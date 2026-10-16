@@ -34,7 +34,7 @@ CloseApplications=yes
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-ptbr.FinishedLabel=O Perseus Contábil foi instalado.%n%nNa primeira abertura o programa cria sozinho o seu banco de dados (em %LOCALAPPDATA%\Perseus\banco); não é preciso instalar nem configurar o PostgreSQL.
+ptbr.FinishedLabel=O Perseus Contábil foi instalado.%n%nNa primeira abertura o programa cria sozinho o seu banco de dados (na pasta AppData\Local\Perseus\banco do seu usuário); não é preciso instalar nem configurar o PostgreSQL.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -50,8 +50,8 @@ Name: "{autodesktop}\Perseus Contábil"; Filename: "{app}\PerseusContabil.exe"; 
 Filename: "{app}\PerseusContabil.exe"; Description: "{cm:LaunchProgram,Perseus Contábil}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-{ O banco local roda a partir de {app}\pgsql; é preciso pará-lo antes de substituir ou remover esses arquivos.
-  Os dados (%LOCALAPPDATA%\Perseus) NÃO são apagados na desinstalação. }
+// O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover
+// esses arquivos. Os dados (%LOCALAPPDATA%\Perseus) NÃO são apagados na desinstalação.
 procedure PararBancoLocal();
 var
   Codigo: Integer;
