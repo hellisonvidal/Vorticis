@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Perseus.Domain\Perseus.Domain.csproj" />
+  </ItemGroup>
+</Project>

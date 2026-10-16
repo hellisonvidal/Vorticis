@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Perseus.Application\Perseus.Application.csproj" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- As migrações SQL ficam em db/ (fonte única) e são embutidas no assembly. -->
+    <EmbeddedResource Include="..\..\db\*.sql" LogicalName="Migracoes.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Dados\*.json" LogicalName="Dados.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
