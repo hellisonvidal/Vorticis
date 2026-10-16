@@ -168,6 +168,43 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             Assert.Empty(saldos.Erros);
             Assert.Contains("lançamento nº 2", saldos.Mensagem);
 
+            // Relatórios › Balanço Patrimonial e DRE (antes do encerramento: resultado destacado no PL)
+            vm.AbrirCommand.Execute(Telas.Demonstracoes);
+            var dem = vm.Demonstracoes;
+            (dem.Inicio, dem.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await dem.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(dem.Erros);
+            Assert.StartsWith("✓", dem.Resumo);
+            Assert.Contains(dem.Dre, l => l.Descricao == "LUCRO LÍQUIDO DO PERÍODO" && l.Valor == "1.500,00");
+            Foto(janela, "08a_demonstracoes");
+
+            // Lançamentos › Encerramento do exercício
+            vm.AbrirCommand.Execute(Telas.Encerramento);
+            var enc = vm.Encerramento;
+            enc.Ano = 2026;
+            await enc.PreverCommand.ExecuteAsync(null);
+            Assert.Contains("LUCRO DO EXERCÍCIO: 1.500,00", enc.Previa);
+            await enc.EncerrarCommand.ExecuteAsync(null);
+            Assert.Empty(enc.Erros);
+            Assert.True(enc.Encerrado);
+            Foto(janela, "08b_encerramento");
+
+            // Relatórios › Livros e relatórios em PDF
+            var pastaPdf = Path.Combine(Path.GetTempPath(), "perseus_pdf_" + Guid.NewGuid().ToString("N"));
+            (ArquivosGerados.AbrirAposGerar, ArquivosGerados.Pasta) = (false, pastaPdf);
+            vm.AbrirCommand.Execute(Telas.LivrosPdf);
+            var livros = vm.LivrosPdf;
+            (livros.Inicio, livros.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            (livros.Representante, livros.RepresentanteCpf, livros.Contador, livros.Crc) = ("Ana Sócia", "123.456.789-09", "Maria Contadora", "SP-123456/O-7");
+            await livros.DiarioCommand.ExecuteAsync(null);
+            Assert.Empty(livros.Erros);
+            Assert.True(File.Exists(livros.UltimoArquivo));
+            await livros.DemonstracoesCommand.ExecuteAsync(null);
+            Assert.Empty(livros.Erros);
+            Foto(janela, "08c_livros_pdf");
+            if (Pasta is not null) foreach (var pdf in Directory.GetFiles(pastaPdf)) File.Copy(pdf, Path.Combine(Pasta, Path.GetFileName(pdf)), true);
+            Directory.Delete(pastaPdf, true);
+
             // 6. Configurações › Perfis de acesso: perfil personalizado só com Razão e Diário
             vm.AbrirCommand.Execute(Telas.Perfis);
             var perfis = vm.Perfis;

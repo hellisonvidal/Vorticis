@@ -9,7 +9,8 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 | Fase | Situação |
 |---|---|
 | 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**. **Pendente:** instalador |
-| 1. MVP contábil | Plano de contas (modelo + **inclusão/alteração/exclusão**), **centros de custo**, **saldos iniciais**, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (CSV). **Pendente:** Diário/Razão em PDF com termos de abertura e encerramento, mapeamento ao plano referencial |
+| 1. MVP contábil | Plano de contas (modelo + manutenção), centros de custo, saldos iniciais, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (CSV), **livros em PDF (Diário com termos de abertura e encerramento, Razão, Balancete)** ✔ |
+| 3. Demonstrações e ECD | **Encerramento do exercício** (apuração do resultado, IND_LCTO = E) e desfazer; **Balanço Patrimonial e DRE** (tela e PDF). **Pendente:** mapeamento ao plano referencial, DMPL/DLPA, DFC, gerador do arquivo ECD |
 
 Ver o [roadmap](docs/04-roadmap.md).
 
@@ -52,6 +53,12 @@ O administrador cria **perfis** em *Configurações › Perfis de acesso*, marca
 Perfis padrão (editáveis, não excluíveis): **Contador** (todas), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). Cadastro de empresas, usuários, perfis, conexão e backup são exclusivos de usuários marcados como **administrador**. As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
 
 Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso`.
+
+### Livros, demonstrações e encerramento
+
+- *Relatórios › Livros e relatórios em PDF*: Livro Diário com termos de abertura e encerramento (ITG 2000: folhas numeradas, identificação da entidade, assinaturas do representante legal e do contador — o número de folhas do termo é calculado após a montagem), Livro Razão de todas as contas com movimento, Balancete e Balanço/DRE. Gerados com PDFsharp/MigraDoc (MIT) e fonte Liberation Sans embutida (SIL OFL 1.1, ver `src/Perseus.Infra/Dados/Fontes/OFL.txt`).
+- *Relatórios › Balanço Patrimonial e DRE*: estrutura do plano da empresa até o nível escolhido; antes do encerramento, o resultado do período aparece destacado no PL para o balanço fechar; a DRE ignora os lançamentos de encerramento.
+- *Lançamentos › Encerramento do exercício*: zera as contas de resultado contra a Apuração do Resultado e transfere o lucro/prejuízo ao PL, em 31/12, com IND_LCTO = E (ECD). "Desfazer" estorna os dois lançamentos para permitir ajustes.
 
 ### Backup e restauração
 

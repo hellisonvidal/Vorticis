@@ -18,6 +18,12 @@ public interface IRepositorioContabil
     /// </summary>
     Task<LancamentoEfetivado> GravarEfetivadoAsync(LancamentoValidado lancamento, long? usuarioId, CancellationToken ct);
 
+    /// <summary>Grava vários lançamentos na mesma transação (tudo ou nada), numerados em sequência.</summary>
+    Task<IReadOnlyList<LancamentoEfetivado>> GravarEfetivadosAsync(IReadOnlyList<LancamentoValidado> lancamentos, long? usuarioId, CancellationToken ct);
+
+    /// <summary>Lançamentos efetivados (não estornados) de uma origem no exercício, com as partidas.</summary>
+    Task<IReadOnlyList<LancamentoRegistrado>> ListarLancamentosAtivosAsync(long empresaId, long exercicioId, OrigemLancamento origem, CancellationToken ct);
+
     Task<IReadOnlyList<CompetenciaStatus>> ListarPeriodosAsync(long empresaId, int ano, CancellationToken ct);
 
     /// <summary>Número do lançamento efetivado (não estornado) com a origem dada no exercício, se houver.</summary>
@@ -36,7 +42,9 @@ public interface IConsultasContabeis
     Task<IReadOnlyList<ContaPlano>> ObterPlanoAsync(long empresaId, CancellationToken ct);
 
     /// <summary>Saldo anterior a <paramref name="inicio"/> e movimento no intervalo, por conta analítica.</summary>
-    Task<IReadOnlyList<MovimentoConta>> ObterMovimentosAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+    /// <param name="excluirEncerramento">Ignora lançamentos de encerramento (IND_LCTO = E) no movimento do intervalo — usado na DRE.</param>
+    Task<IReadOnlyList<MovimentoConta>> ObterMovimentosAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct,
+                                                             bool excluirEncerramento = false);
 
     Task<RazaoConta?> ObterRazaoAsync(long empresaId, string codigoConta, DateOnly inicio, DateOnly fim, CancellationToken ct);
     Task<IReadOnlyList<LinhaDiario>> ObterDiarioAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);

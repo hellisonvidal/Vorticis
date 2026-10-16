@@ -12,11 +12,13 @@ public enum Permissao
     SaldosIniciais,
     PeriodoFechar,
     PeriodoReabrir,
+    ExercicioEncerrar,
     PlanoContasManter,
     CentroCustoManter,
     RelatorioBalancete,
     RelatorioRazao,
     RelatorioDiario,
+    RelatorioDemonstracoes,
     RelatorioExportar,
 
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
@@ -47,12 +49,14 @@ public static class Permissoes
         new(Permissao.SaldosIniciais, "SALDOS_INICIAIS", "Lançamentos", "Lançar saldos iniciais (implantação)"),
         new(Permissao.PeriodoFechar, "PERIODO_FECHAR", "Lançamentos", "Fechar períodos"),
         new(Permissao.PeriodoReabrir, "PERIODO_REABRIR", "Lançamentos", "Reabrir períodos fechados"),
+        new(Permissao.ExercicioEncerrar, "EXERCICIO_ENCERRAR", "Lançamentos", "Encerrar o exercício (apuração do resultado) e desfazer o encerramento"),
         new(Permissao.PlanoContasManter, "PLANO_CONTAS_MANTER", "Cadastros", "Incluir, alterar e excluir contas do plano de contas"),
         new(Permissao.CentroCustoManter, "CENTRO_CUSTO_MANTER", "Cadastros", "Incluir, alterar e excluir centros de custo"),
         new(Permissao.RelatorioBalancete, "RELATORIO_BALANCETE", "Relatórios", "Balancete de verificação"),
         new(Permissao.RelatorioRazao, "RELATORIO_RAZAO", "Relatórios", "Livro Razão"),
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
-        new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios (CSV)"),
+        new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
+        new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);

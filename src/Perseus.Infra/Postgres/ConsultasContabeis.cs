@@ -9,14 +9,14 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
     public async Task<IReadOnlyList<ContaPlano>> ObterPlanoAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, codigo, descricao, nivel, tipo = 'A', conta_pai_id, natureza_saldo::text
+            SELECT id, codigo, descricao, nivel, tipo = 'A', conta_pai_id, natureza_saldo::text, cod_nat
               FROM contabil.plano_contas WHERE empresa_id = @e ORDER BY codigo
             """).Com("e", empresaId);
         var res = new List<ContaPlano>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new ContaPlano(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetInt16(3), r.GetBoolean(4),
-                                   r.IsDBNull(5) ? null : r.GetInt64(5), Mapeamentos.DC(r.GetString(6))));
+                                   r.IsDBNull(5) ? null : r.GetInt64(5), Mapeamentos.DC(r.GetString(6)), r.GetString(7)));
         return res;
     }
 
@@ -25,7 +25,8 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
     /// (partidas). Movimento do intervalo vem das partidas. Inclui lançamentos estornados e seus estornos,
     /// que se anulam — ambos constam do Diário.
     /// </summary>
-    public async Task<IReadOnlyList<MovimentoConta>> ObterMovimentosAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    public async Task<IReadOnlyList<MovimentoConta>> ObterMovimentosAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct,
+                                                                          bool excluirEncerramento = false)
     {
         await using var cmd = ds.CreateCommand("""
             WITH mes_ini AS (SELECT date_trunc('month', @ini::date)::date AS m),
@@ -39,7 +40,8 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
                   FROM contabil.partida p
                   JOIN contabil.lancamento l ON l.id = p.lancamento_id, mes_ini
                  WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO'
-                   AND l.data_lancamento BETWEEN mes_ini.m AND @fim::date),
+                   AND l.data_lancamento BETWEEN mes_ini.m AND @fim::date
+                   AND NOT (@semE AND l.ind_lcto = 'E')),
             agregado AS (
                 SELECT conta_id,
                        SUM(CASE WHEN d < @ini::date THEN CASE ind_dc WHEN 'D' THEN valor ELSE -valor END ELSE 0 END) AS ant_dias,
@@ -50,7 +52,7 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
                    COALESCE(m.saldo, 0) + COALESCE(a.ant_dias, 0),
                    COALESCE(a.deb, 0), COALESCE(a.cred, 0)
               FROM agregado a FULL JOIN anterior_meses m ON m.conta_id = a.conta_id
-            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim).Com("semE", excluirEncerramento);
         var res = new List<MovimentoConta>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))

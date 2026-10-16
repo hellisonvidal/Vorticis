@@ -90,73 +90,102 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
         return new LancamentoRegistrado(lancamentoId, empresaId, numero, data, status, origem, estornoDe, partidas);
     }
 
-    public Task<LancamentoEfetivado> GravarEfetivadoAsync(LancamentoValidado l, long? usuarioId, CancellationToken ct)
+    public async Task<LancamentoEfetivado> GravarEfetivadoAsync(LancamentoValidado l, long? usuarioId, CancellationToken ct)
+        => (await GravarEfetivadosAsync([l], usuarioId, ct))[0];
+
+    public Task<IReadOnlyList<LancamentoEfetivado>> GravarEfetivadosAsync(IReadOnlyList<LancamentoValidado> lancamentos, long? usuarioId,
+                                                                         CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var con = await ds.OpenConnectionAsync(ct);
             await using var tx = await con.BeginTransactionAsync(ct);
             await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
-
-            // Numeração sequencial sem lacunas: o lock na linha do exercício serializa as efetivações.
-            await using (var cmd = new NpgsqlCommand(
-                "SELECT 1 FROM contabil.exercicio WHERE id = @ex AND empresa_id = @e FOR UPDATE", con, tx)
-                .Com("ex", l.ExercicioId).Com("e", l.EmpresaId))
-                if (await cmd.ExecuteScalarAsync(ct) is null)
-                    throw new ViolacaoRegraException("Exercício não pertence à empresa.");
-
-            long numero;
-            await using (var cmd = new NpgsqlCommand(
-                "SELECT COALESCE(MAX(numero), 0) + 1 FROM contabil.lancamento WHERE exercicio_id = @ex", con, tx)
-                .Com("ex", l.ExercicioId))
-                numero = (long)(await cmd.ExecuteScalarAsync(ct))!;
-
-            long id;
-            await using (var cmd = new NpgsqlCommand("""
-                INSERT INTO contabil.lancamento (empresa_id, exercicio_id, data_lancamento, ind_lcto, data_lcto_ext,
-                                                 origem, documento_origem_id, estorno_de_id, criado_por)
-                VALUES (@e, @ex, @d, @ind::contabil.ind_lcto, @dext, @o::contabil.origem_lancamento, @doc, @est, @u)
-                RETURNING id
-                """, con, tx)
-                .Com("e", l.EmpresaId).Com("ex", l.ExercicioId).Com("d", l.Data).Com("ind", l.Indicador.Sql())
-                .Com("dext", l.DataExtemporanea).Com("o", l.Origem.Sql()).Com("doc", l.DocumentoOrigemId)
-                .Com("est", l.EstornoDeId).Com("u", usuarioId))
-                id = (long)(await cmd.ExecuteScalarAsync(ct))!;
-
-            await using (var cmd = new NpgsqlCommand("""
-                INSERT INTO contabil.partida (lancamento_id, sequencia, conta_id, centro_custo_id, participante_id,
-                                              ind_dc, valor, historico, num_arquivo)
-                SELECT @id, t.s, t.c, t.cc, t.pa, t.d::contabil.indicador_dc, t.v, t.h, t.a
-                  FROM unnest(@seq, @conta, @cc, @part, @dc, @valor, @hist, @arq) AS t(s, c, cc, pa, d, v, h, a)
-                """, con, tx)
-                .Com("id", id)
-                .Com("seq", l.Partidas.Select(p => p.Sequencia).ToArray())
-                .Com("conta", l.Partidas.Select(p => p.ContaId).ToArray())
-                .Com("cc", l.Partidas.Select(p => p.CentroCustoId).ToArray())
-                .Com("part", l.Partidas.Select(p => p.ParticipanteId).ToArray())
-                .Com("dc", l.Partidas.Select(p => p.DC.ToString()).ToArray())
-                .Com("valor", l.Partidas.Select(p => p.Valor).ToArray())
-                .Com("hist", l.Partidas.Select(p => p.Historico).ToArray())
-                .Com("arq", l.Partidas.Select(p => p.NumeroArquivo).ToArray()))
-                await cmd.ExecuteNonQueryAsync(ct);
-
-            await using (var cmd = new NpgsqlCommand("""
-                UPDATE contabil.lancamento SET status = 'EFETIVADO', numero = @n, efetivado_em = now() WHERE id = @id
-                """, con, tx).Com("n", numero).Com("id", id))
-                await cmd.ExecuteNonQueryAsync(ct);
-
-            if (l.EstornoDeId is long original)
-            {
-                await using var cmd = new NpgsqlCommand("""
-                    UPDATE contabil.lancamento SET status = 'ESTORNADO'
-                     WHERE id = @o AND empresa_id = @e AND status = 'EFETIVADO'
-                    """, con, tx).Com("o", original).Com("e", l.EmpresaId);
-                if (await cmd.ExecuteNonQueryAsync(ct) != 1)
-                    throw new ViolacaoRegraException("O lançamento original não está mais efetivado (estornado em paralelo?).");
-            }
-
+            var gravados = new List<LancamentoEfetivado>(lancamentos.Count);
+            foreach (var l in lancamentos)
+                gravados.Add(await GravarNaTransacaoAsync(con, tx, l, usuarioId, ct));
             await tx.CommitAsync(ct);   // constraint triggers diferidos (partidas dobradas) rodam aqui
-            return new LancamentoEfetivado(id, numero);
+            return (IReadOnlyList<LancamentoEfetivado>)gravados;
         });
+
+    private static async Task<LancamentoEfetivado> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, LancamentoValidado l,
+                                                                          long? usuarioId, CancellationToken ct)
+    {
+        // Numeração sequencial sem lacunas: o lock na linha do exercício serializa as efetivações.
+        await using (var cmd = new NpgsqlCommand(
+            "SELECT 1 FROM contabil.exercicio WHERE id = @ex AND empresa_id = @e FOR UPDATE", con, tx)
+            .Com("ex", l.ExercicioId).Com("e", l.EmpresaId))
+            if (await cmd.ExecuteScalarAsync(ct) is null)
+                throw new ViolacaoRegraException("Exercício não pertence à empresa.");
+
+        long numero;
+        await using (var cmd = new NpgsqlCommand(
+            "SELECT COALESCE(MAX(numero), 0) + 1 FROM contabil.lancamento WHERE exercicio_id = @ex", con, tx)
+            .Com("ex", l.ExercicioId))
+            numero = (long)(await cmd.ExecuteScalarAsync(ct))!;
+
+        long id;
+        await using (var cmd = new NpgsqlCommand("""
+            INSERT INTO contabil.lancamento (empresa_id, exercicio_id, data_lancamento, ind_lcto, data_lcto_ext,
+                                             origem, documento_origem_id, estorno_de_id, criado_por)
+            VALUES (@e, @ex, @d, @ind::contabil.ind_lcto, @dext, @o::contabil.origem_lancamento, @doc, @est, @u)
+            RETURNING id
+            """, con, tx)
+            .Com("e", l.EmpresaId).Com("ex", l.ExercicioId).Com("d", l.Data).Com("ind", l.Indicador.Sql())
+            .Com("dext", l.DataExtemporanea).Com("o", l.Origem.Sql()).Com("doc", l.DocumentoOrigemId)
+            .Com("est", l.EstornoDeId).Com("u", usuarioId))
+            id = (long)(await cmd.ExecuteScalarAsync(ct))!;
+
+        await using (var cmd = new NpgsqlCommand("""
+            INSERT INTO contabil.partida (lancamento_id, sequencia, conta_id, centro_custo_id, participante_id,
+                                          ind_dc, valor, historico, num_arquivo)
+            SELECT @id, t.s, t.c, t.cc, t.pa, t.d::contabil.indicador_dc, t.v, t.h, t.a
+              FROM unnest(@seq, @conta, @cc, @part, @dc, @valor, @hist, @arq) AS t(s, c, cc, pa, d, v, h, a)
+            """, con, tx)
+            .Com("id", id)
+            .Com("seq", l.Partidas.Select(p => p.Sequencia).ToArray())
+            .Com("conta", l.Partidas.Select(p => p.ContaId).ToArray())
+            .Com("cc", l.Partidas.Select(p => p.CentroCustoId).ToArray())
+            .Com("part", l.Partidas.Select(p => p.ParticipanteId).ToArray())
+            .Com("dc", l.Partidas.Select(p => p.DC.ToString()).ToArray())
+            .Com("valor", l.Partidas.Select(p => p.Valor).ToArray())
+            .Com("hist", l.Partidas.Select(p => p.Historico).ToArray())
+            .Com("arq", l.Partidas.Select(p => p.NumeroArquivo).ToArray()))
+            await cmd.ExecuteNonQueryAsync(ct);
+
+        await using (var cmd = new NpgsqlCommand("""
+            UPDATE contabil.lancamento SET status = 'EFETIVADO', numero = @n, efetivado_em = now() WHERE id = @id
+            """, con, tx).Com("n", numero).Com("id", id))
+            await cmd.ExecuteNonQueryAsync(ct);
+
+        if (l.EstornoDeId is long original)
+        {
+            await using var cmd = new NpgsqlCommand("""
+                UPDATE contabil.lancamento SET status = 'ESTORNADO'
+                 WHERE id = @o AND empresa_id = @e AND status = 'EFETIVADO'
+                """, con, tx).Com("o", original).Com("e", l.EmpresaId);
+            if (await cmd.ExecuteNonQueryAsync(ct) != 1)
+                throw new ViolacaoRegraException("O lançamento original não está mais efetivado (estornado em paralelo?).");
+        }
+
+        return new LancamentoEfetivado(id, numero);
+    }
+
+    public async Task<IReadOnlyList<LancamentoRegistrado>> ListarLancamentosAtivosAsync(long empresaId, long exercicioId, OrigemLancamento origem,
+                                                                                       CancellationToken ct)
+    {
+        var ids = new List<long>();
+        await using (var cmd = ds.CreateCommand("""
+            SELECT id FROM contabil.lancamento
+             WHERE empresa_id = @e AND exercicio_id = @ex AND origem = @o::contabil.origem_lancamento AND status = 'EFETIVADO'
+             ORDER BY numero
+            """).Com("e", empresaId).Com("ex", exercicioId).Com("o", origem.Sql()))
+        await using (var r = await cmd.ExecuteReaderAsync(ct))
+            while (await r.ReadAsync(ct)) ids.Add(r.GetInt64(0));
+        var res = new List<LancamentoRegistrado>();
+        foreach (var id in ids)
+            if (await ObterLancamentoAsync(empresaId, id, ct) is { } l) res.Add(l);
+        return res;
+    }
 
     public async Task<IReadOnlyList<CompetenciaStatus>> ListarPeriodosAsync(long empresaId, int ano, CancellationToken ct)
     {

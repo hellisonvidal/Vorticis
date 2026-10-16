@@ -24,7 +24,9 @@ Cada fase só termina quando o **critério de saída** é atendido com dados rea
 - [ ] Fase 0 — instalador (PostgreSQL silencioso)
 - [x] Fase 1 — lançamento com validação, estorno, fechamento/reabertura, Diário, Razão, Balancete (CSV), plano de contas modelo
 - [x] Fase 1 — manutenção do plano de contas e dos centros de custo, saldos iniciais (implantação)
-- [ ] Fase 1 — Diário/Razão em PDF com termos de abertura e encerramento; mapeamento ao plano referencial (pré-requisito da ECD)
+- [x] Fase 1 — Diário/Razão/Balancete em PDF, Diário com termos de abertura e encerramento
+- [x] Fase 3 (parcial) — encerramento do exercício (e desfazer), Balanço Patrimonial e DRE em tela e PDF
+- [ ] Fase 3 — mapeamento ao plano referencial da RFB, DMPL/DLPA, DFC, gerador do arquivo ECD e validação no PVA
 
 ## Prioridade dentro do MVP (Fase 1)
 

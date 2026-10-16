@@ -1,12 +1,14 @@
 using Npgsql;
 using Perseus.Application.Cadastros;
 using Perseus.Application.Contabil;
+using Perseus.Application.Relatorios;
 using Perseus.Application.Seguranca;
 using Perseus.Application.Sistema;
 using Perseus.Infra.Sistema;
 using Perseus.Infra.Cnpj;
 using Perseus.Infra.Migracoes;
 using Perseus.Infra.Postgres;
+using Perseus.Infra.Relatorios;
 
 namespace Perseus.Infra;
 
@@ -31,6 +33,9 @@ public sealed class PerseusApp : IAsyncDisposable
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj);
+        Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
+        Demonstracoes = new ServicoDemonstracoes(Consultas, autorizador);
+        Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf());
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Migrador = new Migrador(ds);
     }
@@ -43,6 +48,9 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoPlanoContas PlanoContas { get; }
     public ServicoRelatorios Relatorios { get; }
     public ServicoEmpresa Empresas { get; }
+    public ServicoEncerramento Encerramento { get; }
+    public ServicoDemonstracoes Demonstracoes { get; }
+    public ServicoLivros Livros { get; }
     public ServicoBackup Backup { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }

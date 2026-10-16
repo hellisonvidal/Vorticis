@@ -36,6 +36,9 @@ public sealed record ComplementoEmpresa(
 
 public sealed record EmpresaResumo(long Id, string Cnpj, string RazaoSocial);
 
+public sealed record EmpresaDetalhe(long Id, string Cnpj, string RazaoSocial, string? Nire, string Uf, string CodMunicipioIbge, string? Municipio,
+                                    string? Cep, string? Logradouro, string? Numero, string? Complemento, string? Bairro);
+
 /// <summary>Conta do plano modelo. Tipo, nível e pai derivam do código (máscara 9.9.99.999).</summary>
 public sealed record ContaModelo(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo);
 
@@ -46,6 +49,7 @@ public interface IRepositorioEmpresa
     Task<long> CriarAsync(NovaEmpresa empresa, IReadOnlyList<ContaModelo> plano, CancellationToken ct);
     Task CriarExercicioAsync(long empresaId, int ano, CancellationToken ct);
     Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct);
+    Task<EmpresaDetalhe?> ObterAsync(long id, CancellationToken ct);
 }
 
 public interface IFontePlanoModelo

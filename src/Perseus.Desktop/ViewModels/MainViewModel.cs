@@ -34,6 +34,9 @@ public static class Telas
     public const string Usuarios = "usuarios";
     public const string Perfis = "perfis";
     public const string Backup = "backup";
+    public const string Encerramento = "encerramento";
+    public const string Demonstracoes = "demonstracoes";
+    public const string LivrosPdf = "livrospdf";
     public const string AlterarSenha = "senha";
     public const string Conexao = "conexao";
     public const string Sobre = "sobre";
@@ -59,7 +62,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     /// </summary>
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
-        nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup))]
+        nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -74,6 +77,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         CentrosCusto = new CentrosCustoViewModel(this);
         SaldosIniciais = new SaldosIniciaisViewModel(this);
         Backup = new BackupViewModel(this);
+        Encerramento = new EncerramentoViewModel(this);
+        Demonstracoes = new DemonstracoesViewModel(this);
+        LivrosPdf = new LivrosPdfViewModel(this);
         AlterarSenha = new AlterarSenhaViewModel(this);
         Sobre = new SobreViewModel(this);
     }
@@ -105,6 +111,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public CentrosCustoViewModel CentrosCusto { get; private set; }
     public SaldosIniciaisViewModel SaldosIniciais { get; private set; }
     public BackupViewModel Backup { get; private set; }
+    public EncerramentoViewModel Encerramento { get; private set; }
+    public DemonstracoesViewModel Demonstracoes { get; private set; }
+    public LivrosPdfViewModel LivrosPdf { get; private set; }
     public AlterarSenhaViewModel AlterarSenha { get; private set; }
     public SobreViewModel Sobre { get; private set; }
 
@@ -181,6 +190,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Diario.AtualizarPermissoes();
         PlanoContas.AtualizarPermissoes();
         CentrosCusto.AtualizarPermissoes();
+        LivrosPdf.AtualizarPermissoes();
         AtualizarStatus();
         // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
         if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
@@ -210,6 +220,10 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Balancete => Pode(Permissao.RelatorioBalancete),
         Telas.Razao => Pode(Permissao.RelatorioRazao),
         Telas.Diario => Pode(Permissao.RelatorioDiario),
+        Telas.Encerramento => Pode(Permissao.ExercicioEncerrar),
+        Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
+        Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
+                           || Pode(Permissao.RelatorioDemonstracoes),
         Telas.AlterarSenha or Telas.Sobre => true,
         _ => false,
     };
@@ -226,6 +240,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.SaldosIniciais => (SaldosIniciais, "Lançamentos › Saldos iniciais (implantação)"),
             Telas.Perfis => (Perfis, "Configurações › Perfis de acesso"),
             Telas.Backup => (Backup, "Configurações › Backup e restauração"),
+            Telas.Encerramento => (Encerramento, "Lançamentos › Encerramento do exercício"),
+            Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
+            Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
             Telas.Estorno => (Diario, "Lançamentos › Estornar lançamento"),
             Telas.Periodos => (Periodos, "Lançamentos › Fechamento de períodos"),

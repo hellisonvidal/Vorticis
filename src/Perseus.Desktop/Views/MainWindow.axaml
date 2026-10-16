@@ -26,6 +26,9 @@
     <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
     <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>
     <DataTemplate DataType="vm:BackupViewModel"><v:BackupView /></DataTemplate>
+    <DataTemplate DataType="vm:EncerramentoViewModel"><v:EncerramentoView /></DataTemplate>
+    <DataTemplate DataType="vm:DemonstracoesViewModel"><v:DemonstracoesView /></DataTemplate>
+    <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -77,6 +80,7 @@
           <MenuItem Header="Saldos iniciais (implantação)" Command="{Binding AbrirCommand}" CommandParameter="saldosiniciais" />
           <Separator />
           <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
+          <MenuItem Header="Encerramento do exercício" Command="{Binding AbrirCommand}" CommandParameter="encerramento" />
         </MenuItem>
         <MenuItem Header="_Integrações">
           <MenuItem Header="Importar XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
@@ -92,6 +96,9 @@
           <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
           <MenuItem Header="Livro Razão" Command="{Binding AbrirCommand}" CommandParameter="razao" />
           <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
+          <Separator />
+          <MenuItem Header="Balanço Patrimonial e DRE" Command="{Binding AbrirCommand}" CommandParameter="demonstracoes" />
+          <MenuItem Header="Livros e relatórios em PDF" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
         </MenuItem>
         <MenuItem Header="C_onfigurações">
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />

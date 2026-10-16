@@ -109,6 +109,18 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
         }
     }
 
+    public async Task<EmpresaDetalhe?> ObterAsync(long id, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT id, cnpj, razao_social, nire, uf, cod_municipio_ibge, municipio, cep, logradouro, numero, complemento, bairro
+              FROM core.empresa WHERE id = @id
+            """).Com("id", id);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        string? T(int i) => r.IsDBNull(i) ? null : r.GetString(i);
+        return new EmpresaDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), T(3), r.GetString(4), r.GetString(5), T(6), T(7), T(8), T(9), T(10), T(11));
+    }
+
     public async Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("SELECT id, cnpj, razao_social FROM core.empresa WHERE ativa ORDER BY razao_social");

@@ -2,7 +2,8 @@ using Perseus.Domain.Comum;
 
 namespace Perseus.Domain.Contabil;
 
-public sealed record ContaPlano(long Id, string Codigo, string Descricao, short Nivel, bool Analitica, long? ContaPaiId, IndicadorDC NaturezaSaldo);
+public sealed record ContaPlano(long Id, string Codigo, string Descricao, short Nivel, bool Analitica, long? ContaPaiId, IndicadorDC NaturezaSaldo,
+                               string? CodNat = null);
 
 /// <summary>Movimento de uma conta analítica no intervalo. Saldos com sinal: débito positivo.</summary>
 public sealed record MovimentoConta(long ContaId, decimal SaldoAnterior, decimal Debitos, decimal Creditos);
