@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.LancamentoView"
+             x:DataType="vm:LancamentoViewModel">
+  <Grid ColumnDefinitions="*,320" RowDefinitions="Auto,*,Auto,Auto" Margin="8">
+    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Novo lançamento" VerticalAlignment="Center" />
+      <TextBlock Text="Data:" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Data}" SelectedDateFormat="Short" Width="150" />
+    </StackPanel>
+
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Linhas}" SelectedItem="{Binding LinhaSelecionada}"
+              AutoGenerateColumns="False" CanUserSortColumns="False" HeadersVisibility="Column">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Conta" Binding="{ReflectionBinding Conta}" Width="140" />
+        <DataGridTextColumn Header="D/C" Binding="{ReflectionBinding Dc}" Width="70" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="140" />
+        <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+        <DataGridTextColumn Header="Centro de custo" Binding="{ReflectionBinding CentroCusto}" Width="150" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="+ Linha" Command="{Binding AdicionarLinhaCommand}" HotKey="Ctrl+N" />
+        <Button Content="− Remover linha" Command="{Binding RemoverLinhaCommand}" />
+        <Button Content="Limpar" Command="{Binding LimparCommand}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+        <TextBlock Text="{Binding TotalDebito, StringFormat='Débitos: {0}'}" />
+        <TextBlock Text="{Binding TotalCredito, StringFormat='Créditos: {0}'}" />
+        <TextBlock Text="{Binding Diferenca, StringFormat='Diferença: {0}'}" FontWeight="SemiBold"
+                   Foreground="{Binding Balanceado, Converter={x:Static v:Conversores.OkOuErro}}" />
+        <Button Content="Efetivar (Ctrl+Enter)" Command="{Binding EfetivarCommand}" HotKey="Ctrl+Enter"
+                Classes="accent" IsEnabled="{Binding Balanceado}" />
+      </StackPanel>
+    </Grid>
+
+    <v:MensagensView Grid.Row="3" />
+
+    <DockPanel Grid.Column="1" Grid.RowSpan="4" Margin="12,0,0,0">
+      <TextBlock DockPanel.Dock="Top" Text="Contas analíticas" FontWeight="SemiBold" />
+      <TextBox DockPanel.Dock="Top" Text="{Binding FiltroConta}" Watermark="Filtrar por código ou nome" Margin="0,4" />
+      <TextBlock DockPanel.Dock="Bottom" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Clique numa conta para preenchê-la na linha selecionada." />
+      <ListBox ItemsSource="{Binding Contas}" SelectedItem="{Binding ContaSelecionada}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ContaSelecionavel">
+            <TextBlock Text="{Binding Rotulo}" FontSize="12" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Grid>
+</UserControl>

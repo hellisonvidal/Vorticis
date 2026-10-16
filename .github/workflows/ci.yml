@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PERSEUS_TEST_PG: Host=localhost;Username=postgres;Password=postgres;Database=postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Testes SQL das migrações
+        run: |
+          createdb -h localhost -U postgres perseus_sql
+          cat db/0*.sql db/tests/*.sql | psql -h localhost -U postgres -d perseus_sql -v ON_ERROR_STOP=1 -q
+      - name: Build
+        run: dotnet build -c Release
+      - name: Testes (.NET)
+        run: dotnet test -c Release --no-build
+
+  executavel-windows:
+    runs-on: windows-latest
+    needs: testes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Publicar Perseus.exe
+        run: dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perseus-win-x64
+          path: publish/

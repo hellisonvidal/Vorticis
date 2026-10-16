@@ -14,6 +14,13 @@ Cada fase só termina quando o **critério de saída** é atendido com dados rea
 | **7. Reforma Tributária plena** | Apuração CBS/IBS/IS com créditos financeiros; transição ICMS/ISS→IBS por ano; split payment (conciliação); novos planos/rubricas por vigência | Simulação 2027 com dados de 2026 da empresa piloto |
 | **8. Versão completa / escala** | Modo servidor (PostgreSQL na LAN ou nuvem) + API REST; multiusuário concorrente; consolidação (ECD bloco K); ativo imobilizado com depreciação; estoque/custos; dashboards; portal do cliente; Linux/macOS via Avalonia | Escritório com ≥ 5 usuários e ≥ 20 empresas operando simultaneamente |
 
+## Progresso
+
+- [x] Fase 0 — solução .NET 10, migrações versionadas com hash, multiempresa, auditoria encadeada, CI com PostgreSQL, executável Windows
+- [ ] Fase 0 — login/perfis, backup/restauração pela UI, instalador (PostgreSQL silencioso)
+- [x] Fase 1 — lançamento com validação, estorno, fechamento/reabertura, Diário, Razão, Balancete (CSV), plano de contas modelo
+- [ ] Fase 1 — CRUD de plano de contas/centros de custo, saldos iniciais, Diário/Razão em PDF com termos de abertura e encerramento
+
 ## Prioridade dentro do MVP (Fase 1)
 
 1. `ServicoLancamento.Efetivar/Estornar` + triggers (já especificados em [`db/001_core_contabil.sql`](../db/001_core_contabil.sql)).

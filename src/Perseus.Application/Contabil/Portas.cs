@@ -46,5 +46,5 @@ public sealed record RazaoConta(string Codigo, string Descricao, decimal SaldoAn
     public decimal SaldoFinal => Linhas.Count == 0 ? SaldoAnterior : Linhas[^1].SaldoAcumulado;
 }
 
-public sealed record LinhaDiario(long Numero, DateOnly Data, short Sequencia, string CodigoConta, string DescricaoConta,
+public sealed record LinhaDiario(long LancamentoId, long Numero, DateOnly Data, short Sequencia, string CodigoConta, string DescricaoConta,
                                  IndicadorDC DC, decimal Valor, string Historico, StatusLancamento Status);

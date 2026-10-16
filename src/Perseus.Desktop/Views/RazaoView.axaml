@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.RazaoView"
+             x:DataType="vm:RazaoViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Livro Razão" VerticalAlignment="Center" />
+      <TextBox Text="{Binding Conta}" Watermark="Conta (ex.: 1.1.01.001)" Width="200" />
+      <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+      <TextBlock Text="a" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+      <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Cabecalho}" FontWeight="SemiBold" Margin="0,0,0,6" />
+    <v:MensagensView DockPanel.Dock="Bottom" />
+    <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="115" />
+        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
+        <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+        <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding Debito}" Width="130" />
+        <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="130" />
+        <DataGridTextColumn Header="Saldo" Binding="{ReflectionBinding Saldo}" Width="150" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

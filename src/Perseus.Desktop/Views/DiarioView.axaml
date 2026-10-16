@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.DiarioView"
+             x:DataType="vm:DiarioViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Livro Diário" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+      <TextBlock Text="a" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+      <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+    </StackPanel>
+    <Border DockPanel.Dock="Bottom" BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+      <StackPanel Spacing="6">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="Estornar o lançamento selecionado em" VerticalAlignment="Center" />
+          <CalendarDatePicker SelectedDate="{Binding DataEstorno}" Width="140" />
+          <TextBox Text="{Binding MotivoEstorno}" Watermark="Motivo do estorno (obrigatório)" Width="360" />
+          <Button Content="Estornar" Command="{Binding EstornarCommand}" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </Border>
+    <DataGrid ItemsSource="{Binding Linhas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="115" />
+        <DataGridTextColumn Header="Conta" Binding="{ReflectionBinding Conta}" Width="280" />
+        <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding Debito}" Width="120" />
+        <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="120" />
+        <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

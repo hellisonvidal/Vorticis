@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Perseus.Desktop.ViewModels"
+        xmlns:v="using:Perseus.Desktop.Views"
+        xmlns:cad="using:Perseus.Application.Cadastros"
+        x:Class="Perseus.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Perseus — Escrituração Contábil"
+        Width="1200" Height="760" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="16,10">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <TextBlock Text="Perseus" Foreground="White" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Empresa:" Foreground="White" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding Empresas}" SelectedItem="{Binding EmpresaSelecionada}" MinWidth="380">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="cad:EmpresaResumo">
+                <TextBlock Text="{Binding RazaoSocial}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Background="#EEF1F5" Padding="12,4">
+      <TextBlock Text="{Binding Status}" FontSize="12" TextWrapping="Wrap" />
+    </Border>
+    <TabControl Margin="8" Padding="4">
+      <TabItem Header="Lançamentos" IsEnabled="{Binding TemEmpresa}">
+        <v:LancamentoView DataContext="{Binding Lancamento}" />
+      </TabItem>
+      <TabItem Header="Balancete" IsEnabled="{Binding TemEmpresa}">
+        <v:BalanceteView DataContext="{Binding Balancete}" />
+      </TabItem>
+      <TabItem Header="Razão" IsEnabled="{Binding TemEmpresa}">
+        <v:RazaoView DataContext="{Binding Razao}" />
+      </TabItem>
+      <TabItem Header="Diário" IsEnabled="{Binding TemEmpresa}">
+        <v:DiarioView DataContext="{Binding Diario}" />
+      </TabItem>
+      <TabItem Header="Períodos" IsEnabled="{Binding TemEmpresa}">
+        <v:PeriodosView DataContext="{Binding Periodos}" />
+      </TabItem>
+      <TabItem Header="Nova empresa" IsEnabled="{Binding Conectado}">
+        <v:CadastroEmpresaView DataContext="{Binding Cadastro}" />
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

@@ -19,7 +19,7 @@ A integridade é garantida em **duas camadas**:
 | R8 | Numeração sequencial, sem lacunas, atribuída só na efetivação | Livro Diário — ordem cronológica, sem intervalos/rasuras (CC art. 1.183) | App (sequência com lock) |
 | R9 | Encerramento de resultado (`IND_LCTO = 'E'`) só na data final do exercício | ECD I200 | Trigger |
 | R10 | Histórico obrigatório em toda partida | ECD I250.HIST | `NOT NULL` |
-| R11 | Arredondamento: cálculo em `decimal`, arredondar **cada partida** a 2 casas e ajustar a diferença residual na maior partida antes de validar | Evita lançamentos "de R$ 0,01" rejeitados | App |
+| R11 | Valores com no máximo 2 casas decimais — o validador **rejeita** (não arredonda em silêncio). Módulos que calculam valores (rateios, impostos) usam `Dinheiro.Ratear`, que distribui centavos pelo maior resto e garante soma exata | Evita diferenças "de R$ 0,01" | App |
 
 ## 2. Por que *constraint trigger* `DEFERRABLE INITIALLY DEFERRED`
 
@@ -41,84 +41,40 @@ Rascunhos (`status = 'RASCUNHO'`) podem ficar desbalanceados enquanto o usuário
 
 ## 3. Camada de aplicação (C#)
 
-```csharp
-public sealed record PartidaDto(string Conta, char DC, decimal Valor, string Historico,
-                                string? CentroCusto = null, string? Participante = null);
+| Peça | Arquivo | Papel |
+|---|---|---|
+| `ValidadorLancamento` | `src/Perseus.Domain/Contabil/ValidadorLancamento.cs` | Regras R1–R6, R9–R11; função pura, acumula todos os erros |
+| `Estorno` | `src/Perseus.Domain/Contabil/Estorno.cs` | R7: gera o lançamento espelhado (bloqueia estorno duplo, de estorno, de encerramento, retroativo) |
+| `ServicoLancamento` | `src/Perseus.Application/Contabil/ServicoLancamento.cs` | Único ponto de gravação: carrega contexto → valida → grava; traduz rejeições do banco em mensagens |
+| `RepositorioContabil.GravarEfetivadoAsync` | `src/Perseus.Infra/Postgres/RepositorioContabil.cs` | R8: transação com `SELECT ... FOR UPDATE` no exercício, número = máx + 1, insere rascunho + partidas, efetiva; no estorno marca o original na mesma transação |
+| `ServicoPeriodo` | `src/Perseus.Application/Contabil/ServicoPeriodo.cs` | Fecha em ordem cronológica após `contabil.fn_verificar_invariantes`; reabre em ordem inversa |
 
-public sealed class ServicoLancamento
-{
-    public async Task<Resultado<long>> Efetivar(long empresaId, DateOnly data,
-        IReadOnlyList<PartidaDto> partidas, OrigemLancamento origem, long? documentoOrigemId,
-        CancellationToken ct)
-    {
-        var erros = new List<string>();
+Fluxo de efetivação:
 
-        // R3 + R11: normalização monetária
-        var linhas = partidas.Select(p => p with { Valor = Math.Round(p.Valor, 2, MidpointRounding.AwayFromZero) })
-                             .ToList();
-        if (linhas.Any(p => p.Valor <= 0)) erros.Add("Todas as partidas devem ter valor positivo.");
-        if (linhas.Any(p => p.DC is not ('D' or 'C'))) erros.Add("Indicador D/C inválido.");
-
-        // R1 + R2
-        decimal deb = linhas.Where(p => p.DC == 'D').Sum(p => p.Valor);
-        decimal cred = linhas.Where(p => p.DC == 'C').Sum(p => p.Valor);
-        if (!linhas.Any(p => p.DC == 'D') || !linhas.Any(p => p.DC == 'C'))
-            erros.Add("O lançamento precisa de ao menos um débito e um crédito.");
-        if (deb != cred)
-            erros.Add($"Débitos ({deb:N2}) diferentes de créditos ({cred:N2}). Diferença: {deb - cred:N2}.");
-
-        // R4 + R5: carrega contas de uma vez
-        var contas = await _plano.ObterPorCodigos(empresaId, linhas.Select(l => l.Conta), ct);
-        foreach (var l in linhas)
-        {
-            if (!contas.TryGetValue(l.Conta, out var c)) { erros.Add($"Conta {l.Conta} inexistente."); continue; }
-            if (!c.Analitica) erros.Add($"Conta {c.Codigo} é sintética.");
-            if (!c.Ativa) erros.Add($"Conta {c.Codigo} inativa.");
-            if (c.DataInclusao > data) erros.Add($"Conta {c.Codigo} não existia em {data:dd/MM/yyyy}.");
-            if (c.ExigeCentroCusto && l.CentroCusto is null) erros.Add($"Conta {c.Codigo} exige centro de custo.");
-            if (string.IsNullOrWhiteSpace(l.Historico)) erros.Add("Histórico obrigatório.");
-        }
-
-        // R6
-        var periodo = await _periodos.Obter(empresaId, data, ct);
-        if (periodo is null) erros.Add("Exercício/período não cadastrado.");
-        else if (periodo.Fechado) erros.Add($"Período {data:MM/yyyy} fechado.");
-
-        if (erros.Count > 0) return Resultado<long>.Falha(erros);
-
-        // R8: transação + numeração sem lacunas (lock na linha do exercício)
-        await using var tx = await _db.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        long numero = await _db.ExecuteScalarAsync<long>(
-            "SELECT COALESCE(MAX(numero),0)+1 FROM contabil.lancamento " +
-            "WHERE exercicio_id = @ex AND numero IS NOT NULL " +
-            "/* precedido de SELECT ... FROM contabil.exercicio WHERE id=@ex FOR UPDATE */", ...);
-        long id = await _repo.InserirCabecalho(..., status: Status.Rascunho);
-        await _repo.InserirPartidas(id, linhas);
-        await _repo.Efetivar(id, numero);            // muda status -> dispara triggers
-        await _saldos.Acumular(id);                  // atualiza contabil.saldo_mensal
-        await _auditoria.Registrar("lancamento", id, "EFETIVAR");
-        await tx.CommitAsync(ct);                    // constraint trigger valida R1/R2 aqui
-        return Resultado<long>.Ok(id);
-    }
-
-    // R7: estorno = novo lançamento espelhado; o original fica no Diário marcado como ESTORNADO
-    public Task<Resultado<long>> Estornar(long lancamentoId, DateOnly data, string motivo, CancellationToken ct) => ...;
-}
+```
+LancamentoProposto (códigos) ──► ServicoLancamento.EfetivarAsync
+   ├─ carrega contas, centros de custo, participantes e período (1 consulta cada)
+   ├─ ValidadorLancamento.Validar ──► erros? devolve Resultado.Falha (nada é gravado)
+   └─ RepositorioContabil.GravarEfetivadoAsync (1 transação)
+        lock exercício → numero → INSERT lançamento (RASCUNHO) → INSERT partidas (unnest)
+        → UPDATE status EFETIVADO (triggers: período aberto, saldo_mensal, auditoria)
+        → COMMIT (constraint trigger: Σ D = Σ C)
 ```
 
 ## 4. Testes
 
-`db/tests/001_partidas_dobradas_test.sql` cobre 11 casos (aceite de lançamento balanceado, rejeição de desbalanceado, sem crédito, conta sintética, valor negativo, período fechado, data fora do exercício, alteração/exclusão de efetivado, e estorno zerando saldo). Para rodar:
+`db/tests/001_partidas_dobradas_test.sql` cobre 11 casos no nível SQL; `tests/Perseus.Domain.Tests` cobre o validador, estorno, balancete, rateio e CNPJ; `tests/Perseus.Infra.Tests` cobre o fluxo completo contra PostgreSQL real (inclusive 40 efetivações concorrentes sem lacuna de numeração). O SQL (aceite de lançamento balanceado, rejeição de desbalanceado, sem crédito, conta sintética, valor negativo, período fechado, data fora do exercício, alteração/exclusão de efetivado, e estorno zerando saldo). Para rodar:
 
 ```bash
 createdb perseus_test
-psql -v ON_ERROR_STOP=1 -d perseus_test -f db/001_core_contabil.sql -f db/tests/001_partidas_dobradas_test.sql
+psql -v ON_ERROR_STOP=1 -d perseus_test -f db/001_core_contabil.sql -f db/002_saldos_auditoria_fechamento.sql \
+     -f db/tests/001_partidas_dobradas_test.sql
 # saída final esperada: TODOS OS TESTES PASSARAM
 ```
 
 ## 5. Invariantes globais a verificar no fechamento
 
-Além da regra por lançamento, o fechamento de período deve conferir:
+Implementados em `contabil.fn_verificar_invariantes` (db/002): rascunhos pendentes, Σ D = Σ C do mês, `saldo_mensal` = partidas e numeração sem lacunas. Ainda a implementar (dependem das demonstrações e do SPED): (b) e (d) abaixo.
 
 ```sql
 -- (a) Balancete fecha: Σ saldos devedores = Σ saldos credores (analíticas)

@@ -8,6 +8,9 @@ namespace Perseus.Application.Contabil;
 /// </summary>
 public sealed class ServicoPeriodo(IRepositorioContabil repositorio)
 {
+    public Task<IReadOnlyList<CompetenciaStatus>> ListarAsync(long empresaId, int ano, CancellationToken ct = default)
+        => repositorio.ListarPeriodosAsync(empresaId, ano, ct);
+
     public async Task<Resultado> FecharAsync(long empresaId, DateOnly competencia, long? usuarioId, CancellationToken ct = default)
     {
         competencia = new DateOnly(competencia.Year, competencia.Month, 1);
