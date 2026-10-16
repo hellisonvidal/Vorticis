@@ -8,7 +8,7 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 
 | Fase | Situação |
 |---|---|
-| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**. **Pendente:** instalador |
+| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**, **instalador único com banco de dados embutido (sem configurar PostgreSQL)** ✔ |
 | 1. MVP contábil | Plano de contas (modelo + manutenção), centros de custo, saldos iniciais, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (CSV), **livros em PDF (Diário com termos de abertura e encerramento, Razão, Balancete)** ✔ |
 | 3. Demonstrações e ECD | Encerramento do exercício (IND_LCTO = E) e desfazer; Balanço Patrimonial e DRE (tela e PDF); **plano referencial da RFB: importação da tabela oficial e vínculo das contas (sugestões automáticas, cópia do ano anterior, pendências para a ECD)**. **Pendente:** DMPL/DLPA, DFC, gerador do arquivo ECD |
 
@@ -26,9 +26,30 @@ tests/                      Unitários, integração com PostgreSQL e testes de 
 docs/                       Arquitetura, regras, desafios fiscais, roadmap
 ```
 
-## Executar
+## Instalar (usuário final, Windows 10/11 64 bits)
 
-Pré-requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download) e PostgreSQL 16+.
+1. Baixe `Setup-PerseusContabil-<versão>.exe` (artefato **Setup-PerseusContabil** da execução mais recente do CI, na aba *Actions* do GitHub).
+2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
+3. Abra o Perseus Contábil. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador.
+
+Não é preciso instalar nem configurar o PostgreSQL: o instalador traz os binários oficiais do PostgreSQL 16 (pasta `pgsql`), e o Perseus
+cuida do resto:
+
+| Item | Como funciona |
+|---|---|
+| Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Perseus\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Perseus\perseus.json` |
+| Execução | O servidor sobe quando o Perseus abre e para quando ele fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
+| Segurança | Nenhum serviço do Windows nem privilégio de administrador; outros usuários do Windows não leem a senha |
+| Atualização | Basta rodar o instalador novo: ele para o banco, troca os arquivos e preserva os dados |
+| Desinstalação | Remove o programa, **não** os dados (`%LOCALAPPDATA%\Perseus`) — apague a pasta manualmente se quiser |
+| Backup | *Configurações › Backup e restauração* usa o `pg_dump`/`pg_restore` que acompanham o programa |
+| Rede | Para vários computadores usarem o mesmo banco, *Configurações › Conexão* aceita um servidor PostgreSQL; o botão "Usar o banco local" volta ao banco embutido |
+
+Também há o artefato **PerseusContabil-portatil** (pasta com `PerseusContabil.exe` + `pgsql`): descompacte e execute, sem instalar.
+
+## Executar (desenvolvimento)
+
+Pré-requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download) e PostgreSQL 16+ (ou `PERSEUS_PG_EMBUTIDO_BIN` apontando para a pasta `bin` de um PostgreSQL, para usar o modo banco local).
 
 ```bash
 # conexão (opcional; padrão: Host=localhost;Database=perseus;Username=perseus;Password=perseus)
@@ -38,7 +59,7 @@ export PERSEUS_DB="Host=localhost;Database=perseus;Username=postgres;Password=su
 dotnet run --project src/Perseus.Desktop
 ```
 
-Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
+Sem `PERSEUS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
 
 ### Usuários e perfis de acesso
 
@@ -75,21 +96,30 @@ O Perseus não traz a tabela embutida: ela é oficial, muda a cada ano e deve vi
 
 ### Backup e restauração
 
-*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado) em `Documentos\Perseus Contabil\Backups`. A restauração exige digitar `RESTAURAR`, gera antes um backup de segurança do estado atual e encerra todas as sessões. Requer as ferramentas de linha de comando do PostgreSQL (instaladas junto com ele; ou informe a pasta em `PERSEUS_PG_BIN`).
+*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado) em `Documentos\Perseus Contabil\Backups`. A restauração exige digitar `RESTAURAR`, gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `PERSEUS_PG_BIN`).
 
 ### Consulta de CNPJ
 
 Em **Cadastros › Empresas**, o botão *Buscar dados na Receita* preenche razão social, natureza jurídica, CNAE, endereço, município IBGE, início de atividade, situação cadastral e opção pelo Simples/MEI. A fonte é a **base pública do CNPJ divulgada pela Receita Federal** (dados abertos, atualização mensal), via [BrasilAPI](https://brasilapi.com.br) e, como reserva, [Minha Receita](https://minhareceita.org). O portal "Comprovante de Inscrição" da RFB tem captcha e não pode ser automatizado; a API oficial (Serpro "Consulta CNPJ") é paga e pode ser plugada como outra implementação de `IConsultaCnpj`.
 
-### Executável para Windows
+### Gerar o instalador
 
-Arquivo único, sem exigir .NET instalado:
+O job `instalador-windows` do CI faz tudo em um Windows limpo:
 
-```bash
-dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+1. `instalador/baixar-postgresql.ps1` baixa os binários oficiais do PostgreSQL 16 para Windows (EDB) e monta `pgsql` (só `bin`, `lib`, `share` + runtime do Visual C++);
+2. roda o teste do banco embutido no Windows (`ServidorEmbutidoTests`: initdb, start, migrações, reinício, stop);
+3. publica `PerseusContabil.exe` (arquivo único, sem exigir .NET instalado) com a pasta `pgsql` ao lado;
+4. compila `instalador/PerseusContabil.iss` com o Inno Setup → `Setup-PerseusContabil-<versão>.exe`;
+5. `instalador/teste-instalacao.ps1` instala em modo silencioso, abre o programa e confere que o banco foi criado, migrado e parado ao fechar.
+
+Localmente (Windows, com Inno Setup 6):
+
+```powershell
+./instalador/baixar-postgresql.ps1 -Destino pgsql
+dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+Move-Item pgsql publish/pgsql
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=0.4.0 instalador/PerseusContabil.iss   # gera saida\Setup-PerseusContabil-0.4.0.exe
 ```
-
-O executável gerado é `PerseusContabil.exe`; o CI o publica como artefato `perseus-contabil-win-x64` a cada push.
 
 ## Testes
 

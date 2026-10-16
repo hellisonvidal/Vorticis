@@ -134,6 +134,25 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
 
     // ------------------------------------------------------------------ ciclo de vida
 
+    /// <summary>Abertura do programa: prepara o banco (no modo local, cria e inicia o PostgreSQL embutido) e conecta.</summary>
+    public async Task IniciarAsync()
+    {
+        string cs;
+        try
+        {
+            Status = "Preparando o banco de dados...";
+            cs = await BancoDoAplicativo.PrepararAsync(s => Status = s);
+        }
+        catch (Exception ex)
+        {
+            Status = $"Sem conexão com o banco de dados: {ex.Message}";
+            Conexao.CarregarDe(Configuracao.Padrao, ex.Message);
+            Conteudo = Conexao;
+            return;
+        }
+        await InicializarAsync(cs);
+    }
+
     public async Task InicializarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null)
     {
         _connectionString = connectionString;
@@ -151,7 +170,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         catch (Exception ex)
         {
             Status = $"Sem conexão com o banco de dados: {ex.Message}";
-            Conexao.CarregarDe(connectionString, ex.Message);
+            Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(connectionString) ? Configuracao.Padrao : connectionString, ex.Message);
             Conteudo = Conexao;
         }
     }
@@ -289,7 +308,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Contabilidade) _ = Disparar(Contabilidade.CarregarAsync);
         if (tela == Telas.Socios) _ = Disparar(Socios.CarregarAsync);
         if (tela == Telas.LivrosPdf) _ = Disparar(LivrosPdf.PreencherResponsaveisAsync);
-        if (tela == Telas.Conexao) Conexao.CarregarDe(_connectionString, null);
+        if (tela == Telas.Conexao)
+            Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
     }
 

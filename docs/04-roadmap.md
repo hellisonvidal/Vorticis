@@ -21,7 +21,7 @@ Cada fase só termina quando o **critério de saída** é atendido com dados rea
 - [x] Fase 0 — cadastro de empresa com consulta à base pública do CNPJ (RFB)
 - [x] Fase 0 — perfis de acesso configuráveis pelo administrador, verificados nos serviços
 - [x] Fase 0 — backup e restauração pela UI (pg_dump/pg_restore, cópia de segurança automática)
-- [ ] Fase 0 — instalador (PostgreSQL silencioso)
+- [x] Fase 0 — instalador único (Inno Setup) com PostgreSQL embutido gerenciado pelo programa: sem configuração, sem serviço, sem administrador; testado em Windows no CI
 - [x] Fase 1 — lançamento com validação, estorno, fechamento/reabertura, Diário, Razão, Balancete (CSV), plano de contas modelo
 - [x] Fase 1 — manutenção do plano de contas e dos centros de custo, saldos iniciais (implantação)
 - [x] Fase 1 — Diário/Razão/Balancete em PDF, Diário com termos de abertura e encerramento

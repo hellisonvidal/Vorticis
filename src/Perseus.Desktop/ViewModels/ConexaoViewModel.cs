@@ -16,11 +16,22 @@ public partial class ConexaoViewModel(MainViewModel main) : ModuloViewModel(main
 
     public string Arquivo => Configuracao.ArquivoConfiguracao;
 
+    /// <summary>O programa foi instalado com o PostgreSQL embutido (pasta pgsql).</summary>
+    public bool BancoLocalDisponivel => Configuracao.BancoLocalDisponivel;
+
+    [ObservableProperty] private bool _usandoBancoLocal;
+
+    public string DescricaoBancoLocal =>
+        $"O Perseus inclui um banco de dados próprio, criado e iniciado automaticamente, sem nenhuma configuração. " +
+        $"Os dados ficam em {Configuracao.PastaBancoLocal}. Use um servidor PostgreSQL abaixo apenas para compartilhar " +
+        "o banco entre vários computadores da rede.";
+
     public void CarregarDe(string connectionString, string? falha)
     {
         var b = new NpgsqlConnectionStringBuilder(connectionString);
         (Servidor, Porta, Banco, Usuario, Senha) = (b.Host ?? "localhost", b.Port, b.Database ?? "perseus", b.Username ?? "", b.Password ?? "");
         Falha = falha;
+        UsandoBancoLocal = main.App is not null && BancoDoAplicativo.EhBancoLocal(main.ConnectionString);
         Erros.Clear();
         Mensagem = null;
     }
@@ -45,6 +56,23 @@ public partial class ConexaoViewModel(MainViewModel main) : ModuloViewModel(main
         {
             Erros.Add($"Falha: {ex.Message}");
         }
+    }
+
+    /// <summary>Volta a usar o banco local embutido (criando-o, se ainda não existir) e reconecta.</summary>
+    [RelayCommand]
+    private async Task UsarBancoLocalAsync()
+    {
+        Erros.Clear();
+        try
+        {
+            Configuracao.SalvarLocal();
+        }
+        catch (Exception ex)
+        {
+            Erros.Add($"Não foi possível gravar a configuração: {ex.Message}");
+            return;
+        }
+        await main.IniciarAsync();
     }
 
     /// <summary>Grava a configuração e reconecta (volta à tela de login).</summary>

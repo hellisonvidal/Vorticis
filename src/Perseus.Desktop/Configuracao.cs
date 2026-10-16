@@ -3,65 +3,147 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Npgsql;
+using Perseus.Infra.Sistema;
 
 namespace Perseus.Desktop;
 
+public enum ModoBanco { Local, Servidor }
+
+/// <param name="Modo">Local = PostgreSQL embutido, gerenciado pelo Perseus; Servidor = PostgreSQL informado pelo usuário.</param>
+/// <param name="ConnectionString">Só no modo Servidor.</param>
+/// <param name="Porta">Modo Local: última porta usada (0 = ainda não iniciado).</param>
+/// <param name="Senha">Modo Local: senha do superusuário do banco local (null antes da criação).</param>
+public sealed record ConfiguracaoBanco(ModoBanco Modo, string? ConnectionString = null, int Porta = 0, string? Senha = null);
+
 /// <summary>
-/// Conexão com o PostgreSQL local. Ordem: variável PERSEUS_DB → %APPDATA%\Perseus\perseus.json → padrão do instalador.
-/// No Windows a senha é gravada cifrada com DPAPI (só o mesmo usuário do Windows consegue decifrar).
+/// Onde está o banco. Ordem: variável PERSEUS_DB → %APPDATA%\Perseus\perseus.json → banco local embutido (se o
+/// programa foi instalado com ele) → servidor padrão em localhost:5432.
+/// No Windows as senhas são gravadas cifradas com DPAPI (só o mesmo usuário do Windows consegue decifrar).
 /// </summary>
 public static class Configuracao
 {
     public const string Padrao = "Host=localhost;Port=5432;Database=perseus;Username=perseus;Password=perseus";
+    public const string NomeBanco = "perseus";
 
     public static string ArquivoConfiguracao =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Perseus", "perseus.json");
 
-    public static string ObterConnectionString()
+    /// <summary>Dados do banco local: %LOCALAPPDATA%\Perseus\banco (não sai com a desinstalação do programa).</summary>
+    public static string PastaBancoLocal => Path.Combine(PastaLocal, "banco");
+
+    public static string LogBancoLocal => Path.Combine(PastaLocal, "logs", "postgres.log");
+
+    private static string PastaLocal =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Perseus");
+
+    public static bool BancoLocalDisponivel => ServidorPostgresEmbutido.LocalizarBinarios() is not null;
+
+    public static ConfiguracaoBanco Carregar()
     {
         var env = Environment.GetEnvironmentVariable("PERSEUS_DB");
-        if (!string.IsNullOrWhiteSpace(env)) return env;
+        if (!string.IsNullOrWhiteSpace(env)) return new(ModoBanco.Servidor, env);
 
         try
         {
-            if (File.Exists(ArquivoConfiguracao) && JsonNode.Parse(File.ReadAllText(ArquivoConfiguracao)) is JsonObject cfg
-                && cfg["ConnectionString"]?.GetValue<string>() is { Length: > 0 } cs)
+            if (Ler() is { } cfg)
             {
-                if (cfg["SenhaProtegida"]?.GetValue<string>() is { Length: > 0 } protegida && OperatingSystem.IsWindows())
+                // O banco local guarda porta e senha em uma seção própria, preservada quando se configura um servidor.
+                var local = cfg["Local"] as JsonObject;
+                var senhaLocal = local is null ? null : Revelar(local);
+                if (cfg["Modo"]?.GetValue<string>() == nameof(ModoBanco.Local))
+                    return new(ModoBanco.Local, Porta: local?["Porta"]?.GetValue<int>() ?? 0, Senha: senhaLocal);
+                if (cfg["ConnectionString"]?.GetValue<string>() is { Length: > 0 } cs)
                 {
-                    var senha = Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(protegida), null, DataProtectionScope.CurrentUser));
-                    return new NpgsqlConnectionStringBuilder(cs) { Password = senha }.ConnectionString;
+                    var senha = Revelar(cfg);
+                    return new(ModoBanco.Servidor, senha is null ? cs : new NpgsqlConnectionStringBuilder(cs) { Password = senha }.ConnectionString);
                 }
-                return cs;
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException or FormatException
                                        or CryptographicException or InvalidOperationException or ArgumentException)
         {
-            // configuração ilegível: usa o padrão; a tela de conexão mostra o erro, se houver
+            // configuração ilegível: segue para o padrão; a tela de conexão mostra o erro, se houver
         }
-        return Padrao;
+        return BancoLocalDisponivel || Directory.Exists(PastaBancoLocal) ? new(ModoBanco.Local) : new(ModoBanco.Servidor, Padrao);
     }
 
+    /// <summary>Grava a conexão com um servidor PostgreSQL informado pelo usuário (mantém os dados do banco local).</summary>
     public static void Salvar(string connectionString)
     {
         var b = new NpgsqlConnectionStringBuilder(connectionString);
-        var cfg = new JsonObject();
-        if (OperatingSystem.IsWindows() && !string.IsNullOrEmpty(b.Password))
-        {
-            cfg["SenhaProtegida"] = Convert.ToBase64String(
-                ProtectedData.Protect(Encoding.UTF8.GetBytes(b.Password), null, DataProtectionScope.CurrentUser));
-            b.Password = null;
-        }
+        var cfg = new JsonObject { ["Modo"] = nameof(ModoBanco.Servidor) };
+        Proteger(cfg, b.Password);
+        b.Password = null;
         cfg["ConnectionString"] = b.ConnectionString;
-        Directory.CreateDirectory(Path.GetDirectoryName(ArquivoConfiguracao)!);
-        File.WriteAllText(ArquivoConfiguracao, cfg.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        if (LerSeguro()?["Local"] is JsonObject local) cfg["Local"] = local.DeepClone();
+        Gravar(cfg);
+    }
+
+    /// <summary>
+    /// Passa a usar o banco local. Porta/senha nulas mantêm as já gravadas. A senha é gravada antes de criar o
+    /// cluster, para nunca existir um banco local sem senha conhecida.
+    /// </summary>
+    public static void SalvarLocal(int? porta = null, string? senha = null)
+    {
+        var anterior = LerSeguro()?["Local"] as JsonObject;
+        var local = anterior?.DeepClone() as JsonObject ?? new JsonObject();
+        if (porta is not null) local["Porta"] = porta;
+        if (senha is not null)
+        {
+            local.Remove("SenhaProtegida");
+            local.Remove("Senha");
+            Proteger(local, senha);
+        }
+        Gravar(new JsonObject { ["Modo"] = nameof(ModoBanco.Local), ["Local"] = local });
     }
 
     /// <summary>Descrição sem senha, para exibir na tela.</summary>
     public static string Descrever(string connectionString)
     {
         var b = new NpgsqlConnectionStringBuilder(connectionString);
-        return $"{b.Host}:{b.Port}/{b.Database} (usuário {b.Username})";
+        return BancoDoAplicativo.EhBancoLocal(connectionString)
+            ? $"banco local do Perseus (porta {b.Port})"
+            : $"{b.Host}:{b.Port}/{b.Database} (usuário {b.Username})";
+    }
+
+    private static void Proteger(JsonObject cfg, string? senha)
+    {
+        if (string.IsNullOrEmpty(senha)) return;
+        if (OperatingSystem.IsWindows())
+            cfg["SenhaProtegida"] = Convert.ToBase64String(
+                ProtectedData.Protect(Encoding.UTF8.GetBytes(senha), null, DataProtectionScope.CurrentUser));
+        else
+            cfg["Senha"] = senha;   // fora do Windows (desenvolvimento/testes) o arquivo fica no perfil do usuário
+    }
+
+    private static JsonObject? Ler() =>
+        File.Exists(ArquivoConfiguracao) ? JsonNode.Parse(File.ReadAllText(ArquivoConfiguracao)) as JsonObject : null;
+
+    private static JsonObject? LerSeguro()
+    {
+        try
+        {
+            return Ler();
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static string? Revelar(JsonObject cfg) =>
+        Revelar(cfg["SenhaProtegida"]?.GetValue<string>(), cfg["Senha"]?.GetValue<string>());
+
+    private static string? Revelar(string? protegida, string? aberta)
+    {
+        if (protegida is { Length: > 0 } && OperatingSystem.IsWindows())
+            return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(protegida), null, DataProtectionScope.CurrentUser));
+        return aberta is { Length: > 0 } ? aberta : null;
+    }
+
+    private static void Gravar(JsonObject cfg)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(ArquivoConfiguracao)!);
+        File.WriteAllText(ArquivoConfiguracao, cfg.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 }

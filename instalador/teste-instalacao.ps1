@@ -1,0 +1,71 @@
+# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Perseus e confere que o banco local foi
+# criado, iniciado e migrado sem nenhuma configuração; depois fecha o programa e confere que o banco foi parado.
+# Requer Windows PowerShell 5.1 (DPAPI via System.Security).
+param([Parameter(Mandatory)] [string]$Setup)
+$ErrorActionPreference = "Stop"
+
+$log = Join-Path $env:TEMP "perseus-setup.log"
+$p = Start-Process $Setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/LOG=`"$log`"" -Wait -PassThru
+if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40; throw "Instalador terminou com código $($p.ExitCode)" }
+
+$pasta = Join-Path $env:LOCALAPPDATA "Programs\Perseus Contabil"
+$app = Join-Path $pasta "PerseusContabil.exe"
+$pgBin = Join-Path $pasta "pgsql\bin"
+foreach ($f in $app, (Join-Path $pgBin "pg_ctl.exe"), (Join-Path $pgBin "initdb.exe")) {
+    if (-not (Test-Path $f)) { throw "Arquivo não instalado: $f" }
+}
+Write-Host "Instalado em $pasta"
+
+$dados = Join-Path $env:LOCALAPPDATA "Perseus\banco"
+$cfgArquivo = Join-Path $env:APPDATA "Perseus\perseus.json"
+$logPg = Join-Path $env:LOCALAPPDATA "Perseus\logs\postgres.log"
+$proc = Start-Process $app -PassThru
+
+function Falhar($msg) {
+    if (Test-Path $logPg) { Write-Host "--- postgres.log"; Get-Content $logPg -Tail 40 }
+    if (-not $proc.HasExited) { $proc.Kill() }
+    throw $msg
+}
+
+# 1. banco local criado e iniciado
+$limite = (Get-Date).AddMinutes(3)
+while (-not (Test-Path (Join-Path $dados "postmaster.pid"))) {
+    if ($proc.HasExited) { Falhar "O Perseus fechou sozinho (código $($proc.ExitCode))." }
+    if ((Get-Date) -gt $limite) { Falhar "O banco local não foi iniciado em 3 minutos." }
+    Start-Sleep -Seconds 2
+}
+Write-Host "Banco local criado e em execução em $dados"
+
+# 2. configuração gravada com senha cifrada (DPAPI) e migrações aplicadas pelo programa
+Add-Type -AssemblyName System.Security
+$cfg = Get-Content $cfgArquivo -Raw | ConvertFrom-Json
+if ($cfg.Modo -ne "Local") { Falhar "Modo gravado inesperado: $($cfg.Modo)" }
+if ($cfg.Local.Senha) { Falhar "Senha gravada sem cifrar." }
+$senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect(
+    [Convert]::FromBase64String($cfg.Local.SenhaProtegida), $null, "CurrentUser"))
+$env:PGPASSWORD = $senha
+$psql = Join-Path $pgBin "psql.exe"
+$migracoes = 0
+$limite = (Get-Date).AddMinutes(2)
+while ($migracoes -lt 7) {
+    if ((Get-Date) -gt $limite) { Falhar "As migrações não foram aplicadas (encontradas: $migracoes)." }
+    Start-Sleep -Seconds 2
+    $r = & $psql -h localhost -p $cfg.Local.Porta -U postgres -d perseus -tAc "SELECT count(*) FROM public.perseus_migracao" 2>$null
+    if ($LASTEXITCODE -eq 0) { $migracoes = [int]$r }
+}
+Write-Host "Conectado na porta $($cfg.Local.Porta): $migracoes migrações aplicadas"
+& $psql -h localhost -p $cfg.Local.Porta -U postgres -d perseus -tAc "SHOW listen_addresses"
+if ($proc.HasExited) { Falhar "O Perseus fechou inesperadamente." }
+
+# 3. ao fechar o programa, o banco local é parado
+$null = $proc.CloseMainWindow()
+if (-not $proc.WaitForExit(60000)) { Write-Warning "O Perseus não fechou pela janela; encerrando o processo."; $proc.Kill() }
+$limite = (Get-Date).AddSeconds(60)
+while ((Test-Path (Join-Path $dados "postmaster.pid")) -and (Get-Date) -lt $limite) { Start-Sleep -Seconds 2 }
+if (Test-Path (Join-Path $dados "postmaster.pid")) {
+    Write-Warning "O banco local continuou em execução após fechar o programa; parando com pg_ctl."
+    & (Join-Path $pgBin "pg_ctl.exe") stop -D $dados -m fast -w
+} else {
+    Write-Host "Banco local parado ao fechar o programa"
+}
+Write-Host "OK: instalação, criação automática do banco e migrações funcionando."

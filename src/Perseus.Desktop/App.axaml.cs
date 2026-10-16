@@ -22,7 +22,7 @@ public partial class App : Avalonia.Application
             var vm = new MainViewModel();
             desktop.MainWindow = new MainWindow { DataContext = vm };
             desktop.ShutdownRequested += async (_, _) => await vm.DisposeAsync();
-            _ = vm.InicializarAsync(Configuracao.ObterConnectionString());
+            _ = vm.IniciarAsync();
         }
         base.OnFrameworkInitializationCompleted();
     }

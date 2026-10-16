@@ -11,7 +11,7 @@
 | NF-e/NFC-e/CT-e | **DFe.NET (Zeus)** (LGPL) | Classes, schemas e assinatura prontos | ACBr (Delphi, via ACBrLib) |
 | Excel | **ClosedXML** (MIT) | Importação/exportação `.xlsx` | — |
 | PDF/relatórios | **QuestPDF** (licença Community gratuita até US$ 1 mi de receita/ano) | Layout em código, versionável | FastReport OpenSource |
-| Instalador | WiX Toolset / Inno Setup | Instala PostgreSQL silencioso + app + serviço de backup | — |
+| Instalador | Inno Setup | Um único Setup.exe com o app e os binários do PostgreSQL; o app cria (initdb), inicia e para o banco local sozinho (`ServidorPostgresEmbutido`) | — |
 
 **Princípio:** a aplicação desktop fala com uma **camada de serviços em processo** (não um servidor HTTP) no MVP. As interfaces de serviço já são desenhadas para virar uma API REST depois, sem mudar o domínio.
 

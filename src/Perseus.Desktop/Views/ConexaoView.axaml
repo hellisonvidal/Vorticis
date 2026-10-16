@@ -8,6 +8,16 @@
     <TextBlock Classes="titulo" Text="Conexão com o banco de dados (PostgreSQL)" />
     <TextBlock Classes="erro" Text="{Binding Falha, StringFormat='Falha ao conectar: {0}'}"
                IsVisible="{Binding Falha, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    <Border BorderBrush="#C8D3E6" BorderThickness="1" CornerRadius="4" Padding="10" IsVisible="{Binding BancoLocalDisponivel}">
+      <StackPanel Spacing="8">
+        <TextBlock FontWeight="SemiBold" Text="Banco de dados local do Perseus (recomendado)" />
+        <TextBlock TextWrapping="Wrap" FontSize="12" Text="{Binding DescricaoBancoLocal}" />
+        <TextBlock FontSize="12" Foreground="#1B6E3A" Text="Em uso neste momento." IsVisible="{Binding UsandoBancoLocal}" />
+        <Button Content="Usar o banco local" Command="{Binding UsarBancoLocalCommand}" Classes="accent"
+                IsVisible="{Binding !UsandoBancoLocal}" />
+      </StackPanel>
+    </Border>
+    <TextBlock FontWeight="SemiBold" Text="Servidor PostgreSQL" />
     <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
       <TextBlock Text="Servidor" VerticalAlignment="Center" />
       <TextBox Grid.Column="1" Text="{Binding Servidor}" />
@@ -22,7 +32,7 @@
     </Grid>
     <StackPanel Orientation="Horizontal" Spacing="8">
       <Button Content="Testar conexão" Command="{Binding TestarCommand}" />
-      <Button Content="Salvar e conectar" Command="{Binding SalvarEConectarCommand}" Classes="accent" />
+      <Button Content="Salvar e conectar ao servidor" Command="{Binding SalvarEConectarCommand}" />
     </StackPanel>
     <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                Text="{Binding Arquivo, StringFormat='A configuração é gravada em {0}. No Windows, a senha fica cifrada (DPAPI) e só pode ser lida pelo seu usuário do Windows. Salvar encerra a sessão atual.'}" />

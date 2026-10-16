@@ -4,3 +4,6 @@ obj/
 .vs/
 .idea/
 TestResults/
+saida/
+publish/
+pgsql/

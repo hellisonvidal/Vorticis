@@ -58,6 +58,8 @@ public sealed class BackupPostgres(string connectionString, Action? antesDeResta
         var exe = OperatingSystem.IsWindows() ? nome + ".exe" : nome;
         var candidatos = new List<string>();
         if (Environment.GetEnvironmentVariable("PERSEUS_PG_BIN") is { Length: > 0 } bin) candidatos.Add(Path.Combine(bin, exe));
+        // binários distribuídos com o programa (mesma versão do banco local)
+        if (ServidorPostgresEmbutido.LocalizarBinarios() is { } embutido) candidatos.Add(Path.Combine(embutido, exe));
         candidatos.AddRange((Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Select(d => Path.Combine(d, exe)));
         if (OperatingSystem.IsWindows())
