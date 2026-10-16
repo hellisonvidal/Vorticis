@@ -114,7 +114,7 @@ public class PlanoReferencialTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
 
         // Usuário com perfil Consulta vê, mas não vincula
         var consulta = (await db.App.Perfis.ListarAsync(Admin, ct)).Single(p => p.Nome == "Consulta");
-        var uid = (await db.App.Usuarios.CriarUsuarioAsync(Admin, "leitor", "Leitor", "Inicial123", false, ct)).Valor;
+        var uid = (await db.App.Usuarios.CriarUsuarioAsync(Admin, "leitor", "Leitor", "Inicial123", consulta.Id, ct)).Valor;
         await db.App.Usuarios.DefinirAcessoAsync(Admin, uid, empresa, consulta.Id, ct);
         Assert.True((await svc.CarregarAsync(empresa, 2026, uid, ct)).Sucesso);
         Assert.Contains("não permite", (await svc.VincularAsync(empresa, 2026, new Dictionary<long, string?>(), uid, ct)).Erros[0]);

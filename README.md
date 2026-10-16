@@ -63,7 +63,9 @@ Sem `PERSEUS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servid
 
 ### Usuários e perfis de acesso
 
-O administrador cria **perfis** em *Configurações › Perfis de acesso*, marcando função a função o que cada um libera, e atribui a cada usuário um perfil **por empresa** em *Configurações › Usuários*. Funções configuráveis:
+Tudo sobre usuários fica em **Configurações › Usuários**, em abas: *Usuários* (cadastro), *Perfis de acesso*, *Alterar minha senha* e *Registro de acessos* (usuários comuns veem só a troca de senha).
+
+O administrador cria **perfis** marcando função a função o que cada um libera. No cadastro do usuário o **perfil é obrigatório**: ele vale para todas as empresas, inclusive as cadastradas depois, e admite exceções por empresa (outro perfil ou sem acesso). Funções configuráveis:
 
 | Grupo | Funções |
 |---|---|
@@ -71,9 +73,9 @@ O administrador cria **perfis** em *Configurações › Perfis de acesso*, marca
 | Cadastros | Manter plano de contas · Manter centros de custo |
 | Relatórios | Balancete · Livro Razão · Livro Diário · Exportar (CSV) |
 
-Perfis padrão (editáveis, não excluíveis): **Contador** (todas), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). Cadastro de empresas, usuários, perfis, conexão e backup são exclusivos de usuários marcados como **administrador**. As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
+Perfis padrão (não excluíveis): **Administrador** (todas as funções, sempre, e a administração do sistema: empresas, usuários, perfis, conexão e backup), **Contador** (todas as funções contábeis), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
 
-Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso`.
+Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso` (aba *Registro de acessos*). Na tela de entrada, **Salvar login neste computador** guarda usuário e senha em `%APPDATA%\Perseus\login.json`, com a senha cifrada pelo Windows (DPAPI, só o mesmo usuário do Windows consegue ler); não use em computadores compartilhados.
 
 ### Livros, demonstrações e encerramento
 

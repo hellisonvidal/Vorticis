@@ -92,15 +92,20 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var login = Assert.IsType<LoginViewModel>(vm.Conteudo);
             Assert.True(login.EmPrimeiroAcesso);
             (login.Nome, login.Usuario, login.Senha, login.Confirmacao) = ("Maria Contadora", "maria", "Senha1234", "Senha1234");
+            LoginSalvo.Esquecer();
+            login.SalvarLogin = true;                                   // "Salvar login neste computador"
             Foto(janela, "01_primeiro_acesso");
             await login.CriarAdministradorCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // continua maximizada após o login
+            Assert.Equal("maria", LoginSalvo.Obter()?.Usuario);
 
             // 1b. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
-            Assert.Same(vm.Perfis, vm.Conteudo);
+            Assert.Same(vm.CentralUsuarios, vm.Conteudo);
+            Assert.Equal(CentralUsuariosViewModel.AbaPerfis, vm.CentralUsuarios.AbaSelecionada);
             Assert.True(vm.Perfis.ConfiguracaoInicial);
-            foreach (var bloqueada in new[] { Telas.Empresas, Telas.Usuarios, Telas.Lancamento, Telas.Inicio, Telas.Backup })
+            Assert.False(vm.CentralUsuarios.PodeAdministrar);           // aba Usuários só depois de concluir os perfis
+            foreach (var bloqueada in new[] { Telas.Empresas, Telas.Lancamento, Telas.Inicio, Telas.Backup })
                 Assert.False(vm.AbrirCommand.CanExecute(bloqueada), bloqueada);
             await vm.Perfis.CarregarAsync();
             Foto(janela, "01b_configuracao_inicial_perfis");
@@ -305,11 +310,15 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(map.Erros);
             Foto(janela, "08f_vinculo");
 
-            // 6. Configurações › Perfis de acesso: perfil personalizado só com Razão e Diário
+            // 6. Configurações › Usuários, aba Perfis de acesso: perfil personalizado só com Razão e Diário
             vm.AbrirCommand.Execute(Telas.Perfis);
+            Assert.Same(vm.CentralUsuarios, vm.Conteudo);
             var perfis = vm.Perfis;
             await perfis.CarregarAsync();
-            Assert.Equal(["Assistente", "Consulta", "Contador"], perfis.Lista.Select(p => p.Nome).Order());
+            Assert.Equal(["Administrador", "Assistente", "Consulta", "Contador"], perfis.Lista.Select(p => p.Nome).Order());
+            perfis.Selecionado = perfis.Lista.Single(p => p.Nome == "Administrador");
+            Assert.True(perfis.EditandoAdministrador);
+            Assert.All(perfis.Grupos.SelectMany(g => g.Funcoes), f => Assert.True(f.Marcada));   // todas as funções liberadas
             perfis.NovoCommand.Execute(null);
             (perfis.Nome, perfis.Descricao) = ("Auditor externo", "Consulta Razão e Diário");
             foreach (var f in perfis.Grupos.SelectMany(g => g.Funcoes))
@@ -318,19 +327,31 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(perfis.Erros);
             Foto(janela, "08_perfis");
 
-            // Usuários: cria João e atribui o perfil "Auditor externo" na empresa
+            // Aba Usuários: cria João informando o perfil "Auditor externo" (vale para todas as empresas)
             vm.AbrirCommand.Execute(Telas.Usuarios);
+            Assert.Equal(CentralUsuariosViewModel.AbaUsuarios, vm.CentralUsuarios.AbaSelecionada);
             var u = vm.Usuarios;
             await u.CarregarAsync();
             (u.NovoLogin, u.NovoNome, u.NovaSenha) = ("joao", "João Auditor", "Inicial123");
             await u.CriarCommand.ExecuteAsync(null);
+            Assert.Contains("Informe o perfil", u.Erros.Single());       // perfil obrigatório
+            u.NovoPerfil = u.PerfisDisponiveis.Single(o => o.Nome == "Auditor externo");
+            await u.CriarCommand.ExecuteAsync(null);
             Assert.Empty(u.Erros);
+            Assert.Equal("Auditor externo", u.Selecionado?.Perfil);
+            Assert.Equal("Auditor externo", u.PerfilEdicao?.Nome);
             for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             var acesso = Assert.Single(u.Acessos);
-            acesso.Perfil = acesso.Opcoes.Single(o => o.Nome == "Auditor externo");
+            Assert.Equal("Auditor externo", acesso.Perfil.Nome);          // perfil já concedido na empresa
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Equal("Alterações salvas.", u.Mensagem);
             Foto(janela, "09_usuarios");
+
+            // Aba Registro de acessos
+            vm.CentralUsuarios.AbaSelecionada = CentralUsuariosViewModel.AbaRegistro;
+            await vm.CentralUsuarios.CarregarRegistrosAsync();
+            Assert.Contains(vm.CentralUsuarios.Registros, r => r.Login == "maria" && r.Resultado == "Entrou");
+            Foto(janela, "09b_registro_acessos");
 
             // Backup
             vm.AbrirCommand.Execute(Telas.Backup);
@@ -349,6 +370,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.SairCommand.Execute(null);
             Assert.False(vm.Logado);
             login = Assert.IsType<LoginViewModel>(vm.Conteudo);
+            Assert.Equal("maria", login.Usuario);                            // login salvo já vem preenchido
+            Assert.True(login.SalvarLogin);
             (login.Usuario, login.Senha) = ("joao", "errada123");
             await login.EntrarCommand.ExecuteAsync(null);
             Assert.Equal(["Usuário ou senha inválidos."], login.Erros);
@@ -366,10 +389,14 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Diario));
             Assert.True(vm.AbrirCommand.CanExecute(Telas.PlanoContas));     // consulta do plano
             foreach (var proibida in new[] { Telas.Balancete, Telas.Lancamento, Telas.Estorno, Telas.SaldosIniciais, Telas.Periodos,
-                                             Telas.Empresas, Telas.Usuarios, Telas.Perfis, Telas.Backup, Telas.Conexao })
+                                             Telas.Empresas, Telas.Perfis, Telas.Backup, Telas.Conexao })
                 Assert.False(vm.AbrirCommand.CanExecute(proibida), proibida);
             Assert.Same(vm.Inicio, vm.Conteudo);                             // entra pela tela de descanso
             Assert.Null(vm.Inicio.Dica);
+            vm.AbrirCommand.Execute(Telas.Usuarios);                         // usuário comum: só a troca da própria senha
+            Assert.Equal(CentralUsuariosViewModel.AbaSenha, vm.CentralUsuarios.AbaSelecionada);
+            Assert.False(vm.CentralUsuarios.PodeAdministrar);
+            Assert.False(vm.CentralUsuarios.PodePerfis);
             vm.AbrirCommand.Execute(Telas.Razao);
             Assert.Equal("", vm.Balancete.Totais);                           // nada da sessão anterior fica visível
 
@@ -389,6 +416,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             janela.Close();
             await vm.DisposeAsync();
+            LoginSalvo.Esquecer();
             return true;
         }, TestContext.Current.CancellationToken));
         Assert.True(concluido);

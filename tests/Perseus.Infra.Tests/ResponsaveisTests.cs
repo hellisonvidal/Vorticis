@@ -94,7 +94,7 @@ public class ResponsaveisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 
         // Perfil sem a permissão não altera
         var consulta = (await db.App.Perfis.ListarAsync(new SessaoUsuario(adm, "a", "A", true, false), ct)).Single(p => p.Nome == "Consulta");
-        var uid = (await db.App.Usuarios.CriarUsuarioAsync(new SessaoUsuario(adm, "a", "A", true, false), "leitor2", "Leitor", "Inicial123", false, ct)).Valor;
+        var uid = (await db.App.Usuarios.CriarUsuarioAsync(new SessaoUsuario(adm, "a", "A", true, false), "leitor2", "Leitor", "Inicial123", consulta.Id, ct)).Valor;
         await db.App.Usuarios.DefinirAcessoAsync(new SessaoUsuario(adm, "a", "A", true, false), uid, empresa, consulta.Id, ct);
         Assert.True((await svc.ListarSociosAsync(empresa, uid, ct)).Sucesso);
         Assert.Contains("não permite", (await svc.SalvarSocioAsync(empresa, S("Hack", 1m), uid, ct)).Erros[0]);

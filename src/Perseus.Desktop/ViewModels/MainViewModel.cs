@@ -71,7 +71,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
-        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios))]
+        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -95,6 +95,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Socios = new SociosViewModel(this);
         AlterarSenha = new AlterarSenhaViewModel(this);
         Sobre = new SobreViewModel(this);
+        CentralUsuarios = new CentralUsuariosViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -134,6 +135,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public SociosViewModel Socios { get; private set; }
     public AlterarSenhaViewModel AlterarSenha { get; private set; }
     public SobreViewModel Sobre { get; private set; }
+    public CentralUsuariosViewModel CentralUsuarios { get; private set; }
+
+    public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
     public string UsuarioRotulo => Sessao is null ? "" : $"{Sessao.Nome}{(Sessao.Administrador ? " (administrador)" : "")}";
 
@@ -201,6 +205,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public void AoConcluirConfiguracaoInicial()
     {
         _configuracaoInicialPendente = false;
+        CentralUsuarios.AtualizarAcesso();
         AbrirCommand.NotifyCanExecuteChanged();
         Abrir(Telas.Inicio);
         AtualizarStatus();
@@ -219,6 +224,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         TituloTela = "";
         RecriarModulos();
         Login.Limpar();
+        Login.CarregarLoginSalvo();
         Conteudo = Login;
         Status = $"Sessão encerrada. Conectado a {Configuracao.Descrever(_connectionString)}.";
     }
@@ -264,11 +270,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
 
     public bool PodeAbrir(string? tela) => Logado && (!_configuracaoInicialPendente
         ? PodeAbrirTela(tela)
-        : tela is Telas.Perfis or Telas.Sobre or Telas.AlterarSenha);
+        : tela is Telas.Perfis or Telas.Sobre or Telas.AlterarSenha or Telas.Usuarios);
 
     private bool PodeAbrirTela(string? tela) => tela switch
     {
-        Telas.Empresas or Telas.Usuarios or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
+        Telas.Empresas or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
             => Pode(Permissao.AdministrarSistema),
         Telas.PlanoContas or Telas.CentrosCusto or Telas.MapeamentoReferencial or Telas.Contabilidade or Telas.Socios
             => EmpresaSelecionada is not null && _permissoes.TemAcesso,
@@ -283,7 +289,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
         Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
                            || Pode(Permissao.RelatorioDemonstracoes),
-        Telas.AlterarSenha or Telas.Sobre or Telas.Inicio => true,
+        Telas.Usuarios or Telas.AlterarSenha or Telas.Sobre or Telas.Inicio => true,
         _ => false,
     };
 
@@ -297,7 +303,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.PlanoContas => (PlanoContas, "Cadastros › Plano de contas"),
             Telas.CentrosCusto => (CentrosCusto, "Cadastros › Centros de custo"),
             Telas.SaldosIniciais => (SaldosIniciais, "Lançamentos › Saldos iniciais (implantação)"),
-            Telas.Perfis => (Perfis, "Configurações › Perfis de acesso"),
+            Telas.Perfis => (CentralUsuarios, "Configurações › Usuários"),
             Telas.Backup => (Backup, "Configurações › Backup e restauração"),
             Telas.Encerramento => (Encerramento, "Lançamentos › Encerramento do exercício"),
             Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
@@ -312,16 +318,27 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Balancete => (Balancete, "Relatórios › Balancete de verificação"),
             Telas.Razao => (Razao, "Relatórios › Livro Razão"),
             Telas.Diario => (Diario, "Relatórios › Livro Diário"),
-            Telas.Usuarios => (Usuarios, "Configurações › Usuários"),
-            Telas.AlterarSenha => (AlterarSenha, "Configurações › Alterar minha senha"),
+            Telas.Usuarios => (CentralUsuarios, "Configurações › Usuários"),
+            Telas.AlterarSenha => (CentralUsuarios, "Configurações › Usuários"),
             Telas.Conexao => (Conexao, "Configurações › Conexão com o banco de dados"),
             Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus Contábil"),
             Telas.Inicio => (Inicio, ""),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
-        if (tela == Telas.Usuarios) _ = Disparar(Usuarios.CarregarAsync);
-        if (tela == Telas.Perfis) _ = Disparar(Perfis.CarregarAsync);
+        if (tela is Telas.Usuarios or Telas.Perfis or Telas.AlterarSenha)
+        {
+            CentralUsuarios.AtualizarAcesso();
+            var aba = tela switch
+            {
+                Telas.Perfis => CentralUsuariosViewModel.AbaPerfis,
+                Telas.AlterarSenha => CentralUsuariosViewModel.AbaSenha,
+                _ => CentralUsuarios.PodeAdministrar ? CentralUsuariosViewModel.AbaUsuarios
+                   : CentralUsuarios.PodePerfis ? CentralUsuariosViewModel.AbaPerfis : CentralUsuariosViewModel.AbaSenha,
+            };
+            if (CentralUsuarios.AbaSelecionada == aba) CarregarAbaUsuarios();
+            else CentralUsuarios.AbaSelecionada = aba;
+        }
         if (tela == Telas.PlanoContas) _ = Disparar(PlanoContas.CarregarAsync);
         if (tela == Telas.CentrosCusto) _ = Disparar(CentrosCusto.CarregarAsync);
         if (tela == Telas.SaldosIniciais) _ = Disparar(SaldosIniciais.CarregarAsync);
@@ -336,6 +353,18 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
         if (tela == Telas.Inicio) Inicio.Atualizar();
+    }
+
+    /// <summary>Configurações › Usuários: carrega a aba aberta.</summary>
+    public void CarregarAbaUsuarios()
+    {
+        if (!ReferenceEquals(Conteudo, CentralUsuarios)) return;
+        switch (CentralUsuarios.AbaSelecionada)
+        {
+            case CentralUsuariosViewModel.AbaUsuarios when CentralUsuarios.PodeAdministrar: _ = Disparar(Usuarios.CarregarAsync); break;
+            case CentralUsuariosViewModel.AbaPerfis when CentralUsuarios.PodePerfis: _ = Disparar(Perfis.CarregarAsync); break;
+            case CentralUsuariosViewModel.AbaRegistro when CentralUsuarios.PodeAdministrar: _ = Disparar(CentralUsuarios.CarregarRegistrosAsync); break;
+        }
     }
 
     /// <summary>Cadastros › Empresas: carrega a aba de sócios ou de contadores da empresa selecionada.</summary>

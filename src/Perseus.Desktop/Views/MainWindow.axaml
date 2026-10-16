@@ -34,6 +34,7 @@
     <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
     <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
     <DataTemplate DataType="vm:InicioViewModel"><v:InicioView /></DataTemplate>
+    <DataTemplate DataType="vm:CentralUsuariosViewModel"><v:CentralUsuariosView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -89,8 +90,6 @@
         </MenuItem>
         <MenuItem Header="C_onfigurações">
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
-          <MenuItem Header="Perfis de acesso" Command="{Binding AbrirCommand}" CommandParameter="perfis" />
-          <MenuItem Header="Alterar minha senha" Command="{Binding AbrirCommand}" CommandParameter="senha" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
           <MenuItem Header="Plano referencial da RFB (importar tabela)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />

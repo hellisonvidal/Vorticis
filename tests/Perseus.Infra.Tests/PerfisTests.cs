@@ -40,7 +40,7 @@ public class PerfisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         // Perfil "Auditor": só o Razão
         var perfil = await app.Perfis.SalvarAsync(Admin, null, "Auditor externo", "Somente Razão", [Permissao.RelatorioRazao], ct);
         Assert.True(perfil.Sucesso, string.Join("; ", perfil.Erros));
-        var usuario = (await app.Usuarios.CriarUsuarioAsync(Admin, "auditor", "Auditor", "Inicial123", false, ct)).Valor;
+        var usuario = (await app.Usuarios.CriarUsuarioAsync(Admin, "auditor", "Auditor", "Inicial123", perfil.Valor, ct)).Valor;
         Assert.True((await app.Usuarios.DefinirAcessoAsync(Admin, usuario, empresa, perfil.Valor, ct)).Sucesso);
 
         var razao = await app.Relatorios.RazaoAsync(empresa, "1.1.01.001", new(2026, 1, 1), new(2026, 12, 31), usuario, ct);
@@ -61,13 +61,15 @@ public class PerfisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         // ...mas estornar continua proibido
         Assert.Contains("Estornar", (await app.Lancamentos.EstornarAsync(empresa, lanc.Valor.Id, new(2026, 5, 4), "teste", usuario, ct)).Erros[0]);
 
-        // Sem acesso à empresa
+        // Empresa nova: o usuário recebe automaticamente o seu perfil; o administrador pode retirar o acesso
         var outra = await db.CriarEmpresaAsync("06990590000123");
+        Assert.Contains((await app.Usuarios.ListarAcessosAsync(usuario, ct)), a => a.EmpresaId == outra && a.PerfilId == perfil.Valor);
+        Assert.True((await app.Usuarios.DefinirAcessoAsync(Admin, usuario, outra, null, ct)).Sucesso);
         Assert.Equal(["Você não tem acesso a esta empresa."],
             (await app.Relatorios.RazaoAsync(outra, "1.1.01.001", new(2026, 1, 1), new(2026, 12, 31), usuario, ct)).Erros);
 
         // Usuário inativo perde tudo, mesmo com perfil
-        Assert.True((await app.Usuarios.AlterarUsuarioAsync(Admin, usuario, "Auditor", false, false, ct)).Sucesso);
+        Assert.True((await app.Usuarios.AlterarUsuarioAsync(Admin, usuario, "Auditor", perfil.Valor, false, ct)).Sucesso);
         Assert.False((await app.Relatorios.RazaoAsync(empresa, "1.1.01.001", new(2026, 1, 1), new(2026, 12, 31), usuario, ct)).Sucesso);
 
         // Exclusão: perfil em uso e perfil padrão são protegidos
@@ -75,7 +77,21 @@ public class PerfisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var contador = (await app.Perfis.ListarAsync(Admin, ct)).Single(p => p.Nome == "Contador");
         Assert.Contains("padrão do sistema", (await app.Perfis.ExcluirAsync(Admin, contador.Id, ct)).Erros[0]);
         await app.Usuarios.DefinirAcessoAsync(Admin, usuario, empresa, null, ct);
+        Assert.Contains("atribuído a usuários", (await app.Perfis.ExcluirAsync(Admin, perfil.Valor, ct)).Erros[0]);   // ainda é o perfil do usuário
+        Assert.True((await app.Usuarios.AlterarUsuarioAsync(Admin, usuario, "Auditor", await db.PerfilIdAsync("Consulta"), false, ct)).Sucesso);
         Assert.True((await app.Perfis.ExcluirAsync(Admin, perfil.Valor, ct)).Sucesso);
+
+        // Perfil Administrador: todas as funções, sempre (mesmo que se tente desmarcar) e não pode ser excluído
+        var adminPerfil = (await app.Perfis.ListarAsync(Admin, ct)).Single(p => p.Administrador);
+        Assert.Equal("Administrador", adminPerfil.Nome);
+        Assert.Equal(Permissoes.Catalogo.Count, adminPerfil.Permissoes.Count);
+        Assert.True((await app.Perfis.SalvarAsync(Admin, adminPerfil.Id, "Administrador", null, [Permissao.RelatorioRazao], ct)).Sucesso);
+        Assert.Equal(Permissoes.Catalogo.Count, (await app.Perfis.ListarAsync(Admin, ct)).Single(p => p.Administrador).Permissoes.Count);
+        Assert.Contains("padrão do sistema", (await app.Perfis.ExcluirAsync(Admin, adminPerfil.Id, ct)).Erros[0]);
+
+        // Usuário com perfil Administrador é administrador do sistema
+        var chefe = (await app.Usuarios.CriarUsuarioAsync(Admin, "chefe2", "Chefe", "Inicial123", adminPerfil.Id, ct)).Valor;
+        Assert.True((await app.Usuarios.ListarAsync(Admin, ct)).Single(u => u.Id == chefe).Administrador);
     }
 
     [Fact]

@@ -11,7 +11,7 @@
       <StackPanel Spacing="4">
         <TextBlock FontWeight="SemiBold" Text="Configuração inicial (obrigatória): perfis de acesso dos usuários" />
         <TextBlock TextWrapping="Wrap" FontSize="12"
-                   Text="Antes de usar o sistema, defina o que cada perfil de usuário pode acessar. Os perfis Contador, Assistente e Consulta já vêm prontos: revise as funções liberadas, ajuste ou crie novos perfis e clique em Concluir. O cadastro de empresas pode ser feito depois." />
+                   Text="Antes de usar o sistema, defina o que cada perfil de usuário pode acessar. Os perfis Administrador (todas as funções), Contador, Assistente e Consulta já vêm prontos: revise as funções liberadas, ajuste ou crie novos perfis e clique em Concluir. O cadastro de empresas pode ser feito depois." />
       </StackPanel>
       <Button Grid.Column="1" Content="Concluir configuração dos perfis" Classes="accent" VerticalAlignment="Center"
               Margin="12,0,0,0" Command="{Binding ConcluirConfiguracaoInicialCommand}" />
@@ -51,10 +51,12 @@
 
         <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
           <TextBlock Text="Funções liberadas por este perfil" FontWeight="SemiBold" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Content="Marcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:True}" FontSize="12" Margin="0,0,6,0" />
-          <Button Grid.Column="2" Content="Desmarcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:False}" FontSize="12" />
+          <Button Grid.Column="1" Content="Marcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:True}" FontSize="12" Margin="0,0,6,0"
+                  IsEnabled="{Binding !EditandoAdministrador}" />
+          <Button Grid.Column="2" Content="Desmarcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:False}" FontSize="12"
+                  IsEnabled="{Binding !EditandoAdministrador}" />
         </Grid>
-        <ItemsControl ItemsSource="{Binding Grupos}">
+        <ItemsControl ItemsSource="{Binding Grupos}" IsEnabled="{Binding !EditandoAdministrador}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:GrupoFuncoes">
               <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,4">
@@ -73,7 +75,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
-                   Text="Cadastro de empresas, usuários, perfis, conexão e backup não são delegáveis: pertencem a usuários marcados como administrador." />
+                   Text="Cadastro de empresas, usuários, perfis, conexão e backup pertencem a quem tem o perfil Administrador, que libera sempre todas as funções." />
       </StackPanel>
     </ScrollViewer>
   </Grid>

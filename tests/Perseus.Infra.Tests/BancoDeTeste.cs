@@ -51,6 +51,9 @@ public sealed class BancoDeTeste : IAsyncLifetime
         }
     }
 
+    /// <summary>Id de um perfil pelo nome (ex.: "Consulta", "Administrador").</summary>
+    public Task<long> PerfilIdAsync(string nome) => EscalarAsync<long>("SELECT id FROM core.perfil WHERE nome = @n", ("n", nome));
+
     public static void ExigirBanco() => Assert.SkipWhen(ConexaoServidor is null, "Defina PERSEUS_TEST_PG para rodar testes de integração.");
 
     public async Task<long> CriarEmpresaAsync(string cnpj, int ano = 2026)

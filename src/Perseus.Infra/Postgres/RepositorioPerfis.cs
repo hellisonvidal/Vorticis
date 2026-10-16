@@ -27,14 +27,16 @@ public sealed class RepositorioPerfis(NpgsqlDataSource ds) : IRepositorioPerfis,
         await using var cmd = ds.CreateCommand("""
             SELECT p.id, p.nome, p.descricao, p.padrao,
                    COALESCE((SELECT array_agg(permissao) FROM core.perfil_permissao WHERE perfil_id = p.id), '{}'),
-                   (SELECT COUNT(DISTINCT usuario_id) FROM core.usuario_empresa WHERE perfil_id = p.id)::int
-              FROM core.perfil p ORDER BY p.padrao DESC, p.nome
+                   (SELECT COUNT(*) FROM core.usuario u
+                     WHERE u.perfil_id = p.id OR EXISTS (SELECT 1 FROM core.usuario_empresa ue WHERE ue.usuario_id = u.id AND ue.perfil_id = p.id))::int,
+                   p.administrador
+              FROM core.perfil p ORDER BY p.administrador DESC, p.padrao DESC, p.nome
             """);
         var res = new List<PerfilAcesso>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new PerfilAcesso(r.GetInt64(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2), r.GetBoolean(3),
-                                     Permissoes.DeCodigos(r.GetFieldValue<string[]>(4)), r.GetInt32(5)));
+                                     Permissoes.DeCodigos(r.GetFieldValue<string[]>(4)), r.GetInt32(5), r.GetBoolean(6)));
         return res;
     }
 

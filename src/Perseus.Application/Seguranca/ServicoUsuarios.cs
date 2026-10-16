@@ -6,7 +6,14 @@ namespace Perseus.Application.Seguranca;
 public sealed record CredenciaisUsuario(long Id, string Login, string Nome, string SenhaHash, bool Ativo, bool Administrador,
                                         bool DeveTrocarSenha, int TentativasFalhas, DateTimeOffset? BloqueadoAte);
 
-public sealed record UsuarioResumo(long Id, string Login, string Nome, bool Administrador, bool Ativo, DateTimeOffset? UltimoAcesso);
+/// <param name="PerfilId">Perfil do usuário (vale para todas as empresas; o acesso por empresa admite exceções).</param>
+public sealed record UsuarioResumo(long Id, string Login, string Nome, bool Administrador, bool Ativo, DateTimeOffset? UltimoAcesso,
+                                   long? PerfilId = null, string? Perfil = null);
+
+public sealed record PerfilDoUsuario(long Id, string Nome, bool Administrador);
+
+/// <summary>Tentativa de login registrada em core.registro_acesso.</summary>
+public sealed record RegistroAcesso(DateTimeOffset OcorridoEm, string Login, bool Sucesso, string? Motivo, string? Estacao);
 
 /// <param name="Perfil">Nome do perfil do usuário na empresa; nulo para administrador sem perfil atribuído.</param>
 public sealed record EmpresaPermitida(long Id, string Cnpj, string RazaoSocial, string? Perfil);
@@ -21,13 +28,18 @@ public interface IRepositorioUsuarios
     Task<bool> LoginExisteAsync(string login, CancellationToken ct);
 
     /// <summary>Insere o usuário. Com <paramref name="somenteSeNaoHouverUsuarios"/>, só insere se a tabela estiver vazia (retorna null caso contrário).</summary>
-    Task<long?> CriarAsync(string login, string nome, string senhaHash, bool administrador, bool deveTrocarSenha,
+    Task<long?> CriarAsync(string login, string nome, string senhaHash, bool administrador, long? perfilId, bool deveTrocarSenha,
                            bool somenteSeNaoHouverUsuarios, CancellationToken ct);
+    Task<PerfilDoUsuario?> ObterPerfilAsync(long perfilId, CancellationToken ct);
+    Task<long?> IdPerfilAdministradorAsync(CancellationToken ct);
+    /// <summary>Concede o perfil em todas as empresas cadastradas (substitui acessos existentes).</summary>
+    Task AtribuirPerfilEmTodasEmpresasAsync(long usuarioId, long perfilId, CancellationToken ct);
+    Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct);
 
     Task RegistrarFalhaAsync(long? usuarioId, string login, int tentativas, DateTimeOffset? bloquearAte, string motivo, string? estacao, CancellationToken ct);
     Task RegistrarSucessoAsync(long usuarioId, string login, string? novoHash, string? estacao, CancellationToken ct);
     Task AlterarSenhaAsync(long usuarioId, string senhaHash, bool deveTrocarSenha, CancellationToken ct);
-    Task AlterarAsync(long usuarioId, string nome, bool administrador, bool ativo, CancellationToken ct);
+    Task AlterarAsync(long usuarioId, string nome, bool administrador, long perfilId, bool ativo, CancellationToken ct);
     Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct);
     /// <param name="perfilId">Perfil a atribuir; nulo revoga o acesso.</param>
     Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct);
@@ -62,6 +74,7 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         if (erros.Count > 0) return Resultado<SessaoUsuario>.Falha(erros);
 
         var id = await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senha), administrador: true,
+                                              await repositorio.IdPerfilAdministradorAsync(ct),
                                               deveTrocarSenha: false, somenteSeNaoHouverUsuarios: true, ct);
         if (id is null) return Resultado<SessaoUsuario>.Falha("Já existe usuário cadastrado. Entre com seu login.");
         await repositorio.RegistrarSucessoAsync(id.Value, login.Trim(), null, Environment.MachineName, ct);
@@ -120,16 +133,23 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     // ---------------------------------------------------------------- administração
 
+    /// <summary>
+    /// Cadastra um usuário com o perfil informado. O perfil Administrador torna o usuário administrador do sistema;
+    /// os demais perfis são concedidos em todas as empresas (e nas que forem cadastradas depois).
+    /// </summary>
     public async Task<Resultado<long>> CriarUsuarioAsync(SessaoUsuario admin, string login, string nome, string senhaInicial,
-                                                        bool administrador, CancellationToken ct = default)
+                                                        long? perfilId, CancellationToken ct = default)
     {
         if (!admin.Administrador) return Resultado<long>.Falha("Somente administradores podem cadastrar usuários.");
         var erros = ValidarNovo(login, nome, senhaInicial, senhaInicial);
+        var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
+        if (perfil is null) erros.Add("Informe o perfil do usuário.");
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
         if (await repositorio.LoginExisteAsync(login.Trim(), ct)) return Resultado<long>.Falha($"O login \"{login.Trim()}\" já está em uso.");
-        var id = await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senhaInicial), administrador,
-                                              deveTrocarSenha: true, somenteSeNaoHouverUsuarios: false, ct);
-        return Resultado<long>.Ok(id!.Value);
+        var id = (await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senhaInicial), perfil!.Administrador, perfil.Id,
+                                               deveTrocarSenha: true, somenteSeNaoHouverUsuarios: false, ct))!.Value;
+        if (!perfil.Administrador) await repositorio.AtribuirPerfilEmTodasEmpresasAsync(id, perfil.Id, ct);
+        return Resultado<long>.Ok(id);
     }
 
     public async Task<Resultado> RedefinirSenhaAsync(SessaoUsuario admin, long usuarioId, string senhaTemporaria, CancellationToken ct = default)
@@ -143,16 +163,19 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         return Resultado.Ok();
     }
 
-    public async Task<Resultado> AlterarUsuarioAsync(SessaoUsuario admin, long usuarioId, string nome, bool administrador, bool ativo,
+    /// <summary>Altera nome, perfil e situação. O perfil Administrador concede (e os demais retiram) a administração do sistema.</summary>
+    public async Task<Resultado> AlterarUsuarioAsync(SessaoUsuario admin, long usuarioId, string nome, long? perfilId, bool ativo,
                                                     CancellationToken ct = default)
     {
         if (!admin.Administrador) return Resultado.Falha("Somente administradores podem alterar usuários.");
         if (string.IsNullOrWhiteSpace(nome)) return Resultado.Falha("Informe o nome.");
-        if (usuarioId == admin.Id && (!administrador || !ativo))
+        var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
+        if (perfil is null) return Resultado.Falha("Informe o perfil do usuário.");
+        if (usuarioId == admin.Id && (!perfil.Administrador || !ativo))
             return Resultado.Falha("Você não pode remover seu próprio acesso de administrador.");
         try
         {
-            await repositorio.AlterarAsync(usuarioId, nome.Trim(), administrador, ativo, ct);
+            await repositorio.AlterarAsync(usuarioId, nome.Trim(), perfil.Administrador, perfil.Id, ativo, ct);
             return Resultado.Ok();
         }
         catch (ViolacaoRegraException ex)
@@ -178,6 +201,10 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(SessaoUsuario admin, CancellationToken ct = default)
         => admin.Administrador ? await repositorio.ListarAsync(ct) : [];
+
+    /// <summary>Últimas tentativas de login (sucesso e falha), mais recentes primeiro.</summary>
+    public async Task<IReadOnlyList<RegistroAcesso>> RegistroDeAcessosAsync(SessaoUsuario admin, int limite = 300, CancellationToken ct = default)
+        => admin.Administrador ? await repositorio.ListarRegistroAcessoAsync(limite, ct) : [];
 
     public Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct = default)
         => repositorio.ListarAcessosAsync(usuarioId, ct);

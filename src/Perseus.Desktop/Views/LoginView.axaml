@@ -17,6 +17,8 @@
           <TextBox Text="{Binding Usuario}" Name="CampoUsuario" />
           <TextBlock Text="Senha" FontSize="12" />
           <TextBox Text="{Binding Senha}" PasswordChar="●" />
+          <CheckBox Content="Salvar login neste computador" IsChecked="{Binding SalvarLogin}" FontSize="12"
+                    ToolTip.Tip="Guarda usuário e senha (cifrada pelo Windows, só para o seu usuário). Não use em computadores compartilhados." />
           <Button Content="Entrar" Command="{Binding EntrarCommand}" IsDefault="True" Classes="accent"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
@@ -33,6 +35,8 @@
           <TextBox Text="{Binding Senha}" PasswordChar="●" />
           <TextBlock Text="Confirme a senha" FontSize="12" />
           <TextBox Text="{Binding Confirmacao}" PasswordChar="●" />
+          <CheckBox Content="Salvar login neste computador" IsChecked="{Binding SalvarLogin}" FontSize="12"
+                    ToolTip.Tip="Guarda usuário e senha (cifrada pelo Windows, só para o seu usuário). Não use em computadores compartilhados." />
           <Button Content="Criar administrador e entrar" Command="{Binding CriarAdministradorCommand}" IsDefault="True"
                   Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
@@ -43,6 +47,8 @@
           <TextBox Text="{Binding Senha}" PasswordChar="●" />
           <TextBlock Text="Confirme a nova senha" FontSize="12" />
           <TextBox Text="{Binding Confirmacao}" PasswordChar="●" />
+          <CheckBox Content="Salvar login neste computador" IsChecked="{Binding SalvarLogin}" FontSize="12"
+                    ToolTip.Tip="Guarda usuário e senha (cifrada pelo Windows, só para o seu usuário). Não use em computadores compartilhados." />
           <Button Content="Salvar senha e entrar" Command="{Binding TrocarSenhaCommand}" IsDefault="True"
                   Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>

@@ -44,6 +44,9 @@ public partial class PerfisViewModel : ModuloViewModel
     /// <summary>Primeiro uso: a definição dos perfis é obrigatória; as demais funções ficam bloqueadas até concluir.</summary>
     [ObservableProperty] private bool _configuracaoInicial;
 
+    /// <summary>Perfil Administrador: todas as funções, sempre (as marcações ficam travadas).</summary>
+    [ObservableProperty] private bool _editandoAdministrador;
+
     public async Task CarregarAsync()
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
@@ -62,7 +65,9 @@ public partial class PerfisViewModel : ModuloViewModel
         var p = value.Perfil;
         (EditandoId, Nome, Descricao) = (p.Id, p.Nome, p.Descricao ?? "");
         foreach (var f in _funcoes) f.Marcada = p.Permissoes.Contains(f.Definicao.Permissao);
-        Situacao = p.Padrao ? "Perfil padrão do sistema: pode ser editado, mas não excluído."
+        EditandoAdministrador = p.Administrador;
+        Situacao = p.Administrador ? "Perfil Administrador: libera todas as funções e a administração do sistema (não pode ser excluído)."
+                 : p.Padrao ? "Perfil padrão do sistema: pode ser editado, mas não excluído."
                  : p.Usuarios > 0 ? $"Atribuído a {p.Usuarios} usuário(s). Alterações valem a partir da próxima ação deles."
                  : "Não atribuído a nenhum usuário.";
         Erros.Clear();
@@ -73,7 +78,7 @@ public partial class PerfisViewModel : ModuloViewModel
     private void Novo()
     {
         Selecionado = null;
-        (EditandoId, Nome, Descricao, Situacao) = (null, "", "", "Novo perfil");
+        (EditandoId, Nome, Descricao, Situacao, EditandoAdministrador) = (null, "", "", "Novo perfil", false);
         foreach (var f in _funcoes) f.Marcada = false;
     }
 
@@ -82,7 +87,7 @@ public partial class PerfisViewModel : ModuloViewModel
     {
         if (EditandoId is null) return;
         Selecionado = null;
-        (EditandoId, Nome, Situacao) = (null, $"{Nome} (cópia)", "Cópia ainda não salva");
+        (EditandoId, Nome, Situacao, EditandoAdministrador) = (null, $"{Nome} (cópia)", "Cópia ainda não salva", false);
     }
 
     [RelayCommand]

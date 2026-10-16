@@ -3,7 +3,9 @@ using Perseus.Domain.Seguranca;
 
 namespace Perseus.Application.Seguranca;
 
-public sealed record PerfilAcesso(long Id, string Nome, string? Descricao, bool Padrao, IReadOnlySet<Permissao> Permissoes, int Usuarios);
+/// <param name="Administrador">Perfil Administrador: todas as funções, sempre; quem o recebe administra o sistema.</param>
+public sealed record PerfilAcesso(long Id, string Nome, string? Descricao, bool Padrao, IReadOnlySet<Permissao> Permissoes, int Usuarios,
+                                  bool Administrador = false);
 
 public interface IRepositorioPerfis
 {
@@ -31,6 +33,8 @@ public sealed class ServicoPerfis(IRepositorioPerfis repositorio)
         var erros = new List<string>();
         if (nome.Length is < 2 or > 60) erros.Add("O nome do perfil deve ter de 2 a 60 caracteres.");
         var conjunto = permissoes.Where(p => p != Permissao.AdministrarSistema).ToHashSet();
+        if (id is long existente0 && (await repositorio.ListarAsync(ct)).FirstOrDefault(p => p.Id == existente0) is { Administrador: true })
+            conjunto = Permissoes.Catalogo.Select(d => d.Permissao).ToHashSet();   // o perfil Administrador libera sempre tudo
         if (conjunto.Count == 0) erros.Add("Marque ao menos uma função para o perfil.");
         if (erros.Count == 0 && await repositorio.NomeEmUsoAsync(nome, id, ct)) erros.Add($"Já existe um perfil chamado \"{nome}\".");
         if (erros.Count > 0) return Resultado<long>.Falha(erros);

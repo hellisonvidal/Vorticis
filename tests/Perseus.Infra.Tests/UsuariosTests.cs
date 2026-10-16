@@ -49,7 +49,8 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 
     private async Task<long> CriarUsuario(ServicoUsuarios svc, string login, bool admin = false)
     {
-        var r = await svc.CriarUsuarioAsync(Admin, login, $"Usuário {login}", "Inicial123", admin, TestContext.Current.CancellationToken);
+        var perfil = await db.PerfilIdAsync(admin ? "Administrador" : "Consulta");
+        var r = await svc.CriarUsuarioAsync(Admin, login, $"Usuário {login}", "Inicial123", perfil, TestContext.Current.CancellationToken);
         Assert.True(r.Sucesso, string.Join("; ", r.Erros));
         return r.Valor;
     }
@@ -84,7 +85,7 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var ct = TestContext.Current.CancellationToken;
         var svc = Servico();
         var id = await CriarUsuario(svc, "pedro");
-        Assert.True((await svc.AlterarUsuarioAsync(Admin, id, "Pedro", false, ativo: false, ct)).Sucesso);
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, id, "Pedro", await db.PerfilIdAsync("Consulta"), ativo: false, ct)).Sucesso);
 
         Assert.Equal(["Usuário ou senha inválidos."], (await svc.AutenticarAsync("pedro", "Inicial123", ct)).Erros);
         Assert.Equal(["Usuário ou senha inválidos."], (await svc.AutenticarAsync("ninguem", "Inicial123", ct)).Erros);
@@ -116,12 +117,12 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var svc = Servico();
         var comum = new SessaoUsuario(99, "comum", "Comum", false, false);
 
-        Assert.Contains((await svc.CriarUsuarioAsync(comum, "novo", "Novo", "Inicial123", false, ct)).Erros, e => e.Contains("Somente administradores"));
+        Assert.Contains((await svc.CriarUsuarioAsync(comum, "novo", "Novo", "Inicial123", null, ct)).Erros, e => e.Contains("Somente administradores"));
         Assert.Empty(await svc.ListarAsync(comum, ct));
 
         var id = await CriarUsuario(svc, "chefe", admin: true);
         var self = new SessaoUsuario(id, "chefe", "Chefe", true, false);
-        Assert.Contains((await svc.AlterarUsuarioAsync(self, id, "Chefe", false, true, ct)).Erros, e => e.Contains("próprio acesso"));
+        Assert.Contains((await svc.AlterarUsuarioAsync(self, id, "Chefe", await db.PerfilIdAsync("Consulta"), true, ct)).Erros, e => e.Contains("próprio acesso"));
 
         // Regra do banco: não se remove o último administrador ativo.
         var repo = new RepositorioUsuarios(NpgsqlDataSource.Create(db.ConnectionString));
@@ -132,7 +133,8 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             cmd.Parameters.AddWithValue("id", id);
             await cmd.ExecuteNonQueryAsync(ct);
         }
-        var ex = await Assert.ThrowsAsync<ViolacaoRegraException>(() => repo.AlterarAsync(id, "Chefe", false, true, ct));
+        var consultaId = await db.PerfilIdAsync("Consulta");
+        var ex = await Assert.ThrowsAsync<ViolacaoRegraException>(() => repo.AlterarAsync(id, "Chefe", false, consultaId, true, ct));
         Assert.Contains("ao menos um administrador", ex.Message);
     }
 
@@ -147,9 +149,14 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var id = await CriarUsuario(svc, "ana");
         var ana = new SessaoUsuario(id, "ana", "Ana", false, false);
 
-        Assert.Empty(await svc.EmpresasPermitidasAsync(ana, ct));
+        // O perfil informado no cadastro (Consulta) vale em todas as empresas
+        Assert.Equal(["Consulta", "Consulta"], (await svc.EmpresasPermitidasAsync(ana, ct)).Select(e => e.Perfil));
+        Assert.Equal("Consulta", (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == id).Perfil);
+
+        // Exceções por empresa: outro perfil em A, sem acesso em B
         var assistente = (await db.App.Perfis.ListarAsync(Admin, ct)).Single(p => p.Nome == "Assistente");
         await svc.DefinirAcessoAsync(Admin, id, empresaA, assistente.Id, ct);
+        await svc.DefinirAcessoAsync(Admin, id, empresaB, null, ct);
         var permitidas = await svc.EmpresasPermitidasAsync(ana, ct);
         Assert.Equal(empresaA, Assert.Single(permitidas).Id);
         Assert.Equal("Assistente", permitidas[0].Perfil);

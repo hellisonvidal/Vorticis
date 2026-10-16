@@ -37,20 +37,20 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
         return (bool)(await cmd.ExecuteScalarAsync(ct))!;
     }
 
-    public Task<long?> CriarAsync(string login, string nome, string senhaHash, bool administrador, bool deveTrocarSenha,
+    public Task<long?> CriarAsync(string login, string nome, string senhaHash, bool administrador, long? perfilId, bool deveTrocarSenha,
                                   bool somenteSeNaoHouverUsuarios, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var con = await ds.OpenConnectionAsync(ct);
             await using var tx = await con.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
             await using var cmd = new NpgsqlCommand("""
-                INSERT INTO core.usuario (login, nome, senha_hash, administrador, deve_trocar_senha)
-                SELECT @l, @n, @h, @a, @t
+                INSERT INTO core.usuario (login, nome, senha_hash, administrador, perfil_id, deve_trocar_senha)
+                SELECT @l, @n, @h, @a, @p, @t
                  WHERE NOT @so OR NOT EXISTS (SELECT 1 FROM core.usuario)
                 RETURNING id
                 """, con, tx)
                 .Com("l", login).Com("n", nome).Com("h", senhaHash).Com("a", administrador).Com("t", deveTrocarSenha)
-                .Com("so", somenteSeNaoHouverUsuarios);
+                .Com("p", NpgsqlTypes.NpgsqlDbType.Bigint, perfilId).Com("so", somenteSeNaoHouverUsuarios);
             var id = (long?)await cmd.ExecuteScalarAsync(ct);
             await tx.CommitAsync(ct);
             return id;
@@ -104,22 +104,65 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
-    public Task AlterarAsync(long usuarioId, string nome, bool administrador, bool ativo, CancellationToken ct)
+    public Task AlterarAsync(long usuarioId, string nome, bool administrador, long perfilId, bool ativo, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
-            await using var cmd = ds.CreateCommand("UPDATE core.usuario SET nome = @n, administrador = @a, ativo = @at WHERE id = @id")
-                                    .Com("n", nome).Com("a", administrador).Com("at", ativo).Com("id", usuarioId);
+            await using var cmd = ds.CreateCommand(
+                    "UPDATE core.usuario SET nome = @n, administrador = @a, perfil_id = @p, ativo = @at WHERE id = @id")
+                .Com("n", nome).Com("a", administrador).Com("p", perfilId).Com("at", ativo).Com("id", usuarioId);
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
+    public async Task<PerfilDoUsuario?> ObterPerfilAsync(long perfilId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id, nome, administrador FROM core.perfil WHERE id = @id").Com("id", perfilId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? new PerfilDoUsuario(r.GetInt64(0), r.GetString(1), r.GetBoolean(2)) : null;
+    }
+
+    public async Task<long?> IdPerfilAdministradorAsync(CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id FROM core.perfil WHERE administrador");
+        return (long?)await cmd.ExecuteScalarAsync(ct);
+    }
+
+    public Task AtribuirPerfilEmTodasEmpresasAsync(long usuarioId, long perfilId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = ds.CreateCommand("""
+                INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil_id)
+                SELECT @u, e.id, @p FROM core.empresa e
+                ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id
+                """).Com("u", usuarioId).Com("p", perfilId);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
+
+    public async Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT ocorrido_em, login, sucesso, motivo, estacao FROM core.registro_acesso ORDER BY id DESC LIMIT @lim
+            """).Com("lim", limite);
+        var res = new List<RegistroAcesso>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new RegistroAcesso(r.GetFieldValue<DateTimeOffset>(0), r.GetString(1), r.GetBoolean(2),
+                                       r.IsDBNull(3) ? null : r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4)));
+        return res;
+    }
+
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT id, login, nome, administrador, ativo, ultimo_acesso FROM core.usuario ORDER BY nome");
+        await using var cmd = ds.CreateCommand("""
+            SELECT u.id, u.login, u.nome, u.administrador, u.ativo, u.ultimo_acesso, u.perfil_id, p.nome
+              FROM core.usuario u LEFT JOIN core.perfil p ON p.id = u.perfil_id
+             ORDER BY u.nome
+            """);
         var res = new List<UsuarioResumo>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new UsuarioResumo(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetBoolean(3), r.GetBoolean(4),
-                                      r.IsDBNull(5) ? null : r.GetFieldValue<DateTimeOffset>(5)));
+                                      r.IsDBNull(5) ? null : r.GetFieldValue<DateTimeOffset>(5),
+                                      r.IsDBNull(6) ? null : r.GetInt64(6), r.IsDBNull(7) ? null : r.GetString(7)));
         return res;
     }
 

@@ -20,6 +20,11 @@ public partial class LoginViewModel(MainViewModel main) : ModuloViewModel(main)
     [ObservableProperty] private string _nome = "";
     [ObservableProperty] private string _confirmacao = "";
 
+    /// <summary>Salvar login neste computador (usuário e senha; a senha cifrada com DPAPI).</summary>
+    [ObservableProperty] private bool _salvarLogin;
+
+    private bool _senhaVeioSalva;
+
     public bool EmEntrar => Modo == ModoLogin.Entrar;
     public bool EmPrimeiroAcesso => Modo == ModoLogin.PrimeiroAcesso;
     public bool EmTrocaObrigatoria => Modo == ModoLogin.TrocaObrigatoria;
@@ -28,7 +33,18 @@ public partial class LoginViewModel(MainViewModel main) : ModuloViewModel(main)
     {
         Limpar();
         if (main.App is { } app && await app.Usuarios.PrecisaCriarAdministradorAsync())
+        {
             Modo = ModoLogin.PrimeiroAcesso;
+            return;
+        }
+        CarregarLoginSalvo();
+    }
+
+    public void CarregarLoginSalvo()
+    {
+        if (LoginSalvo.Obter() is not { } salvo) return;
+        (Usuario, SalvarLogin) = (salvo.Usuario, true);
+        if (salvo.Senha is { } senha) (Senha, _senhaVeioSalva) = (senha, true);
     }
 
     public void Limpar()
@@ -36,6 +52,7 @@ public partial class LoginViewModel(MainViewModel main) : ModuloViewModel(main)
         (Senha, Confirmacao, Nome) = ("", "", "");
         _pendente = null;
         _senhaDigitada = "";
+        _senhaVeioSalva = false;
         Erros.Clear();
         Mensagem = null;
         Modo = ModoLogin.Entrar;
@@ -46,7 +63,14 @@ public partial class LoginViewModel(MainViewModel main) : ModuloViewModel(main)
     {
         if (!Preparar(out var app)) return;
         var r = await app.Usuarios.AutenticarAsync(Usuario, Senha);
-        if (!r.Sucesso) { MostrarResultado(r, ""); Senha = ""; return; }
+        if (!r.Sucesso)
+        {
+            MostrarResultado(r, "");
+            // senha salva que deixou de valer (trocada ou redefinida): deixa de preenchê-la
+            if (_senhaVeioSalva && SalvarLogin) LoginSalvo.Salvar(Usuario.Trim(), "");
+            (Senha, _senhaVeioSalva) = ("", false);
+            return;
+        }
 
         if (r.Valor.DeveTrocarSenha)
         {
@@ -89,8 +113,11 @@ public partial class LoginViewModel(MainViewModel main) : ModuloViewModel(main)
     private async Task Concluir(SessaoUsuario sessao)
     {
         var login = Usuario;
+        if (SalvarLogin) LoginSalvo.Salvar(login.Trim(), Senha);
+        else LoginSalvo.Esquecer();
+        var salvar = SalvarLogin;
         Limpar();
-        Usuario = login;
+        (Usuario, SalvarLogin) = (login, salvar);
         await main.EntrarAsync(sessao);
     }
 }
