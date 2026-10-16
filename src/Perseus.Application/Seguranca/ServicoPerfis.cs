@@ -13,6 +13,8 @@ public interface IRepositorioPerfis
     Task AtualizarAsync(long id, string nome, string? descricao, IReadOnlySet<Permissao> permissoes, CancellationToken ct);
     /// <summary>Lança <c>ViolacaoRegraException</c> se o perfil for padrão ou estiver em uso.</summary>
     Task ExcluirAsync(long id, CancellationToken ct);
+    Task<bool> ConfiguracaoInicialConcluidaAsync(CancellationToken ct);
+    Task ConcluirConfiguracaoInicialAsync(long administradorId, CancellationToken ct);
 }
 
 /// <summary>Configurações › Perfis de acesso. Somente administradores.</summary>
@@ -40,6 +42,23 @@ public sealed class ServicoPerfis(IRepositorioPerfis repositorio)
             return Resultado<long>.Ok(existente);
         }
         return Resultado<long>.Ok(await repositorio.CriarAsync(nome, desc, conjunto, ct));
+    }
+
+    /// <summary>
+    /// Primeiro uso: depois de criar o administrador, a definição dos perfis de acesso é obrigatória
+    /// (as demais funções ficam bloqueadas até a conclusão).
+    /// </summary>
+    public async Task<bool> ConfiguracaoInicialPendenteAsync(CancellationToken ct = default)
+        => !await repositorio.ConfiguracaoInicialConcluidaAsync(ct);
+
+    public async Task<Resultado> ConcluirConfiguracaoInicialAsync(SessaoUsuario admin, CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado.Falha("Somente administradores concluem a configuração dos perfis.");
+        var perfis = await repositorio.ListarAsync(ct);
+        if (!perfis.Any(p => p.Permissoes.Count > 0))
+            return Resultado.Falha("Defina ao menos um perfil de acesso com funções liberadas antes de concluir.");
+        await repositorio.ConcluirConfiguracaoInicialAsync(admin.Id, ct);
+        return Resultado.Ok();
     }
 
     public async Task<Resultado> ExcluirAsync(SessaoUsuario admin, long id, CancellationToken ct = default)

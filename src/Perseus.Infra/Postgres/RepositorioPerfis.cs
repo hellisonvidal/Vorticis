@@ -92,4 +92,20 @@ public sealed class RepositorioPerfis(NpgsqlDataSource ds) : IRepositorioPerfis,
             await using var cmd = ds.CreateCommand("DELETE FROM core.perfil WHERE id = @id").Com("id", id);
             return await cmd.ExecuteNonQueryAsync(ct);
         });
+
+    public async Task<bool> ConfiguracaoInicialConcluidaAsync(CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand(
+            "SELECT EXISTS (SELECT 1 FROM core.configuracao_sistema WHERE chave = 'perfis_configurados' AND valor = 'S')");
+        return (bool)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
+    public async Task ConcluirConfiguracaoInicialAsync(long administradorId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            INSERT INTO core.configuracao_sistema (chave, valor, alterado_por) VALUES ('perfis_configurados', 'S', @u)
+            ON CONFLICT (chave) DO UPDATE SET valor = 'S', alterado_em = now(), alterado_por = @u
+            """).Com("u", administradorId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
 }

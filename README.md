@@ -59,7 +59,7 @@ export PERSEUS_DB="Host=localhost;Database=perseus;Username=postgres;Password=su
 dotnet run --project src/Perseus.Desktop
 ```
 
-Sem `PERSEUS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
+Sem `PERSEUS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
 
 ### Usuários e perfis de acesso
 

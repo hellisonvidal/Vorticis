@@ -9,6 +9,24 @@ public class PerfisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     private static readonly SessaoUsuario Admin = new(0, "teste", "Teste", true, false);
 
     [Fact]
+    public async Task Configuracao_inicial_dos_perfis_e_obrigatoria_e_concluida_so_pelo_administrador()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var perfis = db.App.Perfis;
+        // banco novo (sem empresas e sem outros usuários): pendente
+        var adm = await db.AdminAsync();
+        Assert.True(await perfis.ConfiguracaoInicialPendenteAsync(ct));
+        Assert.False((await perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "x", "X", false, false), ct)).Sucesso);
+        Assert.True(await perfis.ConfiguracaoInicialPendenteAsync(ct));
+
+        var r = await perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        Assert.False(await perfis.ConfiguracaoInicialPendenteAsync(ct));
+        Assert.Equal(adm, await db.EscalarAsync<long>("SELECT alterado_por FROM core.configuracao_sistema WHERE chave = 'perfis_configurados'"));
+    }
+
+    [Fact]
     public async Task Perfil_personalizado_libera_exatamente_as_funcoes_marcadas_e_os_servicos_respeitam()
     {
         BancoDeTeste.ExigirBanco();

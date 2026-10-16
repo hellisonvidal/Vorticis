@@ -41,6 +41,9 @@ public partial class PerfisViewModel : ModuloViewModel
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private string _situacao = "Novo perfil";
 
+    /// <summary>Primeiro uso: a definição dos perfis é obrigatória; as demais funções ficam bloqueadas até concluir.</summary>
+    [ObservableProperty] private bool _configuracaoInicial;
+
     public async Task CarregarAsync()
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
@@ -113,5 +116,17 @@ public partial class PerfisViewModel : ModuloViewModel
         Novo();
         await CarregarAsync();
         Mensagem = "Perfil excluído.";
+    }
+
+    [RelayCommand]
+    private async Task ConcluirConfiguracaoInicialAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        var r = await app.Perfis.ConcluirConfiguracaoInicialAsync(sessao);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        ConfiguracaoInicial = false;
+        Contexto.AoConcluirConfiguracaoInicial();
     }
 }

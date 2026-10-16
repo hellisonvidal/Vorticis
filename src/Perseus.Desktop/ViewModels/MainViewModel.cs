@@ -16,6 +16,7 @@ public interface IContexto
     long? EmpresaId { get; }
     bool Pode(Permissao permissao);
     Task RecarregarEmpresasAsync(long? selecionar = null);
+    void AoConcluirConfiguracaoInicial();
 }
 
 /// <summary>Telas acessíveis pelo menu. A chave é o CommandParameter do item de menu.</summary>
@@ -44,6 +45,7 @@ public static class Telas
     public const string AlterarSenha = "senha";
     public const string Conexao = "conexao";
     public const string Sobre = "sobre";
+    public const string Inicio = "inicio";
 }
 
 public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposable
@@ -52,11 +54,13 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     private string? _telaAtual;
     private PermissoesEfetivas _permissoes = PermissoesEfetivas.Nenhuma;
     private IConsultaCnpj? _consultaCnpj;
+    private bool _configuracaoInicialPendente;
 
     public MainViewModel()
     {
         Login = new LoginViewModel(this);
         Conexao = new ConexaoViewModel(this);
+        Inicio = new InicioViewModel(this);
         RecriarModulos();
     }
 
@@ -108,6 +112,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
 
     public LoginViewModel Login { get; }
     public ConexaoViewModel Conexao { get; }
+    public InicioViewModel Inicio { get; }
     public CadastroEmpresaViewModel Empresas { get; private set; }
     public LancamentoViewModel Lancamento { get; private set; }
     public BalanceteViewModel Balancete { get; private set; }
@@ -180,9 +185,25 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     {
         Sessao = sessao;
         Logado = true;
+        _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
-        if (EmpresasPermitidas.Count == 0 && sessao.Administrador) Abrir(Telas.Empresas);
-        else AbrirPrimeiraPermitida();
+        if (_configuracaoInicialPendente)
+        {
+            // Primeiro uso: definir os perfis de acesso é obrigatório; o cadastro de empresas pode ficar para depois.
+            Perfis.ConfiguracaoInicial = true;
+            AbrirCommand.NotifyCanExecuteChanged();
+            Abrir(Telas.Perfis);
+            Status = "Configuração inicial: defina os perfis de acesso dos usuários para liberar o sistema.";
+        }
+        else Abrir(Telas.Inicio);
+    }
+
+    public void AoConcluirConfiguracaoInicial()
+    {
+        _configuracaoInicialPendente = false;
+        AbrirCommand.NotifyCanExecuteChanged();
+        Abrir(Telas.Inicio);
+        AtualizarStatus();
     }
 
     [RelayCommand]
@@ -190,6 +211,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     {
         Sessao = null;
         Logado = false;
+        _configuracaoInicialPendente = false;
         EmpresasPermitidas.Clear();
         EmpresaSelecionada = null;
         _permissoes = PermissoesEfetivas.Nenhuma;
@@ -231,11 +253,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
     }
 
-    private void AbrirPrimeiraPermitida()
-    {
-        string[] preferencia = [Telas.Lancamento, Telas.Balancete, Telas.Razao, Telas.Diario, Telas.Periodos, Telas.PlanoContas, Telas.Sobre];
-        Abrir(preferencia.First(PodeAbrir));
-    }
+    private void AbrirPrimeiraPermitida() => Abrir(PodeAbrir(Telas.Inicio) ? Telas.Inicio : Telas.Perfis);
 
     // ------------------------------------------------------------------ permissões e navegação
 
@@ -244,7 +262,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             ? Sessao.Administrador
             : EmpresaSelecionada is not null && _permissoes.Pode(permissao));
 
-    public bool PodeAbrir(string? tela) => Logado && tela switch
+    public bool PodeAbrir(string? tela) => Logado && (!_configuracaoInicialPendente
+        ? PodeAbrirTela(tela)
+        : tela is Telas.Perfis or Telas.Sobre or Telas.AlterarSenha);
+
+    private bool PodeAbrirTela(string? tela) => tela switch
     {
         Telas.Empresas or Telas.Usuarios or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
             => Pode(Permissao.AdministrarSistema),
@@ -261,7 +283,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
         Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
                            || Pode(Permissao.RelatorioDemonstracoes),
-        Telas.AlterarSenha or Telas.Sobre => true,
+        Telas.AlterarSenha or Telas.Sobre or Telas.Inicio => true,
         _ => false,
     };
 
@@ -294,6 +316,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.AlterarSenha => (AlterarSenha, "Configurações › Alterar minha senha"),
             Telas.Conexao => (Conexao, "Configurações › Conexão com o banco de dados"),
             Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus Contábil"),
+            Telas.Inicio => (Inicio, ""),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
@@ -311,6 +334,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Conexao)
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
+        if (tela == Telas.Inicio) Inicio.Atualizar();
     }
 
     partial void OnLogadoChanged(bool value) => AbrirCommand.NotifyCanExecuteChanged();

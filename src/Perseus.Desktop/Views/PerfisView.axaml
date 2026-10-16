@@ -4,6 +4,19 @@
              xmlns:v="using:Perseus.Desktop.Views"
              x:Class="Perseus.Desktop.Views.PerfisView"
              x:DataType="vm:PerfisViewModel">
+  <DockPanel>
+  <Border DockPanel.Dock="Top" IsVisible="{Binding ConfiguracaoInicial}" Background="#FFF6E0" BorderBrush="#E8C66A"
+          BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="8,8,8,0">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock FontWeight="SemiBold" Text="Configuração inicial (obrigatória): perfis de acesso dos usuários" />
+        <TextBlock TextWrapping="Wrap" FontSize="12"
+                   Text="Antes de usar o sistema, defina o que cada perfil de usuário pode acessar. Os perfis Contador, Assistente e Consulta já vêm prontos: revise as funções liberadas, ajuste ou crie novos perfis e clique em Concluir. O cadastro de empresas pode ser feito depois." />
+      </StackPanel>
+      <Button Grid.Column="1" Content="Concluir configuração dos perfis" Classes="accent" VerticalAlignment="Center"
+              Margin="12,0,0,0" Command="{Binding ConcluirConfiguracaoInicialCommand}" />
+    </Grid>
+  </Border>
   <Grid ColumnDefinitions="300,16,*" Margin="8">
     <DockPanel>
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Perfis de acesso" Margin="0,0,0,8" />
@@ -64,4 +77,5 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
+  </DockPanel>
 </UserControl>

@@ -33,6 +33,7 @@
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
     <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
+    <DataTemplate DataType="vm:InicioViewModel"><v:InicioView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -103,6 +104,7 @@
           <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
         </MenuItem>
         <MenuItem Header="_Ajuda">
+          <MenuItem Header="Tela inicial" Command="{Binding AbrirCommand}" CommandParameter="inicio" />
           <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
         </MenuItem>
       </Menu>
@@ -123,7 +125,8 @@
       </Grid>
     </Border>
 
-    <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="12,4" IsVisible="{Binding Logado}">
+    <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="12,4"
+            IsVisible="{Binding TituloTela, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
       <TextBlock Text="{Binding TituloTela}" FontSize="12" Foreground="#44506A" />
     </Border>
 

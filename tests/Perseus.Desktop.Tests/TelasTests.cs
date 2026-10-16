@@ -94,9 +94,25 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await login.CriarAdministradorCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // após o login a janela maximiza
-            Assert.Same(vm.Empresas, vm.Conteudo);              // sem empresas: abre o cadastro
+
+            // 1b. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
+            Assert.Same(vm.Perfis, vm.Conteudo);
+            Assert.True(vm.Perfis.ConfiguracaoInicial);
+            foreach (var bloqueada in new[] { Telas.Empresas, Telas.Usuarios, Telas.Lancamento, Telas.Inicio, Telas.Backup })
+                Assert.False(vm.AbrirCommand.CanExecute(bloqueada), bloqueada);
+            await vm.Perfis.CarregarAsync();
+            Foto(janela, "01b_configuracao_inicial_perfis");
+            await vm.Perfis.ConcluirConfiguracaoInicialCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Perfis.Erros);
+            Assert.False(vm.Perfis.ConfiguracaoInicial);
+
+            // 1c. Tela de descanso, sem obrigar o cadastro de empresa
+            Assert.Same(vm.Inicio, vm.Conteudo);
+            Assert.Contains("Cadastros › Empresas", vm.Inicio.Dica);
+            Foto(janela, "01c_tela_inicial");
             Assert.False(vm.AbrirCommand.CanExecute(Telas.Lancamento));
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Empresas));
+            vm.AbrirCommand.Execute(Telas.Empresas);
 
             // 2. Cadastros › Empresas: busca na base pública do CNPJ e cadastra
             var emp = vm.Empresas;
@@ -343,7 +359,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             foreach (var proibida in new[] { Telas.Balancete, Telas.Lancamento, Telas.Estorno, Telas.SaldosIniciais, Telas.Periodos,
                                              Telas.Empresas, Telas.Usuarios, Telas.Perfis, Telas.Backup, Telas.Conexao })
                 Assert.False(vm.AbrirCommand.CanExecute(proibida), proibida);
-            Assert.Same(vm.Razao, vm.Conteudo);                              // primeira tela permitida
+            Assert.Same(vm.Inicio, vm.Conteudo);                             // entra pela tela de descanso
+            Assert.Null(vm.Inicio.Dica);
+            vm.AbrirCommand.Execute(Telas.Razao);
             Assert.Equal("", vm.Balancete.Totais);                           // nada da sessão anterior fica visível
 
             vm.Razao.Conta = "1.1.01.002";
