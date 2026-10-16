@@ -47,17 +47,20 @@ $env:PGPASSWORD = $senha
 $porta = [int]$cfg.Local.Porta
 $psql = Join-Path $pgBin "psql.exe"
 $conexao = "host=localhost port=$porta user=postgres dbname=perseus connect_timeout=5"
+$script:ultimoErro = ""
 function Consultar($sql) {
-    # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop"
+    # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop".
+    # No Windows o psql não aceita opções depois de argumentos posicionais: tudo como opção.
     $ErrorActionPreference = "Continue"
-    $r = & $psql $conexao -t -A -c $sql 2>$null
+    $r = & $psql -X -t -A -c $sql -d $conexao 2>&1
     if ($LASTEXITCODE -eq 0) { return ($r | Out-String).Trim() }
+    $script:ultimoErro = ($r | Out-String).Trim()
     return $null
 }
 $migracoes = 0
 $limite = (Get-Date).AddMinutes(2)
 while ($migracoes -lt 7) {
-    if ((Get-Date) -gt $limite) { Falhar "As migrações não foram aplicadas (encontradas: $migracoes)." }
+    if ((Get-Date) -gt $limite) { Falhar "As migrações não foram aplicadas (encontradas: $migracoes). psql: $script:ultimoErro" }
     Start-Sleep -Seconds 2
     $r = Consultar "SELECT count(*) FROM public.perseus_migracao"
     if ($r) { $migracoes = [int]$r }
