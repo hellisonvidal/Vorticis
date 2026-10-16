@@ -29,6 +29,8 @@
     <DataTemplate DataType="vm:EncerramentoViewModel"><v:EncerramentoView /></DataTemplate>
     <DataTemplate DataType="vm:DemonstracoesViewModel"><v:DemonstracoesView /></DataTemplate>
     <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
+    <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -73,6 +75,7 @@
           <Separator />
           <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
           <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
+          <MenuItem Header="Vínculo ao plano referencial (RFB)" Command="{Binding AbrirCommand}" CommandParameter="mapeamentoreferencial" />
         </MenuItem>
         <MenuItem Header="_Lançamentos">
           <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
@@ -106,6 +109,7 @@
           <MenuItem Header="Alterar minha senha" Command="{Binding AbrirCommand}" CommandParameter="senha" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
+          <MenuItem Header="Plano referencial da RFB (importar tabela)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
           <Separator />
           <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
         </MenuItem>

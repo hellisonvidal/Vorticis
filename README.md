@@ -10,7 +10,7 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 |---|---|
 | 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**. **Pendente:** instalador |
 | 1. MVP contábil | Plano de contas (modelo + manutenção), centros de custo, saldos iniciais, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (CSV), **livros em PDF (Diário com termos de abertura e encerramento, Razão, Balancete)** ✔ |
-| 3. Demonstrações e ECD | **Encerramento do exercício** (apuração do resultado, IND_LCTO = E) e desfazer; **Balanço Patrimonial e DRE** (tela e PDF). **Pendente:** mapeamento ao plano referencial, DMPL/DLPA, DFC, gerador do arquivo ECD |
+| 3. Demonstrações e ECD | Encerramento do exercício (IND_LCTO = E) e desfazer; Balanço Patrimonial e DRE (tela e PDF); **plano referencial da RFB: importação da tabela oficial e vínculo das contas (sugestões automáticas, cópia do ano anterior, pendências para a ECD)**. **Pendente:** DMPL/DLPA, DFC, gerador do arquivo ECD |
 
 Ver o [roadmap](docs/04-roadmap.md).
 
@@ -59,6 +59,13 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - *Relatórios › Livros e relatórios em PDF*: Livro Diário com termos de abertura e encerramento (ITG 2000: folhas numeradas, identificação da entidade, assinaturas do representante legal e do contador — o número de folhas do termo é calculado após a montagem), Livro Razão de todas as contas com movimento, Balancete e Balanço/DRE. Gerados com PDFsharp/MigraDoc (MIT) e fonte Liberation Sans embutida (SIL OFL 1.1, ver `src/Perseus.Infra/Dados/Fontes/OFL.txt`).
 - *Relatórios › Balanço Patrimonial e DRE*: estrutura do plano da empresa até o nível escolhido; antes do encerramento, o resultado do período aparece destacado no PL para o balanço fechar; a DRE ignora os lançamentos de encerramento.
 - *Lançamentos › Encerramento do exercício*: zera as contas de resultado contra a Apuração do Resultado e transfere o lucro/prejuízo ao PL, em 31/12, com IND_LCTO = E (ECD). "Desfazer" estorna os dois lançamentos para permitir ajustes.
+
+### Plano referencial da RFB
+
+1. **Configurações › Plano referencial da RFB** (administrador): importe a tabela oficial do plano referencial para o tipo de plano (ex.: *PJ em geral – Lucro Real*) e o ano. Obtenha o arquivo no portal do SPED (tabelas da ECD/ECF) ou no programa validador; ele precisa de uma primeira linha de cabeçalho com ao menos `CODIGO` e `DESCRICAO` (`TIPO`, `COD_SUP`, `NIVEL`, `COD_NAT`, `DT_INI`, `DT_FIM` são usados quando existem; separador `|`, `;`, tab ou vírgula; UTF-8 ou ISO-8859-1). Reimportar atualiza a tabela sem perder vínculos.
+2. **Cadastros › Vínculo ao plano referencial**: escolha o plano do exercício e vincule cada conta analítica a uma referencial analítica de mesma natureza (ECD I051). *Sugerir vínculos* propõe pela semelhança das descrições (o contador confirma); *Copiar do ano anterior* reaproveita os vínculos. Contas com movimento ou saldo sem vínculo aparecem como pendências que impedem a ECD.
+
+O Perseus não traz a tabela embutida: ela é oficial, muda a cada ano e deve vir da RFB. Os testes usam uma tabela **fictícia**.
 
 ### Backup e restauração
 

@@ -205,6 +205,39 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             if (Pasta is not null) foreach (var pdf in Directory.GetFiles(pastaPdf)) File.Copy(pdf, Path.Combine(Pasta, Path.GetFileName(pdf)), true);
             Directory.Delete(pastaPdf, true);
 
+            // Configurações › Plano referencial da RFB (tabela FICTÍCIA de teste) e Cadastros › Vínculo ao plano referencial
+            var arquivoRef = Path.Combine(Path.GetTempPath(), "referencial_ficticio_" + Guid.NewGuid().ToString("N") + ".txt");
+            File.WriteAllText(arquivoRef, PlanoReferencialTests.TabelaFicticia, System.Text.Encoding.Latin1);
+            vm.AbrirCommand.Execute(Telas.ImportacaoReferencial);
+            var imp = vm.ImportacaoReferencial;
+            (imp.Ano, imp.Arquivo) = (2026, arquivoRef);
+            await imp.ImportarCommand.ExecuteAsync(null);
+            Assert.Empty(imp.Erros);
+            Assert.Single(imp.Tabelas);
+            Foto(janela, "08d_importacao_referencial");
+            File.Delete(arquivoRef);
+
+            vm.AbrirCommand.Execute(Telas.MapeamentoReferencial);
+            var map = vm.MapeamentoReferencial;
+            map.Ano = 2026;
+            await map.CarregarAsync();
+            await map.UsarPlanoCommand.ExecuteAsync(null);
+            Assert.Empty(map.Erros);
+            Assert.Contains("7 conta(s) com movimento sem vínculo", map.Resumo);
+            map.SomentePendentes = true;
+            await map.SugerirCommand.ExecuteAsync(null);
+            Assert.Contains(map.Linhas, l => l.Codigo == "1.1.01.001" && l.SugestaoTexto.StartsWith("1.01.01"));
+            Foto(janela, "08e_vinculo_sugestoes");
+            await map.AceitarSugestoesCommand.ExecuteAsync(null);
+            Assert.Empty(map.Erros);
+            map.SomentePendentes = false;
+            map.Selecionada = map.Linhas.First(l => l.Pendente);
+            map.FiltroReferencial = "";
+            map.ReferencialEscolhida = map.Opcoes.First();
+            await map.VincularCommand.ExecuteAsync(null);
+            Assert.Empty(map.Erros);
+            Foto(janela, "08f_vinculo");
+
             // 6. Configurações › Perfis de acesso: perfil personalizado só com Razão e Diário
             vm.AbrirCommand.Execute(Telas.Perfis);
             var perfis = vm.Perfis;

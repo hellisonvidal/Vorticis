@@ -26,7 +26,8 @@ Cada fase só termina quando o **critério de saída** é atendido com dados rea
 - [x] Fase 1 — manutenção do plano de contas e dos centros de custo, saldos iniciais (implantação)
 - [x] Fase 1 — Diário/Razão/Balancete em PDF, Diário com termos de abertura e encerramento
 - [x] Fase 3 (parcial) — encerramento do exercício (e desfazer), Balanço Patrimonial e DRE em tela e PDF
-- [ ] Fase 3 — mapeamento ao plano referencial da RFB, DMPL/DLPA, DFC, gerador do arquivo ECD e validação no PVA
+- [x] Fase 3 — plano referencial da RFB: importação da tabela oficial, vínculo das contas com sugestões, cópia do ano anterior e pendências
+- [ ] Fase 3 — DMPL/DLPA, DFC, gerador do arquivo ECD e validação no PVA
 
 ## Prioridade dentro do MVP (Fase 1)
 
