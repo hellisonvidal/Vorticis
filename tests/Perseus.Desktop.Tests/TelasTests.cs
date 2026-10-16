@@ -86,6 +86,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var janela = new MainWindow { DataContext = vm, Width = 1280, Height = 780 };
             janela.Show();
 
+            Assert.Equal(WindowState.Maximized, janela.WindowState);   // inicia sempre maximizada, já no login
+
             // 1. Primeiro acesso: cria o administrador
             var login = Assert.IsType<LoginViewModel>(vm.Conteudo);
             Assert.True(login.EmPrimeiroAcesso);
@@ -93,7 +95,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Foto(janela, "01_primeiro_acesso");
             await login.CriarAdministradorCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
-            Assert.Equal(WindowState.Maximized, janela.WindowState);   // após o login a janela maximiza
+            Assert.Equal(WindowState.Maximized, janela.WindowState);   // continua maximizada após o login
 
             // 1b. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
             Assert.Same(vm.Perfis, vm.Conteudo);

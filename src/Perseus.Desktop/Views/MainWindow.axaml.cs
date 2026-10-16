@@ -12,6 +12,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Sempre inicia maximizada (tela cheia, mantendo a barra de título com o nome do programa).
+        WindowState = WindowState.Maximized;
+        Opened += (_, _) => WindowState = WindowState.Maximized;
         // Atalhos globais (os InputGesture do menu são apenas indicativos no Avalonia).
         KeyBindings.Add(Atalho(Key.L, KeyModifiers.Control, Telas.Lancamento));
         KeyBindings.Add(Atalho(Key.B, KeyModifiers.Control, Telas.Balancete));
@@ -24,10 +27,10 @@ public partial class MainWindow : Window
         };
     }
 
-    /// <summary>Após o login a janela abre sempre maximizada; a tela de login fica centralizada no tamanho normal.</summary>
+    /// <summary>Ao entrar ou sair do sistema, volta a maximizar (caso o usuário tenha restaurado o tamanho).</summary>
     private void AoMudarVm(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.Logado) && _vm is { Logado: true }) WindowState = WindowState.Maximized;
+        if (e.PropertyName == nameof(MainViewModel.Logado)) WindowState = WindowState.Maximized;
     }
 
     private KeyBinding Atalho(Key tecla, KeyModifiers mod, string tela) => new()
