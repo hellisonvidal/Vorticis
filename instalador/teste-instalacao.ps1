@@ -38,7 +38,13 @@ Write-Host "Banco local criado e em execução em $dados"
 
 # 2. configuração gravada com senha cifrada (DPAPI) e migrações aplicadas pelo programa
 Add-Type -AssemblyName System.Security
-$cfg = Get-Content $cfgArquivo -Raw | ConvertFrom-Json
+# a porta é gravada logo depois que o servidor sobe
+$limite = (Get-Date).AddMinutes(1)
+do {
+    Start-Sleep -Seconds 1
+    $cfg = Get-Content $cfgArquivo -Raw | ConvertFrom-Json
+} while ([int]$cfg.Local.Porta -eq 0 -and (Get-Date) -lt $limite)
+if ([int]$cfg.Local.Porta -eq 0) { Falhar "A porta do banco local não foi gravada em $cfgArquivo." }
 if ($cfg.Modo -ne "Local") { Falhar "Modo gravado inesperado: $($cfg.Modo)" }
 if ($cfg.Local.Senha) { Falhar "Senha gravada sem cifrar." }
 $senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect(
