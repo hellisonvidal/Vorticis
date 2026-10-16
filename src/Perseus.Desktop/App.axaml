@@ -1,7 +1,36 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Perseus.Desktop.App"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
              RequestedThemeVariant="Light">
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:LoginViewModel"><v:LoginView /></DataTemplate>
+    <DataTemplate DataType="vm:ConexaoViewModel"><v:ConexaoView /></DataTemplate>
+    <DataTemplate DataType="vm:CadastroEmpresaViewModel"><v:CadastroEmpresaView /></DataTemplate>
+    <DataTemplate DataType="vm:LancamentoViewModel"><v:LancamentoView /></DataTemplate>
+    <DataTemplate DataType="vm:BalanceteViewModel"><v:BalanceteView /></DataTemplate>
+    <DataTemplate DataType="vm:RazaoViewModel"><v:RazaoView /></DataTemplate>
+    <DataTemplate DataType="vm:DiarioViewModel"><v:DiarioView /></DataTemplate>
+    <DataTemplate DataType="vm:PeriodosViewModel"><v:PeriodosView /></DataTemplate>
+    <DataTemplate DataType="vm:UsuariosViewModel"><v:UsuariosView /></DataTemplate>
+    <DataTemplate DataType="vm:AlterarSenhaViewModel"><v:AlterarSenhaView /></DataTemplate>
+    <DataTemplate DataType="vm:SobreViewModel"><v:SobreView /></DataTemplate>
+    <DataTemplate DataType="vm:PerfisViewModel"><v:PerfisView /></DataTemplate>
+    <DataTemplate DataType="vm:PlanoContasViewModel"><v:PlanoContasView /></DataTemplate>
+    <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
+    <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>
+    <DataTemplate DataType="vm:BackupViewModel"><v:BackupView /></DataTemplate>
+    <DataTemplate DataType="vm:EncerramentoViewModel"><v:EncerramentoView /></DataTemplate>
+    <DataTemplate DataType="vm:DemonstracoesViewModel"><v:DemonstracoesView /></DataTemplate>
+    <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
+    <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
+    <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
+    <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
+    <DataTemplate DataType="vm:InicioViewModel"><v:InicioView /></DataTemplate>
+    <DataTemplate DataType="vm:CentralUsuariosViewModel"><v:CentralUsuariosView /></DataTemplate>
+  </Application.DataTemplates>
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />

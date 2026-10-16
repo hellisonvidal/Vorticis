@@ -9,35 +9,22 @@
         Width="1200" Height="760" MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen" WindowState="Maximized">
 
-  <Window.DataTemplates>
-    <DataTemplate DataType="vm:LoginViewModel"><v:LoginView /></DataTemplate>
-    <DataTemplate DataType="vm:ConexaoViewModel"><v:ConexaoView /></DataTemplate>
-    <DataTemplate DataType="vm:CadastroEmpresaViewModel"><v:CadastroEmpresaView /></DataTemplate>
-    <DataTemplate DataType="vm:LancamentoViewModel"><v:LancamentoView /></DataTemplate>
-    <DataTemplate DataType="vm:BalanceteViewModel"><v:BalanceteView /></DataTemplate>
-    <DataTemplate DataType="vm:RazaoViewModel"><v:RazaoView /></DataTemplate>
-    <DataTemplate DataType="vm:DiarioViewModel"><v:DiarioView /></DataTemplate>
-    <DataTemplate DataType="vm:PeriodosViewModel"><v:PeriodosView /></DataTemplate>
-    <DataTemplate DataType="vm:UsuariosViewModel"><v:UsuariosView /></DataTemplate>
-    <DataTemplate DataType="vm:AlterarSenhaViewModel"><v:AlterarSenhaView /></DataTemplate>
-    <DataTemplate DataType="vm:SobreViewModel"><v:SobreView /></DataTemplate>
-    <DataTemplate DataType="vm:PerfisViewModel"><v:PerfisView /></DataTemplate>
-    <DataTemplate DataType="vm:PlanoContasViewModel"><v:PlanoContasView /></DataTemplate>
-    <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
-    <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>
-    <DataTemplate DataType="vm:BackupViewModel"><v:BackupView /></DataTemplate>
-    <DataTemplate DataType="vm:EncerramentoViewModel"><v:EncerramentoView /></DataTemplate>
-    <DataTemplate DataType="vm:DemonstracoesViewModel"><v:DemonstracoesView /></DataTemplate>
-    <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
-    <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
-    <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
-    <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
-    <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
-    <DataTemplate DataType="vm:InicioViewModel"><v:InicioView /></DataTemplate>
-    <DataTemplate DataType="vm:CentralUsuariosViewModel"><v:CentralUsuariosView /></DataTemplate>
-  </Window.DataTemplates>
 
   <Window.Styles>
+    <Style Selector="Border.janela-aberta">
+      <Setter Property="Background" Value="#DDE3EC" />
+    </Style>
+    <Style Selector="Border.janela-aberta.ativa">
+      <Setter Property="Background" Value="#2B4C76" />
+    </Style>
+    <Style Selector="Border.janela-aberta.ativa Button.chip">
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="22" />
+    </Style>
     <Style Selector="Menu#MenuPrincipal > MenuItem">
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Padding" Value="10,4" />
@@ -71,14 +58,19 @@
           <MenuItem Header="Encerramento do exercício" Command="{Binding AbrirCommand}" CommandParameter="encerramento" />
         </MenuItem>
         <MenuItem Header="_Integrações">
-          <MenuItem Header="Importar XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
-          <MenuItem Header="Importar NFS-e (em breve)" IsEnabled="False" />
-          <MenuItem Header="Importar extrato bancário OFX (em breve)" IsEnabled="False" />
-          <MenuItem Header="Importar planilha Excel (em breve)" IsEnabled="False" />
-          <Separator />
-          <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />
-          <MenuItem Header="SPED ECF (em breve)" IsEnabled="False" />
-          <MenuItem Header="eSocial (em breve)" IsEnabled="False" />
+          <MenuItem Header="_Importar">
+            <MenuItem Header="Plano referencial da RFB (tabela oficial)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
+            <Separator />
+            <MenuItem Header="XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
+            <MenuItem Header="NFS-e (em breve)" IsEnabled="False" />
+            <MenuItem Header="Extrato bancário OFX (em breve)" IsEnabled="False" />
+            <MenuItem Header="Planilha Excel (em breve)" IsEnabled="False" />
+          </MenuItem>
+          <MenuItem Header="_Exportar">
+            <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />
+            <MenuItem Header="SPED ECF (em breve)" IsEnabled="False" />
+            <MenuItem Header="eSocial (em breve)" IsEnabled="False" />
+          </MenuItem>
         </MenuItem>
         <MenuItem Header="_Relatórios">
           <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
@@ -92,7 +84,6 @@
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
-          <MenuItem Header="Plano referencial da RFB (importar tabela)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
           <Separator />
           <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
         </MenuItem>
@@ -118,15 +109,31 @@
       </Grid>
     </Border>
 
-    <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="12,4"
-            IsVisible="{Binding TituloTela, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-      <TextBlock Text="{Binding TituloTela}" FontSize="12" Foreground="#44506A" />
+    <!-- Funções abertas (cada uma em sua janela flutuante): clicar traz para a frente, ✕ fecha -->
+    <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="8,3" IsVisible="{Binding TemJanelasAbertas}">
+      <ItemsControl ItemsSource="{Binding JanelasAbertas}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:FuncaoAberta">
+            <Border Classes="janela-aberta" Classes.ativa="{Binding Ativa}" CornerRadius="3" Margin="0,1,6,1" Padding="2,0">
+              <StackPanel Orientation="Horizontal">
+                <Button Content="{Binding Rotulo}" ToolTip.Tip="{Binding Titulo}" Classes="chip" FontSize="12" Padding="8,2"
+                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).AtivarFuncaoCommand}" CommandParameter="{Binding}" />
+                <Button Content="✕" Classes="chip" FontSize="11" Padding="6,2" ToolTip.Tip="Fechar"
+                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FecharFuncaoCommand}" CommandParameter="{Binding}" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </Border>
 
     <Border DockPanel.Dock="Bottom" Background="#EEF1F5" Padding="12,3">
       <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
     </Border>
 
-    <ContentControl Content="{Binding Conteudo}" Margin="8" />
+    <ContentControl Content="{Binding ConteudoPrincipal}" Margin="8" />
   </DockPanel>
 </Window>

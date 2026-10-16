@@ -7,12 +7,14 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.rotulo"><Setter Property="FontSize" Value="12" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="*,12,380" Margin="8">
-    <DockPanel>
-      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-        <TextBlock Classes="titulo" Text="Sócios" VerticalAlignment="Center" />
-        <Button Content="Importar quadro societário da Receita" Command="{Binding ImportarDaReceitaCommand}" IsEnabled="{Binding PodeEditar}" />
-      </StackPanel>
+  <Grid ColumnDefinitions="*,12,380" RowDefinitions="Auto,*" Margin="8">
+    <Grid Grid.ColumnSpan="3" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+      <v:BarraCadastroView />
+      <Button Grid.Column="1" Content="Importar quadro societário da Receita" Command="{Binding ImportarDaReceitaCommand}"
+              IsEnabled="{Binding PodeEditar}" VerticalAlignment="Top" />
+    </Grid>
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Sócios" Margin="0,0,0,6" />
       <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resumo}" FontWeight="SemiBold" Margin="0,6,0,0" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
@@ -26,13 +28,11 @@
         </DataGrid.Columns>
       </DataGrid>
     </DockPanel>
-    <ScrollViewer Grid.Column="2">
-      <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+    <ScrollViewer Grid.Row="1" Grid.Column="2">
+      <StackPanel Spacing="6">
         <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="Dados do sócio" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Content="+ Novo sócio" Command="{Binding NovoCommand}" />
-        </Grid>
+        <TextBlock Text="Dados do sócio" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
         <TextBox Text="{Binding Nome}" Watermark="Nome completo / razão social" />
         <ComboBox ItemsSource="{x:Static vm:OpcaoTipoPessoa.Todas}" SelectedItem="{Binding Tipo}" HorizontalAlignment="Stretch">
           <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoTipoPessoa"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
@@ -52,9 +52,6 @@
         <CheckBox Content="Representante legal (assina a ECD e os termos)" IsChecked="{Binding Representante}" />
         <TextBox Text="{Binding Email}" Watermark="E-mail" />
         <TextBox Text="{Binding Telefone}" Watermark="Telefone" />
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Content="Salvar" Command="{Binding SalvarCommand}" Classes="accent" />
-          <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
         </StackPanel>
         <v:MensagensView />
       </StackPanel>

@@ -42,8 +42,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 {
     private static readonly string? Pasta = Environment.GetEnvironmentVariable("PERSEUS_SCREENSHOTS");
 
-    private static void Foto(Window janela, string nome)
+    private static void Foto(Window janelaPrincipal, string nome)
     {
+        // Com uma função aberta, fotografa a janela flutuante dela; senão, a janela principal.
+        var janela = (janelaPrincipal as MainWindow)?.JanelaAtiva ?? janelaPrincipal;
         // Alguns controles (ex.: CalendarDatePicker) atualizam o texto em uma passada posterior do dispatcher.
         Dispatcher.UIThread.RunJobs();
         janela.CaptureRenderedFrame();
@@ -58,6 +60,17 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     /// se uma asserção falhar lá dentro, a continuação síncrona chamaria Dispose na própria thread e travaria,
     /// escondendo a falha real.
     /// </summary>
+    /// <summary>Espera o diálogo de confirmação (Sim/Não) aparecer.</summary>
+    private static async Task<PedidoConfirmacao> AguardarConfirmacao(MainViewModel vm)
+    {
+        for (var i = 0; i < 200 && vm.Confirmacao is null; i++)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+        return vm.Confirmacao ?? throw new Xunit.Sdk.XunitException("A confirmação não foi pedida.");
+    }
+
     private static async Task<T> ForaDaSessao<T>(Task<T> tarefa)
     {
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -80,9 +93,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         var concluido = await ForaDaSessao(sessao.Dispatch(async () =>
         {
             // Consulta de CNPJ com o parser real e resposta HTTP simulada (os testes não acessam a internet).
-            var http = new HttpSimulado(_ => HttpSimulado.Json(ConsultaCnpjTests.RespostaExemplo));
+            var http = ConsultaCnpjTests.HttpCnpjEInscricoes();
             var vm = new MainViewModel();
-            await vm.InicializarAsync(db.ConnectionString, new ConsultaCnpjPublica(new HttpClient(http)));
+            await vm.InicializarAsync(db.ConnectionString, new ConsultaCnpjPublica(new HttpClient(http)),
+                                      new ConsultaInscricaoEstadualPublica(new HttpClient(http)));
             var janela = new MainWindow { DataContext = vm, Width = 1280, Height = 780 };
             janela.Show();
 
@@ -121,29 +135,76 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Empresas));
             vm.AbrirCommand.Execute(Telas.Empresas);
 
-            // 2. Cadastros › Empresas: busca na base pública do CNPJ e cadastra
+            // 2. Cadastros › Empresas: Incluir, busca na base pública do CNPJ e a inscrição estadual (com confirmação), Salvar
             var emp = vm.Empresas;
+            Assert.True(emp.EmConsulta);
+            Assert.False(emp.AlterarCommand.CanExecute(null));                // nada selecionado
+            emp.IncluirCommand.Execute(null);
+            Assert.True(emp.EmInclusao);
             emp.Cnpj = "11.222.333/0001-81";
-            await emp.ConsultarCnpjCommand.ExecuteAsync(null);
+            var consultaCnpj = emp.ConsultarCnpjCommand.ExecuteAsync(null);
+            var pergunta = await AguardarConfirmacao(vm);                      // IE encontrada: usa?
+            Assert.Contains("SP: 110042490114 (ativa)", pergunta.Mensagem);
+            Foto(janela, "02a_confirma_inscricao_estadual");
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await consultaCnpj;
             Assert.Empty(emp.Erros);
+            Assert.Equal("110042490114", emp.InscricaoEstadual);
             Assert.Equal("EXEMPLO COMERCIO DE INFORMATICA LTDA", emp.RazaoSocial);
             Assert.Equal(("4751201", "3550308", "AVENIDA PAULISTA"), (emp.Cnae, emp.MunicipioIbge, emp.Logradouro));
             Assert.Equal(RegimeTributario.SimplesNacional, emp.Regime);
             Assert.Equal(new DateTime(2015, 3, 2), emp.InicioAtividades);
             emp.AnoExercicio = 2026;
             Foto(janela, "02_empresa_dados_receita");
-            var picker = janela.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
+            Assert.NotNull(janela.JanelaAtiva);                               // a função abriu em janela flutuante
+            var picker = janela.JanelaAtiva!.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
             Assert.Equal((new DateTime(2015, 3, 2), (DateTime?)new DateTime(2015, 3, 2), "02/03/2015"), (emp.InicioAtividades!.Value, picker.SelectedDate, picker.Text));
-            await emp.CadastrarCommand.ExecuteAsync(null);
+            await emp.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(emp.Erros);
+            Assert.True(emp.EmConsulta);
             var empresa = Assert.Single(vm.EmpresasPermitidas);
             Assert.True(await db.EscalarAsync<bool>(
                 """
                 SELECT fonte_dados LIKE 'BrasilAPI%' AND cep = '01310100' AND situacao_cadastral = 'ATIVA'
-                       AND data_inicio_ativ = '2015-03-02' AND cnae_principal = '4751201'
+                       AND data_inicio_ativ = '2015-03-02' AND cnae_principal = '4751201' AND inscricao_estadual = '110042490114'
                   FROM core.empresa WHERE id = @id
                 """,
                 ("id", empresa.Id)));
+
+            // Alterar: telefone
+            await emp.CarregarSelecionadaAsync();
+            Assert.Equal("EXEMPLO COMERCIO DE INFORMATICA LTDA", emp.RazaoSocial);
+            emp.AlterarCommand.Execute(null);
+            Assert.True(emp.EmAlteracao);
+            emp.Telefone = "1144445555";
+            await emp.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(emp.Erros);
+            Assert.Equal("1144445555", await db.EscalarAsync<string>("SELECT telefone FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
+            Foto(janela, "02b_empresa_consulta");
+
+            // Em consulta, a busca da IE pergunta se deve salvar; "Não salvar" mantém o cadastro
+            var buscaIe = emp.BuscarInscricaoEstadualCommand.ExecuteAsync(null);
+            Assert.Contains("Deseja salvar", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(false);
+            await buscaIe;
+            Assert.Equal("Inscrição estadual não alterada.", emp.Mensagem);
+
+            // Excluir (com confirmação) uma segunda empresa
+            emp.IncluirCommand.Execute(null);
+            (emp.Cnpj, emp.RazaoSocial, emp.Cnae, emp.MunicipioIbge, emp.Uf) = ("06.990.590/0001-23", "EMPRESA A EXCLUIR LTDA", "6920601", "3550308", "SP");
+            emp.ImportarPlanoModelo = false;
+            await emp.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(emp.Erros);
+            Assert.Equal(2, vm.EmpresasPermitidas.Count);
+            vm.EmpresaSelecionada = vm.EmpresasPermitidas.Single(e => e.RazaoSocial == "EMPRESA A EXCLUIR LTDA");
+            await emp.CarregarSelecionadaAsync();
+            var exclusao = emp.ExcluirCommand.ExecuteAsync(null);
+            Assert.Contains("EMPRESA A EXCLUIR LTDA", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await exclusao;
+            Assert.Empty(emp.Erros);
+            Assert.Equal(empresa.Id, Assert.Single(vm.EmpresasPermitidas).Id);
+            vm.EmpresaSelecionada = vm.EmpresasPermitidas[0];
 
             // 3. Lançamentos › Lançamento contábil
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Lancamento));
@@ -177,18 +238,38 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var plano = vm.PlanoContas;
             await plano.CarregarAsync();
             plano.Selecionada = plano.Lista.Single(c => c.Conta.Codigo == "1.1.01.003");
-            Assert.Equal("1.1.01.004", plano.NovoCodigo);            // sugestão da próxima irmã
-            plano.NovaDescricao = "Caixa da filial";
-            await plano.IncluirCommand.ExecuteAsync(null);
+            Assert.Equal("1.1.01.003", plano.Codigo);                // consulta: mostra a conta selecionada
+            plano.IncluirCommand.Execute(null);
+            Assert.Equal("1.1.01.004", plano.Codigo);                // sugestão da próxima irmã
+            Assert.Contains("Subconta de 1.1.01", plano.DicaPai);
+            plano.Descricao = "Caixa da filial";
+            await plano.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(plano.Erros);
+            Assert.True(plano.EmConsulta);
             Assert.Contains(plano.Lista, c => c.Conta.Codigo == "1.1.01.004" && c.Conta.Analitica);
+            Assert.Equal("1.1.01.004", plano.Selecionada?.Conta.Codigo);
+            plano.AlterarCommand.Execute(null);                     // Alterar: descrição
+            plano.Descricao = "Caixa da filial Centro";
+            await plano.SalvarCommand.ExecuteAsync(null);
+            Assert.Equal("Caixa da filial Centro", plano.Selecionada?.Conta.Descricao);
             Foto(janela, "06_plano_contas");
 
             // Centros de custo
             vm.AbrirCommand.Execute(Telas.CentrosCusto);
-            (vm.CentrosCusto.NovoCodigo, vm.CentrosCusto.NovaDescricao) = ("ADM", "Administrativo");
-            await vm.CentrosCusto.IncluirCommand.ExecuteAsync(null);
+            vm.CentrosCusto.IncluirCommand.Execute(null);
+            (vm.CentrosCusto.Codigo, vm.CentrosCusto.Descricao) = ("ADM", "Administrativo");
+            await vm.CentrosCusto.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(vm.CentrosCusto.Erros);
+            Assert.Single(vm.CentrosCusto.Lista);
+            vm.CentrosCusto.IncluirCommand.Execute(null);           // Excluir (com confirmação)
+            (vm.CentrosCusto.Codigo, vm.CentrosCusto.Descricao, vm.CentrosCusto.CodigoPai) = ("TEMP", "Temporário", "");
+            await vm.CentrosCusto.SalvarCommand.ExecuteAsync(null);
+            Assert.Equal(2, vm.CentrosCusto.Lista.Count);
+            Assert.Equal("TEMP", vm.CentrosCusto.Selecionado?.Codigo);
+            var exclusaoCc = vm.CentrosCusto.ExcluirCommand.ExecuteAsync(null);
+            Assert.Contains("TEMP – Temporário", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await exclusaoCc;
             Assert.Single(vm.CentrosCusto.Lista);
 
             // Saldos iniciais
@@ -236,6 +317,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal(["BELTRANA DA SILVA", "FULANO DE TAL"], socios.Lista.Select(s => s.Nome).Order());
             socios.Selecionado = socios.Lista.Single(s => s.Nome == "FULANO DE TAL");
             Assert.Equal("***123456**", socios.DocumentoMascarado);
+            socios.AlterarCommand.Execute(null);
             (socios.Documento, socios.Participacao, socios.Representante) = ("390.533.447-05", "70", true);
             await socios.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(socios.Erros);
@@ -245,11 +327,15 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.Empresas.AbaSelecionada = CadastroEmpresaViewModel.AbaContadores;
             var cont = vm.Contabilidade;
             await cont.CarregarAsync();
+            cont.IncluirCommand.Execute(null);
+            cont.IncluirContador = true;
             (cont.ContadorNome, cont.ContadorCpf, cont.ContadorCrc, cont.ContadorUf) = ("Maria Contadora", "529.982.247-25", "1SP123456/O-7", "SP");
-            await cont.VincularContadorCommand.ExecuteAsync(null);
+            await cont.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(cont.Erros);
+            cont.IncluirCommand.Execute(null);
+            cont.IncluirContador = false;
             (cont.EscritorioCnpj, cont.EscritorioRazao, cont.EscritorioCrc) = ("45.723.174/0001-10", "Contábil Exemplo Ltda", "2SP012345/O-1");
-            await cont.VincularEscritorioCommand.ExecuteAsync(null);
+            await cont.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(cont.Erros);
             Assert.Equal(2, cont.Vinculos.Count);
             Foto(janela, "08h_contabilidade");
@@ -319,7 +405,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             perfis.Selecionado = perfis.Lista.Single(p => p.Nome == "Administrador");
             Assert.True(perfis.EditandoAdministrador);
             Assert.All(perfis.Grupos.SelectMany(g => g.Funcoes), f => Assert.True(f.Marcada));   // todas as funções liberadas
-            perfis.NovoCommand.Execute(null);
+            Assert.False(perfis.PodeMarcar);                        // Administrador: sempre todas
+            perfis.IncluirCommand.Execute(null);
             (perfis.Nome, perfis.Descricao) = ("Auditor externo", "Consulta Razão e Diário");
             foreach (var f in perfis.Grupos.SelectMany(g => g.Funcoes))
                 f.Marcada = f.Definicao.Permissao is Permissao.RelatorioRazao or Permissao.RelatorioDiario;
@@ -332,17 +419,20 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal(CentralUsuariosViewModel.AbaUsuarios, vm.CentralUsuarios.AbaSelecionada);
             var u = vm.Usuarios;
             await u.CarregarAsync();
-            (u.NovoLogin, u.NovoNome, u.NovaSenha) = ("joao", "João Auditor", "Inicial123");
-            await u.CriarCommand.ExecuteAsync(null);
+            u.IncluirCommand.Execute(null);
+            (u.Login, u.NomeEdicao, u.NovaSenha) = ("joao", "João Auditor", "Inicial123");
+            await u.SalvarCommand.ExecuteAsync(null);
             Assert.Contains("Informe o perfil", u.Erros.Single());       // perfil obrigatório
-            u.NovoPerfil = u.PerfisDisponiveis.Single(o => o.Nome == "Auditor externo");
-            await u.CriarCommand.ExecuteAsync(null);
+            Assert.True(u.EmInclusao);
+            u.PerfilEdicao = u.PerfisDisponiveis.Single(o => o.Nome == "Auditor externo");
+            await u.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(u.Erros);
             Assert.Equal("Auditor externo", u.Selecionado?.Perfil);
             Assert.Equal("Auditor externo", u.PerfilEdicao?.Nome);
             for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             var acesso = Assert.Single(u.Acessos);
             Assert.Equal("Auditor externo", acesso.Perfil.Nome);          // perfil já concedido na empresa
+            u.AlterarCommand.Execute(null);
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Equal("Alterações salvas.", u.Mensagem);
             Foto(janela, "09_usuarios");
@@ -362,6 +452,23 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Single(vm.Backup.Arquivos);
             Foto(janela, "10_backup");
             Directory.Delete(pastaBackup, true);
+
+            // Janelas flutuantes: cada função aberta tem a sua; a barra lista as abertas e o ✕ fecha
+            Assert.True(vm.JanelasAbertas.Count >= 5);
+            Assert.Same(vm.Backup, vm.FuncaoAtiva?.ViewModel);
+            Assert.NotNull(janela.JanelaDa(vm.Backup));
+            Dispatcher.UIThread.RunJobs();
+            var quadroPrincipal = janela.CaptureRenderedFrame();
+            if (Pasta is not null) quadroPrincipal?.Save(Path.Combine(Pasta, "10b_janelas_abertas.png"));
+            var janelaBackup = vm.FuncaoAtiva!;
+            vm.FecharFuncaoCommand.Execute(janelaBackup);
+            Assert.DoesNotContain(janelaBackup, vm.JanelasAbertas);
+            Assert.Null(janela.JanelaDa(vm.Backup));
+            Assert.NotSame(vm.Backup, vm.Conteudo);
+            vm.AbrirCommand.Execute(Telas.Balancete);                         // reabrir traz a mesma janela para a frente
+            var antes = vm.JanelasAbertas.Count;
+            vm.AbrirCommand.Execute(Telas.Balancete);
+            Assert.Equal(antes, vm.JanelasAbertas.Count);
 
             vm.AbrirCommand.Execute(Telas.Sobre);
             Foto(janela, "11_sobre");
@@ -408,9 +515,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.AbrirCommand.Execute(Telas.PlanoContas);
             await vm.PlanoContas.CarregarAsync();
             Assert.False(vm.PlanoContas.PodeEditar);
-            vm.PlanoContas.NovoCodigo = "1.1.01.005";
-            vm.PlanoContas.NovaDescricao = "Tentativa";
-            await vm.PlanoContas.IncluirCommand.ExecuteAsync(null);           // mesmo forçando, o serviço recusa
+            Assert.False(vm.PlanoContas.IncluirCommand.CanExecute(null));    // botões de manutenção desabilitados
+            vm.PlanoContas.Modo = ModoCadastro.Inclusao;                      // mesmo forçando, o serviço recusa
+            vm.PlanoContas.Codigo = "1.1.01.005";
+            vm.PlanoContas.Descricao = "Tentativa";
+            await vm.PlanoContas.SalvarCommand.ExecuteAsync(null);
             Assert.Contains(vm.PlanoContas.Erros, e => e.Contains("não permite"));
             Foto(janela, "13_perfil_restrito");
 

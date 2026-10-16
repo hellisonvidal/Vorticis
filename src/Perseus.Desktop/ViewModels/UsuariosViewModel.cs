@@ -28,42 +28,44 @@ public partial class AcessoLinha : ObservableObject
     [ObservableProperty] private OpcaoPerfil _perfil = SemAcesso;
 }
 
-/// <summary>Configurações › Usuários, aba Usuários: cadastro com o perfil do usuário e exceções por empresa (somente administrador).</summary>
-public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>Configurações › Usuários, aba Usuários: Incluir / Alterar / Excluir, com o perfil do usuário e exceções por empresa (somente administrador).</summary>
+public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     public ObservableCollection<UsuarioLinha> Lista { get; } = [];
     public ObservableCollection<AcessoLinha> Acessos { get; } = [];
 
-    /// <summary>Perfis que podem ser atribuídos ao usuário (Configurações › Usuários › Perfis de acesso).</summary>
+    /// <summary>Perfis que podem ser atribuídos ao usuário (aba Perfis de acesso).</summary>
     public ObservableCollection<OpcaoPerfil> PerfisDisponiveis { get; } = [];
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private UsuarioLinha? _selecionado;
+    [ObservableProperty] private string _login = "";
     [ObservableProperty] private string _nomeEdicao = "";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarAcessos), nameof(DescricaoPerfilEdicao))] private OpcaoPerfil? _perfilEdicao;
-    [ObservableProperty] private bool _ativoEdicao;
-    [ObservableProperty] private string _senhaTemporaria = "";
-
-    [ObservableProperty] private string _novoLogin = "";
-    [ObservableProperty] private string _novoNome = "";
     [ObservableProperty] private string _novaSenha = "";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(DescricaoNovoPerfil))] private OpcaoPerfil? _novoPerfil;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarAcessos), nameof(DescricaoPerfil))] private OpcaoPerfil? _perfilEdicao;
+    [ObservableProperty] private bool _ativoEdicao = true;
+    [ObservableProperty] private string _senhaTemporaria = "";
 
     private bool _carregandoSelecao;
 
     public bool TemSelecionado => Selecionado is not null;
 
-    /// <summary>Administradores acessam todas as empresas; para os demais, o acesso por empresa admite exceções.</summary>
-    public bool MostrarAcessos => PerfilEdicao is { Administrador: false };
+    /// <summary>Administradores acessam todas as empresas; para os demais, o acesso por empresa admite exceções (definidas ao alterar).</summary>
+    public bool MostrarAcessos => !EmInclusao && PerfilEdicao is { Administrador: false };
 
-    public string DescricaoNovoPerfil => Descrever(NovoPerfil);
-    public string DescricaoPerfilEdicao => Descrever(PerfilEdicao);
-
-    private static string Descrever(OpcaoPerfil? p) => p switch
+    public string DescricaoPerfil => PerfilEdicao switch
     {
         null => "Escolha o perfil: ele define o que o usuário poderá fazer no sistema.",
         { Administrador: true } => "Administrador: todas as funções, em todas as empresas, inclusive usuários, perfis, empresas e backup.",
-        _ => $"Perfil {p.Nome}: concedido em todas as empresas (e nas cadastradas depois). Exceções por empresa abaixo.",
+        var p => $"Perfil {p.Nome}: concedido em todas as empresas (e nas cadastradas depois). Exceções por empresa abaixo.",
     };
+
+    protected override string NomeRegistro => "usuário";
+    protected override string? DescricaoSelecionado => Selecionado is { } u ? $"{u.Nome} ({u.Login})" : null;
+    public override bool PodeManter => Contexto.Sessao?.Administrador == true;
+    protected override string DetalheExclusao =>
+        "\n\nSe o usuário já entrou no sistema, ele é apenas inativado (o histórico de acessos e operações é mantido).";
+
+    protected override void AoMudarModo() => OnPropertyChanged(nameof(MostrarAcessos));
 
     public async Task CarregarAsync()
     {
@@ -73,24 +75,44 @@ public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(con
         var usuarios = await app.Usuarios.ListarAsync(sessao);
         var perfis = await app.Perfis.ListarAsync(sessao);
         if (!EhAtual(geracao)) return;
-        var novoPerfilId = NovoPerfil?.Id;
         PerfisDisponiveis.Clear();
         foreach (var p in perfis) PerfisDisponiveis.Add(new OpcaoPerfil(p.Id, p.Nome, p.Administrador));
-        NovoPerfil = PerfisDisponiveis.FirstOrDefault(p => p.Id == novoPerfilId);
         Lista.Clear();
         foreach (var u in usuarios) Lista.Add(new UsuarioLinha(u));
         Selecionado = Lista.FirstOrDefault(l => l.Usuario.Id == id);
+        AtualizarBarra();
     }
 
     partial void OnSelecionadoChanged(UsuarioLinha? value)
     {
+        if (EmConsulta) MostrarSelecionado();
+        AtualizarBarra();
+    }
+
+    protected override void MostrarSelecionado()
+    {
         Acessos.Clear();
-        if (value is null) return;
         _carregandoSelecao = true;
-        (NomeEdicao, AtivoEdicao, SenhaTemporaria) = (value.Nome, value.Usuario.Ativo, "");
-        PerfilEdicao = PerfisDisponiveis.FirstOrDefault(p => p.Id == value.Usuario.PerfilId);
+        if (Selecionado is { } value)
+        {
+            (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = (value.Login, value.Nome, value.Usuario.Ativo, "", "");
+            PerfilEdicao = PerfisDisponiveis.FirstOrDefault(p => p.Id == value.Usuario.PerfilId);
+            _ = CarregarAcessosAsync(value.Usuario.Id);
+        }
+        else
+        {
+            (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = ("", "", true, "", "");
+            PerfilEdicao = null;
+        }
         _carregandoSelecao = false;
-        _ = CarregarAcessosAsync(value.Usuario.Id);
+    }
+
+    protected override void PrepararInclusao()
+    {
+        Acessos.Clear();
+        _carregandoSelecao = true;
+        (Login, NomeEdicao, NovaSenha, AtivoEdicao, PerfilEdicao) = ("", "", "", true, null);
+        _carregandoSelecao = false;
     }
 
     /// <summary>Trocar o perfil do usuário aplica o novo perfil em todas as empresas (as exceções podem ser refeitas abaixo).</summary>
@@ -126,33 +148,56 @@ public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(con
         }
     }
 
-    [RelayCommand]
-    private Task CriarAsync() => Admin(async (app, sessao) =>
+    protected override async Task<bool> GravarAsync(bool inclusao)
     {
-        var r = await app.Usuarios.CriarUsuarioAsync(sessao, NovoLogin, NovoNome, NovaSenha, NovoPerfil?.Id);
-        MostrarResultado(r, $"Usuário {NovoLogin.Trim()} criado com o perfil {NovoPerfil?.Nome}. Ele deverá trocar a senha no primeiro acesso.");
-        if (!r.Sucesso) return;
-        (NovoLogin, NovoNome, NovaSenha, NovoPerfil) = ("", "", "", null);
-        await CarregarAsync();
-        Selecionado = Lista.FirstOrDefault(l => l.Usuario.Id == r.Valor);
-    });
-
-    [RelayCommand]
-    private Task SalvarAsync() => Admin(async (app, sessao) =>
-    {
-        if (Selecionado is null) return;
-        var id = Selecionado.Usuario.Id;
-        var r = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        foreach (var a in Acessos.Where(a => MostrarAcessos && a.Perfil.Id != a.Original))
+        var ok = false;
+        await Admin(async (app, sessao) =>
         {
-            var acesso = await app.Usuarios.DefinirAcessoAsync(sessao, id, a.EmpresaId, a.Perfil.Id);
-            if (!acesso.Sucesso) { MostrarResultado(acesso, ""); return; }
-            a.Original = a.Perfil.Id;
-        }
-        await CarregarAsync();
-        Mensagem = "Alterações salvas.";
-    });
+            if (inclusao)
+            {
+                var r = await app.Usuarios.CriarUsuarioAsync(sessao, Login, NomeEdicao, NovaSenha, PerfilEdicao?.Id);
+                MostrarResultado(r, $"Usuário {Login.Trim()} criado com o perfil {PerfilEdicao?.Nome}. Ele deverá trocar a senha no primeiro acesso.");
+                if (!r.Sucesso) return;
+                ok = true;
+                Modo = ModoCadastro.Consulta;
+                NovaSenha = "";
+                await CarregarAsync();
+                Selecionado = Lista.FirstOrDefault(l => l.Usuario.Id == r.Valor);
+                return;
+            }
+            if (Selecionado is null) return;
+            var id = Selecionado.Usuario.Id;
+            var alt = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao);
+            if (!alt.Sucesso) { MostrarResultado(alt, ""); return; }
+            foreach (var a in Acessos.Where(a => MostrarAcessos && a.Perfil.Id != a.Original))
+            {
+                var acesso = await app.Usuarios.DefinirAcessoAsync(sessao, id, a.EmpresaId, a.Perfil.Id);
+                if (!acesso.Sucesso) { MostrarResultado(acesso, ""); return; }
+                a.Original = a.Perfil.Id;
+            }
+            ok = true;
+            Modo = ModoCadastro.Consulta;
+            await CarregarAsync();
+            Mensagem = "Alterações salvas.";
+        });
+        return ok;
+    }
+
+    protected override async Task<bool> ExcluirSelecionadoAsync()
+    {
+        var ok = false;
+        await Admin(async (app, sessao) =>
+        {
+            if (Selecionado is not { } u) return;
+            var r = await app.Usuarios.ExcluirUsuarioAsync(sessao, u.Usuario.Id);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Selecionado = null;
+            await CarregarAsync();
+            Mensagem = r.Valor ? $"Usuário {u.Login} excluído." : $"Usuário {u.Login} inativado (já tinha histórico no sistema).";
+        });
+        return ok;
+    }
 
     [RelayCommand]
     private Task RedefinirSenhaAsync() => Admin(async (app, sessao) =>

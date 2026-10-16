@@ -83,6 +83,13 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - *Relatórios › Balanço Patrimonial e DRE*: estrutura do plano da empresa até o nível escolhido; antes do encerramento, o resultado do período aparece destacado no PL para o balanço fechar; a DRE ignora os lançamentos de encerramento.
 - *Lançamentos › Encerramento do exercício*: zera as contas de resultado contra a Apuração do Resultado e transfere o lucro/prejuízo ao PL, em 31/12, com IND_LCTO = E (ECD). "Desfazer" estorna os dois lançamentos para permitir ajustes.
 
+### Uso: janelas e cadastros
+
+- Cada função aberta pelo menu abre em uma **janela flutuante** própria (pode ser movida, redimensionada e fechada no ✕). A barra abaixo do menu lista as funções abertas: clique para trazer à frente, ✕ para fechar. Reabrir a mesma função traz a janela existente.
+- Todos os cadastros (empresas, sócios, contadores, plano de contas, centros de custo, usuários e perfis) têm a mesma barra: **Incluir · Alterar · Excluir · Salvar · Cancelar**. Em consulta o formulário mostra o registro selecionado; Incluir/Alterar liberam a edição; **Excluir sempre pede confirmação**.
+- Excluir uma empresa a retira da lista e bloqueia o acesso, mas mantém a escrituração no banco (guarda legal). Excluir um usuário que já entrou no sistema apenas o inativa (preserva o histórico).
+- **Integrações** está dividido em *Importar* (plano referencial da RFB; XML de NF-e, NFS-e, OFX e Excel em breve) e *Exportar* (ECD, ECF e eSocial em breve).
+
 ### Sócios e contadores
 
 - **Cadastros › Empresas, aba Sócios** (da empresa selecionada): nome, CPF/CNPJ, qualificação, participação no capital (soma dos ativos ≤ 100%), entrada/saída e representante legal. *Importar quadro societário da Receita* traz o QSA da base pública (o CPF vem mascarado — complete-o). Ao cadastrar uma empresa pela consulta de CNPJ, os sócios já são incluídos.
@@ -103,6 +110,8 @@ O Perseus não traz a tabela embutida: ela é oficial, muda a cada ano e deve vi
 ### Consulta de CNPJ
 
 Em **Cadastros › Empresas**, o botão *Buscar dados na Receita* preenche razão social, natureza jurídica, CNAE, endereço, município IBGE, início de atividade, situação cadastral e opção pelo Simples/MEI. A fonte é a **base pública do CNPJ divulgada pela Receita Federal** (dados abertos, atualização mensal), via [BrasilAPI](https://brasilapi.com.br) e, como reserva, [Minha Receita](https://minhareceita.org). O portal "Comprovante de Inscrição" da RFB tem captcha e não pode ser automatizado; a API oficial (Serpro "Consulta CNPJ") é paga e pode ser plugada como outra implementação de `IConsultaCnpj`.
+
+**Inscrição estadual:** *Buscar IE (SINTEGRA)* (também executado logo após a consulta do CNPJ) procura as inscrições do CNPJ na UF da empresa — a UF informada ou, na falta dela, a deduzida do código IBGE do município. A fonte é a API pública do [CNPJ.ws](https://www.cnpj.ws), que reúne as inscrições dos cadastros estaduais (os portais SINTEGRA de cada estado exigem captcha); limite de 3 consultas por minuto. O sistema **sempre pergunta** antes de usar o número: em Incluir/Alterar ele vai para o formulário (gravado ao Salvar); em consulta, grava na empresa só se o usuário confirmar. *Abrir SINTEGRA* abre o portal para conferência manual.
 
 ### Gerar o instalador
 

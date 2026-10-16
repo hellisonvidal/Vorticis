@@ -57,6 +57,9 @@ internal static class Mapeamentos
         _ => throw new ArgumentOutOfRangeException(nameof(r)),
     };
 
+    public static RegimeTributario? RegimeDeSql(string s) =>
+        Enum.GetValues<RegimeTributario>().Select(r => (RegimeTributario?)r).FirstOrDefault(r => r!.Value.Sql() == s);
+
     /// <summary>
     /// Erros levantados pelas regras do banco (RAISE, CHECK, UNIQUE, FK) viram violação de regra
     /// com a mensagem original; demais erros (conexão, sintaxe) continuam como exceção técnica.

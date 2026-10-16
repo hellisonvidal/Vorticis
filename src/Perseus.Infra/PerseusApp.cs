@@ -17,7 +17,7 @@ public sealed class PerseusApp : IAsyncDisposable
 {
     private readonly NpgsqlDataSource _ds;
 
-    private PerseusApp(NpgsqlDataSource ds, string connectionString, IConsultaCnpj consultaCnpj)
+    private PerseusApp(NpgsqlDataSource ds, string connectionString, IConsultaCnpj consultaCnpj, IConsultaInscricaoEstadual consultaIe)
     {
         _ds = ds;
         var repoPerfis = new RepositorioPerfis(ds);
@@ -32,7 +32,7 @@ public sealed class PerseusApp : IAsyncDisposable
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
-        Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj);
+        Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj, consultaIe);
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
@@ -62,10 +62,12 @@ public sealed class PerseusApp : IAsyncDisposable
 
     /// <summary>Conecta e aplica migrações pendentes.</summary>
     /// <param name="consultaCnpj">Fonte de dados de CNPJ; padrão: base pública da RFB via internet.</param>
-    public static async Task<PerseusApp> IniciarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, CancellationToken ct = default)
+    public static async Task<PerseusApp> IniciarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, CancellationToken ct = default,
+                                                      IConsultaInscricaoEstadual? consultaIe = null)
     {
         var ds = NpgsqlDataSource.Create(connectionString);
-        var app = new PerseusApp(ds, connectionString, consultaCnpj ?? new ConsultaCnpjPublica(ConsultaCnpjPublica.CriarHttpClient()));
+        var app = new PerseusApp(ds, connectionString, consultaCnpj ?? new ConsultaCnpjPublica(ConsultaCnpjPublica.CriarHttpClient()),
+                                 consultaIe ?? new ConsultaInscricaoEstadualPublica(ConsultaCnpjPublica.CriarHttpClient()));
         try
         {
             await app.Migrador.AplicarAsync(ct);

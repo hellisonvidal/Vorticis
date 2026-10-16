@@ -4,8 +4,9 @@
              xmlns:v="using:Perseus.Desktop.Views"
              x:Class="Perseus.Desktop.Views.PlanoContasView"
              x:DataType="vm:PlanoContasViewModel">
-  <Grid ColumnDefinitions="*,16,360" Margin="8">
-    <DockPanel>
+  <Grid ColumnDefinitions="*,16,360" RowDefinitions="Auto,*" Margin="8">
+    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
         <TextBlock Classes="titulo" Text="Plano de contas" VerticalAlignment="Center" />
         <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código ou descrição" Width="300" />
@@ -23,47 +24,37 @@
       </DataGrid>
     </DockPanel>
 
-    <ScrollViewer Grid.Column="2">
-      <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+    <ScrollViewer Grid.Row="1" Grid.Column="2">
+      <StackPanel Spacing="6">
         <TextBlock Text="Seu perfil permite apenas consultar o plano." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-
-        <TextBlock Text="Nova conta" FontWeight="SemiBold" Foreground="#1F3A5F" />
-        <TextBox Text="{Binding NovoCodigo}" Watermark="Código (ex.: 1.1.01.004)" />
-        <TextBlock Text="{Binding DicaPai}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
-        <TextBox Text="{Binding NovaDescricao}" Watermark="Descrição" />
-        <Grid ColumnDefinitions="*,8,*">
-          <ComboBox ItemsSource="{x:Static vm:OpcaoNatureza.Todas}" SelectedItem="{Binding NovaNatureza}" HorizontalAlignment="Stretch">
+        <TextBlock Text="Conta" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.1.01.004" IsEnabled="{Binding EmInclusao}" />
+          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DicaPai}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Natureza" />
+          <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static vm:OpcaoNatureza.Todas}" SelectedItem="{Binding Natureza}"
+                    HorizontalAlignment="Stretch" IsEnabled="{Binding EmInclusao}">
             <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoNatureza"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
           </ComboBox>
-          <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:OpcaoSaldo.Todas}" SelectedItem="{Binding NovoSaldo}" HorizontalAlignment="Stretch">
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Saldo" />
+          <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{x:Static vm:OpcaoSaldo.Todas}" SelectedItem="{Binding Saldo}"
+                    HorizontalAlignment="Stretch" IsEnabled="{Binding EmEdicao}">
             <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoSaldo"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
           </ComboBox>
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Incluída em" IsVisible="{Binding EmInclusao}" />
+          <CalendarDatePicker Grid.Row="5" Grid.Column="1" SelectedDate="{Binding DataInclusao}" Width="160" HorizontalAlignment="Left"
+                              IsVisible="{Binding EmInclusao}" />
         </Grid>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBlock Text="Incluída em" VerticalAlignment="Center" FontSize="12" />
-          <CalendarDatePicker SelectedDate="{Binding NovaDataInclusao}" Width="140" />
+        <StackPanel Spacing="4" IsEnabled="{Binding EmEdicao}">
+          <CheckBox Content="Exige centro de custo" IsChecked="{Binding ExigeCc}" />
+          <CheckBox Content="Exige participante" IsChecked="{Binding ExigeParticipante}" />
+          <CheckBox Content="Ativa" IsChecked="{Binding Ativa}" IsEnabled="{Binding EmAlteracao}" />
         </StackPanel>
-        <CheckBox Content="Exige centro de custo" IsChecked="{Binding NovaExigeCc}" />
-        <Button Content="Incluir conta" Command="{Binding IncluirCommand}" Classes="accent" />
-
-        <Border BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,10,0,0" IsVisible="{Binding TemSelecionada}">
-          <StackPanel Spacing="6">
-            <TextBlock Text="{Binding Selecionada.Conta.Codigo, StringFormat='Conta selecionada: {0}'}" FontWeight="SemiBold" Foreground="#1F3A5F" />
-            <TextBox Text="{Binding DescricaoEdicao}" />
-            <ComboBox ItemsSource="{x:Static vm:OpcaoSaldo.Todas}" SelectedItem="{Binding SaldoEdicao}" HorizontalAlignment="Stretch">
-              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoSaldo"><TextBlock Text="{Binding Nome, StringFormat='Natureza do saldo: {0}'}" /></DataTemplate></ComboBox.ItemTemplate>
-            </ComboBox>
-            <CheckBox Content="Exige centro de custo" IsChecked="{Binding ExigeCcEdicao}" />
-            <CheckBox Content="Exige participante" IsChecked="{Binding ExigeParticipanteEdicao}" />
-            <CheckBox Content="Ativa" IsChecked="{Binding AtivaEdicao}" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Salvar alterações" Command="{Binding SalvarCommand}" Classes="accent" />
-              <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
-            </StackPanel>
-            <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
-                       Text="Código e tipo não se alteram (exigência da ECD). Conta com lançamentos não é excluída: inative-a depois de zerar o saldo." />
-          </StackPanel>
-        </Border>
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Código e tipo não se alteram (exigência da ECD). Conta com lançamentos não é excluída: inative-a depois de zerar o saldo." />
         <v:MensagensView />
       </StackPanel>
     </ScrollViewer>

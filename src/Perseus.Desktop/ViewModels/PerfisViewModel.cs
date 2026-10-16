@@ -22,7 +22,7 @@ public sealed record PerfilLinha(PerfilAcesso Perfil)
 }
 
 /// <summary>Configurações › Perfis de acesso: o administrador define, função a função, o que cada perfil libera.</summary>
-public partial class PerfisViewModel : ModuloViewModel
+public partial class PerfisViewModel : CadastroViewModel
 {
     private readonly IReadOnlyList<FuncaoMarcavel> _funcoes;
 
@@ -33,6 +33,10 @@ public partial class PerfisViewModel : ModuloViewModel
     }
 
     public ObservableCollection<PerfilLinha> Lista { get; } = [];
+
+    protected override string NomeRegistro => "perfil";
+    protected override string? DescricaoSelecionado => Selecionado is { } p ? $"o perfil {p.Nome}" : null;
+    public override bool PodeManter => Contexto.Sessao?.Administrador == true;
     public IReadOnlyList<GrupoFuncoes> Grupos { get; }
 
     [ObservableProperty] private PerfilLinha? _selecionado;
@@ -45,7 +49,12 @@ public partial class PerfisViewModel : ModuloViewModel
     [ObservableProperty] private bool _configuracaoInicial;
 
     /// <summary>Perfil Administrador: todas as funções, sempre (as marcações ficam travadas).</summary>
-    [ObservableProperty] private bool _editandoAdministrador;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeMarcar))] private bool _editandoAdministrador;
+
+    /// <summary>Funções podem ser marcadas em inclusão/alteração, exceto no perfil Administrador (sempre todas).</summary>
+    public bool PodeMarcar => EmEdicao && !EditandoAdministrador;
+
+    protected override void AoMudarModo() => OnPropertyChanged(nameof(PodeMarcar));
 
     public async Task CarregarAsync()
     {
@@ -57,11 +66,18 @@ public partial class PerfisViewModel : ModuloViewModel
         Lista.Clear();
         foreach (var p in perfis) Lista.Add(new PerfilLinha(p));
         Selecionado = Lista.FirstOrDefault(l => l.Perfil.Id == id) ?? (id is null ? null : Lista.FirstOrDefault());
+        AtualizarBarra();
     }
 
     partial void OnSelecionadoChanged(PerfilLinha? value)
     {
-        if (value is null) return;
+        if (EmConsulta) MostrarSelecionado();
+        AtualizarBarra();
+    }
+
+    protected override void MostrarSelecionado()
+    {
+        if (Selecionado is not { } value) { LimparFormulario(); return; }
         var p = value.Perfil;
         (EditandoId, Nome, Descricao) = (p.Id, p.Nome, p.Descricao ?? "");
         foreach (var f in _funcoes) f.Marcada = p.Permissoes.Contains(f.Definicao.Permissao);
@@ -74,19 +90,22 @@ public partial class PerfisViewModel : ModuloViewModel
         Mensagem = null;
     }
 
-    [RelayCommand]
-    private void Novo()
+    protected override void PrepararInclusao() => LimparFormulario();
+
+    private void LimparFormulario()
     {
-        Selecionado = null;
         (EditandoId, Nome, Descricao, Situacao, EditandoAdministrador) = (null, "", "", "Novo perfil", false);
         foreach (var f in _funcoes) f.Marcada = false;
     }
 
+    /// <summary>Inclui um perfil novo a partir do selecionado (mesmas funções).</summary>
     [RelayCommand]
     private void Duplicar()
     {
-        if (EditandoId is null) return;
-        Selecionado = null;
+        if (Selecionado is null || EmEdicao) return;
+        Erros.Clear();
+        Mensagem = null;
+        Modo = ModoCadastro.Inclusao;
         (EditandoId, Nome, Situacao, EditandoAdministrador) = (null, $"{Nome} (cópia)", "Cópia ainda não salva", false);
     }
 
@@ -96,31 +115,30 @@ public partial class PerfisViewModel : ModuloViewModel
         foreach (var f in _funcoes) f.Marcada = marcar;
     }
 
-    [RelayCommand]
-    private async Task SalvarAsync()
+    protected override async Task<bool> GravarAsync(bool inclusao)
     {
-        Erros.Clear();
-        Mensagem = null;
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
-        var r = await app.Perfis.SalvarAsync(sessao, EditandoId, Nome, Descricao,
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return false;
+        var r = await app.Perfis.SalvarAsync(sessao, inclusao ? null : EditandoId, Nome, Descricao,
                                              _funcoes.Where(f => f.Marcada).Select(f => f.Definicao.Permissao));
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        if (!r.Sucesso) { MostrarResultado(r, ""); return false; }
         EditandoId = r.Valor;
+        Modo = ModoCadastro.Consulta;
         await CarregarAsync();
+        Selecionado = Lista.FirstOrDefault(l => l.Perfil.Id == r.Valor);
         Mensagem = $"Perfil \"{Nome.Trim()}\" salvo.";
+        return true;
     }
 
-    [RelayCommand]
-    private async Task ExcluirAsync()
+    protected override async Task<bool> ExcluirSelecionadoAsync()
     {
-        Erros.Clear();
-        Mensagem = null;
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || EditandoId is not long id) return;
-        var r = await app.Perfis.ExcluirAsync(sessao, id);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Novo();
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Selecionado is not { } linha) return false;
+        var r = await app.Perfis.ExcluirAsync(sessao, linha.Perfil.Id);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return false; }
+        Selecionado = null;
+        LimparFormulario();
         await CarregarAsync();
         Mensagem = "Perfil excluído.";
+        return true;
     }
 
     [RelayCommand]

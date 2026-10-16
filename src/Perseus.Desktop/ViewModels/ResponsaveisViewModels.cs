@@ -20,15 +20,101 @@ public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
 }
 
 /// <summary>Cadastros › Contadores (contador responsável e escritório contábil) da empresa selecionada; também é a aba Contadores de Cadastros › Empresas.</summary>
-public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>Na inclusão: vincular um contador (true) ou um escritório contábil (false).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IncluindoContador), nameof(IncluindoEscritorio))] private bool _incluirContador = true;
+
+    public bool IncluindoContador => EmInclusao && IncluirContador;
+    public bool IncluindoEscritorio => EmInclusao && !IncluirContador;
+
+    // alteração do vínculo selecionado
+    [ObservableProperty] private bool _responsavelEdicao;
+    [ObservableProperty] private DateTime? _fimEdicao;
+
+    public bool SelecionadoEhContador => Selecionado?.Vinculo.ContadorId is not null;
+
+    protected override string NomeRegistro => "vínculo";
+    protected override string? DescricaoSelecionado => Selecionado is { } s ? $"{s.Tipo.ToLowerInvariant()} {s.Nome}" : null;
+    public override bool PodeManter => PodeEditar;
+    protected override string DetalheExclusao =>
+        "\n\nUse Excluir só para cadastro errado. Ao trocar de contador ou escritório, prefira Alterar e informar o fim do vínculo (mantém o histórico).";
+
+    protected override void AoMudarModo()
+    {
+        OnPropertyChanged(nameof(IncluindoContador));
+        OnPropertyChanged(nameof(IncluindoEscritorio));
+    }
+
+    protected override void PrepararInclusao()
+    {
+        (ContadorNome, ContadorCpf, ContadorCrc, ContadorEmail, ContadorTelefone, ContadorExistente) = ("", "", "", "", "", null);
+        (EscritorioCnpj, EscritorioRazao, EscritorioCrc, EscritorioEmail, EscritorioTelefone, EscritorioExistente) = ("", "", "", "", "", null);
+        (ContadorInicio, EscritorioInicio, ContadorResponsavel) = (new DateTime(DateTime.Today.Year, 1, 1), new DateTime(DateTime.Today.Year, 1, 1), true);
+    }
+
+    protected override void MostrarSelecionado()
+    {
+        ResponsavelEdicao = Selecionado?.Vinculo.ResponsavelTecnico ?? false;
+        FimEdicao = Selecionado?.Vinculo.Fim?.ToDateTime(TimeOnly.MinValue);
+    }
+
+    partial void OnSelecionadoChanged(VinculoContabilLinha? value)
+    {
+        MostrarSelecionado();
+        OnPropertyChanged(nameof(SelecionadoEhContador));
+        AtualizarBarra();
+    }
+
+    protected override async Task<bool> GravarAsync(bool inclusao)
+    {
+        if (inclusao) return IncluirContador ? await VincularContadorAsync() : await VincularEscritorioAsync();
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Selecionado is not { } linha) { Erros.Add("Selecione um vínculo na lista."); return; }
+            var v = linha.Vinculo;
+            if (ResponsavelEdicao && !v.ResponsavelTecnico)
+            {
+                if (v.ContadorId is null) { Erros.Add("Só um contador pode ser o responsável técnico."); return; }
+                var r = await app.Responsaveis.DefinirResponsavelAsync(empresa, v.Id, usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            }
+            if (FimEdicao is { } fim && v.Fim != DateOnly.FromDateTime(fim))
+            {
+                var r = await app.Responsaveis.EncerrarVinculoAsync(empresa, v.Id, DateOnly.FromDateTime(fim), usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            }
+            ok = true;
+            Modo = ModoCadastro.Consulta;
+            await CarregarAsync();
+            Mensagem = "Vínculo alterado.";
+        }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
+
+    protected override async Task<bool> ExcluirSelecionadoAsync()
+    {
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Selecionado is not { } linha) { Erros.Add("Selecione um vínculo na lista."); return; }
+            var r = await app.Responsaveis.ExcluirVinculoAsync(empresa, linha.Vinculo.Id, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Selecionado = null;
+            await CarregarAsync();
+            Mensagem = "Vínculo excluído.";
+        }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
+
     public ObservableCollection<VinculoContabilLinha> Vinculos { get; } = [];
     public ObservableCollection<Contador> ContadoresCadastrados { get; } = [];
     public ObservableCollection<EscritorioContabil> EscritoriosCadastrados { get; } = [];
     public static IReadOnlyList<string> Ufs { get; } = Uf.Todas.Order().ToArray();
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private VinculoContabilLinha? _selecionado;
-    [ObservableProperty] private DateTime? _dataFim = DateTime.Today;
 
     // contador
     [ObservableProperty] private Contador? _contadorExistente;
@@ -53,11 +139,16 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloV
 
     public bool TemSelecionado => Selecionado is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.EmpresaResponsaveisManter);
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+
+    public void AtualizarPermissoes()
+    {
+        OnPropertyChanged(nameof(PodeEditar));
+        AtualizarBarra();
+    }
 
     public async Task CarregarAsync()
     {
-        OnPropertyChanged(nameof(PodeEditar));
+        AtualizarPermissoes();
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var g = NovaGeracao();
         var vinculos = await app.Responsaveis.ListarVinculosAsync(empresa, sessao.Id);
@@ -65,8 +156,10 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloV
         var escritorios = await app.Responsaveis.ListarEscritoriosAsync();
         if (!EhAtual(g)) return;
         if (!vinculos.Sucesso) { MostrarResultado(vinculos, ""); return; }
+        var id = Selecionado?.Vinculo.Id;
         Vinculos.Clear();
         foreach (var v in vinculos.Valor) Vinculos.Add(new VinculoContabilLinha(v));
+        Selecionado = Vinculos.FirstOrDefault(v => v.Vinculo.Id == id);
         ContadoresCadastrados.Clear();
         foreach (var c in contadores) ContadoresCadastrados.Add(c);
         EscritoriosCadastrados.Clear();
@@ -87,17 +180,23 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloV
             (ServicoLivros.FormatarCnpj(value.Cnpj), value.RazaoSocial, value.Crc ?? "", value.UfCrc ?? "SP", value.Email ?? "", value.Telefone ?? "");
     }
 
-    [RelayCommand]
-    private Task VincularContadorAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private async Task<bool> VincularContadorAsync()
+    {
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
     {
         var r = await app.Responsaveis.VincularContadorAsync(empresa,
             new Contador(0, ContadorNome, ContadorCpf, ContadorCrc, ContadorUf, ContadorEmail, ContadorTelefone, null),
             DateOnly.FromDateTime(ContadorInicio ?? DateTime.Today), ContadorResponsavel, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        ok = true;
+        Modo = ModoCadastro.Consulta;
         (ContadorNome, ContadorCpf, ContadorCrc, ContadorEmail, ContadorTelefone, ContadorExistente) = ("", "", "", "", "", null);
         await CarregarAsync();
         Mensagem = "Contador vinculado à empresa.";
     }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
 
     [RelayCommand]
     private async Task BuscarEscritorioAsync()
@@ -112,38 +211,23 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloV
         Mensagem = $"Dados de {r.Valor.Fonte}. Informe o registro do escritório no CRC.";
     }
 
-    [RelayCommand]
-    private Task VincularEscritorioAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private async Task<bool> VincularEscritorioAsync()
+    {
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
     {
         var r = await app.Responsaveis.VincularEscritorioAsync(empresa,
             new EscritorioContabil(0, EscritorioCnpj, EscritorioRazao, EscritorioCrc, EscritorioUf, EscritorioEmail, EscritorioTelefone),
             DateOnly.FromDateTime(EscritorioInicio ?? DateTime.Today), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        ok = true;
+        Modo = ModoCadastro.Consulta;
         (EscritorioCnpj, EscritorioRazao, EscritorioCrc, EscritorioEmail, EscritorioTelefone, EscritorioExistente) = ("", "", "", "", "", null);
         await CarregarAsync();
         Mensagem = "Escritório contábil vinculado à empresa.";
     }, Permissao.EmpresaResponsaveisManter);
-
-    [RelayCommand]
-    private Task DefinirResponsavelAsync() => Acao(async (app, empresa, usuario, id) =>
-        await app.Responsaveis.DefinirResponsavelAsync(empresa, id, usuario), "Responsável técnico definido.");
-
-    [RelayCommand]
-    private Task EncerrarAsync() => Acao(async (app, empresa, usuario, id) =>
-        await app.Responsaveis.EncerrarVinculoAsync(empresa, id, DateOnly.FromDateTime(DataFim ?? DateTime.Today), usuario), "Vínculo encerrado.");
-
-    [RelayCommand]
-    private Task ExcluirAsync() => Acao(async (app, empresa, usuario, id) =>
-        await app.Responsaveis.ExcluirVinculoAsync(empresa, id, usuario), "Vínculo excluído.");
-
-    private Task Acao(Func<Infra.PerseusApp, long, long, long, Task<Domain.Comum.Resultado>> acao, string sucesso) => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Selecionado is null) { Erros.Add("Selecione um vínculo na lista."); return; }
-        var r = await acao(app, empresa, usuario, Selecionado.Vinculo.Id);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarAsync();
-        Mensagem = sucesso;
-    }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
 }
 
 public sealed record SocioLinha(Socio Socio)
@@ -162,8 +246,8 @@ public sealed record OpcaoTipoPessoa(char Codigo, string Nome)
     public static readonly IReadOnlyList<OpcaoTipoPessoa> Todas = [new('F', "Pessoa física"), new('J', "Pessoa jurídica"), new('E', "Estrangeiro")];
 }
 
-/// <summary>Cadastros › Sócios da empresa selecionada.</summary>
-public partial class SociosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>Cadastros › Empresas, aba Sócios: sócios da empresa selecionada (Incluir / Alterar / Excluir).</summary>
+public partial class SociosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     public ObservableCollection<SocioLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Qualificacoes { get; } =
@@ -187,18 +271,30 @@ public partial class SociosViewModel(IContexto contexto) : ModuloViewModel(conte
     private Socio? _original;
 
     public bool PodeEditar => Contexto.Pode(Permissao.EmpresaResponsaveisManter);
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+    public override bool PodeManter => PodeEditar;
+    protected override string NomeRegistro => "sócio";
+    protected override string? DescricaoSelecionado => Selecionado?.Socio.Nome;
+    protected override string DetalheExclusao => "\n\nPara registrar a saída de um sócio, prefira Alterar e informar a data de saída.";
+
+    public void AtualizarPermissoes()
+    {
+        OnPropertyChanged(nameof(PodeEditar));
+        AtualizarBarra();
+    }
 
     public async Task CarregarAsync()
     {
-        OnPropertyChanged(nameof(PodeEditar));
+        AtualizarPermissoes();
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var g = NovaGeracao();
         var r = await app.Responsaveis.ListarSociosAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var id = Selecionado?.Socio.Id;
         Lista.Clear();
         foreach (var s in r.Valor) Lista.Add(new SocioLinha(s));
+        Selecionado = Lista.FirstOrDefault(l => l.Socio.Id == id);
+        if (Selecionado is null) { Limpar(); Modo = ModoCadastro.Consulta; }
         var ativos = r.Valor.Where(s => s.Ativo).ToArray();
         Resumo = $"{ativos.Length} sócio(s) ativo(s) · participação informada: {ativos.Sum(s => s.Participacao ?? 0):0.##}%" +
                  (ativos.Any(s => s.RepresentanteLegal) ? "" : " · sem representante legal definido");
@@ -206,8 +302,14 @@ public partial class SociosViewModel(IContexto contexto) : ModuloViewModel(conte
 
     partial void OnSelecionadoChanged(SocioLinha? value)
     {
-        if (value is null) return;
-        var s = _original = value.Socio;
+        MostrarSelecionado();
+        AtualizarBarra();
+    }
+
+    protected override void MostrarSelecionado()
+    {
+        if (Selecionado is not { } linha) { Limpar(); return; }
+        var s = _original = linha.Socio;
         (EditandoId, Nome, Documento, DocumentoMascarado, Qualificacao) = (s.Id, s.Nome, s.CpfCnpj ?? "", s.DocumentoMascarado ?? "", s.Qualificacao);
         Tipo = OpcaoTipoPessoa.Todas.First(t => t.Codigo == s.TipoPessoa);
         Participacao = s.Participacao?.ToString("0.####") ?? "";
@@ -215,46 +317,58 @@ public partial class SociosViewModel(IContexto contexto) : ModuloViewModel(conte
         (Representante, Email, Telefone) = (s.RepresentanteLegal, s.Email ?? "", s.Telefone ?? "");
     }
 
-    [RelayCommand]
-    private void Novo()
+    protected override void PrepararInclusao() => Limpar();
+
+    private void Limpar()
     {
-        Selecionado = null;
         _original = null;
         (EditandoId, Nome, Documento, DocumentoMascarado, Qualificacao, Participacao) = (0, "", "", "", "Sócio-Administrador", "");
         (Entrada, Saida, Representante, Email, Telefone) = (null, null, false, "", "");
         Tipo = OpcaoTipoPessoa.Todas[0];
     }
 
-    [RelayCommand]
-    private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    protected override async Task<bool> GravarAsync(bool inclusao)
     {
-        decimal? participacao = null;
-        if (Participacao.Trim().Length > 0)
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
         {
-            if (Numeros.LerValor(Participacao.Replace("%", "")) is not { } p) { Erros.Add("Participação inválida."); return; }
-            participacao = p;
-        }
-        var socio = new Socio(EditandoId, Nome, Tipo.Codigo, Documento, _original?.DocumentoMascarado, Qualificacao, _original?.QualificacaoCodigo,
-            participacao, Entrada is { } e ? DateOnly.FromDateTime(e) : null, Saida is { } s ? DateOnly.FromDateTime(s) : null,
-            Representante, Email, Telefone, _original?.Origem ?? "MANUAL");
-        var r = await app.Responsaveis.SalvarSocioAsync(empresa, socio, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        EditandoId = r.Valor;
-        await CarregarAsync();
-        Selecionado = Lista.FirstOrDefault(l => l.Socio.Id == r.Valor);
-        Mensagem = "Sócio salvo.";
-    }, Permissao.EmpresaResponsaveisManter);
+            decimal? participacao = null;
+            if (Participacao.Trim().Length > 0)
+            {
+                if (Numeros.LerValor(Participacao.Replace("%", "")) is not { } p) { Erros.Add("Participação inválida."); return; }
+                participacao = p;
+            }
+            var original = inclusao ? null : _original;
+            var socio = new Socio(inclusao ? 0 : EditandoId, Nome, Tipo.Codigo, Documento, original?.DocumentoMascarado, Qualificacao,
+                original?.QualificacaoCodigo, participacao, Entrada is { } e ? DateOnly.FromDateTime(e) : null,
+                Saida is { } s ? DateOnly.FromDateTime(s) : null, Representante, Email, Telefone, original?.Origem ?? "MANUAL");
+            var r = await app.Responsaveis.SalvarSocioAsync(empresa, socio, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Modo = ModoCadastro.Consulta;
+            Selecionado = null;
+            await CarregarAsync();
+            Selecionado = Lista.FirstOrDefault(l => l.Socio.Id == r.Valor);
+            Mensagem = inclusao ? "Sócio incluído." : "Sócio alterado.";
+        }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
 
-    [RelayCommand]
-    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    protected override async Task<bool> ExcluirSelecionadoAsync()
     {
-        if (EditandoId == 0) { Erros.Add("Selecione um sócio."); return; }
-        var r = await app.Responsaveis.ExcluirSocioAsync(empresa, EditandoId, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Novo();
-        await CarregarAsync();
-        Mensagem = "Sócio excluído. (Para registrar a saída de um sócio, informe a data de saída em vez de excluir.)";
-    }, Permissao.EmpresaResponsaveisManter);
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Selecionado is not { } linha) { Erros.Add("Selecione um sócio."); return; }
+            var r = await app.Responsaveis.ExcluirSocioAsync(empresa, linha.Socio.Id, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Selecionado = null;
+            await CarregarAsync();
+            Mensagem = "Sócio excluído.";
+        }, Permissao.EmpresaResponsaveisManter);
+        return ok;
+    }
 
     [RelayCommand]
     private Task ImportarDaReceitaAsync() => ExecutarAsync(async (app, empresa, usuario) =>

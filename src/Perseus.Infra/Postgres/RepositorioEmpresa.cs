@@ -22,9 +22,9 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO core.empresa (cnpj, razao_social, nome_fantasia, natureza_juridica, cnae_principal, uf,
                                           cod_municipio_ibge, data_inicio_ativ, cep, logradouro, numero, complemento, bairro,
-                                          municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em)
+                                          municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual)
                 VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
-                        @municipio, @email, @tel, @sit, @fonte, @consultado) RETURNING id
+                        @municipio, @email, @tel, @sit, @fonte, @consultado, @ie) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
@@ -33,15 +33,17 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .ComTexto("municipio", e.Complemento?.Municipio).ComTexto("email", e.Complemento?.Email)
                 .ComTexto("tel", e.Complemento?.Telefone).ComTexto("sit", e.Complemento?.SituacaoCadastral)
                 .ComTexto("fonte", e.Complemento?.FonteDados)
-                .Com("consultado", NpgsqlTypes.NpgsqlDbType.TimestampTz, e.Complemento?.DadosConsultadosEm))
+                .Com("consultado", NpgsqlTypes.NpgsqlDbType.TimestampTz, e.Complemento?.DadosConsultadosEm)
+                .ComTexto("ie", e.InscricaoEstadual))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
             await using (var cmd = new NpgsqlCommand("""
-                INSERT INTO core.estabelecimento (empresa_id, cnpj, matriz, uf, cod_municipio_ibge) VALUES (@id, @cnpj, TRUE, @uf, @mun);
+                INSERT INTO core.estabelecimento (empresa_id, cnpj, matriz, uf, cod_municipio_ibge, inscricao_estadual)
+                VALUES (@id, @cnpj, TRUE, @uf, @mun, @ie);
                 INSERT INTO core.empresa_regime (empresa_id, regime, vigencia_inicio)
                 VALUES (@id, @reg::core.regime_tributario, GREATEST(make_date(@ano, 1, 1), @ini));
                 """, con, tx)
-                .Com("id", id).Com("cnpj", e.Cnpj).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge)
+                .Com("id", id).Com("cnpj", e.Cnpj).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).ComTexto("ie", e.InscricaoEstadual)
                 .Com("reg", e.Regime.Sql()).Com("ano", e.AnoPrimeiroExercicio).Com("ini", e.DataInicioAtividades))
                 await cmd.ExecuteNonQueryAsync(ct);
 
@@ -112,14 +114,60 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
     public async Task<EmpresaDetalhe?> ObterAsync(long id, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, cnpj, razao_social, nire, uf, cod_municipio_ibge, municipio, cep, logradouro, numero, complemento, bairro
-              FROM core.empresa WHERE id = @id
+            SELECT id, cnpj, razao_social, nire, uf, cod_municipio_ibge, municipio, cep, logradouro, numero, complemento, bairro,
+                   nome_fantasia, natureza_juridica, cnae_principal, data_inicio_ativ, inscricao_estadual, email, telefone,
+                   (SELECT regime::text FROM core.empresa_regime r WHERE r.empresa_id = e.id ORDER BY vigencia_inicio DESC LIMIT 1),
+                   situacao_cadastral, fonte_dados
+              FROM core.empresa e WHERE id = @id AND ativa
             """).Com("id", id);
         await using var r = await cmd.ExecuteReaderAsync(ct);
         if (!await r.ReadAsync(ct)) return null;
         string? T(int i) => r.IsDBNull(i) ? null : r.GetString(i);
-        return new EmpresaDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), T(3), r.GetString(4), r.GetString(5), T(6), T(7), T(8), T(9), T(10), T(11));
+        return new EmpresaDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), T(3), r.GetString(4), r.GetString(5), T(6), T(7), T(8), T(9), T(10), T(11),
+                                  T(12), r.GetString(13), r.GetString(14), r.GetFieldValue<DateOnly>(15), T(16), T(17), T(18),
+                                  T(19) is { } reg ? Mapeamentos.RegimeDeSql(reg) : null, T(20), T(21));
     }
+
+    public Task AtualizarAsync(AlteracaoEmpresa e, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, null, ct);
+            await using (var cmd = new NpgsqlCommand("""
+                UPDATE core.empresa
+                   SET razao_social = @rs, nome_fantasia = @nf, natureza_juridica = @nj, cnae_principal = @cnae, uf = @uf,
+                       cod_municipio_ibge = @mun, data_inicio_ativ = @ini, inscricao_estadual = @ie, cep = @cep, logradouro = @log,
+                       numero = @num, complemento = @compl, bairro = @bairro, municipio = @municipio, email = @email, telefone = @tel
+                 WHERE id = @id AND ativa;
+                UPDATE core.estabelecimento SET uf = @uf, cod_municipio_ibge = @mun, inscricao_estadual = @ie WHERE empresa_id = @id AND matriz;
+                """, con, tx)
+                .Com("id", e.Id).Com("rs", e.RazaoSocial).ComTexto("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
+                .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
+                .ComTexto("ie", e.InscricaoEstadual).ComTexto("cep", e.Complemento?.Cep).ComTexto("log", e.Complemento?.Logradouro)
+                .ComTexto("num", e.Complemento?.Numero).ComTexto("compl", e.Complemento?.Complemento).ComTexto("bairro", e.Complemento?.Bairro)
+                .ComTexto("municipio", e.Complemento?.Municipio).ComTexto("email", e.Complemento?.Email).ComTexto("tel", e.Complemento?.Telefone))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
+    public Task AtualizarInscricaoEstadualAsync(long id, string? inscricao, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = ds.CreateCommand("""
+                UPDATE core.empresa SET inscricao_estadual = @ie WHERE id = @id;
+                UPDATE core.estabelecimento SET inscricao_estadual = @ie WHERE empresa_id = @id AND matriz;
+                """).Com("id", id).ComTexto("ie", inscricao);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
+
+    public Task DesativarAsync(long id, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = ds.CreateCommand("UPDATE core.empresa SET ativa = FALSE WHERE id = @id").Com("id", id);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
 
     public async Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct)
     {

@@ -22,6 +22,56 @@ public sealed class HttpSimulado(Func<HttpRequestMessage, HttpResponseMessage> r
 
 public class ConsultaCnpjTests
 {
+    // Formato da API pública do CNPJ.ws (campos relevantes): inscrições estaduais por UF.
+    public const string RespostaInscricoesExemplo = """
+        {"razao_social":"EXEMPLO COMERCIO DE INFORMATICA LTDA",
+         "estabelecimento":{"cnpj":"11222333000181",
+           "inscricoes_estaduais":[
+             {"inscricao_estadual":"999888777666","ativo":false,"estado":{"id":19,"nome":"Rio de Janeiro","sigla":"RJ","ibge_id":33}},
+             {"inscricao_estadual":"110042490114","ativo":true,"atualizado_em":"2026-09-01T00:00:00.000Z",
+              "estado":{"id":26,"nome":"São Paulo","sigla":"SP","ibge_id":35}}]}}
+        """;
+
+    /// <summary>Responde CNPJ (BrasilAPI) e inscrições estaduais (CNPJ.ws) conforme o endereço consultado.</summary>
+    public static HttpSimulado HttpCnpjEInscricoes() => new(req => HttpSimulado.Json(
+        req.RequestUri!.Host == "publica.cnpj.ws" ? RespostaInscricoesExemplo : RespostaExemplo));
+
+    [Fact]
+    public async Task Inscricao_estadual_e_filtrada_pela_UF_e_ativa_vem_primeiro()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var consulta = new ConsultaInscricaoEstadualPublica(new HttpClient(HttpCnpjEInscricoes()));
+        var todas = await consulta.ConsultarAsync("11222333000181", ct);
+        Assert.True(todas.Sucesso);
+        Assert.Equal([("SP", "110042490114", true), ("RJ", "999888777666", false)], todas.Valor.Select(i => (i.Uf, i.Inscricao, i.Ativa)));
+
+        var servico = new ServicoEmpresa(null!, null!, null, consulta);
+        // UF deduzida do código IBGE quando a UF não é informada (35 = SP)
+        var sp = await servico.ConsultarInscricaoEstadualAsync("11.222.333/0001-81", null, "3550308", ct);
+        Assert.Equal("110042490114", Assert.Single(sp.Valor).Inscricao);
+        Assert.Empty((await servico.ConsultarInscricaoEstadualAsync("11222333000181", "MG", null, ct)).Valor);
+
+        var limite = new ConsultaInscricaoEstadualPublica(new HttpClient(new HttpSimulado(_ => HttpSimulado.Json("{}", HttpStatusCode.TooManyRequests))));
+        Assert.Contains("3 consultas por minuto", (await limite.ConsultarAsync("11222333000181", ct)).Erros[0]);
+    }
+
+    [Theory]
+    [InlineData("3550308", "SP")]
+    [InlineData("5300108", "DF")]
+    [InlineData("4314902", "RS")]
+    [InlineData("99", null)]
+    public void Uf_pelo_codigo_ibge(string codigo, string? uf) => Assert.Equal(uf, Domain.Cadastros.Uf.DeCodigoIbge(codigo));
+
+    [Theory]
+    [InlineData("110.042.490.114", "110042490114", true)]
+    [InlineData("isento", "ISENTO", true)]
+    [InlineData("1", "1", false)]
+    [InlineData("", null, true)]
+    public void Inscricao_estadual_normalizada(string entrada, string? esperado, bool valida)
+    {
+        Assert.Equal(esperado, Domain.Cadastros.InscricaoEstadual.Normalizar(entrada));
+        Assert.Equal(valida, Domain.Cadastros.InscricaoEstadual.Valida(entrada));
+    }
     // Formato real das respostas da BrasilAPI / Minha Receita (campos relevantes).
     public const string RespostaExemplo = """
         {"uf":"SP","cep":"01310100","cnpj":"11222333000181","bairro":"BELA VISTA","numero":"1000","municipio":"SAO PAULO",

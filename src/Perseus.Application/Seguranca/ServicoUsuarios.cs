@@ -35,6 +35,8 @@ public interface IRepositorioUsuarios
     /// <summary>Concede o perfil em todas as empresas cadastradas (substitui acessos existentes).</summary>
     Task AtribuirPerfilEmTodasEmpresasAsync(long usuarioId, long perfilId, CancellationToken ct);
     Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct);
+    /// <summary>Exclui o usuário; se ele tiver histórico (acessos, lançamentos), apenas o inativa. Retorna true se excluiu.</summary>
+    Task<bool> ExcluirOuInativarAsync(long usuarioId, CancellationToken ct);
 
     Task RegistrarFalhaAsync(long? usuarioId, string login, int tentativas, DateTimeOffset? bloquearAte, string motivo, string? estacao, CancellationToken ct);
     Task RegistrarSucessoAsync(long usuarioId, string login, string? novoHash, string? estacao, CancellationToken ct);
@@ -201,6 +203,24 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(SessaoUsuario admin, CancellationToken ct = default)
         => admin.Administrador ? await repositorio.ListarAsync(ct) : [];
+
+    /// <summary>
+    /// Exclui um usuário que nunca usou o sistema. Quem já entrou (há registro de acesso ou de operações) é inativado,
+    /// para preservar a trilha de auditoria.
+    /// </summary>
+    public async Task<Resultado<bool>> ExcluirUsuarioAsync(SessaoUsuario admin, long usuarioId, CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado<bool>.Falha("Somente administradores podem excluir usuários.");
+        if (usuarioId == admin.Id) return Resultado<bool>.Falha("Você não pode excluir o seu próprio usuário.");
+        try
+        {
+            return Resultado<bool>.Ok(await repositorio.ExcluirOuInativarAsync(usuarioId, ct));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<bool>.Falha(ex.Message);
+        }
+    }
 
     /// <summary>Últimas tentativas de login (sucesso e falha), mais recentes primeiro.</summary>
     public async Task<IReadOnlyList<RegistroAcesso>> RegistroDeAcessosAsync(SessaoUsuario admin, int limite = 300, CancellationToken ct = default)

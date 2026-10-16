@@ -137,6 +137,33 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
+    public Task<bool> ExcluirOuInativarAsync(long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await using (var sp = new NpgsqlCommand("SAVEPOINT exclusao", con, tx)) await sp.ExecuteNonQueryAsync(ct);
+            try
+            {
+                await using var del = new NpgsqlCommand("""
+                    DELETE FROM core.usuario_empresa WHERE usuario_id = @u;
+                    DELETE FROM core.usuario WHERE id = @u;
+                    """, con, tx).Com("u", usuarioId);
+                await del.ExecuteNonQueryAsync(ct);
+                await tx.CommitAsync(ct);
+                return true;
+            }
+            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+            {
+                // tem histórico (acessos, lançamentos, importações): mantém e inativa
+                await using (var rb = new NpgsqlCommand("ROLLBACK TO SAVEPOINT exclusao", con, tx)) await rb.ExecuteNonQueryAsync(ct);
+                await using var ina = new NpgsqlCommand("UPDATE core.usuario SET ativo = FALSE WHERE id = @u", con, tx).Com("u", usuarioId);
+                await ina.ExecuteNonQueryAsync(ct);
+                await tx.CommitAsync(ct);
+                return false;
+            }
+        });
+
     public async Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

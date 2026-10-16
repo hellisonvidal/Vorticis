@@ -48,3 +48,12 @@ public interface IConsultaCnpj
 {
     Task<Resultado<DadosCnpj>> ConsultarAsync(string cnpj, CancellationToken ct);
 }
+
+/// <summary>Inscrição estadual encontrada em fonte pública (cadastros estaduais / SINTEGRA).</summary>
+public sealed record InscricaoEstadualEncontrada(string Uf, string Inscricao, bool Ativa, string Fonte, DateTimeOffset ConsultadoEm);
+
+/// <summary>Consulta as inscrições estaduais de um CNPJ (todas as UFs em que estiver inscrito).</summary>
+public interface IConsultaInscricaoEstadual
+{
+    Task<Resultado<IReadOnlyList<InscricaoEstadualEncontrada>>> ConsultarAsync(string cnpj, CancellationToken ct);
+}

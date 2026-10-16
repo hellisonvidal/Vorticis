@@ -7,6 +7,9 @@ public static class Cnpj
 
     public static string SomenteDigitos(string? valor) => new((valor ?? "").Where(char.IsAsciiDigit).ToArray());
 
+    /// <summary>00.000.000/0000-00 (também para o CNPJ alfanumérico); outros tamanhos ficam como estão.</summary>
+    public static string Formatar(string c) => c.Length == 14 ? $"{c[..2]}.{c[2..5]}.{c[5..8]}/{c[8..12]}-{c[12..]}" : c;
+
     /// <summary>
     /// Valida CNPJ numérico (módulo 11). O CNPJ alfanumérico (IN RFB 2.229/2024, a partir de jul/2026)
     /// usa o mesmo algoritmo sobre (código ASCII − 48); suportado aqui para letras maiúsculas.

@@ -32,8 +32,8 @@ public sealed record ContaLinha(ContaDetalhe Conta)
     public string Situacao => Conta.Ativa ? "" : "Inativa";
 }
 
-/// <summary>Cadastros › Plano de contas.</summary>
-public partial class PlanoContasViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>Cadastros › Plano de contas (Incluir / Alterar / Excluir).</summary>
+public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     private IReadOnlyList<ContaDetalhe> _plano = [];
 
@@ -42,26 +42,29 @@ public partial class PlanoContasViewModel(IContexto contexto) : ModuloViewModel(
     [ObservableProperty] private string _filtro = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private ContaLinha? _selecionada;
 
-    // edição
-    [ObservableProperty] private string _descricaoEdicao = "";
-    [ObservableProperty] private OpcaoSaldo _saldoEdicao = OpcaoSaldo.Todas[0];
-    [ObservableProperty] private bool _exigeCcEdicao;
-    [ObservableProperty] private bool _exigeParticipanteEdicao;
-    [ObservableProperty] private bool _ativaEdicao = true;
-
-    // inclusão
-    [ObservableProperty] private string _novoCodigo = "";
-    [ObservableProperty] private string _novaDescricao = "";
-    [ObservableProperty] private OpcaoNatureza _novaNatureza = OpcaoNatureza.Todas[0];
-    [ObservableProperty] private OpcaoSaldo _novoSaldo = OpcaoSaldo.Todas[0];
-    [ObservableProperty] private bool _novaExigeCc;
-    [ObservableProperty] private DateTime? _novaDataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
+    // formulário (código, natureza e data de inclusão só na inclusão: exigência da ECD)
+    [ObservableProperty] private string _codigo = "";
+    [ObservableProperty] private string _descricao = "";
+    [ObservableProperty] private OpcaoNatureza _natureza = OpcaoNatureza.Todas[0];
+    [ObservableProperty] private OpcaoSaldo _saldo = OpcaoSaldo.Todas[0];
+    [ObservableProperty] private bool _exigeCc;
+    [ObservableProperty] private bool _exigeParticipante;
+    [ObservableProperty] private bool _ativa = true;
+    [ObservableProperty] private DateTime? _dataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
     [ObservableProperty] private string _dicaPai = "";
 
     public bool TemSelecionada => Selecionada is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.PlanoContasManter);
+    public override bool PodeManter => PodeEditar;
+    protected override string NomeRegistro => "conta";
+    protected override string? DescricaoSelecionado => Selecionada is { } s ? $"{s.Conta.Codigo} – {s.Conta.Descricao}" : null;
+    protected override string DetalheExclusao => "\n\nConta com lançamentos não é excluída: use Alterar e desmarque Ativa depois de zerar o saldo.";
 
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+    public void AtualizarPermissoes()
+    {
+        OnPropertyChanged(nameof(PodeEditar));
+        AtualizarBarra();
+    }
 
     public async Task CarregarAsync()
     {
@@ -88,13 +91,35 @@ public partial class PlanoContasViewModel(IContexto contexto) : ModuloViewModel(
 
     partial void OnSelecionadaChanged(ContaLinha? value)
     {
-        if (value is null) return;
-        var c = value.Conta;
-        (DescricaoEdicao, SaldoEdicao, ExigeCcEdicao, ExigeParticipanteEdicao, AtivaEdicao) =
-            (c.Descricao, OpcaoSaldo.De(c.NaturezaSaldo), c.ExigeCentroCusto, c.ExigeParticipante, c.Ativa);
-        // Sugere uma subconta da selecionada (ou irmã, se ela for analítica)
-        var baseCodigo = c.Analitica && c.ContaPaiId is not null ? c.Codigo[..c.Codigo.LastIndexOf('.')] : c.Codigo;
-        NovoCodigo = SugerirProximo(baseCodigo);
+        if (EmConsulta) MostrarSelecionado();
+        AtualizarBarra();
+    }
+
+    protected override void MostrarSelecionado()
+    {
+        if (Selecionada is not { } linha)
+        {
+            (Codigo, Descricao, DicaPai) = ("", "", "");
+            return;
+        }
+        var c = linha.Conta;
+        Codigo = c.Codigo;
+        (Descricao, Saldo, ExigeCc, ExigeParticipante, Ativa) = (c.Descricao, OpcaoSaldo.De(c.NaturezaSaldo), c.ExigeCentroCusto, c.ExigeParticipante, c.Ativa);
+        Natureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == c.CodNat) ?? Natureza;
+        DicaPai = c.Analitica ? "Conta analítica (recebe lançamentos)." : "Conta sintética (agrupa subcontas).";
+    }
+
+    /// <summary>Nova conta: sugere uma subconta da selecionada (ou irmã, se ela for analítica).</summary>
+    protected override void PrepararInclusao()
+    {
+        (Descricao, ExigeCc, ExigeParticipante, Ativa) = ("", false, false, true);
+        DataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
+        if (Selecionada?.Conta is { } c)
+        {
+            var baseCodigo = c.Analitica && c.ContaPaiId is not null ? c.Codigo[..c.Codigo.LastIndexOf('.')] : c.Codigo;
+            Codigo = SugerirProximo(baseCodigo);
+        }
+        else Codigo = "";
     }
 
     private string SugerirProximo(string pai)
@@ -106,52 +131,69 @@ public partial class PlanoContasViewModel(IContexto contexto) : ModuloViewModel(
         return long.TryParse(ultimo, out var n) ? $"{pai}.{(n + 1).ToString().PadLeft(ultimo.Length, '0')}" : pai + ".";
     }
 
-    /// <summary>Ao digitar o código, herda natureza e saldo da conta superior.</summary>
-    partial void OnNovoCodigoChanged(string value)
+    /// <summary>Na inclusão, ao digitar o código, herda natureza e saldo da conta superior.</summary>
+    partial void OnCodigoChanged(string value)
     {
+        if (!EmInclusao) return;   // ao preparar a inclusão, roda de novo quando o modo muda (AoMudarModo)
         var codigo = value.Trim();
         var i = codigo.LastIndexOf('.');
         var pai = i > 0 ? _plano.FirstOrDefault(c => c.Codigo == codigo[..i]) : null;
         if (pai is null) { DicaPai = i > 0 ? $"Conta superior {codigo[..i]} não encontrada." : "Conta de nível 1 (sintética)."; return; }
-        NovaNatureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == pai.CodNat) ?? NovaNatureza;
-        NovoSaldo = OpcaoSaldo.De(pai.NaturezaSaldo);
+        Natureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == pai.CodNat) ?? Natureza;
+        Saldo = OpcaoSaldo.De(pai.NaturezaSaldo);
         DicaPai = $"Subconta de {pai.Codigo} - {pai.Descricao}" +
                   (pai.Analitica ? (pai.TemMovimento ? " (ATENÇÃO: superior tem lançamentos)" : " (a superior passará a sintética)") : "");
     }
 
-    [RelayCommand]
-    private Task IncluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    protected override void AoMudarModo()
     {
-        var r = await app.PlanoContas.IncluirAsync(empresa, new NovaConta(NovoCodigo, NovaDescricao, NovaNatureza.Codigo, NovoSaldo.DC,
-            NovaExigeCc, false, DateOnly.FromDateTime(NovaDataInclusao ?? DateTime.Today)), usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        var codigo = NovoCodigo.Trim();
-        NovaDescricao = "";
-        await CarregarAsync();
-        Selecionada = Lista.FirstOrDefault(l => l.Conta.Id == r.Valor);
-        Mensagem = $"Conta {codigo} incluída.";
-    }, Permissao.PlanoContasManter);
+        if (EmInclusao) OnCodigoChanged(Codigo);
+    }
 
-    [RelayCommand]
-    private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    protected override async Task<bool> GravarAsync(bool inclusao)
     {
-        if (Selecionada is null) return;
-        var r = await app.PlanoContas.AlterarAsync(empresa, Selecionada.Conta.Id, DescricaoEdicao, SaldoEdicao.DC, ExigeCcEdicao,
-                                                   ExigeParticipanteEdicao, AtivaEdicao, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarAsync();
-        Mensagem = "Conta alterada.";
-    }, Permissao.PlanoContasManter);
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            long id;
+            if (inclusao)
+            {
+                var r = await app.PlanoContas.IncluirAsync(empresa, new NovaConta(Codigo, Descricao, Natureza.Codigo, Saldo.DC,
+                    ExigeCc, ExigeParticipante, DateOnly.FromDateTime(DataInclusao ?? DateTime.Today)), usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+                id = r.Valor;
+            }
+            else
+            {
+                if (Selecionada is null) { Erros.Add("Selecione uma conta."); return; }
+                id = Selecionada.Conta.Id;
+                var r = await app.PlanoContas.AlterarAsync(empresa, id, Descricao, Saldo.DC, ExigeCc, ExigeParticipante, Ativa, usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            }
+            ok = true;
+            var codigo = Codigo.Trim();
+            Modo = ModoCadastro.Consulta;
+            await CarregarAsync();
+            Selecionada = Lista.FirstOrDefault(l => l.Conta.Id == id);
+            Mensagem = inclusao ? $"Conta {codigo} incluída." : "Conta alterada.";
+        }, Permissao.PlanoContasManter);
+        return ok;
+    }
 
-    [RelayCommand]
-    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    protected override async Task<bool> ExcluirSelecionadoAsync()
     {
-        if (Selecionada is null) return;
-        var codigo = Selecionada.Conta.Codigo;
-        var r = await app.PlanoContas.ExcluirAsync(empresa, Selecionada.Conta.Id, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Selecionada = null;
-        await CarregarAsync();
-        Mensagem = $"Conta {codigo} excluída.";
-    }, Permissao.PlanoContasManter);
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Selecionada is null) return;
+            var codigo = Selecionada.Conta.Codigo;
+            var r = await app.PlanoContas.ExcluirAsync(empresa, Selecionada.Conta.Id, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Selecionada = null;
+            await CarregarAsync();
+            Mensagem = $"Conta {codigo} excluída.";
+        }, Permissao.PlanoContasManter);
+        return ok;
+    }
 }

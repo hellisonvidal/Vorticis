@@ -17,6 +17,8 @@ public interface IContexto
     bool Pode(Permissao permissao);
     Task RecarregarEmpresasAsync(long? selecionar = null);
     void AoConcluirConfiguracaoInicial();
+    /// <summary>Pergunta Sim/Não ao usuário (diálogo modal). Usado antes de excluir ou gravar dados obtidos de fora.</summary>
+    Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não");
 }
 
 /// <summary>Telas acessíveis pelo menu. A chave é o CommandParameter do item de menu.</summary>
@@ -54,6 +56,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     private string? _telaAtual;
     private PermissoesEfetivas _permissoes = PermissoesEfetivas.Nenhuma;
     private IConsultaCnpj? _consultaCnpj;
+    private IConsultaInscricaoEstadual? _consultaIe;
     private bool _configuracaoInicialPendente;
 
     public MainViewModel()
@@ -61,6 +64,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Login = new LoginViewModel(this);
         Conexao = new ConexaoViewModel(this);
         Inicio = new InicioViewModel(this);
+        JanelasAbertas.CollectionChanged += (_, _) => OnPropertyChanged(nameof(TemJanelasAbertas));
         RecriarModulos();
     }
 
@@ -105,8 +109,18 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     [ObservableProperty] private SessaoUsuario? _sessao;
     [ObservableProperty] private EmpresaPermitida? _empresaSelecionada;
     [ObservableProperty] private string _status = "Conectando ao banco de dados...";
-    [ObservableProperty] private bool _logado;
-    [ObservableProperty] private object? _conteudo;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private bool _logado;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private object? _conteudo;
+    [ObservableProperty] private FuncaoAberta? _funcaoAtiva;
+    [ObservableProperty] private PedidoConfirmacao? _confirmacao;
+
+    /// <summary>Área da janela principal: login/conexão antes de entrar; depois, a tela inicial (as funções abrem em janelas flutuantes).</summary>
+    public object? ConteudoPrincipal => Logado ? Inicio : Conteudo;
+
+    /// <summary>Funções abertas, cada uma em sua janela flutuante.</summary>
+    public ObservableCollection<FuncaoAberta> JanelasAbertas { get; } = [];
+
+    public bool TemJanelasAbertas => JanelasAbertas.Count > 0;
     [ObservableProperty] private string _tituloTela = "";
 
     public ObservableCollection<EmpresaPermitida> EmpresasPermitidas { get; } = [];
@@ -162,16 +176,17 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         await InicializarAsync(cs);
     }
 
-    public async Task InicializarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null)
+    public async Task InicializarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, IConsultaInscricaoEstadual? consultaIe = null)
     {
         _connectionString = connectionString;
         _consultaCnpj = consultaCnpj ?? _consultaCnpj;
+        _consultaIe = consultaIe ?? _consultaIe;
         if (Logado) Sair();
         if (App is not null) { await App.DisposeAsync(); App = null; }
         try
         {
             await BancoLocal.GarantirBancoAsync(connectionString);
-            App = await PerseusApp.IniciarAsync(connectionString, _consultaCnpj);
+            App = await PerseusApp.IniciarAsync(connectionString, _consultaCnpj, consultaIe: _consultaIe);
             Status = $"Conectado a {Configuracao.Descrever(connectionString)}.";
             await Login.PrepararAsync();
             Conteudo = Login;
@@ -207,6 +222,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         _configuracaoInicialPendente = false;
         CentralUsuarios.AtualizarAcesso();
         AbrirCommand.NotifyCanExecuteChanged();
+        FecharTodasAsJanelas();
         Abrir(Telas.Inicio);
         AtualizarStatus();
     }
@@ -215,6 +231,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     private void Sair()
     {
         Sessao = null;
+        FecharTodasAsJanelas();
         Logado = false;
         _configuracaoInicialPendente = false;
         EmpresasPermitidas.Clear();
@@ -237,6 +254,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         EmpresasPermitidas.Clear();
         foreach (var e in lista) EmpresasPermitidas.Add(e);
         EmpresaSelecionada = EmpresasPermitidas.FirstOrDefault(e => e.Id == atual) ?? EmpresasPermitidas.FirstOrDefault();
+        Inicio.Atualizar();
         await AtualizarPermissoesAsync();
     }
 
@@ -254,8 +272,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         MapeamentoReferencial.AtualizarPermissoes();
         Contabilidade.AtualizarPermissoes();
         Socios.AtualizarPermissoes();
+        Empresas.AtualizarBarraCadastro();
         AtualizarStatus();
         // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
+        if (Logado)
+            foreach (var f in JanelasAbertas.Where(f => !PodeAbrir(f.Tela)).ToList()) FecharFuncao(f);
         if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
     }
 
@@ -308,7 +329,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Encerramento => (Encerramento, "Lançamentos › Encerramento do exercício"),
             Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
             Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
-            Telas.ImportacaoReferencial => (ImportacaoReferencial, "Configurações › Plano referencial da RFB"),
+            Telas.ImportacaoReferencial => (ImportacaoReferencial, "Integrações › Importar › Plano referencial da RFB"),
             Telas.MapeamentoReferencial => (MapeamentoReferencial, "Cadastros › Vínculo ao plano referencial"),
             Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores"),
             Telas.Socios => (Socios, "Cadastros › Sócios"),
@@ -326,6 +347,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
+        RegistrarJanela(tela!);
         if (tela is Telas.Usuarios or Telas.Perfis or Telas.AlterarSenha)
         {
             CentralUsuarios.AtualizarAcesso();
@@ -347,7 +369,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.MapeamentoReferencial) _ = Disparar(MapeamentoReferencial.CarregarAsync);
         if (tela == Telas.Contabilidade) _ = Disparar(Contabilidade.CarregarAsync);
         if (tela == Telas.Socios) _ = Disparar(Socios.CarregarAsync);
-        if (tela == Telas.Empresas) CarregarAbaEmpresa();
+        if (tela == Telas.Empresas)
+        {
+            if (Empresas.EmConsulta) _ = Disparar(Empresas.CarregarSelecionadaAsync);
+            CarregarAbaEmpresa();
+        }
         if (tela == Telas.LivrosPdf) _ = Disparar(LivrosPdf.PreencherResponsaveisAsync);
         if (tela == Telas.Conexao)
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
@@ -373,6 +399,71 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (_telaAtual != Telas.Empresas || EmpresaSelecionada is null) return;
         if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) _ = Disparar(Socios.CarregarAsync);
         if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) _ = Disparar(Contabilidade.CarregarAsync);
+    }
+
+    // ------------------------------------------------------------------ janelas flutuantes e confirmação
+
+    private void RegistrarJanela(string tela)
+    {
+        if (!Logado || Conteudo is null || ReferenceEquals(Conteudo, Inicio))
+        {
+            FuncaoAtiva = null;
+            return;
+        }
+        var f = JanelasAbertas.FirstOrDefault(j => ReferenceEquals(j.ViewModel, Conteudo));
+        if (f is null) JanelasAbertas.Add(f = new FuncaoAberta(Conteudo, tela, TituloTela));
+        else (f.Tela, f.Titulo) = (tela, TituloTela);
+        FuncaoAtiva = f;
+    }
+
+    partial void OnFuncaoAtivaChanged(FuncaoAberta? value)
+    {
+        foreach (var j in JanelasAbertas) j.Ativa = ReferenceEquals(j, value);
+    }
+
+    /// <summary>Traz a janela da função para a frente (clique na barra de janelas ou foco na janela).</summary>
+    [RelayCommand]
+    public void AtivarFuncao(FuncaoAberta? f)
+    {
+        if (f is null || !JanelasAbertas.Contains(f)) return;
+        (Conteudo, TituloTela, _telaAtual) = (f.ViewModel, f.Titulo, f.Tela);
+        FuncaoAtiva = f;
+    }
+
+    /// <summary>Fecha a função (botão ✕ da janela ou da barra). Sem outras abertas, volta à tela inicial.</summary>
+    [RelayCommand]
+    public void FecharFuncao(FuncaoAberta? f)
+    {
+        if (f is null || !JanelasAbertas.Remove(f)) return;
+        if (!ReferenceEquals(FuncaoAtiva, f) && !ReferenceEquals(Conteudo, f.ViewModel)) return;
+        if (JanelasAbertas.LastOrDefault() is { } proxima) AtivarFuncao(proxima);
+        else
+        {
+            (Conteudo, TituloTela, _telaAtual, FuncaoAtiva) = (Inicio, "", Telas.Inicio, null);
+            Inicio.Atualizar();
+        }
+    }
+
+    private void FecharTodasAsJanelas()
+    {
+        JanelasAbertas.Clear();
+        FuncaoAtiva = null;
+    }
+
+    public Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não")
+    {
+        Confirmacao?.Responder(false);
+        var pedido = new PedidoConfirmacao(titulo, mensagem, textoSim, textoNao);
+        Confirmacao = pedido;
+        return pedido.Resposta;
+    }
+
+    [RelayCommand]
+    private void ResponderConfirmacao(bool sim)
+    {
+        var pedido = Confirmacao;
+        Confirmacao = null;
+        pedido?.Responder(sim);
     }
 
     partial void OnLogadoChanged(bool value) => AbrirCommand.NotifyCanExecuteChanged();
