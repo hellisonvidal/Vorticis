@@ -41,53 +41,11 @@
   </Window.Styles>
 
   <DockPanel>
-    <!-- Barra superior compacta: menu à esquerda, empresa e usuário à direita (só após o login) -->
-    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="8,2" IsVisible="{Binding Logado}">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+    <!-- Barra do título: nome do programa, empresa ativa e usuário (só após o login) -->
+    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="8,4" IsVisible="{Binding Logado}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <TextBlock Text="Perseus Contábil" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="4,0,14,0" />
-        <Menu Grid.Column="1" Name="MenuPrincipal">
-          <MenuItem Header="_Cadastros">
-            <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
-            <Separator />
-            <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
-            <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
-          </MenuItem>
-          <MenuItem Header="_Lançamentos">
-            <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
-            <MenuItem Header="Estornar lançamento" Command="{Binding AbrirCommand}" CommandParameter="estorno" />
-            <MenuItem Header="Saldos iniciais (implantação)" Command="{Binding AbrirCommand}" CommandParameter="saldosiniciais" />
-            <Separator />
-            <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
-          </MenuItem>
-          <MenuItem Header="_Integrações">
-            <MenuItem Header="Importar XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
-            <MenuItem Header="Importar NFS-e (em breve)" IsEnabled="False" />
-            <MenuItem Header="Importar extrato bancário OFX (em breve)" IsEnabled="False" />
-            <MenuItem Header="Importar planilha Excel (em breve)" IsEnabled="False" />
-            <Separator />
-            <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />
-            <MenuItem Header="SPED ECF (em breve)" IsEnabled="False" />
-            <MenuItem Header="eSocial (em breve)" IsEnabled="False" />
-          </MenuItem>
-          <MenuItem Header="_Relatórios">
-            <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
-            <MenuItem Header="Livro Razão" Command="{Binding AbrirCommand}" CommandParameter="razao" />
-            <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
-          </MenuItem>
-          <MenuItem Header="_Ajuda">
-            <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
-          </MenuItem>
-          <MenuItem Header="C_onfigurações">
-            <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
-            <MenuItem Header="Perfis de acesso" Command="{Binding AbrirCommand}" CommandParameter="perfis" />
-            <MenuItem Header="Alterar minha senha" Command="{Binding AbrirCommand}" CommandParameter="senha" />
-            <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
-            <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
-            <Separator />
-            <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
-          </MenuItem>
-        </Menu>
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
                     MinWidth="300" MaxWidth="420" FontSize="12" MinHeight="26" Padding="8,2"
@@ -99,9 +57,55 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
         </StackPanel>
-        <TextBlock Grid.Column="4" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
+        <TextBlock Grid.Column="3" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
                    VerticalAlignment="Center" Margin="12,0,4,0" />
       </Grid>
+    </Border>
+
+    <!-- Barra de menus, logo abaixo do nome do programa -->
+    <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0" IsVisible="{Binding Logado}">
+      <Menu Name="MenuPrincipal">
+        <MenuItem Header="_Cadastros">
+          <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
+          <Separator />
+          <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
+          <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
+        </MenuItem>
+        <MenuItem Header="_Lançamentos">
+          <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
+          <MenuItem Header="Estornar lançamento" Command="{Binding AbrirCommand}" CommandParameter="estorno" />
+          <MenuItem Header="Saldos iniciais (implantação)" Command="{Binding AbrirCommand}" CommandParameter="saldosiniciais" />
+          <Separator />
+          <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
+        </MenuItem>
+        <MenuItem Header="_Integrações">
+          <MenuItem Header="Importar XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
+          <MenuItem Header="Importar NFS-e (em breve)" IsEnabled="False" />
+          <MenuItem Header="Importar extrato bancário OFX (em breve)" IsEnabled="False" />
+          <MenuItem Header="Importar planilha Excel (em breve)" IsEnabled="False" />
+          <Separator />
+          <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />
+          <MenuItem Header="SPED ECF (em breve)" IsEnabled="False" />
+          <MenuItem Header="eSocial (em breve)" IsEnabled="False" />
+        </MenuItem>
+        <MenuItem Header="_Relatórios">
+          <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
+          <MenuItem Header="Livro Razão" Command="{Binding AbrirCommand}" CommandParameter="razao" />
+          <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
+        </MenuItem>
+        <MenuItem Header="C_onfigurações">
+          <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
+          <MenuItem Header="Perfis de acesso" Command="{Binding AbrirCommand}" CommandParameter="perfis" />
+          <MenuItem Header="Alterar minha senha" Command="{Binding AbrirCommand}" CommandParameter="senha" />
+          <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
+          <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
+          <Separator />
+          <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
+        </MenuItem>
+        <MenuItem Header="_Ajuda">
+          <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
+        </MenuItem>
+      </Menu>
     </Border>
 
     <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="12,4" IsVisible="{Binding Logado}">
