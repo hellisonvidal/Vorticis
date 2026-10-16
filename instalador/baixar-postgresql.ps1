@@ -1,4 +1,4 @@
-# Baixa os binários oficiais do PostgreSQL para Windows (EDB) e monta a pasta "pgsql" distribuída com o Perseus:
+﻿# Baixa os binários oficiais do PostgreSQL para Windows (EDB) e monta a pasta "pgsql" distribuída com o Perseus:
 # só bin, lib e share (sem pgAdmin, StackBuilder, documentação, cabeçalhos e símbolos de depuração).
 param(
     [string]$Destino = "pgsql",

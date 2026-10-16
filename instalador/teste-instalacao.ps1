@@ -1,4 +1,4 @@
-# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Perseus e confere que o banco local foi
+﻿# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Perseus e confere que o banco local foi
 # criado, iniciado e migrado sem nenhuma configuração; depois fecha o programa e confere que o banco foi parado.
 # Requer Windows PowerShell 5.1 (DPAPI via System.Security).
 param([Parameter(Mandatory)] [string]$Setup)
@@ -44,17 +44,27 @@ if ($cfg.Local.Senha) { Falhar "Senha gravada sem cifrar." }
 $senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect(
     [Convert]::FromBase64String($cfg.Local.SenhaProtegida), $null, "CurrentUser"))
 $env:PGPASSWORD = $senha
+$porta = [int]$cfg.Local.Porta
 $psql = Join-Path $pgBin "psql.exe"
+$conexao = "host=localhost port=$porta user=postgres dbname=perseus connect_timeout=5"
+function Consultar($sql) {
+    # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop"
+    $ErrorActionPreference = "Continue"
+    $r = & $psql $conexao -t -A -c $sql 2>$null
+    if ($LASTEXITCODE -eq 0) { return ($r | Out-String).Trim() }
+    return $null
+}
 $migracoes = 0
 $limite = (Get-Date).AddMinutes(2)
 while ($migracoes -lt 7) {
     if ((Get-Date) -gt $limite) { Falhar "As migrações não foram aplicadas (encontradas: $migracoes)." }
     Start-Sleep -Seconds 2
-    $r = & $psql -h localhost -p $cfg.Local.Porta -U postgres -d perseus -tAc "SELECT count(*) FROM public.perseus_migracao" 2>$null
-    if ($LASTEXITCODE -eq 0) { $migracoes = [int]$r }
+    $r = Consultar "SELECT count(*) FROM public.perseus_migracao"
+    if ($r) { $migracoes = [int]$r }
 }
-Write-Host "Conectado na porta $($cfg.Local.Porta): $migracoes migrações aplicadas"
-& $psql -h localhost -p $cfg.Local.Porta -U postgres -d perseus -tAc "SHOW listen_addresses"
+Write-Host "Conectado na porta ${porta}: $migracoes migrações aplicadas"
+$escuta = Consultar "SHOW listen_addresses"
+if ($escuta -ne "localhost") { Falhar "O banco local escuta em '$escuta' (esperado: localhost)." }
 if ($proc.HasExited) { Falhar "O Perseus fechou inesperadamente." }
 
 # 3. ao fechar o programa, o banco local é parado
@@ -64,6 +74,7 @@ $limite = (Get-Date).AddSeconds(60)
 while ((Test-Path (Join-Path $dados "postmaster.pid")) -and (Get-Date) -lt $limite) { Start-Sleep -Seconds 2 }
 if (Test-Path (Join-Path $dados "postmaster.pid")) {
     Write-Warning "O banco local continuou em execução após fechar o programa; parando com pg_ctl."
+    $ErrorActionPreference = "Continue"
     & (Join-Path $pgBin "pg_ctl.exe") stop -D $dados -m fast -w
 } else {
     Write-Host "Banco local parado ao fechar o programa"
