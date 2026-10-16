@@ -79,6 +79,7 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             Foto(janela, "01_primeiro_acesso");
             await login.CriarAdministradorCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
+            Assert.Equal(WindowState.Maximized, janela.WindowState);   // após o login a janela maximiza
             Assert.Same(vm.Empresas, vm.Conteudo);              // sem empresas: abre o cadastro
             Assert.False(vm.AbrirCommand.CanExecute(Telas.Lancamento));
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Empresas));
@@ -189,13 +190,40 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             Assert.True(enc.Encerrado);
             Foto(janela, "08b_encerramento");
 
+            // Cadastros › Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
+            vm.AbrirCommand.Execute(Telas.Socios);
+            var socios = vm.Socios;
+            await socios.CarregarAsync();
+            Assert.Equal(["BELTRANA DA SILVA", "FULANO DE TAL"], socios.Lista.Select(s => s.Nome).Order());
+            socios.Selecionado = socios.Lista.Single(s => s.Nome == "FULANO DE TAL");
+            Assert.Equal("***123456**", socios.DocumentoMascarado);
+            (socios.Documento, socios.Participacao, socios.Representante) = ("390.533.447-05", "70", true);
+            await socios.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(socios.Erros);
+            Foto(janela, "08g_socios");
+
+            // Cadastros › Contadores e escritório contábil
+            vm.AbrirCommand.Execute(Telas.Contabilidade);
+            var cont = vm.Contabilidade;
+            (cont.ContadorNome, cont.ContadorCpf, cont.ContadorCrc, cont.ContadorUf) = ("Maria Contadora", "529.982.247-25", "1SP123456/O-7", "SP");
+            await cont.VincularContadorCommand.ExecuteAsync(null);
+            Assert.Empty(cont.Erros);
+            (cont.EscritorioCnpj, cont.EscritorioRazao, cont.EscritorioCrc) = ("45.723.174/0001-10", "Contábil Exemplo Ltda", "2SP012345/O-1");
+            await cont.VincularEscritorioCommand.ExecuteAsync(null);
+            Assert.Empty(cont.Erros);
+            Assert.Equal(2, cont.Vinculos.Count);
+            Foto(janela, "08h_contabilidade");
+
             // Relatórios › Livros e relatórios em PDF
             var pastaPdf = Path.Combine(Path.GetTempPath(), "perseus_pdf_" + Guid.NewGuid().ToString("N"));
             (ArquivosGerados.AbrirAposGerar, ArquivosGerados.Pasta) = (false, pastaPdf);
             vm.AbrirCommand.Execute(Telas.LivrosPdf);
             var livros = vm.LivrosPdf;
+            await livros.PreencherResponsaveisAsync();
+            // termos preenchidos a partir dos cadastros de sócios e contadores
+            Assert.Equal(("FULANO DE TAL", "390.533.447-05", "Maria Contadora", "1SP123456/O-7"),
+                         (livros.Representante, livros.RepresentanteCpf, livros.Contador, livros.Crc));
             (livros.Inicio, livros.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
-            (livros.Representante, livros.RepresentanteCpf, livros.Contador, livros.Crc) = ("Ana Sócia", "123.456.789-09", "Maria Contadora", "SP-123456/O-7");
             await livros.DiarioCommand.ExecuteAsync(null);
             Assert.Empty(livros.Erros);
             Assert.True(File.Exists(livros.UltimoArquivo));

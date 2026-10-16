@@ -39,6 +39,8 @@ public static class Telas
     public const string LivrosPdf = "livrospdf";
     public const string ImportacaoReferencial = "importacaoreferencial";
     public const string MapeamentoReferencial = "mapeamentoreferencial";
+    public const string Contabilidade = "contabilidade";
+    public const string Socios = "socios";
     public const string AlterarSenha = "senha";
     public const string Conexao = "conexao";
     public const string Sobre = "sobre";
@@ -65,7 +67,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
-        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial))]
+        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -85,6 +87,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         LivrosPdf = new LivrosPdfViewModel(this);
         ImportacaoReferencial = new ImportacaoReferencialViewModel(this);
         MapeamentoReferencial = new MapeamentoReferencialViewModel(this);
+        Contabilidade = new ContabilidadeEmpresaViewModel(this);
+        Socios = new SociosViewModel(this);
         AlterarSenha = new AlterarSenhaViewModel(this);
         Sobre = new SobreViewModel(this);
     }
@@ -121,6 +125,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public LivrosPdfViewModel LivrosPdf { get; private set; }
     public ImportacaoReferencialViewModel ImportacaoReferencial { get; private set; }
     public MapeamentoReferencialViewModel MapeamentoReferencial { get; private set; }
+    public ContabilidadeEmpresaViewModel Contabilidade { get; private set; }
+    public SociosViewModel Socios { get; private set; }
     public AlterarSenhaViewModel AlterarSenha { get; private set; }
     public SobreViewModel Sobre { get; private set; }
 
@@ -199,6 +205,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         CentrosCusto.AtualizarPermissoes();
         LivrosPdf.AtualizarPermissoes();
         MapeamentoReferencial.AtualizarPermissoes();
+        Contabilidade.AtualizarPermissoes();
+        Socios.AtualizarPermissoes();
         AtualizarStatus();
         // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
         if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
@@ -221,7 +229,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     {
         Telas.Empresas or Telas.Usuarios or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
             => Pode(Permissao.AdministrarSistema),
-        Telas.PlanoContas or Telas.CentrosCusto or Telas.MapeamentoReferencial => EmpresaSelecionada is not null && _permissoes.TemAcesso,
+        Telas.PlanoContas or Telas.CentrosCusto or Telas.MapeamentoReferencial or Telas.Contabilidade or Telas.Socios
+            => EmpresaSelecionada is not null && _permissoes.TemAcesso,
         Telas.Lancamento => Pode(Permissao.LancamentoIncluir),
         Telas.Estorno => Pode(Permissao.LancamentoEstornar),
         Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
@@ -254,6 +263,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
             Telas.ImportacaoReferencial => (ImportacaoReferencial, "Configurações › Plano referencial da RFB"),
             Telas.MapeamentoReferencial => (MapeamentoReferencial, "Cadastros › Vínculo ao plano referencial"),
+            Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores e escritório contábil"),
+            Telas.Socios => (Socios, "Cadastros › Sócios"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
             Telas.Estorno => (Diario, "Lançamentos › Estornar lançamento"),
             Telas.Periodos => (Periodos, "Lançamentos › Fechamento de períodos"),
@@ -275,6 +286,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Backup) Backup.Atualizar();
         if (tela == Telas.ImportacaoReferencial) _ = Disparar(ImportacaoReferencial.CarregarAsync);
         if (tela == Telas.MapeamentoReferencial) _ = Disparar(MapeamentoReferencial.CarregarAsync);
+        if (tela == Telas.Contabilidade) _ = Disparar(Contabilidade.CarregarAsync);
+        if (tela == Telas.Socios) _ = Disparar(Socios.CarregarAsync);
+        if (tela == Telas.LivrosPdf) _ = Disparar(LivrosPdf.PreencherResponsaveisAsync);
         if (tela == Telas.Conexao) Conexao.CarregarDe(_connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
     }
@@ -297,6 +311,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             if (_telaAtual == Telas.CentrosCusto) await CentrosCusto.CarregarAsync();
             if (_telaAtual == Telas.SaldosIniciais) await SaldosIniciais.CarregarAsync();
             if (_telaAtual == Telas.MapeamentoReferencial) await MapeamentoReferencial.CarregarAsync();
+            if (_telaAtual == Telas.Contabilidade) await Contabilidade.CarregarAsync();
+            if (_telaAtual == Telas.Socios) await Socios.CarregarAsync();
+            if (_telaAtual == Telas.LivrosPdf) await LivrosPdf.PreencherResponsaveisAsync();
         });
     }
 

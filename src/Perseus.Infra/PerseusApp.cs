@@ -35,6 +35,7 @@ public sealed class PerseusApp : IAsyncDisposable
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj);
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
+        Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
         Demonstracoes = new ServicoDemonstracoes(Consultas, autorizador);
         Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf());
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
@@ -51,6 +52,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoEmpresa Empresas { get; }
     public ServicoEncerramento Encerramento { get; }
     public ServicoPlanoReferencial PlanoReferencial { get; }
+    public ServicoResponsaveis Responsaveis { get; }
     public ServicoDemonstracoes Demonstracoes { get; }
     public ServicoLivros Livros { get; }
     public ServicoBackup Backup { get; }

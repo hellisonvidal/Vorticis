@@ -29,7 +29,10 @@ public class ConsultaCnpjTests
          "nome_fantasia":"EXEMPLO INFO","ddd_telefone_1":"1133334444","email":"CONTATO@EXEMPLO.COM.BR","opcao_pelo_mei":false,
          "opcao_pelo_simples":true,"codigo_municipio_ibge":3550308,"data_inicio_atividade":"2015-03-02",
          "codigo_natureza_juridica":2062,"descricao_situacao_cadastral":"ATIVA","descricao_tipo_de_logradouro":"AVENIDA",
-         "qsa":[{"nome_socio":"FULANO DE TAL"}]}
+         "qsa":[{"nome_socio":"FULANO DE TAL","cnpj_cpf_do_socio":"***123456**","qualificacao_socio":"Sócio-Administrador",
+                 "codigo_qualificacao_socio":49,"data_entrada_sociedade":"2015-03-02","identificador_de_socio":2},
+                {"nome_socio":"BELTRANA DA SILVA","cnpj_cpf_do_socio":"***654321**","qualificacao_socio":"Sócio",
+                 "codigo_qualificacao_socio":22,"data_entrada_sociedade":"2018-07-10","identificador_de_socio":2}]}
         """;
 
     private static ConsultaCnpjPublica Consulta(HttpSimulado http) => new(new HttpClient(http));
@@ -51,6 +54,10 @@ public class ConsultaCnpjTests
         Assert.True(d.Ativa);
         Assert.StartsWith("BrasilAPI", d.Fonte);
         Assert.Equal("https://brasilapi.com.br/api/cnpj/v1/11222333000181", Assert.Single(http.Chamadas).ToString());
+        Assert.Equal(2, d.QuadroSocietario.Count);
+        var fulano = d.QuadroSocietario[0];
+        Assert.Equal(("FULANO DE TAL", "***123456**", "Sócio-Administrador", 49, new DateOnly(2015, 3, 2), 'F'),
+                     (fulano.Nome, fulano.DocumentoMascarado, fulano.Qualificacao, fulano.QualificacaoCodigo, fulano.DataEntrada, fulano.TipoPessoa));
     }
 
     [Fact]

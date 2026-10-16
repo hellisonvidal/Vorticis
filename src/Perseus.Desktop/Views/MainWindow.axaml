@@ -31,6 +31,8 @@
     <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
+    <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
+    <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -46,32 +48,19 @@
   </Window.Styles>
 
   <DockPanel>
-    <!-- Barra do título: nome do programa, empresa ativa e usuário (só após o login) -->
-    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="8,4" IsVisible="{Binding Logado}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-        <TextBlock Text="Perseus Contábil" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="4,0,14,0" />
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-          <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
-          <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
-                    MinWidth="300" MaxWidth="420" FontSize="12" MinHeight="26" Padding="8,2"
-                    PlaceholderText="Nenhuma empresa">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="seg:EmpresaPermitida">
-                <TextBlock Text="{Binding RazaoSocial}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-        </StackPanel>
-        <TextBlock Grid.Column="3" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
-                   VerticalAlignment="Center" Margin="12,0,4,0" />
-      </Grid>
+    <!-- Primeira linha: apenas o nome do programa (só após o login) -->
+    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="12,5" IsVisible="{Binding Logado}">
+      <TextBlock Text="Perseus Contábil" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" />
     </Border>
 
-    <!-- Barra de menus, logo abaixo do nome do programa -->
-    <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0" IsVisible="{Binding Logado}">
+    <!-- Segunda linha: menus à esquerda; empresa ativa e usuário à direita -->
+    <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0,8,0" IsVisible="{Binding Logado}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
       <Menu Name="MenuPrincipal">
         <MenuItem Header="_Cadastros">
           <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
+          <MenuItem Header="Sócios" Command="{Binding AbrirCommand}" CommandParameter="socios" />
+          <MenuItem Header="Contadores e escritório contábil" Command="{Binding AbrirCommand}" CommandParameter="contabilidade" />
           <Separator />
           <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
           <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
@@ -117,6 +106,21 @@
           <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
         </MenuItem>
       </Menu>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
+                    MinWidth="280" MaxWidth="400" FontSize="12" MinHeight="24" Padding="8,1"
+                    PlaceholderText="Nenhuma empresa">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="seg:EmpresaPermitida">
+                <TextBlock Text="{Binding RazaoSocial}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <TextBlock Grid.Column="3" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
+                   VerticalAlignment="Center" Margin="12,0,0,0" />
+      </Grid>
     </Border>
 
     <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="12,4" IsVisible="{Binding Logado}">

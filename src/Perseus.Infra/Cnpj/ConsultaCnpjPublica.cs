@@ -104,7 +104,25 @@ public sealed class ConsultaCnpjPublica(HttpClient http, TimeProvider? relogio =
             Email: Texto(j, "email")?.ToLowerInvariant(),
             Telefone: Texto(j, "ddd_telefone_1"),
             Fonte: fonte,
-            ConsultadoEm: consultadoEm);
+            ConsultadoEm: consultadoEm,
+            Socios: LerQsa(j));
+    }
+
+    /// <summary>QSA: identificador_de_socio 1 = PJ, 2 = PF, 3 = estrangeiro.</summary>
+    private static IReadOnlyList<SocioCnpj> LerQsa(JsonElement j)
+    {
+        if (!j.TryGetProperty("qsa", out var qsa) || qsa.ValueKind != JsonValueKind.Array) return [];
+        var res = new List<SocioCnpj>();
+        foreach (var s in qsa.EnumerateArray())
+        {
+            if (Texto(s, "nome_socio") is not { } nome) continue;
+            var tipo = Texto(s, "identificador_de_socio") switch { "1" => 'J', "3" => 'E', _ => 'F' };
+            res.Add(new SocioCnpj(nome, Texto(s, "cnpj_cpf_do_socio"), Texto(s, "qualificacao_socio"),
+                int.TryParse(Texto(s, "codigo_qualificacao_socio"), out var cod) ? cod : null,
+                DateOnly.TryParseExact(Texto(s, "data_entrada_sociedade"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null,
+                tipo));
+        }
+        return res;
     }
 
     private static string? Texto(JsonElement j, string nome)

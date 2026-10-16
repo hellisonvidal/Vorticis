@@ -110,3 +110,18 @@ public class BalanceteTests
         Assert.Equal("10,00 C", LinhaBalancete.Formatar(-10m));
     }
 }
+
+public class CpfTests
+{
+    [Theory]
+    [InlineData("529.982.247-25", true)]
+    [InlineData("52998224725", true)]
+    [InlineData("529.982.247-24", false)]
+    [InlineData("111.111.111-11", false)]
+    [InlineData("1234567890", false)]
+    public void Valida_digitos_verificadores(string cpf, bool valido) => Assert.Equal(valido, Cpf.Valido(cpf));
+
+    [Fact]
+    public void Formata_e_valida_uf() =>
+        Assert.Equal(("529.982.247-25", true, false), (Cpf.Formatar("52998224725"), Uf.Valida("sp"), Uf.Valida("XX")));
+}

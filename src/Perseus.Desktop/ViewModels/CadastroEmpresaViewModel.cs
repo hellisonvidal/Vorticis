@@ -108,6 +108,10 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : ModuloViewMo
             MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos.");
             if (r.Sucesso)
             {
+                var socios = origem?.QuadroSocietario ?? [];
+                if (socios.Count > 0 && main.Sessao is { } sessao
+                    && await app.Responsaveis.IncluirDoQsaAsync(r.Valor, socios, origem!.Fonte, sessao.Id) is { Sucesso: true, Valor: > 0 } incl)
+                    Mensagem += $" {incl.Valor} sócio(s) incluído(s) do quadro societário (complete CPF e representante em Cadastros › Sócios).";
                 LimparFormulario();
                 await main.RecarregarEmpresasAsync(r.Valor);
             }

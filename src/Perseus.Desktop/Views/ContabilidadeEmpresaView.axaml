@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             xmlns:cad="using:Perseus.Application.Cadastros"
+             x:Class="Perseus.Desktop.Views.ContabilidadeEmpresaView"
+             x:DataType="vm:ContabilidadeEmpresaViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo"><Setter Property="FontSize" Value="12" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" Margin="8">
+    <StackPanel Spacing="4" Margin="0,0,0,6">
+      <TextBlock Classes="titulo" Text="Contadores e escritório contábil da empresa" />
+      <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
+                 Text="O responsável técnico assina a ECD/ECF e os termos do Livro Diário. Mantenha o histórico: ao trocar de contador ou escritório, encerre o vínculo anterior em vez de excluí-lo." />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Vinculos}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False" MinHeight="120">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="150" />
+        <DataGridTextColumn Header="Nome / razão social" Binding="{ReflectionBinding Nome}" Width="*" />
+        <DataGridTextColumn Header="CPF / CNPJ" Binding="{ReflectionBinding Documento}" Width="180" />
+        <DataGridTextColumn Header="CRC" Binding="{ReflectionBinding Crc}" Width="150" />
+        <DataGridTextColumn Header="Início" Binding="{ReflectionBinding Inicio}" Width="112" />
+        <DataGridTextColumn Header="Fim" Binding="{ReflectionBinding Fim}" Width="112" />
+        <DataGridTextColumn Header="" Binding="{ReflectionBinding Responsavel}" Width="190" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,6" IsEnabled="{Binding PodeEditar}">
+      <Button Content="Tornar responsável técnico" Command="{Binding DefinirResponsavelCommand}" />
+      <TextBlock Classes="rotulo" Text="Encerrar em" />
+      <CalendarDatePicker SelectedDate="{Binding DataFim}" Width="140" />
+      <Button Content="Encerrar vínculo" Command="{Binding EncerrarCommand}" />
+      <Button Content="Excluir (cadastro errado)" Command="{Binding ExcluirCommand}" />
+    </StackPanel>
+    <Grid Grid.Row="3" ColumnDefinitions="*,16,*" IsEnabled="{Binding PodeEditar}">
+      <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Vincular contador" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <ComboBox ItemsSource="{Binding ContadoresCadastrados}" SelectedItem="{Binding ContadorExistente}" PlaceholderText="Já cadastrado em outra empresa? Escolha aqui" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Contador"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <Grid ColumnDefinitions="90,*,8,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+            <TextBlock Classes="rotulo" Text="Nome" />
+            <TextBox Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding ContadorNome}" />
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="CPF / CRC" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ContadorCpf}" Watermark="CPF" />
+            <Grid Grid.Row="1" Grid.Column="3" ColumnDefinitions="*,6,70">
+              <TextBox Text="{Binding ContadorCrc}" Watermark="Nº CRC (ex.: 1SP123456/O-7)" />
+              <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:ContabilidadeEmpresaViewModel.Ufs}" SelectedItem="{Binding ContadorUf}" HorizontalAlignment="Stretch" />
+            </Grid>
+            <TextBlock Grid.Row="2" Classes="rotulo" Text="Contato" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContadorEmail}" Watermark="E-mail" />
+            <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding ContadorTelefone}" Watermark="Telefone" />
+            <TextBlock Grid.Row="3" Classes="rotulo" Text="Desde" />
+            <CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding ContadorInicio}" />
+            <CheckBox Grid.Row="3" Grid.Column="3" Content="Responsável técnico" IsChecked="{Binding ContadorResponsavel}" />
+          </Grid>
+          <Button Content="Vincular contador" Command="{Binding VincularContadorCommand}" Classes="accent" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Vincular escritório contábil" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <ComboBox ItemsSource="{Binding EscritoriosCadastrados}" SelectedItem="{Binding EscritorioExistente}" PlaceholderText="Já cadastrado? Escolha aqui" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:EscritorioContabil"><TextBlock Text="{Binding RazaoSocial}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <Grid ColumnDefinitions="90,*,8,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <TextBlock Classes="rotulo" Text="CNPJ" />
+            <TextBox Grid.Column="1" Text="{Binding EscritorioCnpj}" />
+            <Button Grid.Column="3" Content="Buscar dados na Receita" Command="{Binding BuscarEscritorioCommand}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="Razão social" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding EscritorioRazao}" />
+            <TextBlock Grid.Row="2" Classes="rotulo" Text="CRC" />
+            <Grid Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" ColumnDefinitions="*,6,70">
+              <TextBox Text="{Binding EscritorioCrc}" Watermark="Registro da organização contábil no CRC" />
+              <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:ContabilidadeEmpresaViewModel.Ufs}" SelectedItem="{Binding EscritorioUf}" HorizontalAlignment="Stretch" />
+            </Grid>
+            <TextBlock Grid.Row="3" Classes="rotulo" Text="Contato" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EscritorioEmail}" Watermark="E-mail" />
+            <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding EscritorioTelefone}" Watermark="Telefone" />
+            <TextBlock Grid.Row="4" Classes="rotulo" Text="Desde" />
+            <CalendarDatePicker Grid.Row="4" Grid.Column="1" SelectedDate="{Binding EscritorioInicio}" />
+          </Grid>
+          <Button Content="Vincular escritório" Command="{Binding VincularEscritorioCommand}" Classes="accent" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <v:MensagensView Grid.Row="4" Margin="0,6,0,0" />
+  </Grid>
+</UserControl>

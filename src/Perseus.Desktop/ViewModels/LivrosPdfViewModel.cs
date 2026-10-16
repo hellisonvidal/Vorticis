@@ -24,6 +24,18 @@ public partial class LivrosPdfViewModel(IContexto contexto) : ModuloViewModel(co
     public bool PodeBalancete => Contexto.Pode(Permissao.RelatorioBalancete);
     public bool PodeDemonstracoes => Contexto.Pode(Permissao.RelatorioDemonstracoes);
 
+    /// <summary>Preenche os termos com o representante legal (Sócios) e o responsável técnico (Contadores) da empresa.</summary>
+    public async Task PreencherResponsaveisAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) return;
+        var g = NovaGeracao();
+        var rep = await app.Responsaveis.RepresentanteLegalAsync(empresa);
+        var cont = await app.Responsaveis.ResponsavelTecnicoAsync(empresa);
+        if (!EhAtual(g)) return;
+        (Representante, RepresentanteCpf) = rep is null ? ("", "") : (rep.Nome, rep.CpfCnpj is { Length: 11 } c ? Domain.Cadastros.Cpf.Formatar(c) : rep.CpfCnpj ?? "");
+        (Contador, Crc) = cont is null ? ("", "") : (cont.Nome, cont.CrcCompleto);
+    }
+
     public void AtualizarPermissoes()
     {
         OnPropertyChanged(nameof(PodeDiario));

@@ -24,14 +24,21 @@ public sealed record DadosCnpj(
     string? Email,
     string? Telefone,
     string Fonte,
-    DateTimeOffset ConsultadoEm)
+    DateTimeOffset ConsultadoEm,
+    IReadOnlyList<SocioCnpj>? Socios = null)
 {
+    public IReadOnlyList<SocioCnpj> QuadroSocietario => Socios ?? [];
+
     /// <summary>Regime sugerido a partir das opções públicas. Presumido/Real não constam da base pública.</summary>
     public RegimeTributario? RegimeSugerido =>
         OptanteMei == true ? RegimeTributario.MEI : OptanteSimples == true ? RegimeTributario.SimplesNacional : null;
 
     public bool Ativa => string.Equals(SituacaoCadastral, "ATIVA", StringComparison.OrdinalIgnoreCase);
 }
+
+/// <summary>Sócio/administrador do QSA na base pública. O CPF vem mascarado (ex.: ***123456**) — completar manualmente.</summary>
+public sealed record SocioCnpj(string Nome, string? DocumentoMascarado, string? Qualificacao, int? QualificacaoCodigo,
+                               DateOnly? DataEntrada, char TipoPessoa);
 
 /// <summary>
 /// Fonte de dados cadastrais de CNPJ. Implementações: base pública (dados abertos da RFB via BrasilAPI/Minha Receita);
