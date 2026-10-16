@@ -99,9 +99,11 @@ public sealed class ServidorPostgresEmbutido(string pastaBinarios, string pastaD
 
         var porta = PortaLivre(portaPreferida) ? portaPreferida : PortaQualquer();
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(ArquivoLog))!);
+        // Só TCP: fora do Windows, sem socket Unix (o diretório padrão das distribuições, /var/run/postgresql,
+        // não é gravável pelo usuário comum).
+        var opcoes = $"-p {porta} -c listen_addresses=localhost" + (OperatingSystem.IsWindows() ? "" : " -c unix_socket_directories=");
         var (codigo, saida) = await ExecutarAsync("pg_ctl",
-            ["start", "-D", PastaDados, "-l", ArquivoLog, "-w", "-t", "120", "-o", $"-p {porta} -c listen_addresses=localhost"],
-            ct, capturarSaida: false);
+            ["start", "-D", PastaDados, "-l", ArquivoLog, "-w", "-t", "120", "-o", opcoes], ct, capturarSaida: false);
         if (codigo != 0)
             throw new InvalidOperationException(
                 $"Não foi possível iniciar o banco local (pg_ctl, código {codigo}). {saida}Detalhes no arquivo {ArquivoLog}:{Environment.NewLine}{UltimasLinhasLog()}");
