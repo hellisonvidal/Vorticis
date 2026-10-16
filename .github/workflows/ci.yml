@@ -5,9 +5,14 @@ on:
     branches: [main, "claude/**"]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   testes:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -36,6 +41,7 @@ jobs:
 
   instalador-windows:
     runs-on: windows-latest
+    timeout-minutes: 40
     needs: testes
     steps:
       - uses: actions/checkout@v4

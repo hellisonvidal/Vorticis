@@ -10,6 +10,9 @@ using Perseus.Desktop.Views;
 using Perseus.Infra.Cnpj;
 using Perseus.Infra.Tests;
 
+[assembly: AssemblyFixture(typeof(Perseus.Desktop.Tests.SessaoHeadless))]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace Perseus.Desktop.Tests;
 
 public static class AppDeTeste
@@ -21,10 +24,21 @@ public static class AppDeTeste
 }
 
 /// <summary>
+/// O Avalonia admite uma única aplicação por processo: todas as classes de teste usam a mesma sessão headless
+/// (fixture do assembly) e rodam em sequência.
+/// </summary>
+public sealed class SessaoHeadless : IDisposable
+{
+    public HeadlessUnitTestSession Sessao { get; } = HeadlessUnitTestSession.StartNew(typeof(AppDeTeste));
+
+    public void Dispose() => Sessao.Dispose();
+}
+
+/// <summary>
 /// Fluxo completo pela camada de apresentação (ViewModels + janela real renderizada sem tela).
 /// Se PERSEUS_SCREENSHOTS apontar para uma pasta, salva PNGs das telas.
 /// </summary>
-public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixture<BancoDeTeste>
 {
     private static readonly string? Pasta = Environment.GetEnvironmentVariable("PERSEUS_SCREENSHOTS");
 
@@ -60,7 +74,7 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     public async Task Fluxo_completo_com_perfil_personalizado_definido_pelo_administrador()
     {
         BancoDeTeste.ExigirBanco();
-        using var sessao = HeadlessUnitTestSession.StartNew(typeof(AppDeTeste));
+        var sessao = headless.Sessao;
         // Retornar um valor força a sobrecarga Dispatch<T>(Func<Task<T>>), que aguarda o corpo assíncrono;
         // com Func<Task> a sobrecarga escolhida devolveria Task<Task> e as asserções não seriam aguardadas.
         var concluido = await ForaDaSessao(sessao.Dispatch(async () =>

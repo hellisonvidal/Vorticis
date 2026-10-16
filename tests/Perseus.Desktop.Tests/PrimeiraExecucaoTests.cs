@@ -9,7 +9,7 @@ namespace Perseus.Desktop.Tests;
 /// Primeira execução sem nenhuma configuração: o programa cria e inicia o banco local sozinho e vai direto ao
 /// primeiro acesso, sem pedir dados de conexão. Só no Linux (pastas do perfil redirecionadas por XDG_*) e fora do root.
 /// </summary>
-public class PrimeiraExecucaoTests
+public class PrimeiraExecucaoTests(SessaoHeadless headless)
 {
     private static string? Binarios() =>
         Directory.Exists("/usr/lib/postgresql")
@@ -51,7 +51,7 @@ public class PrimeiraExecucaoTests
             Assert.StartsWith(perfil, Configuracao.ArquivoConfiguracao);
             Assert.Equal(ModoBanco.Local, Configuracao.Carregar().Modo);
 
-            using var sessao = HeadlessUnitTestSession.StartNew(typeof(AppDeTeste));
+            var sessao = headless.Sessao;
             var ok = await ForaDaSessao(sessao.Dispatch(async () =>
             {
                 // 1. Sem configuração: cria o banco local e abre o primeiro acesso
