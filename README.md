@@ -8,7 +8,7 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 
 | Fase | Situação |
 |---|---|
-| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI. **Pendente:** login/perfis, backup/restauração, instalador |
+| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, **login com perfis por empresa**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com **consulta à base pública do CNPJ**. **Pendente:** backup/restauração, instalador |
 | 1. MVP contábil | Plano de contas modelo, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (com exportação CSV). **Pendente:** CRUD de plano de contas e centros de custo, importação de saldos iniciais, Diário/Razão em PDF |
 
 Ver o [roadmap](docs/04-roadmap.md).
@@ -37,9 +37,26 @@ export PERSEUS_DB="Host=localhost;Database=perseus;Username=postgres;Password=su
 dotnet run --project src/Perseus.Desktop
 ```
 
-Na primeira execução o banco é criado (se o usuário tiver permissão) e as migrações são aplicadas. A conexão também pode ficar em `%APPDATA%\Perseus\perseus.json`: `{"ConnectionString": "..."}`.
+Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
 
-Gerar o executável para Windows (arquivo único, sem exigir .NET instalado):
+### Usuários e perfis
+
+| Perfil | Pode |
+|---|---|
+| Administrador (global) | Tudo: empresas, usuários, conexão, e todas as operações em todas as empresas |
+| Contador (por empresa) | Lançar, estornar, fechar/reabrir períodos, relatórios |
+| Assistente (por empresa) | Lançar e estornar, relatórios |
+| Consulta (por empresa) | Somente relatórios |
+
+Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso`.
+
+### Consulta de CNPJ
+
+Em **Cadastros › Empresas**, o botão *Buscar dados na Receita* preenche razão social, natureza jurídica, CNAE, endereço, município IBGE, início de atividade, situação cadastral e opção pelo Simples/MEI. A fonte é a **base pública do CNPJ divulgada pela Receita Federal** (dados abertos, atualização mensal), via [BrasilAPI](https://brasilapi.com.br) e, como reserva, [Minha Receita](https://minhareceita.org). O portal "Comprovante de Inscrição" da RFB tem captcha e não pode ser automatizado; a API oficial (Serpro "Consulta CNPJ") é paga e pode ser plugada como outra implementação de `IConsultaCnpj`.
+
+### Executável para Windows
+
+Arquivo único, sem exigir .NET instalado:
 
 ```bash
 dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish

@@ -21,11 +21,19 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             long id;
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO core.empresa (cnpj, razao_social, nome_fantasia, natureza_juridica, cnae_principal, uf,
-                                          cod_municipio_ibge, data_inicio_ativ)
-                VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini) RETURNING id
+                                          cod_municipio_ibge, data_inicio_ativ, cep, logradouro, numero, complemento, bairro,
+                                          municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em)
+                VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
+                        @municipio, @email, @tel, @sit, @fonte, @consultado) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
-                .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades))
+                .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
+                .ComTexto("cep", e.Complemento?.Cep).ComTexto("log", e.Complemento?.Logradouro).ComTexto("num", e.Complemento?.Numero)
+                .ComTexto("compl", e.Complemento?.Complemento).ComTexto("bairro", e.Complemento?.Bairro)
+                .ComTexto("municipio", e.Complemento?.Municipio).ComTexto("email", e.Complemento?.Email)
+                .ComTexto("tel", e.Complemento?.Telefone).ComTexto("sit", e.Complemento?.SituacaoCadastral)
+                .ComTexto("fonte", e.Complemento?.FonteDados)
+                .Com("consultado", NpgsqlTypes.NpgsqlDbType.TimestampTz, e.Complemento?.DadosConsultadosEm))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
             await using (var cmd = new NpgsqlCommand("""

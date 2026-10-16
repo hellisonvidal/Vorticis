@@ -82,6 +82,17 @@ internal static class Mapeamentos
         return cmd;
     }
 
+    /// <summary>Parâmetro com tipo explícito — necessário quando o valor pode ser nulo (o PostgreSQL não infere o tipo de NULL).</summary>
+    public static NpgsqlCommand Com(this NpgsqlCommand cmd, string nome, NpgsqlTypes.NpgsqlDbType tipo, object? valor)
+    {
+        cmd.Parameters.AddWithValue(nome, tipo, valor ?? DBNull.Value);
+        return cmd;
+    }
+
+    /// <summary>Texto opcional: vazio/brancos viram NULL.</summary>
+    public static NpgsqlCommand ComTexto(this NpgsqlCommand cmd, string nome, string? valor)
+        => cmd.Com(nome, NpgsqlTypes.NpgsqlDbType.Varchar, string.IsNullOrWhiteSpace(valor) ? null : valor.Trim());
+
     public static async Task DefinirUsuarioAsync(NpgsqlConnection con, NpgsqlTransaction tx, long? usuarioId, CancellationToken ct)
     {
         await using var cmd = new NpgsqlCommand("""

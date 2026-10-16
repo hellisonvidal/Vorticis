@@ -17,7 +17,22 @@ public sealed record NovaEmpresa(
     DateOnly DataInicioAtividades,
     RegimeTributario Regime,
     int AnoPrimeiroExercicio,
-    bool ImportarPlanoModelo = true);
+    bool ImportarPlanoModelo = true,
+    ComplementoEmpresa? Complemento = null);
+
+/// <summary>Endereço, contato e rastreabilidade da origem dos dados cadastrais.</summary>
+public sealed record ComplementoEmpresa(
+    string? Cep = null,
+    string? Logradouro = null,
+    string? Numero = null,
+    string? Complemento = null,
+    string? Bairro = null,
+    string? Municipio = null,
+    string? Email = null,
+    string? Telefone = null,
+    string? SituacaoCadastral = null,
+    string? FonteDados = null,
+    DateTimeOffset? DadosConsultadosEm = null);
 
 public sealed record EmpresaResumo(long Id, string Cnpj, string RazaoSocial);
 
@@ -38,8 +53,17 @@ public interface IFontePlanoModelo
     IReadOnlyList<ContaModelo> Obter();
 }
 
-public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoModelo planoModelo)
+public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoModelo planoModelo, IConsultaCnpj? consultaCnpj = null)
 {
+    /// <summary>Consulta os dados cadastrais do CNPJ na fonte externa configurada (para pré-preencher o cadastro).</summary>
+    public async Task<Resultado<DadosCnpj>> ConsultarCnpjAsync(string cnpj, CancellationToken ct = default)
+    {
+        var c = new string(cnpj.Where(char.IsAsciiLetterOrDigit).Select(char.ToUpperInvariant).ToArray());
+        if (!Cnpj.Valido(c)) return Resultado<DadosCnpj>.Falha("CNPJ inválido. Confira os dígitos antes de consultar.");
+        if (consultaCnpj is null) return Resultado<DadosCnpj>.Falha("Consulta de CNPJ não configurada.");
+        return await consultaCnpj.ConsultarAsync(c, ct);
+    }
+
     public async Task<Resultado<long>> CadastrarAsync(NovaEmpresa e, CancellationToken ct = default)
     {
         var erros = new List<string>();
@@ -52,11 +76,17 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
         if (e.Uf.Length != 2) erros.Add("UF inválida.");
         if (e.CodMunicipioIbge.Length != 7 || !e.CodMunicipioIbge.All(char.IsAsciiDigit)) erros.Add("Código de município IBGE deve ter 7 dígitos.");
         if (e.AnoPrimeiroExercicio < e.DataInicioAtividades.Year) erros.Add("O primeiro exercício não pode ser anterior ao início das atividades.");
+        var cep = Cnpj.SomenteDigitos(e.Complemento?.Cep);
+        if (cep.Length is not (0 or 8)) erros.Add("CEP deve ter 8 dígitos.");
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
 
         if (await repositorio.CnpjExisteAsync(cnpj, ct)) return Resultado<long>.Falha("Já existe empresa com este CNPJ.");
 
-        var normalizada = e with { Cnpj = cnpj, CnaePrincipal = cnae, Uf = e.Uf.ToUpperInvariant(), RazaoSocial = e.RazaoSocial.Trim() };
+        var normalizada = e with
+        {
+            Cnpj = cnpj, CnaePrincipal = cnae, Uf = e.Uf.ToUpperInvariant(), RazaoSocial = e.RazaoSocial.Trim(),
+            Complemento = e.Complemento is null ? null : e.Complemento with { Cep = cep.Length == 0 ? null : cep },
+        };
         var plano = e.ImportarPlanoModelo ? planoModelo.Obter() : [];
         return Resultado<long>.Ok(await repositorio.CriarAsync(normalizada, plano, ct));
     }

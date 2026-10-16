@@ -132,7 +132,11 @@ Folha calculada ──► provisões/encargos ───────────�
 
 ## 5. Segurança e operação local
 
+- **Usuários**: senha com PBKDF2-HMAC-SHA256 (600 mil iterações, sal aleatório, comparação em tempo constante; o nº de iterações fica no hash para permitir aumento futuro). Bloqueio após 5 falhas por 15 min; mensagens de erro não revelam se o login existe; registro de todas as tentativas (`core.registro_acesso`); banco impede remover o último administrador ativo. Operações de administração são verificadas no `ServicoUsuarios`; permissões de lançamento/fechamento por perfil são verificadas na camada de apresentação — no modo servidor (Fase 8) passam a ser verificadas na API.
+- **Troca de usuário**: ao sair, todas as telas são recriadas, para que nada consultado por um usuário fique visível ao próximo.
+- **Consulta de CNPJ**: `IConsultaCnpj` (Application) com implementação sobre a base pública da RFB (BrasilAPI → Minha Receita). Os dados apenas pré-preenchem o formulário; a origem e a data da consulta ficam gravadas na empresa (`fonte_dados`, `dados_consultados_em`).
 - **Certificado digital**: A1 (`.pfx`) cifrado com DPAPI do Windows; A3 via Windows Certificate Store (token/cartão). Nunca gravar senha do PFX em texto.
+- **Conexão**: `%APPDATA%\Perseus\perseus.json`, senha cifrada com DPAPI (escopo do usuário do Windows).
 - **Banco**: PostgreSQL escutando só em `localhost`; usuário da aplicação sem permissão de `TRUNCATE`/`DROP`; papel separado para migrações.
 - **Backup**: `pg_dump` agendado diário + antes de todo fechamento de período/geração de SPED; retenção local + cópia externa (pasta sincronizada pelo usuário). Restauração testável pela própria UI.
 - **LGPD**: dados de trabalhadores (CPF, saúde em atestados/ASO, dependentes) com acesso por perfil, mascaramento em telas de consulta e registro de acesso.

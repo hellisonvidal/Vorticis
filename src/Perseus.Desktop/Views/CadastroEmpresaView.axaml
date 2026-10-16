@@ -3,42 +3,102 @@
              xmlns:vm="using:Perseus.Desktop.ViewModels"
              xmlns:v="using:Perseus.Desktop.Views"
              xmlns:cad="using:Perseus.Application.Cadastros"
+             xmlns:seg="using:Perseus.Application.Seguranca"
              x:Class="Perseus.Desktop.Views.CadastroEmpresaView"
              x:DataType="vm:CadastroEmpresaViewModel">
-  <ScrollViewer>
-    <StackPanel Margin="8" Spacing="10" MaxWidth="640" HorizontalAlignment="Left">
-      <TextBlock Classes="titulo" Text="Cadastrar empresa" />
-      <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
-        <TextBlock Text="CNPJ" VerticalAlignment="Center" />
-        <TextBox Grid.Column="1" Text="{Binding Cnpj}" Watermark="00.000.000/0000-00 (aceita alfanumérico)" />
-        <TextBlock Grid.Row="1" Text="Razão social" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding RazaoSocial}" />
-        <TextBlock Grid.Row="2" Text="Nome fantasia" VerticalAlignment="Center" />
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NomeFantasia}" />
-        <TextBlock Grid.Row="3" Text="Natureza jurídica" VerticalAlignment="Center" />
-        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NaturezaJuridica}" Watermark="Código CONCLA, ex.: 2062 (LTDA)" />
-        <TextBlock Grid.Row="4" Text="CNAE principal" VerticalAlignment="Center" />
-        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Cnae}" Watermark="7 dígitos" />
-        <TextBlock Grid.Row="5" Text="UF" VerticalAlignment="Center" />
-        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Uf}" MaxLength="2" Width="80" HorizontalAlignment="Left" />
-        <TextBlock Grid.Row="6" Text="Município (código IBGE)" VerticalAlignment="Center" />
-        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding MunicipioIbge}" Watermark="7 dígitos, ex.: 3550308" />
-        <TextBlock Grid.Row="7" Text="Início das atividades" VerticalAlignment="Center" />
-        <CalendarDatePicker Grid.Row="7" Grid.Column="1" SelectedDate="{Binding InicioAtividades}" />
-        <TextBlock Grid.Row="8" Text="Regime tributário" VerticalAlignment="Center" />
-        <ComboBox Grid.Row="8" Grid.Column="1" ItemsSource="{x:Static vm:CadastroEmpresaViewModel.Regimes}" SelectedItem="{Binding Regime}" MinWidth="220">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="cad:RegimeTributario">
-              <TextBlock Text="{Binding Converter={x:Static v:Conversores.NomeRegime}}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <TextBlock Grid.Row="9" Text="Primeiro exercício" VerticalAlignment="Center" />
-        <NumericUpDown Grid.Row="9" Grid.Column="1" Value="{Binding AnoExercicio}" Minimum="2000" Maximum="2100" FormatString="0" Width="130" HorizontalAlignment="Left" />
-        <CheckBox Grid.Row="10" Grid.Column="1" Content="Criar com o plano de contas modelo" IsChecked="{Binding ImportarPlanoModelo}" />
-      </Grid>
-      <Button Content="Cadastrar" Command="{Binding CadastrarCommand}" Classes="accent" />
-      <v:MensagensView />
-    </StackPanel>
-  </ScrollViewer>
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.secao">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Margin" Value="0,10,0,2" />
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="*,16,300">
+    <ScrollViewer>
+      <StackPanel Spacing="6" MaxWidth="720" HorizontalAlignment="Left" Margin="8,0">
+        <TextBlock Classes="titulo" Text="Nova empresa" />
+
+        <TextBlock Classes="secao" Text="Identificação" />
+        <Grid ColumnDefinitions="170,*,Auto" ColumnSpacing="8">
+          <TextBlock Classes="rotulo" Text="CNPJ" />
+          <TextBox Grid.Column="1" Text="{Binding Cnpj}" Watermark="00.000.000/0000-00 (aceita alfanumérico)" />
+          <Button Grid.Column="2" Content="Buscar dados na Receita" Command="{Binding ConsultarCnpjCommand}" Classes="accent" />
+        </Grid>
+        <TextBlock Text="{Binding OrigemDados}" FontSize="11" Foreground="#1B6E3A" TextWrapping="Wrap"
+                   IsVisible="{Binding OrigemDados, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Text="{Binding Aviso}" Classes="erro" FontWeight="SemiBold"
+                   IsVisible="{Binding Aviso, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Razão social" />
+          <TextBox Grid.Column="1" Text="{Binding RazaoSocial}" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Nome fantasia" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NomeFantasia}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Natureza jurídica" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NaturezaJuridica}" Watermark="Código CONCLA, ex.: 2062 (LTDA)" Width="200" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="CNAE principal" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Cnae}" Watermark="7 dígitos" Width="200" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Início das atividades" />
+          <CalendarDatePicker Grid.Row="4" Grid.Column="1" SelectedDate="{Binding InicioAtividades}" />
+        </Grid>
+
+        <TextBlock Classes="secao" Text="Endereço e contato" />
+        <Grid ColumnDefinitions="170,*,70,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="8">
+          <TextBlock Classes="rotulo" Text="CEP" />
+          <TextBox Grid.Column="1" Text="{Binding Cep}" Width="140" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Logradouro / número" />
+          <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Logradouro}" />
+          <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Numero}" Watermark="Nº" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Complemento / bairro" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Complemento}" />
+          <TextBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Text="{Binding Bairro}" Watermark="Bairro" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Município / UF / IBGE" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Municipio}" />
+          <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding Uf}" MaxLength="2" />
+          <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding MunicipioIbge}" Watermark="Cód. IBGE" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="E-mail / telefone" />
+          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Email}" />
+          <TextBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" Text="{Binding Telefone}" Watermark="Telefone" />
+        </Grid>
+
+        <TextBlock Classes="secao" Text="Escrituração" />
+        <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Regime tributário" />
+          <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:CadastroEmpresaViewModel.Regimes}" SelectedItem="{Binding Regime}" MinWidth="220">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="cad:RegimeTributario">
+                <TextBlock Text="{Binding Converter={x:Static v:Conversores.NomeRegime}}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Primeiro exercício" />
+          <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding AnoExercicio}" Minimum="2000" Maximum="2100" FormatString="0" Width="130" HorizontalAlignment="Left" />
+          <CheckBox Grid.Row="2" Grid.Column="1" Content="Criar com o plano de contas modelo" IsChecked="{Binding ImportarPlanoModelo}" />
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+          <Button Content="Cadastrar" Command="{Binding CadastrarCommand}" Classes="accent" />
+          <Button Content="Limpar" Command="{Binding LimparFormularioCommand}" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+
+    <DockPanel Grid.Column="2">
+      <TextBlock DockPanel.Dock="Top" Text="Empresas cadastradas" FontWeight="SemiBold" Margin="0,0,0,6" />
+      <ListBox ItemsSource="{Binding Main.EmpresasPermitidas}" SelectedItem="{Binding Main.EmpresaSelecionada}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="seg:EmpresaPermitida">
+            <StackPanel>
+              <TextBlock Text="{Binding RazaoSocial}" FontSize="12" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Cnpj}" FontSize="11" Foreground="Gray" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Grid>
 </UserControl>

@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.UsuariosView"
+             x:DataType="vm:UsuariosViewModel">
+  <Grid ColumnDefinitions="*,16,380" RowDefinitions="Auto,*,Auto" Margin="8">
+    <TextBlock Classes="titulo" Text="Usuários" Margin="0,0,0,8" />
+
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Login" Binding="{ReflectionBinding Login}" Width="140" />
+        <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="120" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
+        <DataGridTextColumn Header="Último acesso" Binding="{ReflectionBinding UltimoAcesso}" Width="140" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <!-- Novo usuário -->
+    <Border Grid.Row="2" BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,8,0,0">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Novo usuário" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBox Text="{Binding NovoLogin}" Watermark="Login" Width="140" />
+          <TextBox Text="{Binding NovoNome}" Watermark="Nome completo" Width="240" />
+          <TextBox Text="{Binding NovaSenha}" Watermark="Senha inicial" PasswordChar="●" Width="150" />
+          <CheckBox Content="Administrador" IsChecked="{Binding NovoAdmin}" />
+          <Button Content="Criar" Command="{Binding CriarCommand}" Classes="accent" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </Border>
+
+    <!-- Edição do selecionado -->
+    <ScrollViewer Grid.Column="2" Grid.RowSpan="3">
+      <StackPanel Spacing="8" IsVisible="{Binding TemSelecionado}">
+        <TextBlock Classes="titulo" Text="{Binding Selecionado.Login, StringFormat='Usuário: {0}'}" />
+        <TextBlock Text="Nome" FontSize="12" />
+        <TextBox Text="{Binding NomeEdicao}" />
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <CheckBox Content="Administrador" IsChecked="{Binding AdminEdicao}" />
+          <CheckBox Content="Ativo" IsChecked="{Binding AtivoEdicao}" />
+        </StackPanel>
+
+        <TextBlock Text="Acesso às empresas" FontWeight="SemiBold" Margin="0,8,0,0" />
+        <TextBlock Text="Administradores acessam todas as empresas, independentemente desta lista." FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding Acessos}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:AcessoLinha">
+              <Grid ColumnDefinitions="*,140" Margin="0,2">
+                <TextBlock Text="{Binding Empresa}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12" />
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:AcessoLinha.Opcoes}" SelectedItem="{Binding Perfil}"
+                          HorizontalAlignment="Stretch" FontSize="12" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Salvar alterações" Command="{Binding SalvarCommand}" Classes="accent" Margin="0,4,0,0" />
+
+        <TextBlock Text="Redefinir senha" FontWeight="SemiBold" Margin="0,12,0,0" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBox Text="{Binding SenhaTemporaria}" Watermark="Senha temporária" PasswordChar="●" Width="200" />
+          <Button Content="Redefinir" Command="{Binding RedefinirSenhaCommand}" />
+        </StackPanel>
+        <TextBlock Text="Também desbloqueia o usuário. Ele deverá trocar a senha no próximo acesso." FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -3,6 +3,7 @@ using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Perseus.Domain.Contabil;
+using Perseus.Domain.Seguranca;
 
 namespace Perseus.Desktop.ViewModels;
 
@@ -120,13 +121,13 @@ public partial class DiarioViewModel(IContexto contexto) : ModuloViewModel(conte
     {
         if (Selecionada is null) { Erros.Add("Selecione uma linha do lançamento a estornar."); return; }
         var r = await app.Lancamentos.EstornarAsync(empresa, Selecionada.LancamentoId,
-            Data(DataEstorno, DateOnly.FromDateTime(DateTime.Today)), MotivoEstorno, null);
+            Data(DataEstorno, DateOnly.FromDateTime(DateTime.Today)), MotivoEstorno, Contexto.Sessao?.Id);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var msg = $"Lançamento nº {Selecionada.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
         MotivoEstorno = "";
         await GerarAsync();
         Mensagem = msg;
-    });
+    }, Permissao.Lancar);
 }
 
 public sealed record PeriodoView(DateOnly Competencia, bool Aberto)
@@ -161,9 +162,9 @@ public partial class PeriodosViewModel(IContexto contexto) : ModuloViewModel(con
         if (Selecionado is null) { Erros.Add("Selecione uma competência."); return; }
         var competencia = Selecionado.Competencia;
         var r = fechar
-            ? await app.Periodos.FecharAsync(empresa, competencia, null)
-            : await app.Periodos.ReabrirAsync(empresa, competencia, null);
+            ? await app.Periodos.FecharAsync(empresa, competencia, Contexto.Sessao?.Id)
+            : await app.Periodos.ReabrirAsync(empresa, competencia, Contexto.Sessao?.Id);
         await CarregarAsync();
         MostrarResultado(r, $"Período {competencia:MM/yyyy} {(fechar ? "fechado" : "reaberto")}.");
-    });
+    }, Permissao.FecharPeriodos);
 }

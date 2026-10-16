@@ -4,6 +4,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Perseus.Domain.Contabil;
+using Perseus.Domain.Seguranca;
 
 namespace Perseus.Desktop.ViewModels;
 
@@ -125,10 +126,10 @@ public partial class LancamentoViewModel : ModuloViewModel
             preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico,
                 string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim())).ToArray());
 
-        var r = await app.Lancamentos.EfetivarAsync(proposta, null);
+        var r = await app.Lancamentos.EfetivarAsync(proposta, Contexto.Sessao?.Id);
         MostrarResultado(r, r.Sucesso ? $"Lançamento nº {r.Valor.Numero} efetivado." : "");
         if (r.Sucesso) Limpar();
-    });
+    }, Permissao.Lancar);
 
     private decimal SomaDC(IndicadorDC dc) => Linhas.Where(l => l.Indicador == dc).Sum(l => l.ValorDecimal ?? 0);
 
