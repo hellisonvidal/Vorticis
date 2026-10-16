@@ -15,17 +15,17 @@ public sealed record UsuarioLinha(UsuarioResumo Usuario)
     public string UltimoAcesso => Usuario.UltimoAcesso?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "nunca";
 }
 
+public sealed record OpcaoPerfil(long? Id, string Nome);
+
 public partial class AcessoLinha : ObservableObject
 {
-    public const string SemAcesso = "Sem acesso";
-    public static IReadOnlyList<string> Opcoes { get; } = [SemAcesso, "Contador", "Assistente", "Consulta"];
+    public static readonly OpcaoPerfil SemAcesso = new(null, "Sem acesso");
 
     public required long EmpresaId { get; init; }
     public required string Empresa { get; init; }
-    public string Original { get; set; } = SemAcesso;
-    [ObservableProperty] private string _perfil = SemAcesso;
-
-    public Perfil? PerfilEscolhido => Perfil == SemAcesso ? null : Enum.Parse<Perfil>(Perfil);
+    public required IReadOnlyList<OpcaoPerfil> Opcoes { get; init; }
+    public long? Original { get; set; }
+    [ObservableProperty] private OpcaoPerfil _perfil = SemAcesso;
 }
 
 /// <summary>Configurações › Usuários e permissões (somente administrador; o serviço também verifica).</summary>
@@ -51,8 +51,11 @@ public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(con
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
         var id = Selecionado?.Usuario.Id;
+        var geracao = NovaGeracao();
+        var usuarios = await app.Usuarios.ListarAsync(sessao);
+        if (!EhAtual(geracao)) return;
         Lista.Clear();
-        foreach (var u in await app.Usuarios.ListarAsync(sessao)) Lista.Add(new UsuarioLinha(u));
+        foreach (var u in usuarios) Lista.Add(new UsuarioLinha(u));
         Selecionado = Lista.FirstOrDefault(l => l.Usuario.Id == id);
     }
 
@@ -69,13 +72,19 @@ public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(con
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
         try
         {
-            var atuais = (await app.Usuarios.ListarAcessosAsync(usuarioId)).ToDictionary(a => a.EmpresaId, a => a.Perfil.ToString());
+            var opcoes = new List<OpcaoPerfil> { AcessoLinha.SemAcesso };
+            opcoes.AddRange((await app.Perfis.ListarAsync(sessao)).Select(p => new OpcaoPerfil(p.Id, p.Nome)));
+            var atuais = (await app.Usuarios.ListarAcessosAsync(usuarioId)).ToDictionary(a => a.EmpresaId, a => a.PerfilId);
             var todas = await app.Usuarios.EmpresasPermitidasAsync(sessao);   // administrador: todas
             Acessos.Clear();
             foreach (var e in todas)
             {
-                var perfil = atuais.GetValueOrDefault(e.Id, AcessoLinha.SemAcesso);
-                Acessos.Add(new AcessoLinha { EmpresaId = e.Id, Empresa = e.RazaoSocial, Original = perfil, Perfil = perfil });
+                long? atual = atuais.TryGetValue(e.Id, out var pid) ? pid : null;
+                Acessos.Add(new AcessoLinha
+                {
+                    EmpresaId = e.Id, Empresa = e.RazaoSocial, Opcoes = opcoes, Original = atual,
+                    Perfil = opcoes.FirstOrDefault(o => o.Id == atual) ?? AcessoLinha.SemAcesso,
+                });
             }
         }
         catch (Exception ex)
@@ -102,10 +111,11 @@ public partial class UsuariosViewModel(IContexto contexto) : ModuloViewModel(con
         var id = Selecionado.Usuario.Id;
         var r = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, AdminEdicao, AtivoEdicao);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        foreach (var a in Acessos.Where(a => a.Perfil != a.Original))
+        foreach (var a in Acessos.Where(a => a.Perfil.Id != a.Original))
         {
-            await app.Usuarios.DefinirAcessoAsync(sessao, id, a.EmpresaId, a.PerfilEscolhido);
-            a.Original = a.Perfil;
+            var acesso = await app.Usuarios.DefinirAcessoAsync(sessao, id, a.EmpresaId, a.Perfil.Id);
+            if (!acesso.Sucesso) { MostrarResultado(acesso, ""); return; }
+            a.Original = a.Perfil.Id;
         }
         await CarregarAsync();
         Mensagem = "Alterações salvas.";

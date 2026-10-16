@@ -19,9 +19,12 @@ Cada fase só termina quando o **critério de saída** é atendido com dados rea
 - [x] Fase 0 — solução .NET 10, migrações versionadas com hash, multiempresa, auditoria encadeada, CI com PostgreSQL, executável Windows
 - [x] Fase 0 — login, perfis por empresa (Contador/Assistente/Consulta), administração de usuários, menu principal, configuração de conexão pela UI
 - [x] Fase 0 — cadastro de empresa com consulta à base pública do CNPJ (RFB)
-- [ ] Fase 0 — backup/restauração pela UI, instalador (PostgreSQL silencioso)
+- [x] Fase 0 — perfis de acesso configuráveis pelo administrador, verificados nos serviços
+- [x] Fase 0 — backup e restauração pela UI (pg_dump/pg_restore, cópia de segurança automática)
+- [ ] Fase 0 — instalador (PostgreSQL silencioso)
 - [x] Fase 1 — lançamento com validação, estorno, fechamento/reabertura, Diário, Razão, Balancete (CSV), plano de contas modelo
-- [ ] Fase 1 — CRUD de plano de contas/centros de custo, saldos iniciais, Diário/Razão em PDF com termos de abertura e encerramento
+- [x] Fase 1 — manutenção do plano de contas e dos centros de custo, saldos iniciais (implantação)
+- [ ] Fase 1 — Diário/Razão em PDF com termos de abertura e encerramento; mapeamento ao plano referencial (pré-requisito da ECD)
 
 ## Prioridade dentro do MVP (Fase 1)
 

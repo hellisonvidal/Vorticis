@@ -19,6 +19,9 @@ public interface IRepositorioContabil
     Task<LancamentoEfetivado> GravarEfetivadoAsync(LancamentoValidado lancamento, long? usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<CompetenciaStatus>> ListarPeriodosAsync(long empresaId, int ano, CancellationToken ct);
+
+    /// <summary>Número do lançamento efetivado (não estornado) com a origem dada no exercício, se houver.</summary>
+    Task<long?> ObterNumeroLancamentoAtivoAsync(long empresaId, long exercicioId, OrigemLancamento origem, CancellationToken ct);
     Task<IReadOnlyList<Inconsistencia>> VerificarInvariantesAsync(long empresaId, DateOnly competencia, CancellationToken ct);
     Task AlterarStatusPeriodoAsync(long empresaId, DateOnly competencia, bool fechar, long? usuarioId, CancellationToken ct);
 }

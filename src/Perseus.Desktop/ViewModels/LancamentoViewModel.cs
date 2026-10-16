@@ -51,11 +51,12 @@ public partial class LancamentoViewModel : ModuloViewModel
     public async Task AoTrocarEmpresaAsync()
     {
         Limpar();
-        Contas.Clear();
-        _todasContas = [];
-        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) return;
-        var plano = await app.Consultas.ObterPlanoAsync(empresa, CancellationToken.None);
-        _todasContas = plano.Where(c => c.Analitica).Select(c => new ContaSelecionavel(c.Codigo, c.Descricao)).ToArray();
+        var geracao = NovaGeracao();
+        IReadOnlyList<Application.Contabil.ContaDetalhe> plano = [];
+        if (Contexto.App is { } app && Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
+            plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
+        if (!EhAtual(geracao)) return;
+        _todasContas = plano.Where(c => c.Analitica && c.Ativa).Select(c => new ContaSelecionavel(c.Codigo, c.Descricao)).ToArray();
         Filtrar();
     }
 
@@ -113,7 +114,7 @@ public partial class LancamentoViewModel : ModuloViewModel
     }
 
     [RelayCommand]
-    private Task EfetivarAsync() => ExecutarAsync(async (app, empresa) =>
+    private Task EfetivarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var preenchidas = Linhas.Where(l => l.Conta.Trim().Length > 0 || l.Valor.Trim().Length > 0).ToArray();
         var problemas = preenchidas.Select((l, i) =>
@@ -126,10 +127,10 @@ public partial class LancamentoViewModel : ModuloViewModel
             preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico,
                 string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim())).ToArray());
 
-        var r = await app.Lancamentos.EfetivarAsync(proposta, Contexto.Sessao?.Id);
+        var r = await app.Lancamentos.EfetivarAsync(proposta, usuario);
         MostrarResultado(r, r.Sucesso ? $"Lançamento nº {r.Valor.Numero} efetivado." : "");
         if (r.Sucesso) Limpar();
-    }, Permissao.Lancar);
+    }, Permissao.LancamentoIncluir);
 
     private decimal SomaDC(IndicadorDC dc) => Linhas.Where(l => l.Indicador == dc).Sum(l => l.ValorDecimal ?? 0);
 

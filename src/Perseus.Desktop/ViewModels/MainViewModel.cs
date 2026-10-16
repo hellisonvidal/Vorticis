@@ -28,7 +28,12 @@ public static class Telas
     public const string Balancete = "balancete";
     public const string Razao = "razao";
     public const string Diario = "diario";
+    public const string PlanoContas = "planocontas";
+    public const string CentrosCusto = "centroscusto";
+    public const string SaldosIniciais = "saldosiniciais";
     public const string Usuarios = "usuarios";
+    public const string Perfis = "perfis";
+    public const string Backup = "backup";
     public const string AlterarSenha = "senha";
     public const string Conexao = "conexao";
     public const string Sobre = "sobre";
@@ -37,6 +42,8 @@ public static class Telas
 public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposable
 {
     private string _connectionString = "";
+    private string? _telaAtual;
+    private PermissoesEfetivas _permissoes = PermissoesEfetivas.Nenhuma;
     private IConsultaCnpj? _consultaCnpj;
 
     public MainViewModel()
@@ -51,7 +58,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     /// consultado por um usuário (relatórios, formulários, listas) fique visível para o próximo.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
-        nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre))]
+        nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
+        nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -61,6 +69,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Diario = new DiarioViewModel(this);
         Periodos = new PeriodosViewModel(this);
         Usuarios = new UsuariosViewModel(this);
+        Perfis = new PerfisViewModel(this);
+        PlanoContas = new PlanoContasViewModel(this);
+        CentrosCusto = new CentrosCustoViewModel(this);
+        SaldosIniciais = new SaldosIniciaisViewModel(this);
+        Backup = new BackupViewModel(this);
         AlterarSenha = new AlterarSenhaViewModel(this);
         Sobre = new SobreViewModel(this);
     }
@@ -87,6 +100,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public DiarioViewModel Diario { get; private set; }
     public PeriodosViewModel Periodos { get; private set; }
     public UsuariosViewModel Usuarios { get; private set; }
+    public PerfisViewModel Perfis { get; private set; }
+    public PlanoContasViewModel PlanoContas { get; private set; }
+    public CentrosCustoViewModel CentrosCusto { get; private set; }
+    public SaldosIniciaisViewModel SaldosIniciais { get; private set; }
+    public BackupViewModel Backup { get; private set; }
     public AlterarSenhaViewModel AlterarSenha { get; private set; }
     public SobreViewModel Sobre { get; private set; }
 
@@ -98,6 +116,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     {
         _connectionString = connectionString;
         _consultaCnpj = consultaCnpj ?? _consultaCnpj;
+        if (Logado) Sair();
         if (App is not null) { await App.DisposeAsync(); App = null; }
         try
         {
@@ -122,9 +141,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Logado = true;
         await RecarregarEmpresasAsync();
         if (EmpresasPermitidas.Count == 0 && sessao.Administrador) Abrir(Telas.Empresas);
-        else if (Pode(Permissao.Lancar)) Abrir(Telas.Lancamento);
-        else if (Pode(Permissao.ConsultarRelatorios)) Abrir(Telas.Balancete);
-        else Abrir(Telas.Sobre);
+        else AbrirPrimeiraPermitida();
     }
 
     [RelayCommand]
@@ -134,6 +151,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Logado = false;
         EmpresasPermitidas.Clear();
         EmpresaSelecionada = null;
+        _permissoes = PermissoesEfetivas.Nenhuma;
+        _telaAtual = null;
         TituloTela = "";
         RecriarModulos();
         Login.Limpar();
@@ -149,7 +168,28 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         EmpresasPermitidas.Clear();
         foreach (var e in lista) EmpresasPermitidas.Add(e);
         EmpresaSelecionada = EmpresasPermitidas.FirstOrDefault(e => e.Id == atual) ?? EmpresasPermitidas.FirstOrDefault();
+        await AtualizarPermissoesAsync();
+    }
+
+    /// <summary>Lê do banco o que o usuário pode fazer na empresa ativa (perfil atribuído pelo administrador).</summary>
+    public async Task AtualizarPermissoesAsync()
+    {
+        _permissoes = App is not null && Sessao is not null && EmpresaSelecionada is not null
+            ? await App.Autorizador.ObterAsync(Sessao.Id, EmpresaSelecionada.Id)
+            : PermissoesEfetivas.Nenhuma;
+        AbrirCommand.NotifyCanExecuteChanged();
+        Diario.AtualizarPermissoes();
+        PlanoContas.AtualizarPermissoes();
+        CentrosCusto.AtualizarPermissoes();
         AtualizarStatus();
+        // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
+        if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
+    }
+
+    private void AbrirPrimeiraPermitida()
+    {
+        string[] preferencia = [Telas.Lancamento, Telas.Balancete, Telas.Razao, Telas.Diario, Telas.Periodos, Telas.PlanoContas, Telas.Sobre];
+        Abrir(preferencia.First(PodeAbrir));
     }
 
     // ------------------------------------------------------------------ permissões e navegação
@@ -157,13 +197,19 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public bool Pode(Permissao permissao) =>
         Sessao is not null && (permissao == Permissao.AdministrarSistema
             ? Sessao.Administrador
-            : EmpresaSelecionada is not null && Permissoes.Pode(Sessao, EmpresaSelecionada.Perfil, permissao));
+            : EmpresaSelecionada is not null && _permissoes.Pode(permissao));
 
     public bool PodeAbrir(string? tela) => Logado && tela switch
     {
-        Telas.Empresas or Telas.Usuarios or Telas.Conexao => Pode(Permissao.AdministrarSistema),
-        Telas.Lancamento or Telas.Estorno => Pode(Permissao.Lancar),
-        Telas.Periodos or Telas.Balancete or Telas.Razao or Telas.Diario => Pode(Permissao.ConsultarRelatorios),
+        Telas.Empresas or Telas.Usuarios or Telas.Perfis or Telas.Conexao or Telas.Backup => Pode(Permissao.AdministrarSistema),
+        Telas.PlanoContas or Telas.CentrosCusto => EmpresaSelecionada is not null && _permissoes.TemAcesso,
+        Telas.Lancamento => Pode(Permissao.LancamentoIncluir),
+        Telas.Estorno => Pode(Permissao.LancamentoEstornar),
+        Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
+        Telas.Periodos => Pode(Permissao.PeriodoFechar) || Pode(Permissao.PeriodoReabrir),
+        Telas.Balancete => Pode(Permissao.RelatorioBalancete),
+        Telas.Razao => Pode(Permissao.RelatorioRazao),
+        Telas.Diario => Pode(Permissao.RelatorioDiario),
         Telas.AlterarSenha or Telas.Sobre => true,
         _ => false,
     };
@@ -175,19 +221,30 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         (Conteudo, TituloTela) = tela switch
         {
             Telas.Empresas => ((object)Empresas, "Cadastros › Empresas"),
+            Telas.PlanoContas => (PlanoContas, "Cadastros › Plano de contas"),
+            Telas.CentrosCusto => (CentrosCusto, "Cadastros › Centros de custo"),
+            Telas.SaldosIniciais => (SaldosIniciais, "Lançamentos › Saldos iniciais (implantação)"),
+            Telas.Perfis => (Perfis, "Configurações › Perfis de acesso"),
+            Telas.Backup => (Backup, "Configurações › Backup e restauração"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
             Telas.Estorno => (Diario, "Lançamentos › Estornar lançamento"),
             Telas.Periodos => (Periodos, "Lançamentos › Fechamento de períodos"),
             Telas.Balancete => (Balancete, "Relatórios › Balancete de verificação"),
             Telas.Razao => (Razao, "Relatórios › Livro Razão"),
             Telas.Diario => (Diario, "Relatórios › Livro Diário"),
-            Telas.Usuarios => (Usuarios, "Configurações › Usuários e permissões"),
+            Telas.Usuarios => (Usuarios, "Configurações › Usuários"),
             Telas.AlterarSenha => (AlterarSenha, "Configurações › Alterar minha senha"),
             Telas.Conexao => (Conexao, "Configurações › Conexão com o banco de dados"),
-            Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus"),
+            Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus Contábil"),
             _ => (Conteudo, TituloTela),
         };
+        _telaAtual = tela;
         if (tela == Telas.Usuarios) _ = Disparar(Usuarios.CarregarAsync);
+        if (tela == Telas.Perfis) _ = Disparar(Perfis.CarregarAsync);
+        if (tela == Telas.PlanoContas) _ = Disparar(PlanoContas.CarregarAsync);
+        if (tela == Telas.CentrosCusto) _ = Disparar(CentrosCusto.CarregarAsync);
+        if (tela == Telas.SaldosIniciais) _ = Disparar(SaldosIniciais.CarregarAsync);
+        if (tela == Telas.Backup) Backup.Atualizar();
         if (tela == Telas.Conexao) Conexao.CarregarDe(_connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
     }
@@ -198,15 +255,18 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
 
     partial void OnEmpresaSelecionadaChanged(EmpresaPermitida? value)
     {
-        AbrirCommand.NotifyCanExecuteChanged();
-        AtualizarStatus();
-        _ = Disparar(Lancamento.AoTrocarEmpresaAsync);
-        _ = Disparar(Periodos.CarregarAsync);
         Balancete.Linhas.Clear();
         Razao.Linhas.Clear();
         Diario.Linhas.Clear();
-        // Se a tela aberta deixou de ser permitida para a nova empresa, volta à tela neutra.
-        if (Logado && ReferenceEquals(Conteudo, Lancamento) && !Pode(Permissao.Lancar)) Abrir(Telas.Sobre);
+        _ = Disparar(async () =>
+        {
+            await AtualizarPermissoesAsync();
+            await Lancamento.AoTrocarEmpresaAsync();
+            await Periodos.CarregarAsync();
+            if (_telaAtual == Telas.PlanoContas) await PlanoContas.CarregarAsync();
+            if (_telaAtual == Telas.CentrosCusto) await CentrosCusto.CarregarAsync();
+            if (_telaAtual == Telas.SaldosIniciais) await SaldosIniciais.CarregarAsync();
+        });
     }
 
     private void AtualizarStatus()
@@ -214,7 +274,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (Sessao is null) return;
         var empresa = EmpresaSelecionada is null
             ? (EmpresasPermitidas.Count == 0 ? "nenhuma empresa liberada" : "nenhuma empresa selecionada")
-            : $"perfil {(Sessao.Administrador ? "administrador" : EmpresaSelecionada.Perfil?.ToString().ToLowerInvariant())}";
+            : Sessao.Administrador ? "administrador" : $"perfil {_permissoes.NomePerfil ?? "sem acesso"}";
         Status = $"Usuário: {Sessao.Login} | {empresa} | {Configuracao.Descrever(_connectionString)}";
     }
 

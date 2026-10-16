@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>Perseus</AssemblyName>
+    <AssemblyName>PerseusContabil</AssemblyName>
+    <Product>Perseus Contábil</Product>
+    <Title>Perseus Contábil</Title>
+    <Version>0.3.0</Version>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>

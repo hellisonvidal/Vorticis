@@ -25,12 +25,15 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
     [ObservableProperty] private bool _incluirZeradas;
     [ObservableProperty] private string _totais = "";
 
+    public bool PodeExportar => Contexto.Pode(Permissao.RelatorioExportar);
+
     [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa) =>
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
-        var fim = Data(Fim, ini);
-        _ultimo = await app.Relatorios.BalanceteAsync(empresa, ini, fim, IncluirZeradas);
+        var r = await app.Relatorios.BalanceteAsync(empresa, ini, Data(Fim, ini), usuario, IncluirZeradas);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        _ultimo = r.Valor;
         Linhas.Clear();
         foreach (var l in _ultimo)
             Linhas.Add(new LinhaBalanceteView(l.Codigo, l.Descricao, l.Analitica, LinhaBalancete.Formatar(l.SaldoAnterior),
@@ -43,13 +46,14 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
         Totais = $"Movimento: débitos {Numeros.Moeda(deb)} | créditos {Numeros.Moeda(cred)}" + (deb == cred ? " ✓ fechado" : " ✗ DIFERENÇA");
         var invertidas = _ultimo.Count(l => l.Analitica && l.SaldoInvertido);
         Mensagem = invertidas > 0 ? $"{invertidas} conta(s) com saldo contrário à natureza (destacadas)." : null;
-    });
+        OnPropertyChanged(nameof(PodeExportar));
+    }, Permissao.RelatorioBalancete);
 
     [RelayCommand]
-    private Task ExportarCsvAsync() => ExecutarAsync(async (_, _) =>
+    private Task ExportarCsvAsync() => ExecutarAsync(async (_, _, _) =>
     {
         if (_ultimo.Count == 0) { Erros.Add("Gere o balancete antes de exportar."); return; }
-        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Perseus");
+        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Perseus Contabil");
         Directory.CreateDirectory(pasta);
         var arquivo = Path.Combine(pasta, $"balancete_{Inicio:yyyyMMdd}_{Fim:yyyyMMdd}.csv");
         var sb = new StringBuilder("Código;Descrição;Tipo;Saldo anterior;Débitos;Créditos;Saldo final\n");
@@ -58,7 +62,7 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
                 Numeros.Moeda(l.SaldoAnterior), Numeros.Moeda(l.Debitos), Numeros.Moeda(l.Creditos), Numeros.Moeda(l.SaldoFinal)));
         await File.WriteAllTextAsync(arquivo, sb.ToString(), new UTF8Encoding(true));   // BOM: Excel abre acentos corretamente
         Mensagem = $"Exportado para {arquivo}";
-    });
+    }, Permissao.RelatorioExportar);
 }
 
 public sealed record LinhaRazaoView(string Data, long Numero, string Historico, string Debito, string Credito, string Saldo, bool Estornado)
@@ -76,19 +80,20 @@ public partial class RazaoViewModel(IContexto contexto) : ModuloViewModel(contex
     [ObservableProperty] private string _cabecalho = "";
 
     [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa) =>
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         Linhas.Clear();
         Cabecalho = "";
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
-        var razao = await app.Relatorios.RazaoAsync(empresa, Conta.Trim(), ini, Data(Fim, ini));
-        if (razao is null) { Erros.Add($"Conta {Conta} não encontrada."); return; }
+        var r = await app.Relatorios.RazaoAsync(empresa, Conta.Trim(), ini, Data(Fim, ini), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var razao = r.Valor;
         foreach (var l in razao.Linhas)
             Linhas.Add(new LinhaRazaoView(l.Data.ToString("dd/MM/yyyy"), l.Numero, l.Historico,
                 l.DC == IndicadorDC.D ? Numeros.Moeda(l.Valor) : "", l.DC == IndicadorDC.C ? Numeros.Moeda(l.Valor) : "",
                 LinhaBalancete.Formatar(l.SaldoAcumulado), l.Estornado));
         Cabecalho = $"{razao.Codigo} - {razao.Descricao} | Saldo anterior: {LinhaBalancete.Formatar(razao.SaldoAnterior)} | Saldo final: {LinhaBalancete.Formatar(razao.SaldoFinal)}";
-    });
+    }, Permissao.RelatorioRazao);
 }
 
 public sealed record LinhaDiarioView(long LancamentoId, long Numero, string Data, string Conta, string Debito, string Credito,
@@ -104,30 +109,36 @@ public partial class DiarioViewModel(IContexto contexto) : ModuloViewModel(conte
     [ObservableProperty] private DateTime? _dataEstorno = DateTime.Today;
     [ObservableProperty] private string _motivoEstorno = "";
 
+    /// <summary>O painel de estorno só aparece para quem pode estornar.</summary>
+    public bool PodeEstornar => Contexto.Pode(Permissao.LancamentoEstornar);
+
+    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEstornar));
+
     [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa) =>
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
-        var linhas = await app.Relatorios.DiarioAsync(empresa, ini, Data(Fim, ini));
+        var r = await app.Relatorios.DiarioAsync(empresa, ini, Data(Fim, ini), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Linhas.Clear();
-        foreach (var l in linhas)
+        foreach (var l in r.Valor)
             Linhas.Add(new LinhaDiarioView(l.LancamentoId, l.Numero, l.Data.ToString("dd/MM/yyyy"), $"{l.CodigoConta} {l.DescricaoConta}",
                 l.DC == IndicadorDC.D ? Numeros.Moeda(l.Valor) : "", l.DC == IndicadorDC.C ? Numeros.Moeda(l.Valor) : "",
                 l.Historico, l.Status == StatusLancamento.Estornado ? "Estornado" : ""));
     });
 
     [RelayCommand]
-    private Task EstornarAsync() => ExecutarAsync(async (app, empresa) =>
+    private Task EstornarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionada is null) { Erros.Add("Selecione uma linha do lançamento a estornar."); return; }
         var r = await app.Lancamentos.EstornarAsync(empresa, Selecionada.LancamentoId,
-            Data(DataEstorno, DateOnly.FromDateTime(DateTime.Today)), MotivoEstorno, Contexto.Sessao?.Id);
+            Data(DataEstorno, DateOnly.FromDateTime(DateTime.Today)), MotivoEstorno, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var msg = $"Lançamento nº {Selecionada.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
         MotivoEstorno = "";
         await GerarAsync();
         Mensagem = msg;
-    }, Permissao.Lancar);
+    }, Permissao.LancamentoEstornar);
 }
 
 public sealed record PeriodoView(DateOnly Competencia, bool Aberto)
@@ -142,13 +153,21 @@ public partial class PeriodosViewModel(IContexto contexto) : ModuloViewModel(con
     [ObservableProperty] private decimal? _ano = DateTime.Today.Year;
     [ObservableProperty] private PeriodoView? _selecionado;
 
+    public bool PodeFechar => Contexto.Pode(Permissao.PeriodoFechar);
+    public bool PodeReabrir => Contexto.Pode(Permissao.PeriodoReabrir);
+
     [RelayCommand]
     public async Task CarregarAsync()
     {
+        OnPropertyChanged(nameof(PodeFechar));
+        OnPropertyChanged(nameof(PodeReabrir));
+        var geracao = NovaGeracao();
+        IReadOnlyList<Application.Contabil.CompetenciaStatus> lista = [];
+        if (Contexto.App is { } app && Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
+            lista = await app.Periodos.ListarAsync(empresa, (int)(Ano ?? DateTime.Today.Year), sessao.Id);
+        if (!EhAtual(geracao)) return;
         Periodos.Clear();
-        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) return;
-        foreach (var p in await app.Periodos.ListarAsync(empresa, (int)(Ano ?? DateTime.Today.Year)))
-            Periodos.Add(new PeriodoView(p.Competencia, p.Aberto));
+        foreach (var p in lista) Periodos.Add(new PeriodoView(p.Competencia, p.Aberto));
     }
 
     [RelayCommand]
@@ -157,14 +176,14 @@ public partial class PeriodosViewModel(IContexto contexto) : ModuloViewModel(con
     [RelayCommand]
     private Task ReabrirAsync() => Alterar(fechar: false);
 
-    private Task Alterar(bool fechar) => ExecutarAsync(async (app, empresa) =>
+    private Task Alterar(bool fechar) => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionado is null) { Erros.Add("Selecione uma competência."); return; }
         var competencia = Selecionado.Competencia;
         var r = fechar
-            ? await app.Periodos.FecharAsync(empresa, competencia, Contexto.Sessao?.Id)
-            : await app.Periodos.ReabrirAsync(empresa, competencia, Contexto.Sessao?.Id);
+            ? await app.Periodos.FecharAsync(empresa, competencia, usuario)
+            : await app.Periodos.ReabrirAsync(empresa, competencia, usuario);
         await CarregarAsync();
         MostrarResultado(r, $"Período {competencia:MM/yyyy} {(fechar ? "fechado" : "reaberto")}.");
-    }, Permissao.FecharPeriodos);
+    }, fechar ? Permissao.PeriodoFechar : Permissao.PeriodoReabrir);
 }

@@ -1,4 +1,6 @@
+using Perseus.Application.Seguranca;
 using Perseus.Domain.Comum;
+using Perseus.Domain.Seguranca;
 
 namespace Perseus.Application.Contabil;
 
@@ -6,13 +8,14 @@ namespace Perseus.Application.Contabil;
 /// Fechamento mensal. Fecha-se em ordem cronológica (não se fecha março com fevereiro aberto) e
 /// reabre-se em ordem inversa, para que nenhum saldo de mês fechado mude por lançamento retroativo.
 /// </summary>
-public sealed class ServicoPeriodo(IRepositorioContabil repositorio)
+public sealed class ServicoPeriodo(IRepositorioContabil repositorio, Autorizador autorizador)
 {
-    public Task<IReadOnlyList<CompetenciaStatus>> ListarAsync(long empresaId, int ano, CancellationToken ct = default)
-        => repositorio.ListarPeriodosAsync(empresaId, ano, ct);
+    public async Task<IReadOnlyList<CompetenciaStatus>> ListarAsync(long empresaId, int ano, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ListarPeriodosAsync(empresaId, ano, ct) : [];
 
-    public async Task<Resultado> FecharAsync(long empresaId, DateOnly competencia, long? usuarioId, CancellationToken ct = default)
+    public async Task<Resultado> FecharAsync(long empresaId, DateOnly competencia, long usuarioId, CancellationToken ct = default)
     {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PeriodoFechar, ct) is { } negado) return Resultado.Falha(negado);
         competencia = new DateOnly(competencia.Year, competencia.Month, 1);
         var periodos = await repositorio.ListarPeriodosAsync(empresaId, competencia.Year, ct);
         var alvo = periodos.FirstOrDefault(p => p.Competencia == competencia);
@@ -31,8 +34,9 @@ public sealed class ServicoPeriodo(IRepositorioContabil repositorio)
         return Resultado.Ok();
     }
 
-    public async Task<Resultado> ReabrirAsync(long empresaId, DateOnly competencia, long? usuarioId, CancellationToken ct = default)
+    public async Task<Resultado> ReabrirAsync(long empresaId, DateOnly competencia, long usuarioId, CancellationToken ct = default)
     {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PeriodoReabrir, ct) is { } negado) return Resultado.Falha(negado);
         competencia = new DateOnly(competencia.Year, competencia.Month, 1);
         var periodos = await repositorio.ListarPeriodosAsync(empresaId, competencia.Year, ct);
         var alvo = periodos.FirstOrDefault(p => p.Competencia == competencia);

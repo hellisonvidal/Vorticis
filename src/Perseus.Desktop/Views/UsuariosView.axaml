@@ -44,14 +44,20 @@
         </StackPanel>
 
         <TextBlock Text="Acesso às empresas" FontWeight="SemiBold" Margin="0,8,0,0" />
-        <TextBlock Text="Administradores acessam todas as empresas, independentemente desta lista." FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+        <TextBlock Text="O perfil define o que o usuário pode fazer em cada empresa (Configurações › Perfis de acesso). Administradores acessam tudo." FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
         <ItemsControl ItemsSource="{Binding Acessos}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:AcessoLinha">
-              <Grid ColumnDefinitions="*,140" Margin="0,2">
+              <Grid ColumnDefinitions="*,170" Margin="0,2">
                 <TextBlock Text="{Binding Empresa}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12" />
-                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:AcessoLinha.Opcoes}" SelectedItem="{Binding Perfil}"
-                          HorizontalAlignment="Stretch" FontSize="12" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Perfil}"
+                          HorizontalAlignment="Stretch" FontSize="12">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:OpcaoPerfil">
+                      <TextBlock Text="{Binding Nome}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

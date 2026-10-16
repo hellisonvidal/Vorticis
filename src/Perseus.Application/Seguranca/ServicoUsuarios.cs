@@ -8,9 +8,10 @@ public sealed record CredenciaisUsuario(long Id, string Login, string Nome, stri
 
 public sealed record UsuarioResumo(long Id, string Login, string Nome, bool Administrador, bool Ativo, DateTimeOffset? UltimoAcesso);
 
-public sealed record EmpresaPermitida(long Id, string Cnpj, string RazaoSocial, Perfil? Perfil);
+/// <param name="Perfil">Nome do perfil do usuário na empresa; nulo para administrador sem perfil atribuído.</param>
+public sealed record EmpresaPermitida(long Id, string Cnpj, string RazaoSocial, string? Perfil);
 
-public sealed record AcessoEmpresa(long EmpresaId, string RazaoSocial, Perfil Perfil);
+public sealed record AcessoEmpresa(long EmpresaId, string RazaoSocial, long PerfilId, string Perfil);
 
 public interface IRepositorioUsuarios
 {
@@ -28,7 +29,8 @@ public interface IRepositorioUsuarios
     Task AlterarSenhaAsync(long usuarioId, string senhaHash, bool deveTrocarSenha, CancellationToken ct);
     Task AlterarAsync(long usuarioId, string nome, bool administrador, bool ativo, CancellationToken ct);
     Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct);
-    Task DefinirAcessoAsync(long usuarioId, long empresaId, Perfil? perfil, CancellationToken ct);
+    /// <param name="perfilId">Perfil a atribuir; nulo revoga o acesso.</param>
+    Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct);
     Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct);
     Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasAsync(long usuarioId, bool administrador, CancellationToken ct);
 }
@@ -159,12 +161,19 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         }
     }
 
-    public async Task<Resultado> DefinirAcessoAsync(SessaoUsuario admin, long usuarioId, long empresaId, Perfil? perfil,
+    public async Task<Resultado> DefinirAcessoAsync(SessaoUsuario admin, long usuarioId, long empresaId, long? perfilId,
                                                    CancellationToken ct = default)
     {
         if (!admin.Administrador) return Resultado.Falha("Somente administradores podem conceder acesso.");
-        await repositorio.DefinirAcessoAsync(usuarioId, empresaId, perfil, ct);
-        return Resultado.Ok();
+        try
+        {
+            await repositorio.DefinirAcessoAsync(usuarioId, empresaId, perfilId, ct);
+            return Resultado.Ok();
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado.Falha(ex.Message);
+        }
     }
 
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(SessaoUsuario admin, CancellationToken ct = default)

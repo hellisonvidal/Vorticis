@@ -2,6 +2,8 @@ using Npgsql;
 using Perseus.Application.Cadastros;
 using Perseus.Application.Contabil;
 using Perseus.Application.Seguranca;
+using Perseus.Application.Sistema;
+using Perseus.Infra.Sistema;
 using Perseus.Infra.Cnpj;
 using Perseus.Infra.Migracoes;
 using Perseus.Infra.Postgres;
@@ -13,25 +15,35 @@ public sealed class PerseusApp : IAsyncDisposable
 {
     private readonly NpgsqlDataSource _ds;
 
-    private PerseusApp(NpgsqlDataSource ds, IConsultaCnpj consultaCnpj)
+    private PerseusApp(NpgsqlDataSource ds, string connectionString, IConsultaCnpj consultaCnpj)
     {
         _ds = ds;
+        var repoPerfis = new RepositorioPerfis(ds);
+        var autorizador = new Autorizador(repoPerfis);
+        Autorizador = autorizador;
         Usuarios = new ServicoUsuarios(new RepositorioUsuarios(ds));
+        Perfis = new ServicoPerfis(repoPerfis);
         var repoContabil = new RepositorioContabil(ds);
-        Lancamentos = new ServicoLancamento(repoContabil);
-        Periodos = new ServicoPeriodo(repoContabil);
+        Lancamentos = new ServicoLancamento(repoContabil, autorizador);
+        Periodos = new ServicoPeriodo(repoContabil, autorizador);
+        PlanoContas = new ServicoPlanoContas(new RepositorioPlanoContas(ds), autorizador);
         Consultas = new ConsultasContabeis(ds);
-        Relatorios = new ServicoRelatorios(Consultas);
+        Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj);
+        Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Migrador = new Migrador(ds);
     }
 
+    public Autorizador Autorizador { get; }
     public ServicoUsuarios Usuarios { get; }
+    public ServicoPerfis Perfis { get; }
     public ServicoLancamento Lancamentos { get; }
     public ServicoPeriodo Periodos { get; }
+    public ServicoPlanoContas PlanoContas { get; }
     public ServicoRelatorios Relatorios { get; }
     public ServicoEmpresa Empresas { get; }
+    public ServicoBackup Backup { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }
     public Migrador Migrador { get; }
@@ -41,7 +53,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public static async Task<PerseusApp> IniciarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, CancellationToken ct = default)
     {
         var ds = NpgsqlDataSource.Create(connectionString);
-        var app = new PerseusApp(ds, consultaCnpj ?? new ConsultaCnpjPublica(ConsultaCnpjPublica.CriarHttpClient()));
+        var app = new PerseusApp(ds, connectionString, consultaCnpj ?? new ConsultaCnpjPublica(ConsultaCnpjPublica.CriarHttpClient()));
         try
         {
             await app.Migrador.AplicarAsync(ct);

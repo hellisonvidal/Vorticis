@@ -46,5 +46,5 @@ jobs:
         run: dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
       - uses: actions/upload-artifact@v4
         with:
-          name: perseus-win-x64
+          name: perseus-contabil-win-x64
           path: publish/

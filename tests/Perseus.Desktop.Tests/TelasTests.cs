@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Perseus.Application.Cadastros;
+using Perseus.Domain.Seguranca;
 using Perseus.Desktop.ViewModels;
 using Perseus.Desktop.Views;
 using Perseus.Infra.Cnpj;
@@ -38,14 +39,31 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         if (Pasta is not null) quadro.Save(Path.Combine(Pasta, nome + ".png"));
     }
 
+    /// <summary>
+    /// Garante que o restante do teste (inclusive o Dispose da sessão) não rode na thread da sessão headless:
+    /// se uma asserção falhar lá dentro, a continuação síncrona chamaria Dispose na própria thread e travaria,
+    /// escondendo a falha real.
+    /// </summary>
+    private static async Task<T> ForaDaSessao<T>(Task<T> tarefa)
+    {
+        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _ = tarefa.ContinueWith(t =>
+        {
+            if (t.IsFaulted) tcs.SetException(t.Exception!.InnerExceptions);
+            else if (t.IsCanceled) tcs.SetCanceled();
+            else tcs.SetResult(t.Result);
+        }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+        return await tcs.Task;
+    }
+
     [Fact]
-    public async Task Primeiro_acesso_cadastro_por_cnpj_lancamento_usuarios_e_permissoes_pelo_menu()
+    public async Task Fluxo_completo_com_perfil_personalizado_definido_pelo_administrador()
     {
         BancoDeTeste.ExigirBanco();
         using var sessao = HeadlessUnitTestSession.StartNew(typeof(AppDeTeste));
         // Retornar um valor força a sobrecarga Dispatch<T>(Func<Task<T>>), que aguarda o corpo assíncrono;
         // com Func<Task> a sobrecarga escolhida devolveria Task<Task> e as asserções não seriam aguardadas.
-        var concluido = await sessao.Dispatch(async () =>
+        var concluido = await ForaDaSessao(sessao.Dispatch(async () =>
         {
             // Consulta de CNPJ com o parser real e resposta HTTP simulada (os testes não acessam a internet).
             var http = new HttpSimulado(_ => HttpSimulado.Json(ConsultaCnpjTests.RespostaExemplo));
@@ -116,32 +134,88 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             Assert.Contains("✓ fechado", vm.Balancete.Totais);
             Foto(janela, "05_balancete");
 
-            // 5. Configurações › Usuários: cria usuário com perfil Consulta na empresa
+            // 5. Cadastros › Plano de contas: inclui subconta, herdando natureza
+            vm.AbrirCommand.Execute(Telas.PlanoContas);
+            var plano = vm.PlanoContas;
+            await plano.CarregarAsync();
+            plano.Selecionada = plano.Lista.Single(c => c.Conta.Codigo == "1.1.01.003");
+            Assert.Equal("1.1.01.004", plano.NovoCodigo);            // sugestão da próxima irmã
+            plano.NovaDescricao = "Caixa da filial";
+            await plano.IncluirCommand.ExecuteAsync(null);
+            Assert.Empty(plano.Erros);
+            Assert.Contains(plano.Lista, c => c.Conta.Codigo == "1.1.01.004" && c.Conta.Analitica);
+            Foto(janela, "06_plano_contas");
+
+            // Centros de custo
+            vm.AbrirCommand.Execute(Telas.CentrosCusto);
+            (vm.CentrosCusto.NovoCodigo, vm.CentrosCusto.NovaDescricao) = ("ADM", "Administrativo");
+            await vm.CentrosCusto.IncluirCommand.ExecuteAsync(null);
+            Assert.Empty(vm.CentrosCusto.Erros);
+            Assert.Single(vm.CentrosCusto.Lista);
+
+            // Saldos iniciais
+            vm.AbrirCommand.Execute(Telas.SaldosIniciais);
+            var saldos = vm.SaldosIniciais;
+            saldos.Ano = 2026;
+            await saldos.CarregarAsync();
+            saldos.Linhas.Single(l => l.Codigo == "1.1.01.001").Valor = "5.000,00";
+            saldos.Linhas.Single(l => l.Codigo == "1.2.03.003").Valor = "40.000,00";
+            saldos.Linhas.Single(l => l.Codigo == "2.3.01.001").Valor = "45.000,00";
+            Assert.True(saldos.Balanceado);
+            saldos.SomentePreenchidas = true;
+            Foto(janela, "07_saldos_iniciais");
+            await saldos.LancarCommand.ExecuteAsync(null);
+            Assert.Empty(saldos.Erros);
+            Assert.Contains("lançamento nº 2", saldos.Mensagem);
+
+            // 6. Configurações › Perfis de acesso: perfil personalizado só com Razão e Diário
+            vm.AbrirCommand.Execute(Telas.Perfis);
+            var perfis = vm.Perfis;
+            await perfis.CarregarAsync();
+            Assert.Equal(["Assistente", "Consulta", "Contador"], perfis.Lista.Select(p => p.Nome).Order());
+            perfis.NovoCommand.Execute(null);
+            (perfis.Nome, perfis.Descricao) = ("Auditor externo", "Consulta Razão e Diário");
+            foreach (var f in perfis.Grupos.SelectMany(g => g.Funcoes))
+                f.Marcada = f.Definicao.Permissao is Permissao.RelatorioRazao or Permissao.RelatorioDiario;
+            await perfis.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(perfis.Erros);
+            Foto(janela, "08_perfis");
+
+            // Usuários: cria João e atribui o perfil "Auditor externo" na empresa
             vm.AbrirCommand.Execute(Telas.Usuarios);
             var u = vm.Usuarios;
             await u.CarregarAsync();
             (u.NovoLogin, u.NovoNome, u.NovaSenha) = ("joao", "João Auditor", "Inicial123");
             await u.CriarCommand.ExecuteAsync(null);
             Assert.Empty(u.Erros);
-            Assert.Equal("joao", u.Selecionado?.Login);
             for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
-            Assert.Single(u.Acessos).Perfil = "Consulta";
+            var acesso = Assert.Single(u.Acessos);
+            acesso.Perfil = acesso.Opcoes.Single(o => o.Nome == "Auditor externo");
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Equal("Alterações salvas.", u.Mensagem);
-            Foto(janela, "06_usuarios");
+            Foto(janela, "09_usuarios");
+
+            // Backup
+            vm.AbrirCommand.Execute(Telas.Backup);
+            var pastaBackup = Path.Combine(Path.GetTempPath(), "perseus_ui_" + Guid.NewGuid().ToString("N"));
+            vm.Backup.Pasta = pastaBackup;
+            await vm.Backup.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Backup.Erros);
+            Assert.Single(vm.Backup.Arquivos);
+            Foto(janela, "10_backup");
+            Directory.Delete(pastaBackup, true);
 
             vm.AbrirCommand.Execute(Telas.Sobre);
-            Foto(janela, "07_sobre");
+            Foto(janela, "11_sobre");
 
-            // 6. Sai e entra como o novo usuário: troca obrigatória de senha e perfil Consulta
+            // 7. Sai e entra como João: troca obrigatória de senha e perfil personalizado
             vm.SairCommand.Execute(null);
             Assert.False(vm.Logado);
             login = Assert.IsType<LoginViewModel>(vm.Conteudo);
-            Assert.True(login.EmEntrar);
             (login.Usuario, login.Senha) = ("joao", "errada123");
             await login.EntrarCommand.ExecuteAsync(null);
             Assert.Equal(["Usuário ou senha inválidos."], login.Erros);
-            Foto(janela, "08_login_erro");
+            Foto(janela, "12_login_erro");
 
             login.Senha = "Inicial123";
             await login.EntrarCommand.ExecuteAsync(null);
@@ -150,23 +224,34 @@ public class TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
             await login.TrocarSenhaCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
 
-            Assert.False(vm.AbrirCommand.CanExecute(Telas.Lancamento));
-            Assert.False(vm.AbrirCommand.CanExecute(Telas.Empresas));
-            Assert.False(vm.AbrirCommand.CanExecute(Telas.Usuarios));
-            Assert.True(vm.AbrirCommand.CanExecute(Telas.Balancete));
-            Assert.Same(vm.Balancete, vm.Conteudo);
-            Assert.Equal("", vm.Balancete.Totais);                 // nada da sessão anterior fica visível
-            Assert.Empty(vm.Balancete.Linhas);
-            await vm.Periodos.CarregarAsync();
-            vm.Periodos.Selecionado = vm.Periodos.Periodos[0];
-            await vm.Periodos.FecharCommand.ExecuteAsync(null);   // perfil Consulta não fecha período
-            Assert.Contains(vm.Periodos.Erros, e => e.Contains("perfil"));
-            Foto(janela, "09_perfil_consulta");
+            // Menu reflete exatamente o perfil
+            Assert.True(vm.AbrirCommand.CanExecute(Telas.Razao));
+            Assert.True(vm.AbrirCommand.CanExecute(Telas.Diario));
+            Assert.True(vm.AbrirCommand.CanExecute(Telas.PlanoContas));     // consulta do plano
+            foreach (var proibida in new[] { Telas.Balancete, Telas.Lancamento, Telas.Estorno, Telas.SaldosIniciais, Telas.Periodos,
+                                             Telas.Empresas, Telas.Usuarios, Telas.Perfis, Telas.Backup, Telas.Conexao })
+                Assert.False(vm.AbrirCommand.CanExecute(proibida), proibida);
+            Assert.Same(vm.Razao, vm.Conteudo);                              // primeira tela permitida
+            Assert.Equal("", vm.Balancete.Totais);                           // nada da sessão anterior fica visível
+
+            vm.Razao.Conta = "1.1.01.002";
+            (vm.Razao.Inicio, vm.Razao.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await vm.Razao.GerarCommand.ExecuteAsync(null);
+            Assert.Single(vm.Razao.Linhas);
+
+            vm.AbrirCommand.Execute(Telas.PlanoContas);
+            await vm.PlanoContas.CarregarAsync();
+            Assert.False(vm.PlanoContas.PodeEditar);
+            vm.PlanoContas.NovoCodigo = "1.1.01.005";
+            vm.PlanoContas.NovaDescricao = "Tentativa";
+            await vm.PlanoContas.IncluirCommand.ExecuteAsync(null);           // mesmo forçando, o serviço recusa
+            Assert.Contains(vm.PlanoContas.Erros, e => e.Contains("não permite"));
+            Foto(janela, "13_perfil_restrito");
 
             janela.Close();
             await vm.DisposeAsync();
             return true;
-        }, TestContext.Current.CancellationToken);
+        }, TestContext.Current.CancellationToken));
         Assert.True(concluido);
     }
 }

@@ -32,6 +32,25 @@ public sealed class BancoDeTeste : IAsyncLifetime
         await ExecutarNoServidor($"DROP DATABASE IF EXISTS {_nome} WITH (FORCE)");
     }
 
+    private readonly SemaphoreSlim _travaAdmin = new(1, 1);
+    private long? _adminId;
+
+    /// <summary>Administrador para os testes (criado sob demanda, para não interferir no teste de primeiro acesso).</summary>
+    public async Task<long> AdminAsync()
+    {
+        await _travaAdmin.WaitAsync();
+        try
+        {
+            return _adminId ??= await EscalarAsync<long>(
+                "INSERT INTO core.usuario (login, nome, senha_hash, administrador) VALUES ('admin_teste', 'Admin de Teste', @h, TRUE) RETURNING id",
+                ("h", Domain.Seguranca.Senha.GerarHash("Senha1234", iteracoes: 1000)));
+        }
+        finally
+        {
+            _travaAdmin.Release();
+        }
+    }
+
     public static void ExigirBanco() => Assert.SkipWhen(ConexaoServidor is null, "Defina PERSEUS_TEST_PG para rodar testes de integração.");
 
     public async Task<long> CriarEmpresaAsync(string cnpj, int ano = 2026)

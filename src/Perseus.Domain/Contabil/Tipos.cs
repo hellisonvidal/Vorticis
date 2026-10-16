@@ -56,7 +56,8 @@ public sealed record ContaInfo(
     bool Ativa,
     DateOnly DataInclusao,
     bool ExigeCentroCusto,
-    bool ExigeParticipante);
+    bool ExigeParticipante,
+    string? CodNat = null);   // ECD I050.COD_NAT (01 Ativo, 02 Passivo, 03 PL, 04 Resultado...)
 
 public sealed record PeriodoInfo(
     long ExercicioId,

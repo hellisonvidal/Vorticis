@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.PerfisView"
+             x:DataType="vm:PerfisViewModel">
+  <Grid ColumnDefinitions="300,16,*" Margin="8">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Perfis de acesso" Margin="0,0,0,8" />
+      <Button DockPanel.Dock="Bottom" Content="+ Novo perfil" Command="{Binding NovoCommand}" Margin="0,8,0,0" />
+      <ListBox ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:PerfilLinha">
+            <StackPanel>
+              <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <ScrollViewer Grid.Column="2">
+      <StackPanel Spacing="8" MaxWidth="680" HorizontalAlignment="Left">
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+          <TextBlock Text="Nome" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Text="{Binding Nome}" />
+          <TextBlock Grid.Row="1" Text="Descrição" VerticalAlignment="Center" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" />
+        </Grid>
+        <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="#44506A" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Salvar perfil" Command="{Binding SalvarCommand}" Classes="accent" />
+          <Button Content="Duplicar" Command="{Binding DuplicarCommand}" />
+          <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+        </StackPanel>
+        <v:MensagensView />
+
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+          <TextBlock Text="Funções liberadas por este perfil" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Marcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:True}" FontSize="12" Margin="0,0,6,0" />
+          <Button Grid.Column="2" Content="Desmarcar todas" Command="{Binding MarcarTodasCommand}" CommandParameter="{x:False}" FontSize="12" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Grupos}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:GrupoFuncoes">
+              <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,4">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" Foreground="#1F3A5F" />
+                  <ItemsControl ItemsSource="{Binding Funcoes}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:FuncaoMarcavel">
+                        <CheckBox Content="{Binding Descricao}" IsChecked="{Binding Marcada}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
+                   Text="Cadastro de empresas, usuários, perfis, conexão e backup não são delegáveis: pertencem a usuários marcados como administrador." />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

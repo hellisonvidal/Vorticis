@@ -5,7 +5,7 @@
         xmlns:seg="using:Perseus.Application.Seguranca"
         x:Class="Perseus.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="Perseus — Escrituração Fiscal Contábil"
+        Title="Perseus Contábil"
         Width="1200" Height="760" MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen">
 
@@ -21,6 +21,11 @@
     <DataTemplate DataType="vm:UsuariosViewModel"><v:UsuariosView /></DataTemplate>
     <DataTemplate DataType="vm:AlterarSenhaViewModel"><v:AlterarSenhaView /></DataTemplate>
     <DataTemplate DataType="vm:SobreViewModel"><v:SobreView /></DataTemplate>
+    <DataTemplate DataType="vm:PerfisViewModel"><v:PerfisView /></DataTemplate>
+    <DataTemplate DataType="vm:PlanoContasViewModel"><v:PlanoContasView /></DataTemplate>
+    <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
+    <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>
+    <DataTemplate DataType="vm:BackupViewModel"><v:BackupView /></DataTemplate>
   </Window.DataTemplates>
 
   <Window.Styles>
@@ -39,14 +44,18 @@
     <!-- Barra superior compacta: menu à esquerda, empresa e usuário à direita (só após o login) -->
     <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="8,2" IsVisible="{Binding Logado}">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-        <TextBlock Text="Perseus" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="4,0,14,0" />
+        <TextBlock Text="Perseus Contábil" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="4,0,14,0" />
         <Menu Grid.Column="1" Name="MenuPrincipal">
           <MenuItem Header="_Cadastros">
             <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
+            <Separator />
+            <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
+            <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
           </MenuItem>
           <MenuItem Header="_Lançamentos">
             <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
             <MenuItem Header="Estornar lançamento" Command="{Binding AbrirCommand}" CommandParameter="estorno" />
+            <MenuItem Header="Saldos iniciais (implantação)" Command="{Binding AbrirCommand}" CommandParameter="saldosiniciais" />
             <Separator />
             <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
           </MenuItem>
@@ -66,12 +75,14 @@
             <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
           </MenuItem>
           <MenuItem Header="_Ajuda">
-            <MenuItem Header="Sobre o Perseus" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
+            <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
           </MenuItem>
           <MenuItem Header="C_onfigurações">
-            <MenuItem Header="Usuários e permissões" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
+            <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
+            <MenuItem Header="Perfis de acesso" Command="{Binding AbrirCommand}" CommandParameter="perfis" />
             <MenuItem Header="Alterar minha senha" Command="{Binding AbrirCommand}" CommandParameter="senha" />
             <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
+            <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
             <Separator />
             <MenuItem Header="Sair (trocar de usuário)" Command="{Binding SairCommand}" />
           </MenuItem>

@@ -1,0 +1,97 @@
+using Perseus.Application.Contabil;
+using Perseus.Domain.Contabil;
+
+namespace Perseus.Infra.Tests;
+
+public class PlanoContasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+{
+    private static NovaConta Conta(string codigo, string nat = "01", IndicadorDC dc = IndicadorDC.D) =>
+        new(codigo, $"Conta {codigo}", nat, dc, false, false, new DateOnly(2026, 1, 1));
+
+    [Fact]
+    public async Task Inclusao_respeita_hierarquia_natureza_e_movimento()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.PlanoContas;
+        var empresa = await db.CriarEmpresaAsync("11222333000181");
+        var adm = await db.AdminAsync();
+
+        var nova = await svc.IncluirAsync(empresa, Conta("1.1.01.004"), adm, ct);
+        Assert.True(nova.Sucesso, string.Join("; ", nova.Erros));
+        var plano = await svc.ListarAsync(empresa, adm, ct);
+        var criada = plano.Single(c => c.Codigo == "1.1.01.004");
+        Assert.True(criada.Analitica);
+        Assert.Equal(4, criada.Nivel);
+
+        // Subconta de analítica sem movimento: a pai vira sintética
+        Assert.True((await svc.IncluirAsync(empresa, Conta("1.1.01.004.01"), adm, ct)).Sucesso);
+        Assert.False((await svc.ListarAsync(empresa, adm, ct)).Single(c => c.Codigo == "1.1.01.004").Analitica);
+
+        // Subconta de analítica COM movimento: proibido
+        await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 2, 1), OrigemLancamento.Manual,
+            [new("1.1.01.001", IndicadorDC.D, 50m, "x"), new("2.3.01.001", IndicadorDC.C, 50m, "x")]), adm, ct);
+        Assert.Contains("já tem lançamentos", (await svc.IncluirAsync(empresa, Conta("1.1.01.001.01"), adm, ct)).Erros[0]);
+
+        Assert.Contains("não existe", (await svc.IncluirAsync(empresa, Conta("1.9.99.001"), adm, ct)).Erros[0]);
+        Assert.Contains("mesma da conta superior", (await svc.IncluirAsync(empresa, Conta("1.1.01.005", nat: "04"), adm, ct)).Erros[0]);
+        Assert.Contains("Já existe", (await svc.IncluirAsync(empresa, Conta("1.1.01.001"), adm, ct)).Erros[0]);
+        Assert.Contains("Código inválido", (await svc.IncluirAsync(empresa, Conta("1.a.2"), adm, ct)).Erros[0]);
+        Assert.True((await svc.IncluirAsync(empresa, Conta("2.3.04", nat: "03", dc: IndicadorDC.C), adm, ct)).Sucesso);   // PL sob Passivo
+    }
+
+    [Fact]
+    public async Task Inativacao_e_exclusao_protegem_contas_com_saldo_ou_movimento()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.PlanoContas;
+        var empresa = await db.CriarEmpresaAsync("33000167000101");
+        var adm = await db.AdminAsync();
+        await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 2, 1), OrigemLancamento.Manual,
+            [new("1.1.01.001", IndicadorDC.D, 50m, "x"), new("2.3.01.001", IndicadorDC.C, 50m, "x")]), adm, ct);
+        var plano = await svc.ListarAsync(empresa, adm, ct);
+        var caixa = plano.Single(c => c.Codigo == "1.1.01.001");
+        Assert.Equal(50m, caixa.Saldo);
+
+        Assert.Contains("tem saldo", (await svc.AlterarAsync(empresa, caixa.Id, "Caixa", IndicadorDC.D, false, false, false, adm, ct)).Erros[0]);
+        Assert.Contains("tem saldo", (await svc.AlterarAsync(empresa, plano.Single(c => c.Codigo == "1.1").Id, "AC", IndicadorDC.D, false, false, false, adm, ct)).Erros[0]);
+        Assert.Contains("tem lançamentos", (await svc.ExcluirAsync(empresa, caixa.Id, adm, ct)).Erros[0]);
+        Assert.Contains("subcontas", (await svc.ExcluirAsync(empresa, plano.Single(c => c.Codigo == "1.1.01").Id, adm, ct)).Erros[0]);
+
+        var semUso = plano.Single(c => c.Codigo == "1.1.01.003");
+        Assert.True((await svc.AlterarAsync(empresa, semUso.Id, "Aplicações (renomeada)", IndicadorDC.D, true, false, false, adm, ct)).Sucesso);
+        var alterada = (await svc.ListarAsync(empresa, adm, ct)).Single(c => c.Id == semUso.Id);
+        Assert.Equal(("Aplicações (renomeada)", true, false), (alterada.Descricao, alterada.ExigeCentroCusto, alterada.Ativa));
+        Assert.True((await svc.ExcluirAsync(empresa, semUso.Id, adm, ct)).Sucesso);
+    }
+
+    [Fact]
+    public async Task Centros_de_custo_hierarquicos_e_uso_em_lancamento()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.PlanoContas;
+        var empresa = await db.CriarEmpresaAsync("60701190000104");
+        var adm = await db.AdminAsync();
+
+        Assert.True((await svc.IncluirCentroAsync(empresa, "ADM", "Administrativo", null, adm, new DateOnly(2026, 1, 1), ct)).Sucesso);
+        Assert.True((await svc.IncluirCentroAsync(empresa, "ADM.TI", "Tecnologia", "ADM", adm, new DateOnly(2026, 1, 1), ct)).Sucesso);
+        Assert.Contains("não encontrado", (await svc.IncluirCentroAsync(empresa, "X", "X", "NAOEXISTE", adm, ct: ct)).Erros[0]);
+        Assert.Contains("Já existe", (await svc.IncluirCentroAsync(empresa, "ADM", "Dup", null, adm, ct: ct)).Erros[0]);
+
+        var r = await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 3, 1), OrigemLancamento.Manual,
+            [new("4.2.02.004", IndicadorDC.D, 99m, "Internet", "ADM.TI"), new("1.1.01.001", IndicadorDC.C, 99m, "Internet")]), adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+
+        var centros = await svc.ListarCentrosAsync(empresa, adm, ct);
+        var ti = centros.Single(c => c.Codigo == "ADM.TI");
+        Assert.True(ti.TemMovimento);
+        Assert.Contains("tem lançamentos", (await svc.ExcluirCentroAsync(empresa, ti.Id, adm, ct)).Erros[0]);
+        Assert.Contains("subcentros", (await svc.ExcluirCentroAsync(empresa, centros.Single(c => c.Codigo == "ADM").Id, adm, ct)).Erros[0]);
+        Assert.True((await svc.AlterarCentroAsync(empresa, ti.Id, "TI", false, adm, ct)).Sucesso);
+        var inativo = await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 3, 2), OrigemLancamento.Manual,
+            [new("4.2.02.004", IndicadorDC.D, 1m, "x", "ADM.TI"), new("1.1.01.001", IndicadorDC.C, 1m, "x")]), adm, ct);
+        Assert.Contains(inativo.Erros, e => e.Contains("centro de custo ADM.TI não encontrado"));   // inativo não aceita lançamento
+    }
+}

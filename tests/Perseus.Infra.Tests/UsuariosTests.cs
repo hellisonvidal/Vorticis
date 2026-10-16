@@ -148,12 +148,15 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var ana = new SessaoUsuario(id, "ana", "Ana", false, false);
 
         Assert.Empty(await svc.EmpresasPermitidasAsync(ana, ct));
-        await svc.DefinirAcessoAsync(Admin, id, empresaA, Perfil.Assistente, ct);
+        var assistente = (await db.App.Perfis.ListarAsync(Admin, ct)).Single(p => p.Nome == "Assistente");
+        await svc.DefinirAcessoAsync(Admin, id, empresaA, assistente.Id, ct);
         var permitidas = await svc.EmpresasPermitidasAsync(ana, ct);
         Assert.Equal(empresaA, Assert.Single(permitidas).Id);
-        Assert.Equal(Perfil.Assistente, permitidas[0].Perfil);
-        Assert.True(Permissoes.Pode(ana, permitidas[0].Perfil, Permissao.Lancar));
-        Assert.False(Permissoes.Pode(ana, permitidas[0].Perfil, Permissao.FecharPeriodos));
+        Assert.Equal("Assistente", permitidas[0].Perfil);
+        var efetivas = await db.App.Autorizador.ObterAsync(id, empresaA, ct);
+        Assert.True(efetivas.Pode(Permissao.LancamentoIncluir));
+        Assert.False(efetivas.Pode(Permissao.PeriodoFechar));
+        Assert.False((await db.App.Autorizador.ObterAsync(id, empresaB, ct)).TemAcesso);
 
         await svc.DefinirAcessoAsync(Admin, id, empresaA, null, ct);   // revoga
         Assert.Empty(await svc.EmpresasPermitidasAsync(ana, ct));

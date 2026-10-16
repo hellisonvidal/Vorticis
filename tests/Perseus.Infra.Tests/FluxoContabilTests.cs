@@ -8,8 +8,9 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     private static PartidaProposta D(string c, decimal v, string h = "Teste") => new(c, IndicadorDC.D, v, h);
     private static PartidaProposta C(string c, decimal v, string h = "Teste") => new(c, IndicadorDC.C, v, h);
 
-    private Task<Domain.Comum.Resultado<LancamentoEfetivado>> Lancar(long empresa, DateOnly data, params PartidaProposta[] p)
-        => db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, data, OrigemLancamento.Manual, p), null, TestContext.Current.CancellationToken);
+    private async Task<Domain.Comum.Resultado<LancamentoEfetivado>> Lancar(long empresa, DateOnly data, params PartidaProposta[] p)
+        => await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, data, OrigemLancamento.Manual, p), await db.AdminAsync(),
+                                                  TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task Migracoes_sao_idempotentes()
@@ -53,7 +54,7 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.True(l1.Sucesso && l2.Sucesso && l3.Sucesso, string.Join("; ", l1.Erros.Concat(l2.Erros).Concat(l3.Erros)));
         Assert.Equal([1L, 2L, 3L], new[] { l1.Valor.Numero, l2.Valor.Numero, l3.Valor.Numero });
 
-        var bal = await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 2, 1), new(2026, 2, 28), ct: ct);
+        var bal = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 2, 1), new(2026, 2, 28), await db.AdminAsync(), ct: ct)).Valor;
         var banco = bal.Single(l => l.Codigo == "1.1.01.002");
         Assert.Equal((50_000m, 0m, 950.37m, 49_049.63m), (banco.SaldoAnterior, banco.Debitos, banco.Creditos, banco.SaldoFinal));
         var analiticas = bal.Where(l => l.Analitica).ToArray();
@@ -62,14 +63,14 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal(49_049.63m + 1_200m, bal.Single(l => l.Codigo == "1").SaldoFinal);
 
         // Balancete com início no meio do mês usa saldo_mensal + partidas dos dias anteriores.
-        var meio = await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 2, 12), new(2026, 2, 28), ct: ct);
+        var meio = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 2, 12), new(2026, 2, 28), await db.AdminAsync(), ct: ct)).Valor;
         Assert.Equal(1_200m, meio.Single(l => l.Codigo == "1.1.02.001").SaldoAnterior);
 
-        var razao = await db.App.Relatorios.RazaoAsync(empresa, "1.1.01.002", new(2026, 1, 1), new(2026, 12, 31), ct);
+        var razao = (await db.App.Relatorios.RazaoAsync(empresa, "1.1.01.002", new(2026, 1, 1), new(2026, 12, 31), await db.AdminAsync(), ct)).Valor;
         Assert.NotNull(razao);
         Assert.Equal([50_000m, 49_049.63m], razao.Linhas.Select(l => l.SaldoAcumulado));
 
-        var diario = await db.App.Relatorios.DiarioAsync(empresa, new(2026, 1, 1), new(2026, 12, 31), ct);
+        var diario = (await db.App.Relatorios.DiarioAsync(empresa, new(2026, 1, 1), new(2026, 12, 31), await db.AdminAsync(), ct)).Valor;
         Assert.Equal(7, diario.Count);
     }
 
@@ -93,15 +94,15 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var empresa = await db.CriarEmpresaAsync("60701190000104");
         var original = await Lancar(empresa, new(2026, 4, 2), D("1.1.01.001", 300m, "Venda"), C("3.1.01.001", 300m, "Venda"));
 
-        var estorno = await db.App.Lancamentos.EstornarAsync(empresa, original.Valor.Id, new(2026, 4, 3), "lançado em duplicidade", null, ct);
+        var estorno = await db.App.Lancamentos.EstornarAsync(empresa, original.Valor.Id, new(2026, 4, 3), "lançado em duplicidade", await db.AdminAsync(), ct);
         Assert.True(estorno.Sucesso, string.Join("; ", estorno.Erros));
 
-        var bal = await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 4, 1), new(2026, 4, 30), ct: ct);
+        var bal = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 4, 1), new(2026, 4, 30), await db.AdminAsync(), ct: ct)).Valor;
         Assert.Equal(0m, bal.Single(l => l.Codigo == "1.1.01.001").SaldoFinal);
-        var diario = await db.App.Relatorios.DiarioAsync(empresa, new(2026, 4, 1), new(2026, 4, 30), ct);
+        var diario = (await db.App.Relatorios.DiarioAsync(empresa, new(2026, 4, 1), new(2026, 4, 30), await db.AdminAsync(), ct)).Valor;
         Assert.Contains(diario, l => l.Status == StatusLancamento.Estornado);
 
-        var denovo = await db.App.Lancamentos.EstornarAsync(empresa, original.Valor.Id, new(2026, 4, 3), "de novo", null, ct);
+        var denovo = await db.App.Lancamentos.EstornarAsync(empresa, original.Valor.Id, new(2026, 4, 3), "de novo", await db.AdminAsync(), ct);
         Assert.Contains(denovo.Erros, e => e.Contains("já foi estornado"));
     }
 
@@ -113,16 +114,16 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var empresa = await db.CriarEmpresaAsync("45997418000153");
         await Lancar(empresa, new(2026, 1, 20), D("1.1.01.001", 10m), C("3.1.01.001", 10m));
 
-        Assert.Contains((await db.App.Periodos.FecharAsync(empresa, new(2026, 2, 1), null, ct)).Erros, e => e.Contains("01/2026"));
-        Assert.True((await db.App.Periodos.FecharAsync(empresa, new(2026, 1, 1), null, ct)).Sucesso);
-        Assert.True((await db.App.Periodos.FecharAsync(empresa, new(2026, 2, 1), null, ct)).Sucesso);
+        Assert.Contains((await db.App.Periodos.FecharAsync(empresa, new(2026, 2, 1), await db.AdminAsync(), ct)).Erros, e => e.Contains("01/2026"));
+        Assert.True((await db.App.Periodos.FecharAsync(empresa, new(2026, 1, 1), await db.AdminAsync(), ct)).Sucesso);
+        Assert.True((await db.App.Periodos.FecharAsync(empresa, new(2026, 2, 1), await db.AdminAsync(), ct)).Sucesso);
 
         var bloqueado = await Lancar(empresa, new(2026, 1, 25), D("1.1.01.001", 1m), C("3.1.01.001", 1m));
         Assert.Contains(bloqueado.Erros, e => e.Contains("está fechado"));
 
-        Assert.Contains((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 1, 1), null, ct)).Erros, e => e.Contains("02/2026"));
-        Assert.True((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 2, 1), null, ct)).Sucesso);
-        Assert.True((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 1, 1), null, ct)).Sucesso);
+        Assert.Contains((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 1, 1), await db.AdminAsync(), ct)).Erros, e => e.Contains("02/2026"));
+        Assert.True((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 2, 1), await db.AdminAsync(), ct)).Sucesso);
+        Assert.True((await db.App.Periodos.ReabrirAsync(empresa, new(2026, 1, 1), await db.AdminAsync(), ct)).Sucesso);
     }
 
     [Fact]

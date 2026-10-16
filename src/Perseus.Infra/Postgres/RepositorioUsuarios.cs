@@ -123,44 +123,48 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
         return res;
     }
 
-    public async Task DefinirAcessoAsync(long usuarioId, long empresaId, Perfil? perfil, CancellationToken ct)
-    {
-        await using var cmd = perfil is null
-            ? ds.CreateCommand("DELETE FROM core.usuario_empresa WHERE usuario_id = @u AND empresa_id = @e")
-            : ds.CreateCommand("""
-                INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil) VALUES (@u, @e, @p)
-                ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil = EXCLUDED.perfil
-                """).Com("p", perfil.Value.Sql());
-        cmd.Com("u", usuarioId).Com("e", empresaId);
-        await cmd.ExecuteNonQueryAsync(ct);
-    }
+    public Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = perfilId is null
+                ? ds.CreateCommand("DELETE FROM core.usuario_empresa WHERE usuario_id = @u AND empresa_id = @e")
+                : ds.CreateCommand("""
+                    INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil_id) VALUES (@u, @e, @p)
+                    ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id
+                    """).Com("p", perfilId.Value);
+            cmd.Com("u", usuarioId).Com("e", empresaId);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
 
     public async Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT e.id, e.razao_social, ue.perfil FROM core.usuario_empresa ue JOIN core.empresa e ON e.id = ue.empresa_id
+            SELECT e.id, e.razao_social, p.id, p.nome
+              FROM core.usuario_empresa ue
+              JOIN core.empresa e ON e.id = ue.empresa_id
+              JOIN core.perfil p ON p.id = ue.perfil_id
              WHERE ue.usuario_id = @u ORDER BY e.razao_social
             """).Com("u", usuarioId);
         var res = new List<AcessoEmpresa>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
-        while (await r.ReadAsync(ct)) res.Add(new AcessoEmpresa(r.GetInt64(0), r.GetString(1), Permissoes.PerfilDeSql(r.GetString(2))));
+        while (await r.ReadAsync(ct)) res.Add(new AcessoEmpresa(r.GetInt64(0), r.GetString(1), r.GetInt64(2), r.GetString(3)));
         return res;
     }
 
     public async Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasAsync(long usuarioId, bool administrador, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT e.id, e.cnpj, e.razao_social, ue.perfil
+            SELECT e.id, e.cnpj, e.razao_social, p.nome
               FROM core.empresa e
               LEFT JOIN core.usuario_empresa ue ON ue.empresa_id = e.id AND ue.usuario_id = @u
-             WHERE e.ativa AND (@adm OR ue.perfil IS NOT NULL)
+              LEFT JOIN core.perfil p ON p.id = ue.perfil_id
+             WHERE e.ativa AND (@adm OR ue.perfil_id IS NOT NULL)
              ORDER BY e.razao_social
             """).Com("u", usuarioId).Com("adm", administrador);
         var res = new List<EmpresaPermitida>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
-            res.Add(new EmpresaPermitida(r.GetInt64(0), r.GetString(1), r.GetString(2),
-                                         r.IsDBNull(3) ? null : Permissoes.PerfilDeSql(r.GetString(3))));
+            res.Add(new EmpresaPermitida(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3)));
         return res;
     }
 }

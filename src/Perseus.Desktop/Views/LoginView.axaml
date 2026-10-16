@@ -8,7 +8,7 @@
     <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White"
             CornerRadius="8" BorderBrush="#D0D5DD" BorderThickness="1" Padding="32,28" BoxShadow="0 4 18 0 #1A1F3A5F">
       <StackPanel Spacing="10">
-        <TextBlock Text="Perseus" FontSize="28" FontWeight="Bold" Foreground="#1F3A5F" HorizontalAlignment="Center" />
+        <TextBlock Text="Perseus Contábil" FontSize="28" FontWeight="Bold" Foreground="#1F3A5F" HorizontalAlignment="Center" />
         <TextBlock Text="Escrituração Fiscal Contábil" FontSize="13" Foreground="#5B6478" HorizontalAlignment="Center" Margin="0,0,0,10" />
 
         <!-- Entrar -->

@@ -1,4 +1,4 @@
-# Perseus
+# Perseus Contábil
 
 Sistema de Escrituração Fiscal Contábil para empresas brasileiras (Simples Nacional, Lucro Presumido e Lucro Real): contabilidade, documentos fiscais, conciliação bancária, demonstrações, SPED (ECD/ECF), folha de pagamento e eSocial.
 
@@ -8,8 +8,8 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 
 | Fase | Situação |
 |---|---|
-| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, **login com perfis por empresa**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com **consulta à base pública do CNPJ**. **Pendente:** backup/restauração, instalador |
-| 1. MVP contábil | Plano de contas modelo, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (com exportação CSV). **Pendente:** CRUD de plano de contas e centros de custo, importação de saldos iniciais, Diário/Razão em PDF |
+| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**. **Pendente:** instalador |
+| 1. MVP contábil | Plano de contas (modelo + **inclusão/alteração/exclusão**), **centros de custo**, **saldos iniciais**, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete (CSV). **Pendente:** Diário/Razão em PDF com termos de abertura e encerramento, mapeamento ao plano referencial |
 
 Ver o [roadmap](docs/04-roadmap.md).
 
@@ -39,16 +39,23 @@ dotnet run --project src/Perseus.Desktop
 
 Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
 
-### Usuários e perfis
+### Usuários e perfis de acesso
 
-| Perfil | Pode |
+O administrador cria **perfis** em *Configurações › Perfis de acesso*, marcando função a função o que cada um libera, e atribui a cada usuário um perfil **por empresa** em *Configurações › Usuários*. Funções configuráveis:
+
+| Grupo | Funções |
 |---|---|
-| Administrador (global) | Tudo: empresas, usuários, conexão, e todas as operações em todas as empresas |
-| Contador (por empresa) | Lançar, estornar, fechar/reabrir períodos, relatórios |
-| Assistente (por empresa) | Lançar e estornar, relatórios |
-| Consulta (por empresa) | Somente relatórios |
+| Lançamentos | Incluir lançamentos · Estornar · Saldos iniciais · Fechar períodos · Reabrir períodos |
+| Cadastros | Manter plano de contas · Manter centros de custo |
+| Relatórios | Balancete · Livro Razão · Livro Diário · Exportar (CSV) |
+
+Perfis padrão (editáveis, não excluíveis): **Contador** (todas), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). Cadastro de empresas, usuários, perfis, conexão e backup são exclusivos de usuários marcados como **administrador**. As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
 
 Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso`.
+
+### Backup e restauração
+
+*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado) em `Documentos\Perseus Contabil\Backups`. A restauração exige digitar `RESTAURAR`, gera antes um backup de segurança do estado atual e encerra todas as sessões. Requer as ferramentas de linha de comando do PostgreSQL (instaladas junto com ele; ou informe a pasta em `PERSEUS_PG_BIN`).
 
 ### Consulta de CNPJ
 
@@ -62,7 +69,7 @@ Arquivo único, sem exigir .NET instalado:
 dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
 ```
 
-O CI publica esse executável como artefato `perseus-win-x64` a cada push.
+O executável gerado é `PerseusContabil.exe`; o CI o publica como artefato `perseus-contabil-win-x64` a cada push.
 
 ## Testes
 

@@ -1,15 +1,78 @@
+using Perseus.Application.Seguranca;
 using Perseus.Domain.Comum;
 using Perseus.Domain.Contabil;
+using Perseus.Domain.Seguranca;
 
 namespace Perseus.Application.Contabil;
+
+/// <summary>Uma linha da implantação de saldos: conta patrimonial e saldo com sinal (positivo = devedor).</summary>
+public sealed record SaldoInicialConta(string CodigoConta, decimal Valor, IndicadorDC DC);
 
 /// <summary>
 /// Único ponto de gravação de lançamentos contábeis. Módulos integradores (fiscal, banco, folha)
 /// produzem <see cref="LancamentoProposto"/> e chamam <see cref="EfetivarAsync"/>.
+/// Toda operação verifica a permissão do usuário na empresa antes de qualquer outra regra.
 /// </summary>
-public sealed class ServicoLancamento(IRepositorioContabil repositorio)
+public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autorizador autorizador)
 {
-    public async Task<Resultado<LancamentoEfetivado>> EfetivarAsync(LancamentoProposto proposta, long? usuarioId, CancellationToken ct = default)
+    private static readonly string[] NaturezasPatrimoniais = ["01", "02", "03"];
+
+    public async Task<Resultado<LancamentoEfetivado>> EfetivarAsync(LancamentoProposto proposta, long usuarioId, CancellationToken ct = default)
+    {
+        var permissao = proposta.Origem switch
+        {
+            OrigemLancamento.Estorno => Permissao.LancamentoEstornar,
+            OrigemLancamento.SaldoInicial => Permissao.SaldosIniciais,
+            _ => Permissao.LancamentoIncluir,
+        };
+        if (await autorizador.NegarAsync<LancamentoEfetivado>(usuarioId, proposta.EmpresaId, permissao, ct) is { } negado) return negado;
+        return await GravarAsync(proposta, usuarioId, ct);
+    }
+
+    public async Task<Resultado<LancamentoEfetivado>> EstornarAsync(long empresaId, long lancamentoId, DateOnly data, string motivo,
+                                                                   long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<LancamentoEfetivado>(usuarioId, empresaId, Permissao.LancamentoEstornar, ct) is { } negado) return negado;
+        var original = await repositorio.ObterLancamentoAsync(empresaId, lancamentoId, ct);
+        if (original is null) return Resultado<LancamentoEfetivado>.Falha("Lançamento não encontrado.");
+
+        var estorno = Estorno.Gerar(original, data, motivo);
+        if (!estorno.Sucesso) return Resultado<LancamentoEfetivado>.Falha(estorno.Erros);
+
+        return await GravarAsync(estorno.Valor, usuarioId, ct);
+    }
+
+    /// <summary>
+    /// Implantação: um único lançamento na data de início do exercício com os saldos das contas patrimoniais
+    /// (Ativo, Passivo e PL). Os saldos devem fechar (débitos = créditos), como em qualquer balanço.
+    /// </summary>
+    public async Task<Resultado<LancamentoEfetivado>> LancarSaldosIniciaisAsync(long empresaId, int anoExercicio,
+        IReadOnlyList<SaldoInicialConta> saldos, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<LancamentoEfetivado>(usuarioId, empresaId, Permissao.SaldosIniciais, ct) is { } negado) return negado;
+
+        var periodo = await repositorio.ObterPeriodoAsync(empresaId, new DateOnly(anoExercicio, 12, 31), ct);
+        if (periodo is null) return Resultado<LancamentoEfetivado>.Falha($"Exercício {anoExercicio} não cadastrado.");
+        if (await repositorio.ObterNumeroLancamentoAtivoAsync(empresaId, periodo.ExercicioId, OrigemLancamento.SaldoInicial, ct) is long n)
+            return Resultado<LancamentoEfetivado>.Falha($"Já existem saldos iniciais no exercício {anoExercicio} (lançamento nº {n}). Estorne-o para relançar.");
+
+        var linhas = saldos.Where(s => s.Valor != 0).ToArray();
+        if (linhas.Length == 0) return Resultado<LancamentoEfetivado>.Falha("Informe ao menos um saldo.");
+
+        var contas = await repositorio.ObterContasAsync(empresaId, linhas.Select(l => l.CodigoConta).Distinct(), ct);
+        var naoPatrimoniais = linhas.Where(l => contas.TryGetValue(l.CodigoConta, out var c) && !NaturezasPatrimoniais.Contains(c.CodNat))
+                                    .Select(l => l.CodigoConta).ToArray();
+        if (naoPatrimoniais.Length > 0)
+            return Resultado<LancamentoEfetivado>.Falha(
+                $"Saldos iniciais só em contas patrimoniais (Ativo, Passivo, PL). Contas de resultado informadas: {string.Join(", ", naoPatrimoniais)}.");
+
+        var proposta = new LancamentoProposto(empresaId, periodo.InicioExercicio, OrigemLancamento.SaldoInicial,
+            linhas.Select(l => new PartidaProposta(l.CodigoConta, l.Valor < 0 ? l.DC.Inverso() : l.DC, Math.Abs(l.Valor),
+                                                   $"Saldo inicial em {periodo.InicioExercicio:dd/MM/yyyy}")).ToArray());
+        return await GravarAsync(proposta, usuarioId, ct);
+    }
+
+    private async Task<Resultado<LancamentoEfetivado>> GravarAsync(LancamentoProposto proposta, long usuarioId, CancellationToken ct)
     {
         var ctx = await CarregarContextoAsync(proposta, ct);
         var validacao = ValidadorLancamento.Validar(proposta, ctx);
@@ -23,18 +86,6 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio)
         {
             return Resultado<LancamentoEfetivado>.Falha(ex.Message);
         }
-    }
-
-    public async Task<Resultado<LancamentoEfetivado>> EstornarAsync(long empresaId, long lancamentoId, DateOnly data, string motivo,
-                                                                   long? usuarioId, CancellationToken ct = default)
-    {
-        var original = await repositorio.ObterLancamentoAsync(empresaId, lancamentoId, ct);
-        if (original is null) return Resultado<LancamentoEfetivado>.Falha("Lançamento não encontrado.");
-
-        var estorno = Estorno.Gerar(original, data, motivo);
-        if (!estorno.Sucesso) return Resultado<LancamentoEfetivado>.Falha(estorno.Erros);
-
-        return await EfetivarAsync(estorno.Valor, usuarioId, ct);
     }
 
     private async Task<ContextoValidacao> CarregarContextoAsync(LancamentoProposto p, CancellationToken ct)

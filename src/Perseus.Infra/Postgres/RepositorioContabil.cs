@@ -26,14 +26,14 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
     public async Task<IReadOnlyDictionary<string, ContaInfo>> ObterContasAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, codigo, descricao, tipo = 'A', ativa, data_inclusao, exige_centro_custo, exige_participante
+            SELECT id, codigo, descricao, tipo = 'A', ativa, data_inclusao, exige_centro_custo, exige_participante, cod_nat
               FROM contabil.plano_contas WHERE empresa_id = @e AND codigo = ANY(@c)
             """).Com("e", empresaId).Com("c", codigos.ToArray());
         var res = new Dictionary<string, ContaInfo>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res[r.GetString(1)] = new ContaInfo(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetBoolean(3), r.GetBoolean(4),
-                                                r.GetFieldValue<DateOnly>(5), r.GetBoolean(6), r.GetBoolean(7));
+                                                r.GetFieldValue<DateOnly>(5), r.GetBoolean(6), r.GetBoolean(7), r.GetString(8));
         return res;
     }
 
@@ -169,6 +169,15 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct)) res.Add(new CompetenciaStatus(r.GetFieldValue<DateOnly>(0), r.GetBoolean(1)));
         return res;
+    }
+
+    public async Task<long?> ObterNumeroLancamentoAtivoAsync(long empresaId, long exercicioId, OrigemLancamento origem, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT MIN(numero) FROM contabil.lancamento
+             WHERE empresa_id = @e AND exercicio_id = @ex AND origem = @o::contabil.origem_lancamento AND status = 'EFETIVADO'
+            """).Com("e", empresaId).Com("ex", exercicioId).Com("o", origem.Sql());
+        return await cmd.ExecuteScalarAsync(ct) is long n ? n : null;
     }
 
     public async Task<IReadOnlyList<Inconsistencia>> VerificarInvariantesAsync(long empresaId, DateOnly competencia, CancellationToken ct)
