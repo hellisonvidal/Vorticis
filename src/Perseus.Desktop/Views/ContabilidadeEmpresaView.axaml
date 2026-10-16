@@ -10,7 +10,7 @@
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" Margin="8">
     <StackPanel Spacing="4" Margin="0,0,0,6">
-      <TextBlock Classes="titulo" Text="Contadores e escritório contábil da empresa" />
+      <TextBlock Classes="titulo" Text="Contadores da empresa" />
       <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
                  Text="O responsável técnico assina a ECD/ECF e os termos do Livro Diário. Mantenha o histórico: ao trocar de contador ou escritório, encerre o vínculo anterior em vez de excluí-lo." />
     </StackPanel>

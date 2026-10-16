@@ -13,6 +13,25 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : ModuloViewMo
 
     public MainViewModel Main => main;
 
+    /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (as duas últimas, da empresa selecionada).</summary>
+    [ObservableProperty] private int _abaSelecionada;
+
+    public const int AbaSocios = 1;
+    public const int AbaContadores = 2;
+
+    public bool TemEmpresaSelecionada => main.EmpresaSelecionada is not null;
+
+    public string EmpresaSelecionadaRotulo => main.EmpresaSelecionada is { } e ? $"Empresa: {e.RazaoSocial}" : "";
+
+    partial void OnAbaSelecionadaChanged(int value) => main.CarregarAbaEmpresa();
+
+    public void AoTrocarEmpresa()
+    {
+        OnPropertyChanged(nameof(TemEmpresaSelecionada));
+        OnPropertyChanged(nameof(EmpresaSelecionadaRotulo));
+        if (!TemEmpresaSelecionada) AbaSelecionada = 0;
+    }
+
     [ObservableProperty] private string _cnpj = "";
     [ObservableProperty] private string _razaoSocial = "";
     [ObservableProperty] private string _nomeFantasia = "";

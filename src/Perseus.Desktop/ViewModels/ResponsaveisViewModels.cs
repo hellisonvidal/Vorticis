@@ -19,7 +19,7 @@ public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
     public string Responsavel => Vinculo.ResponsavelTecnico ? "✓ responsável técnico" : "";
 }
 
-/// <summary>Cadastros › Contadores e escritório contábil da empresa selecionada.</summary>
+/// <summary>Cadastros › Contadores (contador responsável e escritório contábil) da empresa selecionada; também é a aba Contadores de Cadastros › Empresas.</summary>
 public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<VinculoContabilLinha> Vinculos { get; } = [];

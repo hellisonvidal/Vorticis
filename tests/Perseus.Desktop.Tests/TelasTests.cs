@@ -220,8 +220,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(enc.Encerrado);
             Foto(janela, "08b_encerramento");
 
-            // Cadastros › Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
-            vm.AbrirCommand.Execute(Telas.Socios);
+            // Cadastros › Empresas, aba Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
+            vm.AbrirCommand.Execute(Telas.Empresas);
+            Assert.True(vm.Empresas.TemEmpresaSelecionada);
+            vm.Empresas.AbaSelecionada = CadastroEmpresaViewModel.AbaSocios;
             var socios = vm.Socios;
             await socios.CarregarAsync();
             Assert.Equal(["BELTRANA DA SILVA", "FULANO DE TAL"], socios.Lista.Select(s => s.Nome).Order());
@@ -232,9 +234,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(socios.Erros);
             Foto(janela, "08g_socios");
 
-            // Cadastros › Contadores e escritório contábil
-            vm.AbrirCommand.Execute(Telas.Contabilidade);
+            // Cadastros › Empresas, aba Contadores (o mesmo cadastro de Cadastros › Contadores)
+            vm.Empresas.AbaSelecionada = CadastroEmpresaViewModel.AbaContadores;
             var cont = vm.Contabilidade;
+            await cont.CarregarAsync();
             (cont.ContadorNome, cont.ContadorCpf, cont.ContadorCrc, cont.ContadorUf) = ("Maria Contadora", "529.982.247-25", "1SP123456/O-7", "SP");
             await cont.VincularContadorCommand.ExecuteAsync(null);
             Assert.Empty(cont.Erros);
@@ -243,6 +246,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(cont.Erros);
             Assert.Equal(2, cont.Vinculos.Count);
             Foto(janela, "08h_contabilidade");
+            vm.AbrirCommand.Execute(Telas.Contabilidade);
+            Assert.Same(cont, vm.Conteudo);
+            Assert.Equal("Cadastros › Contadores", vm.TituloTela);
+            Assert.Equal(2, cont.Vinculos.Count);
 
             // Relatórios › Livros e relatórios em PDF
             var pastaPdf = Path.Combine(Path.GetTempPath(), "perseus_pdf_" + Guid.NewGuid().ToString("N"));

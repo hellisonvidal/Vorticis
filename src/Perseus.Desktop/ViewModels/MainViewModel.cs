@@ -304,7 +304,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
             Telas.ImportacaoReferencial => (ImportacaoReferencial, "Configurações › Plano referencial da RFB"),
             Telas.MapeamentoReferencial => (MapeamentoReferencial, "Cadastros › Vínculo ao plano referencial"),
-            Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores e escritório contábil"),
+            Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores"),
             Telas.Socios => (Socios, "Cadastros › Sócios"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
             Telas.Estorno => (Diario, "Lançamentos › Estornar lançamento"),
@@ -330,11 +330,20 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.MapeamentoReferencial) _ = Disparar(MapeamentoReferencial.CarregarAsync);
         if (tela == Telas.Contabilidade) _ = Disparar(Contabilidade.CarregarAsync);
         if (tela == Telas.Socios) _ = Disparar(Socios.CarregarAsync);
+        if (tela == Telas.Empresas) CarregarAbaEmpresa();
         if (tela == Telas.LivrosPdf) _ = Disparar(LivrosPdf.PreencherResponsaveisAsync);
         if (tela == Telas.Conexao)
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
         if (tela == Telas.Inicio) Inicio.Atualizar();
+    }
+
+    /// <summary>Cadastros › Empresas: carrega a aba de sócios ou de contadores da empresa selecionada.</summary>
+    public void CarregarAbaEmpresa()
+    {
+        if (_telaAtual != Telas.Empresas || EmpresaSelecionada is null) return;
+        if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) _ = Disparar(Socios.CarregarAsync);
+        if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) _ = Disparar(Contabilidade.CarregarAsync);
     }
 
     partial void OnLogadoChanged(bool value) => AbrirCommand.NotifyCanExecuteChanged();
@@ -343,6 +352,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
 
     partial void OnEmpresaSelecionadaChanged(EmpresaPermitida? value)
     {
+        Empresas.AoTrocarEmpresa();
         Balancete.Linhas.Clear();
         Razao.Linhas.Clear();
         Diario.Linhas.Clear();
@@ -357,6 +367,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             if (_telaAtual == Telas.MapeamentoReferencial) await MapeamentoReferencial.CarregarAsync();
             if (_telaAtual == Telas.Contabilidade) await Contabilidade.CarregarAsync();
             if (_telaAtual == Telas.Socios) await Socios.CarregarAsync();
+            if (_telaAtual == Telas.Empresas && Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) await Socios.CarregarAsync();
+            if (_telaAtual == Telas.Empresas && Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) await Contabilidade.CarregarAsync();
             if (_telaAtual == Telas.LivrosPdf) await LivrosPdf.PreencherResponsaveisAsync();
         });
     }

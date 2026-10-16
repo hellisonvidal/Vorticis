@@ -49,19 +49,13 @@
   </Window.Styles>
 
   <DockPanel>
-    <!-- Primeira linha: apenas o nome do programa (só após o login) -->
-    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="12,5" IsVisible="{Binding Logado}">
-      <TextBlock Text="Perseus Contábil" Foreground="White" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" />
-    </Border>
-
-    <!-- Segunda linha: menus à esquerda; empresa ativa e usuário à direita -->
+    <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
     <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0,8,0" IsVisible="{Binding Logado}">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
       <Menu Name="MenuPrincipal">
         <MenuItem Header="_Cadastros">
           <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
-          <MenuItem Header="Sócios" Command="{Binding AbrirCommand}" CommandParameter="socios" />
-          <MenuItem Header="Contadores e escritório contábil" Command="{Binding AbrirCommand}" CommandParameter="contabilidade" />
+          <MenuItem Header="Contadores" Command="{Binding AbrirCommand}" CommandParameter="contabilidade" />
           <Separator />
           <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
           <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />

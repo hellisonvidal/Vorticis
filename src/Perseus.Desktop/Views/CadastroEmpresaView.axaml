@@ -16,7 +16,19 @@
       <Setter Property="Foreground" Value="#1F3A5F" />
       <Setter Property="Margin" Value="0,10,0,2" />
     </Style>
+    <Style Selector="TabControl#AbasEmpresa > TabItem">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style Selector="TextBlock.empresa-aba">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#44506A" />
+      <Setter Property="Margin" Value="8,6,8,0" />
+    </Style>
   </UserControl.Styles>
+  <TabControl Name="AbasEmpresa" SelectedIndex="{Binding AbaSelecionada}" Padding="0">
+    <TabItem Header="Dados cadastrais">
   <Grid ColumnDefinitions="*,16,300">
     <ScrollViewer>
       <StackPanel Spacing="6" MaxWidth="720" HorizontalAlignment="Left" Margin="8,0">
@@ -101,4 +113,18 @@
       </ListBox>
     </DockPanel>
   </Grid>
+    </TabItem>
+    <TabItem Header="Sócios" IsEnabled="{Binding TemEmpresaSelecionada}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="empresa-aba" Text="{Binding EmpresaSelecionadaRotulo}" />
+        <ContentControl Content="{Binding Main.Socios}" />
+      </DockPanel>
+    </TabItem>
+    <TabItem Header="Contadores" IsEnabled="{Binding TemEmpresaSelecionada}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="empresa-aba" Text="{Binding EmpresaSelecionadaRotulo}" />
+        <ContentControl Content="{Binding Main.Contabilidade}" />
+      </DockPanel>
+    </TabItem>
+  </TabControl>
 </UserControl>
