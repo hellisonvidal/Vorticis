@@ -92,7 +92,13 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - **Lançamento contábil pelo teclado:** todos os campos ficam abertos para digitação (um clique já edita); Enter/Tab avança, ↓ na última linha cria outra, ↑ numa linha recém-criada e ainda vazia a cancela, Ctrl+Delete exclui a linha, **Ctrl+Enter salva**. Antes da conta há o **código reduzido**; a conta também pode ser digitada pelo nome (lista de sugestões). O valor é formatado com milhar e duas casas (1.500,00). O código do **histórico padrão** preenche o texto fixo e deixa o cursor no fim para completar.
 - **Configurações › Configurações gerais** (administrador): tipo de contabilização — **partida dobrada** (cada linha é um lançamento: data, débito, crédito, valor, histórico) ou **partida simples** (uma conta por linha, D/C, no mínimo 2 linhas).
 - **Código reduzido:** as contas analíticas recebem uma sequência numérica automática (editável no plano de contas); históricos, clientes, fornecedores e bens também têm código sequencial.
-- **Cadastros › Históricos** (texto fixo + complemento livre no lançamento) e **Cadastros › Clientes / Fornecedores** (abas; a mesma pessoa pode ser os dois; CPF/CNPJ validado, conta contábil opcional).
+- **Cadastros › Históricos** (texto fixo + complemento livre no lançamento), **Cadastros › Clientes** e **Cadastros › Fornecedores** (menus separados; a mesma pessoa pode ser os dois; CPF/CNPJ validado, conta contábil opcional). Como no cadastro de empresas, *Buscar na Receita* preenche os dados pelo CNPJ (e a inscrição estadual, ou ISENTO); *Importar planilha* traz vários cadastros de Excel/CSV (colunas NOME e CPF_CNPJ; NOME_FANTASIA, IE, UF, MUNICIPIO, IBGE, EMAIL e TELEFONE quando houver) sem duplicar quem já existe.
+- **Nº do documento no lançamento** (NF, recibo, boleto): fica na partida (ECD I250.NUM_ARQ) e é a base da conciliação automática. A tela de lançamento mostra os **lançamentos efetuados** do período — os estornados continuam na lista, marcados — e o **estorno** é feito ali mesmo: selecione o lançamento, informe a data e o motivo e clique em *Estornar*.
+- **Lançamentos › Conciliações:** concilia as partidas de uma conta (fornecedores, clientes, bancos...) **automaticamente pelo nº do documento** quando débitos e créditos do mesmo documento se anulam (ex.: a NF na compra e o pagamento da mesma NF), ou manualmente marcando as partidas; *Desfazer* reabre. O que fica em aberto compõe o saldo da conta.
+- **Consultas › Diferenças de saldos:** saldo de cada conta no início e no fim do período e a diferença, com alertas de débitos ≠ créditos, saldo contrário à natureza e divergências internas (partidas × saldos mensais).
+- **Livro Razão:** painel com as contas analíticas — clique numa conta para ver o razão no período (aceita também o código reduzido).
+- **Fechar o sistema pede confirmação.**
+- **Configurações gerais › Limpar banco de dados** (NÃO recomendado, só administrador): apaga todas as empresas e cadastros, mantendo usuários, perfis e configurações; exige digitar LIMPAR, confirmar de novo e gera um backup antes.
 - **Inscrição estadual:** se a consulta não encontrar inscrição para o CNPJ na UF, o campo é preenchido com **ISENTO** automaticamente.
 - **Consultas** (menu próprio): *Saldos de contas* (saldo de cada conta numa data, com filtro por código/nome) e *Lançamentos* (por período, filtrando por conta, texto do histórico, valor ou número) — respostas rápidas sem gerar relatório.
 - **Relatórios na tela:** Balancete, Razão, Diário e Balanço/DRE são sempre exibidos na tela, com os botões **PDF**, **Excel (.xlsx)** e **CSV** (abre no Excel em pt-BR). A exportação exige a permissão *Exportar relatórios*.
@@ -106,6 +112,8 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - **Cálculo e lançamento da depreciação:** por competência, mostra a quota contábil (CPC 27) e a fiscal (RFB) e a diferença a controlar no LALUR; *Lançar* gera o lançamento (despesa × depreciação/amortização acumulada) no último dia do mês; *Estornar competência* desfaz o mês mais recente.
 
 ### Integrações › Importar
+
+Cada importação é uma função própria no menu Integrações › Importar.
 
 - **Planilhas** (Excel .xlsx ou CSV): o usuário cria **layouts personalizados** dizendo qual coluna da planilha é a data, a conta débito/crédito (ou conta fixa), o valor, o histórico, o documento e o centro de custo. Dois modelos: *uma linha por lançamento* (débito e crédito na mesma linha; valor negativo inverte) ou *uma linha por partida* (conta + D/C + valor, ou colunas de valor a débito e a crédito, agrupadas pelo nº do lançamento ou até débitos = créditos). Opcionalmente converte os códigos de conta por uma máscara (11010001 → 1.1.01.0001). Os layouts ficam salvos no banco e servem a todas as empresas.
 - **Extratos bancários (OFX)**: lê o extrato do internet banking; cada movimento vira um lançamento contra a conta contábil do banco, com contrapartida padrão para entradas e saídas (editável linha a linha). Movimentos já importados (banco/agência/conta/FITID) não são duplicados; se o lançamento for estornado, pode ser importado de novo.
@@ -130,7 +138,7 @@ O Perseus não traz a tabela embutida: ela é oficial, muda a cada ano e deve vi
 
 ### Backup e restauração
 
-*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado) em `Documentos\Perseus Contabil\Backups`. A restauração exige digitar `RESTAURAR`, gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `PERSEUS_PG_BIN`).
+*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado). Por padrão elas ficam na pasta **Backups dentro do diretório de instalação** do programa (criada pelo instalador; se não puder ser gravada, `Documentos\Perseus Contabil\Backups`); *Escolher pasta...* grava outra pasta para os próximos backups, inclusive os automáticos. *Excluir backup selecionado* apaga um arquivo de backup (com confirmação). A restauração exige digitar `RESTAURAR`, gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `PERSEUS_PG_BIN`).
 
 ### Consulta de CNPJ
 
