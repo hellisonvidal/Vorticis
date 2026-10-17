@@ -8,11 +8,12 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
 {
     public async Task<IReadOnlyList<Contador>> ListarContadoresAsync(CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT id, nome, cpf, crc, uf_crc, email, telefone, escritorio_id FROM core.contador ORDER BY nome");
+        await using var cmd = ds.CreateCommand("SELECT id, nome, cpf, crc, uf_crc, email, telefone, escritorio_id, assina_ecd_ecf FROM core.contador ORDER BY nome");
         var res = new List<Contador>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
-            res.Add(new Contador(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4), T(r, 5), T(r, 6), r.IsDBNull(7) ? null : r.GetInt64(7)));
+            res.Add(new Contador(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4), T(r, 5), T(r, 6), r.IsDBNull(7) ? null : r.GetInt64(7),
+                                     r.GetBoolean(8)));
         return res;
     }
 
@@ -30,13 +31,14 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var cmd = ds.CreateCommand("""
-                INSERT INTO core.contador (nome, cpf, crc, uf_crc, email, telefone, escritorio_id) VALUES (@n, @cpf, @crc, @uf, @em, @tel, @esc)
+                INSERT INTO core.contador (nome, cpf, crc, uf_crc, email, telefone, escritorio_id, assina_ecd_ecf)
+                VALUES (@n, @cpf, @crc, @uf, @em, @tel, @esc, @ass)
                 ON CONFLICT (cpf) DO UPDATE SET nome = EXCLUDED.nome, crc = EXCLUDED.crc, uf_crc = EXCLUDED.uf_crc,
                        email = COALESCE(EXCLUDED.email, core.contador.email), telefone = COALESCE(EXCLUDED.telefone, core.contador.telefone),
-                       escritorio_id = COALESCE(EXCLUDED.escritorio_id, core.contador.escritorio_id)
+                       escritorio_id = COALESCE(EXCLUDED.escritorio_id, core.contador.escritorio_id), assina_ecd_ecf = EXCLUDED.assina_ecd_ecf
                 RETURNING id
                 """).Com("n", c.Nome).Com("cpf", c.Cpf).Com("crc", c.Crc).Com("uf", c.UfCrc).ComTexto("em", c.Email).ComTexto("tel", c.Telefone)
-                    .Com("esc", NpgsqlDbType.Bigint, c.EscritorioId);
+                    .Com("esc", NpgsqlDbType.Bigint, c.EscritorioId).Com("ass", c.AssinaEcdEcf);
             return (long)(await cmd.ExecuteScalarAsync(ct))!;
         });
 
@@ -62,7 +64,7 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
                         THEN CASE WHEN position(c.uf_crc IN c.crc) > 0 THEN c.crc ELSE c.uf_crc || '-' || c.crc END
                         ELSE CASE WHEN e.crc IS NULL OR position(COALESCE(e.uf_crc, '##') IN e.crc) > 0 THEN e.crc ELSE e.uf_crc || '-' || e.crc END
                    END,
-                   v.inicio, v.fim, v.responsavel_tecnico
+                   v.inicio, v.fim, v.responsavel_tecnico, COALESCE(c.assina_ecd_ecf, FALSE)
               FROM core.empresa_contabilidade v
               LEFT JOIN core.contador c ON c.id = v.contador_id
               LEFT JOIN core.escritorio_contabil e ON e.id = v.escritorio_id
@@ -73,7 +75,8 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new VinculoContabil(r.GetInt64(0), r.IsDBNull(1) ? null : r.GetInt64(1), r.IsDBNull(2) ? null : r.GetInt64(2), r.GetString(3),
-                r.GetString(4), T(r, 5), r.GetFieldValue<DateOnly>(6), r.IsDBNull(7) ? null : r.GetFieldValue<DateOnly>(7), r.GetBoolean(8)));
+                r.GetString(4), T(r, 5), r.GetFieldValue<DateOnly>(6), r.IsDBNull(7) ? null : r.GetFieldValue<DateOnly>(7), r.GetBoolean(8),
+                r.GetBoolean(9)));
         return res;
     }
 
@@ -98,6 +101,10 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
             UPDATE core.empresa_contabilidade SET responsavel_tecnico = FALSE WHERE empresa_id = @e AND responsavel_tecnico AND id <> @id;
             UPDATE core.empresa_contabilidade SET responsavel_tecnico = TRUE WHERE id = @id AND empresa_id = @e;
             """, c => c.Com("id", vinculoId).Com("e", empresaId), ct);
+
+    public Task DefinirAssinaEcdEcfAsync(long contadorId, bool assina, long usuarioId, CancellationToken ct)
+        => Executar(usuarioId, "UPDATE core.contador SET assina_ecd_ecf = @a WHERE id = @id",
+                    c => c.Com("id", contadorId).Com("a", assina), ct);
 
     public Task ExcluirVinculoAsync(long empresaId, long vinculoId, long usuarioId, CancellationToken ct)
         => Executar(usuarioId, "DELETE FROM core.empresa_contabilidade WHERE id = @id AND empresa_id = @e",

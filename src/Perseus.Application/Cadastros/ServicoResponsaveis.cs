@@ -6,7 +6,9 @@ using Perseus.Domain.Seguranca;
 
 namespace Perseus.Application.Cadastros;
 
-public sealed record Contador(long Id, string Nome, string Cpf, string Crc, string UfCrc, string? Email, string? Telefone, long? EscritorioId)
+/// <summary>Contador (pessoa física com CRC). <paramref name="AssinaEcdEcf"/>: é quem assina a ECD e a ECF (J930/0930).</summary>
+public sealed record Contador(long Id, string Nome, string Cpf, string Crc, string UfCrc, string? Email, string? Telefone, long? EscritorioId,
+                              bool AssinaEcdEcf = false)
 {
     /// <summary>CRC como impresso nos termos: "UF-número", sem repetir a UF quando ela já faz parte do número (ex.: 1SP123456/O-7).</summary>
     public string CrcCompleto => Crc.Contains(UfCrc, StringComparison.OrdinalIgnoreCase) ? Crc : $"{UfCrc}-{Crc}";
@@ -15,7 +17,7 @@ public sealed record Contador(long Id, string Nome, string Cpf, string Crc, stri
 public sealed record EscritorioContabil(long Id, string Cnpj, string RazaoSocial, string? Crc, string? UfCrc, string? Email, string? Telefone);
 
 public sealed record VinculoContabil(long Id, long? ContadorId, long? EscritorioId, string Nome, string Documento, string? Crc,
-                                     DateOnly Inicio, DateOnly? Fim, bool ResponsavelTecnico)
+                                     DateOnly Inicio, DateOnly? Fim, bool ResponsavelTecnico, bool AssinaEcdEcf = false)
 {
     public bool Vigente => Fim is null;
     public string Tipo => ContadorId is not null ? "Contador" : "Escritório contábil";
@@ -41,6 +43,7 @@ public interface IRepositorioResponsaveis
     Task<long> IncluirVinculoAsync(long empresaId, long? contadorId, long? escritorioId, DateOnly inicio, bool responsavel, long usuarioId, CancellationToken ct);
     Task EncerrarVinculoAsync(long empresaId, long vinculoId, DateOnly fim, long usuarioId, CancellationToken ct);
     Task DefinirResponsavelAsync(long empresaId, long vinculoId, long usuarioId, CancellationToken ct);
+    Task DefinirAssinaEcdEcfAsync(long contadorId, bool assina, long usuarioId, CancellationToken ct);
     Task ExcluirVinculoAsync(long empresaId, long vinculoId, long usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<Socio>> ListarSociosAsync(long empresaId, CancellationToken ct);
@@ -75,6 +78,25 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
     {
         var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).FirstOrDefault(x => x.Vigente && x.ResponsavelTecnico);
         return v?.ContadorId is long id ? (await repositorio.ListarContadoresAsync(ct)).FirstOrDefault(c => c.Id == id) : null;
+    }
+
+    /// <summary>Contador que assina a ECD/ECF: o vigente marcado "assina ECD/ECF" (o responsável técnico primeiro); sem marcação, o responsável técnico.</summary>
+    public async Task<Contador?> SignatarioEcdEcfAsync(long empresaId, CancellationToken ct = default)
+    {
+        var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).Where(x => x.Vigente && x.ContadorId is not null)
+                                                                       .OrderByDescending(x => x.AssinaEcdEcf).ThenByDescending(x => x.ResponsavelTecnico)
+                                                                       .FirstOrDefault(x => x.AssinaEcdEcf || x.ResponsavelTecnico);
+        return v?.ContadorId is long id ? (await repositorio.ListarContadoresAsync(ct)).FirstOrDefault(c => c.Id == id) : null;
+    }
+
+    /// <summary>Marca ou desmarca o contador do vínculo como signatário da ECD/ECF.</summary>
+    public async Task<Resultado> DefinirAssinaEcdEcfAsync(long empresaId, long vinculoId, bool assina, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
+        var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).FirstOrDefault(x => x.Id == vinculoId);
+        if (v is null) return Resultado.Falha("Vínculo não encontrado.");
+        if (v.ContadorId is not long contador) return Resultado.Falha("Só um contador (pessoa física com CRC) assina a ECD/ECF.");
+        return await GravarSemValor(() => repositorio.DefinirAssinaEcdEcfAsync(contador, assina, usuarioId, ct));
     }
 
     public async Task<Socio?> RepresentanteLegalAsync(long empresaId, CancellationToken ct = default)

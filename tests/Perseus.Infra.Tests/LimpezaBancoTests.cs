@@ -25,11 +25,14 @@ public class LimpezaBancoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.True(await svc.UsandoSenhaPadraoAsync(ct));
         Assert.True((await svc.AlterarSenhaAdministradorAsync(admin, "PERSEUS", "Nova#2026", "Nova#2026", ct)).Sucesso);
         Assert.False(await svc.VerificarSenhaAdministradorAsync("PERSEUS", ct));
+        var a3 = new Application.Sistema.DadosCertificado("X", null, "AC", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1), new string('B', 40), true);
+        Assert.True((await db.App.Certificados.RegistrarA3Async(admin, a3, null, null, ct)).Sucesso);
         var r = await svc.LimparBancoAsync(admin, "LIMPAR", "Nova#2026", ct);
         Assert.True(r.Sucesso, string.Join("; ", r.Erros));
         Assert.Equal(1, r.Valor);
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.empresa"));
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM contabil.lancamento"));
+        Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.certificado_digital"));
         // Só fica o administrador padrão: ADMIN / PERSEUS, com troca de senha no primeiro acesso
         Assert.Equal(1L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));
         var login = await db.App.Usuarios.AutenticarAsync("ADMIN", "PERSEUS", ct);

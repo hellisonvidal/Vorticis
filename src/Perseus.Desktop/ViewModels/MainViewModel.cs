@@ -64,6 +64,7 @@ public static class Telas
     public const string Clientes = "clientes";
     public const string Fornecedores = "fornecedores";
     public const string ConfiguracoesGerais = "configuracoesgerais";
+    public const string Certificados = "certificados";
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
@@ -100,7 +101,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais),
+        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais), nameof(Certificados),
         nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao), nameof(DiferencasSaldos))]
     private void RecriarModulos()
     {
@@ -136,6 +137,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Clientes = new ClientesViewModel(this);
         Fornecedores = new FornecedoresViewModel(this);
         ConfiguracoesGerais = new ConfiguracoesGeraisViewModel(this);
+        Certificados = new CertificadosViewModel(this);
         Bens = new BensViewModel(this);
         GruposDepreciacao = new GruposDepreciacaoViewModel(this);
         Depreciacao = new DepreciacaoViewModel(this);
@@ -205,6 +207,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public ClientesViewModel Clientes { get; private set; }
     public FornecedoresViewModel Fornecedores { get; private set; }
     public ConfiguracoesGeraisViewModel ConfiguracoesGerais { get; private set; }
+    public CertificadosViewModel Certificados { get; private set; }
     public BensViewModel Bens { get; private set; }
     public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
     public DepreciacaoViewModel Depreciacao { get; private set; }
@@ -374,6 +377,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             or Telas.Historicos or Telas.Clientes or Telas.Fornecedores or Telas.Bens or Telas.GruposDepreciacao or Telas.Depreciacao
             => EmpresaSelecionada is not null && _permissoes.TemAcesso,
         Telas.ConfiguracoesGerais => Pode(Permissao.AdministrarSistema),
+        Telas.Certificados => Sessao?.Administrador == true,
         Telas.Lancamento => Pode(Permissao.LancamentoIncluir) || Pode(Permissao.LancamentoEstornar),
         Telas.Conciliacao => Pode(Permissao.LancamentoIncluir),
         Telas.DiferencasSaldos => Pode(Permissao.RelatorioBalancete),
@@ -438,6 +442,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Clientes => (Clientes, "Cadastros › Clientes"),
             Telas.Fornecedores => (Fornecedores, "Cadastros › Fornecedores"),
             Telas.ConfiguracoesGerais => (ConfiguracoesGerais, "Configurações › Configurações gerais"),
+            Telas.Certificados => (Certificados, "Configurações › Certificados digitais"),
             Telas.ImportarPlano => (ImportacaoPlano, "Integrações › Importar › Plano de contas"),
             Telas.ImportarPlanilhas => (ImportacaoPlanilhas, "Integrações › Importar › Planilhas"),
             Telas.ImportarExtratos => (ImportacaoExtratos, "Integrações › Importar › Extratos bancários (OFX)"),
@@ -486,6 +491,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela is Telas.Lancamento or Telas.Estorno) _ = Disparar(Lancamento.CarregarAsync);
         if (tela == Telas.Razao) _ = Disparar(Razao.CarregarContasAsync);
         if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
+        if (tela == Telas.Certificados) _ = Disparar(Certificados.CarregarAsync);
         if (tela == Telas.Clientes) _ = Disparar(Clientes.CarregarAsync);
         if (tela == Telas.Fornecedores) _ = Disparar(Fornecedores.CarregarAsync);
         if (tela == Telas.ImportarPlanilhas) _ = Disparar(ImportacaoPlanilhas.CarregarAsync);

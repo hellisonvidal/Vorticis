@@ -30,7 +30,7 @@ public partial class LivrosPdfViewModel(IContexto contexto) : ModuloViewModel(co
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
         var rep = await app.Responsaveis.RepresentanteLegalAsync(empresa);
-        var cont = await app.Responsaveis.ResponsavelTecnicoAsync(empresa);
+        var cont = await app.Responsaveis.SignatarioEcdEcfAsync(empresa);
         if (!EhAtual(g)) return;
         (Representante, RepresentanteCpf) = rep is null ? ("", "") : (rep.Nome, rep.CpfCnpj is { Length: 11 } c ? Domain.Cadastros.Cpf.Formatar(c) : rep.CpfCnpj ?? "");
         (Contador, Crc) = cont is null ? ("", "") : (cont.Nome, cont.CrcCompleto);

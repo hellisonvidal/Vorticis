@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             xmlns:sis="using:Perseus.Application.Sistema"
+             x:Class="Perseus.Desktop.Views.CertificadosView"
+             x:DataType="vm:CertificadosViewModel">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="12">
+    <StackPanel Spacing="4">
+      <TextBlock Classes="titulo" Text="Certificados digitais" />
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Repositório dos certificados usados na comunicação com órgãos públicos (Receita Federal, SEFAZ, Junta Comercial). A1: o arquivo .pfx é guardado no banco como foi importado, protegido pela própria senha (a senha não é gravada). A3: token ou cartão — só o registro; o certificado continua no dispositivo." />
+      <TextBlock Text="Somente o administrador acessa os certificados digitais." Classes="erro" IsVisible="{Binding !PodeAlterar}" />
+      <TextBlock Text="{Binding AvisoVencimento}" Foreground="#9A5B00" FontWeight="SemiBold" TextWrapping="Wrap"
+                 IsVisible="{Binding AvisoVencimento, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,16,*" Margin="0,10" IsEnabled="{Binding PodeAlterar}">
+      <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Importar certificado A1 (.pfx / .p12)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <TextBox Text="{Binding Arquivo}" Watermark="Arquivo do certificado" IsReadOnly="True" />
+            <Button Grid.Column="1" Content="Escolher..." Click="AoEscolherArquivo" />
+          </Grid>
+          <Grid ColumnDefinitions="*,8,*">
+            <TextBox Text="{Binding Senha}" PasswordChar="●" Watermark="Senha do certificado" />
+            <TextBox Grid.Column="2" Text="{Binding Descricao}" Watermark="Descrição (opcional, ex.: e-CNPJ da empresa)" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Conferir" Command="{Binding ConferirCommand}" />
+            <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
+          </StackPanel>
+          <TextBlock Text="{Binding Conferencia}" FontSize="11" Foreground="#1B6E3A" TextWrapping="Wrap"
+                     IsVisible="{Binding Conferencia, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Registrar certificado A3 (token / cartão)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <Button Content="Ler certificados instalados no Windows" Command="{Binding LerInstaladosCommand}" />
+          <ComboBox ItemsSource="{Binding Instalados}" SelectedItem="{Binding InstaladoSelecionado}" HorizontalAlignment="Stretch"
+                    PlaceholderText="Conecte o token/cartão e clique acima">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="sis:DadosCertificado">
+                <TextBlock>
+                  <Run Text="{Binding Titular, Mode=OneWay}" /><Run Text=" · até " /><Run Text="{Binding ValidoAte, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy}'}" />
+                </TextBlock>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Content="Registrar A3" Command="{Binding RegistrarA3Command}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="70" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Titular" Binding="{ReflectionBinding Titular}" Width="*" />
+        <DataGridTextColumn Header="CNPJ / CPF" Binding="{ReflectionBinding Documento}" Width="150" />
+        <DataGridTextColumn Header="Validade" Binding="{ReflectionBinding Validade}" Width="190" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="150" />
+        <DataGridTextColumn Header="Emissor" Binding="{ReflectionBinding Emissor}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <StackPanel Grid.Row="3" Spacing="6" Margin="0,8,0,0">
+      <Button Content="Excluir do repositório" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeAlterar}" />
+      <v:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

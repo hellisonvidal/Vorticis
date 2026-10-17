@@ -99,6 +99,7 @@
         </MenuItem>
         <MenuItem Header="Con_figurações">
           <MenuItem Header="Configurações gerais" Command="{Binding AbrirCommand}" CommandParameter="configuracoesgerais" />
+          <MenuItem Header="Certificados digitais" Command="{Binding AbrirCommand}" CommandParameter="certificados" />
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />

@@ -44,8 +44,15 @@ public class ResponsaveisTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal(("Maria C. Atualizada", "SP-123456/O-7"), (resp!.Nome, resp.CrcCompleto));
         Assert.Equal("1SP123456/O-7", (resp with { Crc = "1SP123456/O-7" }).CrcCompleto);   // UF já no número: não repete
 
-        // Troca de responsável técnico e encerramento de vínculo
+        // Contador que assina a ECD/ECF: sem marcação, o responsável técnico; marcado, ele
         var joao = vinculos.Single(v => v.Nome == "João Contador");
+        Assert.Equal("Maria C. Atualizada", (await svc.SignatarioEcdEcfAsync(empresa, ct))!.Nome);
+        Assert.True((await svc.DefinirAssinaEcdEcfAsync(empresa, joao.Id, true, adm, ct)).Sucesso);
+        Assert.True((await svc.ListarVinculosAsync(empresa, adm, ct)).Valor.Single(v => v.Id == joao.Id).AssinaEcdEcf);
+        Assert.Equal("João Contador", (await svc.SignatarioEcdEcfAsync(empresa, ct))!.Nome);
+        Assert.Contains("Só um contador", (await svc.DefinirAssinaEcdEcfAsync(empresa, vinculos.Single(v => v.EscritorioId is not null).Id, true, adm, ct)).Erros[0]);
+
+        // Troca de responsável técnico e encerramento de vínculo
         Assert.True((await svc.DefinirResponsavelAsync(empresa, joao.Id, adm, ct)).Sucesso);
         Assert.Equal("João Contador", (await svc.ResponsavelTecnicoAsync(empresa, ct))!.Nome);
         Assert.Contains("deve ser um contador", (await svc.DefinirResponsavelAsync(empresa, vinculos.Single(v => v.EscritorioId is not null).Id, adm, ct)).Erros[0]);

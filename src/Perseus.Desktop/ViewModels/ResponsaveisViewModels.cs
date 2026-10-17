@@ -18,6 +18,7 @@ public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
     public string Inicio => Vinculo.Inicio.ToString("dd/MM/yyyy");
     public string Fim => Vinculo.Fim?.ToString("dd/MM/yyyy") ?? "vigente";
     public string Responsavel => Vinculo.ResponsavelTecnico ? "✓ responsável técnico" : "";
+    public string AssinaEcdEcf => Vinculo.AssinaEcdEcf ? "✓ assina ECD/ECF" : "";
 }
 
 /// <summary>Cadastros › Contadores (contador responsável e escritório contábil) da empresa selecionada; também é a aba Contadores de Cadastros › Empresas.</summary>
@@ -31,6 +32,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
 
     // alteração do vínculo selecionado
     [ObservableProperty] private bool _responsavelEdicao;
+    [ObservableProperty] private bool _assinaEdicao;
     [ObservableProperty] private DateTime? _fimEdicao;
 
     public bool SelecionadoEhContador => Selecionado?.Vinculo.ContadorId is not null;
@@ -52,11 +54,13 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         (ContadorNome, ContadorCpf, ContadorCrc, ContadorEmail, ContadorTelefone, ContadorExistente) = ("", "", "", "", "", null);
         (EscritorioCnpj, EscritorioRazao, EscritorioCrc, EscritorioEmail, EscritorioTelefone, EscritorioExistente) = ("", "", "", "", "", null);
         (ContadorInicio, EscritorioInicio, ContadorResponsavel) = (new DateTime(DateTime.Today.Year, 1, 1), new DateTime(DateTime.Today.Year, 1, 1), true);
+        ContadorAssinaEcdEcf = true;
     }
 
     protected override void MostrarSelecionado()
     {
         ResponsavelEdicao = Selecionado?.Vinculo.ResponsavelTecnico ?? false;
+        AssinaEdicao = Selecionado?.Vinculo.AssinaEcdEcf ?? false;
         FimEdicao = Selecionado?.Vinculo.Fim?.ToDateTime(TimeOnly.MinValue);
     }
 
@@ -79,6 +83,11 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
             {
                 if (v.ContadorId is null) { Erros.Add("Só um contador pode ser o responsável técnico."); return; }
                 var r = await app.Responsaveis.DefinirResponsavelAsync(empresa, v.Id, usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            }
+            if (AssinaEdicao != v.AssinaEcdEcf)
+            {
+                var r = await app.Responsaveis.DefinirAssinaEcdEcfAsync(empresa, v.Id, AssinaEdicao, usuario);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             }
             if (FimEdicao is { } fim && v.Fim != DateOnly.FromDateTime(fim))
@@ -127,6 +136,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
     [ObservableProperty] private string _contadorTelefone = "";
     [ObservableProperty] private DateTime? _contadorInicio = new DateTime(DateTime.Today.Year, 1, 1);
     [ObservableProperty] private bool _contadorResponsavel = true;
+    [ObservableProperty] private bool _contadorAssinaEcdEcf = true;
 
     // escritório
     [ObservableProperty] private EscritorioContabil? _escritorioExistente;
@@ -172,6 +182,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         if (value is null) return;
         (ContadorNome, ContadorCpf, ContadorCrc, ContadorUf, ContadorEmail, ContadorTelefone) =
             (value.Nome, Cpf.Formatar(value.Cpf), value.Crc, value.UfCrc, value.Email ?? "", value.Telefone ?? "");
+        ContadorAssinaEcdEcf = value.AssinaEcdEcf;
     }
 
     partial void OnEscritorioExistenteChanged(EscritorioContabil? value)
@@ -187,7 +198,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         await ExecutarAsync(async (app, empresa, usuario) =>
     {
         var r = await app.Responsaveis.VincularContadorAsync(empresa,
-            new Contador(0, ContadorNome, ContadorCpf, ContadorCrc, ContadorUf, ContadorEmail, ContadorTelefone, null),
+            new Contador(0, ContadorNome, ContadorCpf, ContadorCrc, ContadorUf, ContadorEmail, ContadorTelefone, null, ContadorAssinaEcdEcf),
             DateOnly.FromDateTime(ContadorInicio ?? DateTime.Today), ContadorResponsavel, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         ok = true;

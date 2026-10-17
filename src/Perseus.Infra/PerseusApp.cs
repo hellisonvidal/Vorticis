@@ -46,6 +46,7 @@ public sealed class PerseusApp : IAsyncDisposable
         var repoConfiguracao = new RepositorioConfiguracao(ds);
         Licenca = new ServicoLicenca(repoConfiguracao);
         ConfiguracoesGerais = new ServicoConfiguracoesGerais(repoConfiguracao);
+        Certificados = new ServicoCertificados(new RepositorioCertificados(ds));
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
@@ -67,6 +68,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoImobilizado Imobilizado { get; }
     public ServicoParticipantes Participantes { get; }
     public ServicoConfiguracoesGerais ConfiguracoesGerais { get; }
+    public ServicoCertificados Certificados { get; }
     public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }
     public ServicoDiferencasSaldos DiferencasSaldos { get; }

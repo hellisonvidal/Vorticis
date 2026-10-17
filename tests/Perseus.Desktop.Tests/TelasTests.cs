@@ -676,11 +676,34 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await cont.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(cont.Erros);
             Assert.Equal(2, cont.Vinculos.Count);
+            Assert.Equal("✓ assina ECD/ECF", cont.Vinculos.Single(v => v.Nome == "Maria Contadora").AssinaEcdEcf);   // marcado por padrão na inclusão
             Foto(janela, "08h_contabilidade");
             vm.AbrirCommand.Execute(Telas.Contabilidade);
             Assert.Same(cont, vm.Conteudo);
             Assert.Equal("Cadastros › Contadores", vm.TituloTela);
             Assert.Equal(2, cont.Vinculos.Count);
+
+            // Configurações › Certificados digitais: importa um A1 (.pfx), confere titular/CNPJ e avisa o vencimento próximo
+            vm.AbrirCommand.Execute(Telas.Certificados);
+            var cert = vm.Certificados;
+            await cert.CarregarAsync();
+            Assert.True(cert.PodeAlterar);
+            var pfx = Path.Combine(Path.GetTempPath(), "perseus_cert_" + Guid.NewGuid().ToString("N") + ".pfx");
+            await File.WriteAllBytesAsync(pfx, Infra.Tests.CertificadosTests.Pfx("EXEMPLO COMERCIO DE INFORMATICA LTDA:11222333000181", "1234",
+                DateTimeOffset.UtcNow.AddDays(15)));
+            (cert.Arquivo, cert.Senha) = (pfx, "errada");
+            cert.ConferirCommand.Execute(null);
+            Assert.Contains("senha incorreta", Assert.Single(cert.Erros));
+            cert.Senha = "1234";
+            cert.ConferirCommand.Execute(null);
+            Assert.StartsWith("EXEMPLO COMERCIO DE INFORMATICA LTDA — 11.222.333/0001-81", cert.Conferencia);
+            await cert.ImportarCommand.ExecuteAsync(null);
+            Assert.Empty(cert.Erros);
+            var certLinha = Assert.Single(cert.Lista);
+            Assert.Equal(("A1", "11.222.333/0001-81"), (certLinha.Tipo, certLinha.Documento));
+            Assert.Contains("vence em", cert.AvisoVencimento);
+            Foto(janela, "09b_certificados");
+            File.Delete(pfx);
 
             // Relatórios › Livros e relatórios em PDF
             var pastaPdf = Path.Combine(Path.GetTempPath(), "perseus_pdf_" + Guid.NewGuid().ToString("N"));

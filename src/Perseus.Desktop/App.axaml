@@ -38,6 +38,7 @@
     <DataTemplate DataType="vm:ClientesViewModel"><v:ParticipantesView /></DataTemplate>
     <DataTemplate DataType="vm:FornecedoresViewModel"><v:ParticipantesView /></DataTemplate>
     <DataTemplate DataType="vm:ConfiguracoesGeraisViewModel"><v:ConfiguracoesGeraisView /></DataTemplate>
+    <DataTemplate DataType="vm:CertificadosViewModel"><v:CertificadosView /></DataTemplate>
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
     <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>
