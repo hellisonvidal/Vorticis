@@ -26,6 +26,7 @@ OutputBaseFilename=Setup-PerseusContabil-{#Versao}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=icone\PerseusContabil.ico
 UninstallDisplayIcon={app}\PerseusContabil.exe
 UninstallDisplayName=Perseus Contábil
 CloseApplications=yes

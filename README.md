@@ -8,7 +8,7 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 
 | Fase | Situação |
 |---|---|
-| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Consultas / Integrações / Relatórios / Ajuda / Configurações), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**, **instalador único com banco de dados embutido (sem configurar PostgreSQL)** ✔ |
+| 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Imobilizado / Consultas / Integrações / Relatórios / Configurações / Ajuda), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**, **instalador único com banco de dados embutido (sem configurar PostgreSQL)** ✔ |
 | 1. MVP contábil | Plano de contas (modelo + manutenção), centros de custo, saldos iniciais, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete, **relatórios em tela com exportação para PDF, Excel (.xlsx) e CSV**, **Consultas rápidas de saldos e lançamentos**, **importação de lançamentos (planilhas com layouts personalizados, extratos OFX, layout padrão)**, **importação do plano de contas de planilha com conversão de máscara**, **livros em PDF (Diário com termos de abertura e encerramento, Razão, Balancete)** ✔ |
 | 3. Demonstrações e ECD | Encerramento do exercício (IND_LCTO = E) e desfazer; Balanço Patrimonial e DRE (tela e PDF); **plano referencial da RFB: importação da tabela oficial e vínculo das contas (sugestões automáticas, cópia do ano anterior, pendências para a ECD)**. **Pendente:** DMPL/DLPA, DFC, gerador do arquivo ECD |
 
@@ -88,11 +88,22 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - Cada função aberta pelo menu abre em **tela cheia, na área de trabalho abaixo do menu** (sem cobrir a barra de título do programa), com o botão **✕ Fechar** no cabeçalho. A barra abaixo do menu lista as funções abertas: clique para trazer à frente, ✕ para fechar. Reabrir a mesma função traz a janela existente.
 - Todos os cadastros (empresas, sócios, contadores, plano de contas, centros de custo, usuários e perfis) têm a mesma barra: **Incluir · Alterar · Excluir · Salvar · Cancelar** e mostram o **Nº** sequencial de cada registro. Em consulta o formulário mostra o registro selecionado; Incluir/Alterar liberam a edição; **Excluir sempre pede confirmação**.
 - **Exclusão física:** excluir apaga o registro do banco de dados, para que o mesmo CNPJ, login ou código possa ser cadastrado de novo. Excluir uma **empresa** apaga também toda a sua escrituração (lançamentos, plano, períodos, sócios, acessos): o sistema avisa, **gera um backup automático antes** e informa onde ele ficou. Excluir um **usuário** mantém o histórico (lançamentos, registro de acessos) sem o vínculo com ele; ninguém exclui o próprio usuário.
+- **Fechar uma função e abri-la de novo recomeça do zero** (nada do que foi digitado ou consultado permanece).
+- **Lançamento contábil pelo teclado:** todos os campos ficam abertos para digitação (um clique já edita); Enter/Tab avança, ↓ na última linha cria outra, ↑ numa linha recém-criada e ainda vazia a cancela, Ctrl+Delete exclui a linha, **Ctrl+Enter salva**. Antes da conta há o **código reduzido**; a conta também pode ser digitada pelo nome (lista de sugestões). O valor é formatado com milhar e duas casas (1.500,00). O código do **histórico padrão** preenche o texto fixo e deixa o cursor no fim para completar.
+- **Configurações › Configurações gerais** (administrador): tipo de contabilização — **partida dobrada** (cada linha é um lançamento: data, débito, crédito, valor, histórico) ou **partida simples** (uma conta por linha, D/C, no mínimo 2 linhas).
+- **Código reduzido:** as contas analíticas recebem uma sequência numérica automática (editável no plano de contas); históricos, clientes, fornecedores e bens também têm código sequencial.
+- **Cadastros › Históricos** (texto fixo + complemento livre no lançamento) e **Cadastros › Clientes / Fornecedores** (abas; a mesma pessoa pode ser os dois; CPF/CNPJ validado, conta contábil opcional).
 - **Inscrição estadual:** se a consulta não encontrar inscrição para o CNPJ na UF, o campo é preenchido com **ISENTO** automaticamente.
 - **Consultas** (menu próprio): *Saldos de contas* (saldo de cada conta numa data, com filtro por código/nome) e *Lançamentos* (por período, filtrando por conta, texto do histórico, valor ou número) — respostas rápidas sem gerar relatório.
 - **Relatórios na tela:** Balancete, Razão, Diário e Balanço/DRE são sempre exibidos na tela, com os botões **PDF**, **Excel (.xlsx)** e **CSV** (abre no Excel em pt-BR). A exportação exige a permissão *Exportar relatórios*.
 - **Ajuda › Licença e registro:** para quem o Perseus está registrado (titular, CPF/CNPJ, e-mail — o administrador registra) e as licenças dos componentes de terceiros.
 - **Configurações › Conexão com o banco de dados:** permite editar a conexão a qualquer momento — banco local (porta, troca da senha, pasta dos dados) ou servidor PostgreSQL (servidor, porta, banco, usuário, senha, com *Mostrar senhas* e *Testar conexão*).
+
+### Imobilizado
+
+- **Regras de depreciação (grupos):** taxas fiscais da RFB (IN RFB 1.700/2017, Anexo III; RIR/2018 arts. 317–330) já cadastradas — edificações 4%, instalações, máquinas e móveis 10%, veículos de passageiros e computadores 20%, veículos de carga 25%, softwares (amortização) 20%, terrenos não depreciam — com as contas sugeridas; podem ser alteradas e ampliadas.
+- **Cadastro de bens:** grupo, plaqueta, local, NF, fornecedor, aquisição, início de uso, custo, **valor residual, vida útil e método (linear ou soma dos dígitos)** conforme a NBC TG 27 / CPC 27, turnos de uso (aceleração fiscal ×1,5 ou ×2,0 — RIR/2018 art. 323), depreciação já existente na implantação, contas do bem, da depreciação acumulada e da despesa, e baixa.
+- **Cálculo e lançamento da depreciação:** por competência, mostra a quota contábil (CPC 27) e a fiscal (RFB) e a diferença a controlar no LALUR; *Lançar* gera o lançamento (despesa × depreciação/amortização acumulada) no último dia do mês; *Estornar competência* desfaz o mês mais recente.
 
 ### Integrações › Importar
 
@@ -101,6 +112,7 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - **Lançamentos contábeis**: layout padrão do Perseus (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), com botão para gerar a planilha modelo.
 - Em todas, **Pré-visualizar** valida cada lançamento (contas analíticas, período aberto, partidas dobradas) e **Importar** grava tudo numa única transação — se um falhar, nenhum é gravado.
 - **Plano de contas**: importa um plano modelo de planilha (código e descrição obrigatórios; natureza, tipo S/A e saldo D/C lidos ou deduzidos), convertendo os códigos para a **máscara escolhida** (ex.: `9.9.99.999`: 1.1.1.1 → 1.1.01.001; 1101001 → 1.1.01.001). Substitui o plano só enquanto não há lançamentos. *Converter plano atual para a máscara* troca os códigos das contas existentes, mesmo com movimento (lançamentos e hierarquia não mudam).
+- **Vínculo ao plano referencial** também fica em Integrações › Importar.
 - *Exportar*: ECD, ECF e eSocial em breve.
 
 ### Sócios e contadores
@@ -128,7 +140,7 @@ Em **Cadastros › Empresas**, o botão *Buscar dados na Receita* preenche razã
 
 ### Gerar o instalador
 
-O job `instalador-windows` do CI faz tudo em um Windows limpo:
+O job `instalador-windows` do CI faz tudo em um Windows limpo (o ícone do programa e do instalador vem de `instalador/icone/`, gerado por `gerar_icone.py`):
 
 1. `instalador/baixar-postgresql.ps1` baixa os binários oficiais do PostgreSQL 16 para Windows (EDB) e monta `pgsql` (só `bin`, `lib`, `share` + runtime do Visual C++);
 2. roda o teste do banco embutido no Windows (`ServidorEmbutidoTests`: initdb, start, migrações, reinício, stop);

@@ -7,7 +7,12 @@
     <Version>0.4.0</Version>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Ícone do executável (gerado por instalador/icone/gerar_icone.py) -->
+    <ApplicationIcon>..\..\instalador\icone\PerseusContabil.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="..\..\instalador\icone\PerseusContabil.ico" Link="Assets\PerseusContabil.ico" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Perseus.Infra\Perseus.Infra.csproj" />
     <PackageReference Include="Avalonia" />
