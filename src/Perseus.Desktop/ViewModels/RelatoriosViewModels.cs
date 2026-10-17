@@ -91,6 +91,39 @@ public partial class RazaoViewModel(IContexto contexto) : RelatorioViewModel(con
     [ObservableProperty] private DateTime? _fim = DateTime.Today;
     [ObservableProperty] private string _cabecalho = "";
 
+    // Painel de contas analíticas para consultar
+    private IReadOnlyList<ContaSelecionavel> _todasContas = [];
+    private int _cargaContas;
+    public ObservableCollection<ContaSelecionavel> Contas { get; } = [];
+    [ObservableProperty] private string _filtroConta = "";
+    [ObservableProperty] private ContaSelecionavel? _contaSelecionada;
+
+    public async Task CarregarContasAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
+        var g = ++_cargaContas;                                         // contador próprio: não interfere na consulta do razão
+        var plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
+        if (g != _cargaContas) return;
+        _todasContas = plano.Where(c => c.Analitica).Select(c => new ContaSelecionavel(c.Codigo, c.Descricao, c.CodigoReduzido)).ToList();
+        FiltrarContas();
+    }
+
+    partial void OnFiltroContaChanged(string value) => FiltrarContas();
+
+    private void FiltrarContas()
+    {
+        Contas.Clear();
+        foreach (var c in _todasContas.Where(c => LancamentoViewModel.Combina(c, FiltroConta))) Contas.Add(c);
+    }
+
+    /// <summary>Clicar numa conta da lista já mostra o razão dela no período.</summary>
+    partial void OnContaSelecionadaChanged(ContaSelecionavel? value)
+    {
+        if (value is null) return;
+        Conta = value.Codigo;
+        _ = GerarCommand.ExecuteAsync(null);
+    }
+
     protected override string TituloRelatorio => "Livro Razão";
     protected override string Parametros => $"Conta {_razao?.Codigo} - {_razao?.Descricao} | Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
     protected override string NomeArquivo => $"razao_{_razao?.Codigo}_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
@@ -102,7 +135,12 @@ public partial class RazaoViewModel(IContexto contexto) : RelatorioViewModel(con
         Cabecalho = "";
         TemDados = false;
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
-        var r = await app.Relatorios.RazaoAsync(empresa, Conta.Trim(), ini, Data(Fim, ini), usuario);
+        // Aceita também o código reduzido.
+        var conta = _todasContas.FirstOrDefault(c => c.Reduzido?.ToString() == Conta.Trim())?.Codigo ?? Conta.Trim();
+        var geracao = NovaGeracao();
+        var r = await app.Relatorios.RazaoAsync(empresa, conta, ini, Data(Fim, ini), usuario);
+        if (!EhAtual(geracao)) return;                                   // outra consulta começou depois desta
+        Linhas.Clear();
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var razao = _razao = r.Valor;
         _periodo = (ini, Data(Fim, ini));

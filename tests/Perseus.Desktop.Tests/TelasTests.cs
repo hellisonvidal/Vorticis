@@ -786,10 +786,14 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.AbrirCommand.Execute(Telas.Razao);
             Assert.Equal("", vm.Balancete.Totais);                           // nada da sessão anterior fica visível
 
-            vm.Razao.Conta = "1.1.01.002";
             (vm.Razao.Inicio, vm.Razao.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await vm.Razao.CarregarContasAsync();                           // painel de contas analíticas
+            vm.Razao.FiltroConta = "bancos conta";
+            vm.Razao.ContaSelecionada = Assert.Single(vm.Razao.Contas);
             await vm.Razao.GerarCommand.ExecuteAsync(null);
+            Assert.Equal("1.1.01.002", vm.Razao.Conta);
             Assert.Single(vm.Razao.Linhas);
+            Foto(janela, "12b_razao_contas");
 
             vm.AbrirCommand.Execute(Telas.PlanoContas);
             await vm.PlanoContas.CarregarAsync();

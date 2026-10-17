@@ -469,6 +469,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Bens) _ = Disparar(Bens.CarregarAsync);
         if (tela == Telas.GruposDepreciacao) _ = Disparar(GruposDepreciacao.CarregarAsync);
         if (tela == Telas.Lancamento) _ = Disparar(Lancamento.CarregarAsync);
+        if (tela == Telas.Razao) _ = Disparar(Razao.CarregarContasAsync);
         if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
         if (tela == Telas.Clientes) _ = Disparar(Clientes.CarregarAsync);
         if (tela == Telas.Fornecedores) _ = Disparar(Fornecedores.CarregarAsync);
