@@ -72,6 +72,58 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
         return await GravarAsync(proposta, usuarioId, ct);
     }
 
+    /// <summary>
+    /// Valida vários lançamentos de uma vez (importação), carregando contas e períodos uma só vez.
+    /// Não grava nada; o resultado de cada proposta vem na mesma posição.
+    /// </summary>
+    public async Task<IReadOnlyList<Resultado<LancamentoValidado>>> ValidarLoteAsync(IReadOnlyList<LancamentoProposto> propostas, CancellationToken ct = default)
+    {
+        if (propostas.Count == 0) return [];
+        var empresaId = propostas[0].EmpresaId;
+        var partidas = propostas.SelectMany(p => p.Partidas).ToArray();
+        var contas = await repositorio.ObterContasAsync(empresaId, partidas.Select(x => x.CodigoConta).Distinct(), ct);
+        var centros = partidas.Select(x => x.CodigoCentroCusto).OfType<string>().Where(s => s.Length > 0).Distinct().ToArray();
+        var participantes = partidas.Select(x => x.CodigoParticipante).OfType<string>().Where(s => s.Length > 0).Distinct().ToArray();
+        var mapaCentros = centros.Length == 0 ? new Dictionary<string, long>() : await repositorio.ObterCentrosCustoAsync(empresaId, centros, ct);
+        var mapaPart = participantes.Length == 0 ? new Dictionary<string, long>() : await repositorio.ObterParticipantesAsync(empresaId, participantes, ct);
+        var periodos = new Dictionary<(int, int), PeriodoInfo?>();
+        var res = new List<Resultado<LancamentoValidado>>(propostas.Count);
+        foreach (var p in propostas)
+        {
+            if (!periodos.TryGetValue((p.Data.Year, p.Data.Month), out var periodo))
+                periodos[(p.Data.Year, p.Data.Month)] = periodo = await repositorio.ObterPeriodoAsync(empresaId, p.Data, ct);
+            res.Add(ValidadorLancamento.Validar(p, new ContextoValidacao(contas, mapaCentros, mapaPart, periodo)));
+        }
+        return res;
+    }
+
+    /// <summary>
+    /// Efetiva os lançamentos numa única transação (tudo ou nada). <paramref name="chaves"/> identifica a origem de cada
+    /// um (ex.: transação do extrato) para não importar duas vezes.
+    /// </summary>
+    public async Task<Resultado<IReadOnlyList<LancamentoEfetivado>>> EfetivarLoteAsync(IReadOnlyList<LancamentoProposto> propostas,
+        IReadOnlyList<string?>? chaves, long usuarioId, CancellationToken ct = default)
+    {
+        if (propostas.Count == 0) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Nenhum lançamento para importar.");
+        if (propostas.Any(p => p.EmpresaId != propostas[0].EmpresaId || p.Origem is OrigemLancamento.Estorno or OrigemLancamento.SaldoInicial))
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Lote inválido.");
+        if (await autorizador.NegarAsync<IReadOnlyList<LancamentoEfetivado>>(usuarioId, propostas[0].EmpresaId, Permissao.LancamentoIncluir, ct) is { } negado)
+            return negado;
+        var validacoes = await ValidarLoteAsync(propostas, ct);
+        var erros = validacoes.Select((v, i) => (v, i)).Where(x => !x.v.Sucesso)
+                              .Select(x => $"Lançamento {x.i + 1}: {string.Join(" ", x.v.Erros)}").Take(30).ToArray();
+        if (erros.Length > 0) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(erros);
+        try
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Ok(
+                await repositorio.GravarEfetivadosAsync(validacoes.Select(v => v.Valor).ToList(), usuarioId, ct, chaves));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(ex.Message);
+        }
+    }
+
     private async Task<Resultado<LancamentoEfetivado>> GravarAsync(LancamentoProposto proposta, long usuarioId, CancellationToken ct)
     {
         var ctx = await CarregarContextoAsync(proposta, ct);

@@ -29,6 +29,7 @@ public sealed class PerseusApp : IAsyncDisposable
         Lancamentos = new ServicoLancamento(repoContabil, autorizador);
         Periodos = new ServicoPeriodo(repoContabil, autorizador);
         PlanoContas = new ServicoPlanoContas(new RepositorioPlanoContas(ds), autorizador);
+        Importacao = new ServicoImportacao(new RepositorioImportacao(ds), Lancamentos, autorizador);
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
@@ -50,6 +51,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoLancamento Lancamentos { get; }
     public ServicoPeriodo Periodos { get; }
     public ServicoPlanoContas PlanoContas { get; }
+    public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }
     public ServicoEmpresa Empresas { get; }
     public ServicoEncerramento Encerramento { get; }

@@ -56,6 +56,9 @@ public static class Telas
     public const string ConsultaSaldos = "consultasaldos";
     public const string ConsultaLancamentos = "consultalancamentos";
     public const string ImportarPlano = "importarplano";
+    public const string ImportarPlanilhas = "importarplanilhas";
+    public const string ImportarExtratos = "importarextratos";
+    public const string ImportarLancamentos = "importarlancamentos";
 }
 
 public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposable
@@ -84,7 +87,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano))]
+        nameof(ImportacaoPlano), nameof(Importacao))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -112,6 +115,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Licenca = new LicencaViewModel(this);
         Consultas = new ConsultasViewModel(this);
         ImportacaoPlano = new ImportacaoPlanoViewModel(this);
+        Importacao = new ImportacaoViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -169,6 +173,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public LicencaViewModel Licenca { get; private set; }
     public ConsultasViewModel Consultas { get; private set; }
     public ImportacaoPlanoViewModel ImportacaoPlano { get; private set; }
+    public ImportacaoViewModel Importacao { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -328,6 +333,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Balancete => Pode(Permissao.RelatorioBalancete),
         Telas.ConsultaSaldos => Pode(Permissao.RelatorioBalancete),
         Telas.ImportarPlano => Pode(Permissao.PlanoContasManter),
+        Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos => Pode(Permissao.LancamentoIncluir),
         Telas.ConsultaLancamentos => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao),
         Telas.Razao => Pode(Permissao.RelatorioRazao),
         Telas.Diario => Pode(Permissao.RelatorioDiario),
@@ -374,6 +380,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
             Telas.ImportarPlano => (ImportacaoPlano, "Cadastros › Plano de contas › Importar de planilha e máscara"),
+            Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos => (Importacao, "Integrações › Importar"),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
@@ -411,6 +418,16 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Inicio) Inicio.Atualizar();
         if (tela == Telas.Licenca) _ = Disparar(Licenca.CarregarAsync);
         if (tela == Telas.ImportarPlano) _ = Disparar(ImportacaoPlano.CarregarAsync);
+        if (tela is Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos)
+        {
+            Importacao.AbaSelecionada = tela switch
+            {
+                Telas.ImportarExtratos => ImportacaoViewModel.AbaExtratos,
+                Telas.ImportarLancamentos => ImportacaoViewModel.AbaLancamentos,
+                _ => ImportacaoViewModel.AbaPlanilhas,
+            };
+            _ = Disparar(Importacao.Planilhas.CarregarAsync);
+        }
         if (tela is Telas.ConsultaSaldos or Telas.ConsultaLancamentos)
         {
             Consultas.AtualizarPermissoes();

@@ -94,15 +94,25 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
         => (await GravarEfetivadosAsync([l], usuarioId, ct))[0];
 
     public Task<IReadOnlyList<LancamentoEfetivado>> GravarEfetivadosAsync(IReadOnlyList<LancamentoValidado> lancamentos, long? usuarioId,
-                                                                         CancellationToken ct)
+                                                                         CancellationToken ct, IReadOnlyList<string?>? chaves = null)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var con = await ds.OpenConnectionAsync(ct);
             await using var tx = await con.BeginTransactionAsync(ct);
             await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
             var gravados = new List<LancamentoEfetivado>(lancamentos.Count);
-            foreach (var l in lancamentos)
-                gravados.Add(await GravarNaTransacaoAsync(con, tx, l, usuarioId, ct));
+            for (var i = 0; i < lancamentos.Count; i++)
+            {
+                var l = lancamentos[i];
+                var gravado = await GravarNaTransacaoAsync(con, tx, l, usuarioId, ct);
+                gravados.Add(gravado);
+                if (chaves is not null && i < chaves.Count && chaves[i] is { } chave)
+                    await using (var cmd = new NpgsqlCommand("""
+                        INSERT INTO contabil.lancamento_importado (empresa_id, chave, lancamento_id) VALUES (@e, @c, @l)
+                        ON CONFLICT (empresa_id, chave) DO UPDATE SET lancamento_id = EXCLUDED.lancamento_id, importado_em = now()
+                        """, con, tx).Com("e", l.EmpresaId).Com("c", chave).Com("l", gravado.Id))
+                        await cmd.ExecuteNonQueryAsync(ct);
+            }
             await tx.CommitAsync(ct);   // constraint triggers diferidos (partidas dobradas) rodam aqui
             return (IReadOnlyList<LancamentoEfetivado>)gravados;
         });

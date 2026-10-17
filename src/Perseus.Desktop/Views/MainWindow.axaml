@@ -64,13 +64,15 @@
         </MenuItem>
         <MenuItem Header="_Integrações">
           <MenuItem Header="_Importar">
+            <MenuItem Header="Planilhas (layouts personalizados)" Command="{Binding AbrirCommand}" CommandParameter="importarplanilhas" />
+            <MenuItem Header="Extratos bancários (OFX)" Command="{Binding AbrirCommand}" CommandParameter="importarextratos" />
+            <MenuItem Header="Lançamentos contábeis (layout padrão)" Command="{Binding AbrirCommand}" CommandParameter="importarlancamentos" />
+            <Separator />
             <MenuItem Header="Plano de contas (planilha Excel/CSV)" Command="{Binding AbrirCommand}" CommandParameter="importarplano" />
             <MenuItem Header="Plano referencial da RFB (tabela oficial)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
             <Separator />
             <MenuItem Header="XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
             <MenuItem Header="NFS-e (em breve)" IsEnabled="False" />
-            <MenuItem Header="Extrato bancário OFX (em breve)" IsEnabled="False" />
-            <MenuItem Header="Planilha Excel (em breve)" IsEnabled="False" />
           </MenuItem>
           <MenuItem Header="_Exportar">
             <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />

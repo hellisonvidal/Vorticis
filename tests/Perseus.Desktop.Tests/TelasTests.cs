@@ -345,6 +345,63 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await plano.CarregarAsync();
             Assert.Contains(plano.Lista, c => c.Conta.Codigo == "1.1.01.002");
 
+            // Integrações › Importar › Planilhas: layout personalizado salvo e importação (só contas patrimoniais)
+            vm.AbrirCommand.Execute(Telas.ImportarPlanilhas);
+            Assert.Same(vm.Importacao, vm.Conteudo);
+            var planilhas = vm.Importacao.Planilhas;
+            var csvLanc = Path.Combine(Path.GetTempPath(), $"lanc_{Guid.NewGuid():N}.csv");
+            File.WriteAllText(csvLanc, "Data;Débito;Crédito;Valor;Histórico\n15/03/2026;1.1.01.001;1.1.02.001;250,00;Recebimento cliente balcão\n");
+            planilhas.Arquivo = csvLanc;
+            Assert.Equal(("Data", "Débito", "Crédito", "Valor"), (planilhas.ColunaData, planilhas.ColunaContaDebito, planilhas.ColunaContaCredito, planilhas.ColunaValor));
+            planilhas.NomeLayout = "Recebimentos do balcão";
+            await planilhas.SalvarLayoutCommand.ExecuteAsync(null);
+            Assert.Empty(planilhas.Erros);
+            Assert.Equal("Recebimentos do balcão", planilhas.LayoutSelecionado?.Nome);
+            await planilhas.PreVisualizarCommand.ExecuteAsync(null);
+            Assert.Empty(planilhas.Erros);
+            Assert.Equal("OK", Assert.Single(planilhas.Previa).Situacao);
+            Foto(janela, "06c_importar_planilha");
+            var importando = planilhas.ImportarCommand.ExecuteAsync(null);
+            await AguardarConfirmacao(vm);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await importando;
+            Assert.Empty(planilhas.Erros);
+            Assert.Equal("1 lançamento(s) importado(s): nº 2 a 2.", planilhas.Mensagem);
+
+            // Extratos bancários (OFX): reimportar não duplica
+            vm.AbrirCommand.Execute(Telas.ImportarExtratos);
+            Assert.Equal(ImportacaoViewModel.AbaExtratos, vm.Importacao.AbaSelecionada);
+            var ext = vm.Importacao.Extratos;
+            var ofx = Path.Combine(Path.GetTempPath(), $"extrato_{Guid.NewGuid():N}.ofx");
+            File.WriteAllText(ofx, "OFXHEADER:100\n<OFX><BANKACCTFROM><BANKID>341<BRANCHID>0001<ACCTID>5555-1</BANKACCTFROM><BANKTRANLIST>" +
+                                   "\n<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260320<TRNAMT>400.00<FITID>T1<MEMO>PIX CLIENTE ABC\n</BANKTRANLIST></OFX>");
+            (ext.ContaBanco, ext.ContrapartidaEntradas, ext.PrefixoHistorico) = ("1.1.01.004", "1.1.02.001", "Extrato:");
+            ext.Arquivo = ofx;
+            Assert.Contains("1 movimento(s)", ext.DadosExtrato);
+            Assert.Equal("1.1.02.001", Assert.Single(ext.Transacoes).Contrapartida);
+            await ext.PreVisualizarCommand.ExecuteAsync(null);
+            Assert.True(ext.ImportarCommand.CanExecute(null), string.Join("; ", ext.Erros.Concat(ext.Previa.Select(p => p.Situacao))));
+            Foto(janela, "06d_importar_extrato");
+            importando = ext.ImportarCommand.ExecuteAsync(null);
+            await AguardarConfirmacao(vm);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await importando;
+            Assert.Equal("1 lançamento(s) importado(s): nº 3 a 3.", ext.Mensagem);
+            await ext.PreVisualizarCommand.ExecuteAsync(null);
+            Assert.Equal("Já importado", Assert.Single(ext.Previa).Situacao);
+            Assert.False(ext.ImportarCommand.CanExecute(null));
+
+            // Lançamentos contábeis: planilha modelo do layout padrão
+            vm.AbrirCommand.Execute(Telas.ImportarLancamentos);
+            var padrao = vm.Importacao.LancamentosPadrao;
+            padrao.GerarModeloCommand.Execute(null);
+            Assert.True(File.Exists(padrao.ModeloGerado));
+            padrao.Arquivo = padrao.ModeloGerado!;
+            await padrao.PreVisualizarCommand.ExecuteAsync(null);
+            Assert.Empty(padrao.Erros);
+            Assert.Equal(("1000,00".Replace(",00", ""), "OK"), (Assert.Single(padrao.Previa).Item.Lancamento.Total.ToString("0"), padrao.Previa[0].Situacao));
+            Foto(janela, "06e_importar_lancamentos");
+
             // Centros de custo
             vm.AbrirCommand.Execute(Telas.CentrosCusto);
             vm.CentrosCusto.IncluirCommand.Execute(null);
@@ -376,7 +433,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Foto(janela, "07_saldos_iniciais");
             await saldos.LancarCommand.ExecuteAsync(null);
             Assert.Empty(saldos.Erros);
-            Assert.Contains("lançamento nº 2", saldos.Mensagem);
+            Assert.Contains("lançamento nº 4", saldos.Mensagem);       // após o nº 1 manual e os nº 2 e 3 importados
 
             // Relatórios › Balanço Patrimonial e DRE (antes do encerramento: resultado destacado no PL)
             vm.AbrirCommand.Execute(Telas.Demonstracoes);
@@ -472,7 +529,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await map.CarregarAsync();
             await map.UsarPlanoCommand.ExecuteAsync(null);
             Assert.Empty(map.Erros);
-            Assert.Contains("7 conta(s) com movimento sem vínculo", map.Resumo);
+            Assert.Contains("9 conta(s) com movimento sem vínculo", map.Resumo);   // inclui as 2 contas dos lançamentos importados
             map.SomentePendentes = true;
             await map.SugerirCommand.ExecuteAsync(null);
             Assert.Contains(map.Linhas, l => l.Codigo == "1.1.01.001" && l.SugestaoTexto.StartsWith("1.01.01"));

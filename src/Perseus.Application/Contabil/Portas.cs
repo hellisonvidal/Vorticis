@@ -19,7 +19,9 @@ public interface IRepositorioContabil
     Task<LancamentoEfetivado> GravarEfetivadoAsync(LancamentoValidado lancamento, long? usuarioId, CancellationToken ct);
 
     /// <summary>Grava vários lançamentos na mesma transação (tudo ou nada), numerados em sequência.</summary>
-    Task<IReadOnlyList<LancamentoEfetivado>> GravarEfetivadosAsync(IReadOnlyList<LancamentoValidado> lancamentos, long? usuarioId, CancellationToken ct);
+    /// <param name="chaves">Origem de cada lançamento importado (mesma posição), gravada para evitar duplicidade; null = sem controle.</param>
+    Task<IReadOnlyList<LancamentoEfetivado>> GravarEfetivadosAsync(IReadOnlyList<LancamentoValidado> lancamentos, long? usuarioId, CancellationToken ct,
+                                                                  IReadOnlyList<string?>? chaves = null);
 
     /// <summary>Lançamentos efetivados (não estornados) de uma origem no exercício, com as partidas.</summary>
     Task<IReadOnlyList<LancamentoRegistrado>> ListarLancamentosAtivosAsync(long empresaId, long exercicioId, OrigemLancamento origem, CancellationToken ct);
