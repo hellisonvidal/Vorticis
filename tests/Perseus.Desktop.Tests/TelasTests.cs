@@ -245,6 +245,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await cli.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(cli.Erros);
             Assert.Equal("Cliente", Assert.Single(cli.Lista).Tipo);
+            Assert.Equal("Cód. 1", cli.NumeroRegistro);
+            Assert.False(string.IsNullOrEmpty(cli.Logradouro));                // endereço completo, como no cadastro de empresas
+            Assert.Matches(@"^\d{5}-\d{3}$", cli.Cep);
             Foto(janela, "02c_clientes");
             vm.AbrirCommand.Execute(Telas.Fornecedores);
             var forn = vm.Fornecedores;
@@ -252,10 +255,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(forn.Lista);
             forn.IncluirCommand.Execute(null);
             Assert.Equal((false, true), (forn.Cliente, forn.Fornecedor));
-            (forn.Nome, forn.Uf, forn.Municipio) = ("Distribuidora Beta", "SP", "Campinas");
+            (forn.Nome, forn.Uf, forn.Municipio, forn.Cep, forn.Logradouro) = ("Distribuidora Beta", "SP", "Campinas", "13015-904", "Rua Barão de Jaguara");
             await forn.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(forn.Erros);
             Assert.Equal(("2", "Fornecedor"), (Assert.Single(forn.Lista).Codigo, forn.Lista[0].Tipo));
+            Assert.Equal(("13015904", "Rua Barão de Jaguara"), (forn.Lista[0].P.Cep, forn.Lista[0].P.Logradouro));
             Foto(janela, "02c_fornecedores");
 
             // Imobilizado: regras (grupos da RFB), cadastro do bem e cálculo da depreciação

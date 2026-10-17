@@ -40,4 +40,7 @@ public static class Formato
             return DateOnly.FromDateTime(DateTime.FromOADate(serial));
         return null;
     }
+
+    /// <summary>CEP de 8 dígitos como 00000-000 (outros valores ficam como estão).</summary>
+    public static string Cep(string? cep) => cep is { Length: 8 } c && c.All(char.IsAsciiDigit) ? $"{c[..5]}-{c[5..]}" : cep ?? "";
 }

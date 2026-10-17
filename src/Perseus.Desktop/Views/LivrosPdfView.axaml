@@ -20,7 +20,7 @@
         <NumericUpDown Grid.Column="1" Value="{Binding NumeroLivro}" Minimum="1" Maximum="9999" FormatString="0" Width="130" HorizontalAlignment="Left" />
         <TextBlock Grid.Row="1" Text="Representante legal / CPF" VerticalAlignment="Center" />
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Representante}" Watermark="Nome" />
-        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="CPF" />
+        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="000.000.000-00" v:Mascara.Tipo="Cpf" />
         <TextBlock Grid.Row="2" Text="Contador / CRC" VerticalAlignment="Center" />
         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Contador}" Watermark="Nome" />
         <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Crc}" Watermark="CRC (ex.: SP-123456/O-7)" />

@@ -9,7 +9,8 @@ namespace Perseus.Application.Cadastros;
 public sealed record Participante(
     long Id, string Codigo, string Nome, string? NomeFantasia, string? CpfCnpj, string? InscricaoEstadual, string? Uf,
     string? CodMunicipioIbge, string? Municipio, string? Email, string? Telefone, bool Cliente, bool Fornecedor,
-    string? CodigoConta, bool Ativo, bool TemMovimento = false);
+    string? CodigoConta, bool Ativo, bool TemMovimento = false, string? Cep = null, string? Logradouro = null, string? Numero = null,
+    string? Complemento = null, string? Bairro = null);
 
 public interface IRepositorioParticipantes
 {
@@ -46,6 +47,8 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
         if (!string.IsNullOrWhiteSpace(p.Uf) && !Uf.Valida(p.Uf)) erros.Add("UF inválida.");
         if (!string.IsNullOrWhiteSpace(p.CodMunicipioIbge) && (p.CodMunicipioIbge.Trim().Length != 7 || !p.CodMunicipioIbge.Trim().All(char.IsAsciiDigit)))
             erros.Add("Código IBGE do município deve ter 7 dígitos.");
+        var cep = Cnpj.SomenteDigitos(p.Cep);
+        if (cep.Length is not (0 or 8)) erros.Add("CEP deve ter 8 dígitos.");
         if (codigo.Length > 60) erros.Add("Código muito longo.");
         if (lista.Any(x => x.Id != p.Id && x.Codigo == codigo)) erros.Add($"Já existe o participante de código {codigo}.");
         if (doc.Length > 0 && lista.FirstOrDefault(x => x.Id != p.Id && x.CpfCnpj == doc) is { } mesmo)
@@ -68,6 +71,8 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
                 Codigo = codigo, Nome = p.Nome.Trim(), NomeFantasia = N(p.NomeFantasia), CpfCnpj = doc.Length == 0 ? null : doc,
                 InscricaoEstadual = N(p.InscricaoEstadual)?.ToUpperInvariant(), Uf = N(p.Uf)?.ToUpperInvariant(),
                 CodMunicipioIbge = N(p.CodMunicipioIbge), Municipio = N(p.Municipio), Email = N(p.Email), Telefone = N(p.Telefone),
+                Cep = cep.Length == 0 ? null : cep, Logradouro = N(p.Logradouro), Numero = N(p.Numero), Complemento = N(p.Complemento),
+                Bairro = N(p.Bairro),
             }, contaId, ct));
         }
         catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }

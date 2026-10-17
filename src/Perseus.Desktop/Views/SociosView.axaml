@@ -38,7 +38,7 @@
         <ComboBox ItemsSource="{x:Static vm:OpcaoTipoPessoa.Todas}" SelectedItem="{Binding Tipo}" HorizontalAlignment="Stretch">
           <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoTipoPessoa"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
         </ComboBox>
-        <TextBox Text="{Binding Documento}" Watermark="CPF ou CNPJ" />
+        <TextBox Text="{Binding Documento}" Watermark="CPF ou CNPJ" v:Mascara.Tipo="CpfCnpj" />
         <TextBlock Text="{Binding DocumentoMascarado, StringFormat='Na base pública da RFB: {0} (complete o documento acima)'}" FontSize="11" Foreground="Gray"
                    IsVisible="{Binding DocumentoMascarado, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <AutoCompleteBox Text="{Binding Qualificacao}" ItemsSource="{x:Static vm:SociosViewModel.Qualificacoes}" Watermark="Qualificação" FilterMode="Contains" />

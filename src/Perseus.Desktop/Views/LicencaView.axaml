@@ -22,7 +22,7 @@
           <TextBlock Classes="rotulo" Text="Nome / razão social" VerticalAlignment="Center" />
           <TextBox Grid.Column="1" Text="{Binding Titular}" />
           <TextBlock Grid.Row="1" Text="CPF ou CNPJ" VerticalAlignment="Center" />
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Documento}" Width="240" HorizontalAlignment="Left" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Documento}" v:Mascara.Tipo="CpfCnpj" Width="240" HorizontalAlignment="Left" />
           <TextBlock Grid.Row="2" Text="E-mail" VerticalAlignment="Center" />
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Email}" />
         </Grid>

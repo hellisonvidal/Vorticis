@@ -16,7 +16,12 @@ public sealed record PerfilDoUsuario(long Id, string Nome, bool Administrador);
 public sealed record RegistroAcesso(DateTimeOffset OcorridoEm, string Login, bool Sucesso, string? Motivo, string? Estacao);
 
 /// <param name="Perfil">Nome do perfil do usuário na empresa; nulo para administrador sem perfil atribuído.</param>
-public sealed record EmpresaPermitida(long Id, string Cnpj, string RazaoSocial, string? Perfil);
+public sealed record EmpresaPermitida(long Id, string Cnpj, string RazaoSocial, string? Perfil)
+{
+    /// <summary>Código da empresa no sistema (nº do cadastro, 4 dígitos).</summary>
+    public string Codigo => Id.ToString("0000");
+    public string CnpjFormatado => Domain.Cadastros.Cnpj.Formatar(Cnpj);
+}
 
 public sealed record AcessoEmpresa(long EmpresaId, string RazaoSocial, long PerfilId, string Perfil);
 

@@ -79,8 +79,13 @@
     <Style Selector="Calendar">
       <Setter Property="IsTodayHighlighted" Value="False" />
     </Style>
+    <!-- Datas sempre dd/mm/aaaa, com máscara na digitação -->
     <Style Selector="CalendarDatePicker">
       <Setter Property="IsTodayHighlighted" Value="False" />
+      <Setter Property="SelectedDateFormat" Value="Custom" />
+      <Setter Property="CustomDateFormatString" Value="dd/MM/yyyy" />
+      <Setter Property="Watermark" Value="dd/mm/aaaa" />
+      <Setter Property="v:Mascara.Tipo" Value="Data" />
     </Style>
     <!-- Botão do calendário só com o ícone (o padrão mostra o dia de hoje) -->
     <Style Selector="CalendarDatePicker /template/ Button#PART_Button">

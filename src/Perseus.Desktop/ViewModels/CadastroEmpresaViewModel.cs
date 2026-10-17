@@ -74,7 +74,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     protected override string NomeRegistro => "empresa";
 
     /// <summary>Código sequencial da empresa (atribuído na inclusão).</summary>
-    public string NumeroRegistro => EmInclusao ? "Nº (automático)" : _carregada is { } e ? $"Nº {e.Id:0000}" : "";
+    public string NumeroRegistro => EmInclusao ? "Cód. (automático)" : _carregada is { } e ? $"Cód. {e.Id:0000}" : "";
     protected override string? DescricaoSelecionado => _carregada is null ? null : $"{_carregada.RazaoSocial} ({Domain.Cadastros.Cnpj.Formatar(_carregada.Cnpj)})";
     public override bool PodeManter => main.Pode(Permissao.AdministrarSistema);
 
@@ -113,7 +113,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         {
             (Cnpj, RazaoSocial, NomeFantasia, NaturezaJuridica, Cnae) = (Domain.Cadastros.Cnpj.Formatar(d.Cnpj), d.RazaoSocial, d.NomeFantasia ?? "", d.NaturezaJuridica, d.CnaePrincipal);
             (InscricaoEstadual, Uf, MunicipioIbge, Municipio) = (d.InscricaoEstadual ?? "", d.Uf, d.CodMunicipioIbge, d.Municipio ?? "");
-            (Cep, Logradouro, Numero, Complemento, Bairro) = (d.Cep ?? "", d.Logradouro ?? "", d.Numero ?? "", d.Complemento ?? "", d.Bairro ?? "");
+            (Cep, Logradouro, Numero, Complemento, Bairro) = (Formato.Cep(d.Cep), d.Logradouro ?? "", d.Numero ?? "", d.Complemento ?? "", d.Bairro ?? "");
             (Email, Telefone) = (d.Email ?? "", d.Telefone ?? "");
             InicioAtividades = d.DataInicioAtividades?.ToDateTime(TimeOnly.MinValue);
             if (d.Regime is { } r) Regime = r;
@@ -250,7 +250,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         Uf = d.Uf ?? Domain.Cadastros.Uf.DeCodigoIbge(d.CodMunicipioIbge) ?? Uf;
         MunicipioIbge = d.CodMunicipioIbge ?? "";
         Municipio = d.Municipio ?? "";
-        Cep = d.Cep ?? "";
+        Cep = Formato.Cep(d.Cep);
         Logradouro = d.Logradouro ?? "";
         Numero = d.Numero ?? "";
         Complemento = d.Complemento ?? "";

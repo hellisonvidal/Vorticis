@@ -43,7 +43,7 @@
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="CNPJ" />
           <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBox Text="{Binding Cnpj}" Watermark="00.000.000/0000-00 (aceita alfanumérico)" IsEnabled="{Binding EmInclusao}" />
+            <TextBox Text="{Binding Cnpj}" Watermark="00.000.000/0000-00 (aceita alfanumérico)" v:Mascara.Tipo="Cnpj" IsEnabled="{Binding EmInclusao}" />
             <Button Grid.Column="1" Content="Buscar dados na Receita" Command="{Binding ConsultarCnpjCommand}" IsEnabled="{Binding EmInclusao}"
                     MinWidth="190" HorizontalContentAlignment="Center" />
           </Grid>
@@ -79,7 +79,7 @@
         <TextBlock Classes="secao" Text="Endereço e contato" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="CEP" />
-          <TextBox Grid.Column="1" Text="{Binding Cep}" Width="180" HorizontalAlignment="Left" Watermark="8 dígitos" />
+          <TextBox Grid.Column="1" Text="{Binding Cep}" Width="180" HorizontalAlignment="Left" Watermark="00000-000" v:Mascara.Tipo="Cep" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Logradouro / número" />
           <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,8,110">
             <TextBox Text="{Binding Logradouro}" Watermark="Logradouro" />
@@ -130,10 +130,10 @@
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="seg:EmpresaPermitida">
             <StackPanel>
-              <TextBlock Text="{Binding RazaoSocial}" FontSize="12" TextWrapping="Wrap" />
-              <TextBlock FontSize="11" Foreground="Gray">
-                <Run Text="{Binding Id, Mode=OneWay, StringFormat='Nº {0:0000}'}" /><Run Text="  ·  " /><Run Text="{Binding Cnpj, Mode=OneWay}" />
+              <TextBlock FontSize="12" TextWrapping="Wrap">
+                <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" Foreground="#1F3A5F" /><Run Text="  " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
               </TextBlock>
+              <TextBlock FontSize="11" Foreground="Gray" Text="{Binding CnpjFormatado, Mode=OneWay, StringFormat='CNPJ {0}'}" />
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>

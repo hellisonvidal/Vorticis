@@ -118,7 +118,9 @@
                     PlaceholderText="Nenhuma empresa">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="seg:EmpresaPermitida">
-                <TextBlock Text="{Binding RazaoSocial}" />
+                <TextBlock>
+                  <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" – " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
+                </TextBlock>
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>

@@ -50,7 +50,7 @@
       <TextBlock Classes="titulo" Text="Lançamento contábil" VerticalAlignment="Center" />
       <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding PartidaSimples}">
         <TextBlock Text="Data:" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Data}" SelectedDateFormat="Short" Width="140" />
+        <CalendarDatePicker SelectedDate="{Binding Data}" Width="140" />
       </StackPanel>
       <TextBlock Text="{Binding DescricaoModo}" VerticalAlignment="Center" FontSize="11" Foreground="Gray" IsVisible="{Binding !EmEdicao}" />
       <Border Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="3" Padding="8,2" IsVisible="{Binding EmEdicao}">
@@ -90,7 +90,7 @@
             <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
               <Border Classes="linha">
                 <Grid ColumnDefinitions="92,58,165,58,165,105,90,46,*,80">
-                  <TextBox Tag="data" Text="{Binding Data}" />
+                  <TextBox Tag="data" Text="{Binding Data}" v:Mascara.Tipo="Data" />
                   <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
                                    ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"

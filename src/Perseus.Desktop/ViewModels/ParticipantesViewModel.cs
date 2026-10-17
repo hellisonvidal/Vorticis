@@ -19,6 +19,8 @@ public sealed record ParticipanteLinha(Participante P)
     public string Cidade => string.Join("/", new[] { P.Municipio, P.Uf }.Where(s => !string.IsNullOrEmpty(s)));
     public string Tipo => P.Cliente && P.Fornecedor ? "Cliente e fornecedor" : P.Cliente ? "Cliente" : "Fornecedor";
     public string Situacao => P.Ativo ? "" : "Inativo";
+    /// <summary>Segunda linha da lista: cidade, tipo e situação.</summary>
+    public string Detalhe => string.Concat(new[] { Cidade, Tipo, Situacao }.Where(s => s.Length > 0).Select(s => "  ·  " + s));
 }
 
 /// <summary>Cadastros › Clientes.</summary>
@@ -48,6 +50,11 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
     [ObservableProperty] private string _uf = "";
     [ObservableProperty] private string _municipioIbge = "";
     [ObservableProperty] private string _municipio = "";
+    [ObservableProperty] private string _cep = "";
+    [ObservableProperty] private string _logradouro = "";
+    [ObservableProperty] private string _numero = "";
+    [ObservableProperty] private string _complemento = "";
+    [ObservableProperty] private string _bairro = "";
     [ObservableProperty] private string _email = "";
     [ObservableProperty] private string _telefone = "";
     [ObservableProperty] private bool _cliente = true;
@@ -55,7 +62,9 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
     [ObservableProperty] private string _conta = "";
     [ObservableProperty] private bool _ativo = true;
 
-    public string TituloLista => Fornecedores ? "Fornecedores" : "Clientes";
+    public string TituloLista => Fornecedores ? "Fornecedores cadastrados" : "Clientes cadastrados";
+    public string TituloFormulario => (Fornecedores ? "Fornecedor" : "Cliente") + (EmInclusao ? " — inclusão" : Modo == ModoCadastro.Alteracao ? " — alteração" : "");
+    public string NumeroRegistro => EmInclusao ? "Cód. (automático)" : Selecionado is { } s ? $"Cód. {s.Codigo}" : "";
     public bool TemSelecionado => Selecionado is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.LancamentoIncluir);
     public override bool PodeManter => PodeEditar;
@@ -94,8 +103,15 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         Selecionado = Lista.FirstOrDefault(l => l.P.Id == id);
     }
 
+    protected override void AoMudarModo()
+    {
+        OnPropertyChanged(nameof(TituloFormulario));
+        OnPropertyChanged(nameof(NumeroRegistro));
+    }
+
     partial void OnSelecionadoChanged(ParticipanteLinha? value)
     {
+        OnPropertyChanged(nameof(NumeroRegistro));
         if (EmConsulta) MostrarSelecionado();
         AtualizarBarra();
     }
@@ -105,6 +121,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         var p = Selecionado?.P;
         (Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual) = (p?.Codigo ?? "", p?.Nome ?? "", p?.NomeFantasia ?? "", Selecionado?.Documento ?? "", p?.InscricaoEstadual ?? "");
         (Uf, MunicipioIbge, Municipio, Email, Telefone) = (p?.Uf ?? "", p?.CodMunicipioIbge ?? "", p?.Municipio ?? "", p?.Email ?? "", p?.Telefone ?? "");
+        (Cep, Logradouro, Numero, Complemento, Bairro) = (Domain.Comum.Formato.Cep(p?.Cep), p?.Logradouro ?? "", p?.Numero ?? "", p?.Complemento ?? "", p?.Bairro ?? "");
         (Cliente, Fornecedor, Conta, Ativo) = (p?.Cliente ?? !Fornecedores, p?.Fornecedor ?? Fornecedores, p?.CodigoConta ?? "", p?.Ativo ?? true);
     }
 
@@ -123,7 +140,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
             var id = inclusao ? 0 : Selecionado?.P.Id ?? 0;
             if (!inclusao && id == 0) { Erros.Add("Selecione um cadastro."); return; }
             var r = await app.Participantes.GravarAsync(empresa, new Participante(id, Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual, Uf,
-                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo), usuario);
+                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo, false, Cep, Logradouro, Numero, Complemento, Bairro), usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
             Modo = ModoCadastro.Consulta;
@@ -156,6 +173,8 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
             (Nome, NomeFantasia, CpfCnpj) = (d.RazaoSocial, d.NomeFantasia ?? "", Domain.Cadastros.Cnpj.Formatar(d.Cnpj));
             (Uf, MunicipioIbge, Municipio, Email, Telefone) = (d.Uf ?? Uf, d.CodMunicipioIbge ?? MunicipioIbge, d.Municipio ?? Municipio,
                                                                 d.Email ?? Email, d.Telefone ?? Telefone);
+            (Cep, Logradouro, Numero, Complemento, Bairro) = (Domain.Comum.Formato.Cep(d.Cep ?? Domain.Cadastros.Cnpj.SomenteDigitos(Cep)), d.Logradouro ?? Logradouro,
+                                                             d.Numero ?? Numero, d.Complemento ?? Complemento, d.Bairro ?? Bairro);
             var ie = await app.Empresas.ConsultarInscricaoEstadualAsync(cnpj, Uf, MunicipioIbge);
             var aviso = "";
             if (ie.Sucesso)
