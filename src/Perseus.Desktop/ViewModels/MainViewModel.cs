@@ -51,6 +51,8 @@ public static class Telas
     public const string Sobre = "sobre";
     public const string Inicio = "inicio";
     public const string Licenca = "licenca";
+    public const string ConsultaSaldos = "consultasaldos";
+    public const string ConsultaLancamentos = "consultalancamentos";
 }
 
 public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposable
@@ -78,7 +80,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
-        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca))]
+        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -104,6 +106,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Sobre = new SobreViewModel(this);
         CentralUsuarios = new CentralUsuariosViewModel(this);
         Licenca = new LicencaViewModel(this);
+        Consultas = new ConsultasViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -159,6 +162,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public SobreViewModel Sobre { get; private set; }
     public CentralUsuariosViewModel CentralUsuarios { get; private set; }
     public LicencaViewModel Licenca { get; private set; }
+    public ConsultasViewModel Consultas { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -282,6 +286,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Contabilidade.AtualizarPermissoes();
         Socios.AtualizarPermissoes();
         Empresas.AtualizarBarraCadastro();
+        Consultas.AtualizarPermissoes();
         foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
         AtualizarStatus();
         // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
@@ -314,6 +319,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
         Telas.Periodos => Pode(Permissao.PeriodoFechar) || Pode(Permissao.PeriodoReabrir),
         Telas.Balancete => Pode(Permissao.RelatorioBalancete),
+        Telas.ConsultaSaldos => Pode(Permissao.RelatorioBalancete),
+        Telas.ConsultaLancamentos => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao),
         Telas.Razao => Pode(Permissao.RelatorioRazao),
         Telas.Diario => Pode(Permissao.RelatorioDiario),
         Telas.Encerramento => Pode(Permissao.ExercicioEncerrar),
@@ -355,6 +362,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus Contábil"),
             Telas.Inicio => (Inicio, ""),
             Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
+            Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
@@ -391,6 +399,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Sobre) Sobre.Atualizar();
         if (tela == Telas.Inicio) Inicio.Atualizar();
         if (tela == Telas.Licenca) _ = Disparar(Licenca.CarregarAsync);
+        if (tela is Telas.ConsultaSaldos or Telas.ConsultaLancamentos)
+        {
+            Consultas.AtualizarPermissoes();
+            Consultas.AbaSelecionada = tela == Telas.ConsultaSaldos ? ConsultasViewModel.AbaSaldos : ConsultasViewModel.AbaLancamentos;
+        }
     }
 
     /// <summary>Configurações › Usuários: carrega a aba aberta.</summary>

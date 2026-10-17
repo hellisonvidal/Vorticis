@@ -264,6 +264,29 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.StartsWith("Conta;Descrição;Tipo;Saldo anterior;D/C;Débitos", csv.TrimStart('\uFEFF'));
             Assert.Contains("1.1.01.002;Bancos Conta Movimento;A;0,00;;1.500,00;", csv);
 
+            // Consultas: saldos e lançamentos sem abrir relatório
+            vm.AbrirCommand.Execute(Telas.ConsultaSaldos);
+            var cons = vm.Consultas;
+            Assert.Equal(ConsultasViewModel.AbaSaldos, cons.AbaSelecionada);
+            cons.DataSaldo = new DateTime(2026, 3, 31);
+            await cons.ConsultarSaldosCommand.ExecuteAsync(null);
+            Assert.Empty(cons.Erros);
+            Assert.Equal("1.500,00 D", cons.Saldos.Single(s => s.Linha.Codigo == "1.1.01.002").Saldo);
+            cons.FiltroConta = "3";
+            Assert.All(cons.Saldos, s => Assert.StartsWith("3", s.Linha.Codigo));
+            Foto(janela, "05b_consulta_saldos");
+            vm.AbrirCommand.Execute(Telas.ConsultaLancamentos);
+            Assert.Equal(ConsultasViewModel.AbaLancamentos, cons.AbaSelecionada);
+            (cons.Inicio, cons.Fim) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31));
+            await cons.ConsultarLancamentosCommand.ExecuteAsync(null);
+            Assert.Equal(2, cons.Lancamentos.Count);
+            cons.TextoHistorico = "inexistente";
+            Assert.Empty(cons.Lancamentos);
+            cons.TextoHistorico = "venda";
+            Assert.Equal(2, cons.Lancamentos.Count);
+            Assert.Contains("1 lançamento(s)", cons.ResumoLancamentos);
+            Foto(janela, "05c_consulta_lancamentos");
+
             // 5. Cadastros › Plano de contas: inclui subconta, herdando natureza
             vm.AbrirCommand.Execute(Telas.PlanoContas);
             var plano = vm.PlanoContas;

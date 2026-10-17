@@ -57,6 +57,10 @@
           <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
           <MenuItem Header="Encerramento do exercício" Command="{Binding AbrirCommand}" CommandParameter="encerramento" />
         </MenuItem>
+        <MenuItem Header="C_onsultas">
+          <MenuItem Header="Saldos de contas" Command="{Binding AbrirCommand}" CommandParameter="consultasaldos" />
+          <MenuItem Header="Lançamentos" Command="{Binding AbrirCommand}" CommandParameter="consultalancamentos" />
+        </MenuItem>
         <MenuItem Header="_Integrações">
           <MenuItem Header="_Importar">
             <MenuItem Header="Plano referencial da RFB (tabela oficial)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
@@ -80,7 +84,7 @@
           <MenuItem Header="Balanço Patrimonial e DRE" Command="{Binding AbrirCommand}" CommandParameter="demonstracoes" />
           <MenuItem Header="Livros e relatórios em PDF" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
         </MenuItem>
-        <MenuItem Header="C_onfigurações">
+        <MenuItem Header="Con_figurações">
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />
