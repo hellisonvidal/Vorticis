@@ -17,8 +17,8 @@ namespace Perseus.Desktop.Views;
 public partial class LancamentoView : UserControl
 {
     private static readonly string[] CamposDobrada =
-        ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "codhistorico", "historico", "centrocusto"];
-    private static readonly string[] CamposSimples = ["reduzido", "conta", "dc", "valor", "codhistorico", "historico", "centrocusto"];
+        ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto"];
+    private static readonly string[] CamposSimples = ["reduzido", "conta", "dc", "valor", "documento", "codhistorico", "historico", "centrocusto"];
 
     /// <summary>Sugestões de conta: reduzido, início do código ou parte do nome.</summary>
     public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =

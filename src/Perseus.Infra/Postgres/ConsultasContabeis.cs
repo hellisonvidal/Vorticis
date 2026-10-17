@@ -107,7 +107,8 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
     public async Task<IReadOnlyList<LinhaDiario>> ObterDiarioAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT l.id, l.numero, l.data_lancamento, p.sequencia, pc.codigo, pc.descricao, p.ind_dc::text, p.valor, p.historico, l.status::text
+            SELECT l.id, l.numero, l.data_lancamento, p.sequencia, pc.codigo, pc.descricao, p.ind_dc::text, p.valor, p.historico, l.status::text,
+                   p.num_arquivo
               FROM contabil.lancamento l
               JOIN contabil.partida p ON p.lancamento_id = l.id
               JOIN contabil.plano_contas pc ON pc.id = p.conta_id
@@ -118,7 +119,8 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new LinhaDiario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetInt16(3), r.GetString(4), r.GetString(5),
-                                    Mapeamentos.DC(r.GetString(6)), r.GetDecimal(7), r.GetString(8), Mapeamentos.Status(r.GetString(9))));
+                                    Mapeamentos.DC(r.GetString(6)), r.GetDecimal(7), r.GetString(8), Mapeamentos.Status(r.GetString(9)),
+                                    r.IsDBNull(10) ? null : r.GetString(10)));
         return res;
     }
 }

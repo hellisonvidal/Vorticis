@@ -63,6 +63,7 @@ public static class Telas
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
+    public const string Conciliacao = "conciliacao";
     public const string ImportarPlanilhas = "importarplanilhas";
     public const string ImportarExtratos = "importarextratos";
     public const string ImportarLancamentos = "importarlancamentos";
@@ -95,7 +96,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
         nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais),
-        nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao))]
+        nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -133,6 +134,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Bens = new BensViewModel(this);
         GruposDepreciacao = new GruposDepreciacaoViewModel(this);
         Depreciacao = new DepreciacaoViewModel(this);
+        Conciliacao = new ConciliacaoViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -200,6 +202,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public BensViewModel Bens { get; private set; }
     public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
     public DepreciacaoViewModel Depreciacao { get; private set; }
+    public ConciliacaoViewModel Conciliacao { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -364,7 +367,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             or Telas.Historicos or Telas.Clientes or Telas.Fornecedores or Telas.Bens or Telas.GruposDepreciacao or Telas.Depreciacao
             => EmpresaSelecionada is not null && _permissoes.TemAcesso,
         Telas.ConfiguracoesGerais => Pode(Permissao.AdministrarSistema),
-        Telas.Lancamento => Pode(Permissao.LancamentoIncluir),
+        Telas.Lancamento => Pode(Permissao.LancamentoIncluir) || Pode(Permissao.LancamentoEstornar),
+        Telas.Conciliacao => Pode(Permissao.LancamentoIncluir),
         Telas.Estorno => Pode(Permissao.LancamentoEstornar),
         Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
         Telas.Periodos => Pode(Permissao.PeriodoFechar) || Pode(Permissao.PeriodoReabrir),
@@ -405,7 +409,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores"),
             Telas.Socios => (Socios, "Cadastros › Sócios"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
-            Telas.Estorno => (Diario, "Lançamentos › Estornar lançamento"),
+            Telas.Estorno => (Lancamento, "Lançamentos › Lançamento contábil"),   // o estorno fica na própria tela de lançamento
             Telas.Periodos => (Periodos, "Lançamentos › Fechamento de períodos"),
             Telas.Balancete => (Balancete, "Relatórios › Balancete de verificação"),
             Telas.Razao => (Razao, "Relatórios › Livro Razão"),
@@ -419,6 +423,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
             Telas.Historicos => (Historicos, "Cadastros › Históricos"),
             Telas.Bens => (Bens, "Imobilizado › Cadastro de bens"),
+            Telas.Conciliacao => (Conciliacao, "Lançamentos › Conciliações"),
             Telas.GruposDepreciacao => (GruposDepreciacao, "Imobilizado › Regras de depreciação"),
             Telas.Depreciacao => (Depreciacao, "Imobilizado › Cálculo e lançamento da depreciação"),
             Telas.Clientes => (Clientes, "Cadastros › Clientes"),
@@ -467,8 +472,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.ImportarPlano) _ = Disparar(ImportacaoPlano.CarregarAsync);
         if (tela == Telas.Historicos) _ = Disparar(Historicos.CarregarAsync);
         if (tela == Telas.Bens) _ = Disparar(Bens.CarregarAsync);
+        if (tela == Telas.Conciliacao) _ = Disparar(Conciliacao.CarregarContasAsync);
         if (tela == Telas.GruposDepreciacao) _ = Disparar(GruposDepreciacao.CarregarAsync);
-        if (tela == Telas.Lancamento) _ = Disparar(Lancamento.CarregarAsync);
+        if (tela is Telas.Lancamento or Telas.Estorno) _ = Disparar(Lancamento.CarregarAsync);
         if (tela == Telas.Razao) _ = Disparar(Razao.CarregarContasAsync);
         if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
         if (tela == Telas.Clientes) _ = Disparar(Clientes.CarregarAsync);

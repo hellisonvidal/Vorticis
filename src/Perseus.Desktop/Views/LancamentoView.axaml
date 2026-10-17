@@ -45,7 +45,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="*,300" RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="8">
+  <Grid ColumnDefinitions="*,300" RowDefinitions="Auto,Auto,*,Auto,Auto,*" Margin="8">
     <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,6">
       <TextBlock Classes="titulo" Text="Lançamento contábil" VerticalAlignment="Center" />
       <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding PartidaSimples}">
@@ -56,25 +56,27 @@
     </StackPanel>
 
     <!-- Cabeçalhos (mesmas larguras das linhas) -->
-    <Grid Grid.Row="1" ColumnDefinitions="92,58,170,58,170,110,46,*,90" IsVisible="{Binding PartidaDobrada}">
+    <Grid Grid.Row="1" ColumnDefinitions="92,58,165,58,165,105,90,46,*,80" IsVisible="{Binding PartidaDobrada}">
       <TextBlock Classes="cab" Text="Data" />
       <TextBlock Classes="cab" Grid.Column="1" Text="Red. D" />
       <TextBlock Classes="cab" Grid.Column="2" Text="Conta débito" />
       <TextBlock Classes="cab" Grid.Column="3" Text="Red. C" />
       <TextBlock Classes="cab" Grid.Column="4" Text="Conta crédito" />
       <TextBlock Classes="cab" Grid.Column="5" Text="Valor" HorizontalAlignment="Right" Margin="0,0,8,2" />
-      <TextBlock Classes="cab" Grid.Column="6" Text="Hist." />
-      <TextBlock Classes="cab" Grid.Column="7" Text="Histórico" />
-      <TextBlock Classes="cab" Grid.Column="8" Text="C. custo" />
+      <TextBlock Classes="cab" Grid.Column="6" Text="Documento" />
+      <TextBlock Classes="cab" Grid.Column="7" Text="Hist." />
+      <TextBlock Classes="cab" Grid.Column="8" Text="Histórico" />
+      <TextBlock Classes="cab" Grid.Column="9" Text="C. custo" />
     </Grid>
-    <Grid Grid.Row="1" ColumnDefinitions="58,190,46,120,46,*,90" IsVisible="{Binding PartidaSimples}">
+    <Grid Grid.Row="1" ColumnDefinitions="58,190,46,115,90,46,*,80" IsVisible="{Binding PartidaSimples}">
       <TextBlock Classes="cab" Text="Reduz." />
       <TextBlock Classes="cab" Grid.Column="1" Text="Conta" />
       <TextBlock Classes="cab" Grid.Column="2" Text="D/C" />
       <TextBlock Classes="cab" Grid.Column="3" Text="Valor" HorizontalAlignment="Right" Margin="0,0,8,2" />
-      <TextBlock Classes="cab" Grid.Column="4" Text="Hist." />
-      <TextBlock Classes="cab" Grid.Column="5" Text="Histórico" />
-      <TextBlock Classes="cab" Grid.Column="6" Text="C. custo" />
+      <TextBlock Classes="cab" Grid.Column="4" Text="Documento" />
+      <TextBlock Classes="cab" Grid.Column="5" Text="Hist." />
+      <TextBlock Classes="cab" Grid.Column="6" Text="Histórico" />
+      <TextBlock Classes="cab" Grid.Column="7" Text="C. custo" />
     </Grid>
 
     <ScrollViewer Grid.Row="2" Name="Rolagem">
@@ -84,7 +86,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
               <Border Classes="linha">
-                <Grid ColumnDefinitions="92,58,170,58,170,110,46,*,90">
+                <Grid ColumnDefinitions="92,58,165,58,165,105,90,46,*,80">
                   <TextBox Tag="data" Text="{Binding Data}" />
                   <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
@@ -105,9 +107,10 @@
                     </AutoCompleteBox.ItemTemplate>
                   </AutoCompleteBox>
                   <TextBox Grid.Column="5" Tag="valor" Classes="valor" Text="{Binding Valor}" />
-                  <TextBox Grid.Column="6" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
-                  <TextBox Grid.Column="7" Tag="historico" Text="{Binding Historico}" />
-                  <TextBox Grid.Column="8" Tag="centrocusto" Text="{Binding CentroCusto}" />
+                  <TextBox Grid.Column="6" Tag="documento" Text="{Binding Documento}" />
+                  <TextBox Grid.Column="7" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
+                  <TextBox Grid.Column="8" Tag="historico" Text="{Binding Historico}" />
+                  <TextBox Grid.Column="9" Tag="centrocusto" Text="{Binding CentroCusto}" />
                 </Grid>
               </Border>
             </DataTemplate>
@@ -119,7 +122,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
               <Border Classes="linha">
-                <Grid ColumnDefinitions="58,190,46,120,46,*,90">
+                <Grid ColumnDefinitions="58,190,46,115,90,46,*,80">
                   <TextBox Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="1" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
                                    ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
@@ -131,9 +134,10 @@
                   </AutoCompleteBox>
                   <TextBox Grid.Column="2" Tag="dc" Text="{Binding Dc}" MaxLength="1" HorizontalContentAlignment="Center" />
                   <TextBox Grid.Column="3" Tag="valor" Classes="valor" Text="{Binding Valor}" />
-                  <TextBox Grid.Column="4" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
-                  <TextBox Grid.Column="5" Tag="historico" Text="{Binding Historico}" />
-                  <TextBox Grid.Column="6" Tag="centrocusto" Text="{Binding CentroCusto}" />
+                  <TextBox Grid.Column="4" Tag="documento" Text="{Binding Documento}" />
+                  <TextBox Grid.Column="5" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
+                  <TextBox Grid.Column="6" Tag="historico" Text="{Binding Historico}" />
+                  <TextBox Grid.Column="7" Tag="centrocusto" Text="{Binding CentroCusto}" />
                 </Grid>
               </Border>
             </DataTemplate>
@@ -161,7 +165,36 @@
 
     <v:MensagensView Grid.Row="4" />
 
-    <DockPanel Grid.Column="1" Grid.RowSpan="5" Margin="12,0,0,0">
+    <!-- Lançamentos efetuados (os estornados permanecem, marcados) e o estorno do selecionado -->
+    <DockPanel Grid.Row="5" Margin="0,8,0,0">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+        <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding ListaInicio}" Width="128" />
+        <TextBlock Text="a" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding ListaFim}" Width="128" />
+        <Button Content="Atualizar" Command="{Binding CarregarEfetuadosCommand}" />
+      </StackPanel>
+      <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,6,0,0" IsVisible="{Binding PodeEstornar}">
+        <TextBlock Text="Estornar o selecionado em" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding DataEstorno}" Width="128" />
+        <TextBox Text="{Binding MotivoEstorno}" Watermark="Motivo do estorno (obrigatório)" Width="300" />
+        <Button Content="Estornar" Command="{Binding EstornarCommand}" />
+      </StackPanel>
+      <DataGrid ItemsSource="{Binding Efetuados}" SelectedItem="{Binding EfetuadoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="58" />
+          <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" />
+          <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding Debito}" Width="*" />
+          <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="*" />
+          <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="100" />
+          <DataGridTextColumn Header="Documento" Binding="{ReflectionBinding Documento}" Width="90" />
+          <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+          <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="80" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+
+    <DockPanel Grid.Column="1" Grid.RowSpan="6" Margin="12,0,0,0">
       <TextBlock DockPanel.Dock="Top" Text="Contas analíticas" FontWeight="SemiBold" />
       <TextBox DockPanel.Dock="Top" Text="{Binding FiltroConta}" Watermark="Filtrar: reduzido, código ou nome" Margin="0,4" />
       <TextBlock DockPanel.Dock="Bottom" FontSize="11" Foreground="Gray" TextWrapping="Wrap"

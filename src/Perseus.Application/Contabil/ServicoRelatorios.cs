@@ -36,9 +36,9 @@ public sealed class ServicoRelatorios(IConsultasContabeis consultas, Autorizador
     public async Task<Resultado<IReadOnlyList<LinhaDiario>>> DiarioAsync(long empresaId, DateOnly inicio, DateOnly fim, long usuarioId,
                                                                         CancellationToken ct = default)
     {
-        // A tela de estorno lista o Diário: quem pode estornar também pode consultá-lo.
+        // A tela de lançamento lista os lançamentos efetuados: quem lança ou estorna também pode consultá-los.
         var p = await autorizador.ObterAsync(usuarioId, empresaId, ct);
-        if (!p.Pode(Permissao.RelatorioDiario) && !p.Pode(Permissao.LancamentoEstornar))
+        if (!p.Pode(Permissao.RelatorioDiario) && !p.Pode(Permissao.LancamentoEstornar) && !p.Pode(Permissao.LancamentoIncluir))
             return await autorizador.NegarAsync<IReadOnlyList<LinhaDiario>>(usuarioId, empresaId, Permissao.RelatorioDiario, ct)
                    ?? Resultado<IReadOnlyList<LinhaDiario>>.Falha("Acesso negado.");
         return Resultado<IReadOnlyList<LinhaDiario>>.Ok(await consultas.ObterDiarioAsync(empresaId, inicio, fim, ct));

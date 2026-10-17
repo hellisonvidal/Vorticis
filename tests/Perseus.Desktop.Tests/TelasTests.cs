@@ -309,6 +309,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             lin.CodigoHistorico = "1";                                          // histórico padrão + complemento livre
             Assert.Equal("Venda à vista NF ", lin.Historico);
             lin.Historico += "123";
+            lin.Documento = "NF 123";                                          // nº do documento (conciliação)
             var nova = l.AdicionarLinha();                                      // seta para baixo: nova linha
             Assert.Equal(2, l.Linhas.Count);
             Assert.Equal("10/03/2026", nova.Data);
@@ -317,6 +318,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await l.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(l.Erros);
             Assert.Equal("Lançamento nº 1 salvo.", l.Mensagem);
+            var efetuado = Assert.Single(l.Efetuados);                         // lista dos lançamentos efetuados
+            Assert.Equal((1L, "NF 123", "Efetivado"), (efetuado.Numero, efetuado.Documento, efetuado.Situacao));
             Assert.Equal("10/03/2026", l.Linhas[0].Data);                     // a data segue para o próximo
             (l.Linhas[0].Conta, l.Linhas[0].ContaCredito, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("4.2.02.001", "1.1.01.002", "2.300,00", "Aluguel de março");
             Foto(janela, "03_lancamento");
@@ -504,6 +507,39 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("Já importado", Assert.Single(ext.Previa).Situacao);
             Assert.False(ext.ImportarCommand.CanExecute(null));
 
+            // Estorno na própria tela de lançamento: o lançamento estornado continua na lista, marcado
+            vm.AbrirCommand.Execute(Telas.Lancamento);
+            var lanc = vm.Lancamento;
+            await lanc.CarregarAsync();
+            Assert.Equal(3, lanc.Efetuados.Count);
+            lanc.EfetuadoSelecionado = lanc.Efetuados.Single(e => e.Numero == 3);
+            Assert.Equal(new DateTime(2026, 3, 20), lanc.DataEstorno);
+            await lanc.EstornarCommand.ExecuteAsync(null);
+            Assert.Contains("motivo", lanc.Erros[0]);
+            lanc.MotivoEstorno = "Contrapartida errada";
+            var estornando = lanc.EstornarCommand.ExecuteAsync(null);
+            Assert.Contains("lançamento nº 3", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await estornando;
+            Assert.Equal("Lançamento nº 3 estornado pelo lançamento nº 4.", lanc.Mensagem);
+            Assert.Equal(4, lanc.Efetuados.Count);
+            Assert.Equal("Estornado", lanc.Efetuados.Single(e => e.Numero == 3).Situacao);
+            Assert.False(lanc.EstornarCommand.CanExecute(null));
+            Foto(janela, "06f_lancamentos_efetuados");
+
+            // Lançamentos › Conciliações
+            vm.AbrirCommand.Execute(Telas.Conciliacao);
+            var conc = vm.Conciliacao;
+            await conc.CarregarContasAsync();
+            conc.Ate = new DateTime(2026, 3, 31);
+            conc.FiltroConta = "bancos conta";
+            conc.ContaSelecionada = Assert.Single(conc.Contas);
+            await conc.ConsultarCommand.ExecuteAsync(null);
+            Assert.Equal("NF 123", Assert.Single(conc.Linhas).Documento);
+            await conc.ConciliarAutomaticoCommand.ExecuteAsync(null);
+            Assert.StartsWith("Nenhum documento fechou", conc.Mensagem);
+            Foto(janela, "06g_conciliacao");
+
             // Lançamentos contábeis: planilha modelo do layout padrão
             vm.AbrirCommand.Execute(Telas.ImportarLancamentos);
             var padrao = vm.ImportacaoLancamentos;
@@ -546,7 +582,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Foto(janela, "07_saldos_iniciais");
             await saldos.LancarCommand.ExecuteAsync(null);
             Assert.Empty(saldos.Erros);
-            Assert.Contains("lançamento nº 4", saldos.Mensagem);       // após o nº 1 manual e os nº 2 e 3 importados
+            Assert.Contains("lançamento nº 5", saldos.Mensagem);       // após o nº 1 manual, os nº 2 e 3 importados e o estorno nº 4
 
             // Relatórios › Balanço Patrimonial e DRE (antes do encerramento: resultado destacado no PL)
             vm.AbrirCommand.Execute(Telas.Demonstracoes);

@@ -201,13 +201,8 @@ public partial class DiarioViewModel(IContexto contexto) : RelatorioViewModel(co
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _fim = DateTime.Today;
     [ObservableProperty] private LinhaDiarioView? _selecionada;
-    [ObservableProperty] private DateTime? _dataEstorno = DateTime.Today;
-    [ObservableProperty] private string _motivoEstorno = "";
 
-    /// <summary>O painel de estorno só aparece para quem pode estornar.</summary>
-    public bool PodeEstornar => Contexto.Pode(Permissao.LancamentoEstornar);
-
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEstornar));
+    public void AtualizarPermissoes() { }
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -224,19 +219,6 @@ public partial class DiarioViewModel(IContexto contexto) : RelatorioViewModel(co
                 l.DC == IndicadorDC.D ? Numeros.Moeda(l.Valor) : "", l.DC == IndicadorDC.C ? Numeros.Moeda(l.Valor) : "",
                 l.Historico, l.Status == StatusLancamento.Estornado ? "Estornado" : ""));
     });
-
-    [RelayCommand]
-    private Task EstornarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Selecionada is null) { Erros.Add("Selecione uma linha do lançamento a estornar."); return; }
-        var r = await app.Lancamentos.EstornarAsync(empresa, Selecionada.LancamentoId,
-            Data(DataEstorno, DateOnly.FromDateTime(DateTime.Today)), MotivoEstorno, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        var msg = $"Lançamento nº {Selecionada.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
-        MotivoEstorno = "";
-        await GerarAsync();
-        Mensagem = msg;
-    }, Permissao.LancamentoEstornar);
 }
 
 public sealed record PeriodoView(DateOnly Competencia, bool Aberto)

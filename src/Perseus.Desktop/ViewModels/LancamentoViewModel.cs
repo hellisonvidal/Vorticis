@@ -27,6 +27,7 @@ public partial class LinhaLancamentoViewModel : ObservableObject
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ResumoContas))] private string _nomeContaCredito = "";
     [ObservableProperty] private string _dc = "D";
     [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private string _documento = "";
     [ObservableProperty] private string _codigoHistorico = "";
     [ObservableProperty] private string _historico = "";
     [ObservableProperty] private string _centroCusto = "";
@@ -60,6 +61,15 @@ public partial class LinhaLancamentoViewModel : ObservableObject
     {
         if (ValorDecimal is { } v) Valor = Formato.Moeda(v);
     }
+}
+
+/// <summary>Lançamento já efetuado (lista da tela de lançamento), inclusive os estornados.</summary>
+public sealed record LancamentoEfetuadoLinha(long Id, long Numero, DateOnly DataLancamento, string Debito, string Credito, decimal Total,
+                                             string Historico, string Documento, bool Estornado)
+{
+    public string Data => DataLancamento.ToString("dd/MM/yyyy");
+    public string Valor => Formato.Moeda(Total);
+    public string Situacao => Estornado ? "Estornado" : Historico.StartsWith("Estorno", StringComparison.OrdinalIgnoreCase) ? "Estorno" : "Efetivado";
 }
 
 public sealed record ContaSelecionavel(string Codigo, string Descricao, int? Reduzido = null)
@@ -100,6 +110,15 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] private string _diferenca = "0,00";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _balanceado;
 
+    // Lançamentos efetuados (inclusive estornados) e o estorno do selecionado
+    public ObservableCollection<LancamentoEfetuadoLinha> Efetuados { get; } = [];
+    [ObservableProperty] private DateTime? _listaInicio = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _listaFim = new DateTime(DateTime.Today.Year, 12, 31);
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(EstornarCommand))] private LancamentoEfetuadoLinha? _efetuadoSelecionado;
+    [ObservableProperty] private DateTime? _dataEstorno;
+    [ObservableProperty] private string _motivoEstorno = "";
+    public bool PodeEstornar => Contexto.Pode(Permissao.LancamentoEstornar);
+
     public bool PartidaSimples => !PartidaDobrada;
     public string DescricaoModo => PartidaDobrada
         ? "Partida dobrada: cada linha é um lançamento (débito, crédito e valor)."
@@ -138,7 +157,55 @@ public partial class LancamentoViewModel : ModuloViewModel
         PartidaDobrada = modo == ModoLancamento.PartidaDobrada;
         if (trocouModo || Linhas.All(l => l.Vazia)) Limpar();
         Filtrar();
+        OnPropertyChanged(nameof(PodeEstornar));
+        await CarregarEfetuadosAsync();
     }
+
+    /// <summary>Lista os lançamentos do período (os estornados continuam na lista, marcados).</summary>
+    [RelayCommand]
+    public async Task CarregarEfetuadosAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
+        var ini = Data(ListaInicio, new DateOnly(DateTime.Today.Year, 1, 1));
+        var r = await app.Relatorios.DiarioAsync(empresa, ini, Data(ListaFim, ini.AddYears(1).AddDays(-1)), sessao.Id);
+        if (!r.Sucesso) return;
+        var id = EfetuadoSelecionado?.Id;
+        Efetuados.Clear();
+        foreach (var g in r.Valor.GroupBy(l => l.LancamentoId).OrderByDescending(g => g.First().Data).ThenByDescending(g => g.First().Numero))
+        {
+            var deb = g.Where(l => l.DC == IndicadorDC.D).ToList();
+            var cred = g.Where(l => l.DC == IndicadorDC.C).ToList();
+            static string Contas(List<LinhaDiario> ls) =>
+                ls.Count == 0 ? "" : $"{ls[0].CodigoConta} {ls[0].DescricaoConta}" + (ls.Count > 1 ? $" (+{ls.Count - 1})" : "");
+            var f = g.First();
+            Efetuados.Add(new LancamentoEfetuadoLinha(g.Key, f.Numero, f.Data, Contas(deb), Contas(cred), deb.Sum(l => l.Valor), f.Historico,
+                g.Select(l => l.Documento).FirstOrDefault(d => !string.IsNullOrEmpty(d)) ?? "", f.Status == StatusLancamento.Estornado));
+        }
+        EfetuadoSelecionado = Efetuados.FirstOrDefault(e => e.Id == id);
+    }
+
+    partial void OnEfetuadoSelecionadoChanged(LancamentoEfetuadoLinha? value)
+    {
+        if (value is not null) DataEstorno = value.DataLancamento.ToDateTime(TimeOnly.MinValue);
+    }
+
+    private bool PodeEstornarSelecionado() => EfetuadoSelecionado is { Estornado: false };
+
+    /// <summary>Estorna o lançamento selecionado na lista (gera o lançamento inverso; o original fica marcado como estornado).</summary>
+    [RelayCommand(CanExecute = nameof(PodeEstornarSelecionado))]
+    private Task EstornarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (EfetuadoSelecionado is not { } sel) return;
+        if (string.IsNullOrWhiteSpace(MotivoEstorno)) { Erros.Add("Informe o motivo do estorno."); return; }
+        if (!await Contexto.ConfirmarAsync("Estornar lançamento",
+                $"Estornar o lançamento nº {sel.Numero} de {sel.Data} ({sel.Valor})?\n\nSerá gerado o lançamento inverso; o original continua na lista, marcado como estornado.",
+                "Estornar", "Cancelar")) return;
+        var r = await app.Lancamentos.EstornarAsync(empresa, sel.Id, Data(DataEstorno, sel.DataLancamento), MotivoEstorno.Trim(), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        MotivoEstorno = "";
+        await CarregarEfetuadosAsync();
+        Mensagem = $"Lançamento nº {sel.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
+    }, Permissao.LancamentoEstornar);
 
     partial void OnFiltroContaChanged(string value) => Filtrar();
 
@@ -172,6 +239,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         {
             nova.Historico = anterior?.Historico ?? "";
             nova.CodigoHistorico = anterior?.CodigoHistorico ?? "";
+            nova.Documento = anterior?.Documento ?? "";
             nova.Dc = anterior?.Indicador == IndicadorDC.D ? "C" : "D";
             // Sugere o valor que equilibra o lançamento.
             var dif = SomaDC(IndicadorDC.D) - SomaDC(IndicadorDC.C);
@@ -259,8 +327,8 @@ public partial class LancamentoViewModel : ModuloViewModel
             var cc = string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim();
             propostas.Add(new LancamentoProposto(empresa, data.Value, OrigemLancamento.Manual,
             [
-                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal.Value, l.Historico.Trim(), cc),
-                new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc),
+                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal.Value, l.Historico.Trim(), cc, null, Doc(l)),
+                new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc, null, Doc(l)),
             ]));
         }
         if (Erros.Count > 0) return;
@@ -277,6 +345,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         var ultimaData = preenchidas[^1].Data;
         Limpar();
         Linhas[0].Data = ultimaData;
+        await CarregarEfetuadosAsync();
     }
 
     private async Task SalvarSimplesAsync(PerseusApp app, long empresa, long usuario)
@@ -292,11 +361,16 @@ public partial class LancamentoViewModel : ModuloViewModel
 
         var proposta = new LancamentoProposto(empresa, Data(Data, DateOnly.FromDateTime(DateTime.Today)), OrigemLancamento.Manual,
             preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico.Trim(),
-                string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim())).ToArray());
+                string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(), null, Doc(l))).ToArray());
         var r = await app.Lancamentos.EfetivarAsync(proposta, usuario);
         MostrarResultado(r, r.Sucesso ? $"Lançamento nº {r.Valor.Numero} salvo." : "");
-        if (r.Sucesso) Limpar();
+        if (!r.Sucesso) return;
+        Limpar();
+        await CarregarEfetuadosAsync();
     }
+
+    /// <summary>Nº do documento (NF, recibo, boleto...) — base da conciliação automática.</summary>
+    private static string? Doc(LinhaLancamentoViewModel l) => string.IsNullOrWhiteSpace(l.Documento) ? null : l.Documento.Trim();
 
     /// <summary>Data digitada completada e no formato dd/mm/aaaa (ou como foi digitada, se inválida).</summary>
     public string DataCompleta(string texto) =>

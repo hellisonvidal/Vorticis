@@ -54,8 +54,10 @@
         </MenuItem>
         <MenuItem Header="_Lançamentos">
           <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
-          <MenuItem Header="Estornar lançamento" Command="{Binding AbrirCommand}" CommandParameter="estorno" />
           <MenuItem Header="Saldos iniciais (implantação)" Command="{Binding AbrirCommand}" CommandParameter="saldosiniciais" />
+          <MenuItem Header="Conciliações">
+            <MenuItem Header="Conciliação de contas (automática por nº do documento)" Command="{Binding AbrirCommand}" CommandParameter="conciliacao" />
+          </MenuItem>
           <Separator />
           <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
           <MenuItem Header="Encerramento do exercício" Command="{Binding AbrirCommand}" CommandParameter="encerramento" />
