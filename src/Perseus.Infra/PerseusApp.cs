@@ -40,6 +40,7 @@ public sealed class PerseusApp : IAsyncDisposable
         Importacao = new ServicoImportacao(new RepositorioImportacao(ds), Lancamentos, autorizador);
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
+        DiferencasSaldos = new ServicoDiferencasSaldos(Relatorios, repoContabil, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj, consultaIe);
         var repoConfiguracao = new RepositorioConfiguracao(ds);
@@ -68,6 +69,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoConfiguracoesGerais ConfiguracoesGerais { get; }
     public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }
+    public ServicoDiferencasSaldos DiferencasSaldos { get; }
     public ServicoEmpresa Empresas { get; }
     public ServicoEncerramento Encerramento { get; }
     public ServicoPlanoReferencial PlanoReferencial { get; }

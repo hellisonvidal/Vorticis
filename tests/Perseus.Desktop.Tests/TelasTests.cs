@@ -403,6 +403,16 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Contains("1 lançamento(s)", cons.ResumoLancamentos);
             Foto(janela, "05c_consulta_lancamentos");
 
+            // Consultas › Diferenças de saldos
+            vm.AbrirCommand.Execute(Telas.DiferencasSaldos);
+            var dif = vm.DiferencasSaldos;
+            (dif.Inicio, dif.Fim) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31));
+            await dif.AnalisarCommand.ExecuteAsync(null);
+            Assert.Empty(dif.Erros);
+            Assert.Contains("nenhuma inconsistência", dif.Resumo);
+            Assert.Equal("+1.500,00", dif.Linhas.Single(d => d.D.Linha.Codigo == "1.1.01.002").Diferenca);
+            Foto(janela, "05d_diferencas_saldos");
+
             // 5. Cadastros › Plano de contas: inclui subconta, herdando natureza
             vm.AbrirCommand.Execute(Telas.PlanoContas);
             var plano = vm.PlanoContas;

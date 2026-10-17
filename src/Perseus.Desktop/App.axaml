@@ -32,6 +32,7 @@
     <DataTemplate DataType="vm:HistoricosViewModel"><v:HistoricosView /></DataTemplate>
     <DataTemplate DataType="vm:BensViewModel"><v:BensView /></DataTemplate>
     <DataTemplate DataType="vm:ConciliacaoViewModel"><v:ConciliacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:DiferencasSaldosViewModel"><v:DiferencasSaldosView /></DataTemplate>
     <DataTemplate DataType="vm:GruposDepreciacaoViewModel"><v:GruposDepreciacaoView /></DataTemplate>
     <DataTemplate DataType="vm:DepreciacaoViewModel"><v:DepreciacaoView /></DataTemplate>
     <DataTemplate DataType="vm:ClientesViewModel"><v:ParticipantesView /></DataTemplate>

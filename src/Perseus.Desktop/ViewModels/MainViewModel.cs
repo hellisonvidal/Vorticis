@@ -64,6 +64,7 @@ public static class Telas
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
     public const string Conciliacao = "conciliacao";
+    public const string DiferencasSaldos = "diferencassaldos";
     public const string ImportarPlanilhas = "importarplanilhas";
     public const string ImportarExtratos = "importarextratos";
     public const string ImportarLancamentos = "importarlancamentos";
@@ -96,7 +97,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
         nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais),
-        nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao))]
+        nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao), nameof(DiferencasSaldos))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -135,6 +136,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         GruposDepreciacao = new GruposDepreciacaoViewModel(this);
         Depreciacao = new DepreciacaoViewModel(this);
         Conciliacao = new ConciliacaoViewModel(this);
+        DiferencasSaldos = new DiferencasSaldosViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -203,6 +205,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
     public DepreciacaoViewModel Depreciacao { get; private set; }
     public ConciliacaoViewModel Conciliacao { get; private set; }
+    public DiferencasSaldosViewModel DiferencasSaldos { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -369,6 +372,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.ConfiguracoesGerais => Pode(Permissao.AdministrarSistema),
         Telas.Lancamento => Pode(Permissao.LancamentoIncluir) || Pode(Permissao.LancamentoEstornar),
         Telas.Conciliacao => Pode(Permissao.LancamentoIncluir),
+        Telas.DiferencasSaldos => Pode(Permissao.RelatorioBalancete),
         Telas.Estorno => Pode(Permissao.LancamentoEstornar),
         Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
         Telas.Periodos => Pode(Permissao.PeriodoFechar) || Pode(Permissao.PeriodoReabrir),
@@ -424,6 +428,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Historicos => (Historicos, "Cadastros › Históricos"),
             Telas.Bens => (Bens, "Imobilizado › Cadastro de bens"),
             Telas.Conciliacao => (Conciliacao, "Lançamentos › Conciliações"),
+            Telas.DiferencasSaldos => (DiferencasSaldos, "Consultas › Diferenças de saldos"),
             Telas.GruposDepreciacao => (GruposDepreciacao, "Imobilizado › Regras de depreciação"),
             Telas.Depreciacao => (Depreciacao, "Imobilizado › Cálculo e lançamento da depreciação"),
             Telas.Clientes => (Clientes, "Cadastros › Clientes"),

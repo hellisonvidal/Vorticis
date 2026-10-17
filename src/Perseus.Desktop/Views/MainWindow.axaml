@@ -71,6 +71,7 @@
         <MenuItem Header="C_onsultas">
           <MenuItem Header="Saldos de contas" Command="{Binding AbrirCommand}" CommandParameter="consultasaldos" />
           <MenuItem Header="Lançamentos" Command="{Binding AbrirCommand}" CommandParameter="consultalancamentos" />
+          <MenuItem Header="Diferenças de saldos" Command="{Binding AbrirCommand}" CommandParameter="diferencassaldos" />
         </MenuItem>
         <MenuItem Header="_Integrações">
           <MenuItem Header="_Importar">
