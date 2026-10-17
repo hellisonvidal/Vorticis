@@ -715,6 +715,21 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(enc.Encerrado);
             Foto(janela, "08b_encerramento");
 
+            // Relatórios › DMPL e DLPA: a implantação de saldos é a abertura; o encerramento não é mutação (o lucro vem da DRE)
+            vm.AbrirCommand.Execute(Telas.Mutacoes);
+            var mut = vm.Mutacoes;
+            (mut.Inicio, mut.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await mut.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(mut.Erros);
+            Assert.Equal(["Capital social", "Lucros ou prejuízos acumulados", "Total"], mut.ColunasDmpl);
+            Assert.Equal(("Saldos em 31/12/2025", "45.000,00"), (mut.Dmpl[0].Descricao, mut.Dmpl[0].Valores[^1]));
+            Assert.Contains(mut.Dmpl, l => l.Descricao.StartsWith("Lucro líquido") && l.Valores[1] == "1.500,00");
+            Assert.Equal("46.500,00", mut.Dmpl[^1].Valores[^1]);                  // = PL do Balanço depois do encerramento
+            Assert.Equal("1.500,00", mut.Dlpa[^1].Valor);
+            Foto(janela, "08b2_dmpl_dlpa");
+            mut.ExportarPdfCommand.Execute(null);
+            Assert.Empty(mut.Erros);
+
             // Cadastros › Empresas, aba Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
             vm.AbrirCommand.Execute(Telas.Empresas);
             Assert.True(vm.Empresas.TemEmpresaSelecionada);

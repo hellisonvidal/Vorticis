@@ -60,6 +60,21 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
         return res;
     }
 
+    public async Task<IReadOnlyList<PartidaMutacao>> ObterPartidasAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT l.id, p.conta_id, p.ind_dc::text, p.valor, l.ind_lcto = 'E', l.origem = 'SALDO_INICIAL'
+              FROM contabil.lancamento l
+              JOIN contabil.partida p ON p.lancamento_id = l.id
+             WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.data_lancamento BETWEEN @ini AND @fim
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<PartidaMutacao>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new PartidaMutacao(r.GetInt64(0), r.GetInt64(1), Mapeamentos.DC(r.GetString(2)), r.GetDecimal(3), r.GetBoolean(4), r.GetBoolean(5)));
+        return res;
+    }
+
     public async Task<IReadOnlyList<MovimentoParticipante>> ObterMovimentosParticipantesAsync(long empresaId, DateOnly inicio, DateOnly fim,
                                                                                             CancellationToken ct)
     {

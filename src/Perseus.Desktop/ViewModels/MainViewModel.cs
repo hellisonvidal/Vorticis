@@ -66,6 +66,7 @@ public static class Telas
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Certificados = "certificados";
     public const string ExportarLancamentos = "exportarlancamentos";
+    public const string Mutacoes = "mutacoes";
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
@@ -102,7 +103,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais), nameof(Certificados), nameof(ExportacaoLancamentos),
+        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais), nameof(Certificados), nameof(ExportacaoLancamentos), nameof(Mutacoes),
         nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao), nameof(DiferencasSaldos))]
     private void RecriarModulos()
     {
@@ -140,6 +141,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         ConfiguracoesGerais = new ConfiguracoesGeraisViewModel(this);
         Certificados = new CertificadosViewModel(this);
         ExportacaoLancamentos = new ExportacaoLancamentosViewModel(this);
+        Mutacoes = new MutacoesViewModel(this);
         Bens = new BensViewModel(this);
         GruposDepreciacao = new GruposDepreciacaoViewModel(this);
         Depreciacao = new DepreciacaoViewModel(this);
@@ -211,6 +213,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public ConfiguracoesGeraisViewModel ConfiguracoesGerais { get; private set; }
     public CertificadosViewModel Certificados { get; private set; }
     public ExportacaoLancamentosViewModel ExportacaoLancamentos { get; private set; }
+    public MutacoesViewModel Mutacoes { get; private set; }
     public BensViewModel Bens { get; private set; }
     public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
     public DepreciacaoViewModel Depreciacao { get; private set; }
@@ -397,6 +400,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Diario => Pode(Permissao.RelatorioDiario),
         Telas.Encerramento => Pode(Permissao.ExercicioEncerrar),
         Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
+        Telas.Mutacoes => Pode(Permissao.RelatorioDemonstracoes),
         Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
                            || Pode(Permissao.RelatorioDemonstracoes),
         Telas.Usuarios or Telas.AlterarSenha or Telas.Sobre or Telas.Inicio or Telas.Licenca => true,
@@ -419,6 +423,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Backup => (Backup, "Configurações › Backup e restauração"),
             Telas.Encerramento => (Encerramento, "Lançamentos › Encerramento do exercício"),
             Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
+            Telas.Mutacoes => (Mutacoes, "Relatórios › DMPL e DLPA"),
             Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
             Telas.ImportacaoReferencial => (ImportacaoReferencial, "Integrações › Importar › Plano referencial da RFB"),
             Telas.MapeamentoReferencial => (MapeamentoReferencial, "Integrações › Importar › Vínculo ao plano referencial"),

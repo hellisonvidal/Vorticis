@@ -97,6 +97,7 @@
           <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
           <Separator />
           <MenuItem Header="Balanço Patrimonial e DRE" Command="{Binding AbrirCommand}" CommandParameter="demonstracoes" />
+          <MenuItem Header="DMPL e DLPA (mutações do PL e lucros acumulados)" Command="{Binding AbrirCommand}" CommandParameter="mutacoes" />
           <MenuItem Header="Livros e relatórios em PDF" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
         </MenuItem>
         <MenuItem Header="Con_figurações">

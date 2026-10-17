@@ -26,7 +26,13 @@ public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
     /// <summary>Ao abrir: a pasta escolhida (ou a padrão, no diretório de instalação).</summary>
     public async Task CarregarAsync()
     {
-        if (main.App is { } app) Pasta = await app.ConfiguracoesGerais.PastaBackupAsync();
+        var g = NovaGeracao();
+        if (main.App is { } app)
+        {
+            var pasta = await app.ConfiguracoesGerais.PastaBackupAsync();
+            if (!EhAtual(g)) return;                       // pasta escolhida enquanto carregava: não sobrescreve
+            Pasta = pasta;
+        }
         Atualizar();
     }
 
@@ -37,6 +43,7 @@ public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
         Erros.Clear();
         Mensagem = null;
         if (main.App is not { } app || main.Sessao is not { } sessao) return;
+        NovaGeracao();                                      // descarta uma leitura da pasta ainda em andamento
         var padrao = string.Equals(Pasta.Trim(), ServicoBackup.PastaPadrao, StringComparison.OrdinalIgnoreCase);
         var r = await app.ConfiguracoesGerais.SalvarPastaBackupAsync(sessao, padrao ? null : Pasta);
         MostrarResultado(r, padrao ? "Usando a pasta padrão (no diretório de instalação do programa)." : $"Os backups passam a ser gravados em {Pasta.Trim()}.");
