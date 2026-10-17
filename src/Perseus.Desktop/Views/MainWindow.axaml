@@ -44,9 +44,12 @@
         <MenuItem Header="_Cadastros">
           <MenuItem Header="Empresas" Command="{Binding AbrirCommand}" CommandParameter="empresas" />
           <MenuItem Header="Contadores" Command="{Binding AbrirCommand}" CommandParameter="contabilidade" />
+          <MenuItem Header="Clientes" Command="{Binding AbrirCommand}" CommandParameter="clientes" />
+          <MenuItem Header="Fornecedores" Command="{Binding AbrirCommand}" CommandParameter="fornecedores" />
           <Separator />
           <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
           <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
+          <MenuItem Header="Históricos" Command="{Binding AbrirCommand}" CommandParameter="historicos" />
         </MenuItem>
         <MenuItem Header="_Lançamentos">
           <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
@@ -88,6 +91,7 @@
           <MenuItem Header="Livros e relatórios em PDF" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
         </MenuItem>
         <MenuItem Header="Con_figurações">
+          <MenuItem Header="Configurações gerais" Command="{Binding AbrirCommand}" CommandParameter="configuracoesgerais" />
           <MenuItem Header="Usuários" Command="{Binding AbrirCommand}" CommandParameter="usuarios" />
           <MenuItem Header="Conexão com o banco de dados" Command="{Binding AbrirCommand}" CommandParameter="conexao" />
           <MenuItem Header="Backup e restauração" Command="{Binding AbrirCommand}" CommandParameter="backup" />

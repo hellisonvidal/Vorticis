@@ -25,6 +25,7 @@ public sealed record OpcaoSaldo(IndicadorDC DC, string Nome)
 public sealed record ContaLinha(ContaDetalhe Conta)
 {
     public string Numero => Conta.Id.ToString("00000");
+    public string Reduzido => Conta.CodigoReduzido?.ToString() ?? "";
     public string Codigo => new string(' ', (Conta.Nivel - 1) * 3) + Conta.Codigo;
     public string Descricao => Conta.Descricao;
     public string Tipo => Conta.Analitica ? "Analítica" : "Sintética";
@@ -45,6 +46,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
 
     // formulário (código, natureza e data de inclusão só na inclusão: exigência da ECD)
     [ObservableProperty] private string _codigo = "";
+    [ObservableProperty] private string _reduzido = "";
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private OpcaoNatureza _natureza = OpcaoNatureza.Todas[0];
     [ObservableProperty] private OpcaoSaldo _saldo = OpcaoSaldo.Todas[0];
@@ -86,6 +88,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         var f = Filtro.Trim();
         Lista.Clear();
         foreach (var c in _plano.Where(c => f.Length == 0 || c.Codigo.StartsWith(f, StringComparison.Ordinal)
+                                            || c.CodigoReduzido?.ToString() == f
                                             || c.Descricao.Contains(f, StringComparison.CurrentCultureIgnoreCase)))
             Lista.Add(new ContaLinha(c));
     }
@@ -100,11 +103,12 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     {
         if (Selecionada is not { } linha)
         {
-            (Codigo, Descricao, DicaPai) = ("", "", "");
+            (Codigo, Reduzido, Descricao, DicaPai) = ("", "", "", "");
             return;
         }
         var c = linha.Conta;
         Codigo = c.Codigo;
+        Reduzido = c.CodigoReduzido?.ToString() ?? "";
         (Descricao, Saldo, ExigeCc, ExigeParticipante, Ativa) = (c.Descricao, OpcaoSaldo.De(c.NaturezaSaldo), c.ExigeCentroCusto, c.ExigeParticipante, c.Ativa);
         Natureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == c.CodNat) ?? Natureza;
         DicaPai = c.Analitica ? "Conta analítica (recebe lançamentos)." : "Conta sintética (agrupa subcontas).";
@@ -114,6 +118,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     protected override void PrepararInclusao()
     {
         (Descricao, ExigeCc, ExigeParticipante, Ativa) = ("", false, false, true);
+        Reduzido = ((_plano.Max(x => x.CodigoReduzido) ?? 0) + 1).ToString();   // próximo número; pode ser trocado
         DataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
         if (Selecionada?.Conta is { } c)
         {
@@ -159,8 +164,14 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
             long id;
             if (inclusao)
             {
+                int? reduzido = null;
+                if (Reduzido.Trim().Length > 0)
+                {
+                    if (!int.TryParse(Reduzido.Trim(), out var n)) { Erros.Add("O código reduzido deve ser um número."); return; }
+                    reduzido = n;
+                }
                 var r = await app.PlanoContas.IncluirAsync(empresa, new NovaConta(Codigo, Descricao, Natureza.Codigo, Saldo.DC,
-                    ExigeCc, ExigeParticipante, DateOnly.FromDateTime(DataInclusao ?? DateTime.Today)), usuario);
+                    ExigeCc, ExigeParticipante, DateOnly.FromDateTime(DataInclusao ?? DateTime.Today), reduzido), usuario);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
                 id = r.Valor;
             }
@@ -170,6 +181,12 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
                 id = Selecionada.Conta.Id;
                 var r = await app.PlanoContas.AlterarAsync(empresa, id, Descricao, Saldo.DC, ExigeCc, ExigeParticipante, Ativa, usuario);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+                if (Selecionada.Conta.Analitica && Reduzido.Trim() != (Selecionada.Conta.CodigoReduzido?.ToString() ?? ""))
+                {
+                    if (!int.TryParse(Reduzido.Trim(), out var n)) { Erros.Add("O código reduzido deve ser um número."); return; }
+                    var rr = await app.PlanoContas.AlterarReduzidoAsync(empresa, id, n, usuario);
+                    if (!rr.Sucesso) { MostrarResultado(rr, ""); return; }
+                }
             }
             ok = true;
             var codigo = Codigo.Trim();

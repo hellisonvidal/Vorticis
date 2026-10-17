@@ -221,19 +221,96 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal(empresa.Id, Assert.Single(vm.EmpresasPermitidas).Id);
             vm.EmpresaSelecionada = vm.EmpresasPermitidas[0];
 
-            // 3. Lançamentos › Lançamento contábil
+            // Cadastros › Históricos: texto fixo com código sequencial
+            vm.AbrirCommand.Execute(Telas.Historicos);
+            var hist = vm.Historicos;
+            await hist.CarregarAsync();
+            hist.IncluirCommand.Execute(null);
+            Assert.Equal("1", hist.Codigo);
+            hist.Descricao = "Venda à vista NF";
+            await hist.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(hist.Erros);
+            Assert.Equal("1", Assert.Single(hist.Lista).Codigo);
+
+            // Cadastros › Clientes e Fornecedores (abas)
+            vm.AbrirCommand.Execute(Telas.Clientes);
+            var part = vm.Participantes;
+            await part.CarregarAsync();
+            part.IncluirCommand.Execute(null);
+            Assert.Equal("1", part.Codigo);
+            (part.Nome, part.CpfCnpj, part.Uf, part.Municipio) = ("Comercial Alfa Ltda", "11.222.333/0001-81", "SP", "São Paulo");
+            await part.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(part.Erros);
+            Assert.Equal("Cliente", Assert.Single(part.Lista).Tipo);
+            vm.AbrirCommand.Execute(Telas.Fornecedores);
+            Assert.Equal(ParticipantesViewModel.AbaFornecedores, part.AbaSelecionada);
+            Assert.Empty(part.Lista);
+            part.IncluirCommand.Execute(null);
+            (part.Nome, part.Cliente, part.Fornecedor) = ("Distribuidora Beta", false, true);
+            await part.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(part.Erros);
+            Assert.Equal("2", Assert.Single(part.Lista).Codigo);
+            Foto(janela, "02c_fornecedores");
+
+            // 3. Lançamentos › Lançamento contábil (partida dobrada: uma linha por lançamento, digitado pelo teclado)
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Lancamento));
             vm.AbrirCommand.Execute(Telas.Lancamento);
             var l = vm.Lancamento;
             await l.AoTrocarEmpresaAsync();
-            l.Data = new DateTime(2026, 3, 10);
-            (l.Linhas[0].Conta, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("1.1.01.002", "1.500,00", "Venda à vista NF 123");
-            (l.Linhas[1].Conta, l.Linhas[1].Valor, l.Linhas[1].Historico) = ("3.1.01.001", "1500.00", "Venda à vista NF 123");
-            await l.EfetivarCommand.ExecuteAsync(null);
-            Assert.Equal("Lançamento nº 1 efetivado.", l.Mensagem);
-            (l.Linhas[0].Conta, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("4.2.02.001", "2.300,00", "Aluguel de março");
-            (l.Linhas[1].Conta, l.Linhas[1].Valor) = ("1.1.01.002", "2.000,00");
+            Assert.True(l.PartidaDobrada);
+            Assert.Single(l.Linhas);
+            var lin = l.Linhas[0];
+            lin.Data = l.DataCompleta("10/03/2026");
+            var reduzidoBancos = l.TodasContas.Single(c => c.Codigo == "1.1.01.002").Reduzido!.Value;
+            lin.Reduzido = reduzidoBancos.ToString();                           // reduzido preenche a conta
+            Assert.Equal(("1.1.01.002", "Bancos Conta Movimento"), (lin.Conta, lin.NomeConta));
+            lin.ContaCredito = "venda de mercad";                               // nome da conta: resolvido ao sair do campo
+            l.ConfirmarConta(lin, credito: true);
+            Assert.Equal("3.1.01.001", lin.ContaCredito);
+            lin.Valor = "1500";
+            lin.FormatarValor();
+            Assert.Equal("1.500,00", lin.Valor);
+            lin.CodigoHistorico = "1";                                          // histórico padrão + complemento livre
+            Assert.Equal("Venda à vista NF ", lin.Historico);
+            lin.Historico += "123";
+            var nova = l.AdicionarLinha();                                      // seta para baixo: nova linha
+            Assert.Equal(2, l.Linhas.Count);
+            Assert.Equal("10/03/2026", nova.Data);
+            Assert.True(l.CancelarLinhaNova(nova));                             // seta para cima: cancela a linha criada
+            Assert.Single(l.Linhas);
+            await l.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(l.Erros);
+            Assert.Equal("Lançamento nº 1 salvo.", l.Mensagem);
+            Assert.Equal("10/03/2026", l.Linhas[0].Data);                     // a data segue para o próximo
+            (l.Linhas[0].Conta, l.Linhas[0].ContaCredito, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("4.2.02.001", "1.1.01.002", "2.300,00", "Aluguel de março");
             Foto(janela, "03_lancamento");
+
+            // Configurações gerais: partida simples (no mínimo 2 linhas); fechar e abrir recomeça no novo modo
+            vm.AbrirCommand.Execute(Telas.ConfiguracoesGerais);
+            await vm.ConfiguracoesGerais.CarregarAsync();
+            vm.ConfiguracoesGerais.PartidaSimples = true;
+            await vm.ConfiguracoesGerais.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.ConfiguracoesGerais.Erros);
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
+            vm.AbrirCommand.Execute(Telas.Lancamento);
+            l = vm.Lancamento;
+            await l.CarregarAsync();
+            Assert.True(l.PartidaSimples);
+            Assert.Equal(2, l.Linhas.Count);
+            (l.Linhas[0].Reduzido, l.Linhas[0].Valor) = (reduzidoBancos.ToString(), "100,00");
+            Assert.Equal("1.1.01.002", l.Linhas[0].Conta);
+            l.Linhas[1].Conta = "3.1.01.001";
+            Assert.False(l.Balanceado);
+            var terceira = l.AdicionarLinha();                                  // sugere o valor que fecha
+            Assert.Equal(("C", "100,00"), (terceira.Dc, terceira.Valor));
+            l.CancelarLinhaNova(terceira);
+            l.Linhas[1].Valor = "100";
+            Assert.True(l.Balanceado);
+            Foto(janela, "03b_lancamento_partida_simples");
+            vm.ConfiguracoesGerais.PartidaDobrada = true;
+            await vm.ConfiguracoesGerais.SalvarCommand.ExecuteAsync(null);
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.ConfiguracoesGerais));
 
             // Menu aberto (submenu Lançamentos)
             var menuLancamentos = janela.GetVisualDescendants().OfType<MenuItem>().First(m => (m.Header as string) == "_Lançamentos");

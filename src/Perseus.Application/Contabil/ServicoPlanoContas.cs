@@ -9,10 +9,10 @@ namespace Perseus.Application.Contabil;
 public sealed record ContaDetalhe(
     long Id, string Codigo, string Descricao, bool Analitica, short Nivel, long? ContaPaiId, string CodNat,
     IndicadorDC NaturezaSaldo, bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, bool Ativa,
-    bool TemMovimento, bool TemFilhas, decimal Saldo);
+    bool TemMovimento, bool TemFilhas, decimal Saldo, int? CodigoReduzido = null);
 
 public sealed record NovaConta(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo,
-                               bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao);
+                               bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, int? CodigoReduzido = null);
 
 public sealed record CentroCustoDetalhe(long Id, string Codigo, string Descricao, long? PaiId, bool Ativo, bool TemMovimento);
 
@@ -26,6 +26,7 @@ public interface IRepositorioPlanoContas
     Task AlterarAsync(long contaId, string descricao, IndicadorDC naturezaSaldo, bool exigeCentroCusto, bool exigeParticipante, bool ativa,
                       long usuarioId, CancellationToken ct);
     Task ExcluirAsync(long contaId, long usuarioId, CancellationToken ct);
+    Task AlterarReduzidoAsync(long contaId, int reduzido, long usuarioId, CancellationToken ct);
     /// <summary>Apaga o plano da empresa (sem lançamentos) e grava o novo, numa transação.</summary>
     Task SubstituirAsync(long empresaId, IReadOnlyList<Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct);
     /// <summary>Troca os códigos das contas (mesma hierarquia), numa transação.</summary>
@@ -65,6 +66,8 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
 
         var plano = await repositorio.ListarAsync(empresaId, ct);
         if (plano.Any(x => x.Codigo == codigo)) return Resultado<long>.Falha($"Já existe a conta {codigo}.");
+        if (c.CodigoReduzido is { } red && (red <= 0 || plano.FirstOrDefault(x => x.CodigoReduzido == red) is not null))
+            return Resultado<long>.Falha(red <= 0 ? "O código reduzido deve ser maior que zero." : $"O código reduzido {red} já está em uso.");
 
         var segmentos = codigo.Split('.');
         if (segmentos.Length == 1)
@@ -102,6 +105,22 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
                 return Resultado.Falha($"Não é possível inativar: a conta {comSaldo.Codigo} tem saldo {LinhaBalancete.Formatar(comSaldo.Saldo)}. Transfira o saldo antes.");
         }
         await repositorio.AlterarAsync(contaId, descricao.Trim(), naturezaSaldo, exigeCentroCusto, exigeParticipante, ativa, usuarioId, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>Troca o código reduzido (atalho de digitação) de uma conta analítica; deve ser único na empresa.</summary>
+    public async Task<Resultado> AlterarReduzidoAsync(long empresaId, long contaId, int reduzido, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return Resultado.Falha(negado);
+        if (reduzido <= 0) return Resultado.Falha("O código reduzido deve ser um número maior que zero.");
+        var plano = await repositorio.ListarAsync(empresaId, ct);
+        var conta = plano.FirstOrDefault(x => x.Id == contaId);
+        if (conta is null) return Resultado.Falha("Conta não encontrada.");
+        if (!conta.Analitica) return Resultado.Falha("Só contas analíticas têm código reduzido.");
+        if (conta.CodigoReduzido == reduzido) return Resultado.Ok();
+        if (plano.FirstOrDefault(x => x.CodigoReduzido == reduzido) is { } outra)
+            return Resultado.Falha($"O reduzido {reduzido} já é da conta {outra.Codigo} – {outra.Descricao}.");
+        await repositorio.AlterarReduzidoAsync(contaId, reduzido, usuarioId, ct);
         return Resultado.Ok();
     }
 

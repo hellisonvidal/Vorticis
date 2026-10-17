@@ -132,7 +132,7 @@
             <StackPanel>
               <TextBlock Text="{Binding RazaoSocial}" FontSize="12" TextWrapping="Wrap" />
               <TextBlock FontSize="11" Foreground="Gray">
-                <Run Text="{Binding Id, StringFormat='Nº {0:0000}'}" /><Run Text="  ·  " /><Run Text="{Binding Cnpj}" />
+                <Run Text="{Binding Id, Mode=OneWay, StringFormat='Nº {0:0000}'}" /><Run Text="  ·  " /><Run Text="{Binding Cnpj, Mode=OneWay}" />
               </TextBlock>
             </StackPanel>
           </DataTemplate>

@@ -28,13 +28,18 @@ public sealed class PerseusApp : IAsyncDisposable
         var repoContabil = new RepositorioContabil(ds);
         Lancamentos = new ServicoLancamento(repoContabil, autorizador);
         Periodos = new ServicoPeriodo(repoContabil, autorizador);
-        PlanoContas = new ServicoPlanoContas(new RepositorioPlanoContas(ds), autorizador);
+        var repoPlano = new RepositorioPlanoContas(ds);
+        PlanoContas = new ServicoPlanoContas(repoPlano, autorizador);
+        Historicos = new ServicoHistoricos(new RepositorioHistoricos(ds), autorizador);
+        Participantes = new ServicoParticipantes(new RepositorioParticipantes(ds), repoPlano, autorizador);
         Importacao = new ServicoImportacao(new RepositorioImportacao(ds), Lancamentos, autorizador);
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj, consultaIe);
-        Licenca = new ServicoLicenca(new RepositorioConfiguracao(ds));
+        var repoConfiguracao = new RepositorioConfiguracao(ds);
+        Licenca = new ServicoLicenca(repoConfiguracao);
+        ConfiguracoesGerais = new ServicoConfiguracoesGerais(repoConfiguracao);
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
@@ -51,6 +56,9 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoLancamento Lancamentos { get; }
     public ServicoPeriodo Periodos { get; }
     public ServicoPlanoContas PlanoContas { get; }
+    public ServicoHistoricos Historicos { get; }
+    public ServicoParticipantes Participantes { get; }
+    public ServicoConfiguracoesGerais ConfiguracoesGerais { get; }
     public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }
     public ServicoEmpresa Empresas { get; }

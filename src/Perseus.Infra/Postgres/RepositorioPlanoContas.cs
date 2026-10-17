@@ -13,7 +13,8 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                    c.exige_centro_custo, c.exige_participante, c.data_inclusao, c.ativa,
                    EXISTS (SELECT 1 FROM contabil.partida p WHERE p.conta_id = c.id),
                    EXISTS (SELECT 1 FROM contabil.plano_contas f WHERE f.conta_pai_id = c.id),
-                   COALESCE((SELECT SUM(s.total_debito - s.total_credito) FROM contabil.saldo_mensal s WHERE s.conta_id = c.id), 0)
+                   COALESCE((SELECT SUM(s.total_debito - s.total_credito) FROM contabil.saldo_mensal s WHERE s.conta_id = c.id), 0),
+                   c.codigo_reduzido
               FROM contabil.plano_contas c WHERE c.empresa_id = @e ORDER BY c.codigo
             """).Com("e", empresaId);
         var res = new List<ContaDetalhe>();
@@ -21,7 +22,8 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
         while (await r.ReadAsync(ct))
             res.Add(new ContaDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetBoolean(3), r.GetInt16(4),
                 r.IsDBNull(5) ? null : r.GetInt64(5), r.GetString(6), Mapeamentos.DC(r.GetString(7)), r.GetBoolean(8), r.GetBoolean(9),
-                r.GetFieldValue<DateOnly>(10), r.GetBoolean(11), r.GetBoolean(12), r.GetBoolean(13), r.GetDecimal(14)));
+                r.GetFieldValue<DateOnly>(10), r.GetBoolean(11), r.GetBoolean(12), r.GetBoolean(13), r.GetDecimal(14),
+                r.IsDBNull(15) ? null : r.GetInt32(15)));
         return res;
     }
 
@@ -43,12 +45,13 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             long id;
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO contabil.plano_contas (empresa_id, codigo, descricao, tipo, nivel, conta_pai_id, cod_nat, natureza_saldo,
-                                                   exige_centro_custo, exige_participante, data_inclusao)
-                VALUES (@e, @c, @d, @t::contabil.tipo_conta, @n, @pai, @nat, @sal::contabil.indicador_dc, @cc, @part, @inc) RETURNING id
+                                                   exige_centro_custo, exige_participante, data_inclusao, codigo_reduzido)
+                VALUES (@e, @c, @d, @t::contabil.tipo_conta, @n, @pai, @nat, @sal::contabil.indicador_dc, @cc, @part, @inc, @red) RETURNING id
                 """, con, tx)
                 .Com("e", empresaId).Com("c", c.Codigo).Com("d", c.Descricao).Com("t", analitica ? "A" : "S").Com("n", nivel)
                 .Com("pai", NpgsqlTypes.NpgsqlDbType.Bigint, contaPaiId).Com("nat", c.CodNat).Com("sal", c.NaturezaSaldo.ToString())
-                .Com("cc", c.ExigeCentroCusto).Com("part", c.ExigeParticipante).Com("inc", c.DataInclusao))
+                .Com("cc", c.ExigeCentroCusto).Com("part", c.ExigeParticipante).Com("inc", c.DataInclusao)
+                .Com("red", NpgsqlTypes.NpgsqlDbType.Integer, c.CodigoReduzido))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
             await tx.CommitAsync(ct);
             return id;
@@ -68,6 +71,19 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                  WHERE id = @id
                 """, con, tx).Com("d", descricao).Com("s", naturezaSaldo.ToString()).Com("cc", exigeCentroCusto)
                              .Com("p", exigeParticipante).Com("a", ativa).Com("id", contaId))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
+    public Task AlterarReduzidoAsync(long contaId, int reduzido, long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            await using (var cmd = new NpgsqlCommand("UPDATE contabil.plano_contas SET codigo_reduzido = @r WHERE id = @id", con, tx)
+                             .Com("r", reduzido).Com("id", contaId))
                 await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;

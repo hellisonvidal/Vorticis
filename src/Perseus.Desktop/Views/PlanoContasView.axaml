@@ -14,7 +14,7 @@
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False"
                 FontFamily="Consolas, Menlo, monospace">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
+          <DataGridTextColumn Header="Reduzido" Binding="{ReflectionBinding Reduzido}" Width="80" />
           <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="170" />
           <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
           <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="95" />
@@ -29,9 +29,13 @@
       <StackPanel Spacing="6">
         <TextBlock Text="Seu perfil permite apenas consultar o plano." Classes="erro" IsVisible="{Binding !PodeEditar}" />
         <TextBlock Text="Conta" FontWeight="SemiBold" Foreground="#1F3A5F" />
-        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Código" />
-          <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.1.01.004" IsEnabled="{Binding EmInclusao}" />
+          <Grid Grid.Column="1" ColumnDefinitions="*,Auto,80" ColumnSpacing="6">
+            <TextBox Text="{Binding Codigo}" Watermark="ex.: 1.1.01.004" IsEnabled="{Binding EmInclusao}" />
+            <TextBlock Grid.Column="1" Text="Reduzido" VerticalAlignment="Center" />
+            <TextBox Grid.Column="2" Text="{Binding Reduzido}" IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Atalho numérico usado na digitação dos lançamentos (contas analíticas)" />
+          </Grid>
           <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DicaPai}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Descrição" />
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" />

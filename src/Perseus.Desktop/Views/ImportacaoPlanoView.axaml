@@ -50,7 +50,7 @@
           <StackPanel Spacing="6">
             <TextBlock Text="Converter o plano atual" FontWeight="SemiBold" Foreground="#1F3A5F" />
             <TextBlock FontSize="12" TextWrapping="Wrap">
-              <Run Text="Máscara atual:" /> <Run Text="{Binding MascaraAtual}" FontWeight="SemiBold" />
+              <Run Text="Máscara atual:" /> <Run Text="{Binding MascaraAtual, Mode=OneWay}" FontWeight="SemiBold" />
             </TextBlock>
             <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
                        Text="Converte os códigos das contas já cadastradas para a máscara acima, mantendo a hierarquia e os lançamentos." />

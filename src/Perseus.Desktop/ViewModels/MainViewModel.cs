@@ -56,6 +56,10 @@ public static class Telas
     public const string ConsultaSaldos = "consultasaldos";
     public const string ConsultaLancamentos = "consultalancamentos";
     public const string ImportarPlano = "importarplano";
+    public const string Historicos = "historicos";
+    public const string Clientes = "clientes";
+    public const string Fornecedores = "fornecedores";
+    public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string ImportarPlanilhas = "importarplanilhas";
     public const string ImportarExtratos = "importarextratos";
     public const string ImportarLancamentos = "importarlancamentos";
@@ -87,7 +91,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(Importacao))]
+        nameof(ImportacaoPlano), nameof(Importacao), nameof(Historicos), nameof(Participantes), nameof(ConfiguracoesGerais))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -116,6 +120,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Consultas = new ConsultasViewModel(this);
         ImportacaoPlano = new ImportacaoPlanoViewModel(this);
         Importacao = new ImportacaoViewModel(this);
+        Historicos = new HistoricosViewModel(this);
+        Participantes = new ParticipantesViewModel(this);
+        ConfiguracoesGerais = new ConfiguracoesGeraisViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -174,6 +181,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public ConsultasViewModel Consultas { get; private set; }
     public ImportacaoPlanoViewModel ImportacaoPlano { get; private set; }
     public ImportacaoViewModel Importacao { get; private set; }
+    public HistoricosViewModel Historicos { get; private set; }
+    public ParticipantesViewModel Participantes { get; private set; }
+    public ConfiguracoesGeraisViewModel ConfiguracoesGerais { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -309,6 +319,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Empresas.AtualizarBarraCadastro();
         Consultas.AtualizarPermissoes();
         ImportacaoPlano.AtualizarPermissoes();
+        Historicos.AtualizarPermissoes();
+        Participantes.AtualizarPermissoes();
         foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
     }
 
@@ -330,7 +342,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Empresas or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
             => Pode(Permissao.AdministrarSistema),
         Telas.PlanoContas or Telas.CentrosCusto or Telas.MapeamentoReferencial or Telas.Contabilidade or Telas.Socios
+            or Telas.Historicos or Telas.Clientes or Telas.Fornecedores
             => EmpresaSelecionada is not null && _permissoes.TemAcesso,
+        Telas.ConfiguracoesGerais => Pode(Permissao.AdministrarSistema),
         Telas.Lancamento => Pode(Permissao.LancamentoIncluir),
         Telas.Estorno => Pode(Permissao.LancamentoEstornar),
         Telas.SaldosIniciais => Pode(Permissao.SaldosIniciais),
@@ -384,6 +398,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Inicio => (Inicio, ""),
             Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
+            Telas.Historicos => (Historicos, "Cadastros › Históricos"),
+            Telas.Clientes or Telas.Fornecedores => (Participantes, "Cadastros › Clientes e fornecedores"),
+            Telas.ConfiguracoesGerais => (ConfiguracoesGerais, "Configurações › Configurações gerais"),
             Telas.ImportarPlano => (ImportacaoPlano, "Integrações › Importar › Plano de contas"),
             Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos => (Importacao, "Integrações › Importar"),
             _ => (Conteudo, TituloTela),
@@ -423,6 +440,14 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Inicio) Inicio.Atualizar();
         if (tela == Telas.Licenca) _ = Disparar(Licenca.CarregarAsync);
         if (tela == Telas.ImportarPlano) _ = Disparar(ImportacaoPlano.CarregarAsync);
+        if (tela == Telas.Historicos) _ = Disparar(Historicos.CarregarAsync);
+        if (tela == Telas.Lancamento) _ = Disparar(Lancamento.CarregarAsync);
+        if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
+        if (tela is Telas.Clientes or Telas.Fornecedores)
+        {
+            Participantes.AbaSelecionada = tela == Telas.Clientes ? ParticipantesViewModel.AbaClientes : ParticipantesViewModel.AbaFornecedores;
+            _ = Disparar(Participantes.CarregarAsync);
+        }
         if (tela is Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos)
         {
             Importacao.AbaSelecionada = tela switch

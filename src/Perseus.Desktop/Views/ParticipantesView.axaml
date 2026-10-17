@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.ParticipantesView"
+             x:DataType="vm:ParticipantesViewModel">
+  <Grid ColumnDefinitions="*,16,420" RowDefinitions="Auto,Auto,*" Margin="8">
+    <TabStrip Grid.ColumnSpan="3" SelectedIndex="{Binding AbaSelecionada}" IsEnabled="{Binding !EmEdicao}" Margin="0,0,0,6">
+      <TabStripItem Content="Clientes" />
+      <TabStripItem Content="Fornecedores" />
+    </TabStrip>
+    <v:BarraCadastroView Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="2" IsEnabled="{Binding !EmEdicao}">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+        <TextBlock Classes="titulo" Text="{Binding TituloLista}" VerticalAlignment="Center" />
+        <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código, nome ou CPF/CNPJ" Width="280" />
+      </StackPanel>
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+          <DataGridTextColumn Header="Nome / razão social" Binding="{ReflectionBinding Nome}" Width="*" />
+          <DataGridTextColumn Header="CPF/CNPJ" Binding="{ReflectionBinding Documento}" Width="150" />
+          <DataGridTextColumn Header="Cidade" Binding="{ReflectionBinding Cidade}" Width="150" />
+          <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="140" />
+          <DataGridTextColumn Header="" Binding="{ReflectionBinding Situacao}" Width="70" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <ScrollViewer Grid.Row="2" Grid.Column="2">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Cadastro" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Nome / razão" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Nome}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Nome fantasia" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NomeFantasia}" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="CPF / CNPJ" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding CpfCnpj}" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Inscr. estadual" />
+          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding InscricaoEstadual}" Watermark="ou ISENTO" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Município / UF" />
+          <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,6,60">
+            <TextBox Text="{Binding Municipio}" />
+            <TextBox Grid.Column="2" Text="{Binding Uf}" MaxLength="2" />
+          </Grid>
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="Cód. IBGE" />
+          <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding MunicipioIbge}" Width="110" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="7" Classes="rotulo" Text="E-mail" />
+          <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Email}" />
+          <TextBlock Grid.Row="8" Classes="rotulo" Text="Telefone" />
+          <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Telefone}" />
+          <TextBlock Grid.Row="9" Classes="rotulo" Text="Conta contábil" />
+          <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding Conta}" Watermark="código ou reduzido (opcional)" />
+          <StackPanel Grid.Row="10" Grid.Column="1" Orientation="Horizontal" Spacing="14">
+            <CheckBox Content="Cliente" IsChecked="{Binding Cliente}" />
+            <CheckBox Content="Fornecedor" IsChecked="{Binding Fornecedor}" />
+            <CheckBox Content="Ativo" IsChecked="{Binding Ativo}" />
+          </StackPanel>
+        </Grid>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

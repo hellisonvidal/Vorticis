@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             x:Class="Perseus.Desktop.Views.HistoricosView"
+             x:DataType="vm:HistoricosViewModel">
+  <Grid ColumnDefinitions="*,16,380" RowDefinitions="Auto,*" Margin="8">
+    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+        <TextBlock Classes="titulo" Text="Históricos padrão" VerticalAlignment="Center" />
+        <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código ou texto" Width="260" />
+      </StackPanel>
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="80" />
+          <DataGridTextColumn Header="Texto fixo" Binding="{ReflectionBinding Descricao}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
+      <TextBlock Text="Histórico" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Texto fixo" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" TextWrapping="Wrap"
+                 Watermark="ex.: Pagamento da NF nº" MinHeight="60" AcceptsReturn="False" />
+      </Grid>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="No lançamento, digite o código do histórico: o texto fixo é preenchido e o cursor fica no final para completar livremente (nº do documento, nome do cliente...)." />
+      <v:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>
