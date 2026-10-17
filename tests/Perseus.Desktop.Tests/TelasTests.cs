@@ -601,6 +601,36 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Contains(dem.Dre, l => l.Descricao == "LUCRO LÍQUIDO DO PERÍODO" && l.Valor == "1.500,00");
             Foto(janela, "08a_demonstracoes");
 
+            // Lançamento: Enter no último campo salva; duplo clique num efetuado abre para alteração (estorno + corrigido)
+            vm.AbrirCommand.Execute(Telas.Lancamento);
+            var la = vm.Lancamento;
+            await la.CarregarAsync();
+            (la.Linhas[0].Data, la.Linhas[0].Conta, la.Linhas[0].ContaCredito, la.Linhas[0].Valor, la.Linhas[0].Historico) =
+                ("25/03/2026", "1.1.01.004", "1.1.02.001", "50,00", "Recebimento de cliente");
+            Assert.True(la.SalvarPeloEnter());
+            await la.SalvarCommand.ExecutionTask!;
+            Assert.Empty(la.Erros);
+            Assert.Equal("Lançamento nº 6 salvo.", la.Mensagem);
+            Assert.False(la.SalvarPeloEnter());                                // linha vazia: Enter segue para a próxima linha
+            await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 6));
+            Assert.True(la.EmEdicao);
+            var editada = Assert.Single(la.Linhas);
+            Assert.Equal(("1.1.01.004", "1.1.02.001", "50,00", "25/03/2026"), (editada.Conta, editada.ContaCredito, editada.Valor, editada.Data));
+            Assert.Equal("Clientes", editada.NomeContaCredito);
+            editada.Valor = "60,00";
+            Foto(janela, "03c_lancamento_alteracao");
+            await la.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(la.Erros);
+            Assert.Equal("Lançamento nº 6 alterado: estornado pelo nº 7 e regravado como nº 8.", la.Mensagem);
+            Assert.False(la.EmEdicao);
+            Assert.Equal("Estornado", la.Efetuados.Single(e => e.Numero == 6).Situacao);
+            await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 6));    // estornado: não abre
+            Assert.Contains("estornado", Assert.Single(la.Erros));
+            await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 2));    // importado: corrige-se por estorno
+            Assert.Contains("não foi digitado manualmente", Assert.Single(la.Erros));
+            Assert.False(la.EmEdicao);
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
+
             // Lançamentos › Encerramento do exercício
             vm.AbrirCommand.Execute(Telas.Encerramento);
             var enc = vm.Encerramento;

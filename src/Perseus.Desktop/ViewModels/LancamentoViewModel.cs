@@ -119,6 +119,14 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] private string _motivoEstorno = "";
     public bool PodeEstornar => Contexto.Pode(Permissao.LancamentoEstornar);
 
+    // Alteração de um lançamento efetuado (duplo clique na lista)
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EmEdicao), nameof(TextoEdicao))] private LancamentoEfetuadoLinha? _editando;
+    private bool _dobradaConfigurada = true;
+    public bool EmEdicao => Editando is not null;
+    public string TextoEdicao => Editando is { } e
+        ? $"Alterando o lançamento nº {e.Numero} de {e.Data}. Ao salvar, o original é estornado e o corrigido é gravado. Limpar cancela a alteração."
+        : "";
+
     public bool PartidaSimples => !PartidaDobrada;
     public string DescricaoModo => PartidaDobrada
         ? "Partida dobrada: cada linha é um lançamento (débito, crédito e valor)."
@@ -153,8 +161,10 @@ public partial class LancamentoViewModel : ModuloViewModel
         _porReduzido = _todasContas.Where(c => c.Reduzido is not null).ToDictionary(c => c.Reduzido!.Value);
         _historicos = historicos.ToDictionary(h => h.Codigo);
         OnPropertyChanged(nameof(TodasContas));
-        var trocouModo = PartidaDobrada != (modo == ModoLancamento.PartidaDobrada);
-        PartidaDobrada = modo == ModoLancamento.PartidaDobrada;
+        _dobradaConfigurada = modo == ModoLancamento.PartidaDobrada;
+        if (EmEdicao) { Filtrar(); OnPropertyChanged(nameof(PodeEstornar)); await CarregarEfetuadosAsync(); return; }
+        var trocouModo = PartidaDobrada != _dobradaConfigurada;
+        PartidaDobrada = _dobradaConfigurada;
         if (trocouModo || Linhas.All(l => l.Vazia)) Limpar();
         Filtrar();
         OnPropertyChanged(nameof(PodeEstornar));
@@ -206,6 +216,85 @@ public partial class LancamentoViewModel : ModuloViewModel
         await CarregarEfetuadosAsync();
         Mensagem = $"Lançamento nº {sel.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
     }, Permissao.LancamentoEstornar);
+
+    /// <summary>
+    /// Duplo clique num lançamento efetuado: carrega as partidas na digitação para alterar. Débito e crédito únicos
+    /// cabem numa linha da partida dobrada; os demais abrem em partida simples (uma conta por linha).
+    /// </summary>
+    public Task EditarAsync(LancamentoEfetuadoLinha efetuado) => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (efetuado.Estornado) { Erros.Add($"O lançamento nº {efetuado.Numero} está estornado e não pode ser alterado."); return; }
+        if (!Contexto.Pode(Permissao.LancamentoEstornar)) { Erros.Add("Alterar um lançamento exige permissão para estornar."); return; }
+        var r = await app.Lancamentos.ObterAsync(empresa, efetuado.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var l = r.Valor;
+        if (l.Origem != OrigemLancamento.Manual)
+        {
+            Erros.Add($"O lançamento nº {efetuado.Numero} não foi digitado manualmente; corrija-o por estorno.");
+            return;
+        }
+        var ps = l.Partidas;
+        var umaLinha = ps.Count == 2 && ps[0].DC == IndicadorDC.D && ps[1].DC == IndicadorDC.C && ps[0].Valor == ps[1].Valor
+                       && ps[0].Historico == ps[1].Historico && ps[0].CodigoCentroCusto == ps[1].CodigoCentroCusto
+                       && ps[0].NumeroArquivo == ps[1].NumeroArquivo;
+        Editando = efetuado;
+        PartidaDobrada = _dobradaConfigurada && umaLinha;
+        Data = l.Data.ToDateTime(TimeOnly.MinValue);
+        Linhas.Clear();
+        var data = l.Data.ToString("dd/MM/yyyy");
+        if (PartidaDobrada)
+            Linhas.Add(new LinhaLancamentoViewModel
+            {
+                Data = data, Conta = ps[0].CodigoConta, ContaCredito = ps[1].CodigoConta, Valor = Formato.Moeda(ps[0].Valor),
+                Documento = ps[0].NumeroArquivo ?? "", Historico = ps[0].Historico, CentroCusto = ps[0].CodigoCentroCusto ?? "",
+            });
+        else
+            foreach (var p in ps)
+                Linhas.Add(new LinhaLancamentoViewModel
+                {
+                    Data = data, Conta = p.CodigoConta, Dc = p.DC.ToString(), Valor = Formato.Moeda(p.Valor),
+                    Documento = p.NumeroArquivo ?? "", Historico = p.Historico, CentroCusto = p.CodigoCentroCusto ?? "",
+                });
+        foreach (var linha in Linhas)                       // reduzidos e nomes das contas
+        {
+            ConfirmarConta(linha, credito: false);
+            if (PartidaDobrada) ConfirmarConta(linha, credito: true);
+        }
+        LinhaSelecionada = Linhas[0];
+    }, Permissao.LancamentoIncluir);
+
+    /// <summary>Enter no último campo: salva quando o lançamento já fecha; senão (false) segue para a próxima linha.</summary>
+    public bool SalvarPeloEnter()
+    {
+        if (!Balanceado || !SalvarCommand.CanExecute(null)) return false;
+        SalvarCommand.Execute(null);
+        return true;
+    }
+
+    /// <summary>Grava a digitação: inclusão normal ou, em alteração, estorno do original + lançamento corrigido.</summary>
+    private async Task<bool> GravarAsync(PerseusApp app, long empresa, long usuario, IReadOnlyList<LancamentoProposto> propostas)
+    {
+        if (Editando is { } ed)
+        {
+            if (propostas.Count != 1) { Erros.Add("Na alteração, o lançamento deve continuar sendo um só (uma linha)."); return false; }
+            var s = await app.Lancamentos.SubstituirAsync(ed.Id, propostas[0], usuario);
+            if (!s.Sucesso) { foreach (var e in s.Erros) Erros.Add(e); return false; }
+            Mensagem = $"Lançamento nº {ed.Numero} alterado: estornado pelo nº {s.Valor[0].Numero} e regravado como nº {s.Valor[1].Numero}.";
+            return true;
+        }
+        var r = await app.Lancamentos.EfetivarLoteAsync(propostas, null, usuario);
+        if (!r.Sucesso)
+        {
+            // "Lançamento 2: ..." do serviço vira "Linha 2: ..." da tela.
+            // Em partida simples é um lançamento só: sai o prefixo.
+            foreach (var e in r.Erros)
+                Erros.Add(!e.StartsWith("Lançamento ") ? e : PartidaDobrada ? "Linha " + e["Lançamento ".Length..] : e[(e.IndexOf(": ") + 2)..]);
+            return false;
+        }
+        Mensagem = r.Valor.Count == 1 ? $"Lançamento nº {r.Valor[0].Numero} salvo."
+                                      : $"{r.Valor.Count} lançamentos salvos (nº {r.Valor.Min(x => x.Numero)} a {r.Valor.Max(x => x.Numero)}).";
+        return true;
+    }
 
     partial void OnFiltroContaChanged(string value) => Filtrar();
 
@@ -275,6 +364,11 @@ public partial class LancamentoViewModel : ModuloViewModel
     [RelayCommand]
     private void Limpar()
     {
+        if (Editando is not null)
+        {
+            Editando = null;
+            PartidaDobrada = _dobradaConfigurada;
+        }
         Linhas.Clear();
         var data = (Data ?? DateTime.Today).ToString("dd/MM/yyyy");
         if (PartidaDobrada) Linhas.Add(new LinhaLancamentoViewModel { Data = data });
@@ -333,15 +427,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         }
         if (Erros.Count > 0) return;
         if (propostas.Count == 0) { Erros.Add("Digite ao menos um lançamento."); return; }
-        var r = await app.Lancamentos.EfetivarLoteAsync(propostas, null, usuario);
-        if (!r.Sucesso)
-        {
-            // "Lançamento 2: ..." do serviço vira "Linha 2: ..." da tela.
-            foreach (var e in r.Erros) Erros.Add(e.StartsWith("Lançamento ") ? "Linha " + e["Lançamento ".Length..] : e);
-            return;
-        }
-        Mensagem = r.Valor.Count == 1 ? $"Lançamento nº {r.Valor[0].Numero} salvo."
-                                      : $"{r.Valor.Count} lançamentos salvos (nº {r.Valor.Min(x => x.Numero)} a {r.Valor.Max(x => x.Numero)}).";
+        if (!await GravarAsync(app, empresa, usuario, propostas)) return;
         var ultimaData = preenchidas[^1].Data;
         Limpar();
         Linhas[0].Data = ultimaData;
@@ -362,9 +448,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         var proposta = new LancamentoProposto(empresa, Data(Data, DateOnly.FromDateTime(DateTime.Today)), OrigemLancamento.Manual,
             preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico.Trim(),
                 string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(), null, Doc(l))).ToArray());
-        var r = await app.Lancamentos.EfetivarAsync(proposta, usuario);
-        MostrarResultado(r, r.Sucesso ? $"Lançamento nº {r.Valor.Numero} salvo." : "");
-        if (!r.Sucesso) return;
+        if (!await GravarAsync(app, empresa, usuario, [proposta])) return;
         Limpar();
         await CarregarEfetuadosAsync();
     }

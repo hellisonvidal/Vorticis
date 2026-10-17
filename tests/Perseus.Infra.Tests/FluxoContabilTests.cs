@@ -107,6 +107,32 @@ public class FluxoContabilTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public async Task Alteracao_estorna_o_original_e_grava_o_corrigido_na_mesma_transacao()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await db.CriarEmpresaAsync("42424242000152");
+        var admin = await db.AdminAsync();
+        var original = await Lancar(empresa, new(2026, 5, 4), D("1.1.01.001", 300m, "Venda"), C("3.1.01.001", 300m, "Venda"));
+        var lido = await db.App.Lancamentos.ObterAsync(empresa, original.Valor.Id, admin, ct);
+        Assert.Equal(300m, lido.Valor.Partidas[0].Valor);
+
+        var corrigido = new LancamentoProposto(empresa, new(2026, 5, 4), OrigemLancamento.Manual, [D("1.1.01.001", 350m, "Venda"), C("3.1.01.001", 350m, "Venda")]);
+        var invalido = corrigido with { Partidas = [D("1.1.01.001", 350m), C("3.1.01.001", 340m)] };
+        Assert.False((await db.App.Lancamentos.SubstituirAsync(original.Valor.Id, invalido, admin, ct)).Sucesso);   // nada muda
+        var r = await db.App.Lancamentos.SubstituirAsync(original.Valor.Id, corrigido, admin, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        Assert.Equal([2L, 3L], r.Valor.Select(x => x.Numero));
+
+        var bal = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 5, 1), new(2026, 5, 31), admin, ct: ct)).Valor;
+        Assert.Equal(350m, bal.Single(l => l.Codigo == "1.1.01.001").SaldoFinal);
+        var diario = (await db.App.Relatorios.DiarioAsync(empresa, new(2026, 5, 1), new(2026, 5, 31), admin, ct)).Valor;
+        Assert.Equal(StatusLancamento.Estornado, diario.First(l => l.Numero == 1).Status);
+        var denovo = await db.App.Lancamentos.SubstituirAsync(original.Valor.Id, corrigido, admin, ct);
+        Assert.Contains(denovo.Erros, e => e.Contains("já foi estornado"));
+    }
+
+    [Fact]
     public async Task Fechamento_em_ordem_bloqueia_lancamentos_e_reabertura_em_ordem_inversa()
     {
         BancoDeTeste.ExigirBanco();

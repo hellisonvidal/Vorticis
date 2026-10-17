@@ -52,7 +52,10 @@
         <TextBlock Text="Data:" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding Data}" SelectedDateFormat="Short" Width="140" />
       </StackPanel>
-      <TextBlock Text="{Binding DescricaoModo}" VerticalAlignment="Center" FontSize="11" Foreground="Gray" />
+      <TextBlock Text="{Binding DescricaoModo}" VerticalAlignment="Center" FontSize="11" Foreground="Gray" IsVisible="{Binding !EmEdicao}" />
+      <Border Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="3" Padding="8,2" IsVisible="{Binding EmEdicao}">
+        <TextBlock Text="{Binding TextoEdicao}" FontSize="11" Foreground="#5A4500" VerticalAlignment="Center" />
+      </Border>
     </StackPanel>
 
     <!-- Cabeçalhos (mesmas larguras das linhas) -->
@@ -169,6 +172,7 @@
     <DockPanel Grid.Row="5" Margin="0,8,0,0">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
         <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+        <TextBlock Text="(duplo clique para alterar)" FontSize="11" Foreground="Gray" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding ListaInicio}" Width="128" />
         <TextBlock Text="a" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding ListaFim}" Width="128" />
@@ -180,7 +184,8 @@
         <TextBox Text="{Binding MotivoEstorno}" Watermark="Motivo do estorno (obrigatório)" Width="300" />
         <Button Content="Estornar" Command="{Binding EstornarCommand}" />
       </StackPanel>
-      <DataGrid ItemsSource="{Binding Efetuados}" SelectedItem="{Binding EfetuadoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid x:Name="ListaEfetuados" ItemsSource="{Binding Efetuados}" SelectedItem="{Binding EfetuadoSelecionado}" IsReadOnly="True"
+                AutoGenerateColumns="False" DoubleTapped="AoDuploCliqueEfetuado">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="58" />
           <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" />

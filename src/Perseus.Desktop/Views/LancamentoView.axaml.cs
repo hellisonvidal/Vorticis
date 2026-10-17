@@ -12,7 +12,8 @@ namespace Perseus.Desktop.Views;
 /// <summary>
 /// Digitação pelo teclado: Enter avança de campo (pula a conta quando o reduzido já a identificou), seta para baixo
 /// desce de linha e, na última, cria outra; seta para cima sobe e cancela a linha recém-criada ainda vazia;
-/// Ctrl+Delete exclui a linha. Valor formatado ao sair do campo; nome da conta resolvido ao sair do campo da conta.
+/// Ctrl+Delete exclui a linha; Enter no último campo salva quando o lançamento fecha. Valor formatado ao sair do campo;
+/// nome da conta resolvido ao sair do campo da conta. Duplo clique num lançamento efetuado o abre para alteração.
 /// </summary>
 public partial class LancamentoView : UserControl
 {
@@ -95,7 +96,7 @@ public partial class LancamentoView : UserControl
         }
     }
 
-    /// <summary>Enter: próximo campo; no último, próxima linha (criada se preciso).</summary>
+    /// <summary>Enter: próximo campo; no último, salva (se o lançamento fecha) ou vai à próxima linha (criada se preciso).</summary>
     private void Avancar(LinhaLancamentoViewModel linha, int i, string tag)
     {
         var campos = Campos;
@@ -108,7 +109,8 @@ public partial class LancamentoView : UserControl
             Focar(i, campos[p]);
             return;
         }
-        if (i == _vm!.Linhas.Count - 1) _vm.AdicionarLinha();
+        if (_vm!.SalvarPeloEnter()) return;
+        if (i == _vm.Linhas.Count - 1) _vm.AdicionarLinha();
         Focar(i + 1, campos[0]);
     }
 
@@ -121,6 +123,11 @@ public partial class LancamentoView : UserControl
         alvo?.Focus(NavigationMethod.Tab);
         if (alvo is TextBox tb && tag != "historico") tb.SelectAll();
     }, DispatcherPriority.Loaded);
+
+    private async void AoDuploCliqueEfetuado(object? sender, TappedEventArgs e)
+    {
+        if (_vm is not null && (e.Source as Control)?.DataContext is LancamentoEfetuadoLinha efetuado) await _vm.EditarAsync(efetuado);
+    }
 
     private void AoEntrarNoCampo(object? sender, GotFocusEventArgs e)
     {

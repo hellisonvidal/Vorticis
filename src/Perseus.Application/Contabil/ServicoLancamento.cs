@@ -42,6 +42,47 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
         return await GravarAsync(estorno.Valor, usuarioId, ct);
     }
 
+    /// <summary>Lançamento gravado (partidas por código) para ser editado na tela de lançamento.</summary>
+    public async Task<Resultado<LancamentoRegistrado>> ObterAsync(long empresaId, long lancamentoId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<LancamentoRegistrado>(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return negado;
+        return await repositorio.ObterLancamentoAsync(empresaId, lancamentoId, ct) is { } l
+            ? Resultado<LancamentoRegistrado>.Ok(l)
+            : Resultado<LancamentoRegistrado>.Falha("Lançamento não encontrado.");
+    }
+
+    /// <summary>
+    /// Alteração de lançamento efetuado: como lançamentos efetivados são imutáveis, o original é estornado (na data
+    /// dele) e o lançamento corrigido é gravado, tudo numa só transação. Devolve (estorno, novo).
+    /// </summary>
+    public async Task<Resultado<IReadOnlyList<LancamentoEfetivado>>> SubstituirAsync(long lancamentoId, LancamentoProposto novo, long usuarioId,
+                                                                                    CancellationToken ct = default)
+    {
+        if (novo.Origem is OrigemLancamento.Estorno or OrigemLancamento.SaldoInicial)
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Lançamento inválido.");
+        foreach (var p in new[] { Permissao.LancamentoIncluir, Permissao.LancamentoEstornar })
+            if (await autorizador.NegarAsync<IReadOnlyList<LancamentoEfetivado>>(usuarioId, novo.EmpresaId, p, ct) is { } negado) return negado;
+        var original = await repositorio.ObterLancamentoAsync(novo.EmpresaId, lancamentoId, ct);
+        if (original is null) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Lançamento não encontrado.");
+        if (original.Origem != OrigemLancamento.Manual)
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Só lançamentos manuais podem ser alterados; os demais são corrigidos por estorno.");
+
+        var estorno = Estorno.Gerar(original, original.Data, $"alteração do lançamento nº {original.Numero}");
+        if (!estorno.Sucesso) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(estorno.Erros);
+        var validacoes = await ValidarLoteAsync([estorno.Valor, novo], ct);
+        var erros = validacoes.Where(v => !v.Sucesso).SelectMany(v => v.Erros).ToArray();
+        if (erros.Length > 0) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(erros);
+        try
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Ok(
+                await repositorio.GravarEfetivadosAsync(validacoes.Select(v => v.Valor).ToList(), usuarioId, ct));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(ex.Message);
+        }
+    }
+
     /// <summary>
     /// Implantação: um único lançamento na data de início do exercício com os saldos das contas patrimoniais
     /// (Ativo, Passivo e PL). Os saldos devem fechar (débitos = créditos), como em qualquer balanço.
