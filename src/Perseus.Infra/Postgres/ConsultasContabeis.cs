@@ -130,10 +130,12 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
     {
         await using var cmd = ds.CreateCommand("""
             SELECT l.id, l.numero, l.data_lancamento, p.sequencia, pc.codigo, pc.descricao, p.ind_dc::text, p.valor, p.historico, l.status::text,
-                   p.num_arquivo
+                   p.num_arquivo, cc.codigo, pa.codigo
               FROM contabil.lancamento l
               JOIN contabil.partida p ON p.lancamento_id = l.id
               JOIN contabil.plano_contas pc ON pc.id = p.conta_id
+              LEFT JOIN contabil.centro_custo cc ON cc.id = p.centro_custo_id
+              LEFT JOIN core.participante pa ON pa.id = p.participante_id
              WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.data_lancamento BETWEEN @ini AND @fim
              ORDER BY l.data_lancamento, l.numero, p.sequencia
             """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
@@ -142,7 +144,8 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
         while (await r.ReadAsync(ct))
             res.Add(new LinhaDiario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetInt16(3), r.GetString(4), r.GetString(5),
                                     Mapeamentos.DC(r.GetString(6)), r.GetDecimal(7), r.GetString(8), Mapeamentos.Status(r.GetString(9)),
-                                    r.IsDBNull(10) ? null : r.GetString(10)));
+                                    r.IsDBNull(10) ? null : r.GetString(10), r.IsDBNull(11) ? null : r.GetString(11),
+                                    r.IsDBNull(12) ? null : r.GetString(12)));
         return res;
     }
 }

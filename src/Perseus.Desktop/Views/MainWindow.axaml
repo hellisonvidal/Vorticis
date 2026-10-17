@@ -84,6 +84,8 @@
             <MenuItem Header="Vínculo ao plano referencial (RFB)" Command="{Binding AbrirCommand}" CommandParameter="mapeamentoreferencial" />
           </MenuItem>
           <MenuItem Header="_Exportar">
+            <MenuItem Header="Lançamentos contábeis (Excel, PDF, CSV)" Command="{Binding AbrirCommand}" CommandParameter="exportarlancamentos" />
+            <Separator />
             <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />
             <MenuItem Header="SPED ECF (em breve)" IsEnabled="False" />
             <MenuItem Header="eSocial (em breve)" IsEnabled="False" />

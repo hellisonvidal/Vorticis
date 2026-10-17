@@ -62,4 +62,5 @@ public sealed record RazaoConta(string Codigo, string Descricao, decimal SaldoAn
 }
 
 public sealed record LinhaDiario(long LancamentoId, long Numero, DateOnly Data, short Sequencia, string CodigoConta, string DescricaoConta,
-                                 IndicadorDC DC, decimal Valor, string Historico, StatusLancamento Status, string? Documento = null);
+                                 IndicadorDC DC, decimal Valor, string Historico, StatusLancamento Status, string? Documento = null,
+                                 string? CentroCusto = null, string? Participante = null);

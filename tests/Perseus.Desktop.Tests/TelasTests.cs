@@ -381,6 +381,23 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.StartsWith("Conta;Descrição;Tipo;Saldo anterior;D/C;Débitos", csv.TrimStart('\uFEFF'));
             Assert.Contains("1.1.01.002;Bancos Conta Movimento;A;0,00;;1.500,00;", csv);
 
+            // Integrações › Exportar › Lançamentos contábeis: uma linha por partida, em PDF, Excel e CSV
+            vm.AbrirCommand.Execute(Telas.ExportarLancamentos);
+            var expl = vm.ExportacaoLancamentos;
+            (expl.Inicio, expl.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await expl.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(expl.Erros);
+            Assert.Equal(2, expl.Linhas.Count);
+            Assert.StartsWith("1 lançamento(s), 2 partida(s)", expl.Resumo);
+            expl.ExportarExcelCommand.Execute(null);
+            var lancXlsx = Perseus.Infra.Relatorios.ExportadorExcel.Ler(File.ReadAllBytes(expl.UltimoArquivo!));
+            Assert.Equal(("1.1.01.002", "NF 123"), ((string)lancXlsx[0]["Conta"]!, (string)lancXlsx[0]["Documento"]!));
+            expl.ExportarCsvCommand.Execute(null);
+            Assert.StartsWith("Nº;Data;Conta;Descrição da conta;D/C;Valor;Histórico;Documento", File.ReadAllText(expl.UltimoArquivo!).TrimStart('\uFEFF'));
+            expl.ExportarPdfCommand.Execute(null);
+            Assert.Empty(expl.Erros);
+            Foto(janela, "05f_exportar_lancamentos");
+
             // Consultas: saldos e lançamentos sem abrir relatório
             vm.AbrirCommand.Execute(Telas.ConsultaSaldos);
             var cons = vm.Consultas;
