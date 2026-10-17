@@ -162,11 +162,16 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
-    public Task DesativarAsync(long id, CancellationToken ct)
+    public Task<int> ExcluirAsync(long id, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
-            await using var cmd = ds.CreateCommand("UPDATE core.empresa SET ativa = FALSE WHERE id = @id").Com("id", id);
-            return await cmd.ExecuteNonQueryAsync(ct);
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, null, ct);
+            await using var cmd = new NpgsqlCommand("SELECT core.fn_excluir_empresa(@id)", con, tx).Com("id", id);
+            var lancamentos = (int)(await cmd.ExecuteScalarAsync(ct))!;
+            await tx.CommitAsync(ct);
+            return lancamentos;
         });
 
     public async Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct)

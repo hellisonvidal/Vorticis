@@ -72,14 +72,22 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     };
 
     protected override string NomeRegistro => "empresa";
+
+    /// <summary>Código sequencial da empresa (atribuído na inclusão).</summary>
+    public string NumeroRegistro => EmInclusao ? "Nº (automático)" : _carregada is { } e ? $"Nº {e.Id:0000}" : "";
     protected override string? DescricaoSelecionado => _carregada is null ? null : $"{_carregada.RazaoSocial} ({Domain.Cadastros.Cnpj.Formatar(_carregada.Cnpj)})";
     public override bool PodeManter => main.Pode(Permissao.AdministrarSistema);
 
     protected override string DetalheExclusao =>
-        "\n\nA empresa sai da lista e ninguém mais poderá acessá-la. Os lançamentos e livros já registrados permanecem guardados " +
-        "no banco de dados (a legislação exige a guarda da escrituração).";
+        "\n\nATENÇÃO: a empresa e TODOS os seus dados serão apagados do banco de dados — lançamentos, plano de contas, " +
+        "períodos, sócios e acessos. Não há como desfazer. Antes de excluir, o sistema gera automaticamente um backup completo " +
+        "(a legislação exige a guarda da escrituração; guarde esse arquivo).";
 
-    protected override void AoMudarModo() => OnPropertyChanged(nameof(TituloFormulario));
+    protected override void AoMudarModo()
+    {
+        OnPropertyChanged(nameof(TituloFormulario));
+        OnPropertyChanged(nameof(NumeroRegistro));
+    }
 
     // ------------------------------------------------------------------ incluir / alterar / excluir
 
@@ -113,6 +121,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
             Aviso = null;
         }
         OnPropertyChanged(nameof(TituloFormulario));
+        OnPropertyChanged(nameof(NumeroRegistro));
         AtualizarBarra();
     }
 
@@ -177,10 +186,31 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
 
     protected override async Task<bool> ExcluirSelecionadoAsync()
     {
-        if (main.App is not { } app || _carregada is not { } atual) return false;
+        if (main.App is not { } app || _carregada is not { } atual || main.Sessao is not { } sessao) return false;
+        // Backup de segurança antes de apagar (a escrituração tem guarda obrigatória).
+        string? copia = null;
+        try
+        {
+            Ocupado = true;
+            var b = await app.Backup.GerarAsync(sessao, Application.Sistema.ServicoBackup.PastaPadrao);
+            if (b.Sucesso) copia = b.Valor;
+        }
+        catch (Exception)
+        {
+            // segue para a pergunta abaixo
+        }
+        finally
+        {
+            Ocupado = false;
+        }
+        if (copia is null && !await Contexto.ConfirmarAsync("Backup não gerado",
+                "Não foi possível gerar o backup automático antes da exclusão. Excluir a empresa mesmo assim?", "Excluir sem backup", "Cancelar"))
+            return false;
+
         var r = await app.Empresas.ExcluirAsync(atual.Id);
-        MostrarResultado(r, $"Empresa {atual.RazaoSocial} excluída.");
-        if (!r.Sucesso) return false;
+        if (!r.Sucesso) { MostrarResultado(r, ""); return false; }
+        Mensagem = $"Empresa {atual.RazaoSocial} excluída do banco de dados ({r.Valor} lançamento(s) apagado(s))." +
+                   (copia is null ? "" : $" Backup anterior à exclusão: {copia}");
         _carregada = null;
         await main.RecarregarEmpresasAsync();
         return true;

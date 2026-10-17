@@ -8,6 +8,7 @@ namespace Perseus.Desktop.ViewModels;
 
 public sealed record UsuarioLinha(UsuarioResumo Usuario)
 {
+    public string Numero => Usuario.Id.ToString("0000");
     public string Login => Usuario.Login;
     public string Nome => Usuario.Nome;
     public string Perfil => Usuario.Perfil ?? (Usuario.Administrador ? "Administrador" : "(definir perfil)");
@@ -63,7 +64,8 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
     protected override string? DescricaoSelecionado => Selecionado is { } u ? $"{u.Nome} ({u.Login})" : null;
     public override bool PodeManter => Contexto.Sessao?.Administrador == true;
     protected override string DetalheExclusao =>
-        "\n\nSe o usuário já entrou no sistema, ele é apenas inativado (o histórico de acessos e operações é mantido).";
+        "\n\nO usuário é apagado do banco de dados e o login fica livre para um novo cadastro. Os lançamentos que ele fez " +
+        "continuam na escrituração; a trilha de auditoria guarda o login. Para só bloquear o acesso, use Alterar e desmarque Ativo.";
 
     protected override void AoMudarModo() => OnPropertyChanged(nameof(MostrarAcessos));
 
@@ -194,7 +196,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             ok = true;
             Selecionado = null;
             await CarregarAsync();
-            Mensagem = r.Valor ? $"Usuário {u.Login} excluído." : $"Usuário {u.Login} inativado (já tinha histórico no sistema).";
+            Mensagem = $"Usuário {u.Login} excluído.";
         });
         return ok;
     }

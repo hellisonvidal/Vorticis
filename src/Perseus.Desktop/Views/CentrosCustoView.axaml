@@ -10,6 +10,7 @@
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Centros de custo" Margin="0,0,0,8" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
           <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="150" />
           <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
           <DataGridTextColumn Header="Superior" Binding="{ReflectionBinding Superior}" Width="120" />

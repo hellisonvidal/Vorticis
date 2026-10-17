@@ -34,7 +34,10 @@
 
     <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="6" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,12,8">
-        <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
+          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="#44506A" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+        </StackPanel>
 
         <TextBlock Classes="secao" Text="Identificação" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
@@ -128,7 +131,9 @@
           <DataTemplate x:DataType="seg:EmpresaPermitida">
             <StackPanel>
               <TextBlock Text="{Binding RazaoSocial}" FontSize="12" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Cnpj}" FontSize="11" Foreground="Gray" />
+              <TextBlock FontSize="11" Foreground="Gray">
+                <Run Text="{Binding Id, StringFormat='Nº {0:0000}'}" /><Run Text="  ·  " /><Run Text="{Binding Cnpj}" />
+              </TextBlock>
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>

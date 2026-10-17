@@ -60,6 +60,18 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     /// se uma asserção falhar lá dentro, a continuação síncrona chamaria Dispose na própria thread e travaria,
     /// escondendo a falha real.
     /// </summary>
+    /// <summary>Aguarda o comando terminar respondendo "Sim" a confirmações adicionais que ele pedir.</summary>
+    private static async Task ConcluirConfirmando(MainViewModel vm, Task comando)
+    {
+        for (var i = 0; i < 3000 && !comando.IsCompleted; i++)
+        {
+            if (vm.Confirmacao is not null) vm.ResponderConfirmacaoCommand.Execute(true);
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+        await comando;
+    }
+
     /// <summary>Espera o diálogo de confirmação (Sim/Não) aparecer.</summary>
     private static async Task<PedidoConfirmacao> AguardarConfirmacao(MainViewModel vm)
     {
@@ -199,9 +211,12 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.EmpresaSelecionada = vm.EmpresasPermitidas.Single(e => e.RazaoSocial == "EMPRESA A EXCLUIR LTDA");
             await emp.CarregarSelecionadaAsync();
             var exclusao = emp.ExcluirCommand.ExecuteAsync(null);
-            Assert.Contains("EMPRESA A EXCLUIR LTDA", (await AguardarConfirmacao(vm)).Mensagem);
+            var aviso = await AguardarConfirmacao(vm);
+            Assert.Contains("EMPRESA A EXCLUIR LTDA", aviso.Mensagem);
+            Assert.Contains("TODOS os seus dados serão apagados", aviso.Mensagem);
             vm.ResponderConfirmacaoCommand.Execute(true);
-            await exclusao;
+            await ConcluirConfirmando(vm, exclusao);                         // (sem pg_dump, confirma excluir sem backup)
+            Assert.Contains("excluída do banco de dados", emp.Mensagem);
             Assert.Empty(emp.Erros);
             Assert.Equal(empresa.Id, Assert.Single(vm.EmpresasPermitidas).Id);
             vm.EmpresaSelecionada = vm.EmpresasPermitidas[0];

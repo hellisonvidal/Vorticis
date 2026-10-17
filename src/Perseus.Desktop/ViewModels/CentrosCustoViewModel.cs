@@ -8,6 +8,7 @@ namespace Perseus.Desktop.ViewModels;
 
 public sealed record CentroLinha(CentroCustoDetalhe Centro, string? CodigoPai)
 {
+    public string Numero => Centro.Id.ToString("0000");
     public string Codigo => Centro.Codigo;
     public string Descricao => Centro.Descricao;
     public string Superior => CodigoPai ?? "";

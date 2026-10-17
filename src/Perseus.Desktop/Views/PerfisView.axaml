@@ -30,6 +30,7 @@
           <DataTemplate x:DataType="vm:PerfilLinha">
             <StackPanel>
               <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Numero}" FontSize="11" Foreground="Gray" />
               <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" />
             </StackPanel>
           </DataTemplate>

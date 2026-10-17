@@ -18,6 +18,7 @@
       <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resumo}" FontWeight="SemiBold" Margin="0,6,0,0" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
           <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" MinWidth="200" />
           <DataGridTextColumn Header="CPF / CNPJ" Binding="{ReflectionBinding Documento}" Width="140" />
           <DataGridTextColumn Header="Qualificação" Binding="{ReflectionBinding Qualificacao}" Width="160" />

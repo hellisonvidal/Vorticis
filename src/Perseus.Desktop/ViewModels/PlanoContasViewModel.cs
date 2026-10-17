@@ -24,6 +24,7 @@ public sealed record OpcaoSaldo(IndicadorDC DC, string Nome)
 
 public sealed record ContaLinha(ContaDetalhe Conta)
 {
+    public string Numero => Conta.Id.ToString("00000");
     public string Codigo => new string(' ', (Conta.Nivel - 1) * 3) + Conta.Codigo;
     public string Descricao => Conta.Descricao;
     public string Tipo => Conta.Analitica ? "Analítica" : "Sintética";

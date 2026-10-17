@@ -35,8 +35,8 @@ public interface IRepositorioUsuarios
     /// <summary>Concede o perfil em todas as empresas cadastradas (substitui acessos existentes).</summary>
     Task AtribuirPerfilEmTodasEmpresasAsync(long usuarioId, long perfilId, CancellationToken ct);
     Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct);
-    /// <summary>Exclui o usuário; se ele tiver histórico (acessos, lançamentos), apenas o inativa. Retorna true se excluiu.</summary>
-    Task<bool> ExcluirOuInativarAsync(long usuarioId, CancellationToken ct);
+    /// <summary>Exclui o usuário do banco (o histórico fica sem o vínculo; a auditoria guarda o login).</summary>
+    Task ExcluirAsync(long usuarioId, CancellationToken ct);
 
     Task RegistrarFalhaAsync(long? usuarioId, string login, int tentativas, DateTimeOffset? bloquearAte, string motivo, string? estacao, CancellationToken ct);
     Task RegistrarSucessoAsync(long usuarioId, string login, string? novoHash, string? estacao, CancellationToken ct);
@@ -205,20 +205,21 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         => admin.Administrador ? await repositorio.ListarAsync(ct) : [];
 
     /// <summary>
-    /// Exclui um usuário que nunca usou o sistema. Quem já entrou (há registro de acesso ou de operações) é inativado,
-    /// para preservar a trilha de auditoria.
+    /// Exclui o usuário do banco de dados, liberando o login para um novo cadastro. O histórico (lançamentos, acessos)
+    /// é mantido sem o vínculo; a trilha de auditoria guarda o login de quem fez cada operação.
     /// </summary>
-    public async Task<Resultado<bool>> ExcluirUsuarioAsync(SessaoUsuario admin, long usuarioId, CancellationToken ct = default)
+    public async Task<Resultado> ExcluirUsuarioAsync(SessaoUsuario admin, long usuarioId, CancellationToken ct = default)
     {
-        if (!admin.Administrador) return Resultado<bool>.Falha("Somente administradores podem excluir usuários.");
-        if (usuarioId == admin.Id) return Resultado<bool>.Falha("Você não pode excluir o seu próprio usuário.");
+        if (!admin.Administrador) return Resultado.Falha("Somente administradores podem excluir usuários.");
+        if (usuarioId == admin.Id) return Resultado.Falha("Você não pode excluir o seu próprio usuário.");
         try
         {
-            return Resultado<bool>.Ok(await repositorio.ExcluirOuInativarAsync(usuarioId, ct));
+            await repositorio.ExcluirAsync(usuarioId, ct);
+            return Resultado.Ok();
         }
         catch (ViolacaoRegraException ex)
         {
-            return Resultado<bool>.Falha(ex.Message);
+            return Resultado.Falha(ex.Message);
         }
     }
 

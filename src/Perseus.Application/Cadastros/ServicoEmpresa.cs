@@ -70,8 +70,8 @@ public interface IRepositorioEmpresa
     Task<EmpresaDetalhe?> ObterAsync(long id, CancellationToken ct);
     Task AtualizarAsync(AlteracaoEmpresa e, CancellationToken ct);
     Task AtualizarInscricaoEstadualAsync(long id, string? inscricao, CancellationToken ct);
-    /// <summary>Exclusão lógica: a empresa deixa de aparecer e de ser acessível; a escrituração é mantida (guarda legal).</summary>
-    Task DesativarAsync(long id, CancellationToken ct);
+    /// <summary>Exclui a empresa do banco com tudo o que pertence a ela. Retorna quantos lançamentos foram apagados.</summary>
+    Task<int> ExcluirAsync(long id, CancellationToken ct);
 }
 
 public interface IFontePlanoModelo
@@ -156,11 +156,21 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
         return Resultado.Ok();
     }
 
-    public async Task<Resultado> ExcluirAsync(long id, CancellationToken ct = default)
+    /// <summary>
+    /// Exclusão física: apaga a empresa e todos os seus dados (lançamentos, plano de contas, períodos, sócios, acessos),
+    /// liberando o CNPJ para um novo cadastro. Retorna o número de lançamentos apagados.
+    /// </summary>
+    public async Task<Resultado<int>> ExcluirAsync(long id, CancellationToken ct = default)
     {
-        if (await repositorio.ObterAsync(id, ct) is null) return Resultado.Falha("Empresa não encontrada.");
-        await repositorio.DesativarAsync(id, ct);
-        return Resultado.Ok();
+        if (await repositorio.ObterAsync(id, ct) is null) return Resultado<int>.Falha("Empresa não encontrada.");
+        try
+        {
+            return Resultado<int>.Ok(await repositorio.ExcluirAsync(id, ct));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<int>.Falha(ex.Message);
+        }
     }
 
     /// <summary>

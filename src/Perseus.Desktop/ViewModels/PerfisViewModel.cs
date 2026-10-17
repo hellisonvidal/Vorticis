@@ -17,6 +17,7 @@ public sealed record GrupoFuncoes(string Nome, IReadOnlyList<FuncaoMarcavel> Fun
 
 public sealed record PerfilLinha(PerfilAcesso Perfil)
 {
+    public string Numero => $"Nº {Perfil.Id:0000}";
     public string Nome => Perfil.Nome;
     public string Resumo => $"{Perfil.Permissoes.Count} função(ões) · {Perfil.Usuarios} usuário(s){(Perfil.Padrao ? " · padrão" : "")}";
 }

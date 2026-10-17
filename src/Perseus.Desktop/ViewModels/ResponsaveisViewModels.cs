@@ -10,6 +10,7 @@ namespace Perseus.Desktop.ViewModels;
 
 public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
 {
+    public string Numero => Vinculo.Id.ToString("0000");
     public string Tipo => Vinculo.Tipo;
     public string Nome => Vinculo.Nome;
     public string Documento => Vinculo.ContadorId is not null ? Cpf.Formatar(Vinculo.Documento) : ServicoLivros.FormatarCnpj(Vinculo.Documento);
@@ -232,6 +233,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
 
 public sealed record SocioLinha(Socio Socio)
 {
+    public string Numero => Socio.Id.ToString("0000");
     public string Nome => Socio.Nome;
     public string Documento => Socio.CpfCnpj is { } d ? (d.Length == 11 ? Cpf.Formatar(d) : ServicoLivros.FormatarCnpj(d)) : Socio.DocumentoMascarado ?? "";
     public string Qualificacao => Socio.Qualificacao;

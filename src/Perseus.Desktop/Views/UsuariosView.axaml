@@ -16,6 +16,7 @@
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Usuários" Margin="0,0,0,8" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
           <DataGridTextColumn Header="Login" Binding="{ReflectionBinding Login}" Width="140" />
           <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" />
           <DataGridTextColumn Header="Perfil" Binding="{ReflectionBinding Perfil}" Width="150" />

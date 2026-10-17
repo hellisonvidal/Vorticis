@@ -14,6 +14,7 @@
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False"
                 FontFamily="Consolas, Menlo, monospace">
         <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
           <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="170" />
           <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
           <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="95" />
