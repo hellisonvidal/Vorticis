@@ -61,9 +61,6 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     protected override string? DescricaoSelecionado => Selecionada is { } s ? $"{s.Conta.Codigo} – {s.Conta.Descricao}" : null;
     protected override string DetalheExclusao => "\n\nConta com lançamentos não é excluída: use Alterar e desmarque Ativa depois de zerar o saldo.";
 
-    [RelayCommand]
-    private void ImportarPlanilha() => Contexto.AbrirTela(Telas.ImportarPlano);
-
     public void AtualizarPermissoes()
     {
         OnPropertyChanged(nameof(PodeEditar));

@@ -46,9 +46,7 @@
           <MenuItem Header="Contadores" Command="{Binding AbrirCommand}" CommandParameter="contabilidade" />
           <Separator />
           <MenuItem Header="Plano de contas" Command="{Binding AbrirCommand}" CommandParameter="planocontas" />
-          <MenuItem Header="Plano de contas: importar de planilha / máscara" Command="{Binding AbrirCommand}" CommandParameter="importarplano" />
           <MenuItem Header="Centros de custo" Command="{Binding AbrirCommand}" CommandParameter="centroscusto" />
-          <MenuItem Header="Vínculo ao plano referencial (RFB)" Command="{Binding AbrirCommand}" CommandParameter="mapeamentoreferencial" />
         </MenuItem>
         <MenuItem Header="_Lançamentos">
           <MenuItem Header="Lançamento contábil" Command="{Binding AbrirCommand}" CommandParameter="lancamento" InputGesture="Ctrl+L" />
@@ -70,6 +68,7 @@
             <Separator />
             <MenuItem Header="Plano de contas (planilha Excel/CSV)" Command="{Binding AbrirCommand}" CommandParameter="importarplano" />
             <MenuItem Header="Plano referencial da RFB (tabela oficial)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
+            <MenuItem Header="Vínculo ao plano referencial (RFB)" Command="{Binding AbrirCommand}" CommandParameter="mapeamentoreferencial" />
             <Separator />
             <MenuItem Header="XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
             <MenuItem Header="NFS-e (em breve)" IsEnabled="False" />

@@ -11,7 +11,7 @@ namespace Perseus.Desktop.ViewModels;
 public sealed record ContaPreviaLinha(string Linha, string Original, string Codigo, string Descricao, string Tipo, string Natureza, string Saldo);
 
 /// <summary>
-/// Cadastros › Plano de contas › Importar de planilha e máscara. Lê um plano de Excel/CSV, escolhe as colunas,
+/// Integrações › Importar › Plano de contas (planilha e máscara). Lê um plano de Excel/CSV, escolhe as colunas,
 /// converte os códigos para a máscara desejada e substitui o plano (antes do primeiro lançamento). Também converte
 /// os códigos do plano atual para outra máscara.
 /// </summary>

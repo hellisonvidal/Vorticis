@@ -70,7 +70,7 @@ public partial class VinculoLinha(ContaMapeamento conta) : ObservableObject
     partial void OnSugestaoChanged(ContaReferencial? value) => OnPropertyChanged(nameof(SugestaoTexto));
 }
 
-/// <summary>Cadastros › Vínculo ao plano referencial (ECD I051).</summary>
+/// <summary>Integrações › Importar › Vínculo ao plano referencial (ECD I051).</summary>
 public partial class MapeamentoReferencialViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     private IReadOnlyList<ContaMapeamento> _contas = [];

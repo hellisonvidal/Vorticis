@@ -308,8 +308,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("Caixa da filial Centro", plano.Selecionada?.Conta.Descricao);
             Foto(janela, "06_plano_contas");
 
-            // Plano de contas › Importar de planilha e máscara
-            plano.ImportarPlanilhaCommand.Execute(null);
+            // Integrações › Importar › Plano de contas (planilha e máscara)
+            vm.AbrirCommand.Execute(Telas.ImportarPlano);
             var impPlano = vm.ImportacaoPlano;
             Assert.Same(impPlano, vm.Conteudo);
             await impPlano.CarregarAsync();

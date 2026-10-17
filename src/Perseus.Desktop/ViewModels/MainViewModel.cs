@@ -368,7 +368,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
             Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
             Telas.ImportacaoReferencial => (ImportacaoReferencial, "Integrações › Importar › Plano referencial da RFB"),
-            Telas.MapeamentoReferencial => (MapeamentoReferencial, "Cadastros › Vínculo ao plano referencial"),
+            Telas.MapeamentoReferencial => (MapeamentoReferencial, "Integrações › Importar › Vínculo ao plano referencial"),
             Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores"),
             Telas.Socios => (Socios, "Cadastros › Sócios"),
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
@@ -384,7 +384,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Inicio => (Inicio, ""),
             Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
-            Telas.ImportarPlano => (ImportacaoPlano, "Cadastros › Plano de contas › Importar de planilha e máscara"),
+            Telas.ImportarPlano => (ImportacaoPlano, "Integrações › Importar › Plano de contas"),
             Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos => (Importacao, "Integrações › Importar"),
             _ => (Conteudo, TituloTela),
         };
