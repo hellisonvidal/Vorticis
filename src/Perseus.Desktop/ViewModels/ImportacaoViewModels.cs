@@ -94,8 +94,14 @@ public abstract partial class ImportacaoLancamentosBase(IContexto contexto) : Mo
 }
 
 /// <summary>Aba Planilhas: qualquer planilha, com layouts criados pelo usuário (colunas → campos do lançamento).</summary>
+/// <summary>Uma linha da planilha carregada, como está no arquivo (para o usuário ver antes de definir as colunas).</summary>
+public sealed record LinhaPlanilha(int Numero, string[] Celulas);
+
 public partial class ImportacaoPlanilhaViewModel(IContexto contexto) : ImportacaoLancamentosBase(contexto)
 {
+    /// <summary>Quantas linhas da planilha aparecem na visualização.</summary>
+    public const int LinhasVisualizadas = 200;
+
     public const string Nenhuma = "(nenhuma)";
     private TabelaImportada? _tabela;
     private bool _carregandoLayout;
@@ -132,6 +138,34 @@ public partial class ImportacaoPlanilhaViewModel(IContexto contexto) : Importaca
     [ObservableProperty] private string _mascaraContas = "";
     [ObservableProperty] private string _amostra = "";
 
+    // Planilha carregada (visualização crua, com o papel de cada coluna no layout)
+    public ObservableCollection<LinhaPlanilha> LinhasPlanilha { get; } = [];
+    [ObservableProperty] private IReadOnlyList<string> _colunasPlanilha = [];
+    public bool TemPlanilha => ColunasPlanilha.Count > 0;
+
+    /// <summary>Papel da coluna no layout atual (ex.: "Data", "Conta débito"), para o cabeçalho da visualização.</summary>
+    public string PapelDaColuna(string coluna)
+    {
+        var papeis = new (string Coluna, string Papel)[]
+        {
+            (ColunaData, "Data"), (ColunaValor, "Valor"), (ColunaHistorico, "Histórico"), (ColunaDocumento, "Documento"),
+            (ColunaCentroCusto, "C. custo"), (ColunaAgrupador, "Agrupador"),
+        };
+        var porModelo = PorLancamento
+            ? new[] { (ColunaContaDebito, "Conta débito"), (ColunaContaCredito, "Conta crédito") }
+            : new[] { (ColunaConta, "Conta"), (ColunaDC, "D/C"), (ColunaValorDebito, "Valor débito"), (ColunaValorCredito, "Valor crédito") };
+        return string.Join(", ", papeis.Concat(porModelo).Where(p => p.Item1 == coluna).Select(p => p.Item2));
+    }
+
+    /// <summary>Lê (de novo) o arquivo informado e mostra a planilha para definir as colunas.</summary>
+    [RelayCommand]
+    private void CarregarPlanilha()
+    {
+        Erros.Clear();
+        if (string.IsNullOrWhiteSpace(Arquivo) || !File.Exists(Arquivo)) { Erros.Add("Informe o arquivo da planilha (.xlsx ou .csv)."); return; }
+        OnArquivoChanged(Arquivo);
+    }
+
     public async Task CarregarAsync()
     {
         if (Contexto.App is not { } app) return;
@@ -152,7 +186,13 @@ public partial class ImportacaoPlanilhaViewModel(IContexto contexto) : Importaca
         Mensagem = null;
         LimparPrevia();
         _tabela = LerPlanilha(value);
+        LinhasPlanilha.Clear();
+        ColunasPlanilha = _tabela?.Colunas ?? [];
+        OnPropertyChanged(nameof(TemPlanilha));
         if (_tabela is null) return;
+        for (var i = 0; i < Math.Min(_tabela.Linhas.Count, LinhasVisualizadas); i++)
+            LinhasPlanilha.Add(new LinhaPlanilha(_tabela.NumerosLinha[i],
+                Enumerable.Range(0, _tabela.Colunas.Count).Select(c => _tabela.Valor(i, c)).ToArray()));
         foreach (var c in _tabela.Colunas.Where(c => !OpcoesColunas.Contains(c))) OpcoesColunas.Add(c);
         Amostra = $"{_tabela.Linhas.Count} linha(s). Colunas: {string.Join(" | ", _tabela.Colunas)}";
         if (LayoutSelecionado is null && NomeLayout.Length == 0) SugerirColunas();

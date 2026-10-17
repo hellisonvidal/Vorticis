@@ -497,6 +497,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             File.WriteAllText(csvLanc, "Data;Débito;Crédito;Valor;Histórico\n15/03/2026;1.1.01.001;1.1.02.001;250,00;Recebimento cliente balcão\n");
             planilhas.Arquivo = csvLanc;
             Assert.Equal(("Data", "Débito", "Crédito", "Valor"), (planilhas.ColunaData, planilhas.ColunaContaDebito, planilhas.ColunaContaCredito, planilhas.ColunaValor));
+            var linhaPlanilha = Assert.Single(planilhas.LinhasPlanilha);              // a planilha carregada aparece como está no arquivo
+            Assert.Equal((2, "1.1.01.001"), (linhaPlanilha.Numero, linhaPlanilha.Celulas[1]));
+            Assert.Equal("Conta débito", planilhas.PapelDaColuna("Débito"));
+            planilhas.CarregarPlanilhaCommand.Execute(null);                       // "Carregar" lê de novo o arquivo
+            Assert.Single(planilhas.LinhasPlanilha);
             planilhas.NomeLayout = "Recebimentos do balcão";
             await planilhas.SalvarLayoutCommand.ExecuteAsync(null);
             Assert.Empty(planilhas.Erros);

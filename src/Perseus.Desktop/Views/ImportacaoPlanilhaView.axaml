@@ -26,7 +26,11 @@
         <TextBlock Classes="secao" Text="1. Planilha" />
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
           <TextBox Text="{Binding Arquivo}" Watermark="Arquivo .xlsx ou .csv" />
-          <Button Grid.Column="1" Content="Procurar..." Click="ProcurarPlanilha" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <Button Content="Procurar..." Click="ProcurarPlanilha" />
+            <Button Content="Carregar" Command="{Binding CarregarPlanilhaCommand}"
+                    ToolTip.Tip="Lê o arquivo e mostra a planilha ao lado, para você ver os dados antes de definir as colunas" />
+          </StackPanel>
         </Grid>
         <TextBlock Classes="dica" Text="{Binding Amostra}" />
 
@@ -99,6 +103,22 @@
         <v:MensagensView />
       </StackPanel>
     </ScrollViewer>
-    <v:PreviaImportacaoView Grid.Column="2" />
+    <!-- À direita: a planilha como está no arquivo (para definir as colunas) e a pré-visualização dos lançamentos -->
+    <Grid Grid.Column="2" RowDefinitions="Auto,*,10,*">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Planilha carregada" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Como está no arquivo (até 200 linhas). O cabeçalho de cada coluna mostra, entre colchetes, o papel definido no layout." />
+      </StackPanel>
+      <Border Grid.Row="1" BorderBrush="#D0D5DD" BorderThickness="1" Margin="0,4,0,0">
+        <Panel>
+          <DataGrid Name="GradePlanilha" ItemsSource="{Binding LinhasPlanilha}" IsReadOnly="True" AutoGenerateColumns="False"
+                    IsVisible="{Binding TemPlanilha}" FontSize="12" />
+          <TextBlock Text="Escolha o arquivo e clique em Carregar para ver a planilha aqui." Foreground="Gray" Margin="10"
+                     IsVisible="{Binding !TemPlanilha}" />
+        </Panel>
+      </Border>
+      <v:PreviaImportacaoView Grid.Row="3" />
+    </Grid>
   </Grid>
 </UserControl>
