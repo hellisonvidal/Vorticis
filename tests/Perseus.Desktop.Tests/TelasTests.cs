@@ -617,6 +617,14 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var antes = vm.JanelasAbertas.Count;
             vm.AbrirCommand.Execute(Telas.Balancete);
             Assert.Equal(antes, vm.JanelasAbertas.Count);
+            var balanceteAntigo = vm.Balancete;                               // fechar e abrir de novo: recomeça do zero
+            Assert.NotEqual("", balanceteAntigo.Totais);
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Balancete));
+            vm.AbrirCommand.Execute(Telas.Balancete);
+            Assert.NotSame(balanceteAntigo, vm.Balancete);
+            Assert.Same(vm.Balancete, vm.Conteudo);
+            Assert.Equal("", vm.Balancete.Totais);
+            Assert.Empty(vm.Balancete.Linhas);
 
             // Ajuda › Licença e registro
             vm.AbrirCommand.Execute(Telas.Licenca);

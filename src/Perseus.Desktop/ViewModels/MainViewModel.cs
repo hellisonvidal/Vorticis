@@ -289,6 +289,16 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             ? await App.Autorizador.ObterAsync(Sessao.Id, EmpresaSelecionada.Id)
             : PermissoesEfetivas.Nenhuma;
         AbrirCommand.NotifyCanExecuteChanged();
+        AtualizarPermissoesModulos();
+        AtualizarStatus();
+        // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
+        if (Logado)
+            foreach (var f in JanelasAbertas.Where(f => !PodeAbrir(f.Tela)).ToList()) FecharFuncao(f);
+        if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
+    }
+
+    private void AtualizarPermissoesModulos()
+    {
         Diario.AtualizarPermissoes();
         PlanoContas.AtualizarPermissoes();
         CentrosCusto.AtualizarPermissoes();
@@ -300,11 +310,6 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Consultas.AtualizarPermissoes();
         ImportacaoPlano.AtualizarPermissoes();
         foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
-        AtualizarStatus();
-        // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
-        if (Logado)
-            foreach (var f in JanelasAbertas.Where(f => !PodeAbrir(f.Tela)).ToList()) FecharFuncao(f);
-        if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
     }
 
     private void AbrirPrimeiraPermitida() => Abrir(PodeAbrir(Telas.Inicio) ? Telas.Inicio : Telas.Perfis);
@@ -489,13 +494,44 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public void FecharFuncao(FuncaoAberta? f)
     {
         if (f is null || !JanelasAbertas.Remove(f)) return;
-        if (!ReferenceEquals(FuncaoAtiva, f) && !ReferenceEquals(Conteudo, f.ViewModel)) return;
-        if (JanelasAbertas.LastOrDefault() is { } proxima) AtivarFuncao(proxima);
-        else
+        if (ReferenceEquals(FuncaoAtiva, f) || ReferenceEquals(Conteudo, f.ViewModel))
         {
-            (Conteudo, TituloTela, _telaAtual, FuncaoAtiva) = (Inicio, "", Telas.Inicio, null);
-            Inicio.Atualizar();
+            if (JanelasAbertas.LastOrDefault() is { } proxima) AtivarFuncao(proxima);
+            else
+            {
+                (Conteudo, TituloTela, _telaAtual, FuncaoAtiva) = (Inicio, "", Telas.Inicio, null);
+                Inicio.Atualizar();
+            }
         }
+        ReiniciarModulo(f.ViewModel);
+    }
+
+    /// <summary>Telas compostas: ao fechar a principal, as abas que ela mostra também recomeçam.</summary>
+    private static readonly Dictionary<string, string[]> AbasDe = new()
+    {
+        [nameof(Empresas)] = [nameof(Socios), nameof(Contabilidade)],
+        [nameof(CentralUsuarios)] = [nameof(Usuarios), nameof(Perfis), nameof(AlterarSenha)],
+    };
+
+    /// <summary>
+    /// Função fechada recomeça do zero na próxima abertura: o módulo é trocado por uma instância nova
+    /// (nada do que foi digitado, filtrado ou consultado permanece).
+    /// </summary>
+    private void ReiniciarModulo(object modulo)
+    {
+        var propriedades = typeof(MainViewModel).GetProperties()
+            .Where(p => p.CanRead && p.GetSetMethod(true) is not null && p.PropertyType.IsAssignableTo(typeof(ObservableObject))
+                        && p.PropertyType != typeof(MainViewModel) && p.Name is not (nameof(Login) or nameof(Conexao) or nameof(Inicio)))
+            .ToDictionary(p => p.Name);
+        var alvo = propriedades.Values.FirstOrDefault(p => ReferenceEquals(p.GetValue(this), modulo));
+        if (alvo is null) return;
+        foreach (var nome in AbasDe.GetValueOrDefault(alvo.Name, []).Prepend(alvo.Name))
+        {
+            var p = propriedades[nome];
+            p.SetValue(this, Activator.CreateInstance(p.PropertyType, this));
+            OnPropertyChanged(nome);
+        }
+        AtualizarPermissoesModulos();
     }
 
     private void FecharTodasAsJanelas()
