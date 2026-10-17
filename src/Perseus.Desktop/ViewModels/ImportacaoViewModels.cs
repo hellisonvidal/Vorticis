@@ -380,16 +380,3 @@ public partial class ImportacaoLancamentosPadraoViewModel(IContexto contexto) : 
     protected override IReadOnlyList<LancamentoLido>? Ler() =>
         LerPlanilha(Arquivo) is { } t ? Resultado(ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao)) : null;
 }
-
-/// <summary>Integrações › Importar: abas Planilhas, Extratos e Lançamentos contábeis.</summary>
-public partial class ImportacaoViewModel(IContexto contexto) : ObservableObject
-{
-    public const int AbaPlanilhas = 0;
-    public const int AbaExtratos = 1;
-    public const int AbaLancamentos = 2;
-
-    public ImportacaoPlanilhaViewModel Planilhas { get; } = new(contexto);
-    public ImportacaoExtratoViewModel Extratos { get; } = new(contexto);
-    public ImportacaoLancamentosPadraoViewModel LancamentosPadrao { get; } = new(contexto);
-    [ObservableProperty] private int _abaSelecionada;
-}

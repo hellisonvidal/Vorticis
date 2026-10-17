@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perseus.Desktop.ViewModels"
+             xmlns:v="using:Perseus.Desktop.Views"
+             xmlns:app="using:Perseus.Application.Contabil"
+             x:Class="Perseus.Desktop.Views.ImportacaoExtratoView"
+             x:DataType="vm:ImportacaoExtratoViewModel">
+  <!-- Integrações › Importar › Extratos bancários (OFX) -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.secao">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="TextBlock.dica">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="Gray" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6">
+      <TextBlock Classes="dica" FontSize="12" Foreground="#44506A"
+                 Text="Importe o extrato OFX do internet banking. Cada movimento vira um lançamento: entradas debitam a conta do banco e creditam a contrapartida; saídas, o contrário. Movimentos já importados não são duplicados." />
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
+        <TextBlock Text="Arquivo OFX" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" Text="{Binding Arquivo}" Watermark="extrato.ofx" />
+        <Button Grid.Column="2" Content="Procurar..." Click="ProcurarOfx" />
+        <Button Grid.Column="3" Content="Ler" Command="{Binding LerExtratoCommand}" />
+      </Grid>
+      <TextBlock Text="{Binding DadosExtrato}" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <WrapPanel>
+        <TextBlock Text="Conta do banco" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <TextBox Text="{Binding ContaBanco}" Watermark="ex.: 1.1.01.002" Width="140" Margin="0,0,14,6" />
+        <TextBlock Text="Contrapartida das entradas" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <TextBox Text="{Binding ContrapartidaEntradas}" Watermark="ex.: 1.1.02.001" Width="140" Margin="0,0,14,6" />
+        <TextBlock Text="das saídas" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <TextBox Text="{Binding ContrapartidaSaidas}" Watermark="ex.: 2.1.01.001" Width="140" Margin="0,0,8,6" />
+        <Button Content="Preencher vazias" Command="{Binding AplicarContrapartidasCommand}" Margin="0,0,14,6" />
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="Histórico" VerticalAlignment="Center" Margin="0,0,6,6" />
+          <TextBox Text="{Binding PrefixoHistorico}" Watermark="prefixo, ex.: Extrato Itaú:" Width="200" Margin="0,0,6,6" />
+        </StackPanel>
+      </WrapPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Pré-visualizar" Command="{Binding PreVisualizarCommand}" />
+        <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
+      </StackPanel>
+      <v:MensagensView />
+    </StackPanel>
+    <Grid RowDefinitions="*,8,*" Margin="0,8,0,0">
+      <DataGrid ItemsSource="{Binding Transacoes}" AutoGenerateColumns="False" CanUserSortColumns="False">
+        <DataGrid.Columns>
+          <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Importar}" Width="44" />
+          <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="112" IsReadOnly="True" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />
+          <DataGridTextColumn Header="Doc" Binding="{ReflectionBinding Documento}" Width="90" IsReadOnly="True" />
+          <DataGridTextColumn Header="Entrada" Binding="{ReflectionBinding Entrada}" Width="110" IsReadOnly="True" />
+          <DataGridTextColumn Header="Saída" Binding="{ReflectionBinding Saida}" Width="110" IsReadOnly="True" />
+          <DataGridTextColumn Header="Contrapartida" Binding="{ReflectionBinding Contrapartida}" Width="150" />
+        </DataGrid.Columns>
+      </DataGrid>
+      <v:PreviaImportacaoView Grid.Row="2" />
+    </Grid>
+  </DockPanel>
+</UserControl>

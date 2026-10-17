@@ -79,9 +79,6 @@
             <MenuItem Header="Plano de contas (planilha Excel/CSV)" Command="{Binding AbrirCommand}" CommandParameter="importarplano" />
             <MenuItem Header="Plano referencial da RFB (tabela oficial)" Command="{Binding AbrirCommand}" CommandParameter="importacaoreferencial" />
             <MenuItem Header="Vínculo ao plano referencial (RFB)" Command="{Binding AbrirCommand}" CommandParameter="mapeamentoreferencial" />
-            <Separator />
-            <MenuItem Header="XML de NF-e / NFC-e / CT-e (em breve)" IsEnabled="False" />
-            <MenuItem Header="NFS-e (em breve)" IsEnabled="False" />
           </MenuItem>
           <MenuItem Header="_Exportar">
             <MenuItem Header="SPED Contábil — ECD (em breve)" IsEnabled="False" />

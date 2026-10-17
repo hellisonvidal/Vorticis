@@ -94,7 +94,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(Importacao), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais),
+        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais),
         nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao))]
     private void RecriarModulos()
     {
@@ -123,7 +123,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Licenca = new LicencaViewModel(this);
         Consultas = new ConsultasViewModel(this);
         ImportacaoPlano = new ImportacaoPlanoViewModel(this);
-        Importacao = new ImportacaoViewModel(this);
+        ImportacaoPlanilhas = new ImportacaoPlanilhaViewModel(this);
+        ImportacaoExtratos = new ImportacaoExtratoViewModel(this);
+        ImportacaoLancamentos = new ImportacaoLancamentosPadraoViewModel(this);
         Historicos = new HistoricosViewModel(this);
         Clientes = new ClientesViewModel(this);
         Fornecedores = new FornecedoresViewModel(this);
@@ -188,7 +190,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public LicencaViewModel Licenca { get; private set; }
     public ConsultasViewModel Consultas { get; private set; }
     public ImportacaoPlanoViewModel ImportacaoPlano { get; private set; }
-    public ImportacaoViewModel Importacao { get; private set; }
+    public ImportacaoPlanilhaViewModel ImportacaoPlanilhas { get; private set; }
+    public ImportacaoExtratoViewModel ImportacaoExtratos { get; private set; }
+    public ImportacaoLancamentosPadraoViewModel ImportacaoLancamentos { get; private set; }
     public HistoricosViewModel Historicos { get; private set; }
     public ClientesViewModel Clientes { get; private set; }
     public FornecedoresViewModel Fornecedores { get; private set; }
@@ -421,7 +425,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Fornecedores => (Fornecedores, "Cadastros › Fornecedores"),
             Telas.ConfiguracoesGerais => (ConfiguracoesGerais, "Configurações › Configurações gerais"),
             Telas.ImportarPlano => (ImportacaoPlano, "Integrações › Importar › Plano de contas"),
-            Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos => (Importacao, "Integrações › Importar"),
+            Telas.ImportarPlanilhas => (ImportacaoPlanilhas, "Integrações › Importar › Planilhas"),
+            Telas.ImportarExtratos => (ImportacaoExtratos, "Integrações › Importar › Extratos bancários (OFX)"),
+            Telas.ImportarLancamentos => (ImportacaoLancamentos, "Integrações › Importar › Lançamentos contábeis"),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
@@ -466,16 +472,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
         if (tela == Telas.Clientes) _ = Disparar(Clientes.CarregarAsync);
         if (tela == Telas.Fornecedores) _ = Disparar(Fornecedores.CarregarAsync);
-        if (tela is Telas.ImportarPlanilhas or Telas.ImportarExtratos or Telas.ImportarLancamentos)
-        {
-            Importacao.AbaSelecionada = tela switch
-            {
-                Telas.ImportarExtratos => ImportacaoViewModel.AbaExtratos,
-                Telas.ImportarLancamentos => ImportacaoViewModel.AbaLancamentos,
-                _ => ImportacaoViewModel.AbaPlanilhas,
-            };
-            _ = Disparar(Importacao.Planilhas.CarregarAsync);
-        }
+        if (tela == Telas.ImportarPlanilhas) _ = Disparar(ImportacaoPlanilhas.CarregarAsync);
         if (tela is Telas.ConsultaSaldos or Telas.ConsultaLancamentos)
         {
             Consultas.AtualizarPermissoes();

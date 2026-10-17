@@ -26,7 +26,9 @@
     <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoPlanoViewModel"><v:ImportacaoPlanoView /></DataTemplate>
-    <DataTemplate DataType="vm:ImportacaoViewModel"><v:ImportacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoPlanilhaViewModel"><v:ImportacaoPlanilhaView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoExtratoViewModel"><v:ImportacaoExtratoView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoLancamentosPadraoViewModel"><v:ImportacaoLancamentosPadraoView /></DataTemplate>
     <DataTemplate DataType="vm:HistoricosViewModel"><v:HistoricosView /></DataTemplate>
     <DataTemplate DataType="vm:BensViewModel"><v:BensView /></DataTemplate>
     <DataTemplate DataType="vm:GruposDepreciacaoViewModel"><v:GruposDepreciacaoView /></DataTemplate>

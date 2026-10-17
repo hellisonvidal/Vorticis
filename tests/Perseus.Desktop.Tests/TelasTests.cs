@@ -460,8 +460,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             // Integrações › Importar › Planilhas: layout personalizado salvo e importação (só contas patrimoniais)
             vm.AbrirCommand.Execute(Telas.ImportarPlanilhas);
-            Assert.Same(vm.Importacao, vm.Conteudo);
-            var planilhas = vm.Importacao.Planilhas;
+            Assert.Same(vm.ImportacaoPlanilhas, vm.Conteudo);
+            var planilhas = vm.ImportacaoPlanilhas;
             var csvLanc = Path.Combine(Path.GetTempPath(), $"lanc_{Guid.NewGuid():N}.csv");
             File.WriteAllText(csvLanc, "Data;Débito;Crédito;Valor;Histórico\n15/03/2026;1.1.01.001;1.1.02.001;250,00;Recebimento cliente balcão\n");
             planilhas.Arquivo = csvLanc;
@@ -483,8 +483,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             // Extratos bancários (OFX): reimportar não duplica
             vm.AbrirCommand.Execute(Telas.ImportarExtratos);
-            Assert.Equal(ImportacaoViewModel.AbaExtratos, vm.Importacao.AbaSelecionada);
-            var ext = vm.Importacao.Extratos;
+            var ext = vm.ImportacaoExtratos;
+            Assert.Same(ext, vm.Conteudo);
             var ofx = Path.Combine(Path.GetTempPath(), $"extrato_{Guid.NewGuid():N}.ofx");
             File.WriteAllText(ofx, "OFXHEADER:100\n<OFX><BANKACCTFROM><BANKID>341<BRANCHID>0001<ACCTID>5555-1</BANKACCTFROM><BANKTRANLIST>" +
                                    "\n<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260320<TRNAMT>400.00<FITID>T1<MEMO>PIX CLIENTE ABC\n</BANKTRANLIST></OFX>");
@@ -506,7 +506,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             // Lançamentos contábeis: planilha modelo do layout padrão
             vm.AbrirCommand.Execute(Telas.ImportarLancamentos);
-            var padrao = vm.Importacao.LancamentosPadrao;
+            var padrao = vm.ImportacaoLancamentos;
             padrao.GerarModeloCommand.Execute(null);
             Assert.True(File.Exists(padrao.ModeloGerado));
             padrao.Arquivo = padrao.ModeloGerado!;
