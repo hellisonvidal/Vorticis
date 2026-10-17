@@ -11,6 +11,9 @@ public sealed record Participante(
     string? CodMunicipioIbge, string? Municipio, string? Email, string? Telefone, bool Cliente, bool Fornecedor,
     string? CodigoConta, bool Ativo, bool TemMovimento = false);
 
+/// <summary>Resultado da importação de planilha.</summary>
+public sealed record ImportacaoParticipantes(int Incluidos, int Atualizados, IReadOnlyList<string> Erros);
+
 public interface IRepositorioParticipantes
 {
     Task<IReadOnlyList<Participante>> ListarAsync(long empresaId, CancellationToken ct);
@@ -71,6 +74,59 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
             }, contaId, ct));
         }
         catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }
+    }
+
+    /// <summary>
+    /// Importa clientes/fornecedores de planilha (Excel ou CSV). Colunas reconhecidas pelo nome: NOME (ou RAZAO_SOCIAL),
+    /// CPF_CNPJ (CNPJ, CPF, DOCUMENTO), NOME_FANTASIA, IE, UF, MUNICIPIO, IBGE, EMAIL, TELEFONE, CODIGO. Quem já está cadastrado
+    /// com o mesmo CPF/CNPJ passa a ser também cliente/fornecedor (os demais dados não são alterados).
+    /// </summary>
+    public async Task<Resultado<ImportacaoParticipantes>> ImportarAsync(long empresaId, TabelaImportada t, bool cliente, bool fornecedor, long usuarioId,
+                                                                       CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<ImportacaoParticipantes>(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return negado;
+        var iNome = t.Coluna("NOME", "RAZAO_SOCIAL", "NOME_RAZAO_SOCIAL", "RAZAO", "NOME_RAZAO", "CLIENTE", "FORNECEDOR");
+        if (iNome < 0) return Resultado<ImportacaoParticipantes>.Falha($"A planilha precisa de uma coluna NOME ou RAZAO_SOCIAL (encontrado: {string.Join(", ", t.Colunas)}).");
+        var iDoc = t.Coluna("CPF_CNPJ", "CNPJ_CPF", "CNPJ", "CPF", "DOCUMENTO", "CPF_CNPJ_");
+        var iFant = t.Coluna("NOME_FANTASIA", "FANTASIA");
+        var iIe = t.Coluna("IE", "INSCRICAO_ESTADUAL", "INSC_ESTADUAL");
+        var iUf = t.Coluna("UF", "ESTADO");
+        var iMun = t.Coluna("MUNICIPIO", "CIDADE");
+        var iIbge = t.Coluna("IBGE", "COD_MUNICIPIO", "CODIGO_IBGE", "COD_IBGE");
+        var iEmail = t.Coluna("EMAIL", "E_MAIL");
+        var iTel = t.Coluna("TELEFONE", "FONE", "CELULAR");
+        var iCod = t.Coluna("CODIGO", "COD");
+        string? V(int linha, int col) => col >= 0 && t.Valor(linha, col) is { Length: > 0 } v ? v : null;
+
+        int incluidos = 0, atualizados = 0;
+        var erros = new List<string>();
+        for (var i = 0; i < t.Linhas.Count; i++)
+        {
+            var nome = V(i, iNome);
+            if (nome is null) continue;
+            var lista = await repositorio.ListarAsync(empresaId, ct);
+            var doc = Cnpj.SomenteDigitos(V(i, iDoc));
+            if (doc.Length is > 0 and < 11) doc = doc.PadLeft(11, '0');           // CPF com zeros à esquerda perdidos no Excel
+            if (doc.Length is > 11 and < 14) doc = doc.PadLeft(14, '0');
+            if (doc.Length > 0 && lista.FirstOrDefault(x => x.CpfCnpj == doc) is { } existente)
+            {
+                if ((cliente && !existente.Cliente) || (fornecedor && !existente.Fornecedor))
+                {
+                    var r = await GravarAsync(empresaId, existente with { Cliente = existente.Cliente || cliente, Fornecedor = existente.Fornecedor || fornecedor },
+                                              usuarioId, ct);
+                    if (r.Sucesso) atualizados++;
+                    else erros.Add($"Linha {t.NumerosLinha[i]} ({nome}): {string.Join(" ", r.Erros)}");
+                }
+                continue;
+            }
+            var novo = new Participante(0, V(i, iCod) ?? "", nome, V(i, iFant), doc.Length == 0 ? null : doc, V(i, iIe), V(i, iUf), V(i, iIbge),
+                                        V(i, iMun), V(i, iEmail), V(i, iTel), cliente, fornecedor, null, true);
+            if (novo.Codigo.Length > 0 && lista.Any(x => x.Codigo == novo.Codigo)) novo = novo with { Codigo = "" };
+            var g = await GravarAsync(empresaId, novo, usuarioId, ct);
+            if (g.Sucesso) incluidos++;
+            else erros.Add($"Linha {t.NumerosLinha[i]} ({nome}): {string.Join(" ", g.Erros)}");
+        }
+        return Resultado<ImportacaoParticipantes>.Ok(new ImportacaoParticipantes(incluidos, atualizados, erros));
     }
 
     public async Task<Resultado> ExcluirAsync(long empresaId, long id, long usuarioId, CancellationToken ct = default)

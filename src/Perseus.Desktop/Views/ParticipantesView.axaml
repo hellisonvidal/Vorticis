@@ -5,11 +5,12 @@
              x:Class="Perseus.Desktop.Views.ParticipantesView"
              x:DataType="vm:ParticipantesViewModel">
   <Grid ColumnDefinitions="*,16,420" RowDefinitions="Auto,Auto,*" Margin="8">
-    <TabStrip Grid.ColumnSpan="3" SelectedIndex="{Binding AbaSelecionada}" IsEnabled="{Binding !EmEdicao}" Margin="0,0,0,6">
-      <TabStripItem Content="Clientes" />
-      <TabStripItem Content="Fornecedores" />
-    </TabStrip>
-    <v:BarraCadastroView Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <v:BarraCadastroView />
+      <Border Width="1" Background="#C9D2DE" Margin="4,2" />
+      <Button Content="Importar planilha..." Click="ImportarPlanilha" IsEnabled="{Binding !EmEdicao}"
+              ToolTip.Tip="Excel (.xlsx) ou CSV com as colunas NOME e CPF_CNPJ (e, se houver, NOME_FANTASIA, IE, UF, MUNICIPIO, IBGE, EMAIL, TELEFONE)" />
+    </StackPanel>
     <DockPanel Grid.Row="2" IsEnabled="{Binding !EmEdicao}">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
         <TextBlock Classes="titulo" Text="{Binding TituloLista}" VerticalAlignment="Center" />
@@ -37,7 +38,10 @@
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Nome fantasia" />
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NomeFantasia}" />
           <TextBlock Grid.Row="3" Classes="rotulo" Text="CPF / CNPJ" />
-          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding CpfCnpj}" />
+          <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <TextBox Text="{Binding CpfCnpj}" />
+            <Button Grid.Column="1" Content="Buscar na Receita" Command="{Binding BuscarCnpjCommand}" />
+          </Grid>
           <TextBlock Grid.Row="4" Classes="rotulo" Text="Inscr. estadual" />
           <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding InscricaoEstadual}" Watermark="ou ISENTO" />
           <TextBlock Grid.Row="5" Classes="rotulo" Text="Município / UF" />

@@ -31,7 +31,8 @@
     <DataTemplate DataType="vm:BensViewModel"><v:BensView /></DataTemplate>
     <DataTemplate DataType="vm:GruposDepreciacaoViewModel"><v:GruposDepreciacaoView /></DataTemplate>
     <DataTemplate DataType="vm:DepreciacaoViewModel"><v:DepreciacaoView /></DataTemplate>
-    <DataTemplate DataType="vm:ParticipantesViewModel"><v:ParticipantesView /></DataTemplate>
+    <DataTemplate DataType="vm:ClientesViewModel"><v:ParticipantesView /></DataTemplate>
+    <DataTemplate DataType="vm:FornecedoresViewModel"><v:ParticipantesView /></DataTemplate>
     <DataTemplate DataType="vm:ConfiguracoesGeraisViewModel"><v:ConfiguracoesGeraisView /></DataTemplate>
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>

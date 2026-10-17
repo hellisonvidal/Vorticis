@@ -232,24 +232,33 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(hist.Erros);
             Assert.Equal("1", Assert.Single(hist.Lista).Codigo);
 
-            // Cadastros › Clientes e Fornecedores (abas)
+            // Cadastros › Clientes (dados da Receita pelo CNPJ, como no cadastro de empresas) e › Fornecedores (planilha)
             vm.AbrirCommand.Execute(Telas.Clientes);
-            var part = vm.Participantes;
-            await part.CarregarAsync();
-            part.IncluirCommand.Execute(null);
-            Assert.Equal("1", part.Codigo);
-            (part.Nome, part.CpfCnpj, part.Uf, part.Municipio) = ("Comercial Alfa Ltda", "11.222.333/0001-81", "SP", "São Paulo");
-            await part.SalvarCommand.ExecuteAsync(null);
-            Assert.Empty(part.Erros);
-            Assert.Equal("Cliente", Assert.Single(part.Lista).Tipo);
+            var cli = vm.Clientes;
+            await cli.CarregarAsync();
+            cli.IncluirCommand.Execute(null);
+            Assert.Equal("1", cli.Codigo);
+            cli.CpfCnpj = "11222333000181";
+            await cli.BuscarCnpjCommand.ExecuteAsync(null);
+            Assert.Empty(cli.Erros);
+            Assert.Equal(("EXEMPLO COMERCIO DE INFORMATICA LTDA", "SP", "3550308", "110042490114"), (cli.Nome, cli.Uf, cli.MunicipioIbge, cli.InscricaoEstadual));
+            await cli.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(cli.Erros);
+            Assert.Equal("Cliente", Assert.Single(cli.Lista).Tipo);
+            Foto(janela, "02c_clientes");
             vm.AbrirCommand.Execute(Telas.Fornecedores);
-            Assert.Equal(ParticipantesViewModel.AbaFornecedores, part.AbaSelecionada);
-            Assert.Empty(part.Lista);
-            part.IncluirCommand.Execute(null);
-            (part.Nome, part.Cliente, part.Fornecedor) = ("Distribuidora Beta", false, true);
-            await part.SalvarCommand.ExecuteAsync(null);
-            Assert.Empty(part.Erros);
-            Assert.Equal("2", Assert.Single(part.Lista).Codigo);
+            var forn = vm.Fornecedores;
+            await forn.CarregarAsync();
+            Assert.Empty(forn.Lista);
+            var planilhaForn = Path.Combine(Path.GetTempPath(), $"fornecedores_{Guid.NewGuid():N}.csv");
+            File.WriteAllText(planilhaForn, "Nome;CPF/CNPJ;UF;Cidade\nDistribuidora Beta;;SP;Campinas\nEXEMPLO COMERCIO;11.222.333/0001-81;;\nSem documento válido;123;;\n");
+            var importacaoForn = forn.ImportarPlanilhaAsync(planilhaForn);
+            await AguardarConfirmacao(vm);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await importacaoForn;
+            Assert.StartsWith("1 cadastro(s) incluído(s), 1 já existente(s) marcado(s) como fornecedor; 1 linha(s) com erro.", forn.Mensagem);
+            Assert.Equal(2, forn.Lista.Count);
+            Assert.Contains(forn.Lista, l => l.Tipo == "Cliente e fornecedor");
             Foto(janela, "02c_fornecedores");
 
             // Imobilizado: regras (grupos da RFB), cadastro do bem e cálculo da depreciação
