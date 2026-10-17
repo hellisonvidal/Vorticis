@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Perseus.Application.Cadastros;
-using Perseus.Infra.Importacao;
 using Perseus.Domain.Seguranca;
 
 namespace Perseus.Desktop.ViewModels;
@@ -29,8 +28,8 @@ public sealed class ClientesViewModel(IContexto contexto) : ParticipantesViewMod
 public sealed class FornecedoresViewModel(IContexto contexto) : ParticipantesViewModel(contexto, fornecedores: true);
 
 /// <summary>
-/// Cadastro de clientes ou de fornecedores (a mesma pessoa pode ser os dois). Dados podem vir da base pública do CNPJ
-/// (como no cadastro de empresas) ou de uma planilha.
+/// Cadastro de clientes ou de fornecedores (a mesma pessoa pode ser os dois). Os dados podem vir da base pública
+/// do CNPJ, como no cadastro de empresas.
 /// </summary>
 public abstract partial class ParticipantesViewModel(IContexto contexto, bool fornecedores) : CadastroViewModel(contexto)
 {
@@ -168,22 +167,6 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         catch (Exception ex) { Erros.Add(ex.Message); }
         finally { Ocupado = false; }
     }
-
-    /// <summary>Importa vários cadastros de uma planilha (Excel ou CSV), como clientes ou fornecedores desta tela.</summary>
-    public Task ImportarPlanilhaAsync(string arquivo) => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var t = LeitorPlanilha.Ler(arquivo);
-        if (!t.Sucesso) { MostrarResultado(t, ""); return; }
-        if (!await Contexto.ConfirmarAsync($"Importar {TituloLista.ToLowerInvariant()}",
-                $"Importar {t.Valor.Linhas.Count} linha(s) da planilha como {TituloLista.ToLowerInvariant()}? " +
-                "Quem já estiver cadastrado (mesmo CPF/CNPJ) não é duplicado.", "Importar", "Cancelar")) return;
-        var r = await app.Participantes.ImportarAsync(empresa, t.Valor, cliente: !Fornecedores, fornecedor: Fornecedores, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        foreach (var e in r.Valor.Erros.Take(20)) Erros.Add(e);
-        await CarregarAsync();
-        Mensagem = $"{r.Valor.Incluidos} cadastro(s) incluído(s)" + (r.Valor.Atualizados > 0 ? $", {r.Valor.Atualizados} já existente(s) marcado(s) como {NomeRegistro}" : "") +
-                   (r.Valor.Erros.Count > 0 ? $"; {r.Valor.Erros.Count} linha(s) com erro." : ".");
-    }, Permissao.LancamentoIncluir);
 
     protected override async Task<bool> ExcluirSelecionadoAsync()
     {

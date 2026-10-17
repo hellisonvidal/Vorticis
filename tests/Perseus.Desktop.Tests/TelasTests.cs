@@ -232,7 +232,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(hist.Erros);
             Assert.Equal("1", Assert.Single(hist.Lista).Codigo);
 
-            // Cadastros › Clientes (dados da Receita pelo CNPJ, como no cadastro de empresas) e › Fornecedores (planilha)
+            // Cadastros › Clientes (dados da Receita pelo CNPJ, como no cadastro de empresas) e › Fornecedores
             vm.AbrirCommand.Execute(Telas.Clientes);
             var cli = vm.Clientes;
             await cli.CarregarAsync();
@@ -250,15 +250,12 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var forn = vm.Fornecedores;
             await forn.CarregarAsync();
             Assert.Empty(forn.Lista);
-            var planilhaForn = Path.Combine(Path.GetTempPath(), $"fornecedores_{Guid.NewGuid():N}.csv");
-            File.WriteAllText(planilhaForn, "Nome;CPF/CNPJ;UF;Cidade\nDistribuidora Beta;;SP;Campinas\nEXEMPLO COMERCIO;11.222.333/0001-81;;\nSem documento válido;123;;\n");
-            var importacaoForn = forn.ImportarPlanilhaAsync(planilhaForn);
-            await AguardarConfirmacao(vm);
-            vm.ResponderConfirmacaoCommand.Execute(true);
-            await importacaoForn;
-            Assert.StartsWith("1 cadastro(s) incluído(s), 1 já existente(s) marcado(s) como fornecedor; 1 linha(s) com erro.", forn.Mensagem);
-            Assert.Equal(2, forn.Lista.Count);
-            Assert.Contains(forn.Lista, l => l.Tipo == "Cliente e fornecedor");
+            forn.IncluirCommand.Execute(null);
+            Assert.Equal((false, true), (forn.Cliente, forn.Fornecedor));
+            (forn.Nome, forn.Uf, forn.Municipio) = ("Distribuidora Beta", "SP", "Campinas");
+            await forn.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(forn.Erros);
+            Assert.Equal(("2", "Fornecedor"), (Assert.Single(forn.Lista).Codigo, forn.Lista[0].Tipo));
             Foto(janela, "02c_fornecedores");
 
             // Imobilizado: regras (grupos da RFB), cadastro do bem e cálculo da depreciação
