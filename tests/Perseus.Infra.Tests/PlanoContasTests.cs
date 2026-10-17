@@ -95,3 +95,55 @@ public class PlanoContasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Contains(inativo.Erros, e => e.Contains("centro de custo ADM.TI não encontrado"));   // inativo não aceita lançamento
     }
 }
+
+public class ImportacaoPlanoContasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+{
+    [Fact]
+    public async Task Importa_planilha_xlsx_substituindo_o_plano_e_converte_mascara_com_movimento()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.PlanoContas;
+        var empresa = await db.CriarEmpresaAsync("19131243000197");
+        var adm = await db.AdminAsync();
+
+        // Planilha .xlsx (gerada aqui com o próprio exportador), códigos sem máscara
+        var linhas = new (string Cod, string Desc)[]
+        {
+            ("1", "ATIVO"), ("11", "CIRCULANTE"), ("111", "DISPONÍVEL"), ("1111", "Caixa"), ("1112", "Bancos"),
+            ("2", "PASSIVO"), ("21", "CIRCULANTE"), ("211", "FORNECEDORES"), ("2111", "Fornecedores nacionais"),
+            ("3", "RESULTADO"), ("31", "RECEITAS"), ("311", "Vendas"), ("3111", "Venda de mercadorias"),
+        };
+        var xlsx = Relatorios.ExportadorExcel.Gerar([new Application.Relatorios.TabelaRelatorio("Plano",
+            [new("Código"), new("Descrição")], linhas.Select(l => new Application.Relatorios.LinhaRelatorio([l.Cod, l.Desc])).ToList())]);
+        var tabela = Importacao.LeitorPlanilha.Ler(xlsx, ".xlsx");
+        Assert.True(tabela.Sucesso, string.Join("; ", tabela.Erros));
+        var plano = LeitorPlanoContas.Ler(tabela.Valor, ColunasPlano.Detectar(tabela.Valor), MascaraPlano.Ler("9.9.9.99").Valor);
+        Assert.True(plano.Valido, string.Join("; ", plano.Erros));
+
+        var r = await svc.ImportarAsync(empresa, plano, adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var atual = await svc.ListarAsync(empresa, adm, ct);
+        Assert.Equal(13, atual.Count);
+        var caixa = atual.Single(c => c.Codigo == "1.1.1.01");
+        Assert.True(caixa.Analitica);
+        Assert.Equal("1.1.1", atual.Single(c => c.Id == caixa.ContaPaiId).Codigo);
+        Assert.Equal(("04", IndicadorDC.C), (atual.Single(c => c.Codigo == "3.1.1.01").CodNat, atual.Single(c => c.Codigo == "3.1.1.01").NaturezaSaldo));
+
+        // Com lançamento, importar de novo é recusado...
+        var lanc = await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 2, 1), OrigemLancamento.Manual,
+            [new("1.1.1.01", IndicadorDC.D, 80m, "venda"), new("3.1.1.01", IndicadorDC.C, 80m, "venda")]), adm, ct);
+        Assert.True(lanc.Sucesso, string.Join("; ", lanc.Erros));
+        Assert.Contains("já tem lançamentos", (await svc.ImportarAsync(empresa, plano, adm, ct)).Erros[0]);
+
+        // ...mas a conversão de máscara troca só os códigos, mantendo lançamentos e saldos
+        Assert.Contains("níveis", (await svc.AplicarMascaraAsync(empresa, MascaraPlano.Ler("9.9.9").Valor, adm, ct)).Erros[0]);
+        var conv = await svc.AplicarMascaraAsync(empresa, MascaraPlano.Ler("9.9.99.999").Valor, adm, ct);
+        Assert.True(conv.Sucesso, string.Join("; ", conv.Erros));
+        Assert.Equal(7, conv.Valor);                                          // raízes e 2º nível não mudam
+        var depois = await svc.ListarAsync(empresa, adm, ct);
+        var caixaDepois = depois.Single(c => c.Id == caixa.Id);
+        Assert.Equal(("1.1.01.001", 80m), (caixaDepois.Codigo, caixaDepois.Saldo));
+        Assert.Equal(0, (await svc.AplicarMascaraAsync(empresa, MascaraPlano.Ler("9.9.99.999").Valor, adm, ct)).Valor);
+    }
+}

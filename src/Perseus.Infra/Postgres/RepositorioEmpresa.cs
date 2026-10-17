@@ -84,7 +84,7 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
         return r.GetFieldValue<DateOnly>(0);
     }
 
-    private static async Task InserirPlanoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId,
+    internal static async Task InserirPlanoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId,
                                                 IReadOnlyList<ContaModelo> plano, DateOnly dataInclusao, CancellationToken ct)
     {
         if (plano.Count == 0) return;
@@ -97,8 +97,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             var ultimoPonto = c.Codigo.LastIndexOf('.');
             var codigoPai = ultimoPonto < 0 ? null : c.Codigo[..ultimoPonto];
             if (codigoPai is not null && !ids.ContainsKey(codigoPai))
-                throw new InvalidOperationException($"Plano modelo inválido: conta {c.Codigo} sem a conta pai {codigoPai}.");
-            var analitica = !codigos.Any(o => o.StartsWith(c.Codigo + ".", StringComparison.Ordinal));
+                throw new Domain.Comum.ViolacaoRegraException($"Plano inválido: conta {c.Codigo} sem a conta superior {codigoPai}.");
+            var analitica = codigoPai is not null && (c.Analitica ?? !codigos.Any(o => o.StartsWith(c.Codigo + ".", StringComparison.Ordinal)));
 
             await using var cmd = new NpgsqlCommand("""
                 INSERT INTO contabil.plano_contas (empresa_id, codigo, descricao, tipo, nivel, conta_pai_id, cod_nat, natureza_saldo, data_inclusao)

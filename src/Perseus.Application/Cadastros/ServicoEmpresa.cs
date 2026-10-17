@@ -57,8 +57,8 @@ public sealed record EmpresaDetalhe(long Id, string Cnpj, string RazaoSocial, st
                                     string? Telefone = null, RegimeTributario? Regime = null, string? SituacaoCadastral = null,
                                     string? FonteDados = null);
 
-/// <summary>Conta do plano modelo. Tipo, nível e pai derivam do código (máscara 9.9.99.999).</summary>
-public sealed record ContaModelo(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo);
+/// <summary>Conta do plano modelo. Nível e pai derivam do código; tipo também, salvo quando informado (sintética sem subcontas).</summary>
+public sealed record ContaModelo(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo, bool? Analitica = null);
 
 public interface IRepositorioEmpresa
 {

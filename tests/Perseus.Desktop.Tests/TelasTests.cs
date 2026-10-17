@@ -308,6 +308,43 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("Caixa da filial Centro", plano.Selecionada?.Conta.Descricao);
             Foto(janela, "06_plano_contas");
 
+            // Plano de contas › Importar de planilha e máscara
+            plano.ImportarPlanilhaCommand.Execute(null);
+            var impPlano = vm.ImportacaoPlano;
+            Assert.Same(impPlano, vm.Conteudo);
+            await impPlano.CarregarAsync();
+            Assert.Equal("9.9.99.999", impPlano.MascaraAtual);
+            var csvPlano = Path.Combine(Path.GetTempPath(), $"plano_{Guid.NewGuid():N}.csv");
+            File.WriteAllText(csvPlano, "Classificação;Nome da conta\n1;ATIVO\n11;CIRCULANTE\n111;DISPONÍVEL\n1111;Caixa\n2;PASSIVO\n21;CIRCULANTE\n211;Fornecedores\n");
+            impPlano.Mascara = "9.9.9.99";
+            impPlano.Arquivo = csvPlano;
+            Assert.Equal((0, 1), (impPlano.ColunaCodigo, impPlano.ColunaDescricao));
+            Assert.Equal(7, impPlano.Previa.Count);
+            Assert.Contains(impPlano.Previa, p => p.Original == "1111" && p.Codigo.Trim() == "1.1.1.01" && p.Tipo == "Analítica");
+            Assert.True(impPlano.PreviaValida);
+            Foto(janela, "06b_importar_plano");
+            var importacao = impPlano.ImportarCommand.ExecuteAsync(null);
+            Assert.Contains("SUBSTITUÍDO", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await importacao;
+            Assert.Contains("já tem lançamentos", impPlano.Erros[0]);                // empresa com movimento: plano preservado
+            impPlano.Mascara = "9.9.99.9999";                                        // converter o plano atual (e voltar)
+            var conversao = impPlano.AplicarMascaraCommand.ExecuteAsync(null);
+            Assert.Contains("1.1.01.0001", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await conversao;
+            Assert.Empty(impPlano.Erros);
+            Assert.Equal("9.9.99.9999", impPlano.MascaraAtual);
+            impPlano.Mascara = "9.9.99.999";
+            conversao = impPlano.AplicarMascaraCommand.ExecuteAsync(null);
+            await AguardarConfirmacao(vm);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await conversao;
+            Assert.Contains("convertido(s) para a máscara 9.9.99.999", impPlano.Mensagem);
+            vm.AbrirCommand.Execute(Telas.PlanoContas);
+            await plano.CarregarAsync();
+            Assert.Contains(plano.Lista, c => c.Conta.Codigo == "1.1.01.002");
+
             // Centros de custo
             vm.AbrirCommand.Execute(Telas.CentrosCusto);
             vm.CentrosCusto.IncluirCommand.Execute(null);

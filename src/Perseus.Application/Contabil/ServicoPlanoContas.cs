@@ -26,6 +26,10 @@ public interface IRepositorioPlanoContas
     Task AlterarAsync(long contaId, string descricao, IndicadorDC naturezaSaldo, bool exigeCentroCusto, bool exigeParticipante, bool ativa,
                       long usuarioId, CancellationToken ct);
     Task ExcluirAsync(long contaId, long usuarioId, CancellationToken ct);
+    /// <summary>Apaga o plano da empresa (sem lançamentos) e grava o novo, numa transação.</summary>
+    Task SubstituirAsync(long empresaId, IReadOnlyList<Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct);
+    /// <summary>Troca os códigos das contas (mesma hierarquia), numa transação.</summary>
+    Task RecodificarAsync(long empresaId, IReadOnlyDictionary<long, string> codigos, long usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<CentroCustoDetalhe>> ListarCentrosAsync(long empresaId, CancellationToken ct);
     Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, CancellationToken ct);
@@ -116,6 +120,79 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         catch (ViolacaoRegraException ex)
         {
             return Resultado.Falha($"Não foi possível excluir: {ex.Message}");
+        }
+    }
+
+    // ------------------------------------------------------------------ importação e máscara
+
+    /// <summary>
+    /// Substitui o plano da empresa pelo lido da planilha. Só é permitido enquanto nenhuma conta tem lançamentos
+    /// (inclusive rascunhos e saldos iniciais); os vínculos com o plano referencial do plano anterior são descartados.
+    /// </summary>
+    public async Task<Resultado<int>> ImportarAsync(long empresaId, PlanoImportado plano, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return negado;
+        if (plano.Erros.Count > 0) return Resultado<int>.Falha(plano.Erros);
+        if (plano.Contas.Count == 0) return Resultado<int>.Falha("A planilha não tem contas.");
+        if (plano.Contas.FirstOrDefault(c => !NaturezasValidas.Contains(c.CodNat)) is { } invalida)
+            return Resultado<int>.Falha($"Conta {invalida.Codigo}: natureza (COD_NAT) inválida.");
+        var atual = await repositorio.ListarAsync(empresaId, ct);
+        if (atual.FirstOrDefault(c => c.TemMovimento) is { } comMovimento)
+            return Resultado<int>.Falha($"O plano atual já tem lançamentos (ex.: conta {comMovimento.Codigo}); a importação substitui o plano inteiro e só é " +
+                                        "permitida antes do primeiro lançamento. Para ajustar só os códigos, use a conversão de máscara.");
+        try
+        {
+            await repositorio.SubstituirAsync(empresaId, plano.Contas.Select(c =>
+                new Cadastros.ContaModelo(c.Codigo, c.Descricao, c.CodNat, c.NaturezaSaldo, c.Analitica)).ToList(), usuarioId, ct);
+            return Resultado<int>.Ok(plano.Contas.Count);
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<int>.Falha($"Não foi possível importar: {ex.Message}");
+        }
+    }
+
+    /// <summary>Códigos atuais convertidos para a máscara (De → Para), ou os erros que impedem a conversão.</summary>
+    public async Task<Resultado<IReadOnlyList<(ContaDetalhe Conta, string Novo)>>> SimularMascaraAsync(long empresaId, MascaraPlano mascara, long usuarioId,
+                                                                                                       CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<(ContaDetalhe, string)>>(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return negado;
+        var plano = await repositorio.ListarAsync(empresaId, ct);
+        if (plano.Count == 0) return Resultado<IReadOnlyList<(ContaDetalhe, string)>>.Falha("A empresa não tem plano de contas.");
+        var erros = new List<string>();
+        var res = new List<(ContaDetalhe, string)>();
+        foreach (var c in plano)
+        {
+            var r = mascara.Converter(c.Codigo);
+            if (!r.Sucesso) erros.Add($"Conta {c.Codigo}: {r.Erros[0]}.");
+            else if (r.Valor.Count(ch => ch == '.') != c.Codigo.Count(ch => ch == '.'))
+                erros.Add($"Conta {c.Codigo}: a conversão mudaria o nível da conta.");
+            else res.Add((c, r.Valor));
+        }
+        foreach (var g in res.GroupBy(x => x.Item2).Where(g => g.Count() > 1).Take(10))
+            erros.Add($"As contas {string.Join(", ", g.Select(x => x.Item1.Codigo))} ficariam com o mesmo código {g.Key}.");
+        return erros.Count > 0 ? Resultado<IReadOnlyList<(ContaDetalhe, string)>>.Falha(erros.Take(30))
+                               : Resultado<IReadOnlyList<(ContaDetalhe, string)>>.Ok(res);
+    }
+
+    /// <summary>
+    /// Converte os códigos do plano atual para a máscara. A hierarquia e os lançamentos ficam como estão
+    /// (os lançamentos apontam para a conta, não para o código). Retorna quantas contas mudaram de código.
+    /// </summary>
+    public async Task<Resultado<int>> AplicarMascaraAsync(long empresaId, MascaraPlano mascara, long usuarioId, CancellationToken ct = default)
+    {
+        var sim = await SimularMascaraAsync(empresaId, mascara, usuarioId, ct);
+        if (!sim.Sucesso) return Resultado<int>.Falha(sim.Erros);
+        var mudancas = sim.Valor.Where(x => x.Conta.Codigo != x.Novo).ToDictionary(x => x.Conta.Id, x => x.Novo);
+        if (mudancas.Count == 0) return Resultado<int>.Ok(0);
+        try
+        {
+            await repositorio.RecodificarAsync(empresaId, mudancas, usuarioId, ct);
+            return Resultado<int>.Ok(mudancas.Count);
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<int>.Falha($"Não foi possível converter: {ex.Message}");
         }
     }
 

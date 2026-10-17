@@ -89,6 +89,55 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             return 0;
         });
 
+    public Task SubstituirAsync(long empresaId, IReadOnlyList<Application.Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            DateOnly inicio;
+            await using (var cmd = new NpgsqlCommand("""
+                SELECT EXISTS (SELECT 1 FROM contabil.partida p JOIN contabil.plano_contas c ON c.id = p.conta_id WHERE c.empresa_id = @e),
+                       (SELECT min(data_inicio) FROM contabil.exercicio WHERE empresa_id = @e)
+                """, con, tx).Com("e", empresaId))
+            await using (var r = await cmd.ExecuteReaderAsync(ct))
+            {
+                await r.ReadAsync(ct);
+                if (r.GetBoolean(0)) throw new Domain.Comum.ViolacaoRegraException("o plano atual já tem lançamentos.");
+                inicio = r.IsDBNull(1) ? DateOnly.FromDateTime(DateTime.Today) : r.GetFieldValue<DateOnly>(1);
+            }
+            await using (var cmd = new NpgsqlCommand("""
+                DELETE FROM contabil.mapeamento_referencial WHERE conta_id IN (SELECT id FROM contabil.plano_contas WHERE empresa_id = @e);
+                DELETE FROM contabil.saldo_mensal WHERE conta_id IN (SELECT id FROM contabil.plano_contas WHERE empresa_id = @e);
+                DELETE FROM contabil.plano_contas WHERE empresa_id = @e;
+                """, con, tx).Com("e", empresaId))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await RepositorioEmpresa.InserirPlanoAsync(con, tx, empresaId, plano, inicio, ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
+    public Task RecodificarAsync(long empresaId, IReadOnlyDictionary<long, string> codigos, long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            var ids = codigos.Keys.ToArray();
+            // Em duas etapas para não colidir com códigos que ainda serão trocados (1.1.1 ↔ 1.1.01).
+            await using (var cmd = new NpgsqlCommand(
+                "UPDATE contabil.plano_contas SET codigo = '#' || id WHERE empresa_id = @e AND id = ANY(@ids)", con, tx)
+                .Com("e", empresaId).Com("ids", ids))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await using (var cmd = new NpgsqlCommand("""
+                UPDATE contabil.plano_contas c SET codigo = n.codigo
+                  FROM unnest(@ids, @cods) AS n(id, codigo) WHERE c.id = n.id AND c.empresa_id = @e
+                """, con, tx).Com("e", empresaId).Com("ids", ids).Com("cods", ids.Select(i => codigos[i]).ToArray()))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
     public async Task<IReadOnlyList<CentroCustoDetalhe>> ListarCentrosAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

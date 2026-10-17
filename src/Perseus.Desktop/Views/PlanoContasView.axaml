@@ -10,6 +10,7 @@
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
         <TextBlock Classes="titulo" Text="Plano de contas" VerticalAlignment="Center" />
         <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código ou descrição" Width="300" />
+        <Button Content="Importar de planilha / máscara..." Command="{Binding ImportarPlanilhaCommand}" IsVisible="{Binding PodeEditar}" />
       </StackPanel>
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False"
                 FontFamily="Consolas, Menlo, monospace">
