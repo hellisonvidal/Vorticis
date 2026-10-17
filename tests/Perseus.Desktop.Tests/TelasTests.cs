@@ -252,6 +252,33 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("2", Assert.Single(part.Lista).Codigo);
             Foto(janela, "02c_fornecedores");
 
+            // Imobilizado: regras (grupos da RFB), cadastro do bem e cálculo da depreciação
+            vm.AbrirCommand.Execute(Telas.GruposDepreciacao);
+            await vm.GruposDepreciacao.CarregarAsync();
+            Assert.Contains(vm.GruposDepreciacao.Lista, g => g.Descricao == "Móveis e utensílios" && g.Taxa == "10%" && g.VidaUtil == "10 anos");
+            Foto(janela, "02d_regras_depreciacao");
+            vm.AbrirCommand.Execute(Telas.Bens);
+            var bens = vm.Bens;
+            await bens.CarregarAsync();
+            bens.IncluirCommand.Execute(null);
+            Assert.Equal("1", bens.Codigo);
+            bens.Descricao = "Notebook do financeiro";
+            bens.Grupo = bens.Grupos.Single(g => g.Codigo == "08");
+            Assert.Equal(("60", "1.2.03.004", "1.2.03.007"), (bens.VidaUtil, bens.ContaBem, bens.ContaAcumulada));
+            (bens.DataAquisicao, bens.InicioUso, bens.Valor, bens.Turnos) = (new DateTime(2026, 2, 5), new DateTime(2026, 2, 5), "6.000,00", 2);
+            await bens.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(bens.Erros);
+            Assert.Equal("Ativo", Assert.Single(bens.Lista).Situacao);
+            Foto(janela, "02e_bens");
+            vm.AbrirCommand.Execute(Telas.Depreciacao);
+            var dep = vm.Depreciacao;
+            (dep.Mes, dep.Ano) = (2, 2026);                                     // março/2026
+            await dep.CalcularCommand.ExecuteAsync(null);
+            var linhaDep = Assert.Single(dep.Linhas);
+            Assert.Equal(("100,00", "150,00", "50,00"), (linhaDep.Contabil, linhaDep.Fiscal, linhaDep.Diferenca));   // 2 turnos: fiscal × 1,5
+            Assert.True(dep.LancarCommand.CanExecute(null));
+            Foto(janela, "02f_depreciacao");
+
             // 3. Lançamentos › Lançamento contábil (partida dobrada: uma linha por lançamento, digitado pelo teclado)
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Lancamento));
             vm.AbrirCommand.Execute(Telas.Lancamento);

@@ -59,6 +59,12 @@
           <MenuItem Header="Fechamento de períodos" Command="{Binding AbrirCommand}" CommandParameter="periodos" />
           <MenuItem Header="Encerramento do exercício" Command="{Binding AbrirCommand}" CommandParameter="encerramento" />
         </MenuItem>
+        <MenuItem Header="I_mobilizado">
+          <MenuItem Header="Cadastro de bens" Command="{Binding AbrirCommand}" CommandParameter="bens" />
+          <MenuItem Header="Regras de depreciação (grupos)" Command="{Binding AbrirCommand}" CommandParameter="gruposdepreciacao" />
+          <Separator />
+          <MenuItem Header="Cálculo e lançamento da depreciação" Command="{Binding AbrirCommand}" CommandParameter="depreciacao" />
+        </MenuItem>
         <MenuItem Header="C_onsultas">
           <MenuItem Header="Saldos de contas" Command="{Binding AbrirCommand}" CommandParameter="consultasaldos" />
           <MenuItem Header="Lançamentos" Command="{Binding AbrirCommand}" CommandParameter="consultalancamentos" />

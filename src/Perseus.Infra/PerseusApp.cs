@@ -1,3 +1,4 @@
+using Perseus.Application.Imobilizado;
 using Npgsql;
 using Perseus.Application.Cadastros;
 using Perseus.Application.Contabil;
@@ -31,7 +32,9 @@ public sealed class PerseusApp : IAsyncDisposable
         var repoPlano = new RepositorioPlanoContas(ds);
         PlanoContas = new ServicoPlanoContas(repoPlano, autorizador);
         Historicos = new ServicoHistoricos(new RepositorioHistoricos(ds), autorizador);
-        Participantes = new ServicoParticipantes(new RepositorioParticipantes(ds), repoPlano, autorizador);
+        var repoParticipantes = new RepositorioParticipantes(ds);
+        Participantes = new ServicoParticipantes(repoParticipantes, repoPlano, autorizador);
+        Imobilizado = new ServicoImobilizado(new RepositorioImobilizado(ds), repoPlano, repoParticipantes, Lancamentos, autorizador);
         Importacao = new ServicoImportacao(new RepositorioImportacao(ds), Lancamentos, autorizador);
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
@@ -57,6 +60,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public ServicoPeriodo Periodos { get; }
     public ServicoPlanoContas PlanoContas { get; }
     public ServicoHistoricos Historicos { get; }
+    public ServicoImobilizado Imobilizado { get; }
     public ServicoParticipantes Participantes { get; }
     public ServicoConfiguracoesGerais ConfiguracoesGerais { get; }
     public ServicoImportacao Importacao { get; }

@@ -117,7 +117,7 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
             return (IReadOnlyList<LancamentoEfetivado>)gravados;
         });
 
-    private static async Task<LancamentoEfetivado> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, LancamentoValidado l,
+    internal static async Task<LancamentoEfetivado> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, LancamentoValidado l,
                                                                           long? usuarioId, CancellationToken ct)
     {
         // Numeração sequencial sem lacunas: o lock na linha do exercício serializa as efetivações.

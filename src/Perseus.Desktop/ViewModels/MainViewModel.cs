@@ -60,6 +60,9 @@ public static class Telas
     public const string Clientes = "clientes";
     public const string Fornecedores = "fornecedores";
     public const string ConfiguracoesGerais = "configuracoesgerais";
+    public const string Bens = "bens";
+    public const string GruposDepreciacao = "gruposdepreciacao";
+    public const string Depreciacao = "depreciacao";
     public const string ImportarPlanilhas = "importarplanilhas";
     public const string ImportarExtratos = "importarextratos";
     public const string ImportarLancamentos = "importarlancamentos";
@@ -91,7 +94,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(Importacao), nameof(Historicos), nameof(Participantes), nameof(ConfiguracoesGerais))]
+        nameof(ImportacaoPlano), nameof(Importacao), nameof(Historicos), nameof(Participantes), nameof(ConfiguracoesGerais),
+        nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -123,6 +127,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Historicos = new HistoricosViewModel(this);
         Participantes = new ParticipantesViewModel(this);
         ConfiguracoesGerais = new ConfiguracoesGeraisViewModel(this);
+        Bens = new BensViewModel(this);
+        GruposDepreciacao = new GruposDepreciacaoViewModel(this);
+        Depreciacao = new DepreciacaoViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -184,6 +191,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public HistoricosViewModel Historicos { get; private set; }
     public ParticipantesViewModel Participantes { get; private set; }
     public ConfiguracoesGeraisViewModel ConfiguracoesGerais { get; private set; }
+    public BensViewModel Bens { get; private set; }
+    public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
+    public DepreciacaoViewModel Depreciacao { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -321,6 +331,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         ImportacaoPlano.AtualizarPermissoes();
         Historicos.AtualizarPermissoes();
         Participantes.AtualizarPermissoes();
+        Bens.AtualizarPermissoes();
+        GruposDepreciacao.AtualizarPermissoes();
         foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
     }
 
@@ -342,7 +354,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Empresas or Telas.Perfis or Telas.Conexao or Telas.Backup or Telas.ImportacaoReferencial
             => Pode(Permissao.AdministrarSistema),
         Telas.PlanoContas or Telas.CentrosCusto or Telas.MapeamentoReferencial or Telas.Contabilidade or Telas.Socios
-            or Telas.Historicos or Telas.Clientes or Telas.Fornecedores
+            or Telas.Historicos or Telas.Clientes or Telas.Fornecedores or Telas.Bens or Telas.GruposDepreciacao or Telas.Depreciacao
             => EmpresaSelecionada is not null && _permissoes.TemAcesso,
         Telas.ConfiguracoesGerais => Pode(Permissao.AdministrarSistema),
         Telas.Lancamento => Pode(Permissao.LancamentoIncluir),
@@ -399,6 +411,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
             Telas.Historicos => (Historicos, "Cadastros › Históricos"),
+            Telas.Bens => (Bens, "Imobilizado › Cadastro de bens"),
+            Telas.GruposDepreciacao => (GruposDepreciacao, "Imobilizado › Regras de depreciação"),
+            Telas.Depreciacao => (Depreciacao, "Imobilizado › Cálculo e lançamento da depreciação"),
             Telas.Clientes or Telas.Fornecedores => (Participantes, "Cadastros › Clientes e fornecedores"),
             Telas.ConfiguracoesGerais => (ConfiguracoesGerais, "Configurações › Configurações gerais"),
             Telas.ImportarPlano => (ImportacaoPlano, "Integrações › Importar › Plano de contas"),
@@ -441,6 +456,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.Licenca) _ = Disparar(Licenca.CarregarAsync);
         if (tela == Telas.ImportarPlano) _ = Disparar(ImportacaoPlano.CarregarAsync);
         if (tela == Telas.Historicos) _ = Disparar(Historicos.CarregarAsync);
+        if (tela == Telas.Bens) _ = Disparar(Bens.CarregarAsync);
+        if (tela == Telas.GruposDepreciacao) _ = Disparar(GruposDepreciacao.CarregarAsync);
         if (tela == Telas.Lancamento) _ = Disparar(Lancamento.CarregarAsync);
         if (tela == Telas.ConfiguracoesGerais) _ = Disparar(ConfiguracoesGerais.CarregarAsync);
         if (tela is Telas.Clientes or Telas.Fornecedores)
