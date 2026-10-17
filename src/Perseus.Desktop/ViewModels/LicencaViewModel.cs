@@ -17,7 +17,7 @@ public partial class LicencaViewModel(MainViewModel main) : ModuloViewModel(main
         new("PostgreSQL", "PostgreSQL License", "banco de dados local"),
         new("Npgsql", "PostgreSQL License", "acesso ao banco de dados"),
         new("PDFsharp / MigraDoc", "MIT", "relatórios em PDF"),
-        new("ClosedXML", "MIT", "planilhas Excel (importação e exportação)"),
+        new("MiniExcel", "Apache 2.0", "planilhas Excel (importação e exportação)"),
         new("Liberation Sans · Inter", "SIL Open Font License 1.1", "fontes"),
     ];
 
