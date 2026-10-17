@@ -806,7 +806,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Contains(vm.PlanoContas.Erros, e => e.Contains("não permite"));
             Foto(janela, "13_perfil_restrito");
 
-            janela.Close();
+            janela.Close();                                                 // fechar pede confirmação
+            Assert.Contains("Deseja realmente fechar", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(janela.IsVisible);
             await vm.DisposeAsync();
             LoginSalvo.Esquecer();
             return true;

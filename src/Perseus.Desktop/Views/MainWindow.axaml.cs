@@ -23,6 +23,8 @@ public partial class MainWindow : Window
         KeyBindings.Add(Atalho(Key.L, KeyModifiers.Control, Telas.Lancamento));
         KeyBindings.Add(Atalho(Key.B, KeyModifiers.Control, Telas.Balancete));
         KeyBindings.Add(Atalho(Key.F1, KeyModifiers.None, Telas.Sobre));
+        // Fechar o sistema sempre pede confirmação.
+        Closing += AoFechar;
         // As janelas das funções ocupam a área de trabalho (abaixo do título, menus e barra de janelas) e a acompanham.
         PositionChanged += (_, _) => ReposicionarJanelas();
         AreaPrincipal.PropertyChanged += (_, e) =>
@@ -52,6 +54,21 @@ public partial class MainWindow : Window
     private Window? _dialogo;
 
     /// <summary>Janela flutuante da função ativa (null se nenhuma função estiver aberta).</summary>
+    private bool _fechamentoConfirmado;
+
+    /// <summary>Pergunta antes de fechar o programa; só fecha de fato se o usuário confirmar.</summary>
+    private async void AoFechar(object? sender, WindowClosingEventArgs e)
+    {
+        if (_fechamentoConfirmado || _vm is null) return;
+        e.Cancel = true;
+        if (_vm.Confirmacao is not null) return;                          // já há uma pergunta aberta
+        if (await _vm.ConfirmarAsync("Fechar o Perseus Contábil", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
+        {
+            _fechamentoConfirmado = true;
+            Close();
+        }
+    }
+
     public Window? JanelaAtiva => _vm?.FuncaoAtiva is { } f && _janelas.TryGetValue(f, out var w) ? w : null;
 
     public Window? JanelaDa(object viewModel) => _janelas.FirstOrDefault(kv => ReferenceEquals(kv.Key.ViewModel, viewModel)).Value;

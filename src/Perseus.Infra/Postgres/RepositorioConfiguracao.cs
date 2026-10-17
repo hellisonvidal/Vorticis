@@ -30,4 +30,17 @@ public sealed class RepositorioConfiguracao(NpgsqlDataSource ds) : IRepositorioC
         }
         await tx.CommitAsync(ct);
     }
+
+    public Task<int> LimparBancoAsync(long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            int qtd;
+            await using (var cmd = new NpgsqlCommand("SELECT core.fn_limpar_banco()", con, tx) { CommandTimeout = 600 })
+                qtd = (int)(await cmd.ExecuteScalarAsync(ct))!;
+            await tx.CommitAsync(ct);
+            return qtd;
+        });
 }

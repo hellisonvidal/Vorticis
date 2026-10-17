@@ -25,6 +25,20 @@
       </RadioButton>
       <Button Content="Salvar" Command="{Binding SalvarCommand}" Classes="accent" Margin="0,6,0,0" />
     </StackPanel>
+
+    <Border BorderBrush="#E0A3A0" BorderThickness="1" Background="#FDF3F2" CornerRadius="4" Padding="12" Margin="0,16,0,0"
+            IsVisible="{Binding PodeAlterar}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Limpar banco de dados (NÃO RECOMENDADO)" FontWeight="SemiBold" Foreground="#B3261E" />
+        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#5A2A27"
+                   Text="Apaga definitivamente TODAS as empresas e a escrituração (lançamentos, planos, períodos, imobilizado, clientes, fornecedores), contadores, escritórios, tabelas do plano referencial e layouts. Ficam só os usuários, os perfis e as configurações. Use apenas para recomeçar do zero — um backup é gerado antes." />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Digite LIMPAR para confirmar:" VerticalAlignment="Center" />
+          <TextBox Text="{Binding ConfirmacaoLimpeza}" Width="120" />
+          <Button Content="Limpar banco de dados" Command="{Binding LimparBancoCommand}" Background="#B3261E" Foreground="White" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
     <v:MensagensView />
   </StackPanel>
 </UserControl>

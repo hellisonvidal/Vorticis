@@ -32,4 +32,22 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
         await repositorio.GravarAsync(new Dictionary<string, string?> { [ChaveModo] = c.ModoLancamento.ToString() }, admin.Id, ct);
         return Resultado.Ok();
     }
+
+    public const string TextoConfirmacaoLimpeza = "LIMPAR";
+
+    /// <summary>
+    /// Limpa o banco de dados: exclui TODAS as empresas com a escrituração, contadores, escritórios, tabelas do plano
+    /// referencial e layouts. Usuários, perfis e configurações ficam. Não recomendado: só o administrador, digitando LIMPAR.
+    /// </summary>
+    public async Task<Resultado<int>> LimparBancoAsync(SessaoUsuario admin, string confirmacao, CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado<int>.Falha("Somente o administrador pode limpar o banco de dados.");
+        if (confirmacao.Trim() != TextoConfirmacaoLimpeza)
+            return Resultado<int>.Falha($"Para confirmar, digite {TextoConfirmacaoLimpeza} (em maiúsculas) no campo de confirmação.");
+        try
+        {
+            return Resultado<int>.Ok(await repositorio.LimparBancoAsync(admin.Id, ct));
+        }
+        catch (ViolacaoRegraException ex) { return Resultado<int>.Falha(ex.Message); }
+    }
 }
