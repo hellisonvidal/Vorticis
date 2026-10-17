@@ -11,6 +11,8 @@
       <TextBlock Text="a" VerticalAlignment="Center" />
       <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
       <CheckBox Content="Incluir contas zeradas" IsChecked="{Binding IncluirZeradas}" />
+      <CheckBox Content="Detalhar participantes" IsChecked="{Binding DetalharParticipantes}"
+                ToolTip.Tip="Plano com participantes: mostra, abaixo de cada conta, o saldo de cada cliente/fornecedor (a conta continua com a soma)" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
       <v:BarraExportacaoView />

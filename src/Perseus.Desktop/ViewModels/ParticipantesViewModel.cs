@@ -61,6 +61,9 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
     [ObservableProperty] private bool _fornecedor;
     [ObservableProperty] private string _conta = "";
     [ObservableProperty] private bool _ativo = true;
+    /// <summary>Alocado como participante dentro da conta contábil (plano com participantes).</summary>
+    [ObservableProperty] private bool _controleConta;
+    [ObservableProperty] private bool _usaParticipantes;
 
     public string TituloLista => Fornecedores ? "Fornecedores cadastrados" : "Clientes cadastrados";
     public string TituloFormulario => (Fornecedores ? "Fornecedor" : "Cliente") + (EmInclusao ? " — inclusão" : Modo == ModoCadastro.Alteracao ? " — alteração" : "");
@@ -70,7 +73,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
     public override bool PodeManter => PodeEditar;
     protected override string NomeRegistro => Fornecedores ? "fornecedor" : "cliente";
     protected override string? DescricaoSelecionado => Selecionado is { } s ? $"{s.Codigo} – {s.Nome}" : null;
-    protected override string DetalheExclusao => "\n\nQuem já aparece em lançamentos não é excluído: use Alterar e desmarque Ativo.";
+    protected override string DetalheExclusao => "\n\nQuem já aparece em lançamentos não é excluído.";
 
     public void AtualizarPermissoes()
     {
@@ -83,7 +86,9 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var g = NovaGeracao();
         var lista = await app.Participantes.ListarAsync(empresa, sessao.Id);
+        var usa = await app.Participantes.UsaParticipantesAsync(empresa);
         if (!EhAtual(g)) return;
+        UsaParticipantes = usa;
         _todos = lista;
         Filtrar();
     }
@@ -122,7 +127,8 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         (Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual) = (p?.Codigo ?? "", p?.Nome ?? "", p?.NomeFantasia ?? "", Selecionado?.Documento ?? "", p?.InscricaoEstadual ?? "");
         (Uf, MunicipioIbge, Municipio, Email, Telefone) = (p?.Uf ?? "", p?.CodMunicipioIbge ?? "", p?.Municipio ?? "", p?.Email ?? "", p?.Telefone ?? "");
         (Cep, Logradouro, Numero, Complemento, Bairro) = (Domain.Comum.Formato.Cep(p?.Cep), p?.Logradouro ?? "", p?.Numero ?? "", p?.Complemento ?? "", p?.Bairro ?? "");
-        (Cliente, Fornecedor, Conta, Ativo) = (p?.Cliente ?? !Fornecedores, p?.Fornecedor ?? Fornecedores, p?.CodigoConta ?? "", p?.Ativo ?? true);
+        (Cliente, Fornecedor, Conta, Ativo, ControleConta) =
+            (p?.Cliente ?? !Fornecedores, p?.Fornecedor ?? Fornecedores, p?.CodigoConta ?? "", p?.Ativo ?? true, p?.ControleConta ?? false);
     }
 
     protected override void PrepararInclusao()
@@ -140,7 +146,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
             var id = inclusao ? 0 : Selecionado?.P.Id ?? 0;
             if (!inclusao && id == 0) { Erros.Add("Selecione um cadastro."); return; }
             var r = await app.Participantes.GravarAsync(empresa, new Participante(id, Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual, Uf,
-                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo, false, Cep, Logradouro, Numero, Complemento, Bairro), usuario);
+                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo, false, Cep, Logradouro, Numero, Complemento, Bairro, ControleConta), usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
             Modo = ModoCadastro.Consulta;

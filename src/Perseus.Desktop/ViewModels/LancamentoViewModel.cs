@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Perseus.Application.Cadastros;
 using Perseus.Application.Contabil;
 using Perseus.Application.Sistema;
 using Perseus.Domain.Comum;
@@ -31,6 +32,8 @@ public partial class LinhaLancamentoViewModel : ObservableObject
     [ObservableProperty] private string _codigoHistorico = "";
     [ObservableProperty] private string _historico = "";
     [ObservableProperty] private string _centroCusto = "";
+    [ObservableProperty] private string _participante = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ResumoContas))] private string _nomeParticipante = "";
 
     /// <summary>Criada pela seta para baixo e ainda não alterada pelo usuário (a seta para cima a cancela).</summary>
     public bool Nova { get; set; }
@@ -38,7 +41,7 @@ public partial class LinhaLancamentoViewModel : ObservableObject
 
     public LinhaLancamentoViewModel() => PropertyChanged += (_, e) =>
     {
-        if (e.PropertyName is not (nameof(NomeConta) or nameof(NomeContaCredito) or nameof(ResumoContas))) Editada = true;
+        if (e.PropertyName is not (nameof(NomeConta) or nameof(NomeContaCredito) or nameof(NomeParticipante) or nameof(ResumoContas))) Editada = true;
     };
 
     /// <summary>Marca a linha como recém-criada depois de preencher as sugestões (que não contam como edição).</summary>
@@ -49,8 +52,9 @@ public partial class LinhaLancamentoViewModel : ObservableObject
     }
 
     /// <summary>Nomes das contas da linha (rodapé da tela).</summary>
-    public string ResumoContas => NomeContaCredito.Length == 0 ? NomeConta
-        : $"Débito: {(NomeConta.Length > 0 ? NomeConta : "—")}   ·   Crédito: {NomeContaCredito}";
+    public string ResumoContas => (NomeContaCredito.Length == 0 ? NomeConta
+        : $"Débito: {(NomeConta.Length > 0 ? NomeConta : "—")}   ·   Crédito: {NomeContaCredito}")
+        + (NomeParticipante.Length > 0 ? $"   ·   Participante: {NomeParticipante}" : "");
 
     public decimal? ValorDecimal => Formato.LerValor(Valor);
     public IndicadorDC? Indicador => Dc.Trim().ToUpperInvariant() switch { "D" => IndicadorDC.D, "C" => IndicadorDC.C, _ => null };
@@ -88,6 +92,8 @@ public partial class LancamentoViewModel : ModuloViewModel
     private Dictionary<string, ContaSelecionavel> _porCodigo = [];
     private Dictionary<int, ContaSelecionavel> _porReduzido = [];
     private Dictionary<string, HistoricoPadrao> _historicos = [];
+    private Dictionary<string, Participante> _participantes = [];
+    private HashSet<string> _contasComParticipante = [];
     private bool _resolvendo;
 
     public LancamentoViewModel(IContexto contexto) : base(contexto)
@@ -109,6 +115,8 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] private string _totalCredito = "0,00";
     [ObservableProperty] private string _diferenca = "0,00";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _balanceado;
+    /// <summary>Plano com participantes: a coluna Part. aparece e as contas dos participantes exigem o código.</summary>
+    [ObservableProperty] private bool _usaParticipantes;
 
     // Lançamentos efetuados (inclusive estornados) e o estorno do selecionado
     public ObservableCollection<LancamentoEfetuadoLinha> Efetuados { get; } = [];
@@ -145,6 +153,8 @@ public partial class LancamentoViewModel : ModuloViewModel
         var geracao = NovaGeracao();
         IReadOnlyList<ContaDetalhe> plano = [];
         IReadOnlyList<HistoricoPadrao> historicos = [];
+        IReadOnlyList<Participante> participantes = [];
+        var usa = false;
         var modo = ModoLancamento.PartidaDobrada;
         if (Contexto.App is { } app)
         {
@@ -153,6 +163,8 @@ public partial class LancamentoViewModel : ModuloViewModel
             {
                 plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
                 historicos = await app.Historicos.ListarAsync(empresa, sessao.Id);
+                usa = await app.Participantes.UsaParticipantesAsync(empresa);
+                if (usa) participantes = await app.Participantes.ListarAsync(empresa, sessao.Id);
             }
         }
         if (!EhAtual(geracao)) return;
@@ -160,6 +172,11 @@ public partial class LancamentoViewModel : ModuloViewModel
         _porCodigo = _todasContas.ToDictionary(c => c.Codigo);
         _porReduzido = _todasContas.Where(c => c.Reduzido is not null).ToDictionary(c => c.Reduzido!.Value);
         _historicos = historicos.ToDictionary(h => h.Codigo);
+        UsaParticipantes = usa;
+        _participantes = participantes.Where(p => p.Ativo).ToDictionary(p => p.Codigo);
+        _contasComParticipante = plano.Where(c => c.ExigeParticipante).Select(c => c.Codigo)
+                                      .Concat(participantes.Where(p => p.ControleConta && p.CodigoConta is not null).Select(p => p.CodigoConta!))
+                                      .ToHashSet();
         OnPropertyChanged(nameof(TodasContas));
         _dobradaConfigurada = modo == ModoLancamento.PartidaDobrada;
         if (EmEdicao) { Filtrar(); OnPropertyChanged(nameof(PodeEstornar)); await CarregarEfetuadosAsync(); return; }
@@ -247,6 +264,7 @@ public partial class LancamentoViewModel : ModuloViewModel
             {
                 Data = data, Conta = ps[0].CodigoConta, ContaCredito = ps[1].CodigoConta, Valor = Formato.Moeda(ps[0].Valor),
                 Documento = ps[0].NumeroArquivo ?? "", Historico = ps[0].Historico, CentroCusto = ps[0].CodigoCentroCusto ?? "",
+                Participante = ps[0].CodigoParticipante ?? ps[1].CodigoParticipante ?? "",
             });
         else
             foreach (var p in ps)
@@ -254,11 +272,13 @@ public partial class LancamentoViewModel : ModuloViewModel
                 {
                     Data = data, Conta = p.CodigoConta, Dc = p.DC.ToString(), Valor = Formato.Moeda(p.Valor),
                     Documento = p.NumeroArquivo ?? "", Historico = p.Historico, CentroCusto = p.CodigoCentroCusto ?? "",
+                    Participante = p.CodigoParticipante ?? "",
                 });
         foreach (var linha in Linhas)                       // reduzidos e nomes das contas
         {
             ConfirmarConta(linha, credito: false);
             if (PartidaDobrada) ConfirmarConta(linha, credito: true);
+            if (linha.Participante.Length > 0 && _participantes.TryGetValue(linha.Participante, out var pe)) linha.NomeParticipante = pe.Nome;
         }
         LinhaSelecionada = Linhas[0];
     }, Permissao.LancamentoIncluir);
@@ -419,10 +439,16 @@ public partial class LancamentoViewModel : ModuloViewModel
             if (l.ContaCredito.Trim().Length == 0) Erros.Add($"Linha {n}: informe a conta crédito.");
             if (data is null || l.ValorDecimal is not > 0 || l.Conta.Trim().Length == 0 || l.ContaCredito.Trim().Length == 0) continue;
             var cc = string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim();
+            var (partD, partC) = (Part(l, l.Conta), Part(l, l.ContaCredito));
+            if (l.Participante.Trim().Length > 0 && partD is null && partC is null)
+            {
+                Erros.Add($"Linha {n}: participante informado, mas nenhuma das contas controla participantes.");
+                continue;
+            }
             propostas.Add(new LancamentoProposto(empresa, data.Value, OrigemLancamento.Manual,
             [
-                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal.Value, l.Historico.Trim(), cc, null, Doc(l)),
-                new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc, null, Doc(l)),
+                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal.Value, l.Historico.Trim(), cc, partD, Doc(l)),
+                new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc, partC, Doc(l)),
             ]));
         }
         if (Erros.Count > 0) return;
@@ -447,11 +473,18 @@ public partial class LancamentoViewModel : ModuloViewModel
 
         var proposta = new LancamentoProposto(empresa, Data(Data, DateOnly.FromDateTime(DateTime.Today)), OrigemLancamento.Manual,
             preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico.Trim(),
-                string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(), null, Doc(l))).ToArray());
+                string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(), PartSimples(l), Doc(l))).ToArray());
         if (!await GravarAsync(app, empresa, usuario, [proposta])) return;
         Limpar();
         await CarregarEfetuadosAsync();
     }
+
+    /// <summary>Participante da partida: só nas contas que controlam participantes (plano com participantes).</summary>
+    private string? Part(LinhaLancamentoViewModel l, string conta) =>
+        l.Participante.Trim() is { Length: > 0 } p && _contasComParticipante.Contains(conta.Trim()) ? p : null;
+
+    /// <summary>Partida simples: a linha é uma conta só; o participante digitado vai na partida.</summary>
+    private static string? PartSimples(LinhaLancamentoViewModel l) => l.Participante.Trim() is { Length: > 0 } p ? p : null;
 
     /// <summary>Nº do documento (NF, recibo, boleto...) — base da conciliação automática.</summary>
     private static string? Doc(LinhaLancamentoViewModel l) => string.IsNullOrWhiteSpace(l.Documento) ? null : l.Documento.Trim();
@@ -528,6 +561,10 @@ public partial class LancamentoViewModel : ModuloViewModel
                     case nameof(LinhaLancamentoViewModel.ContaCredito):
                         (l.ReduzidoCredito, l.NomeContaCredito) = _porCodigo.TryGetValue(l.ContaCredito.Trim(), out var cc2)
                             ? (cc2.Reduzido?.ToString() ?? "", cc2.Descricao) : ("", "");
+                        break;
+                    case nameof(LinhaLancamentoViewModel.Participante):
+                        l.NomeParticipante = l.Participante.Trim() is { Length: > 0 } cp
+                            ? _participantes.TryGetValue(cp, out var pa) ? pa.Nome : "participante não encontrado" : "";
                         break;
                     case nameof(LinhaLancamentoViewModel.CodigoHistorico):
                         if (_historicos.TryGetValue(l.CodigoHistorico.Trim(), out var h)) l.Historico = h.Descricao.TrimEnd() + " ";

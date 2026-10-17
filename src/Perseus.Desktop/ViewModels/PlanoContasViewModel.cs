@@ -26,11 +26,11 @@ public sealed record ContaLinha(ContaDetalhe Conta)
 {
     public string Numero => Conta.Id.ToString("00000");
     public string Reduzido => Conta.CodigoReduzido?.ToString() ?? "";
-    public string Codigo => new string(' ', (Conta.Nivel - 1) * 3) + Conta.Codigo;
-    public string Descricao => Conta.Descricao;
+    public string Codigo => Conta.Codigo;
+    /// <summary>Descrição recuada pelo nível (o código fica alinhado à esquerda).</summary>
+    public string Descricao => new string(' ', (Conta.Nivel - 1) * 3) + Conta.Descricao;
     public string Tipo => Conta.Analitica ? "Analítica" : "Sintética";
     public string Natureza => OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == Conta.CodNat)?.Nome[5..] ?? Conta.CodNat;
-    public string Saldo => Conta.Analitica ? LinhaBalancete.Formatar(Conta.Saldo) : "";
     public string Situacao => Conta.Ativa ? "" : "Inativa";
 }
 
@@ -57,6 +57,8 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     [ObservableProperty] private string _dicaPai = "";
 
     public bool TemSelecionada => Selecionada is not null;
+    public string TituloFormulario => EmInclusao ? "Nova conta" : Modo == ModoCadastro.Alteracao ? "Alterar conta" : "Dados da conta";
+    public string NumeroRegistro => EmInclusao ? "" : Selecionada is { } s ? $"Cód. {s.Conta.Codigo}" + (s.Reduzido.Length > 0 ? $"  ·  Reduzido {s.Reduzido}" : "") : "";
     public bool PodeEditar => Contexto.Pode(Permissao.PlanoContasManter);
     public override bool PodeManter => PodeEditar;
     protected override string NomeRegistro => "conta";
@@ -95,6 +97,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
 
     partial void OnSelecionadaChanged(ContaLinha? value)
     {
+        OnPropertyChanged(nameof(NumeroRegistro));
         if (EmConsulta) MostrarSelecionado();
         AtualizarBarra();
     }
@@ -153,6 +156,8 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
 
     protected override void AoMudarModo()
     {
+        OnPropertyChanged(nameof(TituloFormulario));
+        OnPropertyChanged(nameof(NumeroRegistro));
         if (EmInclusao) OnCodigoChanged(Codigo);
     }
 

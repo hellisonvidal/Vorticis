@@ -104,7 +104,7 @@
         </Grid>
 
         <TextBlock Classes="secao" Text="Escrituração" />
-        <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+        <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Regime tributário" />
           <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:CadastroEmpresaViewModel.Regimes}" SelectedItem="{Binding Regime}" Width="260"
                     IsEnabled="{Binding EmInclusao}" ToolTip.Tip="O regime tem histórico por ano; é definido na inclusão.">
@@ -119,6 +119,12 @@
                          HorizontalAlignment="Left" IsVisible="{Binding EmInclusao}" />
           <CheckBox Grid.Row="2" Grid.Column="1" Content="Criar com o plano de contas modelo" IsChecked="{Binding ImportarPlanoModelo}"
                     IsVisible="{Binding EmInclusao}" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Plano de contas" />
+          <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
+            <CheckBox Content="Usar plano de contas com participantes" IsChecked="{Binding UsaParticipantes}" IsEnabled="{Binding EmEdicao}" />
+            <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                       Text="Clientes e fornecedores ficam alocados dentro das contas contábeis (ex.: Clientes, Fornecedores): o lançamento informa o participante e o balancete mostra a soma na conta, com detalhamento opcional por participante." />
+          </StackPanel>
         </Grid>
         <v:MensagensView Margin="0,8,0,0" />
       </StackPanel>

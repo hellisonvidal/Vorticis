@@ -18,7 +18,7 @@
     </DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <StackPanel Orientation="Horizontal" Spacing="10">
-        <TextBlock Classes="titulo" Text="Conciliação de contas" VerticalAlignment="Center" />
+        <TextBlock Classes="titulo" Text="Conciliação automática" VerticalAlignment="Center" />
         <TextBox Text="{Binding Conta}" Watermark="Conta ou reduzido" Width="150" />
         <TextBlock Text="até" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding Ate}" Width="130" />

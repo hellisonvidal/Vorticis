@@ -59,7 +59,7 @@
     </StackPanel>
 
     <!-- Cabeçalhos (mesmas larguras das linhas) -->
-    <Grid Grid.Row="1" ColumnDefinitions="92,58,165,58,165,105,90,46,*,80" IsVisible="{Binding PartidaDobrada}">
+    <Grid Grid.Row="1" ColumnDefinitions="92,58,165,58,165,105,90,46,*,80,Auto" IsVisible="{Binding PartidaDobrada}">
       <TextBlock Classes="cab" Text="Data" />
       <TextBlock Classes="cab" Grid.Column="1" Text="Red. D" />
       <TextBlock Classes="cab" Grid.Column="2" Text="Conta débito" />
@@ -70,8 +70,10 @@
       <TextBlock Classes="cab" Grid.Column="7" Text="Hist." />
       <TextBlock Classes="cab" Grid.Column="8" Text="Histórico" />
       <TextBlock Classes="cab" Grid.Column="9" Text="C. custo" />
+      <TextBlock Classes="cab" Grid.Column="10" Text="Part." Width="70" IsVisible="{Binding UsaParticipantes}"
+                 ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
     </Grid>
-    <Grid Grid.Row="1" ColumnDefinitions="58,190,46,115,90,46,*,80" IsVisible="{Binding PartidaSimples}">
+    <Grid Grid.Row="1" ColumnDefinitions="58,190,46,115,90,46,*,80,Auto" IsVisible="{Binding PartidaSimples}">
       <TextBlock Classes="cab" Text="Reduz." />
       <TextBlock Classes="cab" Grid.Column="1" Text="Conta" />
       <TextBlock Classes="cab" Grid.Column="2" Text="D/C" />
@@ -80,6 +82,8 @@
       <TextBlock Classes="cab" Grid.Column="5" Text="Hist." />
       <TextBlock Classes="cab" Grid.Column="6" Text="Histórico" />
       <TextBlock Classes="cab" Grid.Column="7" Text="C. custo" />
+      <TextBlock Classes="cab" Grid.Column="8" Text="Part." Width="70" IsVisible="{Binding UsaParticipantes}"
+                 ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
     </Grid>
 
     <ScrollViewer Grid.Row="2" Name="Rolagem">
@@ -89,7 +93,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
               <Border Classes="linha">
-                <Grid ColumnDefinitions="92,58,165,58,165,105,90,46,*,80">
+                <Grid ColumnDefinitions="92,58,165,58,165,105,90,46,*,80,Auto">
                   <TextBox Tag="data" Text="{Binding Data}" v:Mascara.Tipo="Data" />
                   <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
@@ -114,6 +118,8 @@
                   <TextBox Grid.Column="7" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
                   <TextBox Grid.Column="8" Tag="historico" Text="{Binding Historico}" />
                   <TextBox Grid.Column="9" Tag="centrocusto" Text="{Binding CentroCusto}" />
+                  <TextBox Grid.Column="10" Tag="participante" Text="{Binding Participante}" Width="70"
+                           IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
                 </Grid>
               </Border>
             </DataTemplate>
@@ -125,7 +131,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
               <Border Classes="linha">
-                <Grid ColumnDefinitions="58,190,46,115,90,46,*,80">
+                <Grid ColumnDefinitions="58,190,46,115,90,46,*,80,Auto">
                   <TextBox Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="1" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
                                    ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
@@ -141,6 +147,8 @@
                   <TextBox Grid.Column="5" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
                   <TextBox Grid.Column="6" Tag="historico" Text="{Binding Historico}" />
                   <TextBox Grid.Column="7" Tag="centrocusto" Text="{Binding CentroCusto}" />
+                  <TextBox Grid.Column="8" Tag="participante" Text="{Binding Participante}" Width="70"
+                           IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
                 </Grid>
               </Border>
             </DataTemplate>

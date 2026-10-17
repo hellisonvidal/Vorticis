@@ -49,6 +49,8 @@ public interface IConsultasContabeis
                                                              bool excluirEncerramento = false);
 
     Task<RazaoConta?> ObterRazaoAsync(long empresaId, string codigoConta, DateOnly inicio, DateOnly fim, CancellationToken ct);
+    /// <summary>Saldo anterior e movimento por conta e participante (só partidas com participante).</summary>
+    Task<IReadOnlyList<MovimentoParticipante>> ObterMovimentosParticipantesAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     Task<IReadOnlyList<LinhaDiario>> ObterDiarioAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
 }
 

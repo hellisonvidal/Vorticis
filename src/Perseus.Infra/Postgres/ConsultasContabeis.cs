@@ -60,6 +60,28 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
         return res;
     }
 
+    public async Task<IReadOnlyList<MovimentoParticipante>> ObterMovimentosParticipantesAsync(long empresaId, DateOnly inicio, DateOnly fim,
+                                                                                            CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT p.conta_id, pa.codigo, pa.nome,
+                   SUM(CASE WHEN l.data_lancamento < @ini THEN CASE p.ind_dc WHEN 'D' THEN p.valor ELSE -p.valor END ELSE 0 END),
+                   SUM(CASE WHEN l.data_lancamento >= @ini AND p.ind_dc = 'D' THEN p.valor ELSE 0 END),
+                   SUM(CASE WHEN l.data_lancamento >= @ini AND p.ind_dc = 'C' THEN p.valor ELSE 0 END)
+              FROM contabil.partida p
+              JOIN contabil.lancamento l ON l.id = p.lancamento_id
+              JOIN core.participante pa ON pa.id = p.participante_id
+             WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.data_lancamento <= @fim
+             GROUP BY p.conta_id, pa.codigo, pa.nome
+             ORDER BY pa.nome
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<MovimentoParticipante>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new MovimentoParticipante(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetDecimal(3), r.GetDecimal(4), r.GetDecimal(5)));
+        return res;
+    }
+
     public async Task<RazaoConta?> ObterRazaoAsync(long empresaId, string codigoConta, DateOnly inicio, DateOnly fim, CancellationToken ct)
     {
         await using var con = await ds.OpenConnectionAsync(ct);

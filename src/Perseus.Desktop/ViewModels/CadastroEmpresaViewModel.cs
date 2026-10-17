@@ -61,6 +61,8 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     [ObservableProperty] private RegimeTributario _regime = RegimeTributario.SimplesNacional;
     [ObservableProperty] private decimal? _anoExercicio = DateTime.Today.Year;
     [ObservableProperty] private bool _importarPlanoModelo = true;
+    /// <summary>Plano de contas com participantes: clientes e fornecedores alocados dentro das contas contábeis.</summary>
+    [ObservableProperty] private bool _usaParticipantes;
     [ObservableProperty] private string? _origemDados;
     [ObservableProperty] private string? _aviso;
 
@@ -94,7 +96,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     protected override void PrepararInclusao()
     {
         LimparFormulario();
-        (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo) = ("2062", "SP", RegimeTributario.SimplesNacional, true);
+        (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
     }
 
@@ -105,8 +107,14 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     {
         var geracao = NovaGeracao();
         EmpresaDetalhe? d = null;
-        if (main.App is { } app && main.EmpresaSelecionada is { } sel && PodeManter) d = await app.Empresas.ObterAsync(sel.Id);
+        var usa = false;
+        if (main.App is { } app && main.EmpresaSelecionada is { } sel && PodeManter)
+        {
+            d = await app.Empresas.ObterAsync(sel.Id);
+            usa = await app.Participantes.UsaParticipantesAsync(sel.Id);
+        }
         if (!EhAtual(geracao) || EmEdicao) return;
+        UsaParticipantes = usa;
         _carregada = d;
         if (d is null) LimparFormulario();
         else
@@ -160,6 +168,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
             ImportarPlanoModelo, Complementos(origem), InscricaoEstadual));
         MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos.");
         if (!r.Sucesso) return false;
+        if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);
         var socios = origem?.QuadroSocietario ?? [];
         if (socios.Count > 0 && main.Sessao is { } sessao
             && await app.Responsaveis.IncluirDoQsaAsync(r.Valor, socios, origem!.Fonte, sessao.Id) is { Sucesso: true, Valor: > 0 } incl)
@@ -178,6 +187,11 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
             Uf.Trim(), MunicipioIbge.Trim(), DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), InscricaoEstadual, Complementos(null)));
         MostrarResultado(r, "Alterações da empresa salvas.");
         if (!r.Sucesso) return false;
+        if (main.Sessao is { } sessao && UsaParticipantes != await app.Participantes.UsaParticipantesAsync(atual.Id))
+        {
+            var p = await app.Participantes.DefinirUsaParticipantesAsync(atual.Id, UsaParticipantes, sessao.Id);
+            if (!p.Sucesso) { MostrarResultado(p, ""); return false; }
+        }
         Modo = ModoCadastro.Consulta;
         await main.RecarregarEmpresasAsync(atual.Id);
         await CarregarSelecionadaAsync();

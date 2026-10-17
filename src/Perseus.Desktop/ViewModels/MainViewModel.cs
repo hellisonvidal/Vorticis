@@ -435,7 +435,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.ConsultaSaldos or Telas.ConsultaLancamentos => (Consultas, "Consultas"),
             Telas.Historicos => (Historicos, "Cadastros › Históricos"),
             Telas.Bens => (Bens, "Imobilizado › Cadastro de bens"),
-            Telas.Conciliacao => (Conciliacao, "Lançamentos › Conciliações"),
+            Telas.Conciliacao => (Conciliacao, "Lançamentos › Conciliação automática"),
             Telas.DiferencasSaldos => (DiferencasSaldos, "Consultas › Diferenças de saldos"),
             Telas.GruposDepreciacao => (GruposDepreciacao, "Imobilizado › Regras de depreciação"),
             Telas.Depreciacao => (Depreciacao, "Imobilizado › Cálculo e lançamento da depreciação"),

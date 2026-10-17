@@ -635,6 +635,53 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.False(la.EmEdicao);
             vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
 
+            // Plano de contas com participantes: opção na empresa, cliente alocado na conta Clientes, participante no lançamento
+            vm.AbrirCommand.Execute(Telas.Empresas);
+            var empPart = vm.Empresas;
+            await empPart.CarregarSelecionadaAsync();
+            Assert.False(empPart.UsaParticipantes);
+            empPart.AlterarCommand.Execute(null);
+            empPart.UsaParticipantes = true;
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(empPart.Erros);
+            vm.AbrirCommand.Execute(Telas.Clientes);
+            var cliPart = vm.Clientes;
+            await cliPart.CarregarAsync();
+            Assert.True(cliPart.UsaParticipantes);
+            cliPart.Selecionado = cliPart.Lista.Single(c => c.Codigo == "1");
+            cliPart.AlterarCommand.Execute(null);
+            (cliPart.Conta, cliPart.ControleConta) = ("1.1.02.001", true);
+            await cliPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(cliPart.Erros);
+            vm.AbrirCommand.Execute(Telas.Lancamento);
+            la = vm.Lancamento;
+            await la.CarregarAsync();
+            Dispatcher.UIThread.RunJobs();                                 // tela montada antes de digitar
+            Assert.True(la.UsaParticipantes);
+            (la.Linhas[0].Data, la.Linhas[0].Conta, la.Linhas[0].ContaCredito, la.Linhas[0].Valor, la.Linhas[0].Historico) =
+                ("26/03/2026", "1.1.01.004", "1.1.02.001", "40,00", "Recebimento");
+            await la.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(la.Erros, e => e.Contains("exige participante"));
+            la.Linhas[0].Participante = "1";
+            Assert.Contains("EXEMPLO COMERCIO", la.Linhas[0].ResumoContas);
+            await la.SalvarCommand.ExecuteAsync(null);
+            Assert.True(la.Erros.Count == 0, string.Join("; ", la.Erros));
+            Foto(janela, "03d_lancamento_participante");
+            vm.AbrirCommand.Execute(Telas.Empresas);                       // desliga de novo (o restante do roteiro lança sem participante)
+            await empPart.CarregarSelecionadaAsync();
+            Assert.True(empPart.UsaParticipantes);
+            empPart.AlterarCommand.Execute(null);
+            empPart.UsaParticipantes = false;
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(empPart.Erros);
+            vm.AbrirCommand.Execute(Telas.Balancete);
+            (vm.Balancete.Inicio, vm.Balancete.Fim, vm.Balancete.DetalharParticipantes) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31), true);
+            await vm.Balancete.GerarCommand.ExecuteAsync(null);
+            Assert.Contains(vm.Balancete.Linhas, l => l.Descricao.Contains("↳ 1 – EXEMPLO COMERCIO"));   // o detalhamento vale para os lançamentos já feitos
+            Foto(janela, "05e_balancete_participantes");
+                        foreach (var j in vm.JanelasAbertas.Where(j => j.Tela is Telas.Lancamento or Telas.Clientes).ToList())
+                vm.FecharFuncaoCommand.Execute(j);
+
             // Lançamentos › Encerramento do exercício
             vm.AbrirCommand.Execute(Telas.Encerramento);
             var enc = vm.Encerramento;

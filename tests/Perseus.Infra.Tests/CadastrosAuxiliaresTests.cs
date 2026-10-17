@@ -67,4 +67,38 @@ public class CadastrosAuxiliaresTests(BancoDeTeste db) : IClassFixture<BancoDeTe
         // Excluir a empresa leva junto os cadastros auxiliares
         Assert.True((await db.App.Empresas.ExcluirAsync(empresa, ct)).Sucesso);
     }
+
+    [Fact]
+    public async Task Plano_com_participantes_exige_o_participante_na_conta_e_detalha_o_balancete()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await db.CriarEmpresaAsync("51515151000113");
+        var adm = await db.AdminAsync();
+        var svc = db.App.Participantes;
+        var cliente = new Participante(0, "", "Cliente Alfa", null, "11.222.333/0001-81", null, "SP", null, null, null, null, true, false,
+                                       "1.1.02.001", true, ControleConta: true);
+        Assert.Contains("não usa o plano de contas com participantes", (await svc.GravarAsync(empresa, cliente, adm, ct)).Erros[0]);
+        Assert.True((await svc.DefinirUsaParticipantesAsync(empresa, true, adm, ct)).Sucesso);
+        Assert.True(await svc.UsaParticipantesAsync(empresa, ct));
+        Assert.Contains("informe a conta contábil", (await svc.GravarAsync(empresa, cliente with { CodigoConta = null }, adm, ct)).Erros[0]);
+        var r = await svc.GravarAsync(empresa, cliente, adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        Assert.True((await db.App.PlanoContas.ListarAsync(empresa, adm, ct)).Single(c => c.Codigo == "1.1.02.001").ExigeParticipante);
+
+        LancamentoProposto Venda(string? part) => new(empresa, new(2026, 3, 10), OrigemLancamento.Manual,
+            [new("1.1.02.001", IndicadorDC.D, 300m, "Venda a prazo", null, part), new("3.1.01.001", IndicadorDC.C, 300m, "Venda a prazo")]);
+        Assert.Contains("exige participante", string.Join(" ", (await db.App.Lancamentos.EfetivarAsync(Venda(null), adm, ct)).Erros));
+        Assert.True((await db.App.Lancamentos.EfetivarAsync(Venda("1"), adm, ct)).Sucesso);
+
+        // Balancete: a conta mostra a soma; o detalhamento traz o saldo de cada participante
+        var bal = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 3, 1), new(2026, 3, 31), adm, ct: ct)).Valor;
+        Assert.Equal(300m, bal.Single(l => l.Codigo == "1.1.02.001").SaldoFinal);
+        var det = Assert.Single((await db.App.Relatorios.ParticipantesBalanceteAsync(empresa, new(2026, 3, 1), new(2026, 3, 31), adm, ct)).Valor);
+        Assert.Equal(("1", "Cliente Alfa", 300m), (det.CodigoParticipante, det.NomeParticipante, det.SaldoFinal));
+
+        // Desligar o plano com participantes libera as contas
+        Assert.True((await svc.DefinirUsaParticipantesAsync(empresa, false, adm, ct)).Sucesso);
+        Assert.False((await db.App.PlanoContas.ListarAsync(empresa, adm, ct)).Single(c => c.Codigo == "1.1.02.001").ExigeParticipante);
+    }
 }

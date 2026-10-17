@@ -18,8 +18,8 @@ namespace Perseus.Desktop.Views;
 public partial class LancamentoView : UserControl
 {
     private static readonly string[] CamposDobrada =
-        ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto"];
-    private static readonly string[] CamposSimples = ["reduzido", "conta", "dc", "valor", "documento", "codhistorico", "historico", "centrocusto"];
+        ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
+    private static readonly string[] CamposSimples = ["reduzido", "conta", "dc", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
 
     /// <summary>Sugestões de conta: reduzido, início do código ou parte do nome.</summary>
     public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =
@@ -41,7 +41,9 @@ public partial class LancamentoView : UserControl
         };
     }
 
-    private string[] Campos => _vm?.PartidaDobrada == true ? CamposDobrada : CamposSimples;
+    /// <summary>Ordem dos campos no Enter; o participante só existe no plano com participantes.</summary>
+    private string[] Campos => (_vm?.PartidaDobrada == true ? CamposDobrada : CamposSimples) is var c && _vm?.UsaParticipantes == true
+        ? c : c[..^1];
     private ItemsControl Linhas => _vm?.PartidaDobrada == true ? LinhasDobrada : LinhasSimples;
 
     /// <summary>Linhas recomeçadas (abrir, Limpar, Salvar): foco no primeiro campo.</summary>

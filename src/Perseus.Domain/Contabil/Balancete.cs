@@ -8,6 +8,13 @@ public sealed record ContaPlano(long Id, string Codigo, string Descricao, short 
 /// <summary>Movimento de uma conta analítica no intervalo. Saldos com sinal: débito positivo.</summary>
 public sealed record MovimentoConta(long ContaId, decimal SaldoAnterior, decimal Debitos, decimal Creditos);
 
+/// <summary>Saldo e movimento de um participante (cliente/fornecedor) dentro de uma conta analítica — detalhamento do balancete.</summary>
+public sealed record MovimentoParticipante(long ContaId, string CodigoParticipante, string NomeParticipante, decimal SaldoAnterior,
+                                           decimal Debitos, decimal Creditos)
+{
+    public decimal SaldoFinal => SaldoAnterior + Debitos - Creditos;
+}
+
 public sealed record LinhaBalancete(
     long ContaId,
     string Codigo,

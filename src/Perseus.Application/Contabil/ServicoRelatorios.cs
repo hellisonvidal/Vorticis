@@ -17,6 +17,16 @@ public sealed class ServicoRelatorios(IConsultasContabeis consultas, Autorizador
         return Resultado<IReadOnlyList<LinhaBalancete>>.Ok(Balancete.Montar(plano, movimentos, incluirZeradas));
     }
 
+    /// <summary>Detalhamento do balancete por participante (plano com participantes): saldos de cada cliente/fornecedor na conta.</summary>
+    public async Task<Resultado<IReadOnlyList<MovimentoParticipante>>> ParticipantesBalanceteAsync(long empresaId, DateOnly inicio, DateOnly fim,
+                                                                                                 long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<MovimentoParticipante>>(usuarioId, empresaId, Permissao.RelatorioBalancete, ct) is { } negado)
+            return negado;
+        var lista = await consultas.ObterMovimentosParticipantesAsync(empresaId, inicio, fim, ct);
+        return Resultado<IReadOnlyList<MovimentoParticipante>>.Ok(lista.Where(m => m.SaldoAnterior != 0 || m.Debitos != 0 || m.Creditos != 0).ToList());
+    }
+
     public async Task<Resultado<RazaoConta>> RazaoAsync(long empresaId, string codigoConta, DateOnly inicio, DateOnly fim, long usuarioId,
                                                        CancellationToken ct = default)
     {

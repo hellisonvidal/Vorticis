@@ -10,7 +10,7 @@ public sealed record Participante(
     long Id, string Codigo, string Nome, string? NomeFantasia, string? CpfCnpj, string? InscricaoEstadual, string? Uf,
     string? CodMunicipioIbge, string? Municipio, string? Email, string? Telefone, bool Cliente, bool Fornecedor,
     string? CodigoConta, bool Ativo, bool TemMovimento = false, string? Cep = null, string? Logradouro = null, string? Numero = null,
-    string? Complemento = null, string? Bairro = null);
+    string? Complemento = null, string? Bairro = null, bool ControleConta = false);
 
 public interface IRepositorioParticipantes
 {
@@ -18,11 +18,14 @@ public interface IRepositorioParticipantes
     /// <summary>Inclui (Id = 0) ou altera. <paramref name="contaId"/> é a conta contábil já resolvida.</summary>
     Task<long> GravarAsync(long empresaId, Participante p, long? contaId, CancellationToken ct);
     Task ExcluirAsync(long id, CancellationToken ct);
+    Task<bool> UsaParticipantesAsync(long empresaId, CancellationToken ct);
+    /// <summary>Liga/desliga o plano com participantes; as contas dos participantes passam a exigir (ou não) o participante.</summary>
+    Task DefinirUsaParticipantesAsync(long empresaId, bool usa, CancellationToken ct);
 }
 
 /// <summary>
 /// Cadastros › Clientes e fornecedores. O código é numérico e sequencial por empresa; a mesma pessoa pode ser cliente
-/// e fornecedor. Quem já aparece em lançamentos não é excluído (inative-o).
+/// e fornecedor. Quem já aparece em lançamentos não é excluído.
 /// </summary>
 public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, Contabil.IRepositorioPlanoContas plano, Autorizador autorizador)
 {
@@ -30,6 +33,20 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
             ? (await repositorio.ListarAsync(empresaId, ct)).OrderBy(p => p.Codigo.Length).ThenBy(p => p.Codigo, StringComparer.Ordinal).ToList()
             : [];
+
+    /// <summary>A empresa optou pelo plano de contas com participantes (Cadastros › Empresas › Escrituração).</summary>
+    public Task<bool> UsaParticipantesAsync(long empresaId, CancellationToken ct = default) => repositorio.UsaParticipantesAsync(empresaId, ct);
+
+    public async Task<Resultado> DefinirUsaParticipantesAsync(long empresaId, bool usa, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return Resultado.Falha(negado);
+        try
+        {
+            await repositorio.DefinirUsaParticipantesAsync(empresaId, usa, ct);
+            return Resultado.Ok();
+        }
+        catch (ViolacaoRegraException ex) { return Resultado.Falha(ex.Message); }
+    }
 
     public static string ProximoCodigo(IEnumerable<Participante> existentes) =>
         ((existentes.Select(p => int.TryParse(p.Codigo, out var n) ? n : 0).DefaultIfEmpty(0).Max()) + 1).ToString();
@@ -61,6 +78,10 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
             if (conta is null || !conta.Analitica) erros.Add($"Conta contábil {p.CodigoConta} não encontrada entre as analíticas.");
             else contaId = conta.Id;
         }
+        if (p.ControleConta && contaId is null && !erros.Any(e => e.StartsWith("Conta contábil")))
+            erros.Add("Para alocar como participante, informe a conta contábil (ex.: Clientes ou Fornecedores).");
+        if (p.ControleConta && !await repositorio.UsaParticipantesAsync(empresaId, ct))
+            erros.Add("A empresa não usa o plano de contas com participantes (Cadastros › Empresas › Escrituração).");
         if (p.Id != 0 && lista.All(x => x.Id != p.Id)) erros.Add("Participante não encontrado.");
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
         static string? N(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
@@ -83,7 +104,7 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return Resultado.Falha(negado);
         var p = (await repositorio.ListarAsync(empresaId, ct)).FirstOrDefault(x => x.Id == id);
         if (p is null) return Resultado.Falha("Participante não encontrado.");
-        if (p.TemMovimento) return Resultado.Falha($"{p.Nome} aparece em lançamentos e não pode ser excluído; use Alterar e desmarque Ativo.");
+        if (p.TemMovimento) return Resultado.Falha($"{p.Nome} aparece em lançamentos e não pode ser excluído.");
         try
         {
             await repositorio.ExcluirAsync(id, ct);
