@@ -1,4 +1,3 @@
-using System.Globalization;
 using Perseus.Domain.Comum;
 
 namespace Perseus.Desktop;
