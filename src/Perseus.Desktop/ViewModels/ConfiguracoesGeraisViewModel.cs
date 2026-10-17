@@ -17,12 +17,15 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
 
     public bool PodeAlterar => Contexto.Sessao?.Administrador == true;
 
+    public static string SenhaPadrao => ServicoConfiguracoesGerais.SenhaAdministradorPadrao;
+
     public async Task CarregarAsync()
     {
         OnPropertyChanged(nameof(PodeAlterar));
         if (Contexto.App is not { } app) return;
         var c = await app.ConfiguracoesGerais.ObterAsync();
         PartidaDobrada = c.ModoLancamento == ModoLancamento.PartidaDobrada;
+        SenhaPadraoEmUso = await app.ConfiguracoesGerais.UsandoSenhaPadraoAsync();
     }
 
     [RelayCommand]
@@ -36,13 +39,35 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
         MostrarResultado(r, "Configurações salvas. A tela de lançamento passa a usar o novo modo na próxima abertura.");
     }
 
+    // ------------------------------------------------------------------ senha de administrador
+
+    [ObservableProperty] private bool _senhaPadraoEmUso;
+    [ObservableProperty] private string _senhaAtual = "";
+    [ObservableProperty] private string _novaSenha = "";
+    [ObservableProperty] private string _confirmacaoNovaSenha = "";
+
+    /// <summary>Troca a senha de administrador (pedida para restaurar backups e limpar o banco).</summary>
+    [RelayCommand]
+    private async Task AlterarSenhaAdministradorAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        var r = await app.ConfiguracoesGerais.AlterarSenhaAdministradorAsync(sessao, SenhaAtual, NovaSenha, ConfirmacaoNovaSenha);
+        MostrarResultado(r, "Senha de administrador alterada.");
+        if (!r.Sucesso) return;
+        (SenhaAtual, NovaSenha, ConfirmacaoNovaSenha) = ("", "", "");
+        SenhaPadraoEmUso = await app.ConfiguracoesGerais.UsandoSenhaPadraoAsync();
+    }
+
     // ------------------------------------------------------------------ limpeza do banco (não recomendada)
 
     [ObservableProperty] private string _confirmacaoLimpeza = "";
 
     /// <summary>
-    /// Apaga todas as empresas e cadastros. Pede para digitar LIMPAR, avisa de novo num diálogo, gera um backup antes
-    /// (se não conseguir, pergunta se continua) e só então limpa.
+    /// Apaga todas as empresas, cadastros e usuários. Pede para digitar LIMPAR e, num alerta, a senha de administrador;
+    /// gera um backup antes (se não conseguir, pergunta se continua), limpa e volta à tela de login, onde se entra com
+    /// o administrador padrão (ADMIN / PERSEUS).
     /// </summary>
     [RelayCommand]
     private async Task LimparBancoAsync()
@@ -56,12 +81,13 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
             Erros.Add($"Para continuar, digite {ServicoConfiguracoesGerais.TextoConfirmacaoLimpeza} no campo de confirmação.");
             return;
         }
-        if (!await Contexto.ConfirmarAsync("Limpar banco de dados — NÃO RECOMENDADO",
-                "ATENÇÃO: esta operação apaga DEFINITIVAMENTE todas as empresas e toda a escrituração (lançamentos, planos de contas, " +
-                "períodos, imobilizado, clientes, fornecedores, sócios), além de contadores, escritórios, tabelas do plano referencial " +
-                "e layouts de importação.\n\nFicam apenas os usuários, os perfis de acesso e as configurações.\n\n" +
-                "Um backup será gerado antes. Esta opção não é recomendada. Deseja realmente limpar o banco?",
-                "Sim, limpar tudo", "Cancelar")) return;
+        var senha = await Contexto.SolicitarSenhaAsync("Limpar banco de dados — NÃO RECOMENDADO",
+            "ATENÇÃO: esta operação apaga DEFINITIVAMENTE todas as empresas e toda a escrituração, os cadastros, os usuários e os " +
+            "perfis personalizados. Ao final o sistema volta à tela de login, onde se entra com o administrador padrão " +
+            $"(usuário {ServicoConfiguracoesGerais.LoginAdministradorPadrao}, senha {ServicoConfiguracoesGerais.SenhaAdministradorPadrao}).\n\n" +
+            "Um backup será gerado antes. Para confirmar, informe a senha de administrador:", "Limpar tudo", "Cancelar");
+        if (senha is null) return;
+        if (!await app.ConfiguracoesGerais.VerificarSenhaAdministradorAsync(senha)) { Erros.Add("Senha de administrador incorreta. Nada foi apagado."); return; }
         string? copia = null;
         try
         {
@@ -77,11 +103,12 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
         try
         {
             Ocupado = true;
-            var r = await app.ConfiguracoesGerais.LimparBancoAsync(sessao, ConfirmacaoLimpeza);
+            var r = await app.ConfiguracoesGerais.LimparBancoAsync(sessao, ConfirmacaoLimpeza, senha);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ConfirmacaoLimpeza = "";
-            await Contexto.RecarregarEmpresasAsync();
-            Mensagem = $"Banco de dados limpo: {r.Valor} empresa(s) excluída(s)." + (copia is null ? "" : $" Backup anterior à limpeza: {copia}");
+            await Contexto.ReiniciarParaLoginAsync(
+                $"Banco de dados limpo ({r.Valor} empresa(s) excluída(s)). Entre com o usuário {ServicoConfiguracoesGerais.LoginAdministradorPadrao} " +
+                $"e a senha {ServicoConfiguracoesGerais.SenhaAdministradorPadrao}." + (copia is null ? "" : $" Backup anterior à limpeza: {copia}"));
         }
         catch (Exception ex) { Erros.Add(ex.Message); }
         finally { Ocupado = false; }

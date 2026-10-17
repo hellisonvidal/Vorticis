@@ -19,6 +19,10 @@ public interface IContexto
     void AoConcluirConfiguracaoInicial();
     /// <summary>Pergunta Sim/Não ao usuário (diálogo modal). Usado antes de excluir ou gravar dados obtidos de fora.</summary>
     Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não");
+    /// <summary>Reconecta ao banco e volta à tela de login, mostrando a mensagem (após restaurar ou limpar o banco).</summary>
+    Task ReiniciarParaLoginAsync(string mensagem);
+    /// <summary>Alerta com campo de senha; devolve a senha digitada ou null se o usuário cancelar.</summary>
+    Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar");
     /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
     string DescricaoEmpresa { get; }
     /// <summary>Abre outra função (ver <see cref="Telas"/>), como pelo menu.</summary>
@@ -598,6 +602,20 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         var pedido = new PedidoConfirmacao(titulo, mensagem, textoSim, textoNao);
         Confirmacao = pedido;
         return pedido.Resposta;
+    }
+
+    public async Task ReiniciarParaLoginAsync(string mensagem)
+    {
+        await InicializarAsync(_connectionString, _consultaCnpj, _consultaIe);
+        Login.Mensagem = mensagem;
+    }
+
+    public async Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar")
+    {
+        Confirmacao?.Responder(false);
+        var pedido = new PedidoConfirmacao(titulo, mensagem, textoSim, textoNao, pedeSenha: true);
+        Confirmacao = pedido;
+        return await pedido.Resposta ? pedido.Senha : null;
     }
 
     [RelayCommand]

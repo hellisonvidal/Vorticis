@@ -14,9 +14,15 @@ public sealed partial class FuncaoAberta(object viewModel, string tela, string t
     [ObservableProperty] private bool _ativa;
 }
 
-/// <summary>Pergunta ao usuário (Sim/Não) exibida em diálogo modal; a resposta conclui <see cref="Resposta"/>.</summary>
-public sealed class PedidoConfirmacao(string titulo, string mensagem, string textoSim, string textoNao)
+/// <summary>
+/// Pergunta ao usuário (Sim/Não) exibida em diálogo modal; a resposta conclui <see cref="Resposta"/>.
+/// Com <see cref="PedeSenha"/>, o diálogo tem um campo de senha (lida em <see cref="Senha"/> ao confirmar).
+/// </summary>
+public sealed class PedidoConfirmacao(string titulo, string mensagem, string textoSim, string textoNao, bool pedeSenha = false)
 {
+    public bool PedeSenha { get; } = pedeSenha;
+    public string Senha { get; set; } = "";
+
     private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public string Titulo { get; } = titulo;

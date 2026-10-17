@@ -761,6 +761,13 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(vm.Backup.Erros);
             vm.Backup.Selecionado = Assert.Single(vm.Backup.Arquivos);
             Foto(janela, "10_backup");
+            var restaurando = vm.Backup.RestaurarCommand.ExecuteAsync(null);              // restaurar pede a senha de administrador
+            var alerta = await AguardarConfirmacao(vm);
+            Assert.True(alerta.PedeSenha);
+            alerta.Senha = "errada";
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await restaurando;
+            Assert.Equal(["Senha de administrador incorreta. Nada foi restaurado."], vm.Backup.Erros);
             var excluindo = vm.Backup.ExcluirCommand.ExecuteAsync(null);                  // excluir o backup gerado
             Assert.Contains("Excluir definitivamente", (await AguardarConfirmacao(vm)).Mensagem);
             vm.ResponderConfirmacaoCommand.Execute(true);

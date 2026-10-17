@@ -15,13 +15,10 @@ public sealed record BackupLinha(ArquivoBackup Arquivo)
 /// <summary>Configurações › Backup e restauração (somente administrador).</summary>
 public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
 {
-    public const string PalavraConfirmacao = "RESTAURAR";
-
     public ObservableCollection<BackupLinha> Arquivos { get; } = [];
 
     [ObservableProperty] private string _pasta = ServicoBackup.PastaPadrao;
     [ObservableProperty] private BackupLinha? _selecionado;
-    [ObservableProperty] private string _confirmacao = "";
 
     [RelayCommand]
     private void AtualizarLista() => Atualizar();
@@ -92,7 +89,10 @@ public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
         }
     }
 
-    /// <summary>Substitui o banco pelo backup selecionado; exige digitar a palavra de confirmação. Encerra a sessão ao final.</summary>
+    /// <summary>
+    /// Substitui o banco pelo backup selecionado. Um alerta pede a senha de administrador (padrão PERSEUS);
+    /// encerra a sessão ao final.
+    /// </summary>
     [RelayCommand]
     private async Task RestaurarAsync()
     {
@@ -100,17 +100,21 @@ public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
         Mensagem = null;
         if (main.App is not { } app || main.Sessao is not { } sessao) return;
         if (Selecionado is null) { Erros.Add("Selecione o backup a restaurar."); return; }
-        if (Confirmacao.Trim() != PalavraConfirmacao) { Erros.Add($"Para confirmar, digite {PalavraConfirmacao} no campo de confirmação."); return; }
+        var senha = await main.SolicitarSenhaAsync("Restaurar backup",
+            $"ATENÇÃO: todo o conteúdo atual do banco será SUBSTITUÍDO pelo backup {Selecionado.Nome} ({Selecionado.Data}). " +
+            "Antes, o sistema gera automaticamente uma cópia de segurança do estado atual. Ao final, todos os usuários precisam entrar novamente.\n\n" +
+            "Para confirmar, informe a senha de administrador:", "Restaurar", "Cancelar");
+        if (senha is null) return;
+        if (!await app.ConfiguracoesGerais.VerificarSenhaAdministradorAsync(senha)) { Erros.Add("Senha de administrador incorreta. Nada foi restaurado."); return; }
         try
         {
             Ocupado = true;
             var origem = Selecionado.Arquivo.Caminho;
             var r = await app.Backup.RestaurarAsync(sessao, origem, Pasta);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-            Confirmacao = "";
             // Reconecta (reaplica migrações, se o backup for de versão anterior) e volta ao login.
-            await main.InicializarAsync(main.ConnectionString);
-            main.Login.Mensagem = $"Banco restaurado de {Path.GetFileName(origem)}. O estado anterior foi salvo em {Path.GetFileName(r.Valor)}. Entre novamente.";
+            await main.ReiniciarParaLoginAsync(
+                $"Banco restaurado de {Path.GetFileName(origem)}. O estado anterior foi salvo em {Path.GetFileName(r.Valor)}. Entre novamente.");
         }
         finally
         {

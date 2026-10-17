@@ -191,6 +191,13 @@ public partial class MainWindow : Window
                 },
             },
         };
+        if (pedido.PedeSenha)
+        {
+            var campo = new TextBox { PasswordChar = '●', Watermark = "Senha de administrador", Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
+            campo.TextChanged += (_, _) => pedido.Senha = campo.Text ?? "";
+            ((StackPanel)dialogo.Content!).Children.Insert(2, campo);
+            dialogo.Opened += (_, _) => campo.Focus();
+        }
         botaoSim.Click += (_, _) => _vm?.ResponderConfirmacaoCommand.Execute(true);
         botaoNao.Click += (_, _) => _vm?.ResponderConfirmacaoCommand.Execute(false);
         dialogo.Closed += (_, _) =>

@@ -11,10 +11,9 @@
                  Text="O backup copia o banco inteiro (todas as empresas, usuários e trilha de auditoria) usando as ferramentas oficiais do PostgreSQL. Guarde cópias fora deste computador (pendrive, nuvem)." />
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
         <TextBlock Text="Pasta" VerticalAlignment="Center" />
-        <TextBox Grid.Column="1" Text="{Binding Pasta}" />
+        <TextBox Grid.Column="1" Text="{Binding Pasta}" IsReadOnly="True" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
           <Button Content="Escolher pasta..." Click="EscolherPasta" />
-          <Button Content="Usar esta pasta" Command="{Binding SalvarPastaCommand}" ToolTip.Tip="Grava a pasta para os próximos backups (inclusive os automáticos)" />
           <Button Content="Pasta padrão" Command="{Binding UsarPastaPadraoCommand}" ToolTip.Tip="Backups dentro do diretório de instalação do programa" />
         </StackPanel>
       </Grid>
@@ -28,11 +27,9 @@
       <StackPanel Spacing="6">
         <TextBlock Text="Restaurar o backup selecionado" FontWeight="SemiBold" Foreground="#B3261E" />
         <TextBlock FontSize="12" TextWrapping="Wrap"
-                   Text="Substitui TODO o conteúdo atual do banco pelo do backup. Antes, o sistema gera automaticamente uma cópia de segurança do estado atual. Ao final, todos os usuários precisam entrar novamente." />
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBox Text="{Binding Confirmacao}" Watermark="Digite RESTAURAR para confirmar" Width="260" />
-          <Button Content="Restaurar" Command="{Binding RestaurarCommand}" />
-        </StackPanel>
+                   Text="Substitui TODO o conteúdo atual do banco pelo do backup, depois de confirmar num alerta com a senha de administrador. Antes, o sistema gera automaticamente uma cópia de segurança do estado atual. Ao final, todos os usuários precisam entrar novamente." />
+        <Button Content="Restaurar backup selecionado..." Command="{Binding RestaurarCommand}"
+                ToolTip.Tip="Pede a confirmação com a senha de administrador" />
         <v:MensagensView />
       </StackPanel>
     </Border>

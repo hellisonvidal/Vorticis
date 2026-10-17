@@ -17,14 +17,26 @@ public class LimpezaBancoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var svc = db.App.ConfiguracoesGerais;
         var admin = new SessaoUsuario(adm, "admin_teste", "Admin", true, false);
 
-        Assert.Contains("Somente o administrador", (await svc.LimparBancoAsync(admin with { Administrador = false }, "LIMPAR", ct)).Erros[0]);
-        Assert.Contains("digite LIMPAR", (await svc.LimparBancoAsync(admin, "limpar", ct)).Erros[0]);
-        var r = await svc.LimparBancoAsync(admin, "LIMPAR", ct);
+        Assert.Contains("Somente o administrador", (await svc.LimparBancoAsync(admin with { Administrador = false }, "LIMPAR", "PERSEUS", ct)).Erros[0]);
+        Assert.Contains("digite LIMPAR", (await svc.LimparBancoAsync(admin, "limpar", "PERSEUS", ct)).Erros[0]);
+        Assert.Contains("Senha de administrador incorreta", (await svc.LimparBancoAsync(admin, "LIMPAR", "perseus", ct)).Erros[0]);
+
+        // A senha de administrador pode ser trocada; a padrão deixa de valer
+        Assert.True(await svc.UsandoSenhaPadraoAsync(ct));
+        Assert.True((await svc.AlterarSenhaAdministradorAsync(admin, "PERSEUS", "Nova#2026", "Nova#2026", ct)).Sucesso);
+        Assert.False(await svc.VerificarSenhaAdministradorAsync("PERSEUS", ct));
+        var r = await svc.LimparBancoAsync(admin, "LIMPAR", "Nova#2026", ct);
         Assert.True(r.Sucesso, string.Join("; ", r.Erros));
         Assert.Equal(1, r.Valor);
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.empresa"));
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM contabil.lancamento"));
-        Assert.True(await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario") >= 1);
+        // Só fica o administrador padrão: ADMIN / PERSEUS, com troca de senha no primeiro acesso
+        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));
+        var login = await db.App.Usuarios.AutenticarAsync("ADMIN", "PERSEUS", ct);
+        Assert.True(login.Sucesso, string.Join("; ", login.Erros));
+        Assert.True(login.Valor.Administrador);
+        Assert.True(login.Valor.DeveTrocarSenha);
+        Assert.True(await svc.VerificarSenhaAdministradorAsync("PERSEUS", ct));    // senha de administrador volta à padrão
         Assert.True(await db.EscalarAsync<long>("SELECT count(*) FROM imobilizado.grupo") > 0);
     }
 }
