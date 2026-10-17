@@ -66,7 +66,7 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
         try
         {
             Ocupado = true;
-            var b = await app.Backup.GerarAsync(sessao, Application.Sistema.ServicoBackup.PastaPadrao);
+            var b = await app.Backup.GerarAsync(sessao, await app.ConfiguracoesGerais.PastaBackupAsync());
             if (b.Sucesso) copia = b.Valor;
         }
         catch (Exception) { /* pergunta abaixo */ }

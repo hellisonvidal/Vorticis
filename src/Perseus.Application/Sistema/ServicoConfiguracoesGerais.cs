@@ -12,18 +12,32 @@ public enum ModoLancamento
     PartidaSimples,
 }
 
-public sealed record ConfiguracoesGerais(ModoLancamento ModoLancamento);
+public sealed record ConfiguracoesGerais(ModoLancamento ModoLancamento, string? PastaBackup = null);
 
 /// <summary>Configurações › Configurações gerais (valem para todos os usuários e empresas).</summary>
 public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao repositorio)
 {
     private const string ChaveModo = "modo_lancamento";
+    private const string ChavePastaBackup = "pasta_backup";
 
     public async Task<ConfiguracoesGerais> ObterAsync(CancellationToken ct = default)
     {
-        var v = await repositorio.LerAsync([ChaveModo], ct);
+        var v = await repositorio.LerAsync([ChaveModo, ChavePastaBackup], ct);
         var modo = v.TryGetValue(ChaveModo, out var m) && Enum.TryParse<ModoLancamento>(m.Valor, out var lido) ? lido : ModoLancamento.PartidaDobrada;
-        return new ConfiguracoesGerais(modo);
+        return new ConfiguracoesGerais(modo, v.TryGetValue(ChavePastaBackup, out var p) && p.Valor.Length > 0 ? p.Valor : null);
+    }
+
+    /// <summary>Pasta dos backups: a escolhida pelo usuário ou a padrão (no diretório de instalação).</summary>
+    public async Task<string> PastaBackupAsync(CancellationToken ct = default) => (await ObterAsync(ct)).PastaBackup ?? ServicoBackup.PastaPadrao;
+
+    /// <summary>Grava a pasta escolhida para os backups (vazio = volta à padrão). Precisa ser possível gravar nela.</summary>
+    public async Task<Resultado> SalvarPastaBackupAsync(SessaoUsuario admin, string? pasta, CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado.Falha("Somente o administrador define a pasta dos backups.");
+        var p = string.IsNullOrWhiteSpace(pasta) ? "" : pasta.Trim();
+        if (p.Length > 0 && !ServicoBackup.PodeGravar(p)) return Resultado.Falha($"Não é possível gravar na pasta {p}.");
+        await repositorio.GravarAsync(new Dictionary<string, string?> { [ChavePastaBackup] = p }, admin.Id, ct);
+        return Resultado.Ok();
     }
 
     public async Task<Resultado> SalvarAsync(SessaoUsuario admin, ConfiguracoesGerais c, CancellationToken ct = default)

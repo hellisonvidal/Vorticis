@@ -43,6 +43,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Dirs]
+; Pasta padrão dos backups (dentro da instalação), gravável pelos usuários; não é apagada na desinstalação.
+Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
+
 [Icons]
 Name: "{autoprograms}\Perseus Contábil"; Filename: "{app}\PerseusContabil.exe"
 Name: "{autodesktop}\Perseus Contábil"; Filename: "{app}\PerseusContabil.exe"; Tasks: desktopicon

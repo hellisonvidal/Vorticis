@@ -752,12 +752,26 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             // Backup
             vm.AbrirCommand.Execute(Telas.Backup);
+            await vm.Backup.CarregarAsync();
+            Assert.Equal(Application.Sistema.ServicoBackup.PastaPadrao, vm.Backup.Pasta);     // padrão: diretório de instalação
+            Assert.StartsWith(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), vm.Backup.Pasta);
             var pastaBackup = Path.Combine(Path.GetTempPath(), "perseus_ui_" + Guid.NewGuid().ToString("N"));
             vm.Backup.Pasta = pastaBackup;
+            await vm.Backup.SalvarPastaCommand.ExecuteAsync(null);                         // pasta escolhida fica gravada
+            Assert.Empty(vm.Backup.Erros);
+            Assert.Equal(pastaBackup, await vm.App!.ConfiguracoesGerais.PastaBackupAsync());
             await vm.Backup.GerarCommand.ExecuteAsync(null);
             Assert.Empty(vm.Backup.Erros);
-            Assert.Single(vm.Backup.Arquivos);
+            vm.Backup.Selecionado = Assert.Single(vm.Backup.Arquivos);
             Foto(janela, "10_backup");
+            var excluindo = vm.Backup.ExcluirCommand.ExecuteAsync(null);                  // excluir o backup gerado
+            Assert.Contains("Excluir definitivamente", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await excluindo;
+            Assert.Empty(vm.Backup.Erros);
+            Assert.Empty(vm.Backup.Arquivos);
+            await vm.Backup.UsarPastaPadraoCommand.ExecuteAsync(null);
+            Assert.Equal(Application.Sistema.ServicoBackup.PastaPadrao, await vm.App!.ConfiguracoesGerais.PastaBackupAsync());
             Directory.Delete(pastaBackup, true);
 
             // Janelas flutuantes: cada função aberta tem a sua; a barra lista as abertas e o ✕ fecha

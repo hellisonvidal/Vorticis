@@ -458,7 +458,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         if (tela == Telas.PlanoContas) _ = Disparar(PlanoContas.CarregarAsync);
         if (tela == Telas.CentrosCusto) _ = Disparar(CentrosCusto.CarregarAsync);
         if (tela == Telas.SaldosIniciais) _ = Disparar(SaldosIniciais.CarregarAsync);
-        if (tela == Telas.Backup) Backup.Atualizar();
+        if (tela == Telas.Backup) _ = Disparar(Backup.CarregarAsync);
         if (tela == Telas.ImportacaoReferencial) _ = Disparar(ImportacaoReferencial.CarregarAsync);
         if (tela == Telas.MapeamentoReferencial) _ = Disparar(MapeamentoReferencial.CarregarAsync);
         if (tela == Telas.Contabilidade) _ = Disparar(Contabilidade.CarregarAsync);

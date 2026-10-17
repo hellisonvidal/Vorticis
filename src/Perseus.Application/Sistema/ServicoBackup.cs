@@ -26,8 +26,54 @@ public sealed class ServicoBackup(IBackupBanco backup)
 {
     public const string Extensao = ".backup";
 
-    public static string PastaPadrao =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Perseus Contabil", "Backups");
+    /// <summary>
+    /// Pasta padrão: "Backups" dentro do diretório de instalação do programa. Se ela não puder ser gravada
+    /// (instalação em Arquivos de Programas para todos os usuários), usa Documentos\Perseus Contabil\Backups.
+    /// </summary>
+    public static string PastaPadrao => _pastaPadrao.Value;
+
+    private static readonly Lazy<string> _pastaPadrao = new(() =>
+    {
+        var naInstalacao = Path.Combine(AppContext.BaseDirectory, "Backups");
+        return PodeGravar(naInstalacao)
+            ? naInstalacao
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Perseus Contabil", "Backups");
+    });
+
+    /// <summary>Verifica se é possível criar a pasta e gravar nela.</summary>
+    public static bool PodeGravar(string pasta)
+    {
+        try
+        {
+            Directory.CreateDirectory(pasta);
+            var teste = Path.Combine(pasta, $".perseus_{Guid.NewGuid():N}.tmp");
+            File.WriteAllBytes(teste, []);
+            File.Delete(teste);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Exclui um arquivo de backup (somente administrador; só arquivos .backup).</summary>
+    public static Resultado Excluir(SessaoUsuario sessao, string arquivo)
+    {
+        if (!sessao.Administrador) return Resultado.Falha("Somente administradores excluem backups.");
+        if (!string.Equals(Path.GetExtension(arquivo), Extensao, StringComparison.OrdinalIgnoreCase))
+            return Resultado.Falha("Só arquivos de backup do Perseus (.backup) podem ser excluídos aqui.");
+        if (!File.Exists(arquivo)) return Resultado.Falha($"Arquivo não encontrado: {arquivo}");
+        try
+        {
+            File.Delete(arquivo);
+            return Resultado.Ok();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Resultado.Falha($"Não foi possível excluir: {e.Message}");
+        }
+    }
 
     public static IReadOnlyList<ArquivoBackup> Listar(string pasta) =>
         Directory.Exists(pasta)

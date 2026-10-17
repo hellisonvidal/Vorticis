@@ -192,7 +192,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         try
         {
             Ocupado = true;
-            var b = await app.Backup.GerarAsync(sessao, Application.Sistema.ServicoBackup.PastaPadrao);
+            var b = await app.Backup.GerarAsync(sessao, await app.ConfiguracoesGerais.PastaBackupAsync());
             if (b.Sucesso) copia = b.Valor;
         }
         catch (Exception)

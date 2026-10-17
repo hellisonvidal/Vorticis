@@ -26,6 +26,47 @@ public partial class BackupViewModel(MainViewModel main) : ModuloViewModel(main)
     [RelayCommand]
     private void AtualizarLista() => Atualizar();
 
+    /// <summary>Ao abrir: a pasta escolhida (ou a padrão, no diretório de instalação).</summary>
+    public async Task CarregarAsync()
+    {
+        if (main.App is { } app) Pasta = await app.ConfiguracoesGerais.PastaBackupAsync();
+        Atualizar();
+    }
+
+    /// <summary>Guarda a pasta atual como a pasta dos backups (usada também nos backups automáticos).</summary>
+    [RelayCommand]
+    private async Task SalvarPastaAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (main.App is not { } app || main.Sessao is not { } sessao) return;
+        var padrao = string.Equals(Pasta.Trim(), ServicoBackup.PastaPadrao, StringComparison.OrdinalIgnoreCase);
+        var r = await app.ConfiguracoesGerais.SalvarPastaBackupAsync(sessao, padrao ? null : Pasta);
+        MostrarResultado(r, padrao ? "Usando a pasta padrão (no diretório de instalação do programa)." : $"Os backups passam a ser gravados em {Pasta.Trim()}.");
+        Atualizar();
+    }
+
+    [RelayCommand]
+    private async Task UsarPastaPadraoAsync()
+    {
+        Pasta = ServicoBackup.PastaPadrao;
+        await SalvarPastaAsync();
+    }
+
+    /// <summary>Exclui o arquivo de backup selecionado (pede confirmação).</summary>
+    [RelayCommand]
+    private async Task ExcluirAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (main.Sessao is not { } sessao) return;
+        if (Selecionado is not { } sel) { Erros.Add("Selecione o backup a excluir."); return; }
+        if (!await main.ConfirmarAsync("Excluir backup", $"Excluir definitivamente o arquivo de backup {sel.Nome} ({sel.Data})?", "Excluir", "Cancelar")) return;
+        var r = ServicoBackup.Excluir(sessao, sel.Arquivo.Caminho);
+        MostrarResultado(r, $"Backup {sel.Nome} excluído.");
+        Atualizar();
+    }
+
     public void Atualizar()
     {
         Arquivos.Clear();
