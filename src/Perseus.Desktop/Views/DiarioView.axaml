@@ -11,6 +11,8 @@
       <TextBlock Text="a" VerticalAlignment="Center" />
       <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <v:BarraExportacaoView />
     </StackPanel>
     <Border DockPanel.Dock="Bottom" BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
       <StackPanel Spacing="6">

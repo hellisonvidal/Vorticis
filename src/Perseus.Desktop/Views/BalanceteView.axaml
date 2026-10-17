@@ -12,7 +12,8 @@
       <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
       <CheckBox Content="Incluir contas zeradas" IsChecked="{Binding IncluirZeradas}" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-      <Button Content="Exportar CSV" Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportar}" />
+      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <v:BarraExportacaoView />
     </StackPanel>
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding Totais}" FontWeight="SemiBold" Margin="0,6,0,0" />
     <v:MensagensView DockPanel.Dock="Bottom" />

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Perseus.Application\Perseus.Application.csproj" />
+    <PackageReference Include="MiniExcel" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="PDFsharp-MigraDoc" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" />

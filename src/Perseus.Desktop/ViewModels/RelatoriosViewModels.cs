@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Perseus.Application.Relatorios;
 using Perseus.Domain.Contabil;
 using Perseus.Domain.Seguranca;
 
@@ -14,9 +15,10 @@ public sealed record LinhaBalanceteView(string Codigo, string Descricao, bool An
     public string Alerta => SaldoInvertido ? "⚠" : "";
 }
 
-public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class BalanceteViewModel(IContexto contexto) : RelatorioViewModel(contexto)
 {
     private IReadOnlyList<LinhaBalancete> _ultimo = [];
+    private (DateOnly Ini, DateOnly Fim) _periodo;
 
     public ObservableCollection<LinhaBalanceteView> Linhas { get; } = [];
 
@@ -25,7 +27,12 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
     [ObservableProperty] private bool _incluirZeradas;
     [ObservableProperty] private string _totais = "";
 
-    public bool PodeExportar => Contexto.Pode(Permissao.RelatorioExportar);
+    public bool PodeExportar => PodeExportarPlanilha;
+
+    protected override string TituloRelatorio => "Balancete de verificação";
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"balancete_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+    protected override bool Paisagem => true;
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -34,6 +41,7 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
         var r = await app.Relatorios.BalanceteAsync(empresa, ini, Data(Fim, ini), usuario, IncluirZeradas);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         _ultimo = r.Valor;
+        _periodo = (ini, Data(Fim, ini));
         Linhas.Clear();
         foreach (var l in _ultimo)
             Linhas.Add(new LinhaBalanceteView(l.Codigo, l.Descricao, l.Analitica, LinhaBalancete.Formatar(l.SaldoAnterior),
@@ -46,23 +54,24 @@ public partial class BalanceteViewModel(IContexto contexto) : ModuloViewModel(co
         Totais = $"Movimento: débitos {Numeros.Moeda(deb)} | créditos {Numeros.Moeda(cred)}" + (deb == cred ? " ✓ fechado" : " ✗ DIFERENÇA");
         var invertidas = _ultimo.Count(l => l.Analitica && l.SaldoInvertido);
         Mensagem = invertidas > 0 ? $"{invertidas} conta(s) com saldo contrário à natureza (destacadas)." : null;
+        TemDados = true;
+        AtualizarPermissoesExportacao();
         OnPropertyChanged(nameof(PodeExportar));
     }, Permissao.RelatorioBalancete);
 
-    [RelayCommand]
-    private Task ExportarCsvAsync() => ExecutarAsync(async (_, _, _) =>
-    {
-        if (_ultimo.Count == 0) { Erros.Add("Gere o balancete antes de exportar."); return; }
-        var pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Perseus Contabil");
-        Directory.CreateDirectory(pasta);
-        var arquivo = Path.Combine(pasta, $"balancete_{Inicio:yyyyMMdd}_{Fim:yyyyMMdd}.csv");
-        var sb = new StringBuilder("Código;Descrição;Tipo;Saldo anterior;Débitos;Créditos;Saldo final\n");
-        foreach (var l in _ultimo)
-            sb.AppendLine(string.Join(';', l.Codigo, '"' + l.Descricao.Replace("\"", "\"\"") + '"', l.Analitica ? "A" : "S",
-                Numeros.Moeda(l.SaldoAnterior), Numeros.Moeda(l.Debitos), Numeros.Moeda(l.Creditos), Numeros.Moeda(l.SaldoFinal)));
-        await File.WriteAllTextAsync(arquivo, sb.ToString(), new UTF8Encoding(true));   // BOM: Excel abre acentos corretamente
-        Mensagem = $"Exportado para {arquivo}";
-    }, Permissao.RelatorioExportar);
+    private static string DC(decimal saldo) => saldo == 0 ? "" : saldo > 0 ? "D" : "C";
+
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() =>
+    [
+        new("Balancete", [
+                new("Conta", LarguraCm: 3.2), new("Descrição"), new("Tipo", LarguraCm: 1.1),
+                new("Saldo anterior", TipoColuna.Valor), new("D/C", LarguraCm: 0.9), new("Débitos", TipoColuna.Valor),
+                new("Créditos", TipoColuna.Valor), new("Saldo final", TipoColuna.Valor), new("D/C", LarguraCm: 0.9)],
+            _ultimo.Select(l => new LinhaRelatorio(
+                [l.Codigo, l.Descricao, l.Analitica ? "A" : "S", Math.Abs(l.SaldoAnterior), DC(l.SaldoAnterior), l.Debitos, l.Creditos,
+                 Math.Abs(l.SaldoFinal), DC(l.SaldoFinal)], Destaque: !l.Analitica, Recuo: l.Nivel - 1)).ToList(),
+            Totais),
+    ];
 }
 
 public sealed record LinhaRazaoView(string Data, long Numero, string Historico, string Debito, string Credito, string Saldo, bool Estornado)
@@ -70,8 +79,11 @@ public sealed record LinhaRazaoView(string Data, long Numero, string Historico, 
     public string Situacao => Estornado ? "Estornado" : "";
 }
 
-public partial class RazaoViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class RazaoViewModel(IContexto contexto) : RelatorioViewModel(contexto)
 {
+    private Application.Contabil.RazaoConta? _razao;
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
     public ObservableCollection<LinhaRazaoView> Linhas { get; } = [];
 
     [ObservableProperty] private string _conta = "";
@@ -79,29 +91,74 @@ public partial class RazaoViewModel(IContexto contexto) : ModuloViewModel(contex
     [ObservableProperty] private DateTime? _fim = DateTime.Today;
     [ObservableProperty] private string _cabecalho = "";
 
+    protected override string TituloRelatorio => "Livro Razão";
+    protected override string Parametros => $"Conta {_razao?.Codigo} - {_razao?.Descricao} | Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"razao_{_razao?.Codigo}_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         Linhas.Clear();
         Cabecalho = "";
+        TemDados = false;
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
         var r = await app.Relatorios.RazaoAsync(empresa, Conta.Trim(), ini, Data(Fim, ini), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        var razao = r.Valor;
+        var razao = _razao = r.Valor;
+        _periodo = (ini, Data(Fim, ini));
         foreach (var l in razao.Linhas)
             Linhas.Add(new LinhaRazaoView(l.Data.ToString("dd/MM/yyyy"), l.Numero, l.Historico,
                 l.DC == IndicadorDC.D ? Numeros.Moeda(l.Valor) : "", l.DC == IndicadorDC.C ? Numeros.Moeda(l.Valor) : "",
                 LinhaBalancete.Formatar(l.SaldoAcumulado), l.Estornado));
         Cabecalho = $"{razao.Codigo} - {razao.Descricao} | Saldo anterior: {LinhaBalancete.Formatar(razao.SaldoAnterior)} | Saldo final: {LinhaBalancete.Formatar(razao.SaldoFinal)}";
+        TemDados = true;
+        AtualizarPermissoesExportacao();
     }, Permissao.RelatorioRazao);
+
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas()
+    {
+        var r = _razao!;
+        var linhas = new List<LinhaRelatorio>
+        {
+            new([null, null, "Saldo anterior", null, null, Math.Abs(r.SaldoAnterior), r.SaldoAnterior == 0 ? "" : r.SaldoAnterior > 0 ? "D" : "C", ""], Destaque: true),
+        };
+        linhas.AddRange(r.Linhas.Select(l => new LinhaRelatorio(
+            [l.Data, l.Numero, l.Historico, l.DC == IndicadorDC.D ? l.Valor : null, l.DC == IndicadorDC.C ? l.Valor : null,
+             Math.Abs(l.SaldoAcumulado), l.SaldoAcumulado == 0 ? "" : l.SaldoAcumulado > 0 ? "D" : "C", l.Estornado ? "Estornado" : ""])));
+        return
+        [
+            new($"Razão {r.Codigo}", [
+                    new("Data", TipoColuna.Data), new("Nº", TipoColuna.Inteiro), new("Histórico"), new("Débito", TipoColuna.Valor),
+                    new("Crédito", TipoColuna.Valor), new("Saldo", TipoColuna.Valor), new("D/C", LarguraCm: 0.9), new("Situação", LarguraCm: 1.8)],
+                linhas, Cabecalho),
+        ];
+    }
 }
 
 public sealed record LinhaDiarioView(long LancamentoId, long Numero, string Data, string Conta, string Debito, string Credito,
                                      string Historico, string Situacao);
 
-public partial class DiarioViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class DiarioViewModel(IContexto contexto) : RelatorioViewModel(contexto)
 {
+    private IReadOnlyList<Application.Contabil.LinhaDiario> _ultimo = [];
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
     public ObservableCollection<LinhaDiarioView> Linhas { get; } = [];
+
+    protected override string TituloRelatorio => "Livro Diário";
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"diario_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+    protected override bool Paisagem => true;
+
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() =>
+    [
+        new("Diário", [
+                new("Nº", TipoColuna.Inteiro), new("Data", TipoColuna.Data), new("Conta", LarguraCm: 2.6), new("Descrição da conta", LarguraCm: 6),
+                new("Débito", TipoColuna.Valor), new("Crédito", TipoColuna.Valor), new("Histórico"), new("Situação", LarguraCm: 1.8)],
+            _ultimo.Select(l => new LinhaRelatorio(
+                [l.Numero, l.Data, l.CodigoConta, l.DescricaoConta, l.DC == IndicadorDC.D ? l.Valor : null,
+                 l.DC == IndicadorDC.C ? l.Valor : null, l.Historico, l.Status == StatusLancamento.Estornado ? "Estornado" : ""])).ToList()),
+    ];
 
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _fim = DateTime.Today;
@@ -120,6 +177,9 @@ public partial class DiarioViewModel(IContexto contexto) : ModuloViewModel(conte
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
         var r = await app.Relatorios.DiarioAsync(empresa, ini, Data(Fim, ini), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        (_ultimo, _periodo) = (r.Valor, (ini, Data(Fim, ini)));
+        TemDados = true;
+        AtualizarPermissoesExportacao();
         Linhas.Clear();
         foreach (var l in r.Valor)
             Linhas.Add(new LinhaDiarioView(l.LancamentoId, l.Numero, l.Data.ToString("dd/MM/yyyy"), $"{l.CodigoConta} {l.DescricaoConta}",

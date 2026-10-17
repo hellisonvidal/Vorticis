@@ -13,6 +13,8 @@
       <TextBlock Text="Nível" VerticalAlignment="Center" />
       <ComboBox ItemsSource="{x:Static vm:DemonstracoesViewModel.Niveis}" SelectedItem="{Binding Nivel}" Width="70" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <v:BarraExportacaoView />
     </StackPanel>
     <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
       <TextBlock Text="{Binding Resumo}" FontWeight="SemiBold" />

@@ -19,6 +19,8 @@ public interface IContexto
     void AoConcluirConfiguracaoInicial();
     /// <summary>Pergunta Sim/Não ao usuário (diálogo modal). Usado antes de excluir ou gravar dados obtidos de fora.</summary>
     Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não");
+    /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
+    string DescricaoEmpresa { get; }
 }
 
 /// <summary>Telas acessíveis pelo menu. A chave é o CommandParameter do item de menu.</summary>
@@ -123,6 +125,10 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public ObservableCollection<FuncaoAberta> JanelasAbertas { get; } = [];
 
     public bool TemJanelasAbertas => JanelasAbertas.Count > 0;
+
+    public string DescricaoEmpresa => EmpresaSelecionada is { } e
+        ? $"{e.RazaoSocial} — CNPJ {Domain.Cadastros.Cnpj.Formatar(e.Cnpj)}"
+        : "";
     [ObservableProperty] private string _tituloTela = "";
 
     public ObservableCollection<EmpresaPermitida> EmpresasPermitidas { get; } = [];
@@ -276,6 +282,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Contabilidade.AtualizarPermissoes();
         Socios.AtualizarPermissoes();
         Empresas.AtualizarBarraCadastro();
+        foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
         AtualizarStatus();
         // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
         if (Logado)

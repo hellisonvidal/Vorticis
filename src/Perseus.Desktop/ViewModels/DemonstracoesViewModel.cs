@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Perseus.Application.Relatorios;
 using Perseus.Domain.Contabil;
 using Perseus.Domain.Seguranca;
 
@@ -14,8 +15,22 @@ public sealed record LinhaDemonstracaoView(LinhaDemonstracao Linha)
 }
 
 /// <summary>Relatórios › Balanço Patrimonial e DRE.</summary>
-public partial class DemonstracoesViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class DemonstracoesViewModel(IContexto contexto) : RelatorioViewModel(contexto)
 {
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    protected override string TituloRelatorio => "Balanço Patrimonial e Demonstração do Resultado";
+    protected override string Parametros => $"Balanço em {_periodo.Fim:dd/MM/yyyy} · DRE de {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"demonstracoes_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    private static TabelaRelatorio Tabela(string titulo, IEnumerable<LinhaDemonstracaoView> linhas, string? rodape = null) =>
+        new(titulo, [new("Código", LarguraCm: 3), new("Descrição"), new("Valor (R$)", TipoColuna.Valor, 3.2)],
+            linhas.Select(l => new LinhaRelatorio([l.Codigo, l.Linha.Descricao, l.Linha.Valor],
+                Destaque: l.Linha.Tipo == TipoLinhaDemonstracao.Total, Recuo: l.Linha.Nivel - 1)).ToList(), rodape);
+
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() =>
+        [Tabela("Ativo", Ativo), Tabela("Passivo e PL", PassivoPl), Tabela("DRE", Dre, Resumo)];
+
     public static IReadOnlyList<short> Niveis { get; } = [1, 2, 3, 4, 5];
 
     public ObservableCollection<LinhaDemonstracaoView> Ativo { get; } = [];
@@ -39,6 +54,9 @@ public partial class DemonstracoesViewModel(IContexto contexto) : ModuloViewMode
         Substituir(Ativo, bp.Valor.Ativo);
         Substituir(PassivoPl, bp.Valor.PassivoPl);
         Substituir(Dre, dre.Valor.Linhas);
+        _periodo = (ini, fim);
+        TemDados = true;
+        AtualizarPermissoesExportacao();
         Resumo = (bp.Valor.Fecha ? "✓ Ativo = Passivo + PL" : $"✗ Diferença no balanço: {Numeros.Moeda(bp.Valor.TotalAtivo - bp.Valor.TotalPassivoPl)}") +
                  (bp.Valor.ResultadoNaoEncerrado != 0 ? " · resultado do período ainda não encerrado (aparece destacado no PL)" : "");
     }, Permissao.RelatorioDemonstracoes);

@@ -248,6 +248,22 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Contains("✓ fechado", vm.Balancete.Totais);
             Foto(janela, "05_balancete");
 
+            // Exportação do que está na tela: PDF, Excel (.xlsx) e CSV
+            var pastaExport = Path.Combine(Path.GetTempPath(), "perseus_export_" + Guid.NewGuid().ToString("N"));
+            (ArquivosGerados.AbrirAposGerar, ArquivosGerados.Pasta) = (false, pastaExport);
+            Assert.True(vm.Balancete.ExportarPdfCommand.CanExecute(null));
+            vm.Balancete.ExportarPdfCommand.Execute(null);
+            Assert.Empty(vm.Balancete.Erros);
+            Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(vm.Balancete.UltimoArquivo!), 0, 4));
+            vm.Balancete.ExportarExcelCommand.Execute(null);
+            var planilha = Perseus.Infra.Relatorios.ExportadorExcel.Ler(File.ReadAllBytes(vm.Balancete.UltimoArquivo!));
+            var bancos = planilha.Single(l => (l["Conta"] as string) == "1.1.01.002");
+            Assert.Equal(1500m, Convert.ToDecimal(bancos["Débitos"]));             // número de verdade no Excel
+            vm.Balancete.ExportarCsvCommand.Execute(null);
+            var csv = File.ReadAllText(vm.Balancete.UltimoArquivo!);
+            Assert.StartsWith("Conta;Descrição;Tipo;Saldo anterior;D/C;Débitos", csv.TrimStart('\uFEFF'));
+            Assert.Contains("1.1.01.002;Bancos Conta Movimento;A;0,00;;1.500,00;", csv);
+
             // 5. Cadastros › Plano de contas: inclui subconta, herdando natureza
             vm.AbrirCommand.Execute(Telas.PlanoContas);
             var plano = vm.PlanoContas;
