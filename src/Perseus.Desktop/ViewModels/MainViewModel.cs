@@ -48,6 +48,7 @@ public static class Telas
     public const string Conexao = "conexao";
     public const string Sobre = "sobre";
     public const string Inicio = "inicio";
+    public const string Licenca = "licenca";
 }
 
 public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposable
@@ -75,7 +76,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Empresas), nameof(Lancamento), nameof(Balancete), nameof(Razao),
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
-        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios))]
+        nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca))]
     private void RecriarModulos()
     {
         Empresas = new CadastroEmpresaViewModel(this);
@@ -100,6 +101,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         AlterarSenha = new AlterarSenhaViewModel(this);
         Sobre = new SobreViewModel(this);
         CentralUsuarios = new CentralUsuariosViewModel(this);
+        Licenca = new LicencaViewModel(this);
     }
 
     public PerseusApp? App { get; private set; }
@@ -150,6 +152,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public AlterarSenhaViewModel AlterarSenha { get; private set; }
     public SobreViewModel Sobre { get; private set; }
     public CentralUsuariosViewModel CentralUsuarios { get; private set; }
+    public LicencaViewModel Licenca { get; private set; }
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
@@ -310,7 +313,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
         Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
                            || Pode(Permissao.RelatorioDemonstracoes),
-        Telas.Usuarios or Telas.AlterarSenha or Telas.Sobre or Telas.Inicio => true,
+        Telas.Usuarios or Telas.AlterarSenha or Telas.Sobre or Telas.Inicio or Telas.Licenca => true,
         _ => false,
     };
 
@@ -344,6 +347,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Conexao => (Conexao, "Configurações › Conexão com o banco de dados"),
             Telas.Sobre => (Sobre, "Ajuda › Sobre o Perseus Contábil"),
             Telas.Inicio => (Inicio, ""),
+            Telas.Licenca => (Licenca, "Ajuda › Licença e registro"),
             _ => (Conteudo, TituloTela),
         };
         _telaAtual = tela;
@@ -379,6 +383,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
         if (tela == Telas.Inicio) Inicio.Atualizar();
+        if (tela == Telas.Licenca) _ = Disparar(Licenca.CarregarAsync);
     }
 
     /// <summary>Configurações › Usuários: carrega a aba aberta.</summary>

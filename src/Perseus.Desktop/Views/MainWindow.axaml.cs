@@ -23,6 +23,12 @@ public partial class MainWindow : Window
         KeyBindings.Add(Atalho(Key.L, KeyModifiers.Control, Telas.Lancamento));
         KeyBindings.Add(Atalho(Key.B, KeyModifiers.Control, Telas.Balancete));
         KeyBindings.Add(Atalho(Key.F1, KeyModifiers.None, Telas.Sobre));
+        // As janelas das funções ocupam a área de trabalho (abaixo do título, menus e barra de janelas) e a acompanham.
+        PositionChanged += (_, _) => ReposicionarJanelas();
+        AreaPrincipal.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == BoundsProperty) ReposicionarJanelas();
+        };
         DataContextChanged += (_, _) =>
         {
             if (_vm is not null)
@@ -65,30 +71,69 @@ public partial class MainWindow : Window
 
     private void AbrirJanela(FuncaoAberta f)
     {
+        var titulo = new TextBlock
+        {
+            Text = f.Titulo, FontSize = 13, FontWeight = FontWeight.SemiBold, Foreground = Brushes.White,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0),
+        };
+        var fechar = new Button
+        {
+            Content = "✕  Fechar", FontSize = 12, Padding = new Thickness(10, 2), Margin = new Thickness(4, 2),
+            Background = Brushes.Transparent, Foreground = Brushes.White, BorderThickness = new Thickness(0),
+            [ToolTip.TipProperty] = "Fechar esta função",
+        };
+        var cabecalho = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#3A5F8F")), Height = 30,
+            Child = new DockPanel { Children = { fechar, titulo } },
+        };
+        DockPanel.SetDock(cabecalho, Dock.Top);
+        DockPanel.SetDock(fechar, Dock.Right);
         var w = new Window
         {
             Title = $"{f.Titulo} — Perseus Contábil",
-            Content = new ContentControl { Content = f.ViewModel, Margin = new Thickness(4) },
-            Width = Math.Max(960, Bounds.Width * 0.96),
-            Height = Math.Max(560, Bounds.Height * 0.88),
-            MinWidth = 640,
-            MinHeight = 420,
+            Content = new DockPanel
+            {
+                Children = { cabecalho, new ContentControl { Content = f.ViewModel, Margin = new Thickness(4) } },
+            },
+            SystemDecorations = SystemDecorations.BorderOnly,
+            CanResize = false,
             ShowInTaskbar = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Background = Background,
             Icon = Icon,
         };
+        Posicionar(w);
+        fechar.Click += (_, _) => _vm?.FecharFuncao(f);
         f.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(FuncaoAberta.Titulo)) w.Title = $"{f.Titulo} — Perseus Contábil";
+            if (e.PropertyName != nameof(FuncaoAberta.Titulo)) return;
+            w.Title = $"{f.Titulo} — Perseus Contábil";
+            titulo.Text = f.Titulo;
         };
         w.Activated += (_, _) => _vm?.AtivarFuncao(f);
         w.Closed += (_, _) =>
         {
-            if (!_fechandoPorCodigo.Remove(w)) _vm?.FecharFuncao(f);   // ✕ da própria janela
+            if (!_fechandoPorCodigo.Remove(w)) _vm?.FecharFuncao(f);   // Alt+F4
         };
         w.KeyBindings.AddRange(KeyBindings);   // mesmos atalhos (Ctrl+L, Ctrl+B, F1)
         _janelas[f] = w;
         w.Show(this);
+    }
+
+    /// <summary>Encaixa a janela da função na área de trabalho da janela principal (tela cheia sem cobrir título e menus).</summary>
+    private void Posicionar(Window w)
+    {
+        var area = AreaPrincipal.Bounds;
+        if (area.Width < 10 || area.Height < 10) return;
+        var origem = AreaPrincipal.TranslatePoint(new Point(0, 0), this) ?? default;
+        w.Position = this.PointToScreen(origem);
+        (w.Width, w.Height) = (area.Width, area.Height);
+    }
+
+    private void ReposicionarJanelas()
+    {
+        foreach (var w in _janelas.Values) Posicionar(w);
     }
 
     private void TrazerParaFrente(FuncaoAberta? f)

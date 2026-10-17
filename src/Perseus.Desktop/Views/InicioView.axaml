@@ -11,8 +11,8 @@
         <GradientStop Offset="1" Color="#E6ECF4" />
       </LinearGradientBrush>
     </Border.Background>
-    <Grid RowDefinitions="*,Auto">
-      <Viewbox Stretch="Uniform" MaxWidth="900" Margin="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Grid>
+      <Viewbox Stretch="Uniform" Width="380" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel HorizontalAlignment="Center">
           <TextBlock Text="Perseus" FontSize="96" FontWeight="Bold" Foreground="#1F3A5F" Opacity="0.16"
                      HorizontalAlignment="Center" LetterSpacing="2" />
@@ -22,7 +22,7 @@
                      HorizontalAlignment="Center" Margin="0,18,0,0" />
         </StackPanel>
       </Viewbox>
-      <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,0,0,24" Spacing="4">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,24" Spacing="4">
         <TextBlock Text="{Binding Dica}" FontSize="13" Foreground="#44506A" HorizontalAlignment="Center"
                    IsVisible="{Binding Dica, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <TextBlock Text="{Binding Versao}" FontSize="11" Foreground="#8A94A8" HorizontalAlignment="Center" />

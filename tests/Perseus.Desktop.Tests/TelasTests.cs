@@ -470,6 +470,16 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.AbrirCommand.Execute(Telas.Balancete);
             Assert.Equal(antes, vm.JanelasAbertas.Count);
 
+            // Ajuda › Licença e registro
+            vm.AbrirCommand.Execute(Telas.Licenca);
+            await vm.Licenca.CarregarAsync();
+            Assert.Contains("não registrada", vm.Licenca.Situacao);
+            (vm.Licenca.Titular, vm.Licenca.Documento) = ("Escritório Exemplo Contabilidade", "45.723.174/0001-10");
+            await vm.Licenca.RegistrarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Licenca.Erros);
+            Assert.Equal("Registrado para: Escritório Exemplo Contabilidade — 45.723.174/0001-10", vm.Licenca.Situacao);
+            Foto(janela, "11b_licenca");
+
             vm.AbrirCommand.Execute(Telas.Sobre);
             Foto(janela, "11_sobre");
 

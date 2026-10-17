@@ -33,6 +33,7 @@ public sealed class PerseusApp : IAsyncDisposable
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj, consultaIe);
+        Licenca = new ServicoLicenca(new RepositorioConfiguracao(ds));
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
@@ -45,6 +46,7 @@ public sealed class PerseusApp : IAsyncDisposable
     public Autorizador Autorizador { get; }
     public ServicoUsuarios Usuarios { get; }
     public ServicoPerfis Perfis { get; }
+    public ServicoLicenca Licenca { get; }
     public ServicoLancamento Lancamentos { get; }
     public ServicoPeriodo Periodos { get; }
     public ServicoPlanoContas PlanoContas { get; }

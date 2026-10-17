@@ -264,8 +264,22 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         if (!r.Sucesso) { foreach (var e in r.Erros) Erros.Add(e); return; }
         if (r.Valor.Count == 0)
         {
-            Aviso = $"Nenhuma inscrição estadual encontrada em {uf} para este CNPJ (pode não ser contribuinte do ICMS). " +
-                    "Confira no SINTEGRA do estado e, se for o caso, informe o número ou ISENTO.";
+            // Sem inscrição na UF: a empresa é tratada como não contribuinte do ICMS (ISENTO), sem digitação manual.
+            if (!string.IsNullOrWhiteSpace(InscricaoEstadual) && InscricaoEstadual != "ISENTO")
+            {
+                Aviso = $"Nenhuma inscrição estadual encontrada em {uf} para este CNPJ; o número já informado ({InscricaoEstadual}) foi mantido. " +
+                        "Confira no SINTEGRA do estado.";
+                return;
+            }
+            InscricaoEstadual = "ISENTO";
+            if (EmEdicao)
+            {
+                Mensagem = $"Nenhuma inscrição estadual encontrada em {uf}: preenchido ISENTO (gravado ao Salvar).";
+                return;
+            }
+            var isento = await app.Empresas.SalvarInscricaoEstadualAsync(_carregada!.Id, "ISENTO");
+            if (!isento.Sucesso) { MostrarResultado(isento, ""); return; }
+            Mensagem = $"Nenhuma inscrição estadual encontrada em {uf}: a empresa foi registrada como ISENTO.";
             return;
         }
 

@@ -57,6 +57,33 @@ public static class BancoDoAplicativo
         return _portaLocal == b.Port && b.Host is "localhost" or "127.0.0.1";
     }
 
+    public static int? PortaLocal => _portaLocal;
+
+    /// <summary>
+    /// Troca a senha do superusuário do banco local (ALTER ROLE) e grava a nova senha na configuração.
+    /// A conexão informada precisa ser a do banco local, ainda com a senha antiga.
+    /// </summary>
+    public static async Task AlterarSenhaLocalAsync(string connectionString, string novaSenha, CancellationToken ct = default)
+    {
+        if (!EhBancoLocal(connectionString)) throw new InvalidOperationException("O programa não está usando o banco local.");
+        await using (var con = new NpgsqlConnection(connectionString))
+        {
+            await con.OpenAsync(ct);
+            // ALTER ROLE não aceita parâmetro: literal com aspas duplicadas.
+            await using var cmd = new NpgsqlCommand($"ALTER ROLE {ServidorPostgresEmbutido.Usuario} PASSWORD '{novaSenha.Replace("'", "''")}'", con);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        Configuracao.SalvarLocal(senha: novaSenha);
+        NpgsqlConnection.ClearAllPools();
+    }
+
+    /// <summary>Para o banco local (para reiniciar em outra porta); a próxima preparação o inicia de novo.</summary>
+    public static void PararLocal()
+    {
+        Encerrar();
+        _portaLocal = null;
+    }
+
     /// <summary>Ao sair do programa: para o servidor local, se foi este processo que o iniciou.</summary>
     public static void Encerrar()
     {

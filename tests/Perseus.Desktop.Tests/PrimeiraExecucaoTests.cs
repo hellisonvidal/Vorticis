@@ -83,6 +83,17 @@ public class PrimeiraExecucaoTests(SessaoHeadless headless)
                 await conexao.UsarBancoLocalCommand.ExecuteAsync(null);
                 Assert.IsType<LoginViewModel>(vm.Conteudo);
                 Assert.Equal(cfg.Senha, Configuracao.Carregar().Senha);
+
+                // 4. Configurações › Conexão: edita o banco local (troca a senha) e reconecta
+                conexao.CarregarDe(vm.ConnectionString, null);
+                Assert.True(conexao.UsandoBancoLocal);
+                Assert.True(conexao.UsarBancoLocal);
+                Assert.Equal(BancoDoAplicativo.PortaLocal, (int?)conexao.PortaLocal);
+                (conexao.NovaSenhaLocal, conexao.ConfirmacaoSenhaLocal) = ("NovaSenhaLocal1", "NovaSenhaLocal1");
+                await conexao.SalvarConfiguracaoCommand.ExecuteAsync(null);
+                Assert.Empty(conexao.Erros);
+                Assert.Equal("NovaSenhaLocal1", Configuracao.Carregar().Senha);
+                Assert.IsType<LoginViewModel>(vm.Conteudo);                    // reconectou com a senha nova
                 janela.Close();
                 await vm.DisposeAsync();
                 return true;

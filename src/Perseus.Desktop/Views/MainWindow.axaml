@@ -89,6 +89,7 @@
         </MenuItem>
         <MenuItem Header="_Ajuda">
           <MenuItem Header="Tela inicial" Command="{Binding AbrirCommand}" CommandParameter="inicio" />
+          <MenuItem Header="Licença e registro" Command="{Binding AbrirCommand}" CommandParameter="licenca" />
           <MenuItem Header="Sobre o Perseus Contábil" Command="{Binding AbrirCommand}" CommandParameter="sobre" InputGesture="F1" />
         </MenuItem>
       </Menu>
@@ -134,6 +135,6 @@
       <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
     </Border>
 
-    <ContentControl Content="{Binding ConteudoPrincipal}" Margin="8" />
+    <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />
   </DockPanel>
 </Window>

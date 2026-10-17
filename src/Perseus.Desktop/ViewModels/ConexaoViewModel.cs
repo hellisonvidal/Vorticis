@@ -13,6 +13,29 @@ public partial class ConexaoViewModel(MainViewModel main) : ModuloViewModel(main
     [ObservableProperty] private string _usuario = "perseus";
     [ObservableProperty] private string _senha = "";
     [ObservableProperty] private string? _falha;
+    [ObservableProperty] private bool _mostrarSenha;
+
+    /// <summary>Modo escolhido na tela: banco local do Perseus ou servidor PostgreSQL.</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EditandoServidor))] private bool _usarBancoLocal;
+
+    // banco local: porta e troca de senha
+    [ObservableProperty] private decimal? _portaLocal = Perseus.Infra.Sistema.ServidorPostgresEmbutido.PortaPreferida;
+    [ObservableProperty] private string _novaSenhaLocal = "";
+    [ObservableProperty] private string _confirmacaoSenhaLocal = "";
+
+    public bool EditandoServidor
+    {
+        get => !UsarBancoLocal;
+        set => UsarBancoLocal = !value;
+    }
+    public char CaractereSenha => MostrarSenha ? '\0' : '●';
+    partial void OnMostrarSenhaChanged(bool value) => OnPropertyChanged(nameof(CaractereSenha));
+
+    public string ConexaoAtual => main.App is null || string.IsNullOrEmpty(main.ConnectionString)
+        ? "Sem conexão."
+        : $"Em uso: {Configuracao.Descrever(main.ConnectionString)}";
+
+    public string PastaBancoLocal => Configuracao.PastaBancoLocal;
 
     public string Arquivo => Configuracao.ArquivoConfiguracao;
 
@@ -32,8 +55,49 @@ public partial class ConexaoViewModel(MainViewModel main) : ModuloViewModel(main
         (Servidor, Porta, Banco, Usuario, Senha) = (b.Host ?? "localhost", b.Port, b.Database ?? "perseus", b.Username ?? "", b.Password ?? "");
         Falha = falha;
         UsandoBancoLocal = main.App is not null && BancoDoAplicativo.EhBancoLocal(main.ConnectionString);
+        UsarBancoLocal = BancoLocalDisponivel && (UsandoBancoLocal || Configuracao.Carregar().Modo == ModoBanco.Local);
+        var cfg = Configuracao.Carregar();
+        PortaLocal = BancoDoAplicativo.PortaLocal ?? (cfg.Modo == ModoBanco.Local && cfg.Porta > 0 ? cfg.Porta : Perseus.Infra.Sistema.ServidorPostgresEmbutido.PortaPreferida);
+        (NovaSenhaLocal, ConfirmacaoSenhaLocal, MostrarSenha) = ("", "", false);
+        OnPropertyChanged(nameof(ConexaoAtual));
         Erros.Clear();
         Mensagem = null;
+    }
+
+    /// <summary>Salva o modo escolhido (local ou servidor) e reconecta.</summary>
+    [RelayCommand]
+    private async Task SalvarConfiguracaoAsync()
+    {
+        if (UsarBancoLocal) await SalvarLocalAsync();
+        else await SalvarEConectarAsync();
+    }
+
+    private async Task SalvarLocalAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        var porta = (int)(PortaLocal ?? 0);
+        if (porta is < 1024 or > 65535) { Erros.Add("Porta do banco local deve estar entre 1024 e 65535."); return; }
+        var trocarSenha = NovaSenhaLocal.Length > 0 || ConfirmacaoSenhaLocal.Length > 0;
+        if (trocarSenha)
+        {
+            if (NovaSenhaLocal.Length < 8) { Erros.Add("A nova senha do banco local deve ter ao menos 8 caracteres."); return; }
+            if (NovaSenhaLocal != ConfirmacaoSenhaLocal) { Erros.Add("A confirmação não confere com a nova senha."); return; }
+            if (!UsandoBancoLocal) { Erros.Add("Para trocar a senha, conecte-se primeiro ao banco local."); return; }
+        }
+        try
+        {
+            if (trocarSenha) await BancoDoAplicativo.AlterarSenhaLocalAsync(main.ConnectionString, NovaSenhaLocal);
+            var portaMudou = UsandoBancoLocal && BancoDoAplicativo.PortaLocal != porta;
+            Configuracao.SalvarLocal(porta);
+            if (portaMudou) BancoDoAplicativo.PararLocal();   // reinicia na nova porta ao reconectar
+        }
+        catch (Exception ex)
+        {
+            Erros.Add($"Não foi possível gravar a configuração: {ex.Message}");
+            return;
+        }
+        await main.IniciarAsync();
     }
 
     private string Montar() => new NpgsqlConnectionStringBuilder
