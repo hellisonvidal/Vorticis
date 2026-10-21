@@ -6,17 +6,17 @@ using Vorticis.Desktop.ViewModels;
 namespace Vorticis.Desktop.Views;
 
 /// <summary>As colunas da DMPL dependem das contas do PL da empresa: montadas a cada geração.</summary>
-public partial class MutacoesView : UserControl
+public partial class DmplView : UserControl
 {
-    private MutacoesViewModel? _vm;
+    private DmplViewModel? _vm;
 
-    public MutacoesView()
+    public DmplView()
     {
         InitializeComponent();
         DataContextChanged += (_, _) =>
         {
             if (_vm is not null) _vm.PropertyChanged -= AoMudar;
-            _vm = DataContext as MutacoesViewModel;
+            _vm = DataContext as DmplViewModel;
             if (_vm is not null) _vm.PropertyChanged += AoMudar;
             MontarColunas();
         };
@@ -24,7 +24,7 @@ public partial class MutacoesView : UserControl
 
     private void AoMudar(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MutacoesViewModel.ColunasDmpl)) MontarColunas();
+        if (e.PropertyName == nameof(DmplViewModel.ColunasDmpl)) MontarColunas();
     }
 
     private void MontarColunas()

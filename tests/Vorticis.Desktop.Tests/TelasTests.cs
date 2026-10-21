@@ -715,20 +715,29 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(enc.Encerrado);
             Foto(janela, "08b_encerramento");
 
-            // Relatórios › DMPL e DLPA: a implantação de saldos é a abertura; o encerramento não é mutação (o lucro vem da DRE)
-            vm.AbrirCommand.Execute(Telas.Mutacoes);
-            var mut = vm.Mutacoes;
+            // Relatórios › Contábeis › DMPL e DLPA (telas separadas): a implantação de saldos é a abertura; o encerramento não é mutação
+            vm.AbrirCommand.Execute(Telas.Dmpl);
+            var mut = vm.Dmpl;
             (mut.Inicio, mut.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
             await mut.GerarCommand.ExecuteAsync(null);
             Assert.Empty(mut.Erros);
-            Assert.Equal(["Capital social", "Lucros ou prejuízos acumulados", "Total"], mut.ColunasDmpl);
-            Assert.Equal(("Saldos em 31/12/2025", "45.000,00"), (mut.Dmpl[0].Descricao, mut.Dmpl[0].Valores[^1]));
-            Assert.Contains(mut.Dmpl, l => l.Descricao.StartsWith("Lucro líquido") && l.Valores[1] == "1.500,00");
+            Assert.Equal(["Capital social", "Reservas de capital", "Reservas de lucros", "Ajustes de avaliação patrimonial",
+                          "Lucros ou prejuízos acumulados", "Total"], mut.ColunasDmpl);
+            Assert.Equal(("Saldo inicial em 31/12/2025", "45.000,00"), (mut.Dmpl[0].Descricao, mut.Dmpl[0].Valores[^1]));
+            Assert.Contains(mut.Dmpl, l => l.Descricao.StartsWith("Resultado do exercício") && l.Valores[4] == "1.500,00");
             Assert.Equal("46.500,00", mut.Dmpl[^1].Valores[^1]);                  // = PL do Balanço depois do encerramento
-            Assert.Equal("1.500,00", mut.Dlpa[^1].Valor);
-            Foto(janela, "08b2_dmpl_dlpa");
+            Foto(janela, "08b2_dmpl");
             mut.ExportarPdfCommand.Execute(null);
             Assert.Empty(mut.Erros);
+            vm.AbrirCommand.Execute(Telas.Dlpa);
+            var dlpa = vm.Dlpa;
+            (dlpa.Inicio, dlpa.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await dlpa.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(dlpa.Erros);
+            Assert.Equal("1.500,00", dlpa.Dlpa[^1].Valor);
+            Foto(janela, "08b3_dlpa");
+            dlpa.ExportarPdfCommand.Execute(null);
+            Assert.Empty(dlpa.Erros);
 
             // Cadastros › Empresas, aba Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
             vm.AbrirCommand.Execute(Telas.Empresas);
@@ -789,7 +798,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Foto(janela, "09b_certificados");
             File.Delete(pfx);
 
-            // Relatórios › Livros e relatórios em PDF
+            // Relatórios › Contábeis › Livro Contábil Completo e Termos
             var pastaPdf = Path.Combine(Path.GetTempPath(), "vorticis_pdf_" + Guid.NewGuid().ToString("N"));
             (ArquivosGerados.AbrirAposGerar, ArquivosGerados.Pasta) = (false, pastaPdf);
             vm.AbrirCommand.Execute(Telas.LivrosPdf);
@@ -799,11 +808,22 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal(("FULANO DE TAL", "390.533.447-05", "Maria Contadora", "1SP123456/O-7"),
                          (livros.Representante, livros.RepresentanteCpf, livros.Contador, livros.Crc));
             (livros.Inicio, livros.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
-            await livros.DiarioCommand.ExecuteAsync(null);
+            Assert.Equal(livros.SemNire, livros.AvisoNire.Contains("NIRE"));    // NIRE vem do cadastro; sem ele, aparece o aviso
+            await livros.GerarLivroCommand.ExecuteAsync(null);
             Assert.Empty(livros.Erros);
             Assert.True(File.Exists(livros.UltimoArquivo));
-            await livros.DemonstracoesCommand.ExecuteAsync(null);
+            livros.IncluirRazao = livros.IncluirBalancete = false;              // livro parcial, só o que foi marcado
+            await livros.GerarLivroCommand.ExecuteAsync(null);
             Assert.Empty(livros.Erros);
+            vm.AbrirCommand.Execute(Telas.Termos);
+            var termos = vm.Termos;
+            await termos.PreencherResponsaveisAsync();
+            (termos.Inicio, termos.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await termos.GerarAberturaCommand.ExecuteAsync(null);
+            Assert.Empty(termos.Erros);
+            Assert.True(File.Exists(termos.UltimoArquivo));
+            await termos.GerarEncerramentoCommand.ExecuteAsync(null);
+            Assert.Empty(termos.Erros);
             Foto(janela, "08c_livros_pdf");
             if (Pasta is not null) foreach (var pdf in Directory.GetFiles(pastaPdf)) File.Copy(pdf, Path.Combine(Pasta, Path.GetFileName(pdf)), true);
             Directory.Delete(pastaPdf, true);

@@ -44,9 +44,12 @@ public sealed class GeradorPdf : IGeradorPdf
 
         if (d.TermoAbertura is { } ta) AdicionarTermo(doc, d, ta, termoTexto(ta));
 
-        var secao = NovaSecao(doc, d);
+        // Só os termos (emitidos isoladamente) não têm seção de conteúdo.
+        var temAssinaturas = d.Assinaturas is { Count: > 0 };
+        var secao = d.Blocos.Count > 0 || temAssinaturas ? NovaSecao(doc, d) : null;
         foreach (var bloco in d.Blocos)
         {
+            if (secao is null) break;
             if (bloco.NovaPagina) secao.AddPageBreak();
             if (bloco.Titulo is { } titulo)
             {
@@ -60,6 +63,7 @@ public sealed class GeradorPdf : IGeradorPdf
             if (bloco.Texto is { } texto) AdicionarTexto(secao.AddParagraph(), texto);
             if (bloco.Colunas is { } colunas && bloco.Linhas is { } linhas) AdicionarTabela(secao, colunas, linhas);
         }
+        if (secao is not null && d.Assinaturas is { Count: > 0 } assinaturas) AdicionarAssinaturas(secao, d, assinaturas);
 
         if (d.TermoEncerramento is { } te) AdicionarTermo(doc, d, te, termoTexto(te));
 
@@ -134,15 +138,21 @@ public sealed class GeradorPdf : IGeradorPdf
             p.Format.Alignment = linhas.Length > 1 ? ParagraphAlignment.Left : ParagraphAlignment.Justify;
             p.Format.SpaceAfter = Unit.FromPoint(10);
         }
+        AdicionarAssinaturas(s, d, termo.Assinaturas);
+    }
+
+    /// <summary>Linhas de assinatura lado a lado (nome, cargo/qualificação e documentos sob cada uma).</summary>
+    private static void AdicionarAssinaturas(Section s, DocumentoRelatorio d, IReadOnlyList<string> assinaturas)
+    {
         var tabela = s.AddTable();
-        var largura = ((d.Paisagem ? 29.7 : 21.0) - 2.8) / Math.Max(1, termo.Assinaturas.Count);
-        foreach (var _ in termo.Assinaturas) tabela.AddColumn(Unit.FromCentimeter(largura));
+        var largura = ((d.Paisagem ? 29.7 : 21.0) - 2.8) / Math.Max(1, assinaturas.Count);
+        foreach (var _ in assinaturas) tabela.AddColumn(Unit.FromCentimeter(largura));
         var linha = tabela.AddRow();
         linha.TopPadding = Unit.FromCentimeter(2.5);
-        for (int i = 0; i < termo.Assinaturas.Count; i++)
+        for (int i = 0; i < assinaturas.Count; i++)
         {
             var p = linha.Cells[i].AddParagraph();
-            AdicionarTexto(p, "_______________________________________\n" + termo.Assinaturas[i]);
+            AdicionarTexto(p, "_______________________________________\n" + assinaturas[i]);
             p.Format.Alignment = ParagraphAlignment.Center;
             p.Format.Font.Size = 10;
         }

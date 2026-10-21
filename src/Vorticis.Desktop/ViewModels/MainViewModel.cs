@@ -66,7 +66,9 @@ public static class Telas
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Certificados = "certificados";
     public const string ExportarLancamentos = "exportarlancamentos";
-    public const string Mutacoes = "mutacoes";
+    public const string Dmpl = "dmpl";
+    public const string Dlpa = "dlpa";
+    public const string Termos = "termos";
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
@@ -103,7 +105,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         nameof(Diario), nameof(Periodos), nameof(Usuarios), nameof(AlterarSenha), nameof(Sobre), nameof(Perfis), nameof(PlanoContas),
         nameof(CentrosCusto), nameof(SaldosIniciais), nameof(Backup), nameof(Encerramento), nameof(Demonstracoes), nameof(LivrosPdf),
         nameof(ImportacaoReferencial), nameof(MapeamentoReferencial), nameof(Contabilidade), nameof(Socios), nameof(CentralUsuarios), nameof(Licenca), nameof(Consultas),
-        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais), nameof(Certificados), nameof(ExportacaoLancamentos), nameof(Mutacoes),
+        nameof(ImportacaoPlano), nameof(ImportacaoPlanilhas), nameof(ImportacaoExtratos), nameof(ImportacaoLancamentos), nameof(Historicos), nameof(Clientes), nameof(Fornecedores), nameof(ConfiguracoesGerais), nameof(Certificados), nameof(ExportacaoLancamentos), nameof(Dmpl), nameof(Dlpa), nameof(Termos),
         nameof(Bens), nameof(GruposDepreciacao), nameof(Depreciacao), nameof(Conciliacao), nameof(DiferencasSaldos))]
     private void RecriarModulos()
     {
@@ -141,7 +143,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         ConfiguracoesGerais = new ConfiguracoesGeraisViewModel(this);
         Certificados = new CertificadosViewModel(this);
         ExportacaoLancamentos = new ExportacaoLancamentosViewModel(this);
-        Mutacoes = new MutacoesViewModel(this);
+        Dmpl = new DmplViewModel(this);
+        Dlpa = new DlpaViewModel(this);
+        Termos = new TermosViewModel(this);
         Bens = new BensViewModel(this);
         GruposDepreciacao = new GruposDepreciacaoViewModel(this);
         Depreciacao = new DepreciacaoViewModel(this);
@@ -213,7 +217,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
     public ConfiguracoesGeraisViewModel ConfiguracoesGerais { get; private set; }
     public CertificadosViewModel Certificados { get; private set; }
     public ExportacaoLancamentosViewModel ExportacaoLancamentos { get; private set; }
-    public MutacoesViewModel Mutacoes { get; private set; }
+    public DmplViewModel Dmpl { get; private set; }
+    public DlpaViewModel Dlpa { get; private set; }
+    public TermosViewModel Termos { get; private set; }
     public BensViewModel Bens { get; private set; }
     public GruposDepreciacaoViewModel GruposDepreciacao { get; private set; }
     public DepreciacaoViewModel Depreciacao { get; private set; }
@@ -348,6 +354,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         PlanoContas.AtualizarPermissoes();
         CentrosCusto.AtualizarPermissoes();
         LivrosPdf.AtualizarPermissoes();
+        Termos.AtualizarPermissoes();
         MapeamentoReferencial.AtualizarPermissoes();
         Contabilidade.AtualizarPermissoes();
         Socios.AtualizarPermissoes();
@@ -359,7 +366,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Fornecedores.AtualizarPermissoes();
         Bens.AtualizarPermissoes();
         GruposDepreciacao.AtualizarPermissoes();
-        foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes }) r.AtualizarPermissoesExportacao();
+        foreach (var r in new RelatorioViewModel[] { Balancete, Razao, Diario, Demonstracoes, Dmpl, Dlpa }) r.AtualizarPermissoesExportacao();
     }
 
     private void AbrirPrimeiraPermitida() => Abrir(PodeAbrir(Telas.Inicio) ? Telas.Inicio : Telas.Perfis);
@@ -400,7 +407,8 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
         Telas.Diario => Pode(Permissao.RelatorioDiario),
         Telas.Encerramento => Pode(Permissao.ExercicioEncerrar),
         Telas.Demonstracoes => Pode(Permissao.RelatorioDemonstracoes),
-        Telas.Mutacoes => Pode(Permissao.RelatorioDemonstracoes),
+        Telas.Dmpl or Telas.Dlpa => Pode(Permissao.RelatorioDemonstracoes),
+        Telas.Termos => Pode(Permissao.RelatorioDiario),
         Telas.LivrosPdf => Pode(Permissao.RelatorioDiario) || Pode(Permissao.RelatorioRazao) || Pode(Permissao.RelatorioBalancete)
                            || Pode(Permissao.RelatorioDemonstracoes),
         Telas.Usuarios or Telas.AlterarSenha or Telas.Sobre or Telas.Inicio or Telas.Licenca => true,
@@ -422,9 +430,11 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Perfis => (CentralUsuarios, "Configurações › Usuários"),
             Telas.Backup => (Backup, "Configurações › Backup e restauração"),
             Telas.Encerramento => (Encerramento, "Lançamentos › Encerramento do exercício"),
-            Telas.Demonstracoes => (Demonstracoes, "Relatórios › Balanço Patrimonial e DRE"),
-            Telas.Mutacoes => (Mutacoes, "Relatórios › DMPL e DLPA"),
-            Telas.LivrosPdf => (LivrosPdf, "Relatórios › Livros e relatórios em PDF"),
+            Telas.Demonstracoes => (Demonstracoes, "Relatórios › Contábeis › Balanço Patrimonial e DRE"),
+            Telas.Dmpl => (Dmpl, "Relatórios › Contábeis › DMPL"),
+            Telas.Dlpa => (Dlpa, "Relatórios › Contábeis › DLPA"),
+            Telas.Termos => (Termos, "Relatórios › Contábeis › Termos"),
+            Telas.LivrosPdf => (LivrosPdf, "Relatórios › Contábeis › Livro Contábil Completo"),
             Telas.ImportacaoReferencial => (ImportacaoReferencial, "Integrações › Importar › Plano referencial da RFB"),
             Telas.MapeamentoReferencial => (MapeamentoReferencial, "Integrações › Importar › Vínculo ao plano referencial"),
             Telas.Contabilidade => (Contabilidade, "Cadastros › Contadores"),
@@ -432,9 +442,9 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             Telas.Lancamento => (Lancamento, "Lançamentos › Lançamento contábil"),
             Telas.Estorno => (Lancamento, "Lançamentos › Lançamento contábil"),   // o estorno fica na própria tela de lançamento
             Telas.Periodos => (Periodos, "Lançamentos › Fechamento de períodos"),
-            Telas.Balancete => (Balancete, "Relatórios › Balancete de verificação"),
-            Telas.Razao => (Razao, "Relatórios › Livro Razão"),
-            Telas.Diario => (Diario, "Relatórios › Livro Diário"),
+            Telas.Balancete => (Balancete, "Relatórios › Contábeis › Balancete de verificação"),
+            Telas.Razao => (Razao, "Relatórios › Contábeis › Livro Razão"),
+            Telas.Diario => (Diario, "Relatórios › Contábeis › Livro Diário"),
             Telas.Usuarios => (CentralUsuarios, "Configurações › Usuários"),
             Telas.AlterarSenha => (CentralUsuarios, "Configurações › Usuários"),
             Telas.Conexao => (Conexao, "Configurações › Conexão com o banco de dados"),
@@ -488,6 +498,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             CarregarAbaEmpresa();
         }
         if (tela == Telas.LivrosPdf) _ = Disparar(LivrosPdf.PreencherResponsaveisAsync);
+        if (tela == Telas.Termos) _ = Disparar(Termos.PreencherResponsaveisAsync);
         if (tela == Telas.Conexao)
             Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null);
         if (tela == Telas.Sobre) Sobre.Atualizar();
@@ -666,6 +677,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             if (_telaAtual == Telas.Empresas && Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) await Socios.CarregarAsync();
             if (_telaAtual == Telas.Empresas && Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) await Contabilidade.CarregarAsync();
             if (_telaAtual == Telas.LivrosPdf) await LivrosPdf.PreencherResponsaveisAsync();
+            if (_telaAtual == Telas.Termos) await Termos.PreencherResponsaveisAsync();
         });
     }
 

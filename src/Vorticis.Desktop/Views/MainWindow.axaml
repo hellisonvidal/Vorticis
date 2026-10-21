@@ -92,13 +92,18 @@
           </MenuItem>
         </MenuItem>
         <MenuItem Header="_Relatórios">
-          <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
-          <MenuItem Header="Livro Razão" Command="{Binding AbrirCommand}" CommandParameter="razao" />
-          <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
-          <Separator />
-          <MenuItem Header="Balanço Patrimonial e DRE" Command="{Binding AbrirCommand}" CommandParameter="demonstracoes" />
-          <MenuItem Header="DMPL e DLPA (mutações do PL e lucros acumulados)" Command="{Binding AbrirCommand}" CommandParameter="mutacoes" />
-          <MenuItem Header="Livros e relatórios em PDF" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
+          <MenuItem Header="_Contábeis">
+            <MenuItem Header="Livro Contábil Completo" Command="{Binding AbrirCommand}" CommandParameter="livrospdf" />
+            <MenuItem Header="Termos (abertura e encerramento)" Command="{Binding AbrirCommand}" CommandParameter="termos" />
+            <Separator />
+            <MenuItem Header="Livro Diário" Command="{Binding AbrirCommand}" CommandParameter="diario" />
+            <MenuItem Header="Livro Razão" Command="{Binding AbrirCommand}" CommandParameter="razao" />
+            <MenuItem Header="Balancete de verificação" Command="{Binding AbrirCommand}" CommandParameter="balancete" InputGesture="Ctrl+B" />
+            <Separator />
+            <MenuItem Header="Balanço Patrimonial e DRE" Command="{Binding AbrirCommand}" CommandParameter="demonstracoes" />
+            <MenuItem Header="DMPL (mutações do patrimônio líquido)" Command="{Binding AbrirCommand}" CommandParameter="dmpl" />
+            <MenuItem Header="DLPA (lucros ou prejuízos acumulados)" Command="{Binding AbrirCommand}" CommandParameter="dlpa" />
+          </MenuItem>
         </MenuItem>
         <MenuItem Header="Con_figurações">
           <MenuItem Header="Configurações gerais" Command="{Binding AbrirCommand}" CommandParameter="configuracoesgerais" />

@@ -14,11 +14,18 @@ public sealed record LinhaMutacao(string Descricao, IReadOnlyDictionary<ColunaPl
     public decimal Valor(ColunaPl c) => Valores.GetValueOrDefault(c);
 }
 
-public sealed record LinhaDlpa(string Descricao, decimal Valor, bool Destaque = false);
+/// <param name="SemValor">Linha de título (ex.: "Destinações:"), sem valor.</param>
+public sealed record LinhaDlpa(string Descricao, decimal Valor, bool Destaque = false, bool SemValor = false);
 
 public sealed record DemonstracaoMutacoes(DateOnly Inicio, DateOnly Fim, IReadOnlyList<ColunaPl> Colunas, IReadOnlyList<LinhaMutacao> Dmpl,
                                           IReadOnlyList<LinhaDlpa> Dlpa)
 {
+    /// <summary>Ordem das colunas da DMPL (CPC 26): capital, reservas de capital, reservas de lucros, ajustes de avaliação patrimonial,
+    /// ações em tesouraria (só se houver) e lucros ou prejuízos acumulados; o total vem depois.</summary>
+    public static IReadOnlyList<ColunaPl> OrdemDmpl { get; } =
+        [ColunaPl.CapitalSocial, ColunaPl.ReservasCapital, ColunaPl.ReservasLucros, ColunaPl.AjustesAvaliacao, ColunaPl.AcoesTesouraria,
+         ColunaPl.LucrosAcumulados];
+
     public static string NomeColuna(ColunaPl c) => c switch
     {
         ColunaPl.CapitalSocial => "Capital social",
@@ -41,10 +48,10 @@ public static class Mutacoes
 {
     public const string AumentoCapital = "Aumento de capital (integralização)";
     public const string CapitalComReservas = "Aumento de capital com reservas e lucros";
-    public const string ConstituicaoReservas = "Constituição de reservas";
+    public const string ConstituicaoReservas = "Destinação: constituição de reservas";
     public const string ReversaoReservas = "Reversão de reservas";
-    public const string Dividendos = "Dividendos e lucros distribuídos";
-    public const string LucroLiquido = "Lucro líquido (prejuízo) do exercício";
+    public const string Dividendos = "Destinação: dividendos e lucros distribuídos";
+    public const string LucroLiquido = "Resultado do exercício (lucro líquido ou prejuízo)";
     public const string Outras = "Ajustes de exercícios anteriores e outras mutações";
 
     public static ColunaPl? Classificar(ContaPlano conta, IReadOnlyDictionary<long, ContaPlano> porId)
@@ -102,17 +109,20 @@ public static class Mutacoes
             final[c] = inicial[c] + mutacoes.Values.Sum(m => m[c]) + lucro[c];
 
         var ordem = new[] { Outras, AumentoCapital, CapitalComReservas, ReversaoReservas, LucroLiquido, ConstituicaoReservas, Dividendos };
-        var dmpl = new List<LinhaMutacao> { new($"Saldos em {inicio.AddDays(-1):dd/MM/yyyy}", inicial, Saldo: true) };
+        var dmpl = new List<LinhaMutacao> { new($"Saldo inicial em {inicio.AddDays(-1):dd/MM/yyyy}", inicial, Saldo: true) };
+        // Linhas do modelo do CPC 26 que aparecem sempre (ajustes, aumento de capital, resultado, reservas e dividendos);
+        // as demais (capital com reservas, reversões) só quando há movimento.
+        var fixas = new[] { Outras, AumentoCapital, LucroLiquido, ConstituicaoReservas, Dividendos };
         foreach (var nome in ordem)
         {
             if (nome == LucroLiquido) dmpl.Add(new(LucroLiquido, lucro));
-            else if (mutacoes.TryGetValue(nome, out var m) && m.Values.Any(v => v != 0)) dmpl.Add(new(nome, m));
+            else if (mutacoes.TryGetValue(nome, out var m) && (fixas.Contains(nome) || m.Values.Any(v => v != 0))) dmpl.Add(new(nome, m));
+            else if (fixas.Contains(nome)) dmpl.Add(new(nome, Novo()));
         }
-        dmpl.Add(new($"Saldos em {fim:dd/MM/yyyy}", final, Saldo: true));
+        dmpl.Add(new($"Saldo final em {fim:dd/MM/yyyy}", final, Saldo: true));
 
-        // Colunas sem saldo nem movimento ficam de fora (o modelo do CFC mostra só as que a entidade tem).
-        var colunas = Enum.GetValues<ColunaPl>().Where(c => c == ColunaPl.LucrosAcumulados || c == ColunaPl.CapitalSocial
-                                                            || dmpl.Any(l => l.Valor(c) != 0)).ToList();
+                // Pelo CPC 26 ficam sempre capital, reservas de capital, reservas de lucros, ajustes de avaliação e lucros acumulados.
+        var colunas = DemonstracaoMutacoes.OrdemDmpl.Where(c => c != ColunaPl.AcoesTesouraria || dmpl.Any(l => l.Valor(c) != 0)).ToList();
 
         // DLPA: a coluna de lucros ou prejuízos acumulados, com as destinações em destaque.
         decimal Lpa(string nome) => mutacoes.TryGetValue(nome, out var m) ? m[ColunaPl.LucrosAcumulados] : 0;
@@ -123,7 +133,7 @@ public static class Mutacoes
             new("(+) Reversão de reservas", Lpa(ReversaoReservas)),
             new("(+/-) Lucro líquido (prejuízo) do exercício", lucroLiquido),
             new("Saldo à disposição", inicial[ColunaPl.LucrosAcumulados] + Lpa(Outras) + Lpa(ReversaoReservas) + lucroLiquido, true),
-            new("Destinações:", 0, true),
+            new("Destinações:", 0, true, SemValor: true),
             new("(-) Transferências para reservas", Lpa(ConstituicaoReservas)),
             new("(-) Dividendos e lucros distribuídos", Lpa(Dividendos)),
             new("(-) Incorporação ao capital", Lpa(CapitalComReservas) + Lpa(AumentoCapital)),
