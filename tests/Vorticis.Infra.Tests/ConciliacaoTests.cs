@@ -49,4 +49,40 @@ public class ConciliacaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Contains("não encontrada", (await svc.ListarAsync(empresa, "9.9.9", DateOnly.MaxValue, adm, ct)).Erros[0]);
         Assert.True((await db.App.Empresas.ExcluirAsync(empresa, ct)).Sucesso);           // exclusão leva as conciliações
     }
+
+    [Fact]
+    public async Task Lista_todos_os_lancamentos_com_documento_de_todas_as_contas_e_concilia_automaticamente()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await db.CriarEmpresaAsync("11222333000181");
+        var adm = await db.AdminAsync();
+        async Task Lancar(int dia, string deb, string cred, decimal v, string? doc) =>
+            Assert.True((await db.App.Lancamentos.EfetivarAsync(new LancamentoProposto(empresa, new(2026, 3, dia), OrigemLancamento.Manual,
+                [new(deb, IndicadorDC.D, v, "x", NumeroArquivo: doc), new(cred, IndicadorDC.C, v, "x", NumeroArquivo: doc)]), adm, ct)).Sucesso);
+        await Lancar(1, "1.1.04.001", "2.1.01.001", 1_000m, "NF 123");    // fecha com o pagamento
+        await Lancar(10, "2.1.01.001", "1.1.01.002", 1_000m, "nf000123");
+        await Lancar(2, "1.1.04.001", "2.1.01.001", 500m, "NF 200");       // não fecha
+        await Lancar(5, "1.1.04.001", "2.1.01.001", 80m, null);            // sem documento: não aparece
+        await Lancar(6, "1.1.04.001", "2.1.01.001", 70m, "   ");           // documento em branco: não aparece
+
+        var svc = db.App.Conciliacao;
+        var ate = new DateOnly(2026, 3, 31);
+        var todas = (await svc.ListarComDocumentoAsync(empresa, null, ate, adm, ct)).Valor;
+        Assert.Equal(6, todas.Count);                                       // 3 lançamentos com documento x 2 partidas
+        Assert.All(todas, p => Assert.False(string.IsNullOrWhiteSpace(p.Documento)));
+        Assert.Equal(["1.1.01.002", "1.1.04.001", "2.1.01.001"], todas.Select(p => p.ContaCodigo!).Distinct().Order().ToArray());
+        Assert.Equal(3, (await svc.ListarComDocumentoAsync(empresa, "2.1.01.001", ate, adm, ct)).Valor.Count);
+
+        // Automática sem informar a conta: concilia o que fecha em cada conta; o resto segue listado.
+        var auto = await svc.ConciliarAutomaticoAsync(empresa, null, ate, adm, ct);
+        Assert.True(auto.Sucesso, string.Join("; ", auto.Erros));
+        Assert.Equal(1, auto.Valor.Conciliacoes);                           // só a NF 123 em fornecedores
+        todas = (await svc.ListarComDocumentoAsync(empresa, null, ate, adm, ct)).Valor;
+        Assert.Equal(6, todas.Count);
+        Assert.Equal(2, todas.Count(p => p.Conciliada));
+        Assert.Equal(2, todas.Count(p => !p.Conciliada && p.Documento == "NF 200"));
+        Assert.Contains("não encontrada", (await svc.ListarComDocumentoAsync(empresa, "9.9.9", ate, adm, ct)).Erros[0]);
+        Assert.True((await db.App.Empresas.ExcluirAsync(empresa, ct)).Sucesso);
+    }
 }

@@ -14,7 +14,8 @@ public sealed record ContaDetalhe(
 public sealed record NovaConta(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo,
                                bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, int? CodigoReduzido = null);
 
-public sealed record CentroCustoDetalhe(long Id, string Codigo, string Descricao, long? PaiId, bool Ativo, bool TemMovimento);
+public sealed record CentroCustoDetalhe(long Id, string Codigo, string Descricao, long? PaiId, bool Ativo, bool TemMovimento,
+                                        bool Analitico = true, short Nivel = 1, bool TemFilhos = false);
 
 public interface IRepositorioPlanoContas
 {
@@ -33,8 +34,13 @@ public interface IRepositorioPlanoContas
     Task RecodificarAsync(long empresaId, IReadOnlyDictionary<long, string> codigos, long usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<CentroCustoDetalhe>> ListarCentrosAsync(long empresaId, CancellationToken ct);
-    Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, CancellationToken ct);
-    Task AlterarCentroAsync(long centroId, string descricao, bool ativo, CancellationToken ct);
+    /// <summary>Insere o centro; se <paramref name="paiParaSintetico"/> for informado, converte o pai em sintético na mesma transação.</summary>
+    Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, short nivel, bool analitico,
+                                  long? paiParaSintetico, CancellationToken ct);
+    Task AlterarCentroAsync(long centroId, string descricao, bool ativo, bool analitico, CancellationToken ct);
+    Task<string?> ObterMascaraCentrosAsync(long empresaId, CancellationToken ct);
+    /// <summary>Grava a máscara e, se informado, troca os códigos dos centros (id → novo código; nível recalculado), numa transação.</summary>
+    Task DefinirMascaraCentrosAsync(long empresaId, string? mascara, IReadOnlyDictionary<long, string>? codigos, long usuarioId, CancellationToken ct);
     Task ExcluirCentroAsync(long centroId, CancellationToken ct);
 }
 
@@ -217,35 +223,131 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
 
     // ------------------------------------------------------------------ centros de custo
 
+    /// <summary>Máscara do plano de centros de custo da empresa (null = cadastro livre, sem máscara).</summary>
+    public async Task<string?> ObterMascaraCentrosAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ObterMascaraCentrosAsync(empresaId, ct) : null;
+
+    private async Task<MascaraPlano?> MascaraAsync(long empresaId, CancellationToken ct)
+        => await repositorio.ObterMascaraCentrosAsync(empresaId, ct) is { Length: > 0 } t && MascaraPlano.Ler(t) is { Sucesso: true } m ? m.Valor : null;
+
+    /// <summary>
+    /// Define a máscara dos códigos dos centros (ex.: "9.99.999"). Os centros existentes precisam caber na máscara; com
+    /// <paramref name="converterExistentes"/> os códigos são convertidos (1.1 → 1.01), mantendo a hierarquia. Máscara vazia remove a regra.
+    /// </summary>
+    public async Task<Resultado> DefinirMascaraCentrosAsync(long empresaId, string? mascara, long usuarioId, bool converterExistentes = false,
+                                                           CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.CentroCustoManter, ct) is { } negado) return Resultado.Falha(negado);
+        if (string.IsNullOrWhiteSpace(mascara))
+        {
+            await repositorio.DefinirMascaraCentrosAsync(empresaId, null, null, usuarioId, ct);
+            return Resultado.Ok();
+        }
+        var m = MascaraPlano.Ler(mascara);
+        if (!m.Sucesso) return Resultado.Falha(m.Erros);
+        var centros = await repositorio.ListarCentrosAsync(empresaId, ct);
+        var porId = centros.ToDictionary(c => c.Id);
+        var novos = new Dictionary<long, string>();
+        var erros = new List<string>();
+        foreach (var c in centros)
+        {
+            var codigo = c.Codigo;
+            if (!PlanoCentrosCusto.Validar(codigo, m.Valor).Sucesso)
+            {
+                if (!converterExistentes) { erros.Add($"O centro {c.Codigo} não cabe na máscara {m.Valor.Texto}."); continue; }
+                var conv = m.Valor.Converter(codigo);
+                if (!conv.Sucesso) { erros.Add($"Centro {c.Codigo}: {conv.Erros[0]}."); continue; }
+                codigo = conv.Valor;
+            }
+            novos[c.Id] = codigo;
+        }
+        if (erros.Count == 0)
+        {
+            foreach (var c in centros)
+            {
+                var cod = novos[c.Id];
+                var esperado = PlanoCentrosCusto.CodigoPaiDe(cod);
+                var atual = c.PaiId is long p ? novos[p] : null;
+                if (esperado != atual)
+                    erros.Add(esperado is null ? $"O centro {c.Codigo} tem superior {atual}, mas o código {cod} é de nível 1."
+                                               : $"O superior do centro {c.Codigo} deveria ser {esperado} (pelo código {cod}).");
+            }
+            foreach (var g in novos.GroupBy(x => x.Value).Where(g => g.Count() > 1))
+                erros.Add($"Códigos duplicados após a conversão: {g.Key}.");
+        }
+        if (erros.Count > 0)
+        {
+            var lista = erros.Take(10).ToList();
+            if (erros.Count > 10) lista.Add($"... e mais {erros.Count - 10} problema(s).");
+            return Resultado.Falha(lista);
+        }
+        var mudancas = novos.Where(x => porId[x.Key].Codigo != x.Value).ToDictionary(x => x.Key, x => x.Value);
+        await repositorio.DefinirMascaraCentrosAsync(empresaId, m.Valor.Texto, mudancas, usuarioId, ct);
+        return Resultado.Ok();
+    }
+
     public async Task<IReadOnlyList<CentroCustoDetalhe>> ListarCentrosAsync(long empresaId, long usuarioId, CancellationToken ct = default)
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ListarCentrosAsync(empresaId, ct) : [];
 
+    /// <summary>
+    /// Inclui um centro no plano. Com máscara: código validado por ela, nível 1 sempre grupo e superior (código sem o último nível)
+    /// obrigatório nos demais. O superior analítico sem lançamentos vira sintético; com lançamentos, não recebe subcentros.
+    /// </summary>
     public async Task<Resultado<long>> IncluirCentroAsync(long empresaId, string codigo, string descricao, string? codigoPai, long usuarioId,
-                                                         DateOnly? dataInclusao = null, CancellationToken ct = default)
+                                                         DateOnly? dataInclusao = null, CancellationToken ct = default, bool sintetico = false)
     {
         if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.CentroCustoManter, ct) is { } negado) return negado;
         codigo = codigo.Trim();
-        if (codigo.Length is 0 or > 30) return Resultado<long>.Falha("Informe o código (até 30 caracteres).");
+        var mascara = await MascaraAsync(empresaId, ct);
+        var pos = PlanoCentrosCusto.Validar(codigo, mascara);
+        if (!pos.Sucesso) return Resultado<long>.Falha(pos.Erros);
         if (string.IsNullOrWhiteSpace(descricao)) return Resultado<long>.Falha("Informe a descrição.");
         var centros = await repositorio.ListarCentrosAsync(empresaId, ct);
         if (centros.Any(c => c.Codigo == codigo)) return Resultado<long>.Falha($"Já existe o centro de custo {codigo}.");
-        long? paiId = null;
-        if (!string.IsNullOrWhiteSpace(codigoPai))
+
+        var informado = string.IsNullOrWhiteSpace(codigoPai) ? null : codigoPai.Trim();
+        if (mascara is not null && informado is not null && informado != pos.Valor.CodigoPai)
+            return Resultado<long>.Falha($"O superior do centro {codigo} deve ser {pos.Valor.CodigoPai ?? "(nenhum: nível 1)"}, conforme a máscara.");
+        var codPai = mascara is not null ? pos.Valor.CodigoPai
+            : informado ?? (pos.Valor.CodigoPai is { } d && centros.Any(c => c.Codigo == d) ? d : null);
+
+        CentroCustoDetalhe? pai = null;
+        if (codPai is not null)
         {
-            var pai = centros.FirstOrDefault(c => c.Codigo == codigoPai.Trim());
-            if (pai is null) return Resultado<long>.Falha($"Centro de custo superior {codigoPai} não encontrado.");
-            paiId = pai.Id;
+            pai = centros.FirstOrDefault(c => c.Codigo == codPai);
+            if (pai is null) return Resultado<long>.Falha($"Centro de custo superior {codPai} não encontrado. Cadastre-o primeiro.");
+            if (!pai.Ativo) return Resultado<long>.Falha($"O centro de custo superior {codPai} está inativo.");
+            if (pai.Analitico && pai.TemMovimento)
+                return Resultado<long>.Falha($"O centro {codPai} é analítico e já tem lançamentos; não pode receber subcentros. Crie o novo centro em outro grupo.");
         }
-        return Resultado<long>.Ok(await repositorio.IncluirCentroAsync(empresaId, codigo, descricao.Trim(), paiId,
-            dataInclusao ?? DateOnly.FromDateTime(DateTime.Today), ct));
+
+        var nivel = mascara is not null ? pos.Valor.Nivel : (short)(pai is null ? 1 : pai.Nivel + 1);
+        var tipo = PlanoCentrosCusto.DefinirAnalitico(nivel, sintetico, mascara);
+        if (!tipo.Sucesso) return Resultado<long>.Falha(tipo.Erros);
+        return Resultado<long>.Ok(await repositorio.IncluirCentroAsync(empresaId, codigo, descricao.Trim(), pai?.Id,
+            dataInclusao ?? DateOnly.FromDateTime(DateTime.Today), nivel, tipo.Valor, pai is { Analitico: true } ? pai.Id : null, ct));
     }
 
-    public async Task<Resultado> AlterarCentroAsync(long empresaId, long centroId, string descricao, bool ativo, long usuarioId, CancellationToken ct = default)
+    /// <summary>Altera descrição/situação; <paramref name="analitico"/> troca o tipo (analítico→sintético exige não ter lançamentos; sintético→analítico, não ter subcentros).</summary>
+    public async Task<Resultado> AlterarCentroAsync(long empresaId, long centroId, string descricao, bool ativo, long usuarioId,
+                                                   CancellationToken ct = default, bool? analitico = null)
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.CentroCustoManter, ct) is { } negado) return Resultado.Falha(negado);
         if (string.IsNullOrWhiteSpace(descricao)) return Resultado.Falha("Informe a descrição.");
-        if ((await repositorio.ListarCentrosAsync(empresaId, ct)).All(c => c.Id != centroId)) return Resultado.Falha("Centro de custo não encontrado.");
-        await repositorio.AlterarCentroAsync(centroId, descricao.Trim(), ativo, ct);
+        var centro = (await repositorio.ListarCentrosAsync(empresaId, ct)).FirstOrDefault(c => c.Id == centroId);
+        if (centro is null) return Resultado.Falha("Centro de custo não encontrado.");
+        var tipo = analitico ?? centro.Analitico;
+        if (tipo != centro.Analitico)
+        {
+            if (!tipo && centro.TemMovimento) return Resultado.Falha($"O centro {centro.Codigo} tem lançamentos; não pode virar sintético.");
+            if (tipo && centro.TemFilhos) return Resultado.Falha($"O centro {centro.Codigo} tem subcentros; não pode ser analítico.");
+            var mascara = await MascaraAsync(empresaId, ct);
+            if (mascara is not null && !tipo && centro.Nivel == mascara.Segmentos.Count)
+                return Resultado.Falha($"O último nível da máscara ({mascara.Texto}) só admite centros analíticos.");
+            if (mascara is { Segmentos.Count: > 1 } && tipo && centro.Nivel == 1)
+                return Resultado.Falha("Os centros de nível 1 são sempre grupos (sintéticos).");
+        }
+        await repositorio.AlterarCentroAsync(centroId, descricao.Trim(), ativo, tipo, ct);
         return Resultado.Ok();
     }
 

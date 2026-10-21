@@ -96,6 +96,63 @@ public class PlanoContasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 }
 
+public class PlanoCentrosCustoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+{
+    [Fact]
+    public async Task Plano_de_centros_com_mascara_hierarquia_e_so_analitico_recebe_lancamento()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.PlanoContas;
+        var empresa = await db.CriarEmpresaAsync("33000167000101");
+        var adm = await db.AdminAsync();
+        var data = new DateOnly(2026, 1, 1);
+
+        // Cadastro livre (sem máscara): o pai que recebe filho vira grupo sintético.
+        Assert.True((await svc.IncluirCentroAsync(empresa, "1", "Administrativo", null, adm, data, ct)).Sucesso);
+        Assert.True((await svc.IncluirCentroAsync(empresa, "1.1", "TI", "1", adm, data, ct)).Sucesso);
+        Assert.False((await svc.ListarCentrosAsync(empresa, adm, ct)).Single(c => c.Codigo == "1").Analitico);
+
+        // Máscara: sem converter, os códigos antigos não cabem; convertendo, 1.1 → 1.01.
+        var recusa = await svc.DefinirMascaraCentrosAsync(empresa, "9.99.999", adm, false, ct);
+        Assert.Contains("não cabe", recusa.Erros[0]);
+        Assert.True((await svc.DefinirMascaraCentrosAsync(empresa, "9.99.999", adm, true, ct)).Sucesso);
+        Assert.Equal("9.99.999", await svc.ObterMascaraCentrosAsync(empresa, adm, ct));
+        var ti = (await svc.ListarCentrosAsync(empresa, adm, ct)).Single(c => c.Descricao == "TI");
+        Assert.Equal(("1.01", (short)2), (ti.Codigo, ti.Nivel));
+
+        // Validação pela máscara e pai obrigatório.
+        Assert.Contains("fora da máscara", (await svc.IncluirCentroAsync(empresa, "1.1.1", "x", null, adm, data, ct)).Erros[0]);
+        Assert.Contains("não encontrado", (await svc.IncluirCentroAsync(empresa, "2.01", "Sem pai", null, adm, data, ct)).Erros[0]);
+        Assert.Contains("deve ser 1.01", (await svc.IncluirCentroAsync(empresa, "1.01.001", "x", "1", adm, data, ct)).Erros[0]);
+        Assert.Contains("último nível", (await svc.IncluirCentroAsync(empresa, "1.01.002", "x", null, adm, data, ct, sintetico: true)).Erros[0]);
+        Assert.True((await svc.IncluirCentroAsync(empresa, "1.01.001", "Suporte", null, adm, data, ct)).Sucesso);   // pai deduzido do código
+        var centros = await svc.ListarCentrosAsync(empresa, adm, ct);
+        var suporte = centros.Single(c => c.Codigo == "1.01.001");
+        Assert.Equal((true, (short)3), (suporte.Analitico, suporte.Nivel));
+        Assert.False(centros.Single(c => c.Codigo == "1.01").Analitico);
+
+        // Só analítico aceita lançamento.
+        LancamentoProposto Lanc(string cc) => new(empresa, new(2026, 3, 1), OrigemLancamento.Manual,
+            [new("4.2.02.004", IndicadorDC.D, 10m, "x", cc), new("1.1.01.001", IndicadorDC.C, 10m, "x")]);
+        var sintetico = await db.App.Lancamentos.EfetivarAsync(Lanc("1.01"), adm, ct);
+        Assert.Contains(sintetico.Erros, e => e.Contains("centro de custo 1.01 não encontrado"));
+        var ok = await db.App.Lancamentos.EfetivarAsync(Lanc("1.01.001"), adm, ct);
+        Assert.True(ok.Sucesso, string.Join("; ", ok.Erros));
+
+        // Com lançamentos o centro analítico não vira sintético nem recebe subcentros; com subcentros o grupo não vira analítico.
+        Assert.Contains("tem lançamentos", (await svc.AlterarCentroAsync(empresa, suporte.Id, "Suporte", true, adm, ct, analitico: false)).Erros[0]);
+        Assert.Contains("4 níveis", (await svc.IncluirCentroAsync(empresa, "1.01.001.1", "x", null, adm, data, ct)).Erros[0]);
+        Assert.Contains("subcentros", (await svc.AlterarCentroAsync(empresa, ti.Id, "TI", true, adm, ct, analitico: true)).Erros[0]);
+
+        // Remover a máscara volta ao cadastro livre.
+        Assert.True((await svc.DefinirMascaraCentrosAsync(empresa, "", adm, false, ct)).Sucesso);
+        Assert.Null(await svc.ObterMascaraCentrosAsync(empresa, adm, ct));
+        Assert.Contains("já tem lançamentos", (await svc.IncluirCentroAsync(empresa, "1.01.001.1", "x", null, adm, data, ct)).Erros[0]);   // analítico com movimento
+        Assert.True((await db.App.Empresas.ExcluirAsync(empresa, ct)).Sucesso);
+    }
+}
+
 public class ImportacaoPlanoContasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 {
     [Fact]

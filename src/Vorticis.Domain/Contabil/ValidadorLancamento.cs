@@ -77,7 +77,7 @@ public static class ValidadorLancamento
             if (!string.IsNullOrWhiteSpace(p.CodigoCentroCusto))
             {
                 if (ctx.CentrosCusto.TryGetValue(p.CodigoCentroCusto, out var cc)) centroId = cc;
-                else erros.Add($"{linha}: centro de custo {p.CodigoCentroCusto} não encontrado.");
+                else erros.Add($"{linha}: centro de custo {p.CodigoCentroCusto} não encontrado (só centros analíticos e ativos aceitam lançamento).");
             }
             else if (conta.ExigeCentroCusto) erros.Add($"{linha}: conta {conta.Codigo} exige centro de custo.");
 

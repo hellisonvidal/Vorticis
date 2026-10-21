@@ -13,6 +13,7 @@ public partial class PartidaConciliacaoLinha(PartidaConciliavel p) : ObservableO
     public PartidaConciliavel Partida { get; } = p;
     public string Data => Partida.Data.ToString("dd/MM/yyyy");
     public long Numero => Partida.Numero;
+    public string Conta => Partida.ContaCodigo is null ? "" : $"{Partida.ContaCodigo} {Partida.ContaDescricao}";
     public string Documento => Partida.Documento ?? "";
     public string Debito => Partida.DC == IndicadorDC.D ? Formato.Moeda(Partida.Valor) : "";
     public string Credito => Partida.DC == IndicadorDC.C ? Formato.Moeda(Partida.Valor) : "";
@@ -21,7 +22,10 @@ public partial class PartidaConciliacaoLinha(PartidaConciliavel p) : ObservableO
     [ObservableProperty] private bool _selecionada;
 }
 
-/// <summary>Lançamentos › Conciliações: conciliação de contas automática pelo nº do documento ou manual.</summary>
+/// <summary>
+/// Lançamentos › Conciliações: conciliação de contas automática pelo nº do documento ou manual. A lista traz todos os
+/// lançamentos que têm documento (conciliados ou não, casando ou não), de todas as contas ou só da conta escolhida.
+/// </summary>
 public partial class ConciliacaoViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     private IReadOnlyList<PartidaConciliavel> _partidas = [];
@@ -32,7 +36,8 @@ public partial class ConciliacaoViewModel(IContexto contexto) : ModuloViewModel(
     [ObservableProperty] private string _conta = "";
     [ObservableProperty] private string _nomeConta = "";
     [ObservableProperty] private DateTime? _ate = DateTime.Today;
-    [ObservableProperty] private bool _mostrarConciliadas;
+    [ObservableProperty] private bool _mostrarConciliadas = true;
+    [ObservableProperty] private bool _somenteComDocumento = true;
     [ObservableProperty] private PartidaConciliacaoLinha? _linhaSelecionada;
     [ObservableProperty] private string _resumo = "";
     [ObservableProperty] private string _filtroConta = "";
@@ -44,6 +49,7 @@ public partial class ConciliacaoViewModel(IContexto contexto) : ModuloViewModel(
         var plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
         _todasContas = plano.Where(c => c.Analitica).Select(c => new ContaSelecionavel(c.Codigo, c.Descricao, c.CodigoReduzido)).ToList();
         FiltrarContas();
+        if (Linhas.Count == 0) await ConsultarAsync();   // já abre com todos os lançamentos que têm documento
     }
 
     partial void OnFiltroContaChanged(string value) => FiltrarContas();
@@ -62,16 +68,20 @@ public partial class ConciliacaoViewModel(IContexto contexto) : ModuloViewModel(
     }
 
     partial void OnMostrarConciliadasChanged(bool value) => Exibir();
+    partial void OnSomenteComDocumentoChanged(bool value) => _ = ConsultarCommand.ExecuteAsync(null);
 
     private DateOnly Limite => Data(Ate, DateOnly.FromDateTime(DateTime.Today));
 
     [RelayCommand]
     private Task ConsultarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var r = await app.Conciliacao.ListarAsync(empresa, Conta, Limite, usuario);
+        var conta = Conta.Trim();
+        if (!SomenteComDocumento && conta.Length == 0) { Erros.Add("Informe a conta ou marque \"Somente com documento\" para ver todas as contas."); return; }
+        var r = SomenteComDocumento ? await app.Conciliacao.ListarComDocumentoAsync(empresa, conta, Limite, usuario)
+                                    : await app.Conciliacao.ListarAsync(empresa, conta, Limite, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); _partidas = []; Exibir(); return; }
-        var c = _todasContas.FirstOrDefault(x => x.Codigo == Conta.Trim() || x.Reduzido?.ToString() == Conta.Trim());
-        NomeConta = c is null ? "" : $"{c.Codigo} – {c.Descricao}";
+        var c = _todasContas.FirstOrDefault(x => x.Codigo == conta || x.Reduzido?.ToString() == conta);
+        NomeConta = c is null ? "Todas as contas" : $"{c.Codigo} – {c.Descricao}";
         _partidas = r.Valor;
         Exibir();
     }, Permissao.LancamentoIncluir);
@@ -84,7 +94,7 @@ public partial class ConciliacaoViewModel(IContexto contexto) : ModuloViewModel(
         var saldo = abertas.Sum(p => p.ValorComSinal);
         var docs = abertas.Where(p => !string.IsNullOrWhiteSpace(p.Documento)).Select(p => ServicoConciliacao.Normalizar(p.Documento!)).Distinct().Count();
         Resumo = _partidas.Count == 0 ? "" :
-            $"{abertas.Count} partida(s) em aberto ({docs} documento(s)) · saldo em aberto {LinhaBalancete.Formatar(saldo)} · " +
+            $"{_partidas.Count} partida(s) listada(s) · {abertas.Count} em aberto ({docs} documento(s)) · saldo em aberto {LinhaBalancete.Formatar(saldo)} · " +
             $"{_partidas.Count - abertas.Count} conciliada(s)";
     }
 

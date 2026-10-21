@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Contabil;
+using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
@@ -10,12 +11,19 @@ public sealed record CentroLinha(CentroCustoDetalhe Centro, string? CodigoPai)
 {
     public string Numero => Centro.Id.ToString("0000");
     public string Codigo => Centro.Codigo;
+    /// <summary>Código recuado pelo nível, para mostrar o plano em árvore.</summary>
+    public string Estrutura => new string('\u00A0', 4 * Math.Max(0, Centro.Nivel - 1)) + Centro.Codigo;
+    public string Tipo => Centro.Analitico ? "Analítico" : "Sintético";
+    public short Nivel => Centro.Nivel;
     public string Descricao => Centro.Descricao;
     public string Superior => CodigoPai ?? "";
     public string Situacao => (Centro.Ativo ? "Ativo" : "Inativo") + (Centro.TemMovimento ? " · com lançamentos" : "");
 }
 
-/// <summary>Cadastros › Centros de custo (Incluir / Alterar / Excluir).</summary>
+/// <summary>
+/// Cadastros › Centros de custo (Incluir / Alterar / Excluir): plano hierárquico com máscara por empresa (ex.: 9.99.999);
+/// grupos sintéticos e centros analíticos — só estes aceitam lançamento.
+/// </summary>
 public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     public ObservableCollection<CentroLinha> Lista { get; } = [];
@@ -25,6 +33,24 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private string _codigoPai = "";
     [ObservableProperty] private bool _ativo = true;
+    [ObservableProperty] private bool _sintetico;
+    [ObservableProperty] private string _mascara = "";          // máscara em uso (vazia = cadastro livre)
+    [ObservableProperty] private string _mascaraEdicao = "";
+    [ObservableProperty] private bool _converterExistentes;
+
+    public static IReadOnlyList<string> Mascaras { get; } = ["9.99.999", "9.99.99.999", "9.9.99.999", "9.99.9999"];
+    public string ResumoMascara => Mascara.Length == 0 ? "Sem máscara: códigos livres." : $"Máscara {Mascara}: ex. {Exemplo(Mascara)}";
+
+    private static string Exemplo(string mascara) =>
+        MascaraPlano.Ler(mascara) is { Sucesso: true } m ? string.Join('.', m.Valor.Segmentos.Select(n => "1".PadLeft(n, '0'))) : "";
+
+    partial void OnMascaraChanged(string value) => OnPropertyChanged(nameof(ResumoMascara));
+
+    /// <summary>Com máscara, o superior é o código sem o último nível: preenchido sozinho ao digitar o código.</summary>
+    partial void OnCodigoChanged(string value)
+    {
+        if (EmInclusao && Mascara.Length > 0) CodigoPai = PlanoCentrosCusto.CodigoPaiDe(value.Trim()) ?? "";
+    }
 
     public bool TemSelecionado => Selecionado is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.CentroCustoManter);
@@ -44,7 +70,10 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var geracao = NovaGeracao();
         var centros = await app.PlanoContas.ListarCentrosAsync(empresa, sessao.Id);
+        var mascara = await app.PlanoContas.ObterMascaraCentrosAsync(empresa, sessao.Id) ?? "";
         if (!EhAtual(geracao)) return;
+        Mascara = mascara;
+        MascaraEdicao = mascara;
         var id = Selecionado?.Centro.Id;
         var codigos = centros.ToDictionary(c => c.Id, c => c.Codigo);
         Lista.Clear();
@@ -60,12 +89,12 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
 
     protected override void MostrarSelecionado()
     {
-        if (Selecionado is { } s) (Codigo, Descricao, CodigoPai, Ativo) = (s.Codigo, s.Descricao, s.Superior, s.Centro.Ativo);
-        else (Codigo, Descricao, CodigoPai, Ativo) = ("", "", "", true);
+        if (Selecionado is { } s) (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = (s.Codigo, s.Descricao, s.Superior, s.Centro.Ativo, !s.Centro.Analitico);
+        else (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", "", true, false);
     }
 
     /// <summary>Novo centro: sugere como superior o centro selecionado.</summary>
-    protected override void PrepararInclusao() => (Codigo, Descricao, CodigoPai, Ativo) = ("", "", Selecionado?.Codigo ?? "", true);
+    protected override void PrepararInclusao() => (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", Selecionado?.Codigo ?? "", true, false);
 
     protected override async Task<bool> GravarAsync(bool inclusao)
     {
@@ -76,7 +105,7 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
             long? id = null;
             if (inclusao)
             {
-                var inc = await app.PlanoContas.IncluirCentroAsync(empresa, Codigo, Descricao, CodigoPai, usuario);
+                var inc = await app.PlanoContas.IncluirCentroAsync(empresa, Codigo, Descricao, CodigoPai, usuario, sintetico: Sintetico);
                 r = inc;
                 if (inc.Sucesso) id = inc.Valor;
             }
@@ -84,7 +113,7 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
             {
                 if (Selecionado is null) { Erros.Add("Selecione um centro de custo."); return; }
                 id = Selecionado.Centro.Id;
-                r = await app.PlanoContas.AlterarCentroAsync(empresa, Selecionado.Centro.Id, Descricao, Ativo, usuario);
+                r = await app.PlanoContas.AlterarCentroAsync(empresa, Selecionado.Centro.Id, Descricao, Ativo, usuario, analitico: !Sintetico);
             }
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
@@ -96,6 +125,16 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
         }, Permissao.CentroCustoManter);
         return ok;
     }
+
+    /// <summary>Grava a máscara do plano de centros da empresa (vazia = sem máscara); opcionalmente converte os códigos existentes.</summary>
+    [RelayCommand]
+    private Task SalvarMascaraAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.PlanoContas.DefinirMascaraCentrosAsync(empresa, MascaraEdicao, usuario, ConverterExistentes);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        Mensagem = Mascara.Length == 0 ? "Máscara removida: os códigos dos centros voltam a ser livres." : $"Máscara {Mascara} definida para o plano de centros de custo.";
+    }, Permissao.CentroCustoManter);
 
     protected override async Task<bool> ExcluirSelecionadoAsync()
     {

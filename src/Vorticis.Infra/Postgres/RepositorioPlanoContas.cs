@@ -158,33 +158,77 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
     {
         await using var cmd = ds.CreateCommand("""
             SELECT c.id, c.codigo, c.descricao, c.centro_pai_id, c.ativo,
-                   EXISTS (SELECT 1 FROM contabil.partida p WHERE p.centro_custo_id = c.id)
+                   EXISTS (SELECT 1 FROM contabil.partida p WHERE p.centro_custo_id = c.id),
+                   c.tipo = 'A', c.nivel, EXISTS (SELECT 1 FROM contabil.centro_custo f WHERE f.centro_pai_id = c.id)
               FROM contabil.centro_custo c WHERE c.empresa_id = @e ORDER BY c.codigo
             """).Com("e", empresaId);
         var res = new List<CentroCustoDetalhe>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new CentroCustoDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetInt64(3),
-                                           r.GetBoolean(4), r.GetBoolean(5)));
+                                           r.GetBoolean(4), r.GetBoolean(5), r.GetBoolean(6), r.GetInt16(7), r.GetBoolean(8)));
         return res;
     }
 
-    public Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, CancellationToken ct)
+    public Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, short nivel, bool analitico,
+                                         long? paiParaSintetico, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
-            await using var cmd = ds.CreateCommand("""
-                INSERT INTO contabil.centro_custo (empresa_id, codigo, descricao, centro_pai_id, data_inclusao)
-                VALUES (@e, @c, @d, @p, @i) RETURNING id
-                """).Com("e", empresaId).Com("c", codigo).Com("d", descricao).Com("p", NpgsqlTypes.NpgsqlDbType.Bigint, paiId).Com("i", dataInclusao);
-            return (long)(await cmd.ExecuteScalarAsync(ct))!;
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            if (paiParaSintetico is { } pai)
+                await using (var cmd = new NpgsqlCommand("UPDATE contabil.centro_custo SET tipo = 'S' WHERE id = @id", con, tx).Com("id", pai))
+                    await cmd.ExecuteNonQueryAsync(ct);
+            long id;
+            await using (var cmd = new NpgsqlCommand("""
+                INSERT INTO contabil.centro_custo (empresa_id, codigo, descricao, centro_pai_id, data_inclusao, nivel, tipo)
+                VALUES (@e, @c, @d, @p, @i, @n, @t) RETURNING id
+                """, con, tx).Com("e", empresaId).Com("c", codigo).Com("d", descricao).Com("p", NpgsqlTypes.NpgsqlDbType.Bigint, paiId)
+                            .Com("i", dataInclusao).Com("n", nivel).Com("t", analitico ? "A" : "S"))
+                id = (long)(await cmd.ExecuteScalarAsync(ct))!;
+            await tx.CommitAsync(ct);
+            return id;
         });
 
-    public Task AlterarCentroAsync(long centroId, string descricao, bool ativo, CancellationToken ct)
+    public Task AlterarCentroAsync(long centroId, string descricao, bool ativo, bool analitico, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
-            await using var cmd = ds.CreateCommand("UPDATE contabil.centro_custo SET descricao = @d, ativo = @a WHERE id = @id")
-                                    .Com("d", descricao).Com("a", ativo).Com("id", centroId);
+            await using var cmd = ds.CreateCommand("UPDATE contabil.centro_custo SET descricao = @d, ativo = @a, tipo = @t WHERE id = @id")
+                                    .Com("d", descricao).Com("a", ativo).Com("t", analitico ? "A" : "S").Com("id", centroId);
             return await cmd.ExecuteNonQueryAsync(ct);
+        });
+
+    public async Task<string?> ObterMascaraCentrosAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT mascara_centro_custo FROM core.empresa WHERE id = @e").Com("e", empresaId);
+        return await cmd.ExecuteScalarAsync(ct) as string;
+    }
+
+    public Task DefinirMascaraCentrosAsync(long empresaId, string? mascara, IReadOnlyDictionary<long, string>? codigos, long usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            await using (var cmd = new NpgsqlCommand("UPDATE core.empresa SET mascara_centro_custo = @m WHERE id = @e", con, tx)
+                .Com("e", empresaId).ComTexto("m", mascara))
+                await cmd.ExecuteNonQueryAsync(ct);
+            if (codigos is { Count: > 0 })
+            {
+                var ids = codigos.Keys.ToArray();
+                // Em duas etapas para não colidir com códigos que ainda serão trocados (1.1 ↔ 1.01).
+                await using (var cmd = new NpgsqlCommand(
+                    "UPDATE contabil.centro_custo SET codigo = '#' || id WHERE empresa_id = @e AND id = ANY(@ids)", con, tx)
+                    .Com("e", empresaId).Com("ids", ids))
+                    await cmd.ExecuteNonQueryAsync(ct);
+                await using (var cmd = new NpgsqlCommand("""
+                    UPDATE contabil.centro_custo c SET codigo = n.codigo, nivel = array_length(string_to_array(n.codigo, '.'), 1)
+                      FROM unnest(@ids, @cods) AS n(id, codigo) WHERE c.id = n.id AND c.empresa_id = @e
+                    """, con, tx).Com("e", empresaId).Com("ids", ids).Com("cods", ids.Select(i => codigos[i]).ToArray()))
+                    await cmd.ExecuteNonQueryAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return 0;
         });
 
     public Task ExcluirCentroAsync(long centroId, CancellationToken ct)

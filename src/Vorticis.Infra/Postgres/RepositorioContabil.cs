@@ -38,7 +38,7 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
     }
 
     public Task<IReadOnlyDictionary<string, long>> ObterCentrosCustoAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct)
-        => CodigosParaIds("contabil.centro_custo", "AND ativo", empresaId, codigos, ct);
+        => CodigosParaIds("contabil.centro_custo", "AND ativo AND tipo = 'A'", empresaId, codigos, ct);
 
     public Task<IReadOnlyDictionary<string, long>> ObterParticipantesAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct)
         => CodigosParaIds("core.participante", "", empresaId, codigos, ct);
