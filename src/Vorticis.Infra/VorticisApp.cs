@@ -57,6 +57,9 @@ public sealed class VorticisApp : IAsyncDisposable
         Migrador = new Migrador(ds);
     }
 
+    /// <summary>Fonte de dados do PostgreSQL, para os módulos (Fiscal, Folha) montarem os próprios repositórios sobre o mesmo banco.</summary>
+    public NpgsqlDataSource DataSource => _ds;
+
     public Autorizador Autorizador { get; }
     public ServicoUsuarios Usuarios { get; }
     public ServicoPerfis Perfis { get; }

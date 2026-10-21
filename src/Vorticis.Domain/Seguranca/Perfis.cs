@@ -23,6 +23,15 @@ public enum Permissao
     RelatorioDemonstracoes,
     RelatorioExportar,
 
+    // Módulo Fiscal
+    FiscalDocumentosImportar,
+    FiscalDocumentosConsultar,
+    FiscalContabilizar,
+    FiscalApurar,
+    FiscalLalurManter,
+    FiscalRetencoesManter,
+    FiscalRelatorios,
+
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
 }
@@ -61,6 +70,13 @@ public static class Permissoes
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
         new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
+        new(Permissao.FiscalDocumentosImportar, "FISCAL_DOCUMENTOS_IMPORTAR", "Fiscal", "Importar XML de notas fiscais (NF-e, NFC-e, NFS-e) e excluir documentos importados"),
+        new(Permissao.FiscalDocumentosConsultar, "FISCAL_DOCUMENTOS_CONSULTAR", "Fiscal", "Consultar documentos fiscais importados"),
+        new(Permissao.FiscalContabilizar, "FISCAL_CONTABILIZAR", "Fiscal", "Manter regras de contabilização e contabilizar (ou desfazer) notas fiscais"),
+        new(Permissao.FiscalApurar, "FISCAL_APURAR", "Fiscal", "Apurar tributos (Simples Nacional, Lucro Presumido/Real, PIS/COFINS) e contabilizar as provisões"),
+        new(Permissao.FiscalLalurManter, "FISCAL_LALUR_MANTER", "Fiscal", "Manter LALUR/LACS: adições, exclusões e prejuízos fiscais"),
+        new(Permissao.FiscalRetencoesManter, "FISCAL_RETENCOES_MANTER", "Fiscal", "Manter retenções, guias de recolhimento e histórico de receita/folha"),
+        new(Permissao.FiscalRelatorios, "FISCAL_RELATORIOS", "Fiscal", "Relatórios fiscais: livros de entradas e saídas, resumos, apurações e guias"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);
