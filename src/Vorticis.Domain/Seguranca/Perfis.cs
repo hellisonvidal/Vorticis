@@ -23,6 +23,18 @@ public enum Permissao
     RelatorioDemonstracoes,
     RelatorioExportar,
 
+    // Folha de pagamento
+    FolhaConsultar,
+    FolhaCadastrosManter,
+    FolhaParametrosManter,
+    FolhaEventosLancar,
+    FolhaCalcular,
+    FolhaFechar,
+    FolhaReabrir,
+    FolhaContabilizar,
+    FolhaESocial,
+    FolhaRelatorios,
+
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
 }
@@ -61,6 +73,16 @@ public static class Permissoes
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
         new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
+        new(Permissao.FolhaConsultar, "FOLHA_CONSULTAR", "Folha de pagamento", "Consultar funcionários, rubricas e a folha calculada"),
+        new(Permissao.FolhaCadastrosManter, "FOLHA_CADASTROS_MANTER", "Folha de pagamento", "Manter funcionários, dependentes, cargos, departamentos e rubricas"),
+        new(Permissao.FolhaParametrosManter, "FOLHA_PARAMETROS_MANTER", "Folha de pagamento", "Manter parâmetros de encargos (RAT, FAP, terceiros) e regras de contabilização da folha"),
+        new(Permissao.FolhaEventosLancar, "FOLHA_EVENTOS_LANCAR", "Folha de pagamento", "Lançar eventos variáveis (horas extras, faltas, comissões...)"),
+        new(Permissao.FolhaCalcular, "FOLHA_CALCULAR", "Folha de pagamento", "Calcular folha mensal, férias, 13º salário, rescisões e provisões"),
+        new(Permissao.FolhaFechar, "FOLHA_FECHAR", "Folha de pagamento", "Fechar a competência da folha"),
+        new(Permissao.FolhaReabrir, "FOLHA_REABRIR", "Folha de pagamento", "Reabrir a competência da folha"),
+        new(Permissao.FolhaContabilizar, "FOLHA_CONTABILIZAR", "Folha de pagamento", "Contabilizar a folha e as provisões e desfazer a contabilização"),
+        new(Permissao.FolhaESocial, "FOLHA_ESOCIAL", "Folha de pagamento", "Gerar e exportar os eventos do eSocial"),
+        new(Permissao.FolhaRelatorios, "FOLHA_RELATORIOS", "Folha de pagamento", "Holerites, resumo da folha, encargos, provisões e recibos"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);

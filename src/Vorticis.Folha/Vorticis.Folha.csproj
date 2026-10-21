@@ -5,4 +5,8 @@
     <ProjectReference Include="..\Vorticis.Application\Vorticis.Application.csproj" />
     <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Tabelas legais de referência (mesmas vigências da migração 040) -->
+    <EmbeddedResource Include="Dados\*.json" LogicalName="Folha.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
