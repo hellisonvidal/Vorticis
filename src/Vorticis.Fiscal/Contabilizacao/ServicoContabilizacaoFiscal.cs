@@ -1,0 +1,165 @@
+using Vorticis.Application.Contabil;
+using Vorticis.Application.Seguranca;
+using Vorticis.Domain.Comum;
+using Vorticis.Domain.Contabil;
+using Vorticis.Domain.Seguranca;
+using Vorticis.Fiscal.Documentos;
+
+namespace Vorticis.Fiscal.Contabilizacao;
+
+/// <summary>Conta do plano resolvida por código (completo ou reduzido).</summary>
+public sealed record ContaResolvida(long Id, string Codigo, bool Analitica, bool Ativa);
+
+public interface IRepositorioContabilizacao
+{
+    Task<IReadOnlyList<RegraContabilizacao>> ListarRegrasAsync(long empresaId, CancellationToken ct);
+    Task<long> GravarRegraAsync(long empresaId, RegraContabilizacao regra, long contaDebitoId, long contaCreditoId, CancellationToken ct);
+    Task ExcluirRegraAsync(long empresaId, long regraId, CancellationToken ct);
+
+    /// <summary>Contas pelo código completo ou reduzido; as não encontradas ficam fora.</summary>
+    Task<IReadOnlyDictionary<string, ContaResolvida>> ResolverContasAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct);
+
+    /// <summary>Marca as notas como contabilizadas (documento → lançamento).</summary>
+    Task MarcarContabilizadosAsync(IReadOnlyList<(long DocumentoId, long LancamentoId)> marcas, long usuarioId, CancellationToken ct);
+    Task DesmarcarAsync(IReadOnlyCollection<long> documentoIds, CancellationToken ct);
+    Task<DateOnly?> ObterDataLancamentoAsync(long lancamentoId, CancellationToken ct);
+}
+
+public sealed record FalhaContabilizacao(string Documento, IReadOnlyList<string> Erros);
+
+public sealed record ResultadoContabilizacao(int Contabilizados, decimal Valor, IReadOnlyList<FalhaContabilizacao> Falhas)
+{
+    public string Resumo => $"{Contabilizados} nota(s) contabilizada(s), total {Formato.Moeda(Valor)}" +
+                            (Falhas.Count > 0 ? $"; {Falhas.Count} com pendência." : ".");
+}
+
+/// <summary>
+/// Contabilização automática das notas fiscais: regras por CFOP/participante geram lançamentos pelo
+/// <see cref="ServicoLancamento"/> (único ponto de gravação contábil). Exige a função "contabilizar notas fiscais" e, para gravar,
+/// a de incluir (ou estornar) lançamentos, verificada pelo próprio serviço de lançamento.
+/// </summary>
+public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repositorio, IRepositorioDocumentos documentos, ServicoLancamento lancamentos,
+                                                Autorizador autorizador)
+{
+    // ------------------------------------------------------------------ regras
+
+    public async Task<Resultado<IReadOnlyList<RegraContabilizacao>>> ListarRegrasAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<RegraContabilizacao>>(usuarioId, empresaId, Permissao.FiscalDocumentosConsultar, ct) is { } negado) return negado;
+        return Resultado<IReadOnlyList<RegraContabilizacao>>.Ok(await repositorio.ListarRegrasAsync(empresaId, ct));
+    }
+
+    public async Task<Resultado<long>> GravarRegraAsync(long empresaId, RegraContabilizacao regra, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return negado;
+        var erros = new List<string>();
+        var cfop = string.IsNullOrWhiteSpace(regra.Cfop) ? null : regra.Cfop.Trim().ToUpperInvariant();
+        if (cfop is not null && cfop != Cfop.Servico && !(cfop.Length is >= 1 and <= 4 && cfop.All(char.IsAsciiDigit)))
+            erros.Add("CFOP da regra: informe 1 a 4 dígitos (prefixo ou código completo) ou NFSE para serviços.");
+        if (string.IsNullOrWhiteSpace(regra.Historico)) erros.Add("Informe o histórico.");
+        else if (VariaveisHistorico.Desconhecidas(regra.Historico) is { Count: > 0 } desc)
+            erros.Add($"Variável desconhecida no histórico: {string.Join(", ", desc.Select(d => "{" + d + "}"))}.");
+        var contas = await repositorio.ResolverContasAsync(empresaId, [regra.ContaDebito, regra.ContaCredito], ct);
+        ContaResolvida? Conta(string codigo, string papel)
+        {
+            if (!contas.TryGetValue(codigo.Trim(), out var c)) { erros.Add($"Conta de {papel} {codigo} não encontrada."); return null; }
+            if (!c.Analitica) erros.Add($"Conta de {papel} {c.Codigo} é sintética.");
+            if (!c.Ativa) erros.Add($"Conta de {papel} {c.Codigo} está inativa.");
+            return c;
+        }
+        var debito = Conta(regra.ContaDebito, "débito");
+        var credito = Conta(regra.ContaCredito, "crédito");
+        if (debito is not null && credito is not null && debito.Id == credito.Id) erros.Add("As contas de débito e de crédito devem ser diferentes.");
+        if (erros.Count > 0) return Resultado<long>.Falha(erros);
+        try
+        {
+            return Resultado<long>.Ok(await repositorio.GravarRegraAsync(empresaId,
+                regra with { Cfop = cfop, Historico = regra.Historico.Trim(), ContaDebito = debito!.Codigo, ContaCredito = credito!.Codigo }, debito.Id, credito.Id, ct));
+        }
+        catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }
+    }
+
+    public async Task<Resultado> ExcluirRegraAsync(long empresaId, long regraId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return Resultado.Falha(negado);
+        await repositorio.ExcluirRegraAsync(empresaId, regraId, ct);
+        return Resultado.Ok();
+    }
+
+    // ------------------------------------------------------------------ contabilização
+
+    /// <summary>Notas ainda não contabilizadas do período com o lançamento que seria gerado (ou o motivo de não ser possível).</summary>
+    public async Task<Resultado<IReadOnlyList<PropostaContabilizacao>>> PrevisaoAsync(long empresaId, DateOnly inicio, DateOnly fim, TipoOperacao? operacao,
+        IReadOnlySet<long>? ids, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<PropostaContabilizacao>>(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return negado;
+        if (fim < inicio) return Resultado<IReadOnlyList<PropostaContabilizacao>>.Falha("Data final anterior à inicial.");
+        return Resultado<IReadOnlyList<PropostaContabilizacao>>.Ok(await MontarPropostasAsync(empresaId, inicio, fim, operacao, ids, ct));
+    }
+
+    private async Task<IReadOnlyList<PropostaContabilizacao>> MontarPropostasAsync(long empresaId, DateOnly inicio, DateOnly fim, TipoOperacao? operacao,
+                                                                                   IReadOnlySet<long>? ids, CancellationToken ct)
+    {
+        var docs = await documentos.ListarAsync(empresaId, new FiltroDocumentos(inicio, fim, operacao, Situacao: SituacaoDocumento.Autorizada, Contabilizado: false, Limite: 20000), ct);
+        if (ids is not null) docs = docs.Where(d => ids.Contains(d.Id)).ToList();
+        var itens = (await documentos.ListarItensAsync(empresaId, inicio, fim, operacao, ct)).ToLookup(i => i.DocumentoId, i => i.Item);
+        var regras = await repositorio.ListarRegrasAsync(empresaId, ct);
+        return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras)).ToList();
+    }
+
+    /// <summary>
+    /// Gera os lançamentos das notas prontas (as demais voltam como pendências) e as marca como contabilizadas. Os lançamentos
+    /// são gravados numa única transação pelo serviço de lançamentos; uma nota com conta ou período inválido não impede as outras.
+    /// </summary>
+    public async Task<Resultado<ResultadoContabilizacao>> ContabilizarAsync(long empresaId, DateOnly inicio, DateOnly fim, TipoOperacao? operacao,
+        IReadOnlySet<long>? ids, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<ResultadoContabilizacao>(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return negado;
+        if (fim < inicio) return Resultado<ResultadoContabilizacao>.Falha("Data final anterior à inicial.");
+        var propostas = await MontarPropostasAsync(empresaId, inicio, fim, operacao, ids, ct);
+        if (propostas.Count == 0) return Resultado<ResultadoContabilizacao>.Falha("Nenhuma nota pendente de contabilização no período.");
+
+        var falhas = propostas.Where(p => !p.Pronta).Select(p => new FalhaContabilizacao(p.Documento.Numero, p.Erros)).ToList();
+        var prontas = propostas.Where(p => p.Pronta).ToList();
+        if (prontas.Count > 0)
+        {
+            var validacoes = await lancamentos.ValidarLoteAsync(prontas.Select(p => p.Lancamento!).ToList(), ct);
+            var validas = new List<PropostaContabilizacao>();
+            for (var i = 0; i < prontas.Count; i++)
+                if (validacoes[i].Sucesso) validas.Add(prontas[i]);
+                else falhas.Add(new FalhaContabilizacao(prontas[i].Documento.Numero, validacoes[i].Erros));
+            prontas = validas;
+        }
+        if (prontas.Count == 0) return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(0, 0, falhas));
+
+        var gravados = await lancamentos.EfetivarLoteAsync(prontas.Select(p => p.Lancamento!).ToList(), prontas.Select(p => (string?)$"FISCAL:DOC:{p.Documento.Id}").ToList(),
+                                                          usuarioId, ct);
+        if (!gravados.Sucesso) return Resultado<ResultadoContabilizacao>.Falha(gravados.Erros);
+        await repositorio.MarcarContabilizadosAsync(prontas.Select((p, i) => (p.Documento.Id, gravados.Valor[i].Id)).ToList(), usuarioId, ct);
+        var valor = prontas.Sum(p => p.Lancamento!.Partidas.Where(x => x.DC == IndicadorDC.D).Sum(x => x.Valor));
+        return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(prontas.Count, valor, falhas));
+    }
+
+    /// <summary>Estorna o lançamento de cada nota (na data dele, ou em <paramref name="dataEstorno"/>) e a devolve à situação de não contabilizada.</summary>
+    public async Task<Resultado<ResultadoContabilizacao>> DesfazerAsync(long empresaId, IReadOnlyCollection<long> documentoIds, DateOnly? dataEstorno,
+                                                                       long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<ResultadoContabilizacao>(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return negado;
+        if (documentoIds.Count == 0) return Resultado<ResultadoContabilizacao>.Falha("Selecione ao menos uma nota contabilizada.");
+        var docs = (await documentos.ListarAsync(empresaId, new FiltroDocumentos(Contabilizado: true, Limite: 100000), ct))
+            .Where(d => documentoIds.Contains(d.Id) && d.LancamentoId is not null).ToList();
+        if (docs.Count == 0) return Resultado<ResultadoContabilizacao>.Falha("As notas selecionadas não estão contabilizadas.");
+
+        var falhas = new List<FalhaContabilizacao>();
+        var desfeitos = new List<long>();
+        foreach (var d in docs)
+        {
+            var data = dataEstorno ?? await repositorio.ObterDataLancamentoAsync(d.LancamentoId!.Value, ct) ?? d.DataLivro;
+            var r = await lancamentos.EstornarAsync(empresaId, d.LancamentoId!.Value, data, $"Desfazer contabilização da NF {d.Numero}", usuarioId, ct);
+            if (r.Sucesso) desfeitos.Add(d.Id);
+            else falhas.Add(new FalhaContabilizacao(d.Numero, r.Erros));
+        }
+        if (desfeitos.Count > 0) await repositorio.DesmarcarAsync(desfeitos, ct);
+        return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(desfeitos.Count, 0, falhas));
+    }
+}
