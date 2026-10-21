@@ -36,6 +36,7 @@ public static class Telas
     public const string ImportarPlanilhas = "importarplanilhas";
     public const string ImportarExtratos = "importarextratos";
     public const string ImportarLancamentos = "importarlancamentos";
+    public const string EcdAssistente = "ecd";
 
     // Telas comuns (definidas no casco)
     public const string Empresas = TelasComuns.Empresas;

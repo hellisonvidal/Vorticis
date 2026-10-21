@@ -759,6 +759,29 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(enc.Encerrado);
             Foto(janela, "08b_encerramento");
 
+            // Auditoria › Gerar ECD (SPED Contábil): abre o assistente e chega à validação prévia (pendências de cadastro bloqueiam)
+            Assert.True(vm.AbrirCommand.CanExecute(Telas.EcdAssistente));
+            vm.AbrirCommand.Execute(Telas.EcdAssistente);
+            var ecd = vm.EcdAssistente;
+            await ecd.CarregarAsync();
+            Assert.Equal(1, ecd.Passo);
+            Assert.Equal("EXEMPLO COMERCIO DE INFORMATICA LTDA", ecd.EmpresaNome);
+            ecd.Ano = 2026;
+            Foto(janela, "08c_ecd_passo1");
+            await ecd.AvancarCommand.ExecuteAsync(null);
+            Assert.Empty(ecd.Erros);
+            Assert.Equal(2, ecd.Passo);
+            Assert.NotEmpty(ecd.PreRequisitos);
+            Foto(janela, "08c_ecd_passo2");
+            await ecd.AvancarCommand.ExecuteAsync(null);
+            Assert.Equal(3, ecd.Passo);
+            Assert.NotEmpty(ecd.Pendencias);
+            Foto(janela, "08c_ecd_passo3_validacao");
+            ecd.Aba = EcdAssistenteViewModel.AbaGeradas;
+            Foto(janela, "08c_ecd_geradas");
+            ecd.Aba = EcdAssistenteViewModel.AbaAssistente;
+            foreach (var j in vm.JanelasAbertas.Where(j => j.Tela == Telas.EcdAssistente).ToList()) vm.FecharFuncaoCommand.Execute(j);
+
             // Relatórios › Contábeis › DMPL e DLPA (telas separadas): a implantação de saldos é a abertura; o encerramento não é mutação
             vm.AbrirCommand.Execute(Telas.Dmpl);
             var mut = vm.Dmpl;

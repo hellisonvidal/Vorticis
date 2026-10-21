@@ -145,7 +145,7 @@ e assine no próprio PVA.
 
 ## Como validar no PVA
 
-1. Gerar no Vorticis (Integrações › ECD — tela a construir), resolvendo as pendências bloqueantes.
+1. Gerar no Vorticis (Auditoria › Gerar ECD — assistente em 5 passos: dados, pré-requisitos, validação, assinaturas, gerar e salvar), resolvendo as pendências bloqueantes.
 2. No PVA do Sped Contábil: *Escrituração › Importar*, escolher o `.txt`. O PVA lê as assinaturas anexadas e mostra os signatários.
 3. *Escrituração › Validar*. Erros e advertências apontam registro e regra (os nomes das regras deste documento são os do PVA).
 4. Conferir em *Escrituração › Assinar* a lista de assinantes (devem aparecer como já assinados); se faltar alguém, assinar ali ou

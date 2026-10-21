@@ -35,6 +35,7 @@
     <DataTemplate DataType="vm:DlpaViewModel"><v:DlpaView /></DataTemplate>
     <DataTemplate DataType="vm:TermosViewModel"><v:TermosView /></DataTemplate>
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
+    <DataTemplate DataType="vm:EcdAssistenteViewModel"><v:EcdAssistenteView /></DataTemplate>
     <DataTemplate DataType="vm:ConsultasViewModel"><v:ConsultasView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>

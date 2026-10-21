@@ -49,8 +49,6 @@ public sealed class ModuloContabil : IModuloDesktop
             ItemMenu.Submenu("_Exportar",
                 ItemMenu.Tela("Lançamentos contábeis (Excel, PDF, CSV)", Telas.ExportarLancamentos),
                 ItemMenu.Separador,
-                ItemMenu.EmBreve("SPED Contábil — ECD"),
-                ItemMenu.EmBreve("SPED ECF"),
                 ItemMenu.EmBreve("eSocial"))),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Submenu("_Contábeis",
@@ -64,6 +62,9 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Balanço Patrimonial e DRE", Telas.Demonstracoes),
                 ItemMenu.Tela("DMPL (mutações do patrimônio líquido)", Telas.Dmpl),
                 ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa))),
+        ItemMenu.Submenu("_Auditoria",
+            ItemMenu.Tela("Gerar ECD (SPED Contábil)", Telas.EcdAssistente),
+            ItemMenu.EmBreve("Gerar ECF (SPED)")),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -128,6 +129,9 @@ public sealed class ModuloContabil : IModuloDesktop
                   v => { v.AtualizarPermissoes(); v.AbaSelecionada = ConsultasViewModel.AbaSaldos; return Task.CompletedTask; })
             .Tela(Telas.ConsultaLancamentos, "Consultas", m => m.Pode(Permissao.RelatorioDiario) || m.Pode(Permissao.RelatorioRazao),
                   v => { v.AtualizarPermissoes(); v.AbaSelecionada = ConsultasViewModel.AbaLancamentos; return Task.CompletedTask; });
+        c.Instancia(nameof(MainViewModel.EcdAssistente), m => new EcdAssistenteViewModel(m), aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.EcdAssistente, "Auditoria › Gerar ECD (SPED Contábil)", m => m.Pode(Permissao.SpedEcdGerar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.DiferencasSaldos), m => new DiferencasSaldosViewModel(m))
             .Tela(Telas.DiferencasSaldos, "Consultas › Diferenças de saldos", m => m.Pode(Permissao.RelatorioBalancete));
 
