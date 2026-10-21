@@ -53,7 +53,8 @@ public static class PeriodosFerias
     }
 }
 
-public sealed record SolicitacaoFerias(DateOnly GozoInicio, int DiasGozo, int AbonoDias, int FaltasInjustificadas, decimal MediaVariaveis);
+/// <param name="DiasJaUsados">Dias do mesmo período aquisitivo já gozados ou vendidos em outras solicitações (fracionamento).</param>
+public sealed record SolicitacaoFerias(DateOnly GozoInicio, int DiasGozo, int AbonoDias, int FaltasInjustificadas, decimal MediaVariaveis, int DiasJaUsados = 0);
 
 public static class CalculadoraFerias
 {
@@ -65,8 +66,8 @@ public static class CalculadoraFerias
         if (direito == 0) erros.Add("Mais de 32 faltas injustificadas no período aquisitivo: o empregado perdeu o direito às férias (CLT, art. 130).");
         if (s.DiasGozo < 5) erros.Add("O período de gozo deve ter ao menos 5 dias.");
         if (s.AbonoDias < 0 || s.AbonoDias > direito / 3) erros.Add($"O abono pecuniário é de no máximo 1/3 dos dias de direito ({direito / 3} dias).");
-        if (direito > 0 && s.DiasGozo + s.AbonoDias != direito)
-            erros.Add($"Dias de gozo ({s.DiasGozo}) + abono ({s.AbonoDias}) devem somar os {direito} dias de direito.");
+        if (direito > 0 && s.DiasGozo + s.AbonoDias + s.DiasJaUsados > direito)
+            erros.Add($"Dias de gozo ({s.DiasGozo}) + abono ({s.AbonoDias}) + já utilizados ({s.DiasJaUsados}) passam dos {direito} dias de direito.");
         if (f.Admissao > s.GozoInicio) erros.Add("O gozo não pode começar antes da admissão.");
         return erros;
     }

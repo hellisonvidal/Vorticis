@@ -88,6 +88,14 @@ public static class CalculadoraRescisao
         return Math.Min(12, meses);
     }
 
+    /// <summary>Data do desligamento projetada pelo aviso prévio indenizado (base de férias e 13º proporcionais).</summary>
+    public static DateOnly DataProjetada(DateOnly admissao, SolicitacaoRescisao s)
+    {
+        if (s.Aviso != TipoAviso.Indenizado) return s.DataDesligamento;
+        var dias = DiasAviso(admissao, s.DataDesligamento);
+        return s.DataDesligamento.AddDays(s.Motivo == MotivoRescisao.Acordo484A ? dias / 2 : dias);
+    }
+
     public static IReadOnlyList<string> Validar(FuncionarioCalc f, SolicitacaoRescisao s)
     {
         var erros = new List<string>();

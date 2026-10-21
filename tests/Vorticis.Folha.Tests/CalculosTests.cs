@@ -182,7 +182,8 @@ public class CalculosTests
     {
         var f = Func();
         Assert.NotEmpty(CalculadoraFerias.Validar(f, new SolicitacaoFerias(new DateOnly(2026, 7, 1), 15, 15, 0, 0)));   // abono > 1/3
-        Assert.NotEmpty(CalculadoraFerias.Validar(f, new SolicitacaoFerias(new DateOnly(2026, 7, 1), 20, 0, 0, 0)));    // não soma 30
+        Assert.Empty(CalculadoraFerias.Validar(f, new SolicitacaoFerias(new DateOnly(2026, 7, 1), 20, 0, 0, 0)));       // fracionamento: saldo de 10 dias
+        Assert.NotEmpty(CalculadoraFerias.Validar(f, new SolicitacaoFerias(new DateOnly(2026, 7, 1), 20, 0, 0, 0, 15)));  // 20 + 15 > 30
         Assert.Empty(CalculadoraFerias.Validar(f, new SolicitacaoFerias(new DateOnly(2026, 7, 1), 24, 0, 6, 0)));       // 6 faltas = 24 dias
         var p = PeriodosFerias.Calcular(new DateOnly(2024, 3, 10), new DateOnly(2026, 6, 1));
         Assert.Equal(3, p.Count);
