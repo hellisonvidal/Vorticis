@@ -1,5 +1,6 @@
 using Vorticis.Application.Seguranca;
 using Vorticis.Domain.Comum;
+using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Application.Contabil;
@@ -70,6 +71,8 @@ public sealed class ServicoHistoricos(IRepositorioHistoricos repositorio, Autori
         if (codigo.Length > 20) erros.Add("O código pode ter até 20 caracteres.");
         if (string.IsNullOrWhiteSpace(descricao)) erros.Add("Informe o texto do histórico.");
         else if (descricao.Trim().Length > 250) erros.Add("O texto do histórico pode ter até 250 caracteres.");
+        foreach (var v in VariaveisHistorico.Desconhecidas(descricao))
+            erros.Add($"Variável desconhecida {{{v}}} no texto do histórico. Use as variáveis listadas na tela.");
         return erros;
     }
 }

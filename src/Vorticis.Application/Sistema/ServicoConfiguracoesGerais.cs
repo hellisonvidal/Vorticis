@@ -3,28 +3,17 @@ using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Application.Sistema;
 
-/// <summary>Como a tela de lançamento é digitada.</summary>
-public enum ModoLancamento
-{
-    /// <summary>Cada linha é um lançamento completo: conta débito, conta crédito e valor.</summary>
-    PartidaDobrada,
-    /// <summary>Cada linha é uma partida (uma conta, D ou C); um lançamento tem no mínimo 2 linhas.</summary>
-    PartidaSimples,
-}
-
-public sealed record ConfiguracoesGerais(ModoLancamento ModoLancamento, string? PastaBackup = null);
+public sealed record ConfiguracoesGerais(string? PastaBackup = null);
 
 /// <summary>Configurações › Configurações gerais (valem para todos os usuários e empresas).</summary>
 public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao repositorio)
 {
-    private const string ChaveModo = "modo_lancamento";
     private const string ChavePastaBackup = "pasta_backup";
 
     public async Task<ConfiguracoesGerais> ObterAsync(CancellationToken ct = default)
     {
-        var v = await repositorio.LerAsync([ChaveModo, ChavePastaBackup], ct);
-        var modo = v.TryGetValue(ChaveModo, out var m) && Enum.TryParse<ModoLancamento>(m.Valor, out var lido) ? lido : ModoLancamento.PartidaDobrada;
-        return new ConfiguracoesGerais(modo, v.TryGetValue(ChavePastaBackup, out var p) && p.Valor.Length > 0 ? p.Valor : null);
+        var v = await repositorio.LerAsync([ChavePastaBackup], ct);
+        return new ConfiguracoesGerais(v.TryGetValue(ChavePastaBackup, out var p) && p.Valor.Length > 0 ? p.Valor : null);
     }
 
     /// <summary>Pasta dos backups: a escolhida pelo usuário ou a padrão (no diretório de instalação).</summary>
@@ -37,13 +26,6 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
         var p = string.IsNullOrWhiteSpace(pasta) ? "" : pasta.Trim();
         if (p.Length > 0 && !ServicoBackup.PodeGravar(p)) return Resultado.Falha($"Não é possível gravar na pasta {p}.");
         await repositorio.GravarAsync(new Dictionary<string, string?> { [ChavePastaBackup] = p }, admin.Id, ct);
-        return Resultado.Ok();
-    }
-
-    public async Task<Resultado> SalvarAsync(SessaoUsuario admin, ConfiguracoesGerais c, CancellationToken ct = default)
-    {
-        if (!admin.Administrador) return Resultado.Falha("Somente o administrador altera as configurações gerais.");
-        await repositorio.GravarAsync(new Dictionary<string, string?> { [ChaveModo] = c.ModoLancamento.ToString() }, admin.Id, ct);
         return Resultado.Ok();
     }
 

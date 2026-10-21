@@ -231,6 +231,17 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await hist.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(hist.Erros);
             Assert.Equal("1", Assert.Single(hist.Lista).Codigo);
+            hist.IncluirCommand.Execute(null);                                  // histórico com variáveis de preenchimento automático
+            Assert.Equal("2", hist.Codigo);
+            hist.Descricao = "Pgto {DOCUMENTO} ref. {MES_ANTERIOR} {COMPLEMENTO}";
+            await hist.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(hist.Erros);
+            hist.IncluirCommand.Execute(null);
+            hist.Descricao = "Pgto {INEXISTENTE}";
+            await hist.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains("Variável desconhecida", Assert.Single(hist.Erros));
+            hist.CancelarCommand.Execute(null);
+            Assert.Contains(hist.Variaveis, v => v.Marcador == "{DOCUMENTO}");
 
             // Cadastros › Clientes (dados da Receita pelo CNPJ, como no cadastro de empresas) e › Fornecedores
             vm.AbrirCommand.Execute(Telas.Clientes);
@@ -289,12 +300,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.True(dep.LancarCommand.CanExecute(null));
             Foto(janela, "02f_depreciacao");
 
-            // 3. Lançamentos › Lançamento contábil (partida dobrada: uma linha por lançamento, digitado pelo teclado)
+            // 3. Lançamentos › Lançamento contábil (uma linha com débito e crédito = um lançamento, digitado pelo teclado)
             Assert.True(vm.AbrirCommand.CanExecute(Telas.Lancamento));
             vm.AbrirCommand.Execute(Telas.Lancamento);
             var l = vm.Lancamento;
             await l.AoTrocarEmpresaAsync();
-            Assert.True(l.PartidaDobrada);
             Assert.Single(l.Linhas);
             var lin = l.Linhas[0];
             lin.Data = l.DataCompleta("10/03/2026");
@@ -325,31 +335,48 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             (l.Linhas[0].Conta, l.Linhas[0].ContaCredito, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("4.2.02.001", "1.1.01.002", "2.300,00", "Aluguel de março");
             Foto(janela, "03_lancamento");
 
-            // Configurações gerais: partida simples (no mínimo 2 linhas); fechar e abrir recomeça no novo modo
+            // Várias linhas com uma conta só (partidas simples) fecham um único lançamento; o tipo é inferido
+            l.LimparCommand.Execute(null);
+            var l1 = Assert.Single(l.Linhas);
+            (l1.Data, l1.Reduzido, l1.Valor, l1.Documento) = ("11/03/2026", reduzidoBancos.ToString(), "100,00", "NF 77");
+            Assert.Equal("1.1.01.002", l1.Conta);
+            Assert.False(l.Balanceado);
+            Assert.Equal(("100,00", "0,00", "100,00"), (l.TotalDebito, l.TotalCredito, l.Diferenca));
+            l1.CodigoHistorico = "2";                                           // variáveis do histórico preenchidas pela linha
+            Assert.Equal("Pgto NF 77 ref. 02/2026 {COMPLEMENTO}", l1.Historico);
+            l1.Documento = "NF 78";                                             // texto automático acompanha os dados da linha
+            Assert.Equal("Pgto NF 78 ref. 02/2026 {COMPLEMENTO}", l1.Historico);
+            await l.SalvarCommand.ExecuteAsync(null);                           // variável pendente: o usuário precisa completar
+            Assert.Contains("{COMPLEMENTO}", Assert.Single(l.Erros));
+            l1.Historico = "Pgto NF 78 ref. 02/2026 parcela 1";
+            var salvando = l.SalvarCommand.ExecuteAsync(null);                  // só débito: pede confirmação, não grava
+            Assert.Contains("falta o crédito", (await AguardarConfirmacao(vm)).Mensagem);
+            vm.ResponderConfirmacaoCommand.Execute(false);
+            await salvando;
+            Assert.Single(l.Linhas);
+            Assert.Single(l.Efetuados);
+            salvando = l.SalvarCommand.ExecuteAsync(null);                      // aceita: cria a linha do crédito já com o valor que fecha
+            await AguardarConfirmacao(vm);
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await salvando;
+            Assert.Equal(2, l.Linhas.Count);
+            Assert.Equal("100,00", l.Linhas[1].Valor);
+            Assert.Equal("NF 78", l.Linhas[1].Documento);
+            l.Linhas[1].ContaCredito = "3.1.01.001";
+            Assert.True(l.Balanceado);
+            Assert.Equal("0,00", l.Diferenca);
+            l.Linhas[1].Valor = "90,00";                                        // mais de uma linha e não fecha: erro, sem confirmação
+            await l.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains("não fecham", Assert.Single(l.Erros));
+            Assert.Null(vm.Confirmacao);
+            l.Linhas[1].Valor = "100,00";
+            Foto(janela, "03b_lancamento_partidas_simples");
+            l.LimparCommand.Execute(null);
+            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
+
+            // Configurações gerais não tem mais o tipo de lançamento: só senha de administrador e limpeza
             vm.AbrirCommand.Execute(Telas.ConfiguracoesGerais);
             await vm.ConfiguracoesGerais.CarregarAsync();
-            vm.ConfiguracoesGerais.PartidaSimples = true;
-            await vm.ConfiguracoesGerais.SalvarCommand.ExecuteAsync(null);
-            Assert.Empty(vm.ConfiguracoesGerais.Erros);
-            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
-            vm.AbrirCommand.Execute(Telas.Lancamento);
-            l = vm.Lancamento;
-            await l.CarregarAsync();
-            Assert.True(l.PartidaSimples);
-            Assert.Equal(2, l.Linhas.Count);
-            (l.Linhas[0].Reduzido, l.Linhas[0].Valor) = (reduzidoBancos.ToString(), "100,00");
-            Assert.Equal("1.1.01.002", l.Linhas[0].Conta);
-            l.Linhas[1].Conta = "3.1.01.001";
-            Assert.False(l.Balanceado);
-            var terceira = l.AdicionarLinha();                                  // sugere o valor que fecha
-            Assert.Equal(("C", "100,00"), (terceira.Dc, terceira.Valor));
-            l.CancelarLinhaNova(terceira);
-            l.Linhas[1].Valor = "100";
-            Assert.True(l.Balanceado);
-            Foto(janela, "03b_lancamento_partida_simples");
-            vm.ConfiguracoesGerais.PartidaDobrada = true;
-            await vm.ConfiguracoesGerais.SalvarCommand.ExecuteAsync(null);
-            vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
             vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.ConfiguracoesGerais));
 
             // Menu aberto (submenu Lançamentos)

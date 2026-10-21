@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vorticis.Desktop.ViewModels;
+using Vorticis.Domain.Contabil;
 
 namespace Vorticis.Desktop.Views;
 
@@ -17,9 +18,8 @@ namespace Vorticis.Desktop.Views;
 /// </summary>
 public partial class LancamentoView : UserControl
 {
-    private static readonly string[] CamposDobrada =
+    private static readonly string[] CamposLinha =
         ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
-    private static readonly string[] CamposSimples = ["reduzido", "conta", "dc", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
 
     /// <summary>Sugestões de conta: reduzido, início do código ou parte do nome.</summary>
     public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =
@@ -35,16 +35,15 @@ public partial class LancamentoView : UserControl
         AddHandler(LostFocusEvent, AoSairDoCampo, RoutingStrategies.Bubble);
         DataContextChanged += (_, _) =>
         {
-            if (_vm is not null) _vm.Linhas.CollectionChanged -= AoMudarLinhas;
+            if (_vm is not null) { _vm.Linhas.CollectionChanged -= AoMudarLinhas; _vm.FocoSolicitado -= Focar; }
             _vm = DataContext as LancamentoViewModel;
-            if (_vm is not null) _vm.Linhas.CollectionChanged += AoMudarLinhas;
+            if (_vm is not null) { _vm.Linhas.CollectionChanged += AoMudarLinhas; _vm.FocoSolicitado += Focar; }
         };
     }
 
     /// <summary>Ordem dos campos no Enter; o participante só existe no plano com participantes.</summary>
-    private string[] Campos => (_vm?.PartidaDobrada == true ? CamposDobrada : CamposSimples) is var c && _vm?.UsaParticipantes == true
-        ? c : c[..^1];
-    private ItemsControl Linhas => _vm?.PartidaDobrada == true ? LinhasDobrada : LinhasSimples;
+    private string[] Campos => _vm?.UsaParticipantes == true ? CamposLinha : CamposLinha[..^1];
+    private ItemsControl Linhas => LinhasLancamento;
 
     /// <summary>Linhas recomeçadas (abrir, Limpar, Salvar): foco no primeiro campo.</summary>
     private void AoMudarLinhas(object? sender, NotifyCollectionChangedEventArgs e)
@@ -136,9 +135,13 @@ public partial class LancamentoView : UserControl
         var (campo, tag) = CampoDe(e.Source);
         if (_vm is null || campo?.DataContext is not LinhaLancamentoViewModel linha) return;
         _vm.LinhaSelecionada = linha;
-        // Histórico: cursor no fim do texto fixo, para completar.
+        // Histórico: seleciona a primeira variável {X} ainda sem preencher (digita-se por cima); senão, cursor no fim para completar.
         if (tag == "historico" && campo is TextBox tb)
-            Dispatcher.UIThread.Post(() => { tb.ClearSelection(); tb.CaretIndex = tb.Text?.Length ?? 0; });
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (VariaveisHistorico.PrimeiroPendente(tb.Text) is var (inicio, tamanho)) { tb.SelectionStart = inicio; tb.SelectionEnd = inicio + tamanho; }
+                else { tb.ClearSelection(); tb.CaretIndex = tb.Text?.Length ?? 0; }
+            });
     }
 
     private void AoSairDoCampo(object? sender, RoutedEventArgs e)

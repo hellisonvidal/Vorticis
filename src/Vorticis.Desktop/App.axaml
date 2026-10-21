@@ -79,6 +79,8 @@
       <Setter Property="RowHeight" Value="26" />
       <Setter Property="GridLinesVisibility" Value="Horizontal" />
       <Setter Property="CanUserResizeColumns" Value="True" />
+      <!-- Ctrl+C copia só a célula atual (não a linha); Ctrl+V cola na célula editável -->
+      <Setter Property="v:CopiaCelula.Ativa" Value="True" />
     </Style>
     <!-- Calendário sem destaque do dia atual: só o calendário -->
     <Style Selector="Calendar">

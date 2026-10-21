@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Vorticis.Application.Contabil;
+using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
@@ -15,10 +16,13 @@ public sealed record HistoricoLinha(HistoricoPadrao Historico)
 /// <summary>
 /// Cadastros › Históricos (Incluir / Alterar / Excluir). O texto cadastrado é a parte fixa; no lançamento, informar o
 /// código preenche esse texto e o restante é digitado livremente (ex.: "Pagamento NF " + "1234 - Fornecedor X").
+/// O texto aceita variáveis como {DOCUMENTO} e {COMPETENCIA}, trocadas no lançamento pelos dados da linha.
 /// </summary>
 public partial class HistoricosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     public ObservableCollection<HistoricoLinha> Lista { get; } = [];
+    /// <summary>Variáveis de preenchimento automático ({DOCUMENTO}, {DATA}...) que podem entrar no texto do histórico.</summary>
+    public IReadOnlyList<VariavelHistorico> Variaveis => VariaveisHistorico.Todas;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private HistoricoLinha? _selecionado;
     [ObservableProperty] private string _codigo = "";
