@@ -22,6 +22,7 @@ public enum Permissao
     RelatorioDiario,
     RelatorioDemonstracoes,
     RelatorioExportar,
+    SpedEcdGerar,
 
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
@@ -61,6 +62,7 @@ public static class Permissoes
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
         new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
+        new(Permissao.SpedEcdGerar, "SPED_ECD_GERAR", "Integrações", "Gerar e assinar o arquivo da ECD (SPED Contábil)"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);

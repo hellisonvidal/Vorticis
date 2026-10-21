@@ -6,11 +6,13 @@ using Vorticis.Application.Contabil;
 using Vorticis.Application.Relatorios;
 using Vorticis.Application.Seguranca;
 using Vorticis.Application.Sistema;
+using Vorticis.Application.Sped;
 using Vorticis.Infra.Sistema;
 using Vorticis.Infra.Cnpj;
 using Vorticis.Infra.Migracoes;
 using Vorticis.Infra.Postgres;
 using Vorticis.Infra.Relatorios;
+using Vorticis.Infra.Sped;
 
 namespace Vorticis.Infra;
 
@@ -53,6 +55,8 @@ public sealed class VorticisApp : IAsyncDisposable
         Demonstracoes = new ServicoDemonstracoes(Consultas, autorizador);
         Assinaturas = new ServicoAssinaturas(Responsaveis);
         Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas);
+        AssinadorSped = new AssinadorSpedCms();
+        Ecd = new ServicoEcd(new ConsultasEcd(ds), repoContabil, Responsaveis, autorizador, AssinadorSped);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Migrador = new Migrador(ds);
     }
@@ -80,6 +84,9 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoDemonstracoes Demonstracoes { get; }
     public ServicoAssinaturas Assinaturas { get; }
     public ServicoLivros Livros { get; }
+    /// <summary>Geração e assinatura do arquivo da ECD (SPED Contábil).</summary>
+    public ServicoEcd Ecd { get; }
+    public IAssinadorSped AssinadorSped { get; }
     public ServicoBackup Backup { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }
