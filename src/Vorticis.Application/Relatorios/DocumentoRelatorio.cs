@@ -24,7 +24,8 @@ public sealed record DocumentoRelatorio(
     bool Paisagem = false,
     Termo? TermoAbertura = null,
     Termo? TermoEncerramento = null,
-    string RotuloPagina = "Página");
+    string RotuloPagina = "Página",
+    IReadOnlyList<string>? Assinaturas = null);   // bloco de assinaturas ao final do conteúdo (opção comum dos relatórios)
 
 public sealed record ArquivoGerado(byte[] Conteudo, int Paginas);
 

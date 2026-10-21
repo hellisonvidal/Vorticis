@@ -102,6 +102,13 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
     public async Task<Socio?> RepresentanteLegalAsync(long empresaId, CancellationToken ct = default)
         => (await repositorio.ListarSociosAsync(empresaId, ct)).FirstOrDefault(s => s.Ativo && s.RepresentanteLegal);
 
+    /// <summary>Sócio/responsável que assina os relatórios: o representante legal ativo; sem ele, o primeiro sócio ativo.</summary>
+    public async Task<Socio?> SocioResponsavelAsync(long empresaId, CancellationToken ct = default)
+    {
+        var ativos = (await repositorio.ListarSociosAsync(empresaId, ct)).Where(s => s.Ativo).ToList();
+        return ativos.FirstOrDefault(s => s.RepresentanteLegal) ?? ativos.FirstOrDefault();
+    }
+
     // ------------------------------------------------------------------ contabilidade
 
     public async Task<Resultado<long>> VincularContadorAsync(long empresaId, Contador dados, DateOnly inicio, bool responsavelTecnico, long usuarioId,

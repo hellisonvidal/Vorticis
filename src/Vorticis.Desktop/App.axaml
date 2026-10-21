@@ -40,7 +40,9 @@
     <DataTemplate DataType="vm:ConfiguracoesGeraisViewModel"><v:ConfiguracoesGeraisView /></DataTemplate>
     <DataTemplate DataType="vm:CertificadosViewModel"><v:CertificadosView /></DataTemplate>
     <DataTemplate DataType="vm:ExportacaoLancamentosViewModel"><v:ExportacaoLancamentosView /></DataTemplate>
-    <DataTemplate DataType="vm:MutacoesViewModel"><v:MutacoesView /></DataTemplate>
+    <DataTemplate DataType="vm:DmplViewModel"><v:DmplView /></DataTemplate>
+    <DataTemplate DataType="vm:DlpaViewModel"><v:DlpaView /></DataTemplate>
+    <DataTemplate DataType="vm:TermosViewModel"><v:TermosView /></DataTemplate>
     <DataTemplate DataType="vm:MapeamentoReferencialViewModel"><v:MapeamentoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilidadeEmpresaViewModel"><v:ContabilidadeEmpresaView /></DataTemplate>
     <DataTemplate DataType="vm:SociosViewModel"><v:SociosView /></DataTemplate>

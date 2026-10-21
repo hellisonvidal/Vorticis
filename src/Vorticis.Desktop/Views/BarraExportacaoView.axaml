@@ -3,12 +3,18 @@
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              x:Class="Vorticis.Desktop.Views.BarraExportacaoView"
              x:DataType="vm:RelatorioViewModel">
-  <!-- Exportação padrão dos relatórios (a partir do que está na tela) -->
-  <StackPanel Orientation="Horizontal" Spacing="6">
-    <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="#44506A" />
-    <Button Content="PDF" Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center" />
-    <Button Content="Excel (.xlsx)" Command="{Binding ExportarExcelCommand}" IsVisible="{Binding PodeExportarPlanilha}" />
-    <Button Content="CSV" Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportarPlanilha}" MinWidth="60"
-            HorizontalContentAlignment="Center" />
+  <!-- Exportação padrão dos relatórios (a partir do que está na tela). As assinaturas valem para o PDF. -->
+  <StackPanel Spacing="3">
+    <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="#44506A" />
+      <Button Content="PDF" Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center" />
+      <Button Content="Excel (.xlsx)" Command="{Binding ExportarExcelCommand}" IsVisible="{Binding PodeExportarPlanilha}" />
+      <Button Content="CSV" Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportarPlanilha}" MinWidth="60"
+              HorizontalContentAlignment="Center" />
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <CheckBox Content="Assinatura do sócio/responsável" IsChecked="{Binding AssinaturaResponsavel}" FontSize="11" MinHeight="20" Padding="4,0" />
+      <CheckBox Content="Assinatura do contador" IsChecked="{Binding AssinaturaContador}" FontSize="11" MinHeight="20" Padding="4,0" />
+    </StackPanel>
   </StackPanel>
 </UserControl>

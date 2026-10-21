@@ -51,7 +51,8 @@ public sealed class VorticisApp : IAsyncDisposable
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
         Demonstracoes = new ServicoDemonstracoes(Consultas, autorizador);
-        Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf());
+        Assinaturas = new ServicoAssinaturas(Responsaveis);
+        Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Migrador = new Migrador(ds);
     }
@@ -77,6 +78,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoPlanoReferencial PlanoReferencial { get; }
     public ServicoResponsaveis Responsaveis { get; }
     public ServicoDemonstracoes Demonstracoes { get; }
+    public ServicoAssinaturas Assinaturas { get; }
     public ServicoLivros Livros { get; }
     public ServicoBackup Backup { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }

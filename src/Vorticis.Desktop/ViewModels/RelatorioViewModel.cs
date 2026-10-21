@@ -34,13 +34,41 @@ public abstract partial class RelatorioViewModel(IContexto contexto) : ModuloVie
 
     public void AtualizarPermissoesExportacao() => OnPropertyChanged(nameof(PodeExportarPlanilha));
 
+    /// <summary>Opção comum de todos os relatórios em PDF: bloco de assinatura do sócio/responsável ao final.</summary>
+    [ObservableProperty] private bool _assinaturaResponsavel;
+
+    /// <summary>Opção comum de todos os relatórios em PDF: bloco de assinatura do contador (com CRC) ao final.</summary>
+    [ObservableProperty] private bool _assinaturaContador;
+
     [RelayCommand(CanExecute = nameof(TemDados))]
-    private void ExportarPdf() => Exportar(".pdf", () =>
+    private async Task ExportarPdfAsync()
     {
-        var cabecalho = new List<string> { Contexto.DescricaoEmpresa, Parametros,
-            $"Emitido em {DateTime.Now:dd/MM/yyyy HH:mm} por {Contexto.Sessao?.Nome}" };
-        return new GeradorPdf().Gerar(ExportacaoRelatorio.ParaPdf(TituloRelatorio, cabecalho, Tabelas(), Paisagem)).Conteudo;
-    });
+        IReadOnlyList<string>? assinaturas = null;
+        var opcoes = new OpcoesAssinatura(AssinaturaResponsavel, AssinaturaContador);
+        if (opcoes.Alguma)
+        {
+            Erros.Clear();
+            Mensagem = null;
+            if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) { Erros.Add("Selecione uma empresa."); return; }
+            try
+            {
+                var r = await app.Assinaturas.MontarAsync(empresa, opcoes);
+                if (!r.Sucesso) { foreach (var e in r.Erros) Erros.Add(e); return; }
+                assinaturas = r.Valor;
+            }
+            catch (Exception ex)
+            {
+                Erros.Add($"Não foi possível obter os dados das assinaturas: {ex.Message}");
+                return;
+            }
+        }
+        Exportar(".pdf", () =>
+        {
+            var cabecalho = new List<string> { Contexto.DescricaoEmpresa, Parametros,
+                $"Emitido em {DateTime.Now:dd/MM/yyyy HH:mm} por {Contexto.Sessao?.Nome}" };
+            return new GeradorPdf().Gerar(ExportacaoRelatorio.ParaPdf(TituloRelatorio, cabecalho, Tabelas(), Paisagem) with { Assinaturas = assinaturas }).Conteudo;
+        });
+    }
 
     [RelayCommand(CanExecute = nameof(TemDados))]
     private void ExportarExcel() => Exportar(".xlsx", () => ExportadorExcel.Gerar(Tabelas()), exigePermissao: true);

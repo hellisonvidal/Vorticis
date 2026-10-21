@@ -6,8 +6,11 @@ using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
 
-/// <summary>Relatórios › Livros e relatórios em PDF.</summary>
-public partial class LivrosPdfViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>
+/// Base das funções que emitem livro em PDF (Livro Contábil Completo e Termos): período, número do livro, NIRE (do cadastro
+/// da empresa), representante legal e contador que assinam os termos — preenchidos dos cadastros de Sócios e Contadores.
+/// </summary>
+public abstract partial class LivroBaseViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
     [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 31);
@@ -19,77 +22,100 @@ public partial class LivrosPdfViewModel(IContexto contexto) : ModuloViewModel(co
     [ObservableProperty] private string _dataArquivamento = "";
     [ObservableProperty] private string? _ultimoArquivo;
 
-    public bool PodeDiario => Contexto.Pode(Permissao.RelatorioDiario);
-    public bool PodeRazao => Contexto.Pode(Permissao.RelatorioRazao);
-    public bool PodeBalancete => Contexto.Pode(Permissao.RelatorioBalancete);
-    public bool PodeDemonstracoes => Contexto.Pode(Permissao.RelatorioDemonstracoes);
+    /// <summary>NIRE do cadastro da empresa (somente leitura na tela).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(SemNire), nameof(AvisoNire))] private string _nire = "";
 
-    /// <summary>Preenche os termos com o representante legal (Sócios) e o responsável técnico (Contadores) da empresa.</summary>
+    public bool SemNire => string.IsNullOrWhiteSpace(Nire);
+    public string AvisoNire => SemNire ? "NIRE não cadastrado para esta empresa: o termo sairá sem NIRE. Informe-o em Cadastros › Empresas." : "";
+
+    /// <summary>Preenche NIRE, representante legal (Sócios) e responsável técnico (Contadores) da empresa ativa.</summary>
     public async Task PreencherResponsaveisAsync()
     {
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
         var rep = await app.Responsaveis.RepresentanteLegalAsync(empresa);
         var cont = await app.Responsaveis.SignatarioEcdEcfAsync(empresa);
+        var dados = await app.Empresas.ObterAsync(empresa);
         if (!EhAtual(g)) return;
+        Nire = dados?.Nire?.Trim() ?? "";
         (Representante, RepresentanteCpf) = rep is null ? ("", "") : (rep.Nome, rep.CpfCnpj is { Length: 11 } c ? Domain.Cadastros.Cpf.Formatar(c) : rep.CpfCnpj ?? "");
         (Contador, Crc) = cont is null ? ("", "") : (cont.Nome, cont.CrcCompleto);
     }
 
-    public void AtualizarPermissoes()
-    {
-        OnPropertyChanged(nameof(PodeDiario));
-        OnPropertyChanged(nameof(PodeRazao));
-        OnPropertyChanged(nameof(PodeBalancete));
-        OnPropertyChanged(nameof(PodeDemonstracoes));
-    }
-
-    private (DateOnly Ini, DateOnly Fim) Periodo()
+    protected (DateOnly Ini, DateOnly Fim) Periodo()
     {
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
         return (ini, Data(Fim, ini));
     }
 
-    private string Assinatura(string nome, string complemento) =>
-        string.IsNullOrWhiteSpace(nome) ? "" : $"{nome.Trim()}{(string.IsNullOrWhiteSpace(complemento) ? "" : " — " + complemento.Trim())}";
+    protected DadosTermos Termos(int? folhas = null) =>
+        new((int)(NumeroLivro ?? 1), Representante, RepresentanteCpf, Contador, Crc,
+            string.IsNullOrWhiteSpace(DataArquivamento) ? null : DataArquivamento.Trim(), folhas);
 
-    private void Concluir(Resultado<ArquivoGerado> r, string nome)
+    protected void Concluir(Resultado<ArquivoGerado> r, string nome)
     {
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         UltimoArquivo = ArquivosGerados.Salvar(nome, r.Valor.Conteudo);
         Mensagem = $"{r.Valor.Paginas} página(s) gerada(s): {UltimoArquivo}";
     }
 
-    private string Nome(string tipo) { var (i, f) = Periodo(); return $"{tipo}_{i:yyyyMMdd}_{f:yyyyMMdd}.pdf"; }
+    protected string Nome(string tipo) { var (i, f) = Periodo(); return $"{tipo}_{i:yyyyMMdd}_{f:yyyyMMdd}.pdf"; }
+}
+
+/// <summary>Relatórios › Contábeis › Livro Contábil Completo: o usuário escolhe o que entra no livro e o número do livro.</summary>
+public partial class LivrosPdfViewModel(IContexto contexto) : LivroBaseViewModel(contexto)
+{
+    [ObservableProperty] private bool _incluirTermoAbertura = true;
+    [ObservableProperty] private bool _incluirDiario = true;
+    [ObservableProperty] private bool _incluirRazao = true;
+    [ObservableProperty] private bool _incluirBalancete = true;
+    [ObservableProperty] private bool _incluirBalanco = true;
+    [ObservableProperty] private bool _incluirDre = true;
+    [ObservableProperty] private bool _incluirDmpl = true;
+    [ObservableProperty] private bool _incluirDlpa = true;
+    [ObservableProperty] private bool _incluirTermoEncerramento = true;
+    [ObservableProperty] private bool _assinaturaResponsavel = true;
+    [ObservableProperty] private bool _assinaturaContador = true;
+
+    public bool PodeGerar => Contexto.Pode(Permissao.RelatorioDiario) || Contexto.Pode(Permissao.RelatorioRazao)
+                             || Contexto.Pode(Permissao.RelatorioBalancete) || Contexto.Pode(Permissao.RelatorioDemonstracoes);
+
+    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeGerar));
+
+    public OpcoesLivro Opcoes() => new(IncluirTermoAbertura, IncluirDiario, IncluirRazao, IncluirBalancete, IncluirBalanco, IncluirDre,
+                                       IncluirDmpl, IncluirDlpa, IncluirTermoEncerramento,
+                                       new OpcoesAssinatura(AssinaturaResponsavel, AssinaturaContador));
 
     [RelayCommand]
-    private Task DiarioAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private Task GerarLivroAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var (ini, fim) = Periodo();
-        Concluir(await app.Livros.DiarioAsync(empresa, ini, fim,
-            new DadosTermos((int)(NumeroLivro ?? 1), Representante, RepresentanteCpf, Contador, Crc,
-                            string.IsNullOrWhiteSpace(DataArquivamento) ? null : DataArquivamento.Trim()), usuario), Nome($"livro_diario_{NumeroLivro}"));
+        Concluir(await app.Livros.LivroAsync(empresa, ini, fim, Termos(), Opcoes(), usuario), Nome($"livro_contabil_{NumeroLivro}"));
+    });
+}
+
+/// <summary>Relatórios › Contábeis › Termos: Termo de Abertura e Termo de Encerramento do livro, gerados isoladamente.</summary>
+public partial class TermosViewModel(IContexto contexto) : LivroBaseViewModel(contexto)
+{
+    public static IReadOnlyList<string> Livros { get; } = ["Livro Diário", "Livro Contábil Completo"];
+
+    [ObservableProperty] private string _livro = Livros[0];
+    /// <summary>Total de folhas do livro; vazio deixa a linha para preencher à mão.</summary>
+    [ObservableProperty] private decimal? _folhas;
+
+    public bool PodeGerar => Contexto.Pode(Permissao.RelatorioDiario);
+
+    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeGerar));
+
+    private Task GerarAsync(TipoTermo tipo) => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var (ini, fim) = Periodo();
+        var contabil = Livro == Livros[1];
+        Concluir(await app.Livros.TermoIsoladoAsync(empresa, ini, fim, Termos(Folhas is { } f ? (int)f : null), tipo, contabil, usuario),
+                 Nome($"termo_{(tipo == TipoTermo.Abertura ? "abertura" : "encerramento")}_{NumeroLivro}"));
     }, Permissao.RelatorioDiario);
 
-    [RelayCommand]
-    private Task RazaoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var (ini, fim) = Periodo();
-        Concluir(await app.Livros.RazaoAsync(empresa, ini, fim, usuario), Nome("livro_razao"));
-    }, Permissao.RelatorioRazao);
+    [RelayCommand] private Task GerarAberturaAsync() => GerarAsync(TipoTermo.Abertura);
 
-    [RelayCommand]
-    private Task BalanceteAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var (ini, fim) = Periodo();
-        Concluir(await app.Livros.BalanceteAsync(empresa, ini, fim, usuario), Nome("balancete"));
-    }, Permissao.RelatorioBalancete);
-
-    [RelayCommand]
-    private Task DemonstracoesAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var (ini, fim) = Periodo();
-        Concluir(await app.Livros.DemonstracoesAsync(empresa, ini, fim, 3, Assinatura(Contador, string.IsNullOrWhiteSpace(Crc) ? "" : "Contador — CRC " + Crc),
-            Assinatura(Representante, "Representante legal"), usuario), Nome("demonstracoes"));
-    }, Permissao.RelatorioDemonstracoes);
+    [RelayCommand] private Task GerarEncerramentoAsync() => GerarAsync(TipoTermo.Encerramento);
 }
