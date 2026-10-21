@@ -27,7 +27,7 @@ Requisitos de projeto derivados:
 | **Saldos periódicos (I155)** | Mensais, com saldo inicial = saldo final do mês anterior; indicadores D/C; validar continuidade entre ECDs de anos consecutivos (recuperação de saldos da ECD anterior) |
 | **Encerramento** | Lançamentos de zeramento do resultado com `IND_LCTO = 'E'` na data final; I355 com saldos **antes** do encerramento |
 | **Retificação** | ECD substituta só antes do prazo ou com regras específicas; após isso, lançamentos **extemporâneos** (`IND_LCTO = 'X'` + data) |
-| **Assinatura** | Certificado ICP-Brasil do representante legal **e** do contador (CRC ativo); o sistema gera, o PVA assina/transmite |
+| **Assinatura** | Certificado ICP-Brasil do representante legal **e** do contador (CRC ativo); o sistema gera e já assina no formato do PVA (PKCS#7 após o 9999 — ver [05-ecd.md](05-ecd.md)); o PVA valida e transmite |
 | **Demonstrações** | BP e DRE (Lei 6.404/76 art. 178–187; NBC TG 26); DMPL (ou DLPA, quando dispensada a DMPL — art. 186 §2º); DFC obrigatória para S/A fechadas com PL ≥ R$ 2 mi e demais regidas pela lei; DVA só para companhias abertas |
 | **Norma por porte** | NBC TG completa / NBC TG para PMEs / norma para microentidades — o conjunto de demonstrações e notas exigidas varia; parametrizar por empresa |
 | **ECF** | Bloco M (e-Lalur/e-Lacs: parte A adições/exclusões, parte B controle de prejuízos e diferenças temporárias), compensação de prejuízo fiscal limitada a **30%** do lucro ajustado (Lucro Real), recuperação dos saldos da ECD por hash |
