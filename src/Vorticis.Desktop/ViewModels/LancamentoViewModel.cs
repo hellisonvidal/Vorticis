@@ -14,8 +14,9 @@ using Vorticis.Infra;
 namespace Vorticis.Desktop.ViewModels;
 
 /// <summary>
-/// Uma linha da digitação. Em partida dobrada é um lançamento inteiro (débito, crédito e valor); em partida simples
-/// é uma partida (uma conta, D ou C). Todos os campos são texto livre, editados direto pelo teclado.
+/// Uma linha da digitação. Com conta de débito e de crédito é um lançamento inteiro (partida dobrada); com só uma
+/// das contas é uma partida simples, que se junta às demais linhas de uma conta só para formar um único lançamento.
+/// Todos os campos são texto livre, editados direto pelo teclado.
 /// </summary>
 public partial class LinhaLancamentoViewModel : ObservableObject
 {
@@ -26,7 +27,6 @@ public partial class LinhaLancamentoViewModel : ObservableObject
     [ObservableProperty] private string _reduzidoCredito = "";
     [ObservableProperty] private string _contaCredito = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ResumoContas))] private string _nomeContaCredito = "";
-    [ObservableProperty] private string _dc = "D";
     [ObservableProperty] private string _valor = "";
     [ObservableProperty] private string _documento = "";
     [ObservableProperty] private string _codigoHistorico = "";
@@ -57,7 +57,11 @@ public partial class LinhaLancamentoViewModel : ObservableObject
         + (NomeParticipante.Length > 0 ? $"   ·   Participante: {NomeParticipante}" : "");
 
     public decimal? ValorDecimal => Formato.LerValor(Valor);
-    public IndicadorDC? Indicador => Dc.Trim().ToUpperInvariant() switch { "D" => IndicadorDC.D, "C" => IndicadorDC.C, _ => null };
+    public bool TemDebito => Conta.Trim().Length > 0;
+    public bool TemCredito => ContaCredito.Trim().Length > 0;
+    /// <summary>Texto do histórico padrão escolhido (com variáveis {X}) e o último texto que o sistema preencheu a partir dele.</summary>
+    public string? ModeloHistorico { get; set; }
+    public string? HistoricoAutomatico { get; set; }
     public bool Vazia => Conta.Trim().Length == 0 && ContaCredito.Trim().Length == 0 && Valor.Trim().Length == 0;
 
     /// <summary>Valor com separador de milhar e duas casas (1.500,00), aplicado ao sair do campo.</summary>
@@ -83,8 +87,9 @@ public sealed record ContaSelecionavel(string Codigo, string Descricao, int? Red
 
 /// <summary>
 /// Lançamentos › Lançamento contábil, pensado para o teclado: Enter/Tab avançam, seta para baixo na última linha cria
-/// outra, seta para cima numa linha recém-criada e intocada a cancela, Ctrl+Enter salva. O modo (partida dobrada numa
-/// linha ou partida simples em várias) vem de Configurações gerais.
+/// outra, seta para cima numa linha recém-criada e intocada a cancela, Ctrl+Enter salva. O tipo de lançamento é inferido:
+/// uma linha com conta débito e conta crédito é um lançamento (partida dobrada); linhas com uma conta só (débito ou
+/// crédito) são partidas simples que, somadas, precisam fechar (débitos = créditos) para formar um lançamento.
 /// </summary>
 public partial class LancamentoViewModel : ModuloViewModel
 {
@@ -106,7 +111,6 @@ public partial class LancamentoViewModel : ModuloViewModel
     public ObservableCollection<ContaSelecionavel> Contas { get; } = [];
     public IReadOnlyList<ContaSelecionavel> TodasContas => _todasContas;
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PartidaSimples), nameof(DescricaoModo))] private bool _partidaDobrada = true;
     [ObservableProperty] private DateTime? _data = DateTime.Today;
     [ObservableProperty] private LinhaLancamentoViewModel? _linhaSelecionada;
     [ObservableProperty] private ContaSelecionavel? _contaSelecionada;
@@ -114,7 +118,9 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] private string _totalDebito = "0,00";
     [ObservableProperty] private string _totalCredito = "0,00";
     [ObservableProperty] private string _diferenca = "0,00";
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _balanceado;
+    [ObservableProperty] private bool _balanceado;
+    /// <summary>Há algo digitado para salvar (o salvamento confere se fecha e, se faltar a contrapartida, pergunta).</summary>
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _temDados;
     /// <summary>Plano com participantes: a coluna Part. aparece e as contas dos participantes exigem o código.</summary>
     [ObservableProperty] private bool _usaParticipantes;
 
@@ -129,25 +135,22 @@ public partial class LancamentoViewModel : ModuloViewModel
 
     // Alteração de um lançamento efetuado (duplo clique na lista)
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(EmEdicao), nameof(TextoEdicao))] private LancamentoEfetuadoLinha? _editando;
-    private bool _dobradaConfigurada = true;
     public bool EmEdicao => Editando is not null;
     public string TextoEdicao => Editando is { } e
         ? $"Alterando o lançamento nº {e.Numero} de {e.Data}. Ao salvar, o original é estornado e o corrigido é gravado. Limpar cancela a alteração."
         : "";
 
-    public bool PartidaSimples => !PartidaDobrada;
-    public string DescricaoModo => PartidaDobrada
-        ? "Partida dobrada: cada linha é um lançamento (débito, crédito e valor)."
-        : "Partida simples: uma conta por linha (D ou C); o lançamento fecha quando débitos = créditos.";
+    /// <summary>Pede o foco num campo (tag) de uma linha: a tela atende depois que a linha existir.</summary>
+    public event Action<int, string>? FocoSolicitado;
 
-    /// <summary>Troca de empresa: limpa a digitação e recarrega contas, históricos e o modo.</summary>
+    /// <summary>Troca de empresa: limpa a digitação e recarrega contas e históricos.</summary>
     public async Task AoTrocarEmpresaAsync()
     {
         await CarregarAsync();
         Limpar();
     }
 
-    /// <summary>Ao abrir a tela: contas analíticas (com reduzido), históricos padrão e o modo de lançamento.</summary>
+    /// <summary>Ao abrir a tela: contas analíticas (com reduzido), históricos padrão e participantes.</summary>
     public async Task CarregarAsync()
     {
         var geracao = NovaGeracao();
@@ -155,10 +158,8 @@ public partial class LancamentoViewModel : ModuloViewModel
         IReadOnlyList<HistoricoPadrao> historicos = [];
         IReadOnlyList<Participante> participantes = [];
         var usa = false;
-        var modo = ModoLancamento.PartidaDobrada;
         if (Contexto.App is { } app)
         {
-            modo = (await app.ConfiguracoesGerais.ObterAsync()).ModoLancamento;
             if (Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
             {
                 plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
@@ -178,11 +179,8 @@ public partial class LancamentoViewModel : ModuloViewModel
                                       .Concat(participantes.Where(p => p.ControleConta && p.CodigoConta is not null).Select(p => p.CodigoConta!))
                                       .ToHashSet();
         OnPropertyChanged(nameof(TodasContas));
-        _dobradaConfigurada = modo == ModoLancamento.PartidaDobrada;
         if (EmEdicao) { Filtrar(); OnPropertyChanged(nameof(PodeEstornar)); await CarregarEfetuadosAsync(); return; }
-        var trocouModo = PartidaDobrada != _dobradaConfigurada;
-        PartidaDobrada = _dobradaConfigurada;
-        if (trocouModo || Linhas.All(l => l.Vazia)) Limpar();
+        if (Linhas.All(l => l.Vazia)) Limpar();
         Filtrar();
         OnPropertyChanged(nameof(PodeEstornar));
         await CarregarEfetuadosAsync();
@@ -236,7 +234,7 @@ public partial class LancamentoViewModel : ModuloViewModel
 
     /// <summary>
     /// Duplo clique num lançamento efetuado: carrega as partidas na digitação para alterar. Débito e crédito únicos
-    /// cabem numa linha da partida dobrada; os demais abrem em partida simples (uma conta por linha).
+    /// cabem numa linha; os demais abrem com uma conta por linha (partidas simples).
     /// </summary>
     public Task EditarAsync(LancamentoEfetuadoLinha efetuado) => ExecutarAsync(async (app, empresa, usuario) =>
     {
@@ -255,11 +253,10 @@ public partial class LancamentoViewModel : ModuloViewModel
                        && ps[0].Historico == ps[1].Historico && ps[0].CodigoCentroCusto == ps[1].CodigoCentroCusto
                        && ps[0].NumeroArquivo == ps[1].NumeroArquivo;
         Editando = efetuado;
-        PartidaDobrada = _dobradaConfigurada && umaLinha;
         Data = l.Data.ToDateTime(TimeOnly.MinValue);
         Linhas.Clear();
         var data = l.Data.ToString("dd/MM/yyyy");
-        if (PartidaDobrada)
+        if (umaLinha)
             Linhas.Add(new LinhaLancamentoViewModel
             {
                 Data = data, Conta = ps[0].CodigoConta, ContaCredito = ps[1].CodigoConta, Valor = Formato.Moeda(ps[0].Valor),
@@ -270,14 +267,15 @@ public partial class LancamentoViewModel : ModuloViewModel
             foreach (var p in ps)
                 Linhas.Add(new LinhaLancamentoViewModel
                 {
-                    Data = data, Conta = p.CodigoConta, Dc = p.DC.ToString(), Valor = Formato.Moeda(p.Valor),
+                    Data = data, Conta = p.DC == IndicadorDC.D ? p.CodigoConta : "", ContaCredito = p.DC == IndicadorDC.C ? p.CodigoConta : "",
+                    Valor = Formato.Moeda(p.Valor),
                     Documento = p.NumeroArquivo ?? "", Historico = p.Historico, CentroCusto = p.CodigoCentroCusto ?? "",
                     Participante = p.CodigoParticipante ?? "",
                 });
         foreach (var linha in Linhas)                       // reduzidos e nomes das contas
         {
             ConfirmarConta(linha, credito: false);
-            if (PartidaDobrada) ConfirmarConta(linha, credito: true);
+            ConfirmarConta(linha, credito: true);
             if (linha.Participante.Length > 0 && _participantes.TryGetValue(linha.Participante, out var pe)) linha.NomeParticipante = pe.Nome;
         }
         LinhaSelecionada = Linhas[0];
@@ -292,7 +290,7 @@ public partial class LancamentoViewModel : ModuloViewModel
     }
 
     /// <summary>Grava a digitação: inclusão normal ou, em alteração, estorno do original + lançamento corrigido.</summary>
-    private async Task<bool> GravarAsync(VorticisApp app, long empresa, long usuario, IReadOnlyList<LancamentoProposto> propostas)
+    private async Task<bool> GravarAsync(VorticisApp app, long empresa, long usuario, IReadOnlyList<LancamentoProposto> propostas, IReadOnlyList<int> linhasOrigem)
     {
         if (Editando is { } ed)
         {
@@ -305,10 +303,12 @@ public partial class LancamentoViewModel : ModuloViewModel
         var r = await app.Lancamentos.EfetivarLoteAsync(propostas, null, usuario);
         if (!r.Sucesso)
         {
-            // "Lançamento 2: ..." do serviço vira "Linha 2: ..." da tela.
-            // Em partida simples é um lançamento só: sai o prefixo.
+            // "Lançamento 2: ..." do serviço vira "Linha N: ..." da tela (N = linha que originou aquele lançamento).
             foreach (var e in r.Erros)
-                Erros.Add(!e.StartsWith("Lançamento ") ? e : PartidaDobrada ? "Linha " + e["Lançamento ".Length..] : e[(e.IndexOf(": ") + 2)..]);
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(e, @"^Lançamento (\d+): (.*)$");
+                Erros.Add(m.Success && int.Parse(m.Groups[1].Value) is var k && k >= 1 && k <= linhasOrigem.Count ? $"Linha {linhasOrigem[k - 1]}: {m.Groups[2].Value}" : e);
+            }
             return false;
         }
         Mensagem = r.Valor.Count == 1 ? $"Lançamento nº {r.Valor[0].Numero} salvo."
@@ -336,7 +336,7 @@ public partial class LancamentoViewModel : ModuloViewModel
     partial void OnContaSelecionadaChanged(ContaSelecionavel? value)
     {
         if (value is null || LinhaSelecionada is not { } l) return;
-        if (PartidaDobrada && l.Conta.Trim().Length > 0 && l.ContaCredito.Trim().Length == 0) l.ContaCredito = value.Codigo;
+        if (l.Conta.Trim().Length > 0 && l.ContaCredito.Trim().Length == 0) l.ContaCredito = value.Codigo;
         else l.Conta = value.Codigo;
     }
 
@@ -344,20 +344,14 @@ public partial class LancamentoViewModel : ModuloViewModel
     {
         var anterior = Linhas.LastOrDefault();
         var nova = new LinhaLancamentoViewModel { Data = anterior?.Data ?? (Data ?? DateTime.Today).ToString("dd/MM/yyyy") };
-        if (PartidaSimples)
+        // Depois de uma partida simples (uma conta só), repete histórico e documento e sugere o valor que fecha o lançamento.
+        if (anterior is { } ant && !(ant.TemDebito && ant.TemCredito))
         {
-            nova.Historico = anterior?.Historico ?? "";
-            nova.CodigoHistorico = anterior?.CodigoHistorico ?? "";
-            nova.Documento = anterior?.Documento ?? "";
-            nova.Dc = anterior?.Indicador == IndicadorDC.D ? "C" : "D";
-            // Sugere o valor que equilibra o lançamento.
-            var dif = SomaDC(IndicadorDC.D) - SomaDC(IndicadorDC.C);
-            if (dif != 0)
-            {
-                nova.Dc = dif > 0 ? "C" : "D";
-                nova.Valor = Formato.Moeda(Math.Abs(dif));
-            }
+            (nova.Historico, nova.CodigoHistorico, nova.Documento) = (ant.Historico, ant.CodigoHistorico, ant.Documento);
+            (nova.ModeloHistorico, nova.HistoricoAutomatico) = (ant.ModeloHistorico, ant.HistoricoAutomatico);
         }
+        var dif = SomaDebitos() - SomaCreditos();
+        if (dif != 0) nova.Valor = Formato.Moeda(Math.Abs(dif));
         return nova;
     }
 
@@ -373,42 +367,30 @@ public partial class LancamentoViewModel : ModuloViewModel
     /// <summary>Seta para cima numa linha recém-criada e não alterada: desfaz a criação. Retorna se cancelou.</summary>
     public bool CancelarLinhaNova(LinhaLancamentoViewModel linha)
     {
-        if (!linha.Nova || linha.Editada || Linhas.Count <= MinimoLinhas || !ReferenceEquals(linha, Linhas[^1])) return false;
+        if (!linha.Nova || linha.Editada || Linhas.Count <= 1 || !ReferenceEquals(linha, Linhas[^1])) return false;
         Linhas.Remove(linha);
         LinhaSelecionada = Linhas[^1];
         return true;
     }
 
-    private int MinimoLinhas => PartidaDobrada ? 1 : 2;
-
     [RelayCommand]
     private void Limpar()
     {
-        if (Editando is not null)
-        {
-            Editando = null;
-            PartidaDobrada = _dobradaConfigurada;
-        }
+        Editando = null;
         Linhas.Clear();
-        var data = (Data ?? DateTime.Today).ToString("dd/MM/yyyy");
-        if (PartidaDobrada) Linhas.Add(new LinhaLancamentoViewModel { Data = data });
-        else
-        {
-            Linhas.Add(new LinhaLancamentoViewModel { Dc = "D" });
-            Linhas.Add(new LinhaLancamentoViewModel { Dc = "C" });
-        }
+        Linhas.Add(new LinhaLancamentoViewModel { Data = (Data ?? DateTime.Today).ToString("dd/MM/yyyy") });
         LinhaSelecionada = Linhas[0];
     }
 
-    /// <summary>Exclui a linha atual (Ctrl+Delete), mantendo o mínimo do modo.</summary>
+    /// <summary>Exclui a linha atual (Ctrl+Delete); a última linha é apenas esvaziada.</summary>
     [RelayCommand]
     private void ExcluirLinha()
     {
         if (LinhaSelecionada is not { } l) return;
-        if (Linhas.Count <= MinimoLinhas)
+        if (Linhas.Count <= 1)
         {
             var i = Linhas.IndexOf(l);
-            Linhas[i] = PartidaDobrada ? new LinhaLancamentoViewModel { Data = l.Data } : new LinhaLancamentoViewModel { Dc = l.Dc };
+            Linhas[i] = new LinhaLancamentoViewModel { Data = l.Data };
             LinhaSelecionada = Linhas[i];
             return;
         }
@@ -417,27 +399,28 @@ public partial class LancamentoViewModel : ModuloViewModel
         LinhaSelecionada = Linhas[Math.Min(pos, Linhas.Count - 1)];
     }
 
-    [RelayCommand(CanExecute = nameof(Balanceado))]
+    [RelayCommand(CanExecute = nameof(TemDados))]
     private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (PartidaDobrada) await SalvarDobradaAsync(app, empresa, usuario);
-        else await SalvarSimplesAsync(app, empresa, usuario);
-    }, Permissao.LancamentoIncluir);
-
-    private async Task SalvarDobradaAsync(VorticisApp app, long empresa, long usuario)
     {
         var preenchidas = Linhas.Where(l => !l.Vazia).ToList();
         var propostas = new List<LancamentoProposto>();
-        for (var i = 0; i < preenchidas.Count; i++)
+        var linhasOrigem = new List<int>();          // nº da linha da tela que originou cada proposta
+        var simples = new List<LinhaLancamentoViewModel>();
+        foreach (var l in preenchidas)
         {
-            var l = preenchidas[i];
             var n = Linhas.IndexOf(l) + 1;
             var data = Formato.LerData(CompletarData(l.Data));
-            if (data is null) Erros.Add($"Linha {n}: data inválida.");
-            if (l.ValorDecimal is not > 0) Erros.Add($"Linha {n}: informe o valor.");
-            if (l.Conta.Trim().Length == 0) Erros.Add($"Linha {n}: informe a conta débito.");
-            if (l.ContaCredito.Trim().Length == 0) Erros.Add($"Linha {n}: informe a conta crédito.");
-            if (data is null || l.ValorDecimal is not > 0 || l.Conta.Trim().Length == 0 || l.ContaCredito.Trim().Length == 0) continue;
+            var ok = true;
+            if (data is null) { Erros.Add($"Linha {n}: data inválida."); ok = false; }
+            if (l.ValorDecimal is not > 0) { Erros.Add($"Linha {n}: informe o valor."); ok = false; }
+            if (!l.TemDebito && !l.TemCredito) { Erros.Add($"Linha {n}: informe a conta de débito e/ou a de crédito."); ok = false; }
+            foreach (var v in HistoricoPendente(l.Historico))
+            {
+                Erros.Add($"Linha {n}: complete no histórico a variável {{{v}}}.");
+                ok = false;
+            }
+            if (!ok) continue;
+            if (!(l.TemDebito && l.TemCredito)) { simples.Add(l); continue; }
             var cc = string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim();
             var (partD, partC) = (Part(l, l.Conta), Part(l, l.ContaCredito));
             if (l.Participante.Trim().Length > 0 && partD is null && partC is null)
@@ -445,38 +428,58 @@ public partial class LancamentoViewModel : ModuloViewModel
                 Erros.Add($"Linha {n}: participante informado, mas nenhuma das contas controla participantes.");
                 continue;
             }
-            propostas.Add(new LancamentoProposto(empresa, data.Value, OrigemLancamento.Manual,
+            propostas.Add(new LancamentoProposto(empresa, data!.Value, OrigemLancamento.Manual,
             [
-                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal.Value, l.Historico.Trim(), cc, partD, Doc(l)),
+                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal!.Value, l.Historico.Trim(), cc, partD, Doc(l)),
                 new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc, partC, Doc(l)),
             ]));
+            linhasOrigem.Add(n);
         }
         if (Erros.Count > 0) return;
-        if (propostas.Count == 0) { Erros.Add("Digite ao menos um lançamento."); return; }
-        if (!await GravarAsync(app, empresa, usuario, propostas)) return;
+        if (preenchidas.Count == 0) { Erros.Add("Digite ao menos um lançamento."); return; }
+
+        // Linhas de uma conta só (partidas simples): juntas formam um único lançamento, que precisa fechar.
+        if (simples.Count > 0)
+        {
+            var datas = simples.Select(l => Formato.LerData(CompletarData(l.Data))!.Value).Distinct().ToList();
+            if (datas.Count > 1)
+            {
+                Erros.Add("As linhas com uma conta só formam um único lançamento e devem ter a mesma data.");
+                return;
+            }
+            var (d, c) = (simples.Where(l => l.TemDebito).Sum(l => l.ValorDecimal!.Value), simples.Where(l => l.TemCredito).Sum(l => l.ValorDecimal!.Value));
+            if (d != c)
+            {
+                if (d == 0 || c == 0) await PerguntarContrapartidaAsync(somenteDebito: c == 0, d + c);
+                else Erros.Add($"Débitos ({Formato.Moeda(d)}) e créditos ({Formato.Moeda(c)}) não fecham: diferença de {Formato.Moeda(Math.Abs(d - c))}.");
+                return;
+            }
+            propostas.Add(new LancamentoProposto(empresa, datas[0], OrigemLancamento.Manual,
+                simples.Select(l => new PartidaProposta(l.TemDebito ? l.Conta.Trim() : l.ContaCredito.Trim(), l.TemDebito ? IndicadorDC.D : IndicadorDC.C,
+                    l.ValorDecimal!.Value, l.Historico.Trim(), string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(),
+                    PartSimples(l), Doc(l))).ToArray()));
+            linhasOrigem.Add(Linhas.IndexOf(simples[0]) + 1);
+        }
+        if (!await GravarAsync(app, empresa, usuario, propostas, linhasOrigem)) return;
         var ultimaData = preenchidas[^1].Data;
         Limpar();
         Linhas[0].Data = ultimaData;
         await CarregarEfetuadosAsync();
-    }
+    }, Permissao.LancamentoIncluir);
 
-    private async Task SalvarSimplesAsync(VorticisApp app, long empresa, long usuario)
+    /// <summary>
+    /// Só há débito (ou só crédito): avisa que falta a contrapartida e, se o usuário quiser, cria a linha complementar já
+    /// com o valor que fecha. Nada é gravado desbalanceado.
+    /// </summary>
+    private async Task PerguntarContrapartidaAsync(bool somenteDebito, decimal valor)
     {
-        var preenchidas = Linhas.Where(l => !l.Vazia).ToArray();
-        var problemas = preenchidas.Select(l => (l, n: Linhas.IndexOf(l) + 1)).Select(x =>
-                x.l.Indicador is null ? $"Linha {x.n}: indique D ou C."
-                : x.l.ValorDecimal is not > 0 ? $"Linha {x.n}: valor inválido."
-                : x.l.Conta.Trim().Length == 0 ? $"Linha {x.n}: informe a conta." : null)
-            .OfType<string>().ToArray();
-        if (problemas.Length > 0) { foreach (var p in problemas) Erros.Add(p); return; }
-        if (preenchidas.Length < 2) { Erros.Add("Em partida simples o lançamento tem no mínimo 2 linhas."); return; }
-
-        var proposta = new LancamentoProposto(empresa, Data(Data, DateOnly.FromDateTime(DateTime.Today)), OrigemLancamento.Manual,
-            preenchidas.Select(l => new PartidaProposta(l.Conta.Trim(), l.Indicador!.Value, l.ValorDecimal!.Value, l.Historico.Trim(),
-                string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(), PartSimples(l), Doc(l))).ToArray());
-        if (!await GravarAsync(app, empresa, usuario, [proposta])) return;
-        Limpar();
-        await CarregarEfetuadosAsync();
+        var (tem, falta) = somenteDebito ? ("débito", "crédito") : ("crédito", "débito");
+        if (!await Contexto.ConfirmarAsync("Lançamento incompleto",
+                $"O lançamento tem apenas {tem} ({Formato.Moeda(valor)}): falta o {falta} complementar. " +
+                $"Um lançamento só é efetivado com débitos e créditos iguais.\n\nIncluir agora a linha do {falta}?",
+                $"Incluir {falta}", "Voltar")) return;
+        var nova = AdicionarLinha();
+        FocoSolicitado?.Invoke(Linhas.IndexOf(nova), somenteDebito ? "contacredito" : "conta");
     }
 
     /// <summary>Participante da partida: só nas contas que controlam participantes (plano com participantes).</summary>
@@ -507,27 +510,19 @@ public partial class LancamentoViewModel : ModuloViewModel
         };
     }
 
-    private decimal SomaDC(IndicadorDC dc) => Linhas.Where(l => l.Indicador == dc).Sum(l => l.ValorDecimal ?? 0);
+    private decimal SomaDebitos() => Linhas.Where(l => l.TemDebito).Sum(l => l.ValorDecimal ?? 0);
+    private decimal SomaCreditos() => Linhas.Where(l => l.TemCredito).Sum(l => l.ValorDecimal ?? 0);
 
     private void Recalcular()
     {
-        if (PartidaDobrada)
-        {
-            var total = Linhas.Where(l => !l.Vazia).Sum(l => l.ValorDecimal ?? 0);
-            TotalDebito = TotalCredito = Formato.Moeda(total);
-            Diferenca = Formato.Moeda(0);
-            Balanceado = Linhas.Any(l => !l.Vazia && l.ValorDecimal > 0 && l.Conta.Trim().Length > 0 && l.ContaCredito.Trim().Length > 0);
-            return;
-        }
-        var d = SomaDC(IndicadorDC.D);
-        var c = SomaDC(IndicadorDC.C);
+        var d = SomaDebitos();
+        var c = SomaCreditos();
         TotalDebito = Formato.Moeda(d);
         TotalCredito = Formato.Moeda(c);
         Diferenca = Formato.Moeda(d - c);
         Balanceado = d == c && d > 0;
+        TemDados = Linhas.Any(l => !l.Vazia);
     }
-
-    partial void OnPartidaDobradaChanged(bool value) => Recalcular();
 
     private void AoMudarLinhas(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -567,9 +562,15 @@ public partial class LancamentoViewModel : ModuloViewModel
                             ? _participantes.TryGetValue(cp, out var pa) ? pa.Nome : "participante não encontrado" : "";
                         break;
                     case nameof(LinhaLancamentoViewModel.CodigoHistorico):
-                        if (_historicos.TryGetValue(l.CodigoHistorico.Trim(), out var h)) l.Historico = h.Descricao.TrimEnd() + " ";
+                        if (_historicos.TryGetValue(l.CodigoHistorico.Trim(), out var h)) EscolherHistorico(l, h);
+                        break;
+                    case nameof(LinhaLancamentoViewModel.Documento) or nameof(LinhaLancamentoViewModel.Valor) or nameof(LinhaLancamentoViewModel.Data):
+                        ReaplicarHistorico(l);
                         break;
                 }
+                if (e.PropertyName is nameof(LinhaLancamentoViewModel.Conta) or nameof(LinhaLancamentoViewModel.ContaCredito)
+                    or nameof(LinhaLancamentoViewModel.Reduzido) or nameof(LinhaLancamentoViewModel.ReduzidoCredito)
+                    or nameof(LinhaLancamentoViewModel.Participante)) ReaplicarHistorico(l);
             }
             finally { _resolvendo = false; }
         }
@@ -593,8 +594,58 @@ public partial class LancamentoViewModel : ModuloViewModel
             else (l.Conta, l.Reduzido, l.NomeConta) = (codigo, reduzido, nome);
         }
         finally { _resolvendo = false; }
+        ReaplicarHistorico(l);
         Recalcular();
     }
+
+    // ------------------------------------------------------------------ variáveis do histórico padrão
+
+    /// <summary>Dados da linha que preenchem as variáveis do histórico ({DOCUMENTO}, {VALOR}, {CONTA}...).</summary>
+    private ContextoHistorico ContextoDe(LinhaLancamentoViewModel l)
+    {
+        var texto = l.Data.Trim().Length > 0 ? l.Data : (Data ?? DateTime.Today).ToString("dd/MM/yyyy");
+        var conta = _porCodigo.TryGetValue(l.Conta.Trim(), out var cd) ? cd.Descricao
+                  : _porCodigo.TryGetValue(l.ContaCredito.Trim(), out var cc) ? cc.Descricao : null;
+        var part = _participantes.TryGetValue(l.Participante.Trim(), out var p) ? p.Nome : null;
+        return new ContextoHistorico(l.Documento, part, Formato.LerData(CompletarData(texto)), conta, l.ValorDecimal);
+    }
+
+    /// <summary>Histórico padrão escolhido: substitui as variáveis pelos dados da linha; as que faltam ficam {entre chaves} para completar.</summary>
+    private void EscolherHistorico(LinhaLancamentoViewModel l, HistoricoPadrao h)
+    {
+        if (!VariaveisHistorico.TemVariaveis(h.Descricao))
+        {
+            (l.ModeloHistorico, l.HistoricoAutomatico) = (null, null);
+            l.Historico = h.Descricao.TrimEnd() + " ";
+            return;
+        }
+        l.ModeloHistorico = h.Descricao;
+        l.HistoricoAutomatico = null;
+        ReaplicarHistorico(l, forcar: true);
+    }
+
+    /// <summary>
+    /// Refaz o texto do histórico quando os dados da linha mudam (documento, valor, conta...), desde que o usuário
+    /// não tenha mexido no texto preenchido pelo sistema.
+    /// </summary>
+    private void ReaplicarHistorico(LinhaLancamentoViewModel l, bool forcar = false)
+    {
+        if (l.ModeloHistorico is not { Length: > 0 } modelo) return;
+        if (!forcar && l.Historico != l.HistoricoAutomatico) return;
+        var texto = VariaveisHistorico.Aplicar(modelo, ContextoDe(l)).Texto;
+        l.HistoricoAutomatico = texto;
+        if (l.Historico != texto)
+        {
+            var antes = _resolvendo;
+            _resolvendo = true;
+            try { l.Historico = texto; }
+            finally { _resolvendo = antes; }
+        }
+    }
+
+    /// <summary>Variáveis conhecidas que ainda estão sem preencher no texto do histórico.</summary>
+    private static IEnumerable<string> HistoricoPendente(string historico) =>
+        VariaveisHistorico.Usadas(historico).Where(n => VariaveisHistorico.Todas.Any(v => v.Nome == n));
 
     /// <summary>Código digitado, reduzido ou nome (único ou parte única) → (código, reduzido, nome da conta).</summary>
     private (string Codigo, string Reduzido, string Nome) Resolver(string texto)

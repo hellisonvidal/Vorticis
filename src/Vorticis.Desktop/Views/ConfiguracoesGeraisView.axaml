@@ -7,26 +7,7 @@
   <StackPanel Margin="12" Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
     <TextBlock Classes="titulo" Text="Configurações gerais" />
     <TextBlock Text="Somente o administrador altera estas configurações." Classes="erro" IsVisible="{Binding !PodeAlterar}" />
-    <StackPanel Spacing="8" IsEnabled="{Binding PodeAlterar}">
-      <TextBlock Text="Tipo de contabilização (tela de lançamento)" FontWeight="SemiBold" Foreground="#1F3A5F" />
-      <RadioButton GroupName="modo" IsChecked="{Binding PartidaDobrada}">
-        <StackPanel>
-          <TextBlock Text="Partida dobrada — uma linha por lançamento" FontWeight="SemiBold" />
-          <TextBlock Text="Data · conta débito · conta crédito · valor · histórico na mesma linha. Ideal para digitar muitos lançamentos simples em sequência."
-                     FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
-        </StackPanel>
-      </RadioButton>
-      <RadioButton GroupName="modo" IsChecked="{Binding PartidaSimples}">
-        <StackPanel>
-          <TextBlock Text="Partida simples — uma linha por conta (no mínimo 2 linhas)" FontWeight="SemiBold" />
-          <TextBlock Text="Cada linha tem uma conta com D ou C; o lançamento é salvo quando débitos = créditos. Permite lançamentos com várias contas (rateios, folha, impostos)."
-                     FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
-        </StackPanel>
-      </RadioButton>
-      <Button Content="Salvar" Command="{Binding SalvarCommand}" Classes="accent" Margin="0,6,0,0" />
-    </StackPanel>
-
-    <StackPanel Spacing="8" Margin="0,16,0,0" IsVisible="{Binding PodeAlterar}">
+    <StackPanel Spacing="8" IsVisible="{Binding PodeAlterar}">
       <TextBlock Text="Senha de administrador" FontWeight="SemiBold" Foreground="#1F3A5F" />
       <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
                  Text="Pedida para restaurar backups e limpar o banco de dados. A senha inicial é VORTICIS — troque-a." />
