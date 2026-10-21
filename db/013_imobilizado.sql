@@ -1,5 +1,5 @@
 -- =============================================================================
--- Perseus Contábil — Migração 013: Imobilizado
+-- Vorticis Contábil — Migração 013: Imobilizado
 --   * Grupos de bens com a taxa fiscal de depreciação da RFB (IN RFB 1.700/2017,
 --     Anexo III; RIR/2018 arts. 317 a 330) e contas contábeis sugeridas.
 --   * Cadastro de bens por empresa: custo, valor residual, vida útil estimada e
@@ -88,7 +88,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM core.empresa WHERE id = p_empresa) THEN
         RAISE EXCEPTION 'Empresa % não encontrada', p_empresa;
     END IF;
-    PERFORM set_config('perseus.excluindo_empresa', p_empresa::text, true);
+    PERFORM set_config('vorticis.excluindo_empresa', p_empresa::text, true);
 
     SELECT count(*) INTO v_lancamentos FROM contabil.lancamento WHERE empresa_id = p_empresa;
     DELETE FROM imobilizado.depreciacao WHERE bem_id IN (SELECT id FROM imobilizado.bem WHERE empresa_id = p_empresa);
@@ -110,6 +110,6 @@ BEGIN
     DELETE FROM core.estabelecimento WHERE empresa_id = p_empresa;
     DELETE FROM core.empresa WHERE id = p_empresa;
 
-    PERFORM set_config('perseus.excluindo_empresa', '', true);
+    PERFORM set_config('vorticis.excluindo_empresa', '', true);
     RETURN v_lancamentos;
 END $$;

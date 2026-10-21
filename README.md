@@ -1,4 +1,4 @@
-# Perseus Contábil
+# Vorticis Contábil
 
 Sistema de Escrituração Fiscal Contábil para empresas brasileiras (Simples Nacional, Lucro Presumido e Lucro Real): contabilidade, documentos fiscais, conciliação bancária, demonstrações, SPED (ECD/ECF), folha de pagamento e eSocial.
 
@@ -17,49 +17,49 @@ Ver o [roadmap](docs/04-roadmap.md).
 ## Estrutura
 
 ```
-db/                         Migrações SQL (fonte única; embutidas no Perseus.Infra) e testes SQL
-src/Perseus.Domain          Regras puras: validação de lançamentos, estorno, balancete, rateio, CNPJ
-src/Perseus.Application     Casos de uso (ServicoLancamento, ServicoPeriodo, ServicoRelatorios, ServicoEmpresa) e portas
-src/Perseus.Infra           PostgreSQL (Npgsql), migrador, plano de contas modelo
-src/Perseus.Desktop         Interface Avalonia (MVVM)
+db/                         Migrações SQL (fonte única; embutidas no Vorticis.Infra) e testes SQL
+src/Vorticis.Domain          Regras puras: validação de lançamentos, estorno, balancete, rateio, CNPJ
+src/Vorticis.Application     Casos de uso (ServicoLancamento, ServicoPeriodo, ServicoRelatorios, ServicoEmpresa) e portas
+src/Vorticis.Infra           PostgreSQL (Npgsql), migrador, plano de contas modelo
+src/Vorticis.Desktop         Interface Avalonia (MVVM)
 tests/                      Unitários, integração com PostgreSQL e testes de interface headless
 docs/                       Arquitetura, regras, desafios fiscais, roadmap
 ```
 
 ## Instalar (usuário final, Windows 10/11 64 bits)
 
-1. Baixe `Setup-PerseusContabil-<versão>.exe` (artefato **Setup-PerseusContabil** da execução mais recente do CI, na aba *Actions* do GitHub).
+1. Baixe `Setup-VorticisContabil-<versão>.exe` (artefato **Setup-VorticisContabil** da execução mais recente do CI, na aba *Actions* do GitHub).
 2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
-3. Abra o Perseus Contábil. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador.
+3. Abra o Vorticis Contábil. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador.
 
-Não é preciso instalar nem configurar o PostgreSQL: o instalador traz os binários oficiais do PostgreSQL 16 (pasta `pgsql`), e o Perseus
+Não é preciso instalar nem configurar o PostgreSQL: o instalador traz os binários oficiais do PostgreSQL 16 (pasta `pgsql`), e o Vorticis
 cuida do resto:
 
 | Item | Como funciona |
 |---|---|
-| Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Perseus\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Perseus\perseus.json` |
-| Execução | O servidor sobe quando o Perseus abre e para quando ele fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
+| Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Vorticis\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Vorticis\vorticis.json` |
+| Execução | O servidor sobe quando o Vorticis abre e para quando ele fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
 | Segurança | Nenhum serviço do Windows nem privilégio de administrador; outros usuários do Windows não leem a senha |
 | Atualização | Basta rodar o instalador novo: ele para o banco, troca os arquivos e preserva os dados |
-| Desinstalação | Remove o programa, **não** os dados (`%LOCALAPPDATA%\Perseus`) — apague a pasta manualmente se quiser |
+| Desinstalação | Remove o programa, **não** os dados (`%LOCALAPPDATA%\Vorticis`) — apague a pasta manualmente se quiser |
 | Backup | *Configurações › Backup e restauração* usa o `pg_dump`/`pg_restore` que acompanham o programa |
 | Rede | Para vários computadores usarem o mesmo banco, *Configurações › Conexão* aceita um servidor PostgreSQL; o botão "Usar o banco local" volta ao banco embutido |
 
-Também há o artefato **PerseusContabil-portatil** (pasta com `PerseusContabil.exe` + `pgsql`): descompacte e execute, sem instalar.
+Também há o artefato **VorticisContabil-portatil** (pasta com `VorticisContabil.exe` + `pgsql`): descompacte e execute, sem instalar.
 
 ## Executar (desenvolvimento)
 
-Pré-requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download) e PostgreSQL 16+ (ou `PERSEUS_PG_EMBUTIDO_BIN` apontando para a pasta `bin` de um PostgreSQL, para usar o modo banco local).
+Pré-requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download) e PostgreSQL 16+ (ou `VORTICIS_PG_EMBUTIDO_BIN` apontando para a pasta `bin` de um PostgreSQL, para usar o modo banco local).
 
 ```bash
-# conexão (opcional; padrão: Host=localhost;Database=perseus;Username=perseus;Password=perseus)
-set PERSEUS_DB=Host=localhost;Database=perseus;Username=postgres;Password=suasenha     # Windows (cmd)
-export PERSEUS_DB="Host=localhost;Database=perseus;Username=postgres;Password=suasenha" # Linux/macOS
+# conexão (opcional; padrão: Host=localhost;Database=vorticis;Username=vorticis;Password=vorticis)
+set VORTICIS_DB=Host=localhost;Database=vorticis;Username=postgres;Password=suasenha     # Windows (cmd)
+export VORTICIS_DB="Host=localhost;Database=vorticis;Username=postgres;Password=suasenha" # Linux/macOS
 
-dotnet run --project src/Perseus.Desktop
+dotnet run --project src/Vorticis.Desktop
 ```
 
-Sem `PERSEUS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. A janela sempre abre maximizada. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Perseus abre a tela de conexão; a configuração fica em `%APPDATA%\Perseus\perseus.json`, com a senha cifrada por DPAPI no Windows.
+Sem `VORTICIS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. A janela sempre abre maximizada. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Vorticis abre a tela de conexão; a configuração fica em `%APPDATA%\Vorticis\vorticis.json`, com a senha cifrada por DPAPI no Windows.
 
 ### Usuários e perfis de acesso
 
@@ -75,11 +75,11 @@ O administrador cria **perfis** marcando função a função o que cada um liber
 
 Perfis padrão (não excluíveis): **Administrador** (todas as funções, sempre, e a administração do sistema: empresas, usuários, perfis, conexão e backup), **Contador** (todas as funções contábeis), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
 
-Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso` (aba *Registro de acessos*). Na tela de entrada, **Salvar login neste computador** guarda usuário e senha em `%APPDATA%\Perseus\login.json`, com a senha cifrada pelo Windows (DPAPI, só o mesmo usuário do Windows consegue ler); não use em computadores compartilhados.
+Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso` (aba *Registro de acessos*). Na tela de entrada, **Salvar login neste computador** guarda usuário e senha em `%APPDATA%\Vorticis\login.json`, com a senha cifrada pelo Windows (DPAPI, só o mesmo usuário do Windows consegue ler); não use em computadores compartilhados.
 
 ### Livros, demonstrações e encerramento
 
-- *Relatórios › Livros e relatórios em PDF*: Livro Diário com termos de abertura e encerramento (ITG 2000: folhas numeradas, identificação da entidade, assinaturas do representante legal e do contador — o número de folhas do termo é calculado após a montagem), Livro Razão de todas as contas com movimento, Balancete e Balanço/DRE. Gerados com PDFsharp/MigraDoc (MIT) e fonte Liberation Sans embutida (SIL OFL 1.1, ver `src/Perseus.Infra/Dados/Fontes/OFL.txt`).
+- *Relatórios › Livros e relatórios em PDF*: Livro Diário com termos de abertura e encerramento (ITG 2000: folhas numeradas, identificação da entidade, assinaturas do representante legal e do contador — o número de folhas do termo é calculado após a montagem), Livro Razão de todas as contas com movimento, Balancete e Balanço/DRE. Gerados com PDFsharp/MigraDoc (MIT) e fonte Liberation Sans embutida (SIL OFL 1.1, ver `src/Vorticis.Infra/Dados/Fontes/OFL.txt`).
 - *Relatórios › Balanço Patrimonial e DRE*: estrutura do plano da empresa até o nível escolhido; antes do encerramento, o resultado do período aparece destacado no PL para o balanço fechar; a DRE ignora os lançamentos de encerramento.
 - *Relatórios › DMPL e DLPA* (modelos do CFC; NBC TG 26; Lei 6.404, art. 186): as contas do PL são enquadradas nas colunas (capital social, reservas de capital, ajustes de avaliação patrimonial, reservas de lucros, ações/quotas em tesouraria, lucros ou prejuízos acumulados) pela descrição; a implantação de saldos compõe a abertura; as mutações do período são classificadas pela contrapartida (integralização de capital, aumento de capital com reservas, constituição e reversão de reservas, dividendos, outras); o lucro líquido é o da DRE, de modo que o saldo final confere com o Balanço. A DLPA mostra saldo inicial, lucro, saldo à disposição e destinações. Exporta para PDF, Excel e CSV.
 - *Lançamentos › Encerramento do exercício*: zera as contas de resultado contra a Apuração do Resultado e transfere o lucro/prejuízo ao PL, em 31/12, com IND_LCTO = E (ECD). "Desfazer" estorna os dois lançamentos para permitir ajustes.
@@ -103,12 +103,12 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - **Consultas › Diferenças de saldos:** saldo de cada conta no início e no fim do período e a diferença, com alertas de débitos ≠ créditos, saldo contrário à natureza e divergências internas (partidas × saldos mensais).
 - **Livro Razão:** painel com as contas analíticas — clique numa conta para ver o razão no período (aceita também o código reduzido).
 - **Fechar o sistema pede confirmação.**
-- **Configurações gerais › Limpar banco de dados** (NÃO recomendado, só administrador): exige digitar LIMPAR e, em seguida, a **senha de administrador** (padrão `PERSEUS`, alterável em Configurações gerais); gera um backup antes, apaga empresas, cadastros, usuários e perfis personalizados e **volta à tela de login**, onde se entra com o administrador padrão **ADMIN / PERSEUS** (troca de senha obrigatória no primeiro acesso).
+- **Configurações gerais › Limpar banco de dados** (NÃO recomendado, só administrador): exige digitar LIMPAR e, em seguida, a **senha de administrador** (padrão `VORTICIS`, alterável em Configurações gerais); gera um backup antes, apaga empresas, cadastros, usuários e perfis personalizados e **volta à tela de login**, onde se entra com o administrador padrão **ADMIN / VORTICIS** (troca de senha obrigatória no primeiro acesso).
 - **Configurações › Certificados digitais** (só administrador): repositório dos certificados para comunicação com órgãos públicos. **A1** (.pfx/.p12): *Conferir* mostra titular, CNPJ/CPF e validade; *Importar* guarda o arquivo no banco como está, protegido pela própria senha (a senha não é gravada — é pedida no uso). **A3** (token/cartão): *Ler certificados instalados no Windows* e *Registrar A3*. A lista avisa os certificados vencidos ou que vencem em até 30 dias.
 - **Inscrição estadual:** se a consulta não encontrar inscrição para o CNPJ na UF, o campo é preenchido com **ISENTO** automaticamente.
 - **Consultas** (menu próprio): *Saldos de contas* (saldo de cada conta numa data, com filtro por código/nome) e *Lançamentos* (por período, filtrando por conta, texto do histórico, valor ou número) — respostas rápidas sem gerar relatório.
 - **Relatórios na tela:** Balancete, Razão, Diário e Balanço/DRE são sempre exibidos na tela, com os botões **PDF**, **Excel (.xlsx)** e **CSV** (abre no Excel em pt-BR). A exportação exige a permissão *Exportar relatórios*.
-- **Ajuda › Licença e registro:** para quem o Perseus está registrado (titular, CPF/CNPJ, e-mail — o administrador registra) e as licenças dos componentes de terceiros.
+- **Ajuda › Licença e registro:** para quem o Vorticis está registrado (titular, CPF/CNPJ, e-mail — o administrador registra) e as licenças dos componentes de terceiros.
 - **Configurações › Conexão com o banco de dados:** permite editar a conexão a qualquer momento — banco local (porta, troca da senha, pasta dos dados) ou servidor PostgreSQL (servidor, porta, banco, usuário, senha, com *Mostrar senhas* e *Testar conexão*).
 
 ### Imobilizado
@@ -128,7 +128,7 @@ Cada importação é uma função própria no menu Integrações › Importar.
 - **Planilhas** (Excel .xlsx ou CSV): o usuário cria **layouts personalizados** dizendo qual coluna da planilha é a data, a conta débito/crédito (ou conta fixa), o valor, o histórico, o documento e o centro de custo. Dois modelos: *uma linha por lançamento* (débito e crédito na mesma linha; valor negativo inverte) ou *uma linha por partida* (conta + D/C + valor, ou colunas de valor a débito e a crédito, agrupadas pelo nº do lançamento ou até débitos = créditos). Opcionalmente converte os códigos de conta por uma máscara (11010001 → 1.1.01.0001). Os layouts ficam salvos no banco e servem a todas as empresas.
 - **Extratos bancários (OFX)**: lê o extrato do internet banking; cada movimento vira um lançamento contra a conta contábil do banco, com contrapartida padrão para entradas e saídas (editável linha a linha). Movimentos já importados (banco/agência/conta/FITID) não são duplicados; se o lançamento for estornado, pode ser importado de novo.
 - Na importação de planilhas, **Carregar** mostra a planilha como está no arquivo (até 200 linhas), ao lado do layout: o cabeçalho de cada coluna indica o papel definido (Data, Conta débito, Valor...), para conferir antes de importar.
-- **Lançamentos contábeis**: layout padrão do Perseus (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), com botão para gerar a planilha modelo.
+- **Lançamentos contábeis**: layout padrão do Vorticis (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), com botão para gerar a planilha modelo.
 - Em todas, **Pré-visualizar** valida cada lançamento (contas analíticas, período aberto, partidas dobradas) e **Importar** grava tudo numa única transação — se um falhar, nenhum é gravado.
 - **Plano de contas**: importa um plano modelo de planilha (código e descrição obrigatórios; natureza, tipo S/A e saldo D/C lidos ou deduzidos), convertendo os códigos para a **máscara escolhida** (ex.: `9.9.99.999`: 1.1.1.1 → 1.1.01.001; 1101001 → 1.1.01.001). Substitui o plano só enquanto não há lançamentos. *Converter plano atual para a máscara* troca os códigos das contas existentes, mesmo com movimento (lançamentos e hierarquia não mudam).
 - **Vínculo ao plano referencial** também fica em Integrações › Importar.
@@ -145,11 +145,11 @@ Cada importação é uma função própria no menu Integrações › Importar.
 1. **Integrações › Importar › Plano referencial da RFB** (administrador): importe a tabela oficial do plano referencial para o tipo de plano (ex.: *PJ em geral – Lucro Real*) e o ano. Obtenha o arquivo no portal do SPED (tabelas da ECD/ECF) ou no programa validador; ele precisa de uma primeira linha de cabeçalho com ao menos `CODIGO` e `DESCRICAO` (`TIPO`, `COD_SUP`, `NIVEL`, `COD_NAT`, `DT_INI`, `DT_FIM` são usados quando existem; separador `|`, `;`, tab ou vírgula; UTF-8 ou ISO-8859-1). Reimportar atualiza a tabela sem perder vínculos.
 2. **Integrações › Importar › Vínculo ao plano referencial**: escolha o plano do exercício e vincule cada conta analítica a uma referencial analítica de mesma natureza (ECD I051). *Sugerir vínculos* propõe pela semelhança das descrições (o contador confirma); *Copiar do ano anterior* reaproveita os vínculos. Contas com movimento ou saldo sem vínculo aparecem como pendências que impedem a ECD.
 
-O Perseus não traz a tabela embutida: ela é oficial, muda a cada ano e deve vir da RFB. Os testes usam uma tabela **fictícia**.
+O Vorticis não traz a tabela embutida: ela é oficial, muda a cada ano e deve vir da RFB. Os testes usam uma tabela **fictícia**.
 
 ### Backup e restauração
 
-*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado). Por padrão elas ficam na pasta **Backups dentro do diretório de instalação** do programa (criada pelo instalador; se não puder ser gravada, `Documentos\Perseus Contabil\Backups`); *Escolher pasta...* grava outra pasta para os próximos backups, inclusive os automáticos. *Excluir backup selecionado* apaga um arquivo de backup (com confirmação). A restauração pede confirmação com a **senha de administrador** (padrão `PERSEUS`), gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `PERSEUS_PG_BIN`).
+*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado). Por padrão elas ficam na pasta **Backups dentro do diretório de instalação** do programa (criada pelo instalador; se não puder ser gravada, `Documentos\Vorticis Contabil\Backups`); *Escolher pasta...* grava outra pasta para os próximos backups, inclusive os automáticos. *Excluir backup selecionado* apaga um arquivo de backup (com confirmação). A restauração pede confirmação com a **senha de administrador** (padrão `VORTICIS`), gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `VORTICIS_PG_BIN`).
 
 ### Consulta de CNPJ
 
@@ -163,26 +163,26 @@ O job `instalador-windows` do CI faz tudo em um Windows limpo (o ícone do progr
 
 1. `instalador/baixar-postgresql.ps1` baixa os binários oficiais do PostgreSQL 16 para Windows (EDB) e monta `pgsql` (só `bin`, `lib`, `share` + runtime do Visual C++);
 2. roda o teste do banco embutido no Windows (`ServidorEmbutidoTests`: initdb, start, migrações, reinício, stop);
-3. publica `PerseusContabil.exe` (arquivo único, sem exigir .NET instalado) com a pasta `pgsql` ao lado;
-4. compila `instalador/PerseusContabil.iss` com o Inno Setup → `Setup-PerseusContabil-<versão>.exe`;
+3. publica `VorticisContabil.exe` (arquivo único, sem exigir .NET instalado) com a pasta `pgsql` ao lado;
+4. compila `instalador/VorticisContabil.iss` com o Inno Setup → `Setup-VorticisContabil-<versão>.exe`;
 5. `instalador/teste-instalacao.ps1` instala em modo silencioso, abre o programa e confere que o banco foi criado, migrado e parado ao fechar.
 
 Localmente (Windows, com Inno Setup 6):
 
 ```powershell
 ./instalador/baixar-postgresql.ps1 -Destino pgsql
-dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+dotnet publish src/Vorticis.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 Move-Item pgsql publish/pgsql
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=0.4.0 instalador/PerseusContabil.iss   # gera saida\Setup-PerseusContabil-0.4.0.exe
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=0.4.0 instalador/VorticisContabil.iss   # gera saida\Setup-VorticisContabil-0.4.0.exe
 ```
 
 ## Testes
 
 ```bash
 dotnet test                                    # unitários (sempre) + integração/UI (se houver banco)
-export PERSEUS_TEST_PG="Host=localhost;Username=postgres;Password=postgres;Database=postgres"
+export VORTICIS_TEST_PG="Host=localhost;Username=postgres;Password=postgres;Database=postgres"
 dotnet test                                    # agora inclui integração e interface
-export PERSEUS_SCREENSHOTS=/caminho/pasta      # opcional: salva PNG de cada aba no teste de interface
+export VORTICIS_SCREENSHOTS=/caminho/pasta      # opcional: salva PNG de cada aba no teste de interface
 ```
 
 Os testes de integração criam e apagam um banco temporário por classe de teste.

@@ -1,24 +1,24 @@
-﻿# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Perseus e confere que o banco local foi
+﻿# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Vorticis e confere que o banco local foi
 # criado, iniciado e migrado sem nenhuma configuração; depois fecha o programa e confere que o banco foi parado.
 # Requer Windows PowerShell 5.1 (DPAPI via System.Security).
 param([Parameter(Mandatory)] [string]$Setup)
 $ErrorActionPreference = "Stop"
 
-$log = Join-Path $env:TEMP "perseus-setup.log"
+$log = Join-Path $env:TEMP "vorticis-setup.log"
 $p = Start-Process $Setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/LOG=`"$log`"" -Wait -PassThru
 if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40; throw "Instalador terminou com código $($p.ExitCode)" }
 
-$pasta = Join-Path $env:LOCALAPPDATA "Programs\Perseus Contabil"
-$app = Join-Path $pasta "PerseusContabil.exe"
+$pasta = Join-Path $env:LOCALAPPDATA "Programs\Vorticis Contabil"
+$app = Join-Path $pasta "VorticisContabil.exe"
 $pgBin = Join-Path $pasta "pgsql\bin"
 foreach ($f in $app, (Join-Path $pgBin "pg_ctl.exe"), (Join-Path $pgBin "initdb.exe")) {
     if (-not (Test-Path $f)) { throw "Arquivo não instalado: $f" }
 }
 Write-Host "Instalado em $pasta"
 
-$dados = Join-Path $env:LOCALAPPDATA "Perseus\banco"
-$cfgArquivo = Join-Path $env:APPDATA "Perseus\perseus.json"
-$logPg = Join-Path $env:LOCALAPPDATA "Perseus\logs\postgres.log"
+$dados = Join-Path $env:LOCALAPPDATA "Vorticis\banco"
+$cfgArquivo = Join-Path $env:APPDATA "Vorticis\vorticis.json"
+$logPg = Join-Path $env:LOCALAPPDATA "Vorticis\logs\postgres.log"
 $proc = Start-Process $app -PassThru
 
 function Falhar($msg) {
@@ -30,7 +30,7 @@ function Falhar($msg) {
 # 1. banco local criado e iniciado
 $limite = (Get-Date).AddMinutes(3)
 while (-not (Test-Path (Join-Path $dados "postmaster.pid"))) {
-    if ($proc.HasExited) { Falhar "O Perseus fechou sozinho (código $($proc.ExitCode))." }
+    if ($proc.HasExited) { Falhar "O Vorticis fechou sozinho (código $($proc.ExitCode))." }
     if ((Get-Date) -gt $limite) { Falhar "O banco local não foi iniciado em 3 minutos." }
     Start-Sleep -Seconds 2
 }
@@ -52,7 +52,7 @@ $senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::
 $env:PGPASSWORD = $senha
 $porta = [int]$cfg.Local.Porta
 $psql = Join-Path $pgBin "psql.exe"
-$conexao = "host=localhost port=$porta user=postgres dbname=perseus connect_timeout=5"
+$conexao = "host=localhost port=$porta user=postgres dbname=vorticis connect_timeout=5"
 $script:ultimoErro = ""
 function Consultar($sql) {
     # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop".
@@ -68,17 +68,17 @@ $limite = (Get-Date).AddMinutes(2)
 while ($migracoes -lt 7) {
     if ((Get-Date) -gt $limite) { Falhar "As migrações não foram aplicadas (encontradas: $migracoes). psql: $script:ultimoErro" }
     Start-Sleep -Seconds 2
-    $r = Consultar "SELECT count(*) FROM public.perseus_migracao"
+    $r = Consultar "SELECT count(*) FROM public.vorticis_migracao"
     if ($r) { $migracoes = [int]$r }
 }
 Write-Host "Conectado na porta ${porta}: $migracoes migrações aplicadas"
 $escuta = Consultar "SHOW listen_addresses"
 if ($escuta -ne "localhost") { Falhar "O banco local escuta em '$escuta' (esperado: localhost)." }
-if ($proc.HasExited) { Falhar "O Perseus fechou inesperadamente." }
+if ($proc.HasExited) { Falhar "O Vorticis fechou inesperadamente." }
 
 # 3. ao fechar o programa, o banco local é parado
 $null = $proc.CloseMainWindow()
-if (-not $proc.WaitForExit(60000)) { Write-Warning "O Perseus não fechou pela janela; encerrando o processo."; $proc.Kill() }
+if (-not $proc.WaitForExit(60000)) { Write-Warning "O Vorticis não fechou pela janela; encerrando o processo."; $proc.Kill() }
 $limite = (Get-Date).AddSeconds(60)
 while ((Test-Path (Join-Path $dados "postmaster.pid")) -and (Get-Date) -lt $limite) { Start-Sleep -Seconds 2 }
 if (Test-Path (Join-Path $dados "postmaster.pid")) {

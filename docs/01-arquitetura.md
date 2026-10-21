@@ -19,21 +19,21 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Perseus.Desktop (Avalonia, MVVM)                                 │
+│ Vorticis.Desktop (Avalonia, MVVM)                                 │
 ├──────────────────────────────────────────────────────────────────┤
-│ Perseus.Application  — casos de uso (EfetivarLancamento,          │
+│ Vorticis.Application  — casos de uso (EfetivarLancamento,          │
 │                        ImportarNFe, GerarECD, CalcularFolha...)  │
 ├──────────────┬───────────────┬──────────────┬────────────────────┤
 │ Módulo       │ Módulo        │ Módulo       │ Módulo             │
 │ Contábil     │ Fiscal        │ Banco/       │ Folha              │
 │ (Domínio)    │ (DF-e, apur.) │ Conciliação  │ (eSocial)          │
 ├──────────────┴───────────────┴──────────────┴────────────────────┤
-│ Perseus.Sped  — geradores de arquivo ECD/ECF/EFD (leiaute em     │
+│ Vorticis.Sped  — geradores de arquivo ECD/ECF/EFD (leiaute em     │
 │                 código + validação de registros)                  │
-│ Perseus.Gov   — clientes SOAP/REST: eSocial, EFD-Reinf, SEFAZ,    │
+│ Vorticis.Gov   — clientes SOAP/REST: eSocial, EFD-Reinf, SEFAZ,    │
 │                 ADN NFS-e; assinatura com certificado A1/A3       │
 ├──────────────────────────────────────────────────────────────────┤
-│ Perseus.Infra — PostgreSQL, arquivos, backup, logs, criptografia  │
+│ Vorticis.Infra — PostgreSQL, arquivos, backup, logs, criptografia  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -136,7 +136,7 @@ Folha calculada ──► provisões/encargos ───────────�
 - **Troca de usuário**: ao sair, todas as telas são recriadas, para que nada consultado por um usuário fique visível ao próximo.
 - **Consulta de CNPJ**: `IConsultaCnpj` (Application) com implementação sobre a base pública da RFB (BrasilAPI → Minha Receita). Os dados apenas pré-preenchem o formulário; a origem e a data da consulta ficam gravadas na empresa (`fonte_dados`, `dados_consultados_em`).
 - **Certificado digital**: A1 (`.pfx`) cifrado com DPAPI do Windows; A3 via Windows Certificate Store (token/cartão). Nunca gravar senha do PFX em texto.
-- **Conexão**: `%APPDATA%\Perseus\perseus.json`, senha cifrada com DPAPI (escopo do usuário do Windows).
+- **Conexão**: `%APPDATA%\Vorticis\vorticis.json`, senha cifrada com DPAPI (escopo do usuário do Windows).
 - **Banco**: PostgreSQL escutando só em `localhost`; usuário da aplicação sem permissão de `TRUNCATE`/`DROP`; papel separado para migrações.
 - **Backup**: `pg_dump` agendado diário + antes de todo fechamento de período/geração de SPED; retenção local + cópia externa (pasta sincronizada pelo usuário). Restauração testável pela própria UI.
 - **LGPD**: dados de trabalhadores (CPF, saúde em atestados/ASO, dependentes) com acesso por perfil, mascaramento em telas de consulta e registro de acesso.

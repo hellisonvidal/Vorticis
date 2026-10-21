@@ -72,7 +72,7 @@ Requisitos de projeto derivados:
 
 ## 6. Integrações governamentais
 
-| Sistema | Interface | Uso no Perseus |
+| Sistema | Interface | Uso no Vorticis |
 |---|---|---|
 | eSocial | Web service SOAP, lotes assinados, consulta assíncrona por protocolo | Envio/retorno de eventos da folha |
 | EFD-Reinf | API REST, eventos assinados | Retenções na fonte (R-4010/R-4020), serviços tomados (R-2010) |

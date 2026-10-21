@@ -43,11 +43,11 @@ Rascunhos (`status = 'RASCUNHO'`) podem ficar desbalanceados enquanto o usuário
 
 | Peça | Arquivo | Papel |
 |---|---|---|
-| `ValidadorLancamento` | `src/Perseus.Domain/Contabil/ValidadorLancamento.cs` | Regras R1–R6, R9–R11; função pura, acumula todos os erros |
-| `Estorno` | `src/Perseus.Domain/Contabil/Estorno.cs` | R7: gera o lançamento espelhado (bloqueia estorno duplo, de estorno, de encerramento, retroativo) |
-| `ServicoLancamento` | `src/Perseus.Application/Contabil/ServicoLancamento.cs` | Único ponto de gravação: carrega contexto → valida → grava; traduz rejeições do banco em mensagens |
-| `RepositorioContabil.GravarEfetivadoAsync` | `src/Perseus.Infra/Postgres/RepositorioContabil.cs` | R8: transação com `SELECT ... FOR UPDATE` no exercício, número = máx + 1, insere rascunho + partidas, efetiva; no estorno marca o original na mesma transação |
-| `ServicoPeriodo` | `src/Perseus.Application/Contabil/ServicoPeriodo.cs` | Fecha em ordem cronológica após `contabil.fn_verificar_invariantes`; reabre em ordem inversa |
+| `ValidadorLancamento` | `src/Vorticis.Domain/Contabil/ValidadorLancamento.cs` | Regras R1–R6, R9–R11; função pura, acumula todos os erros |
+| `Estorno` | `src/Vorticis.Domain/Contabil/Estorno.cs` | R7: gera o lançamento espelhado (bloqueia estorno duplo, de estorno, de encerramento, retroativo) |
+| `ServicoLancamento` | `src/Vorticis.Application/Contabil/ServicoLancamento.cs` | Único ponto de gravação: carrega contexto → valida → grava; traduz rejeições do banco em mensagens |
+| `RepositorioContabil.GravarEfetivadoAsync` | `src/Vorticis.Infra/Postgres/RepositorioContabil.cs` | R8: transação com `SELECT ... FOR UPDATE` no exercício, número = máx + 1, insere rascunho + partidas, efetiva; no estorno marca o original na mesma transação |
+| `ServicoPeriodo` | `src/Vorticis.Application/Contabil/ServicoPeriodo.cs` | Fecha em ordem cronológica após `contabil.fn_verificar_invariantes`; reabre em ordem inversa |
 
 Fluxo de efetivação:
 
@@ -63,11 +63,11 @@ LancamentoProposto (códigos) ──► ServicoLancamento.EfetivarAsync
 
 ## 4. Testes
 
-`db/tests/001_partidas_dobradas_test.sql` cobre 11 casos no nível SQL; `tests/Perseus.Domain.Tests` cobre o validador, estorno, balancete, rateio e CNPJ; `tests/Perseus.Infra.Tests` cobre o fluxo completo contra PostgreSQL real (inclusive 40 efetivações concorrentes sem lacuna de numeração). O SQL (aceite de lançamento balanceado, rejeição de desbalanceado, sem crédito, conta sintética, valor negativo, período fechado, data fora do exercício, alteração/exclusão de efetivado, e estorno zerando saldo). Para rodar:
+`db/tests/001_partidas_dobradas_test.sql` cobre 11 casos no nível SQL; `tests/Vorticis.Domain.Tests` cobre o validador, estorno, balancete, rateio e CNPJ; `tests/Vorticis.Infra.Tests` cobre o fluxo completo contra PostgreSQL real (inclusive 40 efetivações concorrentes sem lacuna de numeração). O SQL (aceite de lançamento balanceado, rejeição de desbalanceado, sem crédito, conta sintética, valor negativo, período fechado, data fora do exercício, alteração/exclusão de efetivado, e estorno zerando saldo). Para rodar:
 
 ```bash
-createdb perseus_test
-psql -v ON_ERROR_STOP=1 -d perseus_test -f db/001_core_contabil.sql -f db/002_saldos_auditoria_fechamento.sql \
+createdb vorticis_test
+psql -v ON_ERROR_STOP=1 -d vorticis_test -f db/001_core_contabil.sql -f db/002_saldos_auditoria_fechamento.sql \
      -f db/tests/001_partidas_dobradas_test.sql
 # saída final esperada: TODOS OS TESTES PASSARAM
 ```

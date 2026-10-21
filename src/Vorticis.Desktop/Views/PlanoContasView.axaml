@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Views"
+             x:Class="Vorticis.Desktop.Views.PlanoContasView"
+             x:DataType="vm:PlanoContasViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.secao">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Margin" Value="0,10,0,2" />
+    </Style>
+  </UserControl.Styles>
+  <!-- Mesmo padrão do cadastro de empresas: formulário em seções à esquerda, contas cadastradas à direita -->
+  <Grid ColumnDefinitions="440,16,*" RowDefinitions="Auto,*" Margin="8,4,8,0">
+    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="6" Margin="0,0,12,8">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
+          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="#44506A" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+        </StackPanel>
+        <TextBlock Text="Seu perfil permite apenas consultar o plano." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+
+        <TextBlock Classes="secao" Text="Identificação" />
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.1.01.004" IsEnabled="{Binding EmInclusao}" />
+          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DicaPai}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Código reduzido" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Reduzido}" IsEnabled="{Binding EmEdicao}" Width="120" HorizontalAlignment="Left"
+                   ToolTip.Tip="Atalho numérico usado na digitação dos lançamentos (contas analíticas)" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" />
+        </Grid>
+
+        <TextBlock Classes="secao" Text="Classificação" />
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Natureza" />
+          <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:OpcaoNatureza.Todas}" SelectedItem="{Binding Natureza}"
+                    HorizontalAlignment="Stretch" IsEnabled="{Binding EmInclusao}">
+            <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoNatureza"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Saldo" />
+          <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:OpcaoSaldo.Todas}" SelectedItem="{Binding Saldo}"
+                    HorizontalAlignment="Stretch" IsEnabled="{Binding EmEdicao}">
+            <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoSaldo"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Incluída em" IsVisible="{Binding EmInclusao}" />
+          <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding DataInclusao}" Width="160" HorizontalAlignment="Left"
+                              IsVisible="{Binding EmInclusao}" />
+        </Grid>
+
+        <TextBlock Classes="secao" Text="Controles" />
+        <StackPanel Spacing="4" IsEnabled="{Binding EmEdicao}">
+          <CheckBox Content="Exige centro de custo" IsChecked="{Binding ExigeCc}" />
+          <CheckBox Content="Exige participante (cliente/fornecedor)" IsChecked="{Binding ExigeParticipante}" />
+          <CheckBox Content="Ativa" IsChecked="{Binding Ativa}" IsEnabled="{Binding EmAlteracao}" />
+        </StackPanel>
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,4,0,0"
+                   Text="Código e tipo não se alteram (exigência da ECD). Conta com lançamentos não é excluída: inative-a depois de zerar o saldo." />
+        <v:MensagensView Margin="0,8,0,0" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <DockPanel Grid.Row="1" Grid.Column="2" IsEnabled="{Binding !EmEdicao}">
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+        <TextBlock Text="Contas cadastradas" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código, reduzido ou descrição" />
+      </DockPanel>
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False"
+                FontFamily="Consolas, Menlo, monospace">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="130" />
+          <DataGridTextColumn Header="Red." Binding="{ReflectionBinding Reduzido}" Width="72" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+          <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="95" />
+          <DataGridTextColumn Header="Natureza" Binding="{ReflectionBinding Natureza}" Width="130" />
+          <DataGridTextColumn Header="" Binding="{ReflectionBinding Situacao}" Width="70" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+  </Grid>
+</UserControl>

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Perseus Contábil — Migração 011: importação de lançamentos
+-- Vorticis Contábil — Migração 011: importação de lançamentos
 --   * Layouts de planilha definidos pelo usuário (colunas → campos do lançamento),
 --     compartilhados entre as empresas do escritório.
 --   * Controle de duplicidade: cada transação importada (ex.: FITID do extrato OFX)

@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.BarraExportacaoView"
+             x:DataType="vm:RelatorioViewModel">
+  <!-- Exportação padrão dos relatórios (a partir do que está na tela) -->
+  <StackPanel Orientation="Horizontal" Spacing="6">
+    <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="#44506A" />
+    <Button Content="PDF" Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center" />
+    <Button Content="Excel (.xlsx)" Command="{Binding ExportarExcelCommand}" IsVisible="{Binding PodeExportarPlanilha}" />
+    <Button Content="CSV" Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportarPlanilha}" MinWidth="60"
+            HorizontalContentAlignment="Center" />
+  </StackPanel>
+</UserControl>

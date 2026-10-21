@@ -1,0 +1,211 @@
+using MigraDoc.DocumentObjectModel;
+using MigraDoc.DocumentObjectModel.Tables;
+using MigraDoc.Rendering;
+using PdfSharp.Fonts;
+using Vorticis.Application.Relatorios;
+
+namespace Vorticis.Infra.Relatorios;
+
+/// <summary>
+/// Gera PDF com PDFsharp/MigraDoc (licença MIT) e a fonte Liberation Sans embutida (SIL OFL 1.1, métrica da Arial),
+/// para que o resultado seja idêntico em qualquer máquina. Termos com "{folhas}" recebem o total de folhas: o documento
+/// é montado uma vez para contar as páginas e outra para o resultado final.
+/// </summary>
+public sealed class GeradorPdf : IGeradorPdf
+{
+    public const string Fonte = "Liberation Sans";
+
+    static GeradorPdf()
+    {
+        GlobalFontSettings.FontResolver ??= new ResolvedorFontes();
+    }
+
+    public ArquivoGerado Gerar(DocumentoRelatorio documento)
+    {
+        var temFolhas = (documento.TermoAbertura?.Texto ?? "").Contains("{folhas}") || (documento.TermoEncerramento?.Texto ?? "").Contains("{folhas}");
+        var paginas = temFolhas ? Renderizar(documento, folhas: 0).PageCount : 0;
+        var final = Renderizar(documento, paginas);
+        var total = final.PdfDocument.PageCount;   // ler antes de salvar: depois de salvo o documento fica bloqueado
+        using var ms = new MemoryStream();
+        final.PdfDocument.Save(ms, false);
+        return new ArquivoGerado(ms.ToArray(), total);
+    }
+
+    private static PdfDocumentRenderer Renderizar(DocumentoRelatorio d, int folhas)
+    {
+        var doc = new Document();
+        doc.Info.Title = d.Titulo;
+        doc.Info.Author = "Vorticis Contábil";
+        var normal = doc.Styles[StyleNames.Normal]!;
+        normal.Font.Name = Fonte;
+        normal.Font.Size = 8.5;
+
+        var termoTexto = (Termo t) => t.Texto.Replace("{folhas}", folhas.ToString());
+
+        if (d.TermoAbertura is { } ta) AdicionarTermo(doc, d, ta, termoTexto(ta));
+
+        var secao = NovaSecao(doc, d);
+        foreach (var bloco in d.Blocos)
+        {
+            if (bloco.NovaPagina) secao.AddPageBreak();
+            if (bloco.Titulo is { } titulo)
+            {
+                var p = secao.AddParagraph(titulo);
+                p.Format.Font.Bold = true;
+                p.Format.Font.Size = 9.5;
+                p.Format.SpaceBefore = Unit.FromPoint(8);
+                p.Format.SpaceAfter = Unit.FromPoint(4);
+                p.Format.KeepWithNext = true;
+            }
+            if (bloco.Texto is { } texto) AdicionarTexto(secao.AddParagraph(), texto);
+            if (bloco.Colunas is { } colunas && bloco.Linhas is { } linhas) AdicionarTabela(secao, colunas, linhas);
+        }
+
+        if (d.TermoEncerramento is { } te) AdicionarTermo(doc, d, te, termoTexto(te));
+
+        var renderer = new PdfDocumentRenderer { Document = doc };
+        renderer.RenderDocument();
+        return renderer;
+    }
+
+    private static Section NovaSecao(Document doc, DocumentoRelatorio d)
+    {
+        var s = doc.AddSection();
+        var ps = doc.DefaultPageSetup.Clone();
+        // Dimensões explícitas: no MigraDoc 6, Orientation não troca largura/altura de um PageSetup clonado.
+        ps.PageFormat = PageFormat.A4;
+        ps.Orientation = Orientation.Portrait;
+        ps.PageWidth = Unit.FromCentimeter(d.Paisagem ? 29.7 : 21.0);
+        ps.PageHeight = Unit.FromCentimeter(d.Paisagem ? 21.0 : 29.7);
+        ps.TopMargin = Unit.FromCentimeter(2.6);
+        ps.BottomMargin = Unit.FromCentimeter(1.6);
+        ps.LeftMargin = ps.RightMargin = Unit.FromCentimeter(1.4);
+        ps.HeaderDistance = Unit.FromCentimeter(0.8);
+        ps.FooterDistance = Unit.FromCentimeter(0.7);
+        s.PageSetup = ps;
+
+        // Cabeçalho: título à esquerda, número da folha/página à direita; identificação logo abaixo.
+        var cab = s.Headers.Primary;
+        var t = cab.AddTable();
+        var largura = (d.Paisagem ? 29.7 : 21.0) - 2.8;
+        t.AddColumn(Unit.FromCentimeter(largura - 4));
+        t.AddColumn(Unit.FromCentimeter(4));
+        var r = t.AddRow();
+        var titulo = r.Cells[0].AddParagraph(d.Titulo);
+        titulo.Format.Font.Bold = true;
+        titulo.Format.Font.Size = 11;
+        var pag = r.Cells[1].AddParagraph($"{d.RotuloPagina} ");
+        pag.AddPageField();
+        pag.Format.Alignment = ParagraphAlignment.Right;
+        foreach (var linha in d.Cabecalho)
+        {
+            var p = cab.AddParagraph(linha);
+            p.Format.Font.Size = 8;
+        }
+        var sep = cab.AddParagraph();
+        sep.Format.Borders.Bottom.Width = 0.5;
+
+        var rod = s.Footers.Primary.AddParagraph($"Vorticis Contábil — emitido em {DateTime.Now:dd/MM/yyyy HH:mm}");
+        rod.Format.Font.Size = 6.5;
+        rod.Format.Font.Color = Colors.Gray;
+        return s;
+    }
+
+    private static void AdicionarTermo(Document doc, DocumentoRelatorio d, Termo termo, string texto)
+    {
+        var s = NovaSecao(doc, d);
+        var titulo = s.AddParagraph(termo.Titulo);
+        titulo.Format.Font.Bold = true;
+        titulo.Format.Font.Size = 14;
+        titulo.Format.Alignment = ParagraphAlignment.Center;
+        titulo.Format.SpaceBefore = Unit.FromCentimeter(2);
+        titulo.Format.SpaceAfter = Unit.FromCentimeter(1);
+        foreach (var paragrafo in texto.Split("\n\n"))
+        {
+            // Parágrafo corrido é justificado; blocos com quebras de linha (identificação) ficam à esquerda.
+            var linhas = paragrafo.Split('\n');
+            var p = s.AddParagraph();
+            for (int i = 0; i < linhas.Length; i++)
+            {
+                if (i > 0) p.AddLineBreak();
+                p.AddText(linhas[i]);
+            }
+            p.Format.Font.Size = 11;
+            p.Format.Alignment = linhas.Length > 1 ? ParagraphAlignment.Left : ParagraphAlignment.Justify;
+            p.Format.SpaceAfter = Unit.FromPoint(10);
+        }
+        var tabela = s.AddTable();
+        var largura = ((d.Paisagem ? 29.7 : 21.0) - 2.8) / Math.Max(1, termo.Assinaturas.Count);
+        foreach (var _ in termo.Assinaturas) tabela.AddColumn(Unit.FromCentimeter(largura));
+        var linha = tabela.AddRow();
+        linha.TopPadding = Unit.FromCentimeter(2.5);
+        for (int i = 0; i < termo.Assinaturas.Count; i++)
+        {
+            var p = linha.Cells[i].AddParagraph();
+            AdicionarTexto(p, "_______________________________________\n" + termo.Assinaturas[i]);
+            p.Format.Alignment = ParagraphAlignment.Center;
+            p.Format.Font.Size = 10;
+        }
+    }
+
+    private static void AdicionarTabela(Section s, IReadOnlyList<Coluna> colunas, IReadOnlyList<LinhaTabela> linhas)
+    {
+        var t = s.AddTable();
+        t.Borders.Bottom.Width = 0.25;
+        t.Borders.Bottom.Color = Colors.LightGray;
+        foreach (var c in colunas)
+        {
+            var col = t.AddColumn(Unit.FromCentimeter(c.LarguraCm));
+            col.Format.Alignment = Alinhar(c.Alinhamento);
+        }
+        var cab = t.AddRow();
+        cab.HeadingFormat = true;
+        cab.Shading.Color = new Color(235, 239, 245);
+        cab.Format.Font.Bold = true;
+        for (int i = 0; i < colunas.Count; i++) cab.Cells[i].AddParagraph(colunas[i].Titulo);
+
+        foreach (var l in linhas)
+        {
+            var r = t.AddRow();
+            r.Format.Font.Bold = l.Negrito;
+            for (int i = 0; i < colunas.Count && i < l.Celulas.Count; i++)
+            {
+                var p = r.Cells[i].AddParagraph(l.Celulas[i]);
+                if (i == 0 && l.Recuo > 0) p.Format.LeftIndent = Unit.FromPoint(6 * l.Recuo);
+            }
+        }
+    }
+
+    private static void AdicionarTexto(Paragraph p, string texto)
+    {
+        var linhas = texto.Split('\n');
+        for (int i = 0; i < linhas.Length; i++)
+        {
+            if (i > 0) p.AddLineBreak();
+            p.AddText(linhas[i]);
+        }
+    }
+
+    private static ParagraphAlignment Alinhar(Alinhamento a) => a switch
+    {
+        Alinhamento.Direita => ParagraphAlignment.Right,
+        Alinhamento.Centro => ParagraphAlignment.Center,
+        _ => ParagraphAlignment.Left,
+    };
+
+    /// <summary>Fornece as fontes embutidas ao PDFsharp (necessário fora do Windows e garante o mesmo resultado no Windows).</summary>
+    private sealed class ResolvedorFontes : IFontResolver
+    {
+        public FontResolverInfo? ResolveTypeface(string familyName, bool bold, bool italic) =>
+            new(bold ? "LiberationSans-Bold" : "LiberationSans-Regular");
+
+        public byte[]? GetFont(string faceName)
+        {
+            using var s = typeof(GeradorPdf).Assembly.GetManifestResourceStream($"Fontes.{faceName}.ttf")
+                          ?? throw new InvalidOperationException($"Fonte {faceName} não embutida.");
+            using var ms = new MemoryStream();
+            s.CopyTo(ms);
+            return ms.ToArray();
+        }
+    }
+}

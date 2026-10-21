@@ -23,7 +23,7 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      PERSEUS_TEST_PG: Host=localhost;Username=postgres;Password=postgres;Database=postgres
+      VORTICIS_TEST_PG: Host=localhost;Username=postgres;Password=postgres;Database=postgres
       PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +32,8 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Testes SQL das migrações
         run: |
-          createdb -h localhost -U postgres perseus_sql
-          cat db/0*.sql db/tests/*.sql | psql -h localhost -U postgres -d perseus_sql -v ON_ERROR_STOP=1 -q
+          createdb -h localhost -U postgres vorticis_sql
+          cat db/0*.sql db/tests/*.sql | psql -h localhost -U postgres -d vorticis_sql -v ON_ERROR_STOP=1 -q
       - name: Build
         run: dotnet build -c Release
       - name: Testes (.NET)
@@ -54,36 +54,36 @@ jobs:
       - name: Teste do banco local no Windows (initdb, start, migrações, stop)
         shell: pwsh
         env:
-          PERSEUS_PG_EMBUTIDO_BIN: ${{ github.workspace }}\pgsql\bin
+          VORTICIS_PG_EMBUTIDO_BIN: ${{ github.workspace }}\pgsql\bin
         run: |
-          dotnet build tests/Perseus.Infra.Tests -c Release
-          tests/Perseus.Infra.Tests/bin/Release/net10.0/Perseus.Infra.Tests.exe -class Perseus.Infra.Tests.ServidorEmbutidoTests -failSkips
+          dotnet build tests/Vorticis.Infra.Tests -c Release
+          tests/Vorticis.Infra.Tests/bin/Release/net10.0/Vorticis.Infra.Tests.exe -class Vorticis.Infra.Tests.ServidorEmbutidoTests -failSkips
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Publicar PerseusContabil.exe com o PostgreSQL
+      - name: Publicar VorticisContabil.exe com o PostgreSQL
         shell: pwsh
         run: |
-          dotnet publish src/Perseus.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+          dotnet publish src/Vorticis.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
           Move-Item pgsql publish/pgsql
       - name: Gerar instalador (Inno Setup)
         shell: pwsh
         run: |
-          $versao = (Select-Xml -Path src/Perseus.Desktop/Perseus.Desktop.csproj -XPath "//Version").Node.InnerText
+          $versao = (Select-Xml -Path src/Vorticis.Desktop/Vorticis.Desktop.csproj -XPath "//Version").Node.InnerText
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE -ne 0) { exit 1 } }
-          & $iscc "/DVersao=$versao" instalador/PerseusContabil.iss
+          & $iscc "/DVersao=$versao" instalador/VorticisContabil.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-ChildItem saida | Format-Table Name, @{n="MB"; e={[math]::Round($_.Length / 1MB, 1)}}
       - name: Teste de instalação (Windows limpo, sem configuração)
         shell: powershell
         run: |
-          $setup = (Get-ChildItem saida/Setup-PerseusContabil-*.exe).FullName
+          $setup = (Get-ChildItem saida/Setup-VorticisContabil-*.exe).FullName
           ./instalador/teste-instalacao.ps1 -Setup $setup
       - uses: actions/upload-artifact@v4
         with:
-          name: Setup-PerseusContabil
-          path: saida/Setup-PerseusContabil-*.exe
+          name: Setup-VorticisContabil
+          path: saida/Setup-VorticisContabil-*.exe
           compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
-          name: PerseusContabil-portatil
+          name: VorticisContabil-portatil
           path: publish/
