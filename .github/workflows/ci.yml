@@ -59,31 +59,50 @@ jobs:
           dotnet build tests/Vorticis.Infra.Tests -c Release
           tests/Vorticis.Infra.Tests/bin/Release/net10.0/Vorticis.Infra.Tests.exe -class Vorticis.Infra.Tests.ServidorEmbutidoTests -failSkips
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Publicar VorticisContabil.exe com o PostgreSQL
+      - name: Publicar os três executáveis (arquivo único) com o PostgreSQL
         shell: pwsh
         run: |
-          dotnet publish src/Vorticis.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+          # Contábil, Fiscal e Folha vão para a mesma pasta (publish), junto com a pasta pgsql: é a entrada do instalador.
+          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop") {
+            dotnet publish "src/$projeto" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           Move-Item pgsql publish/pgsql
+          # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
+          foreach ($modulo in "Contabil", "Fiscal", "Folha") {
+            $pasta = "portatil/Vorticis$modulo"
+            New-Item -ItemType Directory -Path $pasta -Force | Out-Null
+            Copy-Item "publish/Vorticis$modulo.exe" $pasta
+            Copy-Item publish/pgsql "$pasta/pgsql" -Recurse
+          }
       - name: Gerar instalador (Inno Setup)
         shell: pwsh
         run: |
-          $versao = (Select-Xml -Path src/Vorticis.Desktop/Vorticis.Desktop.csproj -XPath "//Version").Node.InnerText
+          $versao = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE -ne 0) { exit 1 } }
-          & $iscc "/DVersao=$versao" instalador/VorticisContabil.iss
+          & $iscc "/DVersao=$versao" instalador/Vorticis.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-ChildItem saida | Format-Table Name, @{n="MB"; e={[math]::Round($_.Length / 1MB, 1)}}
       - name: Teste de instalação (Windows limpo, sem configuração)
         shell: powershell
         run: |
-          $setup = (Get-ChildItem saida/Setup-VorticisContabil-*.exe).FullName
+          $setup = (Get-ChildItem saida/Setup-Vorticis-*.exe).FullName
           ./instalador/teste-instalacao.ps1 -Setup $setup
       - uses: actions/upload-artifact@v4
         with:
-          name: Setup-VorticisContabil
-          path: saida/Setup-VorticisContabil-*.exe
+          name: Setup-Vorticis
+          path: saida/Setup-Vorticis-*.exe
           compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: VorticisContabil-portatil
-          path: publish/
+          path: portatil/VorticisContabil/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisFiscal-portatil
+          path: portatil/VorticisFiscal/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisFolha-portatil
+          path: portatil/VorticisFolha/

@@ -5,6 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vorticis.Desktop\Vorticis.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\Vorticis.Fiscal.Desktop\Vorticis.Fiscal.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\Vorticis.Folha.Desktop\Vorticis.Folha.Desktop.csproj" />
     <ProjectReference Include="..\Vorticis.Infra.Tests\Vorticis.Infra.Tests.csproj" />
     <PackageReference Include="Avalonia.Headless" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -13,5 +15,8 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Vorticis.Desktop.Comum" />
+    <Using Include="Vorticis.Desktop.Comum.ViewModels" />
+    <Using Include="Vorticis.Desktop.Comum.Views" />
   </ItemGroup>
 </Project>

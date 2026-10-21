@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.DepreciacaoView"
@@ -18,7 +19,7 @@
       <TextBlock Text="{Binding Resumo}" FontWeight="SemiBold" />
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="Contábil: (custo − valor residual) pela vida útil do bem, a partir do mês do início de uso (CPC 27). Fiscal: taxa da RFB sobre o custo, acelerada por turnos. O lançamento debita a despesa e credita a depreciação (amortização) acumulada, no último dia do mês." />
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
     <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>

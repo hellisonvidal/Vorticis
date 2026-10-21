@@ -21,16 +21,20 @@ db/                         Migrações SQL (fonte única; embutidas no Vorticis
 src/Vorticis.Domain          Regras puras: validação de lançamentos, estorno, balancete, rateio, CNPJ
 src/Vorticis.Application     Casos de uso (ServicoLancamento, ServicoPeriodo, ServicoRelatorios, ServicoEmpresa) e portas
 src/Vorticis.Infra           PostgreSQL (Npgsql), migrador, plano de contas modelo
-src/Vorticis.Desktop         Interface Avalonia (MVVM)
+src/Vorticis.Desktop.Comum   Casco comum dos executáveis (Avalonia/MVVM): bootstrap, janela principal com menu do módulo, login, banco, empresas, usuários, perfis, certificados, backup, configurações
+src/Vorticis.Desktop         Executável do módulo Contábil (VorticisContabil.exe)
+src/Vorticis.Fiscal(.Desktop)  Regras/serviços e executável do módulo Fiscal (VorticisFiscal.exe) — estrutura pronta, funções em breve
+src/Vorticis.Folha(.Desktop)   Regras/serviços e executável do módulo Folha de Pagamento (VorticisFolha.exe) — estrutura pronta, funções em breve
 tests/                      Unitários, integração com PostgreSQL e testes de interface headless
 docs/                       Arquitetura, regras, desafios fiscais, roadmap
 ```
 
 ## Instalar (usuário final, Windows 10/11 64 bits)
 
-1. Baixe `Setup-VorticisContabil-<versão>.exe` (artefato **Setup-VorticisContabil** da execução mais recente do CI, na aba *Actions* do GitHub).
+1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub).
 2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
-3. Abra o Vorticis Contábil. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador.
+3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha de Pagamento** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
+4. Abra o módulo desejado. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador. Os módulos compartilham o mesmo banco, login, empresas e configurações; o banco sobe com o primeiro módulo aberto e só para quando o último fecha.
 
 Não é preciso instalar nem configurar o PostgreSQL: o instalador traz os binários oficiais do PostgreSQL 16 (pasta `pgsql`), e o Vorticis
 cuida do resto:
@@ -38,14 +42,14 @@ cuida do resto:
 | Item | Como funciona |
 |---|---|
 | Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Vorticis\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Vorticis\vorticis.json` |
-| Execução | O servidor sobe quando o Vorticis abre e para quando ele fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
+| Execução | O servidor sobe quando o primeiro módulo do Vorticis abre e para quando o último fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
 | Segurança | Nenhum serviço do Windows nem privilégio de administrador; outros usuários do Windows não leem a senha |
 | Atualização | Basta rodar o instalador novo: ele para o banco, troca os arquivos e preserva os dados |
 | Desinstalação | Remove o programa, **não** os dados (`%LOCALAPPDATA%\Vorticis`) — apague a pasta manualmente se quiser |
 | Backup | *Configurações › Backup e restauração* usa o `pg_dump`/`pg_restore` que acompanham o programa |
 | Rede | Para vários computadores usarem o mesmo banco, *Configurações › Conexão* aceita um servidor PostgreSQL; o botão "Usar o banco local" volta ao banco embutido |
 
-Também há o artefato **VorticisContabil-portatil** (pasta com `VorticisContabil.exe` + `pgsql`): descompacte e execute, sem instalar.
+Também há os artefatos portáteis **VorticisContabil-portatil**, **VorticisFiscal-portatil** e **VorticisFolha-portatil** (pasta com o `.exe` do módulo + `pgsql`): descompacte e execute, sem instalar.
 
 ## Executar (desenvolvimento)
 
@@ -56,7 +60,7 @@ Pré-requisitos: [.NET 10 SDK](https://dotnet.microsoft.com/download) e PostgreS
 set VORTICIS_DB=Host=localhost;Database=vorticis;Username=postgres;Password=suasenha     # Windows (cmd)
 export VORTICIS_DB="Host=localhost;Database=vorticis;Username=postgres;Password=suasenha" # Linux/macOS
 
-dotnet run --project src/Vorticis.Desktop
+dotnet run --project src/Vorticis.Desktop          # Contábil (ou src/Vorticis.Fiscal.Desktop, src/Vorticis.Folha.Desktop)
 ```
 
 Sem `VORTICIS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a tela de **primeiro acesso** pede a criação do usuário administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. A janela sempre abre maximizada. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Vorticis abre a tela de conexão; a configuração fica em `%APPDATA%\Vorticis\vorticis.json`, com a senha cifrada por DPAPI no Windows.
@@ -167,17 +171,21 @@ O job `instalador-windows` do CI faz tudo em um Windows limpo (o ícone do progr
 
 1. `instalador/baixar-postgresql.ps1` baixa os binários oficiais do PostgreSQL 16 para Windows (EDB) e monta `pgsql` (só `bin`, `lib`, `share` + runtime do Visual C++);
 2. roda o teste do banco embutido no Windows (`ServidorEmbutidoTests`: initdb, start, migrações, reinício, stop);
-3. publica `VorticisContabil.exe` (arquivo único, sem exigir .NET instalado) com a pasta `pgsql` ao lado;
-4. compila `instalador/VorticisContabil.iss` com o Inno Setup → `Setup-VorticisContabil-<versão>.exe`;
-5. `instalador/teste-instalacao.ps1` instala em modo silencioso, abre o programa e confere que o banco foi criado, migrado e parado ao fechar.
+3. publica `VorticisContabil.exe`, `VorticisFiscal.exe` e `VorticisFolha.exe` (arquivo único, sem exigir .NET instalado) na pasta `publish`, com a pasta `pgsql` ao lado, e monta os portáteis (exe + `pgsql` de cada módulo);
+4. compila `instalador/Vorticis.iss` com o Inno Setup → `Setup-Vorticis-<versão>.exe` (seleção de módulos);
+5. `instalador/teste-instalacao.ps1` instala em modo silencioso (todos os módulos), abre o Contábil e confere que o banco foi criado, migrado e parado ao fechar.
+
+Artefatos do CI: **Setup-Vorticis**, **VorticisContabil-portatil**, **VorticisFiscal-portatil**, **VorticisFolha-portatil**.
 
 Localmente (Windows, com Inno Setup 6):
 
 ```powershell
 ./instalador/baixar-postgresql.ps1 -Destino pgsql
-dotnet publish src/Vorticis.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+foreach ($p in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop") {
+  dotnet publish "src/$p" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+}
 Move-Item pgsql publish/pgsql
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=0.4.0 instalador/VorticisContabil.iss   # gera saida\Setup-VorticisContabil-0.4.0.exe
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=0.4.0 instalador/Vorticis.iss   # gera saida\Setup-Vorticis-0.4.0.exe
 ```
 
 ## Testes

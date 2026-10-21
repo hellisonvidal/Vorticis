@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+        xmlns:v="using:Vorticis.Desktop.Comum.Views"
+        xmlns:seg="using:Vorticis.Application.Seguranca"
+        x:Class="Vorticis.Desktop.Comum.Views.MainWindow"
+        x:DataType="vm:MainViewModelBase"
+        Title="Vorticis"
+        Icon="avares://Vorticis.Desktop.Comum/Assets/VorticisContabil.ico"
+        Width="1200" Height="760" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized">
+
+
+  <Window.Styles>
+    <Style Selector="Border.janela-aberta">
+      <Setter Property="Background" Value="#DDE3EC" />
+    </Style>
+    <Style Selector="Border.janela-aberta.ativa">
+      <Setter Property="Background" Value="#2B4C76" />
+    </Style>
+    <Style Selector="Border.janela-aberta.ativa Button.chip">
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="22" />
+    </Style>
+    <Style Selector="Menu#MenuPrincipal > MenuItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Menu#MenuPrincipal MenuItem MenuItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="10,5" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
+    <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0,8,0" IsVisible="{Binding Logado}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+      <!-- Os itens vêm do módulo (IModuloDesktop.Menus) e são montados em MainWindow.axaml.cs -->
+      <Menu Name="MenuPrincipal" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
+                    MinWidth="280" MaxWidth="400" FontSize="12" MinHeight="24" Padding="8,1"
+                    PlaceholderText="Nenhuma empresa">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="seg:EmpresaPermitida">
+                <TextBlock>
+                  <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" – " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
+                </TextBlock>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <TextBlock Grid.Column="3" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
+                   VerticalAlignment="Center" Margin="12,0,0,0" />
+      </Grid>
+    </Border>
+
+    <!-- Funções abertas (cada uma em sua janela flutuante): clicar traz para a frente, ✕ fecha -->
+    <Border DockPanel.Dock="Top" Background="#EEF1F5" Padding="8,3" IsVisible="{Binding TemJanelasAbertas}">
+      <ItemsControl ItemsSource="{Binding JanelasAbertas}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:FuncaoAberta">
+            <Border Classes="janela-aberta" Classes.ativa="{Binding Ativa}" CornerRadius="3" Margin="0,1,6,1" Padding="2,0">
+              <StackPanel Orientation="Horizontal">
+                <Button Content="{Binding Rotulo}" ToolTip.Tip="{Binding Titulo}" Classes="chip" FontSize="12" Padding="8,2"
+                        Command="{Binding $parent[Window].((vm:MainViewModelBase)DataContext).AtivarFuncaoCommand}" CommandParameter="{Binding}" />
+                <Button Content="✕" Classes="chip" FontSize="11" Padding="6,2" ToolTip.Tip="Fechar"
+                        Command="{Binding $parent[Window].((vm:MainViewModelBase)DataContext).FecharFuncaoCommand}" CommandParameter="{Binding}" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Background="#EEF1F5" Padding="12,3">
+      <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+    </Border>
+
+    <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />
+  </DockPanel>
+</Window>

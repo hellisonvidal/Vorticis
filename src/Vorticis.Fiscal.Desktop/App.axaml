@@ -1,0 +1,13 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Vorticis.Fiscal.Desktop.App"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             RequestedThemeVariant="Light">
+  <Application.DataTemplates>
+    <!-- Telas comuns (login, empresas, usuários, backup...); as telas do módulo entram aqui como DataTemplate -->
+    <c:TemplatesComuns />
+  </Application.DataTemplates>
+  <Application.Styles>
+    <StyleInclude Source="avares://Vorticis.Desktop.Comum/Estilos.axaml" />
+  </Application.Styles>
+</Application>

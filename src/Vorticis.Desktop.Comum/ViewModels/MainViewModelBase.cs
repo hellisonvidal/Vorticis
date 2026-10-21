@@ -1,0 +1,580 @@
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Cadastros;
+using Vorticis.Application.Seguranca;
+using Vorticis.Desktop.Comum.Modulos;
+using Vorticis.Domain.Seguranca;
+using Vorticis.Infra;
+
+namespace Vorticis.Desktop.Comum.ViewModels;
+
+/// <summary>Contexto compartilhado pelos módulos: aplicação conectada, usuário logado e empresa ativa.</summary>
+public interface IContexto
+{
+    VorticisApp? App { get; }
+    SessaoUsuario? Sessao { get; }
+    long? EmpresaId { get; }
+    bool Pode(Permissao permissao);
+    Task RecarregarEmpresasAsync(long? selecionar = null);
+    void AoConcluirConfiguracaoInicial();
+    /// <summary>Pergunta Sim/Não ao usuário (diálogo modal). Usado antes de excluir ou gravar dados obtidos de fora.</summary>
+    Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não");
+    /// <summary>Reconecta ao banco e volta à tela de login, mostrando a mensagem (após restaurar ou limpar o banco).</summary>
+    Task ReiniciarParaLoginAsync(string mensagem);
+    /// <summary>Alerta com campo de senha; devolve a senha digitada ou null se o usuário cancelar.</summary>
+    Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar");
+    /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
+    string DescricaoEmpresa { get; }
+    /// <summary>Abre outra função (ver <see cref="TelasComuns"/> e as chaves de cada módulo), como pelo menu.</summary>
+    void AbrirTela(string tela);
+}
+
+/// <summary>Telas comuns a todos os módulos. A chave é o CommandParameter do item de menu.</summary>
+public static class TelasComuns
+{
+    public const string Empresas = "empresas";
+    public const string Contabilidade = "contabilidade";
+    public const string Socios = "socios";
+    public const string Clientes = "clientes";
+    public const string Fornecedores = "fornecedores";
+    public const string Usuarios = "usuarios";
+    public const string Perfis = "perfis";
+    public const string AlterarSenha = "senha";
+    public const string Conexao = "conexao";
+    public const string Backup = "backup";
+    public const string ConfiguracoesGerais = "configuracoesgerais";
+    public const string Certificados = "certificados";
+    public const string Licenca = "licenca";
+    public const string Sobre = "sobre";
+    public const string Inicio = "inicio";
+    /// <summary>Item de menu que encerra a sessão (trocar de usuário); não abre tela.</summary>
+    public const string Sair = "sair";
+}
+
+/// <summary>
+/// Janela principal de qualquer módulo da suíte: conexão com o banco, login, empresa ativa, permissões, navegação
+/// por funções em janelas flutuantes e confirmações. As telas próprias do módulo vêm de <see cref="IModuloDesktop"/>.
+/// </summary>
+public abstract partial class MainViewModelBase : ObservableObject, IContexto, IAsyncDisposable
+{
+    private string _connectionString = "";
+    private string? _telaAtual;
+    private PermissoesEfetivas _permissoes = PermissoesEfetivas.Nenhuma;
+    private IConsultaCnpj? _consultaCnpj;
+    private IConsultaInscricaoEstadual? _consultaIe;
+    private bool _configuracaoInicialPendente;
+    private readonly CatalogoTelas _catalogo = new();
+    private readonly Dictionary<string, object> _instancias = [];
+
+    protected MainViewModelBase(IModuloDesktop modulo)
+    {
+        Modulo = modulo;
+        Login = new LoginViewModel(this);
+        RegistrarTelasComuns(_catalogo);
+        modulo.RegistrarTelas(_catalogo);
+        JanelasAbertas.CollectionChanged += (_, _) => OnPropertyChanged(nameof(TemJanelasAbertas));
+        Menus = MontarMenus();
+        Atalhos = [.. modulo.Atalhos, new AtalhoTela("F1", TelasComuns.Sobre, "Esta tela")];
+        RecriarModulos();
+    }
+
+    /// <summary>O módulo (Contábil, Fiscal, Folha) que este executável hospeda.</summary>
+    public IModuloDesktop Modulo { get; }
+
+    /// <summary>Menu completo: Cadastros (comuns + do módulo), menus do módulo, Configurações e Ajuda.</summary>
+    public IReadOnlyList<ItemMenu> Menus { get; }
+
+    /// <summary>Atalhos de teclado da janela (do módulo e F1 = Sobre).</summary>
+    public IReadOnlyList<AtalhoTela> Atalhos { get; }
+
+    // ------------------------------------------------------------------ instâncias das telas
+
+    /// <summary>
+    /// Instâncias novas de todas as telas do sistema (as fixas são criadas só na primeira vez). Chamado a cada logout,
+    /// para que nada digitado ou consultado por um usuário (relatórios, formulários, listas) fique visível para o próximo.
+    /// </summary>
+    private void RecriarModulos()
+    {
+        foreach (var def in _catalogo.Instancias.Where(d => !d.Fixa || !_instancias.ContainsKey(d.Nome)))
+            _instancias[def.Nome] = def.Criar(this);
+    }
+
+    /// <summary>ViewModel da instância (propriedades tipadas das classes derivadas usam o nome da própria propriedade).</summary>
+    protected T Instancia<T>([CallerMemberName] string nome = "") where T : class => (T)_instancias[nome];
+
+    public LoginViewModel Login { get; }
+    public ConexaoViewModel Conexao => Instancia<ConexaoViewModel>();
+    public InicioViewModel Inicio => Instancia<InicioViewModel>();
+    public CadastroEmpresaViewModel Empresas => Instancia<CadastroEmpresaViewModel>();
+    public UsuariosViewModel Usuarios => Instancia<UsuariosViewModel>();
+    public PerfisViewModel Perfis => Instancia<PerfisViewModel>();
+    public ContabilidadeEmpresaViewModel Contabilidade => Instancia<ContabilidadeEmpresaViewModel>();
+    public SociosViewModel Socios => Instancia<SociosViewModel>();
+    public AlterarSenhaViewModel AlterarSenha => Instancia<AlterarSenhaViewModel>();
+    public SobreViewModel Sobre => Instancia<SobreViewModel>();
+    public CentralUsuariosViewModel CentralUsuarios => Instancia<CentralUsuariosViewModel>();
+    public LicencaViewModel Licenca => Instancia<LicencaViewModel>();
+    public ClientesViewModel Clientes => Instancia<ClientesViewModel>();
+    public FornecedoresViewModel Fornecedores => Instancia<FornecedoresViewModel>();
+    public ConfiguracoesGeraisViewModel ConfiguracoesGerais => Instancia<ConfiguracoesGeraisViewModel>();
+    public CertificadosViewModel Certificados => Instancia<CertificadosViewModel>();
+    public BackupViewModel Backup => Instancia<BackupViewModel>();
+
+    /// <summary>Telas comuns a todos os módulos (os menus delas ficam em <see cref="MontarMenus"/>).</summary>
+    private void RegistrarTelasComuns(CatalogoTelas c)
+    {
+        static bool Admin(MainViewModelBase m) => m.Pode(Permissao.AdministrarSistema);
+        static bool ComAcesso(MainViewModelBase m) => m.TemAcessoNaEmpresa;
+
+        c.Instancia(nameof(Conexao), m => new ConexaoViewModel(m), fixa: true)
+            .Tela(TelasComuns.Conexao, "Configurações › Conexão com o banco de dados", Admin,
+                  v => { v.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null); return Task.CompletedTask; });
+        c.Instancia(nameof(Inicio), m => new InicioViewModel(m), fixa: true)
+            .Tela(TelasComuns.Inicio, "", null, v => { v.Atualizar(); return Task.CompletedTask; });
+
+        c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade)],
+                    atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
+            .Tela(TelasComuns.Empresas, "Cadastros › Empresas", Admin, v =>
+            {
+                if (v.EmConsulta) _ = Disparar(v.CarregarSelecionadaAsync);
+                CarregarAbaEmpresa();
+                return Task.CompletedTask;
+            });
+        c.Instancia(nameof(Contabilidade), m => new ContabilidadeEmpresaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa || AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaContadores) ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.Contabilidade, "Cadastros › Contadores", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(Socios), m => new SociosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa || AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaSocios) ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.Socios, "Cadastros › Sócios", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(Clientes), m => new ClientesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(TelasComuns.Clientes, "Cadastros › Clientes", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(Fornecedores), m => new FornecedoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(TelasComuns.Fornecedores, "Cadastros › Fornecedores", ComAcesso, v => v.CarregarAsync());
+
+        c.Instancia(nameof(Usuarios), m => new UsuariosViewModel(m));
+        c.Instancia(nameof(Perfis), m => new PerfisViewModel(m));
+        c.Instancia(nameof(AlterarSenha), m => new AlterarSenhaViewModel(m));
+        c.Instancia(nameof(CentralUsuarios), m => new CentralUsuariosViewModel(m),
+                    reiniciaJunto: [nameof(Usuarios), nameof(Perfis), nameof(AlterarSenha)])
+            .Tela(TelasComuns.Perfis, "Configurações › Usuários", Admin, v => AbrirCentralUsuarios(v, TelasComuns.Perfis))
+            .Tela(TelasComuns.Usuarios, "Configurações › Usuários", null, v => AbrirCentralUsuarios(v, TelasComuns.Usuarios))
+            .Tela(TelasComuns.AlterarSenha, "Configurações › Usuários", null, v => AbrirCentralUsuarios(v, TelasComuns.AlterarSenha));
+
+        c.Instancia(nameof(Backup), m => new BackupViewModel(m))
+            .Tela(TelasComuns.Backup, "Configurações › Backup e restauração", Admin, v => v.CarregarAsync());
+        c.Instancia(nameof(ConfiguracoesGerais), m => new ConfiguracoesGeraisViewModel(m))
+            .Tela(TelasComuns.ConfiguracoesGerais, "Configurações › Configurações gerais", Admin, v => v.CarregarAsync());
+        c.Instancia(nameof(Certificados), m => new CertificadosViewModel(m))
+            .Tela(TelasComuns.Certificados, "Configurações › Certificados digitais", m => m.Sessao?.Administrador == true, v => v.CarregarAsync());
+        c.Instancia(nameof(Licenca), m => new LicencaViewModel(m))
+            .Tela(TelasComuns.Licenca, "Ajuda › Licença e registro", null, v => v.CarregarAsync());
+        c.Instancia(nameof(Sobre), m => new SobreViewModel(m))
+            .Tela(TelasComuns.Sobre, $"Ajuda › Sobre o {Modulo.Nome}", null, v => { v.Atualizar(); return Task.CompletedTask; });
+    }
+
+    /// <summary>Menus do casco em volta dos do módulo.</summary>
+    private IReadOnlyList<ItemMenu> MontarMenus()
+    {
+        var cadastros = new List<ItemMenu>
+        {
+            ItemMenu.Tela("Empresas", TelasComuns.Empresas),
+            ItemMenu.Tela("Contadores", TelasComuns.Contabilidade),
+            ItemMenu.Tela("Clientes", TelasComuns.Clientes),
+            ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores),
+        };
+        if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
+        return
+        [
+            ItemMenu.Submenu("_Cadastros", [.. cadastros]),
+            .. Modulo.Menus,
+            ItemMenu.Submenu("Con_figurações",
+                ItemMenu.Tela("Configurações gerais", TelasComuns.ConfiguracoesGerais),
+                ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados),
+                ItemMenu.Tela("Usuários", TelasComuns.Usuarios),
+                ItemMenu.Tela("Conexão com o banco de dados", TelasComuns.Conexao),
+                ItemMenu.Tela("Backup e restauração", TelasComuns.Backup),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair)),
+            ItemMenu.Submenu("_Ajuda",
+                ItemMenu.Tela("Tela inicial", TelasComuns.Inicio),
+                ItemMenu.Tela("Licença e registro", TelasComuns.Licenca),
+                ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre, "F1")),
+        ];
+    }
+
+    // ------------------------------------------------------------------ estado
+
+    public VorticisApp? App { get; private set; }
+    public long? EmpresaId => EmpresaSelecionada?.Id;
+    public string ConnectionString => _connectionString;
+
+    [ObservableProperty] private SessaoUsuario? _sessao;
+    [ObservableProperty] private EmpresaPermitida? _empresaSelecionada;
+    [ObservableProperty] private string _status = "Conectando ao banco de dados...";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private bool _logado;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private object? _conteudo;
+    [ObservableProperty] private FuncaoAberta? _funcaoAtiva;
+    [ObservableProperty] private PedidoConfirmacao? _confirmacao;
+
+    /// <summary>Área da janela principal: login/conexão antes de entrar; depois, a tela inicial (as funções abrem em janelas flutuantes).</summary>
+    public object? ConteudoPrincipal => Logado ? Inicio : Conteudo;
+
+    /// <summary>Funções abertas, cada uma em sua janela flutuante.</summary>
+    public ObservableCollection<FuncaoAberta> JanelasAbertas { get; } = [];
+
+    public bool TemJanelasAbertas => JanelasAbertas.Count > 0;
+
+    public string DescricaoEmpresa => EmpresaSelecionada is { } e
+        ? $"{e.RazaoSocial} — CNPJ {Domain.Cadastros.Cnpj.Formatar(e.Cnpj)}"
+        : "";
+    [ObservableProperty] private string _tituloTela = "";
+
+    public ObservableCollection<EmpresaPermitida> EmpresasPermitidas { get; } = [];
+
+    public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
+
+    public string UsuarioRotulo => Sessao is null ? "" : $"{Sessao.Nome}{(Sessao.Administrador ? " (administrador)" : "")}";
+
+    /// <summary>O usuário tem algum acesso (perfil) na empresa ativa.</summary>
+    public bool TemAcessoNaEmpresa => EmpresaSelecionada is not null && _permissoes.TemAcesso;
+
+    // ------------------------------------------------------------------ ciclo de vida
+
+    /// <summary>Abertura do programa: prepara o banco (no modo local, cria e inicia o PostgreSQL embutido) e conecta.</summary>
+    public async Task IniciarAsync()
+    {
+        string cs;
+        try
+        {
+            Status = "Preparando o banco de dados...";
+            cs = await BancoDoAplicativo.PrepararAsync(s => Status = s);
+        }
+        catch (Exception ex)
+        {
+            Status = $"Sem conexão com o banco de dados: {ex.Message}";
+            Conexao.CarregarDe(Configuracao.Padrao, ex.Message);
+            Conteudo = Conexao;
+            return;
+        }
+        await InicializarAsync(cs);
+    }
+
+    public async Task InicializarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, IConsultaInscricaoEstadual? consultaIe = null)
+    {
+        _connectionString = connectionString;
+        _consultaCnpj = consultaCnpj ?? _consultaCnpj;
+        _consultaIe = consultaIe ?? _consultaIe;
+        if (Logado) Sair();
+        if (App is not null) { await App.DisposeAsync(); App = null; }
+        try
+        {
+            await BancoLocal.GarantirBancoAsync(connectionString);
+            App = await VorticisApp.IniciarAsync(connectionString, _consultaCnpj, consultaIe: _consultaIe);
+            Status = $"Conectado a {Configuracao.Descrever(connectionString)}.";
+            await Login.PrepararAsync();
+            Conteudo = Login;
+        }
+        catch (Exception ex)
+        {
+            Status = $"Sem conexão com o banco de dados: {ex.Message}";
+            Conexao.CarregarDe(BancoDoAplicativo.EhBancoLocal(connectionString) ? Configuracao.Padrao : connectionString, ex.Message);
+            Conteudo = Conexao;
+        }
+    }
+
+    /// <summary>Chamado pelo login (ou pela troca obrigatória de senha) quando a sessão está pronta para uso.</summary>
+    public async Task EntrarAsync(SessaoUsuario sessao)
+    {
+        Sessao = sessao;
+        Logado = true;
+        _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
+        await RecarregarEmpresasAsync();
+        if (_configuracaoInicialPendente)
+        {
+            // Primeiro uso: definir os perfis de acesso é obrigatório; o cadastro de empresas pode ficar para depois.
+            Perfis.ConfiguracaoInicial = true;
+            AbrirCommand.NotifyCanExecuteChanged();
+            Abrir(TelasComuns.Perfis);
+            Status = "Configuração inicial: defina os perfis de acesso dos usuários para liberar o sistema.";
+        }
+        else Abrir(TelasComuns.Inicio);
+    }
+
+    public void AoConcluirConfiguracaoInicial()
+    {
+        _configuracaoInicialPendente = false;
+        CentralUsuarios.AtualizarAcesso();
+        AbrirCommand.NotifyCanExecuteChanged();
+        FecharTodasAsJanelas();
+        Abrir(TelasComuns.Inicio);
+        AtualizarStatus();
+    }
+
+    [RelayCommand]
+    private void Sair()
+    {
+        Sessao = null;
+        FecharTodasAsJanelas();
+        Logado = false;
+        _configuracaoInicialPendente = false;
+        EmpresasPermitidas.Clear();
+        EmpresaSelecionada = null;
+        _permissoes = PermissoesEfetivas.Nenhuma;
+        _telaAtual = null;
+        TituloTela = "";
+        RecriarModulos();
+        Login.Limpar();
+        Login.CarregarLoginSalvo();
+        Conteudo = Login;
+        Status = $"Sessão encerrada. Conectado a {Configuracao.Descrever(_connectionString)}.";
+    }
+
+    public async Task RecarregarEmpresasAsync(long? selecionar = null)
+    {
+        if (App is null || Sessao is null) return;
+        var atual = selecionar ?? EmpresaSelecionada?.Id;
+        var lista = await App.Usuarios.EmpresasPermitidasAsync(Sessao);
+        EmpresasPermitidas.Clear();
+        foreach (var e in lista) EmpresasPermitidas.Add(e);
+        EmpresaSelecionada = EmpresasPermitidas.FirstOrDefault(e => e.Id == atual) ?? EmpresasPermitidas.FirstOrDefault();
+        Inicio.Atualizar();
+        await AtualizarPermissoesAsync();
+    }
+
+    /// <summary>Lê do banco o que o usuário pode fazer na empresa ativa (perfil atribuído pelo administrador).</summary>
+    public async Task AtualizarPermissoesAsync()
+    {
+        _permissoes = App is not null && Sessao is not null && EmpresaSelecionada is not null
+            ? await App.Autorizador.ObterAsync(Sessao.Id, EmpresaSelecionada.Id)
+            : PermissoesEfetivas.Nenhuma;
+        AbrirCommand.NotifyCanExecuteChanged();
+        AtualizarPermissoesModulos();
+        AtualizarStatus();
+        // Se a tela aberta deixou de ser permitida (troca de empresa/perfil), vai para a primeira permitida.
+        if (Logado)
+            foreach (var f in JanelasAbertas.Where(f => !PodeAbrir(f.Tela)).ToList()) FecharFuncao(f);
+        if (Logado && _telaAtual is not null && !PodeAbrir(_telaAtual)) AbrirPrimeiraPermitida();
+    }
+
+    private void AtualizarPermissoesModulos()
+    {
+        foreach (var def in _catalogo.Instancias.Where(d => d.AtualizarPermissoes is not null))
+            def.AtualizarPermissoes!(_instancias[def.Nome]);
+    }
+
+    private void AbrirPrimeiraPermitida() => Abrir(PodeAbrir(TelasComuns.Inicio) ? TelasComuns.Inicio : TelasComuns.Perfis);
+
+    // ------------------------------------------------------------------ permissões e navegação
+
+    public bool Pode(Permissao permissao) =>
+        Sessao is not null && (permissao == Permissao.AdministrarSistema
+            ? Sessao.Administrador
+            : EmpresaSelecionada is not null && _permissoes.Pode(permissao));
+
+    public bool PodeAbrir(string? tela) => Logado && tela is not null && _catalogo.Telas.TryGetValue(tela, out var def)
+        && (!_configuracaoInicialPendente
+            ? def.Pode(this)
+            : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios);
+
+    /// <summary>A chave pertence a uma tela registrada (comum ou do módulo)?</summary>
+    public bool ConheceTela(string chave) => _catalogo.Telas.ContainsKey(chave);
+
+    public void AbrirTela(string tela) => Abrir(tela);
+
+    [RelayCommand(CanExecute = nameof(PodeAbrir))]
+    private void Abrir(string? tela)
+    {
+        if (!PodeAbrir(tela)) return;
+        var def = _catalogo.Telas[tela!];
+        var vm = _instancias[def.Instancia];
+        (Conteudo, TituloTela) = (vm, def.Titulo);
+        _telaAtual = tela;
+        RegistrarJanela(tela!);
+        if (def.AoAbrir is { } aoAbrir) _ = Disparar(() => aoAbrir(vm));
+    }
+
+    /// <summary>Configurações › Usuários: seleciona e carrega a aba correspondente à chave aberta.</summary>
+    private Task AbrirCentralUsuarios(CentralUsuariosViewModel central, string tela)
+    {
+        central.AtualizarAcesso();
+        var aba = tela switch
+        {
+            TelasComuns.Perfis => CentralUsuariosViewModel.AbaPerfis,
+            TelasComuns.AlterarSenha => CentralUsuariosViewModel.AbaSenha,
+            _ => central.PodeAdministrar ? CentralUsuariosViewModel.AbaUsuarios
+               : central.PodePerfis ? CentralUsuariosViewModel.AbaPerfis : CentralUsuariosViewModel.AbaSenha,
+        };
+        if (central.AbaSelecionada == aba) CarregarAbaUsuarios();
+        else central.AbaSelecionada = aba;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Configurações › Usuários: carrega a aba aberta.</summary>
+    public void CarregarAbaUsuarios()
+    {
+        if (!ReferenceEquals(Conteudo, CentralUsuarios)) return;
+        switch (CentralUsuarios.AbaSelecionada)
+        {
+            case CentralUsuariosViewModel.AbaUsuarios when CentralUsuarios.PodeAdministrar: _ = Disparar(Usuarios.CarregarAsync); break;
+            case CentralUsuariosViewModel.AbaPerfis when CentralUsuarios.PodePerfis: _ = Disparar(Perfis.CarregarAsync); break;
+            case CentralUsuariosViewModel.AbaRegistro when CentralUsuarios.PodeAdministrar: _ = Disparar(CentralUsuarios.CarregarRegistrosAsync); break;
+        }
+    }
+
+    /// <summary>Cadastros › Empresas: carrega a aba de sócios ou de contadores da empresa selecionada.</summary>
+    public void CarregarAbaEmpresa()
+    {
+        if (_telaAtual != TelasComuns.Empresas || EmpresaSelecionada is null) return;
+        if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) _ = Disparar(Socios.CarregarAsync);
+        if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) _ = Disparar(Contabilidade.CarregarAsync);
+    }
+
+    private bool AbaDaEmpresaAtiva(int aba) => _telaAtual == TelasComuns.Empresas && Empresas.AbaSelecionada == aba;
+
+    /// <summary>A tela aberta no momento exibe a instância informada?</summary>
+    private bool InstanciaAtiva(string nome) =>
+        _telaAtual is not null && _catalogo.Telas.TryGetValue(_telaAtual, out var d) && d.Instancia == nome;
+
+    // ------------------------------------------------------------------ janelas flutuantes e confirmação
+
+    private void RegistrarJanela(string tela)
+    {
+        if (!Logado || Conteudo is null || ReferenceEquals(Conteudo, Inicio))
+        {
+            FuncaoAtiva = null;
+            return;
+        }
+        var f = JanelasAbertas.FirstOrDefault(j => ReferenceEquals(j.ViewModel, Conteudo));
+        if (f is null) JanelasAbertas.Add(f = new FuncaoAberta(Conteudo, tela, TituloTela));
+        else (f.Tela, f.Titulo) = (tela, TituloTela);
+        FuncaoAtiva = f;
+    }
+
+    partial void OnFuncaoAtivaChanged(FuncaoAberta? value)
+    {
+        foreach (var j in JanelasAbertas) j.Ativa = ReferenceEquals(j, value);
+    }
+
+    /// <summary>Traz a janela da função para a frente (clique na barra de janelas ou foco na janela).</summary>
+    [RelayCommand]
+    public void AtivarFuncao(FuncaoAberta? f)
+    {
+        if (f is null || !JanelasAbertas.Contains(f)) return;
+        (Conteudo, TituloTela, _telaAtual) = (f.ViewModel, f.Titulo, f.Tela);
+        FuncaoAtiva = f;
+    }
+
+    /// <summary>Fecha a função (botão ✕ da janela ou da barra). Sem outras abertas, volta à tela inicial.</summary>
+    [RelayCommand]
+    public void FecharFuncao(FuncaoAberta? f)
+    {
+        if (f is null || !JanelasAbertas.Remove(f)) return;
+        if (ReferenceEquals(FuncaoAtiva, f) || ReferenceEquals(Conteudo, f.ViewModel))
+        {
+            if (JanelasAbertas.LastOrDefault() is { } proxima) AtivarFuncao(proxima);
+            else
+            {
+                (Conteudo, TituloTela, _telaAtual, FuncaoAtiva) = (Inicio, "", TelasComuns.Inicio, null);
+                Inicio.Atualizar();
+            }
+        }
+        ReiniciarModulo(f.ViewModel);
+    }
+
+    /// <summary>
+    /// Função fechada recomeça do zero na próxima abertura: o módulo é trocado por uma instância nova
+    /// (nada do que foi digitado, filtrado ou consultado permanece). Telas compostas reiniciam as abas junto.
+    /// </summary>
+    private void ReiniciarModulo(object modulo)
+    {
+        var alvo = _catalogo.Instancias.FirstOrDefault(d => !d.Fixa && ReferenceEquals(_instancias[d.Nome], modulo));
+        if (alvo is null) return;
+        foreach (var nome in alvo.ReiniciaJunto.Prepend(alvo.Nome))
+        {
+            _instancias[nome] = _catalogo.Instancias.First(d => d.Nome == nome).Criar(this);
+            OnPropertyChanged(nome);
+        }
+        AtualizarPermissoesModulos();
+    }
+
+    private void FecharTodasAsJanelas()
+    {
+        JanelasAbertas.Clear();
+        FuncaoAtiva = null;
+    }
+
+    public Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não")
+    {
+        Confirmacao?.Responder(false);
+        var pedido = new PedidoConfirmacao(titulo, mensagem, textoSim, textoNao);
+        Confirmacao = pedido;
+        return pedido.Resposta;
+    }
+
+    public async Task ReiniciarParaLoginAsync(string mensagem)
+    {
+        await InicializarAsync(_connectionString, _consultaCnpj, _consultaIe);
+        Login.Mensagem = mensagem;
+    }
+
+    public async Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar")
+    {
+        Confirmacao?.Responder(false);
+        var pedido = new PedidoConfirmacao(titulo, mensagem, textoSim, textoNao, pedeSenha: true);
+        Confirmacao = pedido;
+        return await pedido.Resposta ? pedido.Senha : null;
+    }
+
+    [RelayCommand]
+    private void ResponderConfirmacao(bool sim)
+    {
+        var pedido = Confirmacao;
+        Confirmacao = null;
+        pedido?.Responder(sim);
+    }
+
+    partial void OnLogadoChanged(bool value) => AbrirCommand.NotifyCanExecuteChanged();
+
+    partial void OnSessaoChanged(SessaoUsuario? value) => OnPropertyChanged(nameof(UsuarioRotulo));
+
+    partial void OnEmpresaSelecionadaChanged(EmpresaPermitida? value)
+    {
+        foreach (var def in _catalogo.Instancias.Where(d => d.AoLimpar is not null)) def.AoLimpar!(_instancias[def.Nome]);
+        _ = Disparar(async () =>
+        {
+            await AtualizarPermissoesAsync();
+            foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null))
+                await def.AoTrocarEmpresa!(_instancias[def.Nome], InstanciaAtiva(def.Nome));
+        });
+    }
+
+    private void AtualizarStatus()
+    {
+        if (Sessao is null) return;
+        var empresa = EmpresaSelecionada is null
+            ? (EmpresasPermitidas.Count == 0 ? "nenhuma empresa liberada" : "nenhuma empresa selecionada")
+            : Sessao.Administrador ? "administrador" : $"perfil {_permissoes.NomePerfil ?? "sem acesso"}";
+        Status = $"Usuário: {Sessao.Login} | {empresa} | {Configuracao.Descrever(_connectionString)}";
+    }
+
+    /// <summary>Tarefa disparada em segundo plano: erros vão para a barra de status em vez de sumirem.</summary>
+    private async Task Disparar(Func<Task> acao)
+    {
+        try
+        {
+            await acao();
+        }
+        catch (Exception ex)
+        {
+            Status = $"Erro ao carregar dados: {ex.Message}";
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (App is not null) await App.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+}

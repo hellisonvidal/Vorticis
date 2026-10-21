@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.ImportacaoPlanoView"
@@ -57,7 +58,7 @@
             <Button Content="Converter plano atual para a máscara" Command="{Binding AplicarMascaraCommand}" />
           </StackPanel>
         </Border>
-        <v:MensagensView />
+        <c:MensagensView />
       </StackPanel>
     </ScrollViewer>
 

@@ -1,12 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              xmlns:app="using:Vorticis.Application.Imobilizado"
              x:Class="Vorticis.Desktop.Views.BensView"
              x:DataType="vm:BensViewModel">
   <Grid ColumnDefinitions="*,16,430" RowDefinitions="Auto,*,Auto" Margin="8">
-    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
         <TextBlock Classes="titulo" Text="Bens do imobilizado" VerticalAlignment="Center" />
@@ -98,7 +99,7 @@
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Motivo" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MotivoBaixa}" Watermark="venda, perda, doação..." />
         </Grid>
-        <v:MensagensView />
+        <c:MensagensView />
       </StackPanel>
     </ScrollViewer>
   </Grid>

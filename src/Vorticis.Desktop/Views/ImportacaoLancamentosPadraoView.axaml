@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              xmlns:app="using:Vorticis.Application.Contabil"
@@ -36,7 +37,7 @@
         <Button Content="Pré-visualizar" Command="{Binding PreVisualizarCommand}" />
         <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
       </StackPanel>
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
     <v:PreviaImportacaoView Margin="0,8,0,0" />
   </DockPanel>

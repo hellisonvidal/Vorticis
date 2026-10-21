@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.TermosView"
@@ -25,7 +26,7 @@
                    VerticalAlignment="Center" />
         <TextBlock Grid.Row="3" Text="Representante legal / CPF" VerticalAlignment="Center" />
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Representante}" Watermark="Nome" />
-        <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="000.000.000-00" v:Mascara.Tipo="Cpf" />
+        <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="000.000.000-00" c:Mascara.Tipo="Cpf" />
         <TextBlock Grid.Row="4" Text="Contador / CRC" VerticalAlignment="Center" />
         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Contador}" Watermark="Nome" />
         <TextBox Grid.Row="4" Grid.Column="3" Text="{Binding Crc}" Watermark="CRC (ex.: SP-123456/O-7)" />
@@ -43,7 +44,7 @@
       </WrapPanel>
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="Cada termo sai em seu próprio PDF, com o mesmo texto do Livro Diário (ITG 2000): identificação da entidade e assinaturas do representante legal e do contador. Representante e contador vêm dos cadastros de Sócios e Contadores da empresa." />
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Executável do módulo Fiscal: usa o casco comum (login, empresas, usuários, backup...) e acrescenta as telas do módulo. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>VorticisFiscal</AssemblyName>
+    <Product>Vorticis Fiscal</Product>
+    <Title>Vorticis Fiscal</Title>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Mesmo ícone da suíte por enquanto -->
+    <ApplicationIcon>..\..\instalador\icone\VorticisContabil.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Vorticis.Desktop.Comum\Vorticis.Desktop.Comum.csproj" />
+    <ProjectReference Include="..\Vorticis.Fiscal\Vorticis.Fiscal.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Vorticis.Desktop.Comum" />
+    <Using Include="Vorticis.Desktop.Comum.ViewModels" />
+    <Using Include="Vorticis.Desktop.Comum.Views" />
+  </ItemGroup>
+</Project>

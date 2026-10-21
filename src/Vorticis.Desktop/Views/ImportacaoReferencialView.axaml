@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              xmlns:dom="using:Vorticis.Domain.Contabil"
@@ -24,7 +25,7 @@
         <Button Grid.Row="2" Grid.Column="2" Content="Procurar..." Click="Procurar" />
       </Grid>
       <Button Content="Importar tabela" Command="{Binding ImportarCommand}" Classes="accent" />
-      <v:MensagensView />
+      <c:MensagensView />
       <TextBlock Text="Tabelas importadas" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,8,0,0" />
     </StackPanel>
     <DataGrid ItemsSource="{Binding Tabelas}" IsReadOnly="True" AutoGenerateColumns="False">

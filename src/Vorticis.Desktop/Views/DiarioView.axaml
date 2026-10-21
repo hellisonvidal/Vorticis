@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.DiarioView"
@@ -12,9 +13,9 @@
       <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
-      <v:BarraExportacaoView />
+      <c:BarraExportacaoView />
     </StackPanel>
-    <v:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
     <DataGrid ItemsSource="{Binding Linhas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />

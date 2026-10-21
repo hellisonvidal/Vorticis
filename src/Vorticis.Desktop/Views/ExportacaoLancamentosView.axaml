@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.ExportacaoLancamentosView"
@@ -14,14 +15,14 @@
         <CheckBox Content="Incluir estornados e estornos" IsChecked="{Binding IncluirEstornados}" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
         <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
-        <v:BarraExportacaoView />
+        <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock FontSize="11" Foreground="Gray"
                  Text="Uma linha por partida (conta debitada ou creditada), com documento, centro de custo e participante. Gere e escolha o formato." />
     </StackPanel>
     <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Spacing="4">
       <TextBlock Text="{Binding Resumo}" FontWeight="SemiBold" />
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
     <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>

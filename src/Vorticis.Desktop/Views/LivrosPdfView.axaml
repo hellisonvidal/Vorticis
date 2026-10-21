@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.LivrosPdfView"
@@ -35,7 +36,7 @@
         <NumericUpDown Grid.Column="1" Value="{Binding NumeroLivro}" Minimum="1" Maximum="9999" FormatString="0" Width="130" HorizontalAlignment="Left" />
         <TextBlock Grid.Row="1" Text="Representante legal / CPF" VerticalAlignment="Center" />
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Representante}" Watermark="Nome" />
-        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="000.000.000-00" v:Mascara.Tipo="Cpf" />
+        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RepresentanteCpf}" Watermark="000.000.000-00" c:Mascara.Tipo="Cpf" />
         <TextBlock Grid.Row="2" Text="Contador / CRC" VerticalAlignment="Center" />
         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Contador}" Watermark="Nome" />
         <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Crc}" Watermark="CRC (ex.: SP-123456/O-7)" />
@@ -51,7 +52,7 @@
               HorizontalAlignment="Left" Margin="0,8,0,0" />
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="O PDF é salvo em Documentos\Vorticis Contabil\Relatorios e aberto no leitor padrão. O livro segue a ITG 2000 (folhas numeradas, termos com identificação da entidade e assinaturas do representante legal e do contador); cada parte começa em página nova. As assinaturas marcadas fecham o conteúdo, antes do termo de encerramento. Para quem é obrigado à ECD, o livro oficial é o arquivo digital do SPED." />
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

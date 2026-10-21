@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              xmlns:dom="using:Vorticis.Domain.Contabil"
@@ -54,7 +55,7 @@
           <Button Content="Vincular" Command="{Binding VincularCommand}" Classes="accent" />
           <Button Content="Remover vínculo" Command="{Binding RemoverVinculoCommand}" />
         </StackPanel>
-        <v:MensagensView />
+        <c:MensagensView />
       </StackPanel>
       <ListBox ItemsSource="{Binding Opcoes}" SelectedItem="{Binding ReferencialEscolhida}">
         <ListBox.ItemTemplate>

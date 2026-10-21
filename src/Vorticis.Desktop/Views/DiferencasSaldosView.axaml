@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.DiferencasSaldosView"
@@ -23,7 +24,7 @@
       </ItemsControl>
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="Compara o saldo de cada conta no dia anterior ao início com o saldo no fim do período (a diferença é o movimento líquido) e verifica: débitos = créditos, contas com saldo contrário à natureza e a coerência entre as partidas e os saldos mensais." />
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
     <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
       <DataGrid.Columns>

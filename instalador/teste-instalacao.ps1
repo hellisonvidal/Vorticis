@@ -1,4 +1,4 @@
-﻿# Teste de fumaça em Windows limpo (CI): instala em modo silencioso, abre o Vorticis e confere que o banco local foi
+﻿# Teste de fumaça em Windows limpo (CI): instala a suíte em modo silencioso, abre o Vorticis Contábil e confere que o banco local foi
 # criado, iniciado e migrado sem nenhuma configuração; depois fecha o programa e confere que o banco foi parado.
 # Requer Windows PowerShell 5.1 (DPAPI via System.Security).
 param([Parameter(Mandatory)] [string]$Setup)
@@ -8,10 +8,12 @@ $log = Join-Path $env:TEMP "vorticis-setup.log"
 $p = Start-Process $Setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/LOG=`"$log`"" -Wait -PassThru
 if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40; throw "Instalador terminou com código $($p.ExitCode)" }
 
-$pasta = Join-Path $env:LOCALAPPDATA "Programs\Vorticis Contabil"
+$pasta = Join-Path $env:LOCALAPPDATA "Programs\Vorticis"
 $app = Join-Path $pasta "VorticisContabil.exe"
 $pgBin = Join-Path $pasta "pgsql\bin"
-foreach ($f in $app, (Join-Path $pgBin "pg_ctl.exe"), (Join-Path $pgBin "initdb.exe")) {
+# instalação completa (padrão do modo silencioso): os três módulos e o banco local compartilhado
+foreach ($f in $app, (Join-Path $pasta "VorticisFiscal.exe"), (Join-Path $pasta "VorticisFolha.exe"), (Join-Path $pasta "Vorticis.ico"),
+               (Join-Path $pgBin "pg_ctl.exe"), (Join-Path $pgBin "initdb.exe")) {
     if (-not (Test-Path $f)) { throw "Arquivo não instalado: $f" }
 }
 Write-Host "Instalado em $pasta"

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.LancamentoView"
@@ -76,7 +77,7 @@
           <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
             <Border Classes="linha">
               <Grid ColumnDefinitions="84,46,130,46,130,92,76,40,*,58,Auto">
-                <TextBox Tag="data" Text="{Binding Data}" v:Mascara.Tipo="Data" />
+                <TextBox Tag="data" Text="{Binding Data}" c:Mascara.Tipo="Data" />
                 <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
                   <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
                                    ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
@@ -114,7 +115,7 @@
         <TextBlock Text="{Binding TotalDebito, StringFormat='Débitos: {0}'}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding TotalCredito, StringFormat='Créditos: {0}'}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding Diferenca, StringFormat='Diferença: {0}'}" FontWeight="SemiBold" VerticalAlignment="Center"
-                   Foreground="{Binding Balanceado, Converter={x:Static v:Conversores.OkOuErro}}" />
+                   Foreground="{Binding Balanceado, Converter={x:Static c:Conversores.OkOuErro}}" />
       </StackPanel>
       <TextBlock Grid.Column="1" Margin="16,0" FontSize="12" Foreground="#1F3A5F" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                  Text="{Binding LinhaSelecionada.ResumoContas}" />
@@ -124,7 +125,7 @@
       </StackPanel>
     </Grid>
 
-    <v:MensagensView Grid.Row="4" />
+    <c:MensagensView Grid.Row="4" />
 
     <!-- Lançamentos efetuados (os estornados permanecem, marcados) e o estorno do selecionado -->
     <DockPanel Grid.Row="5" Margin="0,2,0,0">

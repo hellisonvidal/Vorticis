@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.BalanceteView"
@@ -15,10 +16,10 @@
                 ToolTip.Tip="Plano com participantes: mostra, abaixo de cada conta, o saldo de cada cliente/fornecedor (a conta continua com a soma)" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
-      <v:BarraExportacaoView />
+      <c:BarraExportacaoView />
     </StackPanel>
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding Totais}" FontWeight="SemiBold" Margin="0,6,0,0" />
-    <v:MensagensView DockPanel.Dock="Bottom" />
+    <c:MensagensView DockPanel.Dock="Bottom" />
     <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Conta" Binding="{ReflectionBinding CodigoIndentado}" Width="150" />

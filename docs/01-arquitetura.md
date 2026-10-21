@@ -19,7 +19,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Vorticis.Desktop (Avalonia, MVVM)                                 │
+│ Vorticis.Desktop.Comum + executáveis dos módulos (Avalonia, MVVM) │
 ├──────────────────────────────────────────────────────────────────┤
 │ Vorticis.Application  — casos de uso (EfetivarLancamento,          │
 │                        ImportarNFe, GerarECD, CalcularFolha...)  │
@@ -41,6 +41,39 @@ Regras de dependência:
 - **Só o módulo Contábil grava lançamentos.** Fiscal, Banco e Folha emitem *propostas de lançamento* (`LancamentoProposto`) que passam pelo mesmo `ServicoLancamento.Efetivar()` — um único ponto de validação.
 - Cada módulo é um schema PostgreSQL (`core`, `contabil`, `fiscal`, `banco`, `folha`, `gov`).
 - Tabelas legais (alíquotas, faixas, tetos, códigos de tabelas do eSocial/SPED) vivem em `core.parametro_legal` com vigência — **nada de valor legal no código**.
+
+### 2.1 Suíte de executáveis (Contábil, Fiscal, Folha)
+
+O produto é uma **suíte de três executáveis** sobre o mesmo banco, login, empresas e configurações (`%APPDATA%\Vorticis`, `%LOCALAPPDATA%\Vorticis`):
+
+```
+Vorticis.Desktop (VorticisContabil)  Vorticis.Fiscal.Desktop (VorticisFiscal)  Vorticis.Folha.Desktop (VorticisFolha)
+        │  telas contábeis                   │  telas fiscais                       │  telas da folha
+        └──────────────────┬─────────────────┴──────────────────────────────────────┘
+                 Vorticis.Desktop.Comum  — casco: App/bootstrap, janela principal (menu fornecido pelo módulo),
+                 login, banco local, empresas, contadores, clientes/fornecedores, usuários, perfis, certificados,
+                 configurações, backup, licença, sobre, controles e utilitários de tela
+                           │
+        Vorticis.Fiscal ── Vorticis.Folha ── (regras/serviços/repositórios de cada módulo; hoje vazios)
+                           │
+              Vorticis.Application / Vorticis.Domain / Vorticis.Infra   (compartilhados; Infra tem o migrador e `VorticisApp`)
+```
+
+**Ponto de extensão.** Cada executável implementa `IModuloDesktop` (`Vorticis.Desktop.Comum.Modulos`) e herda `AppBase`/`MainViewModelBase`:
+
+| Membro | Uso |
+|---|---|
+| `Nome`, `NomeCurto`, `Subtitulo`, `NomeExecutavel` | Título da janela, login, tela inicial e Sobre |
+| `ItensCadastros` | Itens do módulo no menu Cadastros (depois de Empresas, Contadores, Clientes, Fornecedores) |
+| `Menus` | Menus do módulo, entre Cadastros e Configurações; item = `ItemMenu.Tela(titulo, chave)`, `Submenu`, `Separador` ou `EmBreve` (desabilitado) |
+| `Atalhos` | Atalhos de teclado (`AtalhoTela(gesto, chave, descrição)`), listados na tela Sobre |
+| `RegistrarTelas(CatalogoTelas)` | `catalogo.Instancia(nome, m => new XViewModel(m), atualizarPermissoes:, aoLimpar:, aoTrocarEmpresa:).Tela(chave, título, pode:, aoAbrir:)` |
+
+O casco mantém os menus **Cadastros comuns**, **Configurações** e **Ajuda**; o login, a empresa ativa, as permissões, as janelas de função e as confirmações ficam em `MainViewModelBase`. Telas novas: ViewModel + View (`UserControl`) no projeto do módulo, um `DataTemplate` no `App.axaml` do módulo e o registro em `RegistrarTelas`. Telas comuns a vários módulos entram no casco (e em `TemplatesComuns`).
+
+**Banco compartilhado.** O servidor local sobe com o primeiro módulo aberto e só é parado pelo último a fechar (marcas travadas em `%LOCALAPPDATA%\Vorticis\execucao`).
+
+**Migrações centralizadas.** Todas ficam em `db/` (um único migrador; toda base recebe todos os esquemas, independentemente dos módulos instalados). Faixas reservadas: **001–024** núcleo e contábil (em uso), **025–029** ECD/ECF, **030–039** Fiscal, **040–049** Folha de Pagamento.
 
 ## 3. Modelo de dados
 

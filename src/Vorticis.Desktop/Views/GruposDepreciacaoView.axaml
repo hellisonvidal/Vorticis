@@ -1,11 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.GruposDepreciacaoView"
              x:DataType="vm:GruposDepreciacaoViewModel">
   <Grid ColumnDefinitions="*,16,400" RowDefinitions="Auto,*,Auto" Margin="8">
-    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Regras de depreciação (grupos de bens)" Margin="0,0,0,8" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
@@ -42,7 +43,7 @@
         <TextBlock Grid.Row="7" Classes="rotulo" Text="Base legal" />
         <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding BaseLegal}" TextWrapping="Wrap" />
       </Grid>
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
   </Grid>
 </UserControl>

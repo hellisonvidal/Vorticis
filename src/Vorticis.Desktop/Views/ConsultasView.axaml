@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.ConsultasView"
@@ -12,7 +13,7 @@
     </Style>
   </UserControl.Styles>
   <DockPanel>
-    <v:MensagensView DockPanel.Dock="Bottom" Margin="8,4" />
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="8,4" />
     <TabControl Name="AbasConsultas" SelectedIndex="{Binding AbaSelecionada}" Padding="0">
       <TabItem Header="Saldos de contas" IsEnabled="{Binding PodeSaldos}">
         <DockPanel Margin="8">

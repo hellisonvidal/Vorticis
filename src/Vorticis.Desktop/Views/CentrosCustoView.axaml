@@ -1,11 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.CentrosCustoView"
              x:DataType="vm:CentrosCustoViewModel">
   <Grid ColumnDefinitions="*,16,340" RowDefinitions="Auto,*" Margin="8">
-    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Centros de custo" Margin="0,0,0,8" />
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
@@ -39,7 +40,7 @@
         <CheckBox Grid.Row="3" Grid.Column="1" Content="Sintético (grupo, não recebe lançamentos)" IsChecked="{Binding Sintetico}" IsEnabled="{Binding EmEdicao}" />
         <CheckBox Grid.Row="4" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" IsEnabled="{Binding EmAlteracao}" />
       </Grid>
-      <v:MensagensView />
+      <c:MensagensView />
     </StackPanel>
   </Grid>
 </UserControl>

@@ -17,7 +17,7 @@ public sealed record TabelaLinha(TabelaReferencialImportada Tabela)
 }
 
 /// <summary>Configurações › Plano referencial da RFB: importação das tabelas oficiais (somente administrador).</summary>
-public partial class ImportacaoReferencialViewModel(MainViewModel main) : ModuloViewModel(main)
+public partial class ImportacaoReferencialViewModel(MainViewModelBase main) : ModuloViewModel(main)
 {
     public static IReadOnlyList<TipoPlanoReferencial> Tipos => TipoPlanoReferencial.Todos;
     public ObservableCollection<TabelaLinha> Tabelas { get; } = [];
