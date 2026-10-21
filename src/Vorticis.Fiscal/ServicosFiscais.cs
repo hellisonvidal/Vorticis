@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using Vorticis.Fiscal.Contabilizacao;
+using Vorticis.Fiscal.Comum;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Simples;
 using Vorticis.Fiscal.Postgres;
 using Vorticis.Infra;
 
@@ -20,10 +22,14 @@ public sealed class ServicosFiscais
     {
         var ds = app.DataSource;
         var repoDocumentos = new RepositorioDocumentos(ds);
+        Parametros = new ParametrosFiscaisPostgres(ds);
         Documentos = new ServicoDocumentosFiscais(repoDocumentos, app.Autorizador);
         Contabilizacao = new ServicoContabilizacaoFiscal(new RepositorioContabilizacao(ds), repoDocumentos, app.Lancamentos, app.Autorizador);
+        Simples = new ServicoSimplesNacional(new RepositorioSimples(ds), repoDocumentos, Parametros, app.Autorizador);
     }
 
+    public IParametrosFiscais Parametros { get; }
+    public ServicoSimplesNacional Simples { get; }
     public ServicoDocumentosFiscais Documentos { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
 }

@@ -5,4 +5,8 @@
     <ProjectReference Include="..\Vorticis.Application\Vorticis.Application.csproj" />
     <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Tabelas legais por vigência (semente de core.parametro_legal): Simples Nacional, Lucro Presumido/Real... -->
+    <EmbeddedResource Include="Parametros\*.json" />
+  </ItemGroup>
 </Project>
