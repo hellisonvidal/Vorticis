@@ -723,6 +723,23 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             empPart.UsaParticipantes = false;
             await empPart.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(empPart.Erros);
+
+            // Cadastros › Empresas: NIRE (aba Dados cadastrais) e aba Contabilidade (modelo do plano, porte, contas de encerramento)
+            await empPart.CarregarSelecionadaAsync();
+            Assert.True(empPart.PodeAbaContabilidade);
+            Assert.Equal("basico", empPart.ModeloSelecionado?.Id);
+            Assert.Equal(("5.1.01.001", "2.3.03.001", "2.3.03.002"), (empPart.ContaApuracao, empPart.ContaLucros, empPart.ContaPrejuizos));
+            empPart.AlterarCommand.Execute(null);
+            empPart.Nire = "123";
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(empPart.Erros, e => e.Contains("NIRE"));
+            empPart.Nire = "35.2.0123456-7";
+            (empPart.GrandePorte, empPart.UsaCentroCusto, empPart.ContaLucros) = (true, true, "2.3.03.001");
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.True(empPart.Erros.Count == 0, string.Join("; ", empPart.Erros));
+            Assert.Equal("35201234567", await db.EscalarAsync<string>("SELECT nire FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
+            Assert.True(await db.EscalarAsync<bool>("SELECT grande_porte AND usa_centro_custo FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
+
             vm.AbrirCommand.Execute(Telas.Balancete);
             (vm.Balancete.Inicio, vm.Balancete.Fim, vm.Balancete.DetalharParticipantes) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31), true);
             await vm.Balancete.GerarCommand.ExecuteAsync(null);

@@ -9,10 +9,12 @@ namespace Vorticis.Application.Contabil;
 public sealed record ContaDetalhe(
     long Id, string Codigo, string Descricao, bool Analitica, short Nivel, long? ContaPaiId, string CodNat,
     IndicadorDC NaturezaSaldo, bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, bool Ativa,
-    bool TemMovimento, bool TemFilhas, decimal Saldo, int? CodigoReduzido = null);
+    bool TemMovimento, bool TemFilhas, decimal Saldo, int? CodigoReduzido = null, long? GrupoParticipantesId = null);
 
+/// <param name="GrupoParticipantesId">Conta sintética onde os participantes são alocados; obrigatório quando a conta exige participante.</param>
 public sealed record NovaConta(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo,
-                               bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, int? CodigoReduzido = null);
+                               bool ExigeCentroCusto, bool ExigeParticipante, DateOnly DataInclusao, int? CodigoReduzido = null,
+                               long? GrupoParticipantesId = null);
 
 public sealed record CentroCustoDetalhe(long Id, string Codigo, string Descricao, long? PaiId, bool Ativo, bool TemMovimento,
                                         bool Analitico = true, short Nivel = 1, bool TemFilhos = false);
@@ -25,11 +27,17 @@ public interface IRepositorioPlanoContas
     Task<long> IncluirAsync(long empresaId, NovaConta conta, long? contaPaiId, short nivel, bool analitica, long? paiParaSintetica,
                             long usuarioId, CancellationToken ct);
     Task AlterarAsync(long contaId, string descricao, IndicadorDC naturezaSaldo, bool exigeCentroCusto, bool exigeParticipante, bool ativa,
-                      long usuarioId, CancellationToken ct);
+                      long? grupoParticipantesId, long usuarioId, CancellationToken ct);
     Task ExcluirAsync(long contaId, long usuarioId, CancellationToken ct);
     Task AlterarReduzidoAsync(long contaId, int reduzido, long usuarioId, CancellationToken ct);
-    /// <summary>Apaga o plano da empresa (sem lançamentos) e grava o novo, numa transação.</summary>
-    Task SubstituirAsync(long empresaId, IReadOnlyList<Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct);
+    /// <summary>
+    /// Apaga o plano da empresa (sem lançamentos) e grava o novo, numa transação. Com <paramref name="modelo"/>, a empresa fica registrada
+    /// com ele (e com as contas de encerramento dele); sem, o plano passa a ser próprio (importado).
+    /// </summary>
+    Task SubstituirAsync(long empresaId, IReadOnlyList<Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct,
+                         Cadastros.ModeloPlano? modelo = null);
+    Task<Cadastros.ConfiguracaoContabil> ObterConfiguracaoAsync(long empresaId, CancellationToken ct);
+    Task SalvarConfiguracaoAsync(long empresaId, Cadastros.ConfiguracaoContabil configuracao, CancellationToken ct);
     /// <summary>Troca os códigos das contas (mesma hierarquia), numa transação.</summary>
     Task RecodificarAsync(long empresaId, IReadOnlyDictionary<long, string> codigos, long usuarioId, CancellationToken ct);
 
@@ -50,7 +58,7 @@ public interface IRepositorioPlanoContas
 /// lançamentos; uma analítica com movimento não pode virar sintética; conta com movimento ou filhas não é
 /// excluída (inativa-se); só se inativa conta com saldo zero.
 /// </summary>
-public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositorio, Autorizador autorizador)
+public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositorio, Autorizador autorizador, Cadastros.IFontePlanoModelo? modelos = null)
 {
     [GeneratedRegex(@"^\d+(\.\d+)*$")]
     private static partial Regex FormatoCodigo();
@@ -74,6 +82,8 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         if (plano.Any(x => x.Codigo == codigo)) return Resultado<long>.Falha($"Já existe a conta {codigo}.");
         if (c.CodigoReduzido is { } red && (red <= 0 || plano.FirstOrDefault(x => x.CodigoReduzido == red) is not null))
             return Resultado<long>.Falha(red <= 0 ? "O código reduzido deve ser maior que zero." : $"O código reduzido {red} já está em uso.");
+        if (ValidarGrupoParticipantes(plano, c.ExigeParticipante, c.GrupoParticipantesId, c.CodNat) is { } erroGrupo) return Resultado<long>.Falha(erroGrupo);
+        if (!c.ExigeParticipante) c = c with { GrupoParticipantesId = null };
 
         var segmentos = codigo.Split('.');
         if (segmentos.Length == 1)
@@ -95,8 +105,25 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
             pai.Id, (short)segmentos.Length, analitica: true, pai.Analitica ? pai.Id : null, usuarioId, ct));
     }
 
+    /// <summary>
+    /// Conta que exige participante (cliente/fornecedor) precisa indicar o grupo — conta sintética, da mesma natureza — em que as
+    /// contas dos participantes são alocadas. Retorna o erro, ou null se estiver correto.
+    /// </summary>
+    private static string? ValidarGrupoParticipantes(IReadOnlyList<ContaDetalhe> plano, bool exige, long? grupoId, string codNat)
+    {
+        if (!exige) return null;
+        if (grupoId is null) return "Informe o grupo (conta sintética) onde as contas dos participantes serão alocadas.";
+        var grupo = plano.FirstOrDefault(x => x.Id == grupoId);
+        if (grupo is null) return "Grupo dos participantes não encontrado neste plano.";
+        if (grupo.Analitica) return $"O grupo dos participantes deve ser uma conta sintética; {grupo.Codigo} é analítica.";
+        if (!grupo.Ativa) return $"O grupo dos participantes {grupo.Codigo} está inativo.";
+        if (grupo.CodNat != codNat) return $"O grupo dos participantes {grupo.Codigo} é de outra natureza (COD_NAT {grupo.CodNat}).";
+        return null;
+    }
+
     public async Task<Resultado> AlterarAsync(long empresaId, long contaId, string descricao, IndicadorDC naturezaSaldo, bool exigeCentroCusto,
-                                             bool exigeParticipante, bool ativa, long usuarioId, CancellationToken ct = default)
+                                             bool exigeParticipante, bool ativa, long usuarioId, CancellationToken ct = default,
+                                             long? grupoParticipantesId = null)
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return Resultado.Falha(negado);
         if (string.IsNullOrWhiteSpace(descricao)) return Resultado.Falha("Informe a descrição.");
@@ -110,7 +137,10 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
             if (comSaldo is not null)
                 return Resultado.Falha($"Não é possível inativar: a conta {comSaldo.Codigo} tem saldo {LinhaBalancete.Formatar(comSaldo.Saldo)}. Transfira o saldo antes.");
         }
-        await repositorio.AlterarAsync(contaId, descricao.Trim(), naturezaSaldo, exigeCentroCusto, exigeParticipante, ativa, usuarioId, ct);
+        if (exigeParticipante && !conta.Analitica) return Resultado.Falha("Só conta analítica (que recebe lançamentos) exige participante.");
+        if (ValidarGrupoParticipantes(plano, exigeParticipante, grupoParticipantesId, conta.CodNat) is { } erroGrupo) return Resultado.Falha(erroGrupo);
+        await repositorio.AlterarAsync(contaId, descricao.Trim(), naturezaSaldo, exigeCentroCusto, exigeParticipante, ativa,
+                                       exigeParticipante ? grupoParticipantesId : null, usuarioId, ct);
         return Resultado.Ok();
     }
 
@@ -146,6 +176,64 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         {
             return Resultado.Falha($"Não foi possível excluir: {ex.Message}");
         }
+    }
+
+    // ------------------------------------------------------------------ modelos de plano e configuração contábil
+
+    /// <summary>Modelos de plano de contas embutidos (o mesmo catálogo do cadastro da empresa).</summary>
+    public IReadOnlyList<Cadastros.ModeloPlano> ListarModelos() => modelos?.Listar() ?? [];
+
+    /// <summary>
+    /// Aplica um modelo de plano de contas à empresa, substituindo o plano atual. Só é permitido enquanto nenhuma conta tem
+    /// lançamentos (inclusive rascunhos e saldos iniciais). Registra o modelo e as contas padrão do encerramento na empresa.
+    /// </summary>
+    public async Task<Resultado<int>> AplicarModeloAsync(long empresaId, string modeloId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return negado;
+        var modelo = modelos?.Listar().FirstOrDefault(m => m.Id == modeloId);
+        if (modelo is null) return Resultado<int>.Falha("Escolha um modelo de plano de contas.");
+        var atual = await repositorio.ListarAsync(empresaId, ct);
+        if (atual.FirstOrDefault(c => c.TemMovimento) is { } comMovimento)
+            return Resultado<int>.Falha($"O plano atual já tem lançamentos (ex.: conta {comMovimento.Codigo}); trocar o modelo substitui o plano inteiro " +
+                                        "e só é permitido antes do primeiro lançamento.");
+        var contas = modelos!.Obter(modelo.Id);
+        try
+        {
+            await repositorio.SubstituirAsync(empresaId, contas, usuarioId, ct, modelo);
+            return Resultado<int>.Ok(contas.Count);
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<int>.Falha($"Não foi possível aplicar o modelo: {ex.Message}");
+        }
+    }
+
+    public async Task<Cadastros.ConfiguracaoContabil> ObterConfiguracaoAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ObterConfiguracaoAsync(empresaId, ct) : new();
+
+    /// <summary>
+    /// Grava as configurações contábeis da empresa. As contas de apuração e de lucros/prejuízos devem existir no plano
+    /// (analíticas); o modelo registrado não muda aqui (ver <see cref="AplicarModeloAsync"/>).
+    /// </summary>
+    public async Task<Resultado> SalvarConfiguracaoAsync(long empresaId, Cadastros.ConfiguracaoContabil cfg, DateOnly? inicioAtividades, long usuarioId,
+                                                        CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return Resultado.Falha(negado);
+        cfg = cfg.Normalizar();
+        var erros = cfg.Validar(inicioAtividades).ToList();
+        if (erros.Count == 0)
+        {
+            var plano = await repositorio.ListarAsync(empresaId, ct);
+            if (plano.Count > 0)
+                foreach (var (rotulo, codigo) in new[] { ("apuração do resultado", cfg.ContaApuracao), ("lucros ou superávit acumulados", cfg.ContaLucros),
+                                                         ("prejuízos ou déficit acumulados", cfg.ContaPrejuizos) })
+                    if (codigo is not null && !plano.Any(c => c.Codigo == codigo && c.Analitica))
+                        erros.Add($"A conta de {rotulo} ({codigo}) não existe no plano ou não é analítica.");
+        }
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        var atual = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
+        await repositorio.SalvarConfiguracaoAsync(empresaId, cfg with { ModeloPlano = atual.ModeloPlano }, ct);
+        return Resultado.Ok();
     }
 
     // ------------------------------------------------------------------ importação e máscara

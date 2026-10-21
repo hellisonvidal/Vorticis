@@ -51,9 +51,14 @@ public sealed class RepositorioParticipantes(NpgsqlDataSource ds) : IRepositorio
                .ComTexto("bairro", p.Bairro).Com("ctl", p.ControleConta);
             if (p.Id != 0) cmd.Com("id", p.Id);
             var id = (long)(await cmd.ExecuteScalarAsync(ct))!;
-            // Participante alocado na conta: a conta passa a exigir o participante nos lançamentos.
+            // Participante alocado na conta: a conta passa a exigir o participante nos lançamentos. Sem grupo definido no plano,
+            // o grupo dos participantes é a conta superior (sintética) da conta.
             if (p.ControleConta && contaId is not null)
-                await using (var conta = ds.CreateCommand("UPDATE contabil.plano_contas SET exige_participante = TRUE WHERE id = @c AND empresa_id = @e")
+                await using (var conta = ds.CreateCommand("""
+                                 UPDATE contabil.plano_contas
+                                    SET exige_participante = TRUE, grupo_participantes_id = COALESCE(grupo_participantes_id, conta_pai_id)
+                                  WHERE id = @c AND empresa_id = @e
+                                 """)
                                  .Com("c", contaId.Value).Com("e", empresaId))
                     await conta.ExecuteNonQueryAsync(ct);
             return id;
@@ -72,7 +77,8 @@ public sealed class RepositorioParticipantes(NpgsqlDataSource ds) : IRepositorio
             await using var tx = await con.BeginTransactionAsync(ct);
             await using (var cmd = new NpgsqlCommand("""
                 UPDATE core.empresa SET usa_participantes = @u WHERE id = @e;
-                UPDATE contabil.plano_contas SET exige_participante = @u
+                UPDATE contabil.plano_contas
+                   SET exige_participante = @u, grupo_participantes_id = CASE WHEN @u THEN COALESCE(grupo_participantes_id, conta_pai_id) END
                  WHERE empresa_id = @e
                    AND id IN (SELECT conta_id FROM core.participante WHERE empresa_id = @e AND controle_conta AND conta_id IS NOT NULL);
                 """, con, tx).Com("u", usa).Com("e", empresaId))

@@ -22,9 +22,12 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO core.empresa (cnpj, razao_social, nome_fantasia, natureza_juridica, cnae_principal, uf,
                                           cod_municipio_ibge, data_inicio_ativ, cep, logradouro, numero, complemento, bairro,
-                                          municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual)
+                                          municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual,
+                                          nire, plano_modelo, mascara_plano, inicio_escrituracao, usa_centro_custo, grande_porte,
+                                          conta_apuracao, conta_lucros, conta_prejuizos)
                 VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
-                        @municipio, @email, @tel, @sit, @fonte, @consultado, @ie) RETURNING id
+                        @municipio, @email, @tel, @sit, @fonte, @consultado, @ie,
+                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
@@ -34,17 +37,22 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .ComTexto("tel", e.Complemento?.Telefone).ComTexto("sit", e.Complemento?.SituacaoCadastral)
                 .ComTexto("fonte", e.Complemento?.FonteDados)
                 .Com("consultado", NpgsqlTypes.NpgsqlDbType.TimestampTz, e.Complemento?.DadosConsultadosEm)
-                .ComTexto("ie", e.InscricaoEstadual))
+                .ComTexto("ie", e.InscricaoEstadual).ComTexto("nire", e.Nire)
+                .ComTexto("modelo", e.Contabil?.ModeloPlano).ComTexto("mascara", e.Contabil?.MascaraPlano)
+                .Com("inicioesc", NpgsqlTypes.NpgsqlDbType.Date, e.Contabil?.InicioEscrituracao)
+                .Com("cc", e.Contabil?.UsaCentroCusto ?? false).Com("porte", e.Contabil?.GrandePorte ?? false)
+                .ComTexto("capur", e.Contabil?.ContaApuracao).ComTexto("cluc", e.Contabil?.ContaLucros).ComTexto("cprej", e.Contabil?.ContaPrejuizos))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO core.estabelecimento (empresa_id, cnpj, matriz, uf, cod_municipio_ibge, inscricao_estadual)
                 VALUES (@id, @cnpj, TRUE, @uf, @mun, @ie);
-                INSERT INTO core.empresa_regime (empresa_id, regime, vigencia_inicio)
-                VALUES (@id, @reg::core.regime_tributario, GREATEST(make_date(@ano, 1, 1), @ini));
+                INSERT INTO core.empresa_regime (empresa_id, regime, vigencia_inicio, apuracao_irpj, regime_caixa)
+                VALUES (@id, @reg::core.regime_tributario, GREATEST(make_date(@ano, 1, 1), @ini), @apirpj, @caixa);
                 """, con, tx)
                 .Com("id", id).Com("cnpj", e.Cnpj).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).ComTexto("ie", e.InscricaoEstadual)
-                .Com("reg", e.Regime.Sql()).Com("ano", e.AnoPrimeiroExercicio).Com("ini", e.DataInicioAtividades))
+                .Com("reg", e.Regime.Sql()).Com("ano", e.AnoPrimeiroExercicio).Com("ini", e.DataInicioAtividades)
+                .ComTexto("apirpj", e.Contabil?.ApuracaoIrpj).Com("caixa", e.Contabil?.RegimeCaixa ?? false))
                 await cmd.ExecuteNonQueryAsync(ct);
 
             var inicioExercicio = await CriarExercicioAsync(con, tx, id, e.AnoPrimeiroExercicio, ct);
@@ -138,7 +146,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 UPDATE core.empresa
                    SET razao_social = @rs, nome_fantasia = @nf, natureza_juridica = @nj, cnae_principal = @cnae, uf = @uf,
                        cod_municipio_ibge = @mun, data_inicio_ativ = @ini, inscricao_estadual = @ie, cep = @cep, logradouro = @log,
-                       numero = @num, complemento = @compl, bairro = @bairro, municipio = @municipio, email = @email, telefone = @tel
+                       numero = @num, complemento = @compl, bairro = @bairro, municipio = @municipio, email = @email, telefone = @tel,
+                       nire = @nire
                  WHERE id = @id AND ativa;
                 UPDATE core.estabelecimento SET uf = @uf, cod_municipio_ibge = @mun, inscricao_estadual = @ie WHERE empresa_id = @id AND matriz;
                 """, con, tx)
@@ -146,7 +155,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
                 .ComTexto("ie", e.InscricaoEstadual).ComTexto("cep", e.Complemento?.Cep).ComTexto("log", e.Complemento?.Logradouro)
                 .ComTexto("num", e.Complemento?.Numero).ComTexto("compl", e.Complemento?.Complemento).ComTexto("bairro", e.Complemento?.Bairro)
-                .ComTexto("municipio", e.Complemento?.Municipio).ComTexto("email", e.Complemento?.Email).ComTexto("tel", e.Complemento?.Telefone))
+                .ComTexto("municipio", e.Complemento?.Municipio).ComTexto("email", e.Complemento?.Email).ComTexto("tel", e.Complemento?.Telefone)
+                .ComTexto("nire", e.Nire))
                 await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;

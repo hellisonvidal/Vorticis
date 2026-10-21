@@ -14,7 +14,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                    EXISTS (SELECT 1 FROM contabil.partida p WHERE p.conta_id = c.id),
                    EXISTS (SELECT 1 FROM contabil.plano_contas f WHERE f.conta_pai_id = c.id),
                    COALESCE((SELECT SUM(s.total_debito - s.total_credito) FROM contabil.saldo_mensal s WHERE s.conta_id = c.id), 0),
-                   c.codigo_reduzido
+                   c.codigo_reduzido, c.grupo_participantes_id
               FROM contabil.plano_contas c WHERE c.empresa_id = @e ORDER BY c.codigo
             """).Com("e", empresaId);
         var res = new List<ContaDetalhe>();
@@ -23,7 +23,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             res.Add(new ContaDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetBoolean(3), r.GetInt16(4),
                 r.IsDBNull(5) ? null : r.GetInt64(5), r.GetString(6), Mapeamentos.DC(r.GetString(7)), r.GetBoolean(8), r.GetBoolean(9),
                 r.GetFieldValue<DateOnly>(10), r.GetBoolean(11), r.GetBoolean(12), r.GetBoolean(13), r.GetDecimal(14),
-                r.IsDBNull(15) ? null : r.GetInt32(15)));
+                r.IsDBNull(15) ? null : r.GetInt32(15), r.IsDBNull(16) ? null : r.GetInt64(16)));
         return res;
     }
 
@@ -45,20 +45,21 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             long id;
             await using (var cmd = new NpgsqlCommand("""
                 INSERT INTO contabil.plano_contas (empresa_id, codigo, descricao, tipo, nivel, conta_pai_id, cod_nat, natureza_saldo,
-                                                   exige_centro_custo, exige_participante, data_inclusao, codigo_reduzido)
-                VALUES (@e, @c, @d, @t::contabil.tipo_conta, @n, @pai, @nat, @sal::contabil.indicador_dc, @cc, @part, @inc, @red) RETURNING id
+                                                   exige_centro_custo, exige_participante, data_inclusao, codigo_reduzido, grupo_participantes_id)
+                VALUES (@e, @c, @d, @t::contabil.tipo_conta, @n, @pai, @nat, @sal::contabil.indicador_dc, @cc, @part, @inc, @red, @grupo) RETURNING id
                 """, con, tx)
                 .Com("e", empresaId).Com("c", c.Codigo).Com("d", c.Descricao).Com("t", analitica ? "A" : "S").Com("n", nivel)
                 .Com("pai", NpgsqlTypes.NpgsqlDbType.Bigint, contaPaiId).Com("nat", c.CodNat).Com("sal", c.NaturezaSaldo.ToString())
                 .Com("cc", c.ExigeCentroCusto).Com("part", c.ExigeParticipante).Com("inc", c.DataInclusao)
-                .Com("red", NpgsqlTypes.NpgsqlDbType.Integer, c.CodigoReduzido))
+                .Com("red", NpgsqlTypes.NpgsqlDbType.Integer, c.CodigoReduzido)
+                .Com("grupo", NpgsqlTypes.NpgsqlDbType.Bigint, c.GrupoParticipantesId))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
             await tx.CommitAsync(ct);
             return id;
         });
 
     public Task AlterarAsync(long contaId, string descricao, IndicadorDC naturezaSaldo, bool exigeCentroCusto, bool exigeParticipante, bool ativa,
-                             long usuarioId, CancellationToken ct)
+                             long? grupoParticipantesId, long usuarioId, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var con = await ds.OpenConnectionAsync(ct);
@@ -67,10 +68,10 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             await using (var cmd = new NpgsqlCommand("""
                 UPDATE contabil.plano_contas
                    SET descricao = @d, natureza_saldo = @s::contabil.indicador_dc, exige_centro_custo = @cc,
-                       exige_participante = @p, ativa = @a
+                       exige_participante = @p, ativa = @a, grupo_participantes_id = @g
                  WHERE id = @id
                 """, con, tx).Com("d", descricao).Com("s", naturezaSaldo.ToString()).Com("cc", exigeCentroCusto)
-                             .Com("p", exigeParticipante).Com("a", ativa).Com("id", contaId))
+                             .Com("p", exigeParticipante).Com("a", ativa).Com("g", NpgsqlTypes.NpgsqlDbType.Bigint, grupoParticipantesId).Com("id", contaId))
                 await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;
@@ -105,7 +106,8 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
             return 0;
         });
 
-    public Task SubstituirAsync(long empresaId, IReadOnlyList<Application.Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct)
+    public Task SubstituirAsync(long empresaId, IReadOnlyList<Application.Cadastros.ContaModelo> plano, long usuarioId, CancellationToken ct,
+                                Application.Cadastros.ModeloPlano? modelo = null)
         => Mapeamentos.TraduzirErrosAsync(async () =>
         {
             await using var con = await ds.OpenConnectionAsync(ct);
@@ -126,9 +128,60 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                 DELETE FROM contabil.mapeamento_referencial WHERE conta_id IN (SELECT id FROM contabil.plano_contas WHERE empresa_id = @e);
                 DELETE FROM contabil.saldo_mensal WHERE conta_id IN (SELECT id FROM contabil.plano_contas WHERE empresa_id = @e);
                 DELETE FROM contabil.plano_contas WHERE empresa_id = @e;
+                UPDATE core.participante SET controle_conta = FALSE WHERE empresa_id = @e;
                 """, con, tx).Com("e", empresaId))
                 await cmd.ExecuteNonQueryAsync(ct);
             await RepositorioEmpresa.InserirPlanoAsync(con, tx, empresaId, plano, inicio, ct);
+            // com modelo, a empresa passa a usar as contas de encerramento dele; sem (plano importado), as configuradas continuam valendo
+            await using (var cmd = new NpgsqlCommand("""
+                UPDATE core.empresa
+                   SET plano_modelo = @m,
+                       conta_apuracao = COALESCE(@ap, conta_apuracao), conta_lucros = COALESCE(@lu, conta_lucros),
+                       conta_prejuizos = COALESCE(@pr, conta_prejuizos)
+                 WHERE id = @e
+                """, con, tx).Com("e", empresaId).ComTexto("m", modelo?.Id).ComTexto("ap", modelo?.Contas.Apuracao)
+                             .ComTexto("lu", modelo?.Contas.LucrosAcumulados).ComTexto("pr", modelo?.Contas.PrejuizosAcumulados))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
+    public async Task<Application.Cadastros.ConfiguracaoContabil> ObterConfiguracaoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT e.plano_modelo, e.mascara_plano, e.inicio_escrituracao, e.usa_centro_custo, e.grande_porte,
+                   e.conta_apuracao, e.conta_lucros, e.conta_prejuizos, r.apuracao_irpj, COALESCE(r.regime_caixa, FALSE)
+              FROM core.empresa e
+              LEFT JOIN LATERAL (SELECT apuracao_irpj, regime_caixa FROM core.empresa_regime
+                                  WHERE empresa_id = e.id ORDER BY vigencia_inicio DESC LIMIT 1) r ON TRUE
+             WHERE e.id = @e
+            """).Com("e", empresaId);
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        if (!await rd.ReadAsync(ct)) return new();
+        string? T(int i) => rd.IsDBNull(i) ? null : rd.GetString(i);
+        return new Application.Cadastros.ConfiguracaoContabil(T(0), T(1), rd.IsDBNull(2) ? null : rd.GetFieldValue<DateOnly>(2), rd.GetBoolean(3),
+                                                              rd.GetBoolean(4), T(5), T(6), T(7), T(8), rd.GetBoolean(9));
+    }
+
+    public Task SalvarConfiguracaoAsync(long empresaId, Application.Cadastros.ConfiguracaoContabil c, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, null, ct);
+            // apuração do IRPJ e regime de caixa pertencem ao regime vigente (o mais recente)
+            await using (var cmd = new NpgsqlCommand("""
+                UPDATE core.empresa
+                   SET mascara_plano = @mascara, inicio_escrituracao = @inicio, usa_centro_custo = @cc, grande_porte = @porte,
+                       conta_apuracao = @ap, conta_lucros = @lu, conta_prejuizos = @pr
+                 WHERE id = @e;
+                UPDATE core.empresa_regime SET apuracao_irpj = @irpj, regime_caixa = @caixa
+                 WHERE id = (SELECT id FROM core.empresa_regime WHERE empresa_id = @e ORDER BY vigencia_inicio DESC LIMIT 1);
+                """, con, tx)
+                .Com("e", empresaId).ComTexto("mascara", c.MascaraPlano).Com("inicio", NpgsqlTypes.NpgsqlDbType.Date, c.InicioEscrituracao)
+                .Com("cc", c.UsaCentroCusto).Com("porte", c.GrandePorte).ComTexto("ap", c.ContaApuracao).ComTexto("lu", c.ContaLucros)
+                .ComTexto("pr", c.ContaPrejuizos).ComTexto("irpj", c.ApuracaoIrpj).Com("caixa", c.RegimeCaixa))
+                await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;
         });

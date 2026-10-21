@@ -18,6 +18,18 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     [ObservableProperty] private bool _encerrado;
     [ObservableProperty] private string _motivo = "";
 
+    /// <summary>Contas de apuração e de lucros/prejuízos configuradas na empresa (Cadastros › Empresas › Contabilidade); sem configuração, as do modelo básico.</summary>
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        var geracao = NovaGeracao();
+        var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
+        if (!EhAtual(geracao)) return;
+        (ContaApuracao, ContaLucros, ContaPrejuizos) =
+            (cfg.ContaApuracao ?? Padrao.Apuracao, cfg.ContaLucros ?? Padrao.LucrosAcumulados, cfg.ContaPrejuizos ?? Padrao.PrejuizosAcumulados);
+        (Previa, Encerrado) = ("", false);
+    }
+
     private ContasEncerramento Contas => new(ContaApuracao.Trim(), ContaLucros.Trim(), ContaPrejuizos.Trim());
     private int AnoInt => (int)(Ano ?? DateTime.Today.Year);
 

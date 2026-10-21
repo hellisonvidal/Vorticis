@@ -485,6 +485,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             else CentralUsuarios.AbaSelecionada = aba;
         }
         if (tela == Telas.PlanoContas) _ = Disparar(PlanoContas.CarregarAsync);
+        if (tela == Telas.Encerramento) _ = Disparar(Encerramento.CarregarAsync);
         if (tela == Telas.CentrosCusto) _ = Disparar(CentrosCusto.CarregarAsync);
         if (tela == Telas.SaldosIniciais) _ = Disparar(SaldosIniciais.CarregarAsync);
         if (tela == Telas.Backup) _ = Disparar(Backup.CarregarAsync);
@@ -669,6 +670,7 @@ public partial class MainViewModel : ObservableObject, IContexto, IAsyncDisposab
             await Lancamento.AoTrocarEmpresaAsync();
             await Periodos.CarregarAsync();
             if (_telaAtual == Telas.PlanoContas) await PlanoContas.CarregarAsync();
+            if (_telaAtual == Telas.Encerramento) await Encerramento.CarregarAsync();
             if (_telaAtual == Telas.CentrosCusto) await CentrosCusto.CarregarAsync();
             if (_telaAtual == Telas.SaldosIniciais) await SaldosIniciais.CarregarAsync();
             if (_telaAtual == Telas.MapeamentoReferencial) await MapeamentoReferencial.CarregarAsync();

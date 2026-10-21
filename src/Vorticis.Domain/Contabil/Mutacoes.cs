@@ -64,12 +64,13 @@ public static class Mutacoes
         bool Propria(string s) => textos[0].Contains(s);
         if (Tem("TESOURARIA")) return ColunaPl.AcoesTesouraria;
         if (Tem("AJUSTE") && Tem("AVALIAC")) return ColunaPl.AjustesAvaliacao;
+        if (Propria("SUPERAVIT") || Propria("DEFICIT")) return ColunaPl.LucrosAcumulados;   // entidades sem fins lucrativos (ITG 2002)
         if (Propria("LUCRO") || Propria("PREJUIZO")) return Propria("RESERVA") ? ColunaPl.ReservasLucros : ColunaPl.LucrosAcumulados;
         if (Tem("RESERVA") && (Tem("RESERVA DE CAPITAL") || Tem("RESERVAS DE CAPITAL") || Propria("AGIO") || Propria("DOACAO")))
             return ColunaPl.ReservasCapital;
         if (Tem("RESERVA")) return ColunaPl.ReservasLucros;
-        if (Tem("CAPITAL")) return ColunaPl.CapitalSocial;
-        return Tem("LUCRO") || Tem("PREJUIZO") ? ColunaPl.LucrosAcumulados : ColunaPl.ReservasLucros;
+        if (Tem("CAPITAL") || Tem("PATRIMONIO SOCIAL")) return ColunaPl.CapitalSocial;
+        return Tem("LUCRO") || Tem("PREJUIZO") || Tem("SUPERAVIT") || Tem("DEFICIT") ? ColunaPl.LucrosAcumulados : ColunaPl.ReservasLucros;
     }
 
     /// <param name="saldosIniciais">Saldo (débito positivo) de cada conta analítica no início do período.</param>

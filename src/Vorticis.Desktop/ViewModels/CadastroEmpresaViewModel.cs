@@ -4,8 +4,26 @@ using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Cadastros;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
+using Vorticis.Infra;
 
 namespace Vorticis.Desktop.ViewModels;
+
+/// <summary>Modelos de plano de contas embutidos (cadastro da empresa e tela do plano de contas).</summary>
+public static class CatalogoModelosPlano
+{
+    private static readonly PlanoModeloEmbutido Fonte = new();
+    public static IReadOnlyList<ModeloPlano> Todos { get; } = Fonte.Listar();
+    public static ModeloPlano? Padrao { get; } = Todos.FirstOrDefault(m => m.Id == Fonte.ModeloPadrao);
+}
+
+public sealed record OpcaoApuracaoIrpj(string Valor, string Nome)
+{
+    public static readonly IReadOnlyList<OpcaoApuracaoIrpj> Todas =
+    [
+        new(ConfiguracaoContabil.Trimestral, "Trimestral"),
+        new(ConfiguracaoContabil.AnualEstimativa, "Anual, com estimativa mensal"),
+    ];
+}
 
 /// <summary>
 /// Cadastros › Empresas: incluir (com pré-preenchimento pela base pública do CNPJ), alterar e excluir;
@@ -19,11 +37,15 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
 
     public MainViewModel Main => main;
 
-    /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (as duas últimas, da empresa selecionada).</summary>
+    /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (da empresa selecionada), 3 = contabilidade.</summary>
     [ObservableProperty] private int _abaSelecionada;
 
     public const int AbaSocios = 1;
     public const int AbaContadores = 2;
+    public const int AbaContabilidade = 3;
+
+    /// <summary>A aba Contabilidade vale para a empresa selecionada e também na inclusão (modelo de plano e demais opções da nova empresa).</summary>
+    public bool PodeAbaContabilidade => TemEmpresaSelecionada || EmInclusao;
 
     public bool TemEmpresaSelecionada => main.EmpresaSelecionada is not null;
 
@@ -35,7 +57,8 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     {
         OnPropertyChanged(nameof(TemEmpresaSelecionada));
         OnPropertyChanged(nameof(EmpresaSelecionadaRotulo));
-        if (!TemEmpresaSelecionada) AbaSelecionada = 0;
+        OnPropertyChanged(nameof(PodeAbaContabilidade));
+        if (!TemEmpresaSelecionada && !EmInclusao) AbaSelecionada = 0;
         if (EmConsulta) MostrarSelecionado();
     }
 
@@ -47,6 +70,8 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     [ObservableProperty] private string _naturezaJuridica = "2062";
     [ObservableProperty] private string _cnae = "";
     [ObservableProperty] private string _inscricaoEstadual = "";
+    /// <summary>NIRE (Junta Comercial), 11 dígitos; exigido na ECD e na ECF.</summary>
+    [ObservableProperty] private string _nire = "";
     [ObservableProperty] private string _uf = "SP";
     [ObservableProperty] private string _municipioIbge = "";
     [ObservableProperty] private string _municipio = "";
@@ -58,13 +83,68 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     [ObservableProperty] private string _email = "";
     [ObservableProperty] private string _telefone = "";
     [ObservableProperty] private DateTime? _inicioAtividades = new DateTime(DateTime.Today.Year, 1, 1);
-    [ObservableProperty] private RegimeTributario _regime = RegimeTributario.SimplesNacional;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EhLucroReal), nameof(PermiteRegimeCaixa))]
+    private RegimeTributario _regime = RegimeTributario.SimplesNacional;
     [ObservableProperty] private decimal? _anoExercicio = DateTime.Today.Year;
     [ObservableProperty] private bool _importarPlanoModelo = true;
     /// <summary>Plano de contas com participantes: clientes e fornecedores alocados dentro das contas contábeis.</summary>
     [ObservableProperty] private bool _usaParticipantes;
     [ObservableProperty] private string? _origemDados;
     [ObservableProperty] private string? _aviso;
+
+    // ------------------------------------------------------------------ aba Contabilidade
+
+    public static IReadOnlyList<ModeloPlano> ModelosPlano => CatalogoModelosPlano.Todos;
+    public static IReadOnlyList<string> Mascaras => Domain.Contabil.MascaraPlano.Sugestoes;
+    public static IReadOnlyList<OpcaoApuracaoIrpj> FormasApuracao => OpcaoApuracaoIrpj.Todas;
+
+    /// <summary>Modelo do plano de contas: na inclusão é o que será criado; em empresa existente, escolher outro substitui o plano (se ainda sem lançamentos).</summary>
+    [ObservableProperty] private ModeloPlano? _modeloSelecionado = CatalogoModelosPlano.Padrao;
+    [ObservableProperty] private string _planoAtual = "";
+    [ObservableProperty] private string _mascara = "";
+    [ObservableProperty] private string? _mascaraModelo;
+    [ObservableProperty] private DateTime? _inicioEscrituracao;
+    [ObservableProperty] private bool _usaCentroCusto;
+    [ObservableProperty] private bool _grandePorte;
+    [ObservableProperty] private string _contaApuracao = "";
+    [ObservableProperty] private string _contaLucros = "";
+    [ObservableProperty] private string _contaPrejuizos = "";
+    [ObservableProperty] private OpcaoApuracaoIrpj? _apuracaoIrpj;
+    [ObservableProperty] private bool _regimeCaixa;
+
+    private ConfiguracaoContabil _configuracao = new();
+
+    /// <summary>Apuração trimestral/anual do IRPJ só se aplica ao Lucro Real.</summary>
+    public bool EhLucroReal => Regime == RegimeTributario.LucroReal;
+
+    /// <summary>Regime de caixa: opção do Lucro Presumido e do Simples Nacional.</summary>
+    public bool PermiteRegimeCaixa => Regime is RegimeTributario.LucroPresumido or RegimeTributario.SimplesNacional;
+
+    partial void OnMascaraModeloChanged(string? value)
+    {
+        if (value is not null) Mascara = value;
+    }
+
+    /// <summary>Na inclusão, as contas de encerramento acompanham o modelo escolhido (podem ser trocadas).</summary>
+    partial void OnModeloSelecionadoChanged(ModeloPlano? value)
+    {
+        if (EmInclusao && value is not null)
+            (ContaApuracao, ContaLucros, ContaPrejuizos) = (value.Contas.Apuracao, value.Contas.LucrosAcumulados, value.Contas.PrejuizosAcumulados);
+    }
+
+    private ConfiguracaoContabil ConfiguracaoDoFormulario() => new(
+        ModeloSelecionado?.Id, Mascara, InicioEscrituracao is { } d ? DateOnly.FromDateTime(d) : null, UsaCentroCusto, GrandePorte,
+        ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa);
+
+    private void MostrarConfiguracao(ConfiguracaoContabil c)
+    {
+        _configuracao = c;
+        ModeloSelecionado = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == c.ModeloPlano);
+        PlanoAtual = ModeloSelecionado is { } m ? $"Plano de contas aplicado: {m.Nome}." : "Plano próprio (importado ou personalizado) ou ainda não criado.";
+        (Mascara, InicioEscrituracao, UsaCentroCusto, GrandePorte) = (c.MascaraPlano ?? "", c.InicioEscrituracao?.ToDateTime(TimeOnly.MinValue), c.UsaCentroCusto, c.GrandePorte);
+        (ContaApuracao, ContaLucros, ContaPrejuizos) = (c.ContaApuracao ?? "", c.ContaLucros ?? "", c.ContaPrejuizos ?? "");
+        (ApuracaoIrpj, RegimeCaixa) = (OpcaoApuracaoIrpj.Todas.FirstOrDefault(o => o.Valor == c.ApuracaoIrpj), c.RegimeCaixa);
+    }
 
     public string TituloFormulario => Modo switch
     {
@@ -89,6 +169,8 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     {
         OnPropertyChanged(nameof(TituloFormulario));
         OnPropertyChanged(nameof(NumeroRegistro));
+        OnPropertyChanged(nameof(PodeAbaContabilidade));
+        if (!PodeAbaContabilidade && AbaSelecionada == AbaContabilidade) AbaSelecionada = 0;
     }
 
     // ------------------------------------------------------------------ incluir / alterar / excluir
@@ -98,6 +180,11 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         LimparFormulario();
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
+        MostrarConfiguracao(new ConfiguracaoContabil());
+        PlanoAtual = "";
+        ModeloSelecionado = CatalogoModelosPlano.Padrao;
+        if (ModeloSelecionado is { } padrao)
+            (ContaApuracao, ContaLucros, ContaPrejuizos) = (padrao.Contas.Apuracao, padrao.Contas.LucrosAcumulados, padrao.Contas.PrejuizosAcumulados);
     }
 
     /// <summary>Mostra no formulário a empresa selecionada (lista à direita ou seletor do topo).</summary>
@@ -107,11 +194,13 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
     {
         var geracao = NovaGeracao();
         EmpresaDetalhe? d = null;
+        ConfiguracaoContabil? cfg = null;
         var usa = false;
         if (main.App is { } app && main.EmpresaSelecionada is { } sel && PodeManter)
         {
             d = await app.Empresas.ObterAsync(sel.Id);
             usa = await app.Participantes.UsaParticipantesAsync(sel.Id);
+            if (main.Sessao is { } sessao) cfg = await app.PlanoContas.ObterConfiguracaoAsync(sel.Id, sessao.Id);
         }
         if (!EhAtual(geracao) || EmEdicao) return;
         UsaParticipantes = usa;
@@ -120,7 +209,8 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         else
         {
             (Cnpj, RazaoSocial, NomeFantasia, NaturezaJuridica, Cnae) = (Domain.Cadastros.Cnpj.Formatar(d.Cnpj), d.RazaoSocial, d.NomeFantasia ?? "", d.NaturezaJuridica, d.CnaePrincipal);
-            (InscricaoEstadual, Uf, MunicipioIbge, Municipio) = (d.InscricaoEstadual ?? "", d.Uf, d.CodMunicipioIbge, d.Municipio ?? "");
+            (InscricaoEstadual, Nire, Uf, MunicipioIbge, Municipio) = (d.InscricaoEstadual ?? "", d.Nire ?? "", d.Uf, d.CodMunicipioIbge, d.Municipio ?? "");
+            MostrarConfiguracao(cfg ?? new ConfiguracaoContabil());
             (Cep, Logradouro, Numero, Complemento, Bairro) = (Formato.Cep(d.Cep), d.Logradouro ?? "", d.Numero ?? "", d.Complemento ?? "", d.Bairro ?? "");
             (Email, Telefone) = (d.Email ?? "", d.Telefone ?? "");
             InicioAtividades = d.DataInicioAtividades?.ToDateTime(TimeOnly.MinValue);
@@ -165,7 +255,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
             Cnpj, RazaoSocial, string.IsNullOrWhiteSpace(NomeFantasia) ? null : NomeFantasia.Trim(),
             NaturezaJuridica.Trim(), Cnae, Uf.Trim(), MunicipioIbge.Trim(),
             DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), Regime, (int)(AnoExercicio ?? DateTime.Today.Year),
-            ImportarPlanoModelo, Complementos(origem), InscricaoEstadual));
+            ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario()));
         MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos.");
         if (!r.Sucesso) return false;
         if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);
@@ -184,9 +274,10 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         if (_carregada is not { } atual) { Erros.Add("Selecione a empresa a alterar."); return false; }
         var r = await app.Empresas.AlterarAsync(new AlteracaoEmpresa(
             atual.Id, RazaoSocial, string.IsNullOrWhiteSpace(NomeFantasia) ? null : NomeFantasia.Trim(), NaturezaJuridica.Trim(), Cnae,
-            Uf.Trim(), MunicipioIbge.Trim(), DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), InscricaoEstadual, Complementos(null)));
+            Uf.Trim(), MunicipioIbge.Trim(), DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), InscricaoEstadual, Complementos(null), Nire));
         MostrarResultado(r, "Alterações da empresa salvas.");
         if (!r.Sucesso) return false;
+        if (main.Sessao is { } sess && !await SalvarContabilidadeAsync(app, atual.Id, sess.Id)) return false;
         if (main.Sessao is { } sessao && UsaParticipantes != await app.Participantes.UsaParticipantesAsync(atual.Id))
         {
             var p = await app.Participantes.DefinirUsaParticipantesAsync(atual.Id, UsaParticipantes, sessao.Id);
@@ -195,6 +286,35 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
         Modo = ModoCadastro.Consulta;
         await main.RecarregarEmpresasAsync(atual.Id);
         await CarregarSelecionadaAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Aba Contabilidade de empresa existente: se outro modelo de plano foi escolhido, substitui o plano (com confirmação e só
+    /// sem lançamentos); depois grava as demais configurações (mesmas conferências do serviço).
+    /// </summary>
+    private async Task<bool> SalvarContabilidadeAsync(Infra.VorticisApp app, long empresaId, long usuarioId)
+    {
+        var escolhido = ModeloSelecionado;
+        string? aplicado = null;
+        if (escolhido is not null && escolhido.Id != _configuracao.ModeloPlano)
+        {
+            if (!await Contexto.ConfirmarAsync("Trocar o plano de contas",
+                    $"O plano de contas atual da empresa será substituído pelo modelo \"{escolhido.Nome}\" ({escolhido.QuantidadeContas} contas). " +
+                    "Isso só é possível enquanto não houver lançamentos. Deseja continuar?", "Trocar o plano", "Manter o plano"))
+                ModeloSelecionado = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == _configuracao.ModeloPlano);
+            else
+            {
+                var m = await app.PlanoContas.AplicarModeloAsync(empresaId, escolhido.Id, usuarioId);
+                if (!m.Sucesso) { MostrarResultado(m, ""); return false; }
+                aplicado = $" Plano de contas substituído pelo modelo {escolhido.Nome} ({m.Valor} contas).";
+                (ContaApuracao, ContaLucros, ContaPrejuizos) = (escolhido.Contas.Apuracao, escolhido.Contas.LucrosAcumulados, escolhido.Contas.PrejuizosAcumulados);
+            }
+        }
+        var c = await app.PlanoContas.SalvarConfiguracaoAsync(empresaId, ConfiguracaoDoFormulario(),
+                                                              DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), usuarioId);
+        if (!c.Sucesso) { MostrarResultado(c, ""); return false; }
+        Mensagem += aplicado;
         return true;
     }
 
@@ -366,7 +486,7 @@ public partial class CadastroEmpresaViewModel(MainViewModel main) : CadastroView
 
     private void LimparFormulario()
     {
-        (Cnpj, RazaoSocial, NomeFantasia, Cnae, MunicipioIbge, Municipio, InscricaoEstadual) = ("", "", "", "", "", "", "");
+        (Cnpj, RazaoSocial, NomeFantasia, Cnae, MunicipioIbge, Municipio, InscricaoEstadual, Nire) = ("", "", "", "", "", "", "", "");
         (Cep, Logradouro, Numero, Complemento, Bairro, Email, Telefone) = ("", "", "", "", "", "", "");
         (OrigemDados, Aviso, _consultado) = (null, null, null);
     }

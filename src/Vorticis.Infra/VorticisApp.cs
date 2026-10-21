@@ -31,7 +31,7 @@ public sealed class VorticisApp : IAsyncDisposable
         Lancamentos = new ServicoLancamento(repoContabil, autorizador);
         Periodos = new ServicoPeriodo(repoContabil, autorizador);
         var repoPlano = new RepositorioPlanoContas(ds);
-        PlanoContas = new ServicoPlanoContas(repoPlano, autorizador);
+        PlanoContas = new ServicoPlanoContas(repoPlano, autorizador, new PlanoModeloEmbutido());
         Conciliacao = new ServicoConciliacao(new RepositorioConciliacao(ds), repoPlano, autorizador);
         Historicos = new ServicoHistoricos(new RepositorioHistoricos(ds), autorizador);
         var repoParticipantes = new RepositorioParticipantes(ds);

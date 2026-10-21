@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Cadastros;
 using Vorticis.Application.Contabil;
 using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
@@ -34,12 +35,80 @@ public sealed record ContaLinha(ContaDetalhe Conta)
     public string Situacao => Conta.Ativa ? "" : "Inativa";
 }
 
-/// <summary>Cadastros › Plano de contas (Incluir / Alterar / Excluir).</summary>
+/// <summary>Conta sintética que pode ser o grupo onde as contas dos participantes são alocadas.</summary>
+public sealed record OpcaoGrupo(long Id, string Codigo, string Descricao)
+{
+    public string Texto => $"{Codigo} - {Descricao}";
+    public override string ToString() => Texto;
+}
+
+/// <summary>
+/// Cadastros › Plano de contas (Incluir / Alterar / Excluir). A grade só aparece depois que a empresa tem plano: sem plano (ou ao
+/// clicar em "Escolher plano"), a tela oferece os modelos embutidos — os mesmos do cadastro da empresa.
+/// </summary>
 public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
     private IReadOnlyList<ContaDetalhe> _plano = [];
 
     public ObservableCollection<ContaLinha> Lista { get; } = [];
+
+    // ------------------------------------------------------------------ escolha do plano (modelos)
+
+    public static IReadOnlyList<ModeloPlano> ModelosPlano => CatalogoModelosPlano.Todos;
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade))] private bool _temPlano;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade))] private bool _escolhendoPlano;
+    [ObservableProperty] private ModeloPlano? _modeloEscolhido;
+    [ObservableProperty] private string _planoAtual = "";
+    [ObservableProperty] private bool _usaCentroCusto;
+
+    /// <summary>Oferece os modelos: empresa sem plano, ou o usuário pediu para escolher/trocar o plano.</summary>
+    public bool MostrarEscolha => !TemPlano || EscolhendoPlano;
+
+    /// <summary>Formulário e grade das contas: só com o plano escolhido (e fora da troca de plano).</summary>
+    public bool MostrarGrade => TemPlano && !EscolhendoPlano;
+
+    /// <summary>Contas sintéticas (nível 2 em diante): candidatas a grupo dos participantes.</summary>
+    public ObservableCollection<OpcaoGrupo> Grupos { get; } = [];
+    [ObservableProperty] private OpcaoGrupo? _grupoParticipantes;
+
+    /// <summary>Centro de custo: a empresa usa (aba Contabilidade) ou a conta já exige.</summary>
+    public bool PermiteCentroCusto => UsaCentroCusto || ExigeCc;
+    partial void OnUsaCentroCustoChanged(bool value) => OnPropertyChanged(nameof(PermiteCentroCusto));
+    partial void OnExigeCcChanged(bool value) => OnPropertyChanged(nameof(PermiteCentroCusto));
+
+    [RelayCommand]
+    private void EscolherPlano()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        EscolhendoPlano = true;
+    }
+
+    [RelayCommand]
+    private void CancelarEscolha()
+    {
+        EscolhendoPlano = false;
+        ModeloEscolhido = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == _modeloAplicado);
+    }
+
+    private string? _modeloAplicado;
+
+    /// <summary>Aplica o modelo escolhido, substituindo o plano da empresa (só sem lançamentos; com plano, pede confirmação).</summary>
+    [RelayCommand]
+    private Task AplicarModeloAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (ModeloEscolhido is not { } modelo) { Erros.Add("Escolha um modelo de plano de contas."); return; }
+        if (TemPlano && !await Contexto.ConfirmarAsync("Trocar o plano de contas",
+                $"O plano de contas atual será substituído pelo modelo \"{modelo.Nome}\" ({modelo.QuantidadeContas} contas). " +
+                "Isso só é possível enquanto não houver lançamentos. Deseja continuar?", "Trocar o plano", "Cancelar"))
+            return;
+        var r = await app.PlanoContas.AplicarModeloAsync(empresa, modelo.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        EscolhendoPlano = false;
+        await CarregarAsync();
+        Mensagem = $"Plano \"{modelo.Nome}\" aplicado: {r.Valor} contas.";
+    }, Permissao.PlanoContasManter);
 
     [ObservableProperty] private string _filtro = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private ContaLinha? _selecionada;
@@ -77,8 +146,18 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         var id = Selecionada?.Conta.Id;
         var geracao = NovaGeracao();
         var plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
+        var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
         if (!EhAtual(geracao)) return;
         _plano = plano;
+        TemPlano = plano.Count > 0;
+        _modeloAplicado = cfg.ModeloPlano;
+        UsaCentroCusto = cfg.UsaCentroCusto;
+        var modelo = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == cfg.ModeloPlano);
+        PlanoAtual = !TemPlano ? "" : modelo is not null ? $"Plano de contas: {modelo.Nome} ({plano.Count} contas)" : $"Plano de contas próprio ({plano.Count} contas)";
+        if (!TemPlano) EscolhendoPlano = false;
+        ModeloEscolhido = modelo ?? (TemPlano ? null : CatalogoModelosPlano.Padrao);
+        Grupos.Clear();
+        foreach (var g in plano.Where(c => !c.Analitica && c.Nivel >= 2)) Grupos.Add(new OpcaoGrupo(g.Id, g.Codigo, g.Descricao));
         Filtrar();
         Selecionada = Lista.FirstOrDefault(l => l.Conta.Id == id);
     }
@@ -113,6 +192,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         Codigo = c.Codigo;
         Reduzido = c.CodigoReduzido?.ToString() ?? "";
         (Descricao, Saldo, ExigeCc, ExigeParticipante, Ativa) = (c.Descricao, OpcaoSaldo.De(c.NaturezaSaldo), c.ExigeCentroCusto, c.ExigeParticipante, c.Ativa);
+        GrupoParticipantes = c.GrupoParticipantesId is { } g ? Grupos.FirstOrDefault(x => x.Id == g) : null;
         Natureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == c.CodNat) ?? Natureza;
         DicaPai = c.Analitica ? "Conta analítica (recebe lançamentos)." : "Conta sintética (agrupa subcontas).";
     }
@@ -121,6 +201,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     protected override void PrepararInclusao()
     {
         (Descricao, ExigeCc, ExigeParticipante, Ativa) = ("", false, false, true);
+        GrupoParticipantes = null;
         Reduzido = ((_plano.Max(x => x.CodigoReduzido) ?? 0) + 1).ToString();   // próximo número; pode ser trocado
         DataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
         if (Selecionada?.Conta is { } c)
@@ -129,6 +210,26 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
             Codigo = SugerirProximo(baseCodigo);
         }
         else Codigo = "";
+    }
+
+    /// <summary>Marcar "exige participante" exige indicar o grupo; sugere a conta superior da conta (sintética), que o usuário pode trocar.</summary>
+    partial void OnExigeParticipanteChanged(bool value)
+    {
+        if (!EmEdicao) return;
+        GrupoParticipantes = value ? GrupoParticipantes ?? SugerirGrupo() : null;
+    }
+
+    private OpcaoGrupo? SugerirGrupo()
+    {
+        string? codigoPai = null;
+        if (EmInclusao)
+        {
+            var codigo = Codigo.Trim();
+            var i = codigo.LastIndexOf('.');
+            if (i > 0) codigoPai = codigo[..i];
+        }
+        else if (Selecionada?.Conta.ContaPaiId is { } paiId) codigoPai = _plano.FirstOrDefault(c => c.Id == paiId)?.Codigo;
+        return codigoPai is null ? null : Grupos.FirstOrDefault(g => g.Codigo == codigoPai);
     }
 
     private string SugerirProximo(string pai)
@@ -147,6 +248,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         var codigo = value.Trim();
         var i = codigo.LastIndexOf('.');
         var pai = i > 0 ? _plano.FirstOrDefault(c => c.Codigo == codigo[..i]) : null;
+        if (ExigeParticipante && GrupoParticipantes is null) GrupoParticipantes = SugerirGrupo();
         if (pai is null) { DicaPai = i > 0 ? $"Conta superior {codigo[..i]} não encontrada." : "Conta de nível 1 (sintética)."; return; }
         Natureza = OpcaoNatureza.Todas.FirstOrDefault(n => n.Codigo == pai.CodNat) ?? Natureza;
         Saldo = OpcaoSaldo.De(pai.NaturezaSaldo);
@@ -176,7 +278,8 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
                     reduzido = n;
                 }
                 var r = await app.PlanoContas.IncluirAsync(empresa, new NovaConta(Codigo, Descricao, Natureza.Codigo, Saldo.DC,
-                    ExigeCc, ExigeParticipante, DateOnly.FromDateTime(DataInclusao ?? DateTime.Today), reduzido), usuario);
+                    ExigeCc, ExigeParticipante, DateOnly.FromDateTime(DataInclusao ?? DateTime.Today), reduzido,
+                    ExigeParticipante ? GrupoParticipantes?.Id : null), usuario);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
                 id = r.Valor;
             }
@@ -184,7 +287,8 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
             {
                 if (Selecionada is null) { Erros.Add("Selecione uma conta."); return; }
                 id = Selecionada.Conta.Id;
-                var r = await app.PlanoContas.AlterarAsync(empresa, id, Descricao, Saldo.DC, ExigeCc, ExigeParticipante, Ativa, usuario);
+                var r = await app.PlanoContas.AlterarAsync(empresa, id, Descricao, Saldo.DC, ExigeCc, ExigeParticipante, Ativa, usuario,
+                                                           grupoParticipantesId: ExigeParticipante ? GrupoParticipantes?.Id : null);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
                 if (Selecionada.Conta.Analitica && Reduzido.Trim() != (Selecionada.Conta.CodigoReduzido?.ToString() ?? ""))
                 {
