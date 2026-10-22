@@ -19,6 +19,7 @@ internal sealed class ContextoDeTeste(VorticisApp? app, SessaoUsuario? sessao, l
     public void AoConcluirConfiguracaoInicial() { }
     public Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não") => Task.FromResult(true);
     public Task ReiniciarParaLoginAsync(string mensagem) => Task.CompletedTask;
+    public Task ConcluirImplantacaoAsync(string loginAdministrador) => Task.CompletedTask;
     public Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar") => Task.FromResult<string?>(null);
     public string DescricaoEmpresa => "Empresa de teste";
     public void AbrirTela(string tela) => Abertas.Add(tela);
