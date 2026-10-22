@@ -1,9 +1,12 @@
 using System.Runtime.CompilerServices;
-using Vorticis.Fiscal.Contabilizacao;
 using Vorticis.Fiscal.Comum;
+using Vorticis.Fiscal.Contabilizacao;
 using Vorticis.Fiscal.Documentos;
-using Vorticis.Fiscal.Simples;
+using Vorticis.Fiscal.Guias;
+using Vorticis.Fiscal.Lucro;
 using Vorticis.Fiscal.Postgres;
+using Vorticis.Fiscal.Retencoes;
+using Vorticis.Fiscal.Simples;
 using Vorticis.Infra;
 
 namespace Vorticis.Fiscal;
@@ -21,17 +24,30 @@ public sealed class ServicosFiscais
     private ServicosFiscais(VorticisApp app)
     {
         var ds = app.DataSource;
+        var autorizador = app.Autorizador;
         var repoDocumentos = new RepositorioDocumentos(ds);
+        var repoContabilizacao = new RepositorioContabilizacao(ds);
+        var repoSimples = new RepositorioSimples(ds);
+        var repoLucro = new RepositorioLucro(ds);
+        var repoRetencoes = new RepositorioRetencoes(ds);
         Parametros = new ParametrosFiscaisPostgres(ds);
-        Documentos = new ServicoDocumentosFiscais(repoDocumentos, app.Autorizador);
-        Contabilizacao = new ServicoContabilizacaoFiscal(new RepositorioContabilizacao(ds), repoDocumentos, app.Lancamentos, app.Autorizador);
-        Simples = new ServicoSimplesNacional(new RepositorioSimples(ds), repoDocumentos, Parametros, app.Autorizador);
+        Documentos = new ServicoDocumentosFiscais(repoDocumentos, autorizador);
+        Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador);
+        Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
+        Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
+        Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
+        Guias = new ServicoGuias(new RepositorioGuias(ds), repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
+        Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
 
     public IParametrosFiscais Parametros { get; }
-    public ServicoSimplesNacional Simples { get; }
     public ServicoDocumentosFiscais Documentos { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
+    public ServicoSimplesNacional Simples { get; }
+    public ServicoLucro Lucro { get; }
+    public ServicoRetencoes Retencoes { get; }
+    public ServicoGuias Guias { get; }
+    public ServicoProvisoes Provisoes { get; }
 }
 
 public static class VorticisAppFiscalExtensions
