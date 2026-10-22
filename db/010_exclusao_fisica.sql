@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis Contábil — Migração 010: exclusão física de cadastros
+-- Perseus Contábil — Migração 010: exclusão física de cadastros
 --   Excluir uma empresa ou um usuário remove os registros do banco, para que o
 --   mesmo CNPJ ou login possa ser cadastrado de novo sem conflito.
 --   * Empresa: core.fn_excluir_empresa apaga, numa transação, tudo o que pertence
@@ -13,7 +13,7 @@
 -- Empresa sendo excluída nesta transação (definida só por core.fn_excluir_empresa).
 CREATE OR REPLACE FUNCTION core.excluindo_empresa(p_empresa BIGINT)
 RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
-    SELECT COALESCE(current_setting('vorticis.excluindo_empresa', true), '') = p_empresa::text
+    SELECT COALESCE(current_setting('perseus.excluindo_empresa', true), '') = p_empresa::text
 $$;
 
 CREATE OR REPLACE FUNCTION contabil.fn_valida_lancamento()
@@ -81,7 +81,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM core.empresa WHERE id = p_empresa) THEN
         RAISE EXCEPTION 'Empresa % não encontrada', p_empresa;
     END IF;
-    PERFORM set_config('vorticis.excluindo_empresa', p_empresa::text, true);
+    PERFORM set_config('perseus.excluindo_empresa', p_empresa::text, true);
 
     SELECT count(*) INTO v_lancamentos FROM contabil.lancamento WHERE empresa_id = p_empresa;
     DELETE FROM contabil.mapeamento_referencial WHERE empresa_id = p_empresa;
@@ -101,7 +101,7 @@ BEGIN
     DELETE FROM core.estabelecimento WHERE empresa_id = p_empresa;
     DELETE FROM core.empresa WHERE id = p_empresa;
 
-    PERFORM set_config('vorticis.excluindo_empresa', '', true);
+    PERFORM set_config('perseus.excluindo_empresa', '', true);
     RETURN v_lancamentos;
 END $$;
 

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis Contábil — Migração 016: endereço de clientes/fornecedores, contador que assina
+-- Perseus Contábil — Migração 016: endereço de clientes/fornecedores, contador que assina
 --   a ECD/ECF e repositório de certificados digitais
 -- =============================================================================
 

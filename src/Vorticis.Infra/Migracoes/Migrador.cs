@@ -60,7 +60,17 @@ public sealed class Migrador(NpgsqlDataSource dataSource)
             if (aplicadas.TryGetValue(nome, out var hashAplicado))
             {
                 if (hashAplicado != hash)
-                    throw new InvalidOperationException($"A migração {nome} foi alterada depois de aplicada. Crie uma nova migração em vez de editar esta.");
+                {
+                    // Builds intermediárias da troca de nome publicaram as migrações 010 a 017 com "Perseus" trocado por
+                    // "Vorticis" (os textos originais foram restaurados). Bancos criados por elas são aceitos e passam a
+                    // registrar o hash original; qualquer outra diferença continua sendo erro.
+                    if (hashAplicado != HashTrocaDeNome(sql))
+                        throw new InvalidOperationException($"A migração {nome} foi alterada depois de aplicada. Crie uma nova migração em vez de editar esta.");
+                    await using var corrige = new NpgsqlCommand("UPDATE public.vorticis_migracao SET sha256 = @h WHERE nome = @n", con);
+                    corrige.Parameters.AddWithValue("h", hash);
+                    corrige.Parameters.AddWithValue("n", nome);
+                    await corrige.ExecuteNonQueryAsync(ct);
+                }
                 resultado.Add(new(nome, false));
                 continue;
             }
@@ -78,6 +88,10 @@ public sealed class Migrador(NpgsqlDataSource dataSource)
         }
         return resultado;
     }
+
+    private static string HashTrocaDeNome(string sql) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
+            sql.Replace("Perseus", "Vorticis").Replace("PERSEUS", "VORTICIS").Replace("perseus", "vorticis"))));
 
     private static string Ler(Assembly asm, string recurso)
     {

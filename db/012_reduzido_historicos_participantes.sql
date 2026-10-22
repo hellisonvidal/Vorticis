@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis Contábil — Migração 012
+-- Perseus Contábil — Migração 012
 --   * Código reduzido das contas analíticas: sequência numérica por empresa, usada
 --     como atalho na digitação dos lançamentos (atribuída automaticamente).
 --   * Clientes e fornecedores: dados cadastrais completos em core.participante
@@ -24,7 +24,7 @@ BEGIN
     IF NEW.tipo = 'S' THEN
         NEW.codigo_reduzido := NULL;
     ELSIF NEW.codigo_reduzido IS NULL THEN
-        PERFORM pg_advisory_xact_lock(hashtext('vorticis_reduzido'), NEW.empresa_id::int);
+        PERFORM pg_advisory_xact_lock(hashtext('perseus_reduzido'), NEW.empresa_id::int);
         SELECT COALESCE(MAX(codigo_reduzido), 0) + 1 INTO NEW.codigo_reduzido
           FROM contabil.plano_contas WHERE empresa_id = NEW.empresa_id;
     END IF;

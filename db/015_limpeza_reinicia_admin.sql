@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis Contábil — Migração 015: a limpeza do banco recomeça do zero
+-- Perseus Contábil — Migração 015: a limpeza do banco recomeça do zero
 --   Além das empresas e cadastros, a limpeza apaga usuários e perfis personalizados e
 --   recria o administrador padrão (login ADMIN; o hash da senha vem do aplicativo).
 --   O ADMIN deve trocar a senha no primeiro acesso.

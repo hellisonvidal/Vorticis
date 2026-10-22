@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis Contábil — Migração 014
+-- Perseus Contábil — Migração 014
 --   * Conciliação de contas: partidas de uma conta que se compensam (débitos = créditos)
 --     ficam agrupadas numa conciliação — automática pelo nº do documento ou manual.
 --     O nº do documento é o campo NUM_ARQ da partida (ECD I250).
@@ -35,7 +35,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM core.empresa WHERE id = p_empresa) THEN
         RAISE EXCEPTION 'Empresa % não encontrada', p_empresa;
     END IF;
-    PERFORM set_config('vorticis.excluindo_empresa', p_empresa::text, true);
+    PERFORM set_config('perseus.excluindo_empresa', p_empresa::text, true);
 
     SELECT count(*) INTO v_lancamentos FROM contabil.lancamento WHERE empresa_id = p_empresa;
     DELETE FROM contabil.conciliacao WHERE empresa_id = p_empresa;
@@ -58,7 +58,7 @@ BEGIN
     DELETE FROM core.estabelecimento WHERE empresa_id = p_empresa;
     DELETE FROM core.empresa WHERE id = p_empresa;
 
-    PERFORM set_config('vorticis.excluindo_empresa', '', true);
+    PERFORM set_config('perseus.excluindo_empresa', '', true);
     RETURN v_lancamentos;
 END $$;
 
