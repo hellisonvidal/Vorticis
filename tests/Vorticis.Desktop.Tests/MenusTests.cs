@@ -21,12 +21,10 @@ public class MenusTests
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
     }
 
-    [Theory]
-    [InlineData("Fiscal")]
-    [InlineData("Folha")]
-    public void Modulos_novos_tem_menu_comum_e_itens_do_modulo_desabilitados(string modulo)
+    [Fact]
+    public void Fiscal_tem_menu_comum_e_itens_do_modulo_desabilitados()
     {
-        MainViewModelBase vm = modulo == "Fiscal" ? new Vorticis.Fiscal.Desktop.MainViewModel() : new Vorticis.Folha.Desktop.MainViewModel();
+        MainViewModelBase vm = new Vorticis.Fiscal.Desktop.MainViewModel();
         Assert.StartsWith("Vorticis ", vm.Modulo.Nome);
         Assert.Equal("_Cadastros", vm.Menus[0].Titulo);
         Assert.Equal("_Ajuda", vm.Menus[^1].Titulo);
@@ -44,5 +42,20 @@ public class MenusTests
         Assert.Equal("Con_figurações", titulos[^2]);
         Assert.Equal("_Ajuda", titulos[^1]);
         Assert.Contains("_Lançamentos", titulos);
+    }
+
+    [Fact]
+    public void Menu_da_folha_tem_telas_registradas_e_so_o_que_falta_fica_em_breve()
+    {
+        var vm = new Vorticis.Folha.Desktop.MainViewModel();
+        Assert.Equal("_Cadastros", vm.Menus[0].Titulo);
+        Assert.Equal("_Ajuda", vm.Menus[^1].Titulo);
+        var proprios = Folhas(vm.Menus.Skip(1).SkipLast(2)).Where(i => !i.EhSeparador).ToList();
+        var habilitados = proprios.Where(i => i.Habilitado).ToList();
+        Assert.All(habilitados, i => Assert.True(vm.ConheceTela(i.Chave!), i.Titulo));
+        Assert.Contains(habilitados, i => i.Chave == "folha.funcionarios");
+        Assert.Contains(habilitados, i => i.Chave == "folha.esocial");
+        Assert.Equal(["FGTS (GFD) (em breve)", "DCTFWeb e INSS (em breve)", "RAIS e DIRF (em breve)"], proprios.Where(i => !i.Habilitado).Select(i => i.Titulo));
+        Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
     }
 }

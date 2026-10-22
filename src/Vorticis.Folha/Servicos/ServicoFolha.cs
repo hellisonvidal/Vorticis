@@ -117,6 +117,12 @@ public sealed class ServicoFolha(IRepositorioCadastrosFolha cadastros, IReposito
         catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }
     }
 
+    /// <summary>A rubrica é calculada pelo sistema (não recebe lançamento de evento).</summary>
+    public static bool EhAutomatica(string codigo) => RubricasAutomaticas.Contains(codigo);
+
+    /// <summary>O evento é informado por quantidade (horas/dias) e não por valor.</summary>
+    public static bool UsaReferencia(string codigo) => RubricasPorReferencia.Contains(codigo);
+
     private static readonly HashSet<string> RubricasAutomaticas =
     [
         RubricasPadrao.Salario, RubricasPadrao.Dsr, RubricasPadrao.Insalubridade, RubricasPadrao.Periculosidade, RubricasPadrao.SalarioFamilia,
