@@ -20,6 +20,7 @@ public sealed record CertificadoLinha(CertificadoDigital C, DateTimeOffset Agora
     public string Situacao => C.Situacao(Agora);
     public bool Alerta => C.DiasParaVencer(Agora) <= 30;
     public string Emissor => C.Emissor;
+    public string Padrao => string.Join(" e ", new[] { C.PadraoContador ? "Contador" : null, C.PadraoResponsavel ? "Responsável" : null }.OfType<string>());
 }
 
 /// <summary>
@@ -29,8 +30,15 @@ public sealed record CertificadoLinha(CertificadoDigital C, DateTimeOffset Agora
 public partial class CertificadosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<CertificadoLinha> Lista { get; } = [];
+    /// <summary>Instalados no Windows com chave de dispositivo (token/cartão): só A3, para registrar.</summary>
     public ObservableCollection<DadosCertificado> Instalados { get; } = [];
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand))] private CertificadoLinha? _selecionado;
+    /// <summary>Instalados no Windows com chave exportável (software): podem ser importados para o Vorticis como A1.</summary>
+    public ObservableCollection<DadosCertificado> InstaladosA1 { get; } = [];
+    [ObservableProperty] private DadosCertificado? _instaladoA1Selecionado;
+    [ObservableProperty] private string _senhaProtecao = "";
+    [ObservableProperty] private string _senhaPadrao = "";
+    public bool RepositorioWindowsDisponivel => OperatingSystem.IsWindows();
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand), nameof(PadraoContadorCommand), nameof(PadraoResponsavelCommand), nameof(RetirarPadraoCommand))] private CertificadoLinha? _selecionado;
     [ObservableProperty] private DadosCertificado? _instaladoSelecionado;
 
     // Importação de A1
@@ -87,21 +95,77 @@ public partial class CertificadosViewModel(IContexto contexto) : ModuloViewModel
         Mensagem = "Certificado A1 importado. A senha não é gravada: ela será pedida quando o certificado for usado.";
     });
 
-    /// <summary>Lê os certificados com chave privada instalados no Windows (tokens e cartões A3).</summary>
+    /// <summary>Lê os certificados instalados no Windows: A3 (token/cartão) para registrar e A1 (software, chave exportável) para importar.</summary>
     [RelayCommand]
     private void LerInstalados()
     {
         Erros.Clear();
         Instalados.Clear();
+        InstaladosA1.Clear();
+        if (!OperatingSystem.IsWindows()) { Erros.Add(ServicoCertificados.AvisoSomenteWindows); return; }
         try
         {
-            foreach (var d in ServicoCertificados.ListarInstaladosNoWindows()) Instalados.Add(d);
-            Mensagem = Instalados.Count == 0
+            foreach (var d in ServicoCertificados.ListarInstaladosNoWindows(ServicoCertificados.TipoA3)) Instalados.Add(d);
+            foreach (var d in ServicoCertificados.ListarInstaladosNoWindows(ServicoCertificados.TipoA1)) InstaladosA1.Add(d);
+            Mensagem = Instalados.Count + InstaladosA1.Count == 0
                 ? "Nenhum certificado com chave privada no repositório do Windows. Conecte o token/cartão e tente de novo."
-                : $"{Instalados.Count} certificado(s) encontrado(s). Escolha um e clique em Registrar A3.";
+                : $"{Instalados.Count} certificado(s) A3 (token/cartão) e {InstaladosA1.Count} A1 (software) encontrado(s).";
         }
         catch (Exception ex) { Erros.Add($"Não foi possível ler o repositório do Windows: {ex.Message}"); }
     }
+
+    /// <summary>Importa para o Vorticis, como A1, um certificado instalado no Windows com chave exportável (pede a senha que protegerá o arquivo).</summary>
+    [RelayCommand]
+    private Task ImportarInstaladoAsync() => ExecutarAdminAsync(async (app, sessao) =>
+    {
+        if (InstaladoA1Selecionado is not { } d) { Erros.Add("Escolha um certificado A1 instalado no Windows."); return; }
+        var pfx = ServicoCertificados.ExportarInstaladoComoPfx(d.Impressao, SenhaProtecao);
+        if (!pfx.Sucesso) { MostrarResultado(pfx, ""); return; }
+        var r = await app.Certificados.ImportarA1Async(sessao, pfx.Valor, SenhaProtecao, Descricao, Contexto.EmpresaId);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        (SenhaProtecao, Descricao) = ("", "");
+        await CarregarAsync();
+        Mensagem = "Certificado importado como A1. A senha de proteção não é gravada: ela será pedida quando o certificado for usado (ou defina-o como padrão para guardá-la neste computador).";
+    });
+
+    private Task DefinirPadraoAsync(PapelAssinatura papel) => ExecutarAdminAsync(async (app, sessao) =>
+    {
+        if (Selecionado is not { } s) { Erros.Add("Escolha um certificado na lista."); return; }
+        if (s.Tipo == "A1")
+        {
+            if (string.IsNullOrEmpty(SenhaPadrao)) { Erros.Add("Informe a senha do certificado A1 para defini-lo como padrão: ela é conferida e guardada, protegida, só neste computador."); return; }
+            var aberto = await app.Certificados.AbrirA1Async(sessao, s.C.Id, SenhaPadrao);
+            if (!aberto.Sucesso) { MostrarResultado(aberto, ""); return; }
+            aberto.Valor.Dispose();
+        }
+        var r = await app.Certificados.DefinirPadraoAsync(sessao, s.C.Id, papel, true);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var aviso = "";
+        if (s.Tipo == "A1")
+        {
+            aviso = SenhasCertificados.Guardar(s.C.Id, SenhaPadrao)
+                ? " A senha ficou guardada, protegida pelo Windows, só neste computador."
+                : " Neste sistema a senha não pode ser guardada: o programa a pedirá a cada uso.";
+            SenhaPadrao = "";
+        }
+        await CarregarAsync();
+        Mensagem = $"\"{s.Descricao}\" é agora o certificado padrão {(papel == PapelAssinatura.Contador ? "do contador" : "do responsável")}.{aviso}";
+    });
+
+    [RelayCommand(CanExecute = nameof(TemSelecionado))] private Task PadraoContadorAsync() => DefinirPadraoAsync(PapelAssinatura.Contador);
+
+    [RelayCommand(CanExecute = nameof(TemSelecionado))] private Task PadraoResponsavelAsync() => DefinirPadraoAsync(PapelAssinatura.Responsavel);
+
+    [RelayCommand(CanExecute = nameof(TemSelecionado))]
+    private Task RetirarPadraoAsync() => ExecutarAdminAsync(async (app, sessao) =>
+    {
+        if (Selecionado is not { } s) return;
+        foreach (var papel in new[] { PapelAssinatura.Contador, PapelAssinatura.Responsavel })
+            await app.Certificados.DefinirPadraoAsync(sessao, s.C.Id, papel, false);
+        SenhasCertificados.Esquecer(s.C.Id);
+        await CarregarAsync();
+        Mensagem = $"\"{s.Descricao}\" deixou de ser certificado padrão.";
+    });
 
     [RelayCommand]
     private Task RegistrarA3Async() => ExecutarAdminAsync(async (app, sessao) =>
@@ -125,6 +189,7 @@ public partial class CertificadosViewModel(IContexto contexto) : ModuloViewModel
             return;
         var r = await app.Certificados.ExcluirAsync(sessao, s.C.Id);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        SenhasCertificados.Esquecer(s.C.Id);
         await CarregarAsync();
         Mensagem = $"Certificado \"{s.Descricao}\" excluído.";
     });

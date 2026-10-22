@@ -15,6 +15,8 @@
     <StackPanel Orientation="Horizontal" Spacing="12">
       <CheckBox Content="Assinatura do sócio/responsável" IsChecked="{Binding AssinaturaResponsavel}" FontSize="11" MinHeight="20" Padding="4,0" />
       <CheckBox Content="Assinatura do contador" IsChecked="{Binding AssinaturaContador}" FontSize="11" MinHeight="20" Padding="4,0" />
+      <CheckBox Content="Assinar digitalmente o PDF" IsChecked="{Binding AssinarPdfDigitalmente}" FontSize="11" MinHeight="20" Padding="4,0"
+                ToolTip.Tip="Assinatura digital PAdES com o certificado padrão (Configurações › Certificados digitais)" />
     </StackPanel>
   </StackPanel>
 </UserControl>

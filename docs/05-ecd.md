@@ -143,6 +143,15 @@ executar o PVA neste ambiente para importar um arquivo assinado aqui; ficam como
 autoassinados não passam nessa etapa). Se o PVA recusar a assinatura externa, gere o arquivo **sem assinatura** (sempre disponível)
 e assine no próprio PVA.
 
+## Certificado padrão
+
+Em Configurações › Certificados digitais, um certificado pode ser marcado como **padrão do contador** e/ou **do responsável**
+(migração 029; um por papel, por empresa ou geral). O assistente da ECD já o escolhe para cada signatário do J930. Em A1 a senha é
+conferida e guardada só no computador, protegida pelo Windows (DPAPI); o banco não guarda senha. A3 usa o repositório do Windows
+(o driver pede o PIN). A lista de A3 mostra apenas certificados com chave em dispositivo/não exportável; certificados A1 instalados
+no Windows (chave exportável) podem ser importados para o Vorticis como A1. Os mesmos certificados padrão assinam relatórios em PDF
+(opção "Assinar digitalmente o PDF": assinatura CMS destacada `adbe.pkcs7.detached`, SHA-256, com PDFsharp).
+
 ## Como validar no PVA
 
 1. Gerar no Vorticis (Auditoria › Gerar ECD — assistente em 5 passos: dados, pré-requisitos, validação, assinaturas, gerar e salvar), resolvendo as pendências bloqueantes.

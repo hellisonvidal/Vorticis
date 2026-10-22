@@ -9,7 +9,7 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
     public async Task<IReadOnlyList<CertificadoDigital>> ListarAsync(CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, tipo, descricao, titular, documento, emissor, valido_de, valido_ate, impressao, empresa_id
+            SELECT id, tipo, descricao, titular, documento, emissor, valido_de, valido_ate, impressao, empresa_id, padrao_contador, padrao_responsavel
               FROM core.certificado_digital ORDER BY valido_ate
             """);
         var res = new List<CertificadoDigital>();
@@ -17,7 +17,7 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
         while (await r.ReadAsync(ct))
             res.Add(new CertificadoDigital(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4),
                 r.GetString(5), r.GetFieldValue<DateTimeOffset>(6), r.GetFieldValue<DateTimeOffset>(7), r.GetString(8),
-                r.IsDBNull(9) ? null : r.GetInt64(9)));
+                r.IsDBNull(9) ? null : r.GetInt64(9), r.GetBoolean(10), r.GetBoolean(11)));
         return res;
     }
 
@@ -37,6 +37,28 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
     {
         await using var cmd = ds.CreateCommand("SELECT arquivo FROM core.certificado_digital WHERE id = @id").Com("id", id);
         return await cmd.ExecuteScalarAsync(ct) as byte[];
+    }
+
+    public async Task DefinirPadraoAsync(long id, PapelAssinatura papel, bool padrao, CancellationToken ct)
+    {
+        var coluna = papel == PapelAssinatura.Contador ? "padrao_contador" : "padrao_responsavel";
+        await using var con = await ds.OpenConnectionAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        if (padrao)
+        {
+            await using var limpa = new NpgsqlCommand($"""
+                UPDATE core.certificado_digital SET {coluna} = FALSE
+                 WHERE {coluna} AND id <> @id
+                   AND COALESCE(empresa_id, 0) = (SELECT COALESCE(empresa_id, 0) FROM core.certificado_digital WHERE id = @id)
+                """, con, tx);
+            limpa.Parameters.AddWithValue("id", id);
+            await limpa.ExecuteNonQueryAsync(ct);
+        }
+        await using var marca = new NpgsqlCommand($"UPDATE core.certificado_digital SET {coluna} = @p WHERE id = @id", con, tx);
+        marca.Parameters.AddWithValue("p", padrao);
+        marca.Parameters.AddWithValue("id", id);
+        await marca.ExecuteNonQueryAsync(ct);
+        await tx.CommitAsync(ct);
     }
 
     public Task ExcluirAsync(long id, CancellationToken ct)

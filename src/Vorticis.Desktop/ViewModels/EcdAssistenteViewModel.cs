@@ -68,7 +68,7 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
         "Escolha a empresa (menu superior) e o exercício e confira os dados que irão para a ECD: NIRE, porte, número do livro e opções de geração.",
         "Confira se o que a ECD exige já está pronto. Para cada item pendente, use o atalho para abrir a tela que o resolve e volte aqui.",
         "O Vorticis confere o arquivo antes de gerar, com as mesmas regras do PVA. Só é possível avançar sem pendências bloqueantes; avisos não impedem.",
-        "Escolha o certificado digital de cada signatário do livro (contador e responsável): A1 (arquivo .pfx), A3 (token ou cartão no Windows) ou deixe para assinar depois no PVA.",
+        "Escolha o certificado digital de cada signatário do livro (contador e responsável): A1 (arquivo .pfx), A3 (token ou cartão no Windows) ou o certificado padrão (já escolhido quando definido em Configurações › Certificados), ou deixe para assinar depois no PVA.",
         "Gere o arquivo, confira o resumo e salve o .txt na pasta escolhida. Depois é só importar e validar no PVA.",
     ];
 
@@ -226,12 +226,21 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
     {
         Instalados.Clear();
         Cadastrados.Clear();
-        try { foreach (var d in ServicoCertificados.ListarInstaladosNoWindows()) Instalados.Add(d); }
+        try { foreach (var d in ServicoCertificados.ListarInstaladosNoWindows(ServicoCertificados.TipoA3)) Instalados.Add(d); }   // A3: nunca os A1
         catch (Exception ex) { Erros.Add($"Não foi possível ler o repositório do Windows: {ex.Message}"); }
         if (Contexto.App is { } app && Contexto.Sessao is { } sessao)
         {
             var r = await app.Certificados.ListarAsync(sessao);
             if (r.Sucesso) foreach (var c in r.Valor) Cadastrados.Add(c);
+            // Certificados padrão (Configurações › Certificados digitais): já vêm escolhidos, com a senha guardada neste computador.
+            foreach (var s in Signatarios.Where(x => x.Modo == ModoAssinatura.Nenhum))
+            {
+                var padrao = await app.Certificados.ObterPadraoAsync(sessao, s.Signatario.Contador ? PapelAssinatura.Contador : PapelAssinatura.Responsavel, Contexto.EmpresaId);
+                if (!padrao.Sucesso || padrao.Valor is not { } p) continue;
+                s.Cadastrado = Cadastrados.FirstOrDefault(c => c.Id == p.Id);
+                s.Senha = p.Tipo == "A1" ? SenhasCertificados.Obter(p.Id) ?? "" : "";
+                s.Modo = ModoAssinatura.Cadastrado;
+            }
         }
         OnPropertyChanged(nameof(RepositorioWindowsDisponivel));
         OnPropertyChanged(nameof(AvisoRepositorio));

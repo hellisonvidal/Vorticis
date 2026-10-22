@@ -40,9 +40,21 @@ public abstract partial class RelatorioViewModel(IContexto contexto) : ModuloVie
     /// <summary>Opção comum de todos os relatórios em PDF: bloco de assinatura do contador (com CRC) ao final.</summary>
     [ObservableProperty] private bool _assinaturaContador;
 
+    /// <summary>Assina digitalmente o PDF (PAdES/PKCS#7) com o certificado padrão do contador, ou do responsável (Configurações › Certificados digitais).</summary>
+    [ObservableProperty] private bool _assinarPdfDigitalmente;
+
     [RelayCommand(CanExecute = nameof(TemDados))]
     private async Task ExportarPdfAsync()
     {
+        AssinaturaDigitalPdf? digital = null;
+        if (AssinarPdfDigitalmente)
+        {
+            Erros.Clear();
+            Mensagem = null;
+            var a = await CertificadosPadrao.ParaPdfAsync(Contexto, $"Relatório: {TituloRelatorio}");
+            if (!a.Sucesso) { foreach (var e in a.Erros) Erros.Add(e); return; }
+            digital = a.Valor;
+        }
         IReadOnlyList<string>? assinaturas = null;
         var opcoes = new OpcoesAssinatura(AssinaturaResponsavel, AssinaturaContador);
         if (opcoes.Alguma)
@@ -66,7 +78,7 @@ public abstract partial class RelatorioViewModel(IContexto contexto) : ModuloVie
         {
             var cabecalho = new List<string> { Contexto.DescricaoEmpresa, Parametros,
                 $"Emitido em {DateTime.Now:dd/MM/yyyy HH:mm} por {Contexto.Sessao?.Nome}" };
-            return new GeradorPdf().Gerar(ExportacaoRelatorio.ParaPdf(TituloRelatorio, cabecalho, Tabelas(), Paisagem) with { Assinaturas = assinaturas }).Conteudo;
+            return new GeradorPdf().Gerar(ExportacaoRelatorio.ParaPdf(TituloRelatorio, cabecalho, Tabelas(), Paisagem) with { Assinaturas = assinaturas, AssinaturaDigital = digital }).Conteudo;
         });
     }
 

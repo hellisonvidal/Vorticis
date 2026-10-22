@@ -25,7 +25,11 @@ public sealed record DocumentoRelatorio(
     Termo? TermoAbertura = null,
     Termo? TermoEncerramento = null,
     string RotuloPagina = "Página",
-    IReadOnlyList<string>? Assinaturas = null);   // bloco de assinaturas ao final do conteúdo (opção comum dos relatórios)
+    IReadOnlyList<string>? Assinaturas = null,    // bloco de assinaturas ao final do conteúdo (opção comum dos relatórios)
+    AssinaturaDigitalPdf? AssinaturaDigital = null);   // assina digitalmente o arquivo PDF (certificado A1/A3)
+
+/// <summary>Assinatura digital do PDF com o certificado dado (chave privada presente; no A3, o driver pede o PIN).</summary>
+public sealed record AssinaturaDigitalPdf(System.Security.Cryptography.X509Certificates.X509Certificate2 Certificado, string? Motivo = null, string? Local = null);
 
 public sealed record ArquivoGerado(byte[] Conteudo, int Paginas);
 

@@ -52,6 +52,18 @@ public abstract partial class LivroBaseViewModel(IContexto contexto) : ModuloVie
         new((int)(NumeroLivro ?? 1), Representante, RepresentanteCpf, Contador, Crc,
             string.IsNullOrWhiteSpace(DataArquivamento) ? null : DataArquivamento.Trim(), folhas);
 
+    /// <summary>Assina digitalmente o PDF (PAdES/PKCS#7) com o certificado padrão do contador, ou do responsável.</summary>
+    [ObservableProperty] private bool _assinarPdfDigitalmente;
+
+    /// <summary>Abre o certificado padrão para o PDF que será gerado; nulo (com erros na tela) se a assinatura foi pedida e não é possível.</summary>
+    protected async Task<AssinaturaDigitalPdf?> AssinaturaDigitalAsync(string motivo)
+    {
+        if (!AssinarPdfDigitalmente) return null;
+        var a = await CertificadosPadrao.ParaPdfAsync(Contexto, motivo);
+        if (!a.Sucesso) { foreach (var e in a.Erros) Erros.Add(e); return null; }
+        return a.Valor;
+    }
+
     protected void Concluir(Resultado<ArquivoGerado> r, string nome)
     {
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
@@ -90,6 +102,9 @@ public partial class LivrosPdfViewModel(IContexto contexto) : LivroBaseViewModel
     private Task GerarLivroAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var (ini, fim) = Periodo();
+        var digital = await AssinaturaDigitalAsync("Livro contábil");
+        if (AssinarPdfDigitalmente && digital is null) return;
+        using var escopo = ContextoAssinaturaPdf.Usar(digital);
         Concluir(await app.Livros.LivroAsync(empresa, ini, fim, Termos(), Opcoes(), usuario), Nome($"livro_contabil_{NumeroLivro}"));
     });
 }
@@ -111,6 +126,9 @@ public partial class TermosViewModel(IContexto contexto) : LivroBaseViewModel(co
     {
         var (ini, fim) = Periodo();
         var contabil = Livro == Livros[1];
+        var digital = await AssinaturaDigitalAsync("Termo do livro contábil");
+        if (AssinarPdfDigitalmente && digital is null) return;
+        using var escopo = ContextoAssinaturaPdf.Usar(digital);
         Concluir(await app.Livros.TermoIsoladoAsync(empresa, ini, fim, Termos(Folhas is { } f ? (int)f : null), tipo, contabil, usuario),
                  Nome($"termo_{(tipo == TipoTermo.Abertura ? "abertura" : "encerramento")}_{NumeroLivro}"));
     }, Permissao.RelatorioDiario);

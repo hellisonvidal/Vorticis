@@ -100,8 +100,8 @@
                       <ComboBox SelectedIndex="{Binding ModoIndice}" Width="360">
                         <ComboBoxItem Content="Não assinar agora (assino no PVA)" />
                         <ComboBoxItem Content="Certificado A1 — arquivo .pfx" />
-                        <ComboBoxItem Content="Certificado A3 / instalado no Windows" />
-                        <ComboBoxItem Content="Certificado cadastrado no Vorticis" />
+                        <ComboBoxItem Content="Certificado A3 (token/cartão no Windows)" />
+                        <ComboBoxItem Content="Certificado cadastrado (ou padrão)" />
                       </ComboBox>
                       <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding PedeArquivo}">
                         <TextBox Text="{Binding ArquivoPfx}" Width="420" Watermark="Arquivo .pfx ou .p12" />

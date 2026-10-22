@@ -37,10 +37,13 @@
       </Border>
       <Border Grid.Column="2" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
         <StackPanel Spacing="6">
-          <TextBlock Text="Registrar certificado A3 (token / cartão)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock Text="Certificados instalados no Windows" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" IsVisible="{Binding !RepositorioWindowsDisponivel}"
+                     Text="Disponível somente no Windows. Neste sistema, use o arquivo A1 (.pfx)." />
           <Button Content="Ler certificados instalados no Windows" Command="{Binding LerInstaladosCommand}" />
+          <TextBlock Text="A3 (token / cartão): apenas o registro" FontSize="11" Foreground="#44506A" />
           <ComboBox ItemsSource="{Binding Instalados}" SelectedItem="{Binding InstaladoSelecionado}" HorizontalAlignment="Stretch"
-                    PlaceholderText="Conecte o token/cartão e clique acima">
+                    PlaceholderText="Só certificados A3 (chave no token/cartão)">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="sis:DadosCertificado">
                 <TextBlock>
@@ -50,6 +53,19 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <Button Content="Registrar A3" Command="{Binding RegistrarA3Command}" />
+          <TextBlock Text="A1 instalado (chave exportável): importar para o Vorticis" FontSize="11" Foreground="#44506A" Margin="0,6,0,0" />
+          <ComboBox ItemsSource="{Binding InstaladosA1}" SelectedItem="{Binding InstaladoA1Selecionado}" HorizontalAlignment="Stretch"
+                    PlaceholderText="Certificados A1 do repositório do Windows">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="sis:DadosCertificado">
+                <TextBlock>
+                  <Run Text="{Binding Titular, Mode=OneWay}" /><Run Text=" · até " /><Run Text="{Binding ValidoAte, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy}'}" />
+                </TextBlock>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBox Text="{Binding SenhaProtecao}" PasswordChar="●" Watermark="Senha que protegerá o certificado importado" />
+          <Button Content="Importar como A1" Command="{Binding ImportarInstaladoCommand}" />
         </StackPanel>
       </Border>
     </Grid>
@@ -62,11 +78,20 @@
         <DataGridTextColumn Header="CNPJ / CPF" Binding="{ReflectionBinding Documento}" Width="150" />
         <DataGridTextColumn Header="Validade" Binding="{ReflectionBinding Validade}" Width="190" />
         <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="150" />
+        <DataGridTextColumn Header="Padrão para assinar" Binding="{ReflectionBinding Padrao}" Width="150" />
         <DataGridTextColumn Header="Emissor" Binding="{ReflectionBinding Emissor}" Width="*" />
       </DataGrid.Columns>
     </DataGrid>
 
     <StackPanel Grid.Row="3" Spacing="6" Margin="0,8,0,0">
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Certificado padrão: o selecionado na lista passa a assinar, sem perguntar de novo, a ECD/ECF (contador e responsável) e os relatórios em PDF. Em A1 informe a senha: ela é conferida e guardada, protegida pelo Windows, só neste computador." />
+      <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding PodeAlterar}">
+        <TextBox Text="{Binding SenhaPadrao}" PasswordChar="●" Watermark="Senha do A1 selecionado" Width="200" />
+        <Button Content="Padrão do contador" Command="{Binding PadraoContadorCommand}" />
+        <Button Content="Padrão do responsável" Command="{Binding PadraoResponsavelCommand}" />
+        <Button Content="Retirar padrão" Command="{Binding RetirarPadraoCommand}" />
+      </StackPanel>
       <Button Content="Excluir do repositório" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeAlterar}" />
       <v:MensagensView />
     </StackPanel>

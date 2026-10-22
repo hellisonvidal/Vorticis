@@ -26,9 +26,26 @@ public sealed class GeradorPdf : IGeradorPdf
         var paginas = temFolhas ? Renderizar(documento, folhas: 0).PageCount : 0;
         var final = Renderizar(documento, paginas);
         var total = final.PdfDocument.PageCount;   // ler antes de salvar: depois de salvo o documento fica bloqueado
+        if ((documento.AssinaturaDigital ?? ContextoAssinaturaPdf.Atual) is { } assinatura) PrepararAssinatura(final.PdfDocument, assinatura);
         using var ms = new MemoryStream();
         final.PdfDocument.Save(ms, false);
         return new ArquivoGerado(ms.ToArray(), total);
+    }
+
+    /// <summary>A assinatura é aplicada ao salvar: o PDFsharp reserva o espaço, calcula o intervalo assinado e grava o CMS.</summary>
+    private static void PrepararAssinatura(PdfSharp.Pdf.PdfDocument pdf, AssinaturaDigitalPdf a)
+    {
+        var assinador = new AssinadorPdfCms(a.Certificado);
+        var opcoes = new PdfSharp.Pdf.Signatures.DigitalSignatureOptions
+        {
+            Reason = a.Motivo ?? "Assinatura digital do relatório",
+            Location = a.Local ?? "",
+            AppName = "Vorticis Contábil",
+            PageIndex = pdf.PageCount - 1,
+            Rectangle = new PdfSharp.Drawing.XRect(30, 24, 260, 36),
+            AppearanceHandler = new CarimboAssinatura(assinador.CertificateName, a.Motivo ?? "Assinatura digital do relatório"),
+        };
+        PdfSharp.Pdf.Signatures.DigitalSignatureHandler.ForDocument(pdf, assinador, opcoes);
     }
 
     private static PdfDocumentRenderer Renderizar(DocumentoRelatorio d, int folhas)

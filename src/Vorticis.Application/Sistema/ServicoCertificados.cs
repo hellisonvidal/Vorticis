@@ -8,7 +8,8 @@ namespace Vorticis.Application.Sistema;
 
 /// <summary>Certificado guardado no repositório (sem o conteúdo do arquivo).</summary>
 public sealed record CertificadoDigital(long Id, string Tipo, string Descricao, string Titular, string? Documento, string Emissor,
-                                        DateTimeOffset ValidoDe, DateTimeOffset ValidoAte, string Impressao, long? EmpresaId)
+                                        DateTimeOffset ValidoDe, DateTimeOffset ValidoAte, string Impressao, long? EmpresaId,
+                                        bool PadraoContador = false, bool PadraoResponsavel = false)
 {
     public int DiasParaVencer(DateTimeOffset agora) => (int)Math.Floor((ValidoAte - agora).TotalDays);
 
@@ -22,7 +23,10 @@ public sealed record CertificadoDigital(long Id, string Tipo, string Descricao, 
 
 /// <summary>Dados lidos de um certificado (arquivo .pfx ou repositório do Windows), antes de guardar.</summary>
 public sealed record DadosCertificado(string Titular, string? Documento, string Emissor, DateTimeOffset ValidoDe, DateTimeOffset ValidoAte,
-                                      string Impressao, bool TemChavePrivada);
+                                      string Impressao, bool TemChavePrivada, string? Tipo = null);
+
+/// <summary>Papel de quem assina com o certificado padrão.</summary>
+public enum PapelAssinatura { Contador, Responsavel }
 
 public interface IRepositorioCertificados
 {
@@ -30,6 +34,8 @@ public interface IRepositorioCertificados
     Task<long> IncluirAsync(CertificadoDigital c, byte[]? arquivo, CancellationToken ct);
     Task<byte[]?> ObterArquivoAsync(long id, CancellationToken ct);
     Task ExcluirAsync(long id, CancellationToken ct);
+    /// <summary>Marca (ou desmarca) o certificado como padrão do papel, desmarcando o anterior do mesmo escopo (empresa ou geral).</summary>
+    Task DefinirPadraoAsync(long id, PapelAssinatura papel, bool padrao, CancellationToken ct);
 }
 
 /// <summary>
@@ -103,6 +109,27 @@ public sealed class ServicoCertificados(IRepositorioCertificados repositorio, Ti
         return Resultado.Ok();
     }
 
+    /// <summary>Define (ou retira) o certificado padrão para assinar como contador ou como responsável. Vale para a empresa do certificado, ou para todas se ele não tiver empresa.</summary>
+    public async Task<Resultado> DefinirPadraoAsync(SessaoUsuario usuario, long id, PapelAssinatura papel, bool padrao, CancellationToken ct = default)
+    {
+        if (!usuario.Administrador) return Resultado.Falha("Somente o administrador define o certificado padrão.");
+        var c = (await repositorio.ListarAsync(ct)).FirstOrDefault(x => x.Id == id);
+        if (c is null) return Resultado.Falha("Certificado não encontrado.");
+        if (padrao && c.ValidoAte < Agora) return Resultado.Falha($"Certificado vencido em {c.ValidoAte.ToLocalTime():dd/MM/yyyy}: não pode ser o padrão.");
+        await repositorio.DefinirPadraoAsync(id, papel, padrao, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>Certificado padrão do papel para a empresa: o da própria empresa, senão o geral (sem empresa). Nulo se não houver ou estiver vencido.</summary>
+    public async Task<Resultado<CertificadoDigital?>> ObterPadraoAsync(SessaoUsuario usuario, PapelAssinatura papel, long? empresaId, CancellationToken ct = default)
+    {
+        if (!usuario.Administrador) return Resultado<CertificadoDigital?>.Falha("Somente o administrador usa os certificados digitais.");
+        var padroes = (await repositorio.ListarAsync(ct))
+            .Where(c => (papel == PapelAssinatura.Contador ? c.PadraoContador : c.PadraoResponsavel) && c.ValidoAte >= Agora).ToList();
+        var achado = padroes.FirstOrDefault(c => empresaId is not null && c.EmpresaId == empresaId) ?? padroes.FirstOrDefault(c => c.EmpresaId is null);
+        return Resultado<CertificadoDigital?>.Ok(achado);
+    }
+
     /// <summary>Carrega o certificado A1 guardado, pronto para assinar ou autenticar (a senha é pedida no uso).</summary>
     public async Task<Resultado<X509Certificate2>> AbrirA1Async(SessaoUsuario usuario, long id, string senha, CancellationToken ct = default)
     {
@@ -115,13 +142,91 @@ public sealed class ServicoCertificados(IRepositorioCertificados repositorio, Ti
         catch (CryptographicException) { return Resultado<X509Certificate2>.Falha("Senha do certificado incorreta."); }
     }
 
-    /// <summary>Certificados pessoais com chave privada instalados no Windows (A3 em token/cartão e A1 instalados).</summary>
-    public static IReadOnlyList<DadosCertificado> ListarInstaladosNoWindows()
+    public const string TipoA1 = "A1", TipoA3 = "A3";
+
+    /// <summary>
+    /// A3 = chave em dispositivo (token/cartão: provedor de cartão inteligente ou chave não exportável); A1 = chave de software
+    /// exportável. A regra pura, para ser testada em qualquer sistema.
+    /// </summary>
+    public static string ClassificarChave(string? provedor, bool exportavel, bool hardware)
+        => hardware || !exportavel || (provedor?.Contains("Smart Card", StringComparison.OrdinalIgnoreCase) ?? false) ? TipoA3 : TipoA1;
+
+    /// <summary>Tipo (A1 ou A3) do certificado com chave privada. Fora do Windows não há como ler o provedor: considera-se A1 se a chave for exportável.</summary>
+    public static string TipoDoCertificado(X509Certificate2 c)
+    {
+        string? provedor = null;
+        var exportavel = false;
+        var hardware = false;
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                using var rsa = c.GetRSAPrivateKey();
+                if (rsa is RSACng cng)
+                {
+                    provedor = cng.Key.Provider?.Provider;
+                    exportavel = (cng.Key.ExportPolicy & (CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport)) != 0;
+                }
+                else if (rsa is RSACryptoServiceProvider csp)
+                {
+                    var info = csp.CspKeyContainerInfo;
+                    provedor = info.ProviderName;
+                    exportavel = info.Exportable;
+                    hardware = info.HardwareDevice || info.Removable;
+                }
+                else exportavel = PodeExportar(c);
+            }
+            catch (CryptographicException) { exportavel = false; }
+        }
+        else exportavel = PodeExportar(c);
+        return ClassificarChave(provedor, exportavel, hardware);
+    }
+
+    private static bool PodeExportar(X509Certificate2 c)
+    {
+        try { c.Export(X509ContentType.Pfx, "x"); return true; }
+        catch (CryptographicException) { return false; }
+    }
+
+    /// <summary>Certificados pessoais com chave privada instalados no Windows, de todos os tipos.</summary>
+    public static IReadOnlyList<DadosCertificado> ListarInstaladosNoWindows() => ListarInstaladosNoWindows(null);
+
+    /// <summary>Certificados pessoais com chave privada instalados no Windows; com <paramref name="tipo"/> ("A1" ou "A3"), só desse tipo.
+    /// O A3 nunca inclui certificados de software (A1).</summary>
+    public static IReadOnlyList<DadosCertificado> ListarInstaladosNoWindows(string? tipo)
     {
         if (!OperatingSystem.IsWindows()) return [];
         using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
         store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-        return store.Certificates.Where(c => c.HasPrivateKey).Select(Dados).OrderBy(d => d.Titular).ToList();
+        return store.Certificates.Where(c => c.HasPrivateKey)
+            .Select(c => Dados(c) with { Tipo = TipoDoCertificado(c) })
+            .Where(d => tipo is null || d.Tipo == tipo).OrderBy(d => d.Titular).ToList();
+    }
+
+    /// <summary>Mensagem para quando o repositório do Windows não existe (Linux/macOS).</summary>
+    public const string AvisoSomenteWindows = "O repositório de certificados do Windows (A3 em token/cartão e A1 instalados) só está disponível no Windows. Use um arquivo A1 (.pfx).";
+
+    /// <summary>Exporta um certificado instalado (com chave exportável) para .pfx protegido pela senha dada, para importá-lo como A1.</summary>
+    public static Resultado<byte[]> ExportarComoPfx(X509Certificate2 cert, string senha)
+    {
+        if (string.IsNullOrEmpty(senha)) return Resultado<byte[]>.Falha("Informe uma senha de proteção para o arquivo do certificado.");
+        if (!cert.HasPrivateKey) return Resultado<byte[]>.Falha("O certificado não tem chave privada.");
+        try { return Resultado<byte[]>.Ok(cert.Export(X509ContentType.Pfx, senha)); }
+        catch (CryptographicException)
+        {
+            return Resultado<byte[]>.Falha("A chave privada deste certificado não é exportável (token/cartão A3 ou chave protegida): ele não pode ser importado como A1. Registre-o como A3.");
+        }
+    }
+
+    /// <summary>Exporta (como .pfx) o certificado instalado no Windows com a impressão dada.</summary>
+    public static Resultado<byte[]> ExportarInstaladoComoPfx(string impressao, string senha)
+    {
+        if (!OperatingSystem.IsWindows()) return Resultado<byte[]>.Falha(AvisoSomenteWindows);
+        using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+        store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+        using var cert = store.Certificates.Find(X509FindType.FindByThumbprint, impressao.Replace(" ", ""), validOnly: false)
+            .Cast<X509Certificate2>().FirstOrDefault(c => c.HasPrivateKey);
+        return cert is null ? Resultado<byte[]>.Falha("Certificado não encontrado no repositório do Windows.") : ExportarComoPfx(cert, senha);
     }
 
     public static DadosCertificado Dados(X509Certificate2 c)

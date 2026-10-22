@@ -28,6 +28,7 @@
         <CheckBox Content="Termo de encerramento" IsChecked="{Binding IncluirTermoEncerramento}" Width="230" />
         <CheckBox Content="Assinatura do sócio/responsável" IsChecked="{Binding AssinaturaResponsavel}" Width="230" />
         <CheckBox Content="Assinatura do contador" IsChecked="{Binding AssinaturaContador}" Width="230" />
+        <CheckBox Content="Assinar digitalmente o PDF" IsChecked="{Binding AssinarPdfDigitalmente}" Width="230" />
       </WrapPanel>
 
       <TextBlock Text="Livro, termos de abertura e encerramento e assinaturas" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,8,0,0" />
