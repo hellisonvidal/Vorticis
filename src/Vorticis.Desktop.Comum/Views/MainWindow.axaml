@@ -39,13 +39,10 @@
 
   <DockPanel>
     <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
-    <!-- A cor da barra e a faixa de destaque são do módulo (IModuloDesktop.CorBarra / CorDestaque) -->
+    <!-- A cor da barra e a faixa de destaque identificam o módulo (IModuloDesktop.CorBarra / CorDestaque); o nome dele fica só no título -->
     <Border DockPanel.Dock="Top" BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
     <Border Background="{Binding PincelBarra}" Padding="4,0,8,0">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-        <Border Background="{Binding PincelDestaque}" CornerRadius="3" Padding="10,2" Margin="4,3,8,3" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Modulo.NomeCurto}" Foreground="White" FontWeight="Bold" FontSize="12" />
-        </Border>
         <!-- Os itens vêm do módulo (IModuloDesktop.Menus) e são montados em MainWindow.axaml.cs -->
         <Menu Name="MenuPrincipal" Grid.Column="1" />
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
