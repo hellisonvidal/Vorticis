@@ -15,6 +15,9 @@ public interface IModuloDesktop
     /// <summary>Nome completo do módulo ("Vorticis Contábil"): título da janela, tela Sobre e mensagens.</summary>
     string Nome { get; }
 
+    /// <summary>Indicador deste módulo no cadastro da empresa (core.empresa): a seleção do topo lista só as empresas ativas nele.</summary>
+    Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa { get; }
+
     /// <summary>Nome curto, mostrado na tela inicial ("Contábil").</summary>
     string NomeCurto { get; }
 

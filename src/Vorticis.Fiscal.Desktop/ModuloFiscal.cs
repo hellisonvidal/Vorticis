@@ -11,6 +11,7 @@ namespace Vorticis.Fiscal.Desktop;
 public sealed class ModuloFiscal : IModuloDesktop
 {
     public string Nome => "Vorticis Fiscal";
+    public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Fiscal;
     public string NomeCurto => "Fiscal";
     public string Subtitulo => "Escrituração e obrigações fiscais";
     public string NomeExecutavel => "VorticisFiscal";

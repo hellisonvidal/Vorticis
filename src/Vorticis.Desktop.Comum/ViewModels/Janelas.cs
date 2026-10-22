@@ -18,10 +18,21 @@ public sealed partial class FuncaoAberta(object viewModel, string tela, string t
 /// Pergunta ao usuário (Sim/Não) exibida em diálogo modal; a resposta conclui <see cref="Resposta"/>.
 /// Com <see cref="PedeSenha"/>, o diálogo tem um campo de senha (lida em <see cref="Senha"/> ao confirmar).
 /// </summary>
+/// <summary>Caixa de seleção de um diálogo de confirmação; a obrigatória fica marcada e não pode ser desmarcada.</summary>
+public sealed class OpcaoConfirmacao(string texto, bool marcada, bool obrigatoria = false)
+{
+    public string Texto { get; } = texto;
+    public bool Obrigatoria { get; } = obrigatoria;
+    public bool Marcada { get; set; } = marcada || obrigatoria;
+}
+
 public sealed class PedidoConfirmacao(string titulo, string mensagem, string textoSim, string textoNao, bool pedeSenha = false)
 {
     public bool PedeSenha { get; } = pedeSenha;
     public string Senha { get; set; } = "";
+
+    /// <summary>Caixas de seleção exibidas entre a mensagem e os botões (vazio na maioria dos diálogos).</summary>
+    public IReadOnlyList<OpcaoConfirmacao> Opcoes { get; init; } = [];
 
     private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

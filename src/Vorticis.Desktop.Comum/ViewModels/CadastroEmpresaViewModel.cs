@@ -83,6 +83,21 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private string _email = "";
     [ObservableProperty] private string _telefone = "";
     [ObservableProperty] private DateTime? _inicioAtividades = new DateTime(DateTime.Today.Year, 1, 1);
+    // Módulos em que a empresa está ativa (o do módulo em uso fica sempre marcado).
+    [ObservableProperty] private bool _moduloContabil = true;
+    [ObservableProperty] private bool _moduloFiscal = true;
+    [ObservableProperty] private bool _moduloFolha = true;
+
+    public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
+    public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
+    public bool FolhaEditavel => main.ModuloAtual != ModulosEmpresa.Folha;
+
+    public ModulosEmpresa Modulos
+    {
+        get => (ModuloContabil ? ModulosEmpresa.Contabil : 0) | (ModuloFiscal ? ModulosEmpresa.Fiscal : 0) | (ModuloFolha ? ModulosEmpresa.Folha : 0);
+        set => (ModuloContabil, ModuloFiscal, ModuloFolha) = (value.HasFlag(ModulosEmpresa.Contabil), value.HasFlag(ModulosEmpresa.Fiscal), value.HasFlag(ModulosEmpresa.Folha));
+    }
+
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(EhLucroReal), nameof(PermiteRegimeCaixa))]
     private RegimeTributario _regime = RegimeTributario.SimplesNacional;
     [ObservableProperty] private decimal? _anoExercicio = DateTime.Today.Year;
@@ -200,6 +215,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         LimparFormulario();
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
+        Modulos = ModulosEmpresa.Todos;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;
@@ -235,6 +251,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             (Email, Telefone) = (d.Email ?? "", d.Telefone ?? "");
             InicioAtividades = d.DataInicioAtividades?.ToDateTime(TimeOnly.MinValue);
             if (d.Regime is { } r) Regime = r;
+            Modulos = d.Modulos;
             OrigemDados = d.FonteDados is null ? null : $"Dados obtidos de {d.FonteDados}. Situação cadastral: {d.SituacaoCadastral ?? "não informada"}.";
             Aviso = null;
         }
@@ -271,11 +288,18 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         // A origem só é registrada se o CNPJ cadastrado for o mesmo que foi consultado.
         var origem = _consultado is not null && Domain.Cadastros.Cnpj.SomenteDigitos(_consultado.Cnpj) == Domain.Cadastros.Cnpj.SomenteDigitos(Cnpj)
             ? _consultado : null;
+        // Confirma em quais módulos a empresa será cadastrada (o módulo atual é obrigatório; os demais vêm marcados).
+        if (await main.EscolherModulosAsync(Modulos | main.ModuloAtual) is not { } modulos)
+        {
+            Erros.Add("Cadastro cancelado: nenhum módulo foi confirmado.");
+            return false;
+        }
+        Modulos = modulos;
         var r = await app.Empresas.CadastrarAsync(new NovaEmpresa(
             Cnpj, RazaoSocial, string.IsNullOrWhiteSpace(NomeFantasia) ? null : NomeFantasia.Trim(),
             NaturezaJuridica.Trim(), Cnae, Uf.Trim(), MunicipioIbge.Trim(),
             DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), Regime, (int)(AnoExercicio ?? DateTime.Today.Year),
-            ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario()));
+            ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario(), modulos));
         MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos.");
         if (!r.Sucesso) return false;
         if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);
@@ -294,7 +318,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         if (_carregada is not { } atual) { Erros.Add("Selecione a empresa a alterar."); return false; }
         var r = await app.Empresas.AlterarAsync(new AlteracaoEmpresa(
             atual.Id, RazaoSocial, string.IsNullOrWhiteSpace(NomeFantasia) ? null : NomeFantasia.Trim(), NaturezaJuridica.Trim(), Cnae,
-            Uf.Trim(), MunicipioIbge.Trim(), DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), InscricaoEstadual, Complementos(null), Nire));
+            Uf.Trim(), MunicipioIbge.Trim(), DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), InscricaoEstadual, Complementos(null), Nire, Modulos | main.ModuloAtual));
         MostrarResultado(r, "Alterações da empresa salvas.");
         if (!r.Sucesso) return false;
         if (main.Sessao is { } sess && !await SalvarContabilidadeAsync(app, atual.Id, sess.Id)) return false;

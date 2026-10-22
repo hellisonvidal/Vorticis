@@ -245,4 +245,29 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
             res.Add(new EmpresaPermitida(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3)));
         return res;
     }
+
+    public async Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasNoModuloAsync(
+        long usuarioId, bool administrador, Application.Cadastros.ModulosEmpresa modulo, bool ativas, CancellationToken ct)
+    {
+        var coluna = modulo switch
+        {
+            Application.Cadastros.ModulosEmpresa.Contabil => "modulo_contabil",
+            Application.Cadastros.ModulosEmpresa.Fiscal => "modulo_fiscal",
+            Application.Cadastros.ModulosEmpresa.Folha => "modulo_folha",
+            _ => throw new ArgumentException("Informe um único módulo.", nameof(modulo)),
+        };
+        await using var cmd = ds.CreateCommand($"""
+            SELECT e.id, e.cnpj, e.razao_social, p.nome
+              FROM core.empresa e
+              LEFT JOIN core.usuario_empresa ue ON ue.empresa_id = e.id AND ue.usuario_id = @u
+              LEFT JOIN core.perfil p ON p.id = ue.perfil_id
+             WHERE e.ativa AND (@adm OR ue.perfil_id IS NOT NULL) AND e.{coluna} = @ativas
+             ORDER BY e.razao_social
+            """).Com("u", usuarioId).Com("adm", administrador).Com("ativas", ativas);
+        var res = new List<EmpresaPermitida>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new EmpresaPermitida(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3)));
+        return res;
+    }
 }

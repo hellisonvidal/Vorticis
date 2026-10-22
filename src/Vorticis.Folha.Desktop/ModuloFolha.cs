@@ -12,6 +12,7 @@ namespace Vorticis.Folha.Desktop;
 public sealed class ModuloFolha : IModuloDesktop
 {
     public string Nome => "Vorticis Folha de Pagamento";
+    public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Folha;
     public string NomeCurto => "Folha";
     public string Subtitulo => "Folha de pagamento e eSocial";
     public string NomeExecutavel => "VorticisFolha";

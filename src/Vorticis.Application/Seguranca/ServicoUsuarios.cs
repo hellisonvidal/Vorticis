@@ -57,6 +57,8 @@ public interface IRepositorioUsuarios
     Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct);
     Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct);
     Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasAsync(long usuarioId, bool administrador, CancellationToken ct);
+    /// <summary>Empresas permitidas ao usuário que estão ativas (<paramref name="ativas"/>) ou NÃO ativas no módulo.</summary>
+    Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasNoModuloAsync(long usuarioId, bool administrador, Cadastros.ModulosEmpresa modulo, bool ativas, CancellationToken ct);
 }
 
 /// <summary>
@@ -284,6 +286,14 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     /// <summary>Empresas que o usuário pode acessar: todas para o administrador; as liberadas no cadastro para os demais; nenhuma na implantação.</summary>
     public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasPermitidasAsync(SessaoUsuario sessao, CancellationToken ct = default)
         => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasAsync(sessao.Id, sessao.Administrador, ct);
+
+    /// <summary>Empresas que o usuário pode acessar e que estão ativas no módulo (lista do seletor do topo).</summary>
+    public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasDoModuloAsync(SessaoUsuario sessao, Cadastros.ModulosEmpresa modulo, CancellationToken ct = default)
+        => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasNoModuloAsync(sessao.Id, sessao.Administrador, modulo, true, ct);
+
+    /// <summary>Empresas que o usuário pode acessar mas que ainda não estão ativas no módulo (para oferecer a ativação).</summary>
+    public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasForaDoModuloAsync(SessaoUsuario sessao, Cadastros.ModulosEmpresa modulo, CancellationToken ct = default)
+        => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasNoModuloAsync(sessao.Id, sessao.Administrador, modulo, false, ct);
 
     private static List<string> ValidarNovo(string login, string nome, string senha, string confirmacao)
     {

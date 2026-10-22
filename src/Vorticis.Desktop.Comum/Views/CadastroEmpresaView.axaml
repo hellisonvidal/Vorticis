@@ -106,6 +106,13 @@
           </Grid>
         </Grid>
 
+        <TextBlock Classes="secao" Text="Módulos" />
+        <StackPanel Orientation="Horizontal" Spacing="16" IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Módulos em que a empresa está ativa. O módulo em uso não pode ser desmarcado.">
+          <CheckBox Name="ModuloContabilCheck" Content="Contábil" IsChecked="{Binding ModuloContabil}" IsEnabled="{Binding ContabilEditavel}" />
+          <CheckBox Name="ModuloFiscalCheck" Content="Fiscal" IsChecked="{Binding ModuloFiscal}" IsEnabled="{Binding FiscalEditavel}" />
+          <CheckBox Name="ModuloFolhaCheck" Content="Folha de Pagamento" IsChecked="{Binding ModuloFolha}" IsEnabled="{Binding FolhaEditavel}" />
+        </StackPanel>
+
         <TextBlock Classes="secao" Text="Escrituração" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Regime tributário" />

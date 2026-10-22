@@ -24,6 +24,12 @@ public interface IContexto
     Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não");
     /// <summary>Reconecta ao banco e volta à tela de login, mostrando a mensagem (após restaurar ou limpar o banco).</summary>
     Task ReiniciarParaLoginAsync(string mensagem);
+    /// <summary>
+    /// "Cadastrar esta empresa em quais módulos?": o módulo atual vem marcado e obrigatório. Devolve null se o usuário cancelar.
+    /// </summary>
+    Task<ModulosEmpresa?> EscolherModulosAsync(ModulosEmpresa inicial);
+    /// <summary>Módulo que este executável hospeda (Contábil, Fiscal ou Folha).</summary>
+    ModulosEmpresa ModuloAtual { get; }
     /// <summary>Alerta com campo de senha; devolve a senha digitada ou null se o usuário cancelar.</summary>
     Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar");
     /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
@@ -322,6 +328,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _implantacao = sessao.Implantacao;
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
+        await OferecerAtivacaoAsync();
         if (_implantacao)
         {
             // Instalação nova: abre o cadastro de usuários, que só permite incluir o administrador, até concluir.
@@ -385,7 +392,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         if (App is null || Sessao is null) return;
         var atual = selecionar ?? EmpresaSelecionada?.Id;
-        var lista = await App.Usuarios.EmpresasPermitidasAsync(Sessao);
+        var lista = await App.Usuarios.EmpresasDoModuloAsync(Sessao, ModuloAtual);
         EmpresasPermitidas.Clear();
         foreach (var e in lista) EmpresasPermitidas.Add(e);
         EmpresaSelecionada = EmpresasPermitidas.FirstOrDefault(e => e.Id == atual) ?? EmpresasPermitidas.FirstOrDefault();
@@ -555,6 +562,37 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         JanelasAbertas.Clear();
         FuncaoAtiva = null;
+    }
+
+    public ModulosEmpresa ModuloAtual => Modulo.ModuloEmpresa;
+
+    public async Task<ModulosEmpresa?> EscolherModulosAsync(ModulosEmpresa inicial)
+    {
+        Confirmacao?.Responder(false);
+        var atual = ModuloAtual;
+        var opcoes = new[] { ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha }
+            .Select(m => (Modulo: m, Opcao: new OpcaoConfirmacao(m.Nome(), inicial.HasFlag(m), obrigatoria: m == atual))).ToList();
+        var pedido = new PedidoConfirmacao("Cadastrar esta empresa em quais módulos?",
+                                           "Os cadastros (empresa, participantes, sócios, contadores etc.) são únicos e compartilhados; escolha em quais módulos a empresa ficará ativa.",
+                                           "Cadastrar", "Cancelar") { Opcoes = [.. opcoes.Select(o => o.Opcao)] };
+        Confirmacao = pedido;
+        if (!await pedido.Resposta) return null;
+        return opcoes.Where(o => o.Opcao.Marcada).Aggregate(ModulosEmpresa.Nenhum, (acc, o) => acc | o.Modulo);
+    }
+
+    /// <summary>Oferece ativar, neste módulo, as empresas liberadas ao usuário que ainda não estão ativas nele.</summary>
+    public async Task OferecerAtivacaoAsync()
+    {
+        if (App is null || Sessao is null || _implantacao) return;
+        var fora = await App.Usuarios.EmpresasForaDoModuloAsync(Sessao, ModuloAtual);
+        var ativou = false;
+        foreach (var e in fora.Take(5))
+            if (await ConfirmarAsync($"Ativar empresa no {Modulo.NomeCurto}",
+                                     $"A empresa {e.RazaoSocial} (CNPJ {e.CnpjFormatado}) não está ativa no módulo {Modulo.NomeCurto}. Ativar esta empresa no módulo {Modulo.NomeCurto}?",
+                                     "Ativar", "Agora não")
+                && (await App.Empresas.AtivarNoModuloAsync(e.Id, ModuloAtual)).Sucesso)
+                ativou = true;
+        if (ativou) await RecarregarEmpresasAsync();
     }
 
     public Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não")

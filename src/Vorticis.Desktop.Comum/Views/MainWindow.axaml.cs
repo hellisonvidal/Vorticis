@@ -176,6 +176,19 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------------ confirmação (Sim/Não)
 
+    /// <summary>Caixas de seleção do diálogo (módulos da empresa, por exemplo); painel vazio quando o pedido não tem opções.</summary>
+    private static StackPanel OpcoesDe(PedidoConfirmacao pedido)
+    {
+        var painel = new StackPanel { Spacing = 6, IsVisible = pedido.Opcoes.Count > 0 };
+        foreach (var o in pedido.Opcoes)
+        {
+            var caixa = new CheckBox { Content = o.Texto, IsChecked = o.Marcada, IsEnabled = !o.Obrigatoria, Name = "Opcao" + o.Texto.Split(' ')[0] };
+            caixa.IsCheckedChanged += (_, _) => o.Marcada = caixa.IsChecked == true || o.Obrigatoria;
+            painel.Children.Add(caixa);
+        }
+        return painel;
+    }
+
     private void MostrarConfirmacao(PedidoConfirmacao? pedido)
     {
         if (pedido is null)
@@ -202,6 +215,7 @@ public partial class MainWindow : Window
                 {
                     new TextBlock { Text = pedido.Titulo, FontSize = 16, FontWeight = FontWeight.SemiBold },
                     new TextBlock { Text = pedido.Mensagem, TextWrapping = TextWrapping.Wrap },
+                    OpcoesDe(pedido),
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right,
                                      Children = { botaoSim, botaoNao } },
                 },

@@ -8,6 +8,7 @@ namespace Vorticis.Desktop;
 public sealed class ModuloContabil : IModuloDesktop
 {
     public string Nome => "Vorticis Contábil";
+    public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Contabil;
     public string NomeCurto => "Contábil";
     public string Subtitulo => "Escrituração Fiscal Contábil";
     public string NomeExecutavel => "VorticisContabil";

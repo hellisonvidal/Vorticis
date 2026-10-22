@@ -6,6 +6,22 @@ using Vorticis.Domain.Contabil;
 
 namespace Vorticis.Application.Cadastros;
 
+/// <summary>Módulos da suíte em que a empresa está ativa (o banco e os cadastros comuns são únicos).</summary>
+[Flags]
+public enum ModulosEmpresa : byte
+{
+    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Todos = 7,
+}
+
+public static class ModulosEmpresaExtensoes
+{
+    public static string Nome(this ModulosEmpresa m) => m switch
+    {
+        ModulosEmpresa.Contabil => "Contábil", ModulosEmpresa.Fiscal => "Fiscal", ModulosEmpresa.Folha => "Folha de Pagamento",
+        _ => string.Join(", ", new[] { ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha }.Where(x => m.HasFlag(x)).Select(Nome)),
+    };
+}
+
 public enum RegimeTributario { MEI, SimplesNacional, LucroPresumido, LucroReal, LucroArbitrado, ImuneIsenta }
 
 public sealed record NovaEmpresa(
@@ -24,7 +40,8 @@ public sealed record NovaEmpresa(
     string? InscricaoEstadual = null,
     string? Nire = null,
     string? ModeloPlano = null,
-    ConfiguracaoContabil? Contabil = null);
+    ConfiguracaoContabil? Contabil = null,
+    ModulosEmpresa Modulos = ModulosEmpresa.Todos);
 
 /// <summary>Alteração do cadastro (o CNPJ não muda; o regime tem histórico próprio).</summary>
 public sealed record AlteracaoEmpresa(
@@ -38,7 +55,8 @@ public sealed record AlteracaoEmpresa(
     DateOnly DataInicioAtividades,
     string? InscricaoEstadual,
     ComplementoEmpresa? Complemento = null,
-    string? Nire = null);
+    string? Nire = null,
+    ModulosEmpresa? Modulos = null);
 
 /// <summary>Endereço, contato e rastreabilidade da origem dos dados cadastrais.</summary>
 public sealed record ComplementoEmpresa(
@@ -61,7 +79,7 @@ public sealed record EmpresaDetalhe(long Id, string Cnpj, string RazaoSocial, st
                                     string? NomeFantasia = null, string NaturezaJuridica = "", string CnaePrincipal = "",
                                     DateOnly? DataInicioAtividades = null, string? InscricaoEstadual = null, string? Email = null,
                                     string? Telefone = null, RegimeTributario? Regime = null, string? SituacaoCadastral = null,
-                                    string? FonteDados = null);
+                                    string? FonteDados = null, ModulosEmpresa Modulos = ModulosEmpresa.Todos);
 
 /// <summary>Conta do plano modelo. Nível e pai derivam do código; tipo também, salvo quando informado (sintética sem subcontas).</summary>
 public sealed record ContaModelo(string Codigo, string Descricao, string CodNat, IndicadorDC NaturezaSaldo, bool? Analitica = null);
@@ -140,6 +158,8 @@ public interface IRepositorioEmpresa
     Task CriarExercicioAsync(long empresaId, int ano, CancellationToken ct);
     Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct);
     Task<EmpresaDetalhe?> ObterAsync(long id, CancellationToken ct);
+    /// <summary>Ativa a empresa também nos módulos indicados (não desativa nenhum).</summary>
+    Task AtivarModulosAsync(long id, ModulosEmpresa modulos, CancellationToken ct);
     Task AtualizarAsync(AlteracaoEmpresa e, CancellationToken ct);
     Task AtualizarInscricaoEstadualAsync(long id, string? inscricao, CancellationToken ct);
     /// <summary>Exclui a empresa do banco com tudo o que pertence a ela. Retorna quantos lançamentos foram apagados.</summary>
@@ -185,6 +205,7 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
         if (!Nire.Valido(e.Nire)) erros.Add("NIRE deve ter 11 dígitos (número do registro na Junta Comercial).");
         var modelo = e.ImportarPlanoModelo ? planoModelo.Listar().FirstOrDefault(m => m.Id == (e.ModeloPlano ?? planoModelo.ModeloPadrao)) : null;
         if (e.ImportarPlanoModelo && modelo is null) erros.Add("Modelo de plano de contas não encontrado.");
+        if (e.Modulos == ModulosEmpresa.Nenhum || (e.Modulos & ~ModulosEmpresa.Todos) != 0) erros.Add("Escolha ao menos um módulo para a empresa.");
         var contabil = (e.Contabil ?? new ConfiguracaoContabil()).Normalizar();
         erros.AddRange(contabil.Validar(e.DataInicioAtividades));
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
@@ -231,6 +252,7 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
         if (cep.Length is not (0 or 8)) erros.Add("CEP deve ter 8 dígitos.");
         if (!Domain.Cadastros.InscricaoEstadual.Valida(e.InscricaoEstadual)) erros.Add("Inscrição estadual deve ter de 2 a 14 dígitos ou ISENTO.");
         if (!Nire.Valido(e.Nire)) erros.Add("NIRE deve ter 11 dígitos (número do registro na Junta Comercial).");
+        if (e.Modulos is { } mods && (mods == ModulosEmpresa.Nenhum || (mods & ~ModulosEmpresa.Todos) != 0)) erros.Add("Escolha ao menos um módulo para a empresa.");
         if (erros.Count > 0) return Resultado.Falha(erros);
         if (await repositorio.ObterAsync(e.Id, ct) is null) return Resultado.Falha("Empresa não encontrada.");
 
@@ -241,6 +263,15 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
             Complemento = e.Complemento is null ? null : e.Complemento with { Cep = cep.Length == 0 ? null : cep },
             Nire = Nire.Normalizar(e.Nire),
         }, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>Ativa a empresa no módulo (ou módulos) indicado, sem alterar os demais.</summary>
+    public async Task<Resultado> AtivarNoModuloAsync(long id, ModulosEmpresa modulos, CancellationToken ct = default)
+    {
+        if (modulos == ModulosEmpresa.Nenhum || (modulos & ~ModulosEmpresa.Todos) != 0) return Resultado.Falha("Módulo inválido.");
+        if (await repositorio.ObterAsync(id, ct) is null) return Resultado.Falha("Empresa não encontrada.");
+        await repositorio.AtivarModulosAsync(id, modulos, ct);
         return Resultado.Ok();
     }
 

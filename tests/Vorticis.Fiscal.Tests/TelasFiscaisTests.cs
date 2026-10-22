@@ -23,6 +23,8 @@ public sealed class ContextoDeTeste(VorticisApp app, long usuarioId, long empres
     public Task ReiniciarParaLoginAsync(string mensagem) => Task.CompletedTask;
     public Task ConcluirImplantacaoAsync(string loginAdministrador) => Task.CompletedTask;
     public Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar") => Task.FromResult<string?>(null);
+    public Application.Cadastros.ModulosEmpresa ModuloAtual => Application.Cadastros.ModulosEmpresa.Contabil;
+    public Task<Application.Cadastros.ModulosEmpresa?> EscolherModulosAsync(Application.Cadastros.ModulosEmpresa inicial) => Task.FromResult<Application.Cadastros.ModulosEmpresa?>(inicial);
     public string DescricaoEmpresa => "Empresa de Teste LTDA - 33.000.167/0001-01";
     public void AbrirTela(string tela) { }
 }

@@ -214,9 +214,17 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.NotNull(janela.JanelaAtiva);                               // a função abriu em janela flutuante
             var picker = janela.JanelaAtiva!.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
             Assert.Equal((new DateTime(2015, 3, 2), (DateTime?)new DateTime(2015, 3, 2), "02/03/2015"), (emp.InicioAtividades!.Value, picker.SelectedDate, picker.Text));
-            await emp.SalvarCommand.ExecuteAsync(null);
+            var salvandoEmpresa = emp.SalvarCommand.ExecuteAsync(null);
+            var modulos = await AguardarConfirmacao(vm);                      // cadastrar em quais módulos?
+            Assert.Equal("Cadastrar esta empresa em quais módulos?", modulos.Titulo);
+            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento"], modulos.Opcoes.Select(o => o.Texto));
+            Assert.All(modulos.Opcoes, o => Assert.True(o.Marcada));
+            modulos.Opcoes[2].Marcada = false;                                // sem Folha
+            vm.ResponderConfirmacaoCommand.Execute(true);
+            await salvandoEmpresa;
             Assert.Empty(emp.Erros);
             Assert.True(emp.EmConsulta);
+            Assert.False(emp.ModuloFolha);
             var empresa = Assert.Single(vm.EmpresasPermitidas);
             Assert.True(await db.EscalarAsync<bool>(
                 """
@@ -248,7 +256,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             emp.IncluirCommand.Execute(null);
             (emp.Cnpj, emp.RazaoSocial, emp.Cnae, emp.MunicipioIbge, emp.Uf) = ("06.990.590/0001-23", "EMPRESA A EXCLUIR LTDA", "6920601", "3550308", "SP");
             emp.ImportarPlanoModelo = false;
-            await emp.SalvarCommand.ExecuteAsync(null);
+            await ConcluirConfirmando(vm, emp.SalvarCommand.ExecuteAsync(null));         // aceita os módulos sugeridos (todos)
             Assert.Empty(emp.Erros);
             Assert.Equal(2, vm.EmpresasPermitidas.Count);
             vm.EmpresaSelecionada = vm.EmpresasPermitidas.Single(e => e.RazaoSocial == "EMPRESA A EXCLUIR LTDA");
