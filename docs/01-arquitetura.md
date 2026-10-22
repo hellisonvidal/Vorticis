@@ -54,7 +54,7 @@ Vorticis.Desktop (VorticisContabil)  Vorticis.Fiscal.Desktop (VorticisFiscal)  V
                  login, banco local, empresas, contadores, clientes/fornecedores, usuários, perfis, certificados,
                  configurações, backup, licença, sobre, controles e utilitários de tela
                            │
-        Vorticis.Fiscal ── Vorticis.Folha ── (regras/serviços/repositórios de cada módulo; hoje vazios)
+        Vorticis.Fiscal ── Vorticis.Folha ── (regras/serviços/repositórios de cada módulo; Folha implementada, com `ServicosFolha.De(VorticisApp)` como raiz de composição)
                            │
               Vorticis.Application / Vorticis.Domain / Vorticis.Infra   (compartilhados; Infra tem o migrador e `VorticisApp`)
 ```

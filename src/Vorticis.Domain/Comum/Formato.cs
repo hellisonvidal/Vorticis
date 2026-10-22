@@ -9,6 +9,9 @@ public static class Formato
 
     public static string Moeda(decimal valor) => valor.ToString("N2", PtBr);
 
+    /// <summary>Número sem zeros à direita (até 2 casas), vírgula decimal: 7,5 · 9 · 22,5.</summary>
+    public static string Num(decimal valor) => valor.ToString("0.##", PtBr);
+
     /// <summary>
     /// Valor digitado ou vindo de planilha: aceita "1.500,00", "1500,5", "R$ 1.500" e o formato com ponto decimal
     /// ("1500.5", "-80.25"), além de negativos entre parênteses "(80,00)".
