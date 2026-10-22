@@ -32,7 +32,10 @@ public class MenusTests
         Assert.Equal("_Ajuda", vm.Menus[^1].Titulo);
         var proprios = vm.Menus.Skip(1).SkipLast(2);
         Assert.NotEmpty(proprios);
-        Assert.All(Folhas(proprios), i => Assert.False(i.Habilitado || i.Chave is not null, i.Titulo));
+        if (modulo == "Fiscal")   // o Fiscal já tem telas: item habilitado tem chave; o que falta fica "em breve" (desabilitado e sem chave)
+            Assert.All(Folhas(proprios).Where(i => !i.EhSeparador), i => Assert.Equal(i.Chave is not null, i.Habilitado));
+        else
+            Assert.All(Folhas(proprios), i => Assert.False(i.Habilitado || i.Chave is not null, i.Titulo));
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
     }
 

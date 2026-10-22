@@ -18,5 +18,7 @@
     <Using Include="Vorticis.Desktop.Comum" />
     <Using Include="Vorticis.Desktop.Comum.ViewModels" />
     <Using Include="Vorticis.Desktop.Comum.Views" />
+    <Using Include="Vorticis.Infra" />
+    <Using Include="Vorticis.Fiscal" />
   </ItemGroup>
 </Project>
