@@ -3,6 +3,7 @@ using Vorticis.Domain.Comum;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Guias;
 using Vorticis.Fiscal.Lucro;
+using Vorticis.Fiscal.Produtos;
 using Vorticis.Fiscal.Retencoes;
 using Vorticis.Fiscal.Simples;
 
@@ -31,6 +32,33 @@ public static class TabelasFiscais
         rows.Add(L(true, null, "", "", "TOTAL", null, "", "", "", "", linhas.Sum(l => l.ValorContabil), linhas.Sum(l => l.BcIcms), null, linhas.Sum(l => l.Icms), linhas.Sum(l => l.IcmsSt),
             linhas.Sum(l => l.Ipi), linhas.Sum(l => l.Pis), linhas.Sum(l => l.Cofins), linhas.Sum(l => l.Iss), ""));
         return new TabelaRelatorio(titulo, colunas, rows, $"{linhas.Select(l => l.DocumentoId).Distinct().Count()} documento(s), {linhas.Count} linha(s) por CFOP. Cancelados e denegados aparecem sem valores.");
+    }
+
+    public static TabelaRelatorio Produtos(IReadOnlyList<Produto> produtos)
+    {
+        var rows = produtos.Select(p => L(false, p.Codigo, p.Descricao, p.Unidade, p.Ncm ?? "", p.Cest ?? "", p.Gtin ?? "", p.Origem, TiposItem.Rotulo(p.TipoItem),
+            p.CfopEntrada ?? "", p.CfopSaida ?? "", p.AliqIcms, p.AliqIpi, p.AliqPis, p.AliqCofins, p.Ativo ? "Sim" : "Não")).ToList();
+        return new TabelaRelatorio("Produtos cadastrados",
+        [
+            new("Código", TipoColuna.Inteiro), new("Descrição"), new("Un.", LarguraCm: 1), new("NCM", LarguraCm: 2), new("CEST", LarguraCm: 1.8), new("GTIN", LarguraCm: 3.2),
+            new("Orig.", LarguraCm: 1), new("Tipo do item", LarguraCm: 4), new("CFOP ent.", LarguraCm: 1.6), new("CFOP saí.", LarguraCm: 1.6), new("ICMS %", TipoColuna.Valor, 1.5),
+            new("IPI %", TipoColuna.Valor, 1.5), new("PIS %", TipoColuna.Valor, 1.5), new("COFINS %", TipoColuna.Valor, 1.6), new("Ativo", LarguraCm: 1.1),
+        ], rows, $"{produtos.Count} produto(s).");
+    }
+
+    public static TabelaRelatorio ItensNotas(IReadOnlyList<LinhaItemNota> itens)
+    {
+        var rows = itens.Select(i => L(false, i.DataLivro, i.Operacao.Rotulo(), i.Modelo.Codigo() == "NFSE" ? "NFS" : i.Modelo.Codigo(), i.Numero, i.Participante ?? "", i.CodigoProduto,
+            i.Descricao ?? "", i.Ncm ?? "", i.Cfop, i.Unidade ?? "", i.Quantidade, i.ValorUnitario, i.ValorProduto, i.ValorContabil, i.Icms, i.IcmsSt, i.Ipi, i.Pis, i.Cofins, i.Iss)).ToList();
+        rows.Add(L(true, null, "", "", "TOTAL", "", null, "", "", "", "", null, null, itens.Sum(i => i.ValorProduto), itens.Sum(i => i.ValorContabil), itens.Sum(i => i.Icms),
+            itens.Sum(i => i.IcmsSt), itens.Sum(i => i.Ipi), itens.Sum(i => i.Pis), itens.Sum(i => i.Cofins), itens.Sum(i => i.Iss)));
+        return new TabelaRelatorio("Itens das notas fiscais",
+        [
+            new("Data", TipoColuna.Data), new("Oper.", LarguraCm: 1.6), new("Mod.", LarguraCm: 1.1), new("Número", LarguraCm: 1.6), new("Participante"), new("Cód.", TipoColuna.Inteiro, 1.2),
+            new("Produto/descrição"), new("NCM", LarguraCm: 2), new("CFOP", LarguraCm: 1.3), new("Un.", LarguraCm: 1), new("Qtde", TipoColuna.Valor), new("Unitário", TipoColuna.Valor),
+            new("Valor produto", TipoColuna.Valor), new("Valor contábil", TipoColuna.Valor), new("ICMS", TipoColuna.Valor), new("ICMS-ST", TipoColuna.Valor), new("IPI", TipoColuna.Valor),
+            new("PIS", TipoColuna.Valor), new("COFINS", TipoColuna.Valor), new("ISS", TipoColuna.Valor),
+        ], rows, $"{itens.Count} item(ns) de notas autorizadas. Cancelados e denegados não entram.");
     }
 
     public static TabelaRelatorio ResumoCfop(IReadOnlyList<ResumoCfop> resumo)

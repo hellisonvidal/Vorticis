@@ -15,8 +15,11 @@ public sealed record EmpresaFiscal(long Id, string Cnpj, IReadOnlyList<string> C
 public sealed record DocumentoFiscal(
     long Id, ModeloDocumento Modelo, string Chave, TipoOperacao Operacao, string Numero, string Serie, DateOnly Emissao, DateOnly DataLivro,
     string? NaturezaOperacao, SituacaoDocumento Situacao, ParteDocumento Emitente, ParteDocumento? Destinatario, long? ParticipanteId,
-    string? ParticipanteCodigo, TotaisDocumento Totais, long? LancamentoId, bool Contabilizado)
+    string? ParticipanteCodigo, TotaisDocumento Totais, long? LancamentoId, bool Contabilizado,
+    string Origem = "XML", long? CentroCustoId = null, string? CentroCustoCodigo = null)
 {
+    public bool Digitado => Origem == "DIGITADO";
+
     /// <summary>Nome da outra parte: cliente (saída) ou fornecedor (entrada).</summary>
     public string? NomeParticipante => Operacao == TipoOperacao.Entrada ? Emitente.Nome : Destinatario?.Nome;
     public string? DocumentoParticipante => Operacao == TipoOperacao.Entrada ? Emitente.Documento : Destinatario?.Documento;

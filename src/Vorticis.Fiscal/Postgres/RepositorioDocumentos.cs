@@ -73,14 +73,15 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
 
             foreach (var i in d.Itens)
             {
+                var produtoId = i.Cfop == Cfop.Servico ? null : await VincularProdutoAsync(con, tx, empresaId, d.Emitente.Documento, ident.Operacao, i, ct);
                 await using var item = new NpgsqlCommand("""
                     INSERT INTO fiscal.documento_item (documento_id, n_item, cod_produto, descricao, ncm, cest, cfop, unidade, quantidade, valor_unitario,
                         valor_produto, valor_desconto, valor_frete, valor_seguro, valor_outras, valor_contabil, cst_icms, origem_mercadoria,
                         vl_bc_icms, aliq_icms, vl_icms, vl_bc_icms_st, vl_icms_st, cst_ipi, vl_bc_ipi, aliq_ipi, vl_ipi,
-                        cst_pis, vl_bc_pis, aliq_pis, vl_pis, cst_cofins, vl_bc_cofins, aliq_cofins, vl_cofins, vl_bc_iss, aliq_iss, vl_iss)
+                        cst_pis, vl_bc_pis, aliq_pis, vl_pis, cst_cofins, vl_bc_cofins, aliq_cofins, vl_cofins, vl_bc_iss, aliq_iss, vl_iss, produto_id, gtin)
                     VALUES (@d, @n, @cod, @desc, @ncm, @cest, @cfop, @un, @qtd, @vu, @vp, @vd, @vf, @vs, @vo, @vc, @cst, @orig,
                         @bc, @aliq, @icms, @bcst, @st, @cipi, @bcipi, @aipi, @ipi, @cpis, @bcpis, @apis, @pis, @ccof, @bccof, @acof, @cof,
-                        @bciss, @aiss, @iss)
+                        @bciss, @aiss, @iss, @prod, @gtin)
                     """, con, tx)
                     .Com("d", documentoId).Com("n", i.Numero).ComTexto("cod", Cortar(i.CodProduto, 60)).ComTexto("desc", Cortar(i.Descricao, 500))
                     .ComTexto("ncm", Cortar(i.Ncm, 8)).ComTexto("cest", Cortar(i.Cest, 7)).Com("cfop", Cortar(i.Cfop, 10) ?? "").ComTexto("un", Cortar(i.Unidade, 10))
@@ -91,7 +92,8 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     .ComTexto("cipi", Cortar(i.CstIpi, 2)).Com("bcipi", i.BcIpi).Com("aipi", i.AliqIpi).Com("ipi", i.Ipi)
                     .ComTexto("cpis", Cortar(i.CstPis, 2)).Com("bcpis", i.BcPis).Com("apis", i.AliqPis).Com("pis", i.Pis)
                     .ComTexto("ccof", Cortar(i.CstCofins, 2)).Com("bccof", i.BcCofins).Com("acof", i.AliqCofins).Com("cof", i.Cofins)
-                    .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss);
+                    .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss)
+                    .Com("prod", NpgsqlDbType.Bigint, produtoId).ComTexto("gtin", i.Gtin);
                 await item.ExecuteNonQueryAsync(ct);
             }
             await tx.CommitAsync(ct);
@@ -136,6 +138,63 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         return ((long)(await ins.ExecuteScalarAsync(ct))!, true, nomeNovo);
     }
 
+
+    /// <summary>
+    /// Vincula o item ao cadastro de produtos: pelo vínculo (emitente + código do produto no emitente); na falta, pelo GTIN válido e depois
+    /// pela descrição idêntica; se nada casar, cadastra o produto. O vínculo (emitente + código) é gravado para as próximas notas.
+    /// </summary>
+    private static async Task<long?> VincularProdutoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, string? emitente, TipoOperacao operacao,
+                                                          ItemFiscal i, CancellationToken ct)
+    {
+        var cod = Cortar(i.CodProduto?.Trim(), 60) is { Length: > 0 } c ? c : null;
+        var descricao = Cortar(i.Descricao?.Trim(), 200) is { Length: > 0 } ds ? ds : null;
+        if (cod is null && descricao is null) return null;
+        var emit = new string((emitente ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (emit.Length > 14) emit = emit[..14];
+
+        long? id = null;
+        if (cod is not null)
+            await using (var q = new NpgsqlCommand("SELECT produto_id FROM fiscal.produto_vinculo WHERE empresa_id = @e AND emitente_documento = @em AND cod_produto_emitente = @c", con, tx)
+                             .Com("e", empresaId).Com("em", emit).Com("c", cod))
+                id = await q.ExecuteScalarAsync(ct) as long?;
+        if (id is null && i.Gtin is not null)
+            await using (var q = new NpgsqlCommand("SELECT id FROM fiscal.produto WHERE empresa_id = @e AND gtin = @g", con, tx).Com("e", empresaId).Com("g", i.Gtin))
+                id = await q.ExecuteScalarAsync(ct) as long?;
+        if (id is null && descricao is not null)
+            await using (var q = new NpgsqlCommand("SELECT id FROM fiscal.produto WHERE empresa_id = @e AND lower(descricao) = lower(@d) ORDER BY ativo DESC, codigo LIMIT 1", con, tx)
+                             .Com("e", empresaId).Com("d", descricao))
+                id = await q.ExecuteScalarAsync(ct) as long?;
+        if (id is null)
+        {
+            await using (var trava = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtext('fiscal_produto'), @e::int)", con, tx).Com("e", empresaId))
+                await trava.ExecuteNonQueryAsync(ct);
+            static string? Digitos(string? t, int n) => t is null ? null : new string(t.Where(char.IsAsciiDigit).ToArray()) is { Length: > 0 } d && d.Length == n ? d : null;
+            var entrada = operacao == TipoOperacao.Entrada;
+            var cfop = Digitos(i.Cfop, 4);
+            await using var ins = new NpgsqlCommand("""
+                INSERT INTO fiscal.produto (empresa_id, codigo, descricao, unidade, ncm, cest, gtin, origem, tipo_item, cfop_entrada, cfop_saida,
+                                            cst_icms_entrada, cst_icms_saida, aliq_icms, aliq_ipi, aliq_pis, aliq_cofins)
+                VALUES (@e, (SELECT COALESCE(MAX(codigo), 0) + 1 FROM fiscal.produto WHERE empresa_id = @e), @d, @un, @ncm, @cest, @g, @orig, '00', @ce, @cs,
+                        @cste, @csts, @aicms, @aipi, @apis, @acof)
+                RETURNING id
+                """, con, tx)
+                .Com("e", empresaId).Com("d", descricao ?? cod!).Com("un", Cortar(string.IsNullOrWhiteSpace(i.Unidade) ? "UN" : i.Unidade.Trim(), 10)!)
+                .ComTexto("ncm", Digitos(i.Ncm, 8)).ComTexto("cest", Digitos(i.Cest, 7)).ComTexto("g", i.Gtin)
+                .Com("orig", i.Origem is { Length: 1 } o && o[0] is >= '0' and <= '8' ? o : "0")
+                .ComTexto("ce", entrada ? cfop : null).ComTexto("cs", entrada ? null : cfop)
+                .ComTexto("cste", entrada ? Cortar(i.CstIcms, 3) : null).ComTexto("csts", entrada ? null : Cortar(i.CstIcms, 3))
+                .Com("aicms", Math.Min(i.AliqIcms, 100m)).Com("aipi", Math.Min(i.AliqIpi, 100m)).Com("apis", Math.Min(i.AliqPis, 100m)).Com("acof", Math.Min(i.AliqCofins, 100m));
+            id = (long)(await ins.ExecuteScalarAsync(ct))!;
+        }
+        if (cod is not null)
+            await using (var v = new NpgsqlCommand("""
+                INSERT INTO fiscal.produto_vinculo (empresa_id, produto_id, emitente_documento, cod_produto_emitente) VALUES (@e, @p, @em, @c)
+                ON CONFLICT (empresa_id, emitente_documento, cod_produto_emitente) DO NOTHING
+                """, con, tx).Com("e", empresaId).Com("p", id!.Value).Com("em", emit).Com("c", cod))
+                await v.ExecuteNonQueryAsync(ct);
+        return id;
+    }
+
     public async Task<CancelamentoRegistrado> CancelarPorChaveAsync(long empresaId, string chave, CancellationToken ct)
     {
         await using var con = await ds.OpenConnectionAsync(ct);
@@ -169,13 +228,13 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     }
 
     private const string ColunasDocumento = """
-        d.id, d.modelo, d.chave_acesso, d.tipo_operacao, d.numero, d.serie, d.data_emissao, d.data_entrada_saida, d.natureza_operacao, d.situacao,
+        d.id, d.modelo, COALESCE(d.chave_acesso, ''), d.tipo_operacao, d.numero, d.serie, d.data_emissao, d.data_entrada_saida, d.natureza_operacao, d.situacao,
         d.emitente_documento, d.emitente_nome, d.emitente_uf, d.destinatario_documento, d.destinatario_nome, d.destinatario_uf,
         d.participante_id, p.codigo,
         d.valor_produtos, d.valor_desconto, d.valor_frete, d.valor_seguro, d.valor_outras, d.valor_total,
         d.vl_bc_icms, d.vl_icms, d.vl_bc_icms_st, d.vl_icms_st, d.vl_ipi, d.vl_pis, d.vl_cofins, d.vl_iss, d.iss_retido,
         d.vl_ret_pis, d.vl_ret_cofins, d.vl_ret_csll, d.vl_irrf, d.vl_ret_prev,
-        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE)
+        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE), d.origem, d.centro_custo_id, ccd.codigo
         """;
 
     public async Task<IReadOnlyList<DocumentoFiscal>> ListarAsync(long empresaId, FiltroDocumentos f, CancellationToken ct)
@@ -209,6 +268,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
               FROM fiscal.documento d
               LEFT JOIN core.participante p ON p.id = d.participante_id
               LEFT JOIN contabil.lancamento l ON l.id = d.lancamento_id
+              LEFT JOIN contabil.centro_custo ccd ON ccd.id = d.centro_custo_id
              WHERE {onde}
              ORDER BY d.data_entrada_saida, length(d.numero), d.numero, d.id
              LIMIT @lim
@@ -230,32 +290,34 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 r.GetString(4), r.GetString(5), r.GetFieldValue<DateOnly>(6), r.GetFieldValue<DateOnly>(7), r.Texto(8), ModelosExtensions.SituacaoDe(r.GetString(9)),
                 new ParteDocumento(r.Texto(10), r.Texto(11), r.Texto(12)),
                 r.IsDBNull(13) && r.IsDBNull(14) ? null : new ParteDocumento(r.Texto(13), r.Texto(14), r.Texto(15)),
-                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39)));
+                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39), r.GetString(40), r.LongOuNulo(41), r.Texto(42)));
         }
         return res;
     }
 
-    private const string ColunasItem = """
+    internal const string ColunasItemSql = """
         i.n_item, i.cod_produto, i.descricao, i.ncm, i.cest, i.cfop, i.unidade, i.quantidade, i.valor_unitario, i.valor_produto, i.valor_desconto,
         i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, i.cst_icms, i.origem_mercadoria, i.vl_bc_icms, i.aliq_icms, i.vl_icms,
         i.vl_bc_icms_st, i.vl_icms_st, i.cst_ipi, i.vl_bc_ipi, i.aliq_ipi, i.vl_ipi, i.cst_pis, i.vl_bc_pis, i.aliq_pis, i.vl_pis,
-        i.cst_cofins, i.vl_bc_cofins, i.aliq_cofins, i.vl_cofins, i.vl_bc_iss, i.aliq_iss, i.vl_iss
+        i.cst_cofins, i.vl_bc_cofins, i.aliq_cofins, i.vl_cofins, i.vl_bc_iss, i.aliq_iss, i.vl_iss,
+        i.gtin, i.produto_id, i.centro_custo_id, cci.codigo
         """;
 
-    private static ItemFiscal LerItem(NpgsqlDataReader r, int o) => new(
+    internal static ItemFiscal LerItemSql(NpgsqlDataReader r, int o) => new(
         r.GetInt32(o), r.Texto(o + 1), r.Texto(o + 2), r.Texto(o + 3), r.Texto(o + 4), r.GetString(o + 5), r.Texto(o + 6), r.GetDecimal(o + 7),
         r.GetDecimal(o + 8), r.GetDecimal(o + 9), r.GetDecimal(o + 10), r.GetDecimal(o + 11), r.GetDecimal(o + 12), r.GetDecimal(o + 13),
         r.GetDecimal(o + 14), r.Texto(o + 15), r.Texto(o + 16), r.GetDecimal(o + 17), r.GetDecimal(o + 18), r.GetDecimal(o + 19), r.GetDecimal(o + 20),
         r.GetDecimal(o + 21), r.Texto(o + 22), r.GetDecimal(o + 23), r.GetDecimal(o + 24), r.GetDecimal(o + 25), r.Texto(o + 26),
         r.GetDecimal(o + 27), r.GetDecimal(o + 28), r.GetDecimal(o + 29), r.Texto(o + 30), r.GetDecimal(o + 31), r.GetDecimal(o + 32),
-        r.GetDecimal(o + 33), r.GetDecimal(o + 34), r.GetDecimal(o + 35), r.GetDecimal(o + 36));
+        r.GetDecimal(o + 33), r.GetDecimal(o + 34), r.GetDecimal(o + 35), r.GetDecimal(o + 36),
+        r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40));
 
     public async Task<IReadOnlyList<ItemFiscal>> ListarItensDoDocumentoAsync(long documentoId, CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand($"SELECT {ColunasItem} FROM fiscal.documento_item i WHERE i.documento_id = @d ORDER BY i.n_item").Com("d", documentoId);
+        await using var cmd = ds.CreateCommand($"SELECT {ColunasItemSql} FROM fiscal.documento_item i LEFT JOIN contabil.centro_custo cci ON cci.id = i.centro_custo_id WHERE i.documento_id = @d ORDER BY i.n_item").Com("d", documentoId);
         var res = new List<ItemFiscal>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
-        while (await r.ReadAsync(ct)) res.Add(LerItem(r, 0));
+        while (await r.ReadAsync(ct)) res.Add(LerItemSql(r, 0));
         return res;
     }
 
@@ -265,9 +327,10 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
             SELECT d.id, d.modelo, d.tipo_operacao, d.numero, d.serie, d.data_emissao, d.data_entrada_saida, d.situacao,
                    CASE WHEN d.tipo_operacao = 'E' THEN d.emitente_nome ELSE d.destinatario_nome END,
                    CASE WHEN d.tipo_operacao = 'E' THEN d.emitente_documento ELSE d.destinatario_documento END,
-                   CASE WHEN d.tipo_operacao = 'E' THEN d.emitente_uf ELSE d.destinatario_uf END, d.chave_acesso, d.iss_retido,
-                   {ColunasItem}
+                   CASE WHEN d.tipo_operacao = 'E' THEN d.emitente_uf ELSE d.destinatario_uf END, COALESCE(d.chave_acesso, ''), d.iss_retido,
+                   {ColunasItemSql}
               FROM fiscal.documento d JOIN fiscal.documento_item i ON i.documento_id = d.id
+              LEFT JOIN contabil.centro_custo cci ON cci.id = i.centro_custo_id
              WHERE d.empresa_id = @e AND d.data_entrada_saida BETWEEN @ini AND @fim AND (@op::text IS NULL OR d.tipo_operacao = @op)
              ORDER BY d.data_entrada_saida, d.id, i.n_item
             """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim).Com("op", NpgsqlDbType.Text, operacao?.Codigo());
@@ -276,7 +339,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         while (await r.ReadAsync(ct))
             res.Add(new LinhaItemFiscal(r.GetInt64(0), ModelosExtensions.ModeloDe(r.GetString(1)), ModelosExtensions.OperacaoDe(r.GetString(2)), r.GetString(3),
                 r.GetString(4), r.GetFieldValue<DateOnly>(5), r.GetFieldValue<DateOnly>(6), ModelosExtensions.SituacaoDe(r.GetString(7)), r.Texto(8),
-                r.Texto(9), r.Texto(10), r.GetString(11), r.GetBoolean(12), LerItem(r, 13)));
+                r.Texto(9), r.Texto(10), r.GetString(11), r.GetBoolean(12), LerItemSql(r, 13)));
         return res;
     }
 

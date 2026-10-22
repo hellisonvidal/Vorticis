@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.DigitacaoDocumentoView"
+             x:DataType="vm:DigitacaoDocumentoViewModel">
+  <!-- Lançamentos › Documentos fiscais › Entrada / Saída: digitação manual de nota fiscal -->
+  <ScrollViewer>
+    <StackPanel Margin="8" Spacing="8">
+      <TextBlock Classes="titulo" Text="{Binding Titulo}" />
+      <TextBlock Text="{Binding SituacaoDocumento}" FontWeight="SemiBold" Foreground="#7C2D12" />
+
+      <!-- Notas digitadas -->
+      <WrapPanel>
+        <TextBlock Text="Notas digitadas de" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <CalendarDatePicker SelectedDate="{Binding FiltroInicio}" Width="140" Margin="0,0,6,6" />
+        <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <CalendarDatePicker SelectedDate="{Binding FiltroFim}" Width="140" Margin="0,0,8,6" />
+        <Button Content="Consultar" Command="{Binding ConsultarCommand}" Margin="0,0,8,6" />
+        <Button Content="Nova nota" Command="{Binding NovoCommand}" Margin="0,0,8,6" />
+        <Button Content="Excluir selecionada" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" Margin="0,0,8,6" />
+      </WrapPanel>
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False" Height="130">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />
+          <DataGridTextColumn Header="Modelo" Binding="{ReflectionBinding Modelo}" Width="70" />
+          <DataGridTextColumn Header="Série" Binding="{ReflectionBinding Serie}" Width="55" />
+          <DataGridTextColumn Header="Número" Binding="{ReflectionBinding Numero}" Width="90" />
+          <DataGridTextColumn Header="Cliente / fornecedor" Binding="{ReflectionBinding Participante}" Width="*" MinWidth="160" />
+          <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="110" />
+          <DataGridTextColumn Header="Contab." Binding="{ReflectionBinding Contabilizado}" Width="70" />
+        </DataGrid.Columns>
+      </DataGrid>
+
+      <!-- Cabeçalho -->
+      <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="8" CornerRadius="4">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
+          <TextBlock Text="Modelo" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:DigitacaoDocumentoViewModel.Modelos}" SelectedIndex="{Binding Modelo}" Width="120" />
+          <TextBlock Grid.Column="2" Text="Série" VerticalAlignment="Center" />
+          <TextBox Grid.Column="3" Text="{Binding Serie}" Width="70" />
+          <TextBlock Grid.Column="4" Text="Número" VerticalAlignment="Center" />
+          <TextBox Grid.Column="5" Text="{Binding Numero}" Width="110" />
+          <TextBlock Grid.Column="6" Text="Emissão" VerticalAlignment="Center" />
+          <CalendarDatePicker Grid.Column="7" SelectedDate="{Binding Emissao}" Width="140" />
+          <TextBlock Grid.Row="1" Text="{Binding RotuloParticipante}" VerticalAlignment="Center" />
+          <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Participante}" Watermark="código, nome ou CPF/CNPJ cadastrado" />
+          <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding RotuloData}" VerticalAlignment="Center" />
+          <CalendarDatePicker Grid.Row="1" Grid.Column="5" SelectedDate="{Binding DataLivro}" Width="140" />
+          <TextBlock Grid.Row="1" Grid.Column="6" Text="Chave (opcional)" VerticalAlignment="Center" />
+          <TextBox Grid.Row="1" Grid.Column="7" Text="{Binding Chave}" Width="330" />
+          <TextBlock Grid.Row="2" Text="Natureza" VerticalAlignment="Center" />
+          <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Natureza}" Watermark="natureza da operação" />
+          <TextBlock Grid.Row="2" Grid.Column="4" Text="Total informado" VerticalAlignment="Center" />
+          <TextBox Grid.Row="2" Grid.Column="5" Text="{Binding TotalInformado}" Watermark="confere com os itens" Width="140" />
+          <StackPanel Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" IsVisible="{Binding MostraCentro}">
+            <TextBlock Text="Centro de custo" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroDocumento}" Width="260" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Item -->
+      <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="8" CornerRadius="4">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <TextBlock Text="Item da nota" FontWeight="SemiBold" />
+          <WrapPanel>
+            <TextBox Text="{Binding Item.Produto}" Watermark="Produto (código, descrição ou GTIN)" Width="210" Margin="0,0,6,6" />
+            <Button Content="Buscar produto" Command="{Binding BuscarProdutoCommand}" Margin="0,0,10,6" />
+            <TextBox Text="{Binding Item.Descricao}" Watermark="Descrição" Width="260" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Cfop}" Watermark="CFOP" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Ncm}" Watermark="NCM" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Cest}" Watermark="CEST" Width="80" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Unidade}" Watermark="Un." Width="60" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Origem}" Watermark="Orig." Width="55" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.CstIcms}" Watermark="CST/CSOSN" Width="90" Margin="0,0,6,6" />
+          </WrapPanel>
+          <WrapPanel>
+            <TextBox Text="{Binding Item.Quantidade}" Watermark="Quantidade" Width="95" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Unitario}" Watermark="Valor unitário" Width="110" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Desconto}" Watermark="Desconto" Width="90" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Frete}" Watermark="Frete" Width="90" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Seguro}" Watermark="Seguro" Width="90" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Outras}" Watermark="Outras desp." Width="95" Margin="0,0,6,6" />
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding MostraCentro}" Margin="0,0,6,6">
+              <TextBlock Text="C. custo" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroItem}" Width="230" />
+            </StackPanel>
+          </WrapPanel>
+          <WrapPanel>
+            <TextBlock Text="ICMS" VerticalAlignment="Center" Margin="0,0,6,6" Width="55" />
+            <TextBox Text="{Binding Item.BcIcms}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.AliqIcms}" Watermark="Alíq. %" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Icms}" Watermark="Valor" Width="100" Margin="0,0,14,6" />
+            <TextBlock Text="ICMS-ST" VerticalAlignment="Center" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.BcIcmsSt}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.IcmsSt}" Watermark="Valor" Width="100" Margin="0,0,14,6" />
+            <TextBlock Text="IPI" VerticalAlignment="Center" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.CstIpi}" Watermark="CST" Width="55" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.BcIpi}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.AliqIpi}" Watermark="Alíq. %" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Ipi}" Watermark="Valor" Width="100" Margin="0,0,6,6" />
+          </WrapPanel>
+          <WrapPanel>
+            <TextBlock Text="PIS" VerticalAlignment="Center" Margin="0,0,6,6" Width="55" />
+            <TextBox Text="{Binding Item.CstPis}" Watermark="CST" Width="55" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.BcPis}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.AliqPis}" Watermark="Alíq. %" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Pis}" Watermark="Valor" Width="100" Margin="0,0,14,6" />
+            <TextBlock Text="COFINS" VerticalAlignment="Center" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.CstCofins}" Watermark="CST" Width="55" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.BcCofins}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.AliqCofins}" Watermark="Alíq. %" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Cofins}" Watermark="Valor" Width="100" Margin="0,0,14,6" />
+            <TextBlock Text="ISS" VerticalAlignment="Center" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.BcIss}" Watermark="Base" Width="100" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.AliqIss}" Watermark="Alíq. %" Width="70" Margin="0,0,6,6" />
+            <TextBox Text="{Binding Item.Iss}" Watermark="Valor" Width="100" Margin="0,0,6,6" />
+          </WrapPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Calcular tributos" Command="{Binding CalcularTributosCommand}" />
+            <Button Content="Adicionar item" Command="{Binding AdicionarItemCommand}" Classes="accent" />
+            <Button Content="Atualizar item selecionado" Command="{Binding AtualizarItemCommand}" />
+            <Button Content="Remover item selecionado" Command="{Binding RemoverItemCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <DataGrid ItemsSource="{Binding Itens}" SelectedItem="{Binding ItemSelecionado}" IsReadOnly="True" AutoGenerateColumns="False" Height="170">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Item" Binding="{ReflectionBinding N}" Width="50" />
+          <DataGridTextColumn Header="Prod." Binding="{ReflectionBinding Produto}" Width="65" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" MinWidth="160" />
+          <DataGridTextColumn Header="CFOP" Binding="{ReflectionBinding Cfop}" Width="65" />
+          <DataGridTextColumn Header="Qtde" Binding="{ReflectionBinding Quantidade}" Width="75" />
+          <DataGridTextColumn Header="Unitário" Binding="{ReflectionBinding Unitario}" Width="95" />
+          <DataGridTextColumn Header="Valor contábil" Binding="{ReflectionBinding Total}" Width="110" />
+          <DataGridTextColumn Header="ICMS" Binding="{ReflectionBinding Icms}" Width="85" />
+          <DataGridTextColumn Header="IPI" Binding="{ReflectionBinding Ipi}" Width="80" />
+          <DataGridTextColumn Header="PIS" Binding="{ReflectionBinding Pis}" Width="75" />
+          <DataGridTextColumn Header="COFINS" Binding="{ReflectionBinding Cofins}" Width="80" />
+          <DataGridTextColumn Header="ISS" Binding="{ReflectionBinding Iss}" Width="75" />
+          <DataGridTextColumn Header="C. custo" Binding="{ReflectionBinding CentroCusto}" Width="90" />
+        </DataGrid.Columns>
+      </DataGrid>
+      <TextBlock Text="{Binding Totais}" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Gravar nota" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeEditar}" Classes="accent" />
+        <Button Content="Nova nota" Command="{Binding NovoCommand}" />
+      </StackPanel>
+      <c:MensagensView />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

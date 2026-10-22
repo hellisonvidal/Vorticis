@@ -100,7 +100,7 @@ public static class Permissoes
         new(Permissao.FolhaContabilizar, "FOLHA_CONTABILIZAR", "Folha de pagamento", "Contabilizar a folha e as provisões e desfazer a contabilização"),
         new(Permissao.FolhaESocial, "FOLHA_ESOCIAL", "Folha de pagamento", "Gerar e exportar os eventos do eSocial"),
         new(Permissao.FolhaRelatorios, "FOLHA_RELATORIOS", "Folha de pagamento", "Holerites, resumo da folha, encargos, provisões e recibos"),
-        new(Permissao.FiscalDocumentosImportar, "FISCAL_DOCUMENTOS_IMPORTAR", "Fiscal", "Importar XML de notas fiscais (NF-e, NFC-e, NFS-e) e excluir documentos importados"),
+        new(Permissao.FiscalDocumentosImportar, "FISCAL_DOCUMENTOS_IMPORTAR", "Fiscal", "Importar XML e digitar notas fiscais (NF-e, NFC-e, NFS-e), manter produtos e excluir documentos"),
         new(Permissao.FiscalDocumentosConsultar, "FISCAL_DOCUMENTOS_CONSULTAR", "Fiscal", "Consultar documentos fiscais importados"),
         new(Permissao.FiscalContabilizar, "FISCAL_CONTABILIZAR", "Fiscal", "Manter regras de contabilização e contabilizar (ou desfazer) notas fiscais"),
         new(Permissao.FiscalApurar, "FISCAL_APURAR", "Fiscal", "Apurar tributos (Simples Nacional, Lucro Presumido/Real, PIS/COFINS) e contabilizar as provisões"),

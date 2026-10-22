@@ -50,8 +50,11 @@ public static class MotorContabilizacao
     /// <summary>
     /// Um lançamento por nota, na data do livro: para cada CFOP, uma partida a débito e outra a crédito com o valor contábil dos itens
     /// (produto - desconto + frete + seguro + outras + IPI + ICMS-ST). Documento = número da nota; histórico pelo modelo da regra.
+    /// Com <paramref name="usaCentroCusto"/>, as partidas são separadas por centro de custo (o do item, ou o do documento na falta dele) e o centro
+    /// vai na partida de débito nas entradas (despesa/custo) e na de crédito nas saídas (receita).
     /// </summary>
-    public static PropostaContabilizacao Montar(long empresaId, DocumentoFiscal doc, IReadOnlyList<ItemFiscal> itens, IReadOnlyList<RegraContabilizacao> regras)
+    public static PropostaContabilizacao Montar(long empresaId, DocumentoFiscal doc, IReadOnlyList<ItemFiscal> itens, IReadOnlyList<RegraContabilizacao> regras,
+                                                bool usaCentroCusto = false)
     {
         var erros = new List<string>();
         if (doc.Situacao != SituacaoDocumento.Autorizada)
@@ -59,20 +62,23 @@ public static class MotorContabilizacao
         if (itens.Count == 0) return new(doc, null, [$"Documento {doc.Numero} sem itens."]);
 
         var partidas = new List<PartidaProposta>();
-        foreach (var grupo in itens.GroupBy(i => i.Cfop).OrderBy(g => g.Key, StringComparer.Ordinal))
+        string? Centro(ItemFiscal i) => usaCentroCusto ? i.CentroCustoCodigo ?? doc.CentroCustoCodigo : null;
+        foreach (var grupo in itens.GroupBy(i => (i.Cfop, Centro: Centro(i))).OrderBy(g => g.Key.Cfop, StringComparer.Ordinal).ThenBy(g => g.Key.Centro ?? "", StringComparer.Ordinal))
         {
             var valor = Dinheiro.Arredondar(grupo.Sum(i => i.ValorContabil));
             if (valor <= 0) continue;
-            var regra = Escolher(regras, doc.Operacao, grupo.Key, doc.ParticipanteId);
+            var regra = Escolher(regras, doc.Operacao, grupo.Key.Cfop, doc.ParticipanteId);
             if (regra is null)
             {
-                erros.Add($"Documento {doc.Numero}: nenhuma regra de contabilização para o CFOP {grupo.Key} ({doc.Operacao.Rotulo().ToLowerInvariant()}).");
+                erros.Add($"Documento {doc.Numero}: nenhuma regra de contabilização para o CFOP {grupo.Key.Cfop} ({doc.Operacao.Rotulo().ToLowerInvariant()}).");
                 continue;
             }
             var historico = VariaveisHistorico.Aplicar(regra.Historico, new ContextoHistorico(
                 Documento: doc.Numero, Participante: doc.NomeParticipante, Data: doc.DataLivro, Valor: valor)).Texto;
-            partidas.Add(new PartidaProposta(regra.ContaDebito, IndicadorDC.D, valor, historico, null, doc.ParticipanteCodigo, doc.Numero));
-            partidas.Add(new PartidaProposta(regra.ContaCredito, IndicadorDC.C, valor, historico, null, doc.ParticipanteCodigo, doc.Numero));
+            var centro = grupo.Key.Centro;
+            var entrada = doc.Operacao == TipoOperacao.Entrada;
+            partidas.Add(new PartidaProposta(regra.ContaDebito, IndicadorDC.D, valor, historico, entrada ? centro : null, doc.ParticipanteCodigo, doc.Numero));
+            partidas.Add(new PartidaProposta(regra.ContaCredito, IndicadorDC.C, valor, historico, entrada ? null : centro, doc.ParticipanteCodigo, doc.Numero));
         }
         if (erros.Count == 0 && partidas.Count == 0) erros.Add($"Documento {doc.Numero} sem valor a contabilizar.");
         if (erros.Count > 0) return new(doc, null, erros);

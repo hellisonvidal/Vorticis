@@ -23,6 +23,9 @@ public interface IRepositorioContabilizacao
     Task MarcarContabilizadosAsync(IReadOnlyList<(long DocumentoId, long LancamentoId)> marcas, long usuarioId, CancellationToken ct);
     Task DesmarcarAsync(IReadOnlyCollection<long> documentoIds, CancellationToken ct);
     Task<DateOnly?> ObterDataLancamentoAsync(long lancamentoId, CancellationToken ct);
+
+    /// <summary>"Usar centros de custo no fiscal" ligado e empresa com centros de custo habilitados.</summary>
+    Task<bool> CentroCustoAtivoAsync(long empresaId, CancellationToken ct);
 }
 
 public sealed record FalhaContabilizacao(string Documento, IReadOnlyList<string> Erros);
@@ -104,7 +107,8 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
         if (ids is not null) docs = docs.Where(d => ids.Contains(d.Id)).ToList();
         var itens = (await documentos.ListarItensAsync(empresaId, inicio, fim, operacao, ct)).ToLookup(i => i.DocumentoId, i => i.Item);
         var regras = await repositorio.ListarRegrasAsync(empresaId, ct);
-        return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras)).ToList();
+        var usaCentro = await repositorio.CentroCustoAtivoAsync(empresaId, ct);
+        return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras, usaCentro)).ToList();
     }
 
     /// <summary>

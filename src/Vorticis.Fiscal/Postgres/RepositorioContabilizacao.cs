@@ -91,4 +91,13 @@ public sealed class RepositorioContabilizacao(NpgsqlDataSource ds) : IRepositori
         await using var cmd = ds.CreateCommand("SELECT data_lancamento FROM contabil.lancamento WHERE id = @l").Com("l", lancamentoId);
         return await cmd.ExecuteScalarAsync(ct) is DateOnly d ? d : null;
     }
+
+    public async Task<bool> CentroCustoAtivoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT e.usa_centro_custo AND COALESCE((SELECT c.usa_centro_custo FROM fiscal.configuracao c WHERE c.empresa_id = e.id), FALSE)
+              FROM core.empresa e WHERE e.id = @e
+            """).Com("e", empresaId);
+        return await cmd.ExecuteScalarAsync(ct) is true;
+    }
 }

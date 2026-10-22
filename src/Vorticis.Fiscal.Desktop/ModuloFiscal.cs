@@ -5,7 +5,7 @@ using Vorticis.Fiscal.Desktop.ViewModels;
 namespace Vorticis.Fiscal.Desktop;
 
 /// <summary>
-/// Módulo Fiscal: importação de XML (NF-e, NFC-e, NFS-e nacional), consulta, contabilização automática, livros de entradas e saídas,
+/// Módulo Fiscal: digitação de notas de entrada e saída, produtos, importação de XML (NF-e, NFC-e, NFS-e nacional), consulta, contabilização automática, livros de entradas e saídas,
 /// apuração do Simples Nacional, Lucro Presumido e Lucro Real, PIS/COFINS, retenções e guias de recolhimento.
 /// </summary>
 public sealed class ModuloFiscal : IModuloDesktop
@@ -17,10 +17,18 @@ public sealed class ModuloFiscal : IModuloDesktop
     public string CorDestaque => "#C2410C";   // laranja
     public string CorBarra => "#7C2D12";
 
-    public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [];
+    public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
+    [
+        ItemMenu.Tela("Produtos", Telas.Produtos),
+        ItemMenu.Tela("Configurações fiscais da empresa", Telas.ConfiguracoesFiscais),
+    ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
+        ItemMenu.Submenu("_Lançamentos",
+            ItemMenu.Submenu("_Documentos fiscais",
+                ItemMenu.Tela("Entrada", Telas.NotaEntrada),
+                ItemMenu.Tela("Saída", Telas.NotaSaida))),
         ItemMenu.Submenu("_Documentos fiscais",
             ItemMenu.Tela("Importação de XML (NF-e, NFC-e, NFS-e)", Telas.ImportacaoXml),
             ItemMenu.Tela("Consulta de documentos", Telas.Documentos),
@@ -47,7 +55,10 @@ public sealed class ModuloFiscal : IModuloDesktop
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Tela("Livro de Registro de Entradas", Telas.LivroEntradas),
             ItemMenu.Tela("Livro de Registro de Saídas", Telas.LivroSaidas),
-            ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop)),
+            ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
+            ItemMenu.Separador,
+            ItemMenu.Tela("Produtos cadastrados", Telas.RelProdutos),
+            ItemMenu.Tela("Itens das notas fiscais", Telas.RelItensNotas)),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -67,6 +78,19 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.RegrasContabilizacao, "Documentos fiscais › Regras de contabilização", m => m.Pode(Permissao.FiscalContabilizar), v => v.CarregarAsync());
         c.Instancia("ContabilizarNotas", m => new ContabilizarNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ContabilizarNotas, "Documentos fiscais › Contabilizar notas fiscais", m => m.Pode(Permissao.FiscalContabilizar));
+
+        c.Instancia("NotaEntrada", m => new NotaEntradaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.NotaEntrada, "Lançamentos › Documentos fiscais › Entrada", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("NotaSaida", m => new NotaSaidaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.NotaSaida, "Lançamentos › Documentos fiscais › Saída", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("Produtos", m => new ProdutosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.Produtos, "Cadastros › Produtos", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("ConfiguracoesFiscais", m => new ConfiguracoesFiscaisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.ConfiguracoesFiscais, "Cadastros › Configurações fiscais", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
 
         c.Instancia("Simples", m => new ApuracaoSimplesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Simples, "Apuração › Simples Nacional", m => m.Pode(Permissao.FiscalApurar));
@@ -91,6 +115,10 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.LivroEntradas, "Relatórios › Livro de Registro de Entradas", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("LivroSaidas", m => new LivroSaidasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.LivroSaidas, "Relatórios › Livro de Registro de Saídas", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelProdutos", m => new RelatorioProdutosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelProdutos, "Relatórios › Produtos cadastrados", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelItensNotas", m => new RelatorioItensNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelItensNotas, "Relatórios › Itens das notas fiscais", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ResumoCfop", m => new ResumoCfopViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ResumoCfop, "Relatórios › Resumo por CFOP", m => m.Pode(Permissao.FiscalRelatorios));
     }

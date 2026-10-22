@@ -145,7 +145,8 @@ public static class LeitorXmlFiscal
             Valor(ipi, "CST"), Num(Valor(ipi, "vBC")), Num(Valor(ipi, "pIPI"), 4), vIpi,
             Valor(pis, "CST"), Num(Valor(pis, "vBC")), Num(Valor(pis, "pPIS"), 4), Num(Valor(pis, "vPIS")),
             Valor(cofins, "CST"), Num(Valor(cofins, "vBC")), Num(Valor(cofins, "pCOFINS"), 4), Num(Valor(cofins, "vCOFINS")),
-            Num(Valor(issqn, "vBC")), Num(Valor(issqn, "vAliq"), 4), Num(Valor(issqn, "vISSQN")));
+            Num(Valor(issqn, "vBC")), Num(Valor(issqn, "vAliq"), 4), Num(Valor(issqn, "vISSQN")),
+            Gtin: Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEAN")) ?? Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEANTrib")));
     }
 
     // ------------------------------------------------------------------ NFS-e padrão nacional (ADN)

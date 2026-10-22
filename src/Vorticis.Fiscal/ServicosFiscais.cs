@@ -4,6 +4,7 @@ using Vorticis.Fiscal.Contabilizacao;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Guias;
 using Vorticis.Fiscal.Lucro;
+using Vorticis.Fiscal.Produtos;
 using Vorticis.Fiscal.Postgres;
 using Vorticis.Fiscal.Retencoes;
 using Vorticis.Fiscal.Simples;
@@ -32,6 +33,8 @@ public sealed class ServicosFiscais
         var repoRetencoes = new RepositorioRetencoes(ds);
         Parametros = new ParametrosFiscaisPostgres(ds);
         Documentos = new ServicoDocumentosFiscais(repoDocumentos, autorizador);
+        Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
+        Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
         Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador);
         Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
@@ -42,6 +45,8 @@ public sealed class ServicosFiscais
 
     public IParametrosFiscais Parametros { get; }
     public ServicoDocumentosFiscais Documentos { get; }
+    public ServicoDigitacaoFiscal Digitacao { get; }
+    public ServicoProdutos Produtos { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
     public ServicoSimplesNacional Simples { get; }
     public ServicoLucro Lucro { get; }
