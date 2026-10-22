@@ -58,7 +58,7 @@ public sealed class ServidorEmbutidoTests : IDisposable
         }.ConnectionString;
         await BancoLocal.GarantirBancoAsync(cs, ct);
         await using (var app = await VorticisApp.IniciarAsync(cs, ct: ct))
-            Assert.True(await app.Usuarios.PrecisaCriarAdministradorAsync(ct));
+            Assert.True(await app.Usuarios.ImplantacaoAtivaAsync(ct));
 
         // senha errada é recusada (SCRAM, não "trust")
         await using (var errada = new NpgsqlConnection(new NpgsqlConnectionStringBuilder(cs) { Password = "errada" }.ConnectionString))

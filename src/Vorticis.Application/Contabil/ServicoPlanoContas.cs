@@ -213,10 +213,12 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
 
     /// <summary>
     /// Grava as configurações contábeis da empresa. As contas de apuração e de lucros/prejuízos devem existir no plano
-    /// (analíticas); o modelo registrado não muda aqui (ver <see cref="AplicarModeloAsync"/>).
+    /// (analíticas); o modelo registrado não muda aqui (ver <see cref="AplicarModeloAsync"/>). Se a máscara dos centros de custo
+    /// mudou, é aplicada antes pelas regras de <see cref="DefinirMascaraCentrosAsync"/> (exige a permissão de centros de custo;
+    /// <paramref name="converterCentros"/> converte os códigos existentes para a nova máscara).
     /// </summary>
     public async Task<Resultado> SalvarConfiguracaoAsync(long empresaId, Cadastros.ConfiguracaoContabil cfg, DateOnly? inicioAtividades, long usuarioId,
-                                                        CancellationToken ct = default)
+                                                        CancellationToken ct = default, bool converterCentros = false)
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return Resultado.Falha(negado);
         cfg = cfg.Normalizar();
@@ -232,6 +234,11 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         }
         if (erros.Count > 0) return Resultado.Falha(erros);
         var atual = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
+        if ((cfg.MascaraCentroCusto ?? "") != (atual.MascaraCentroCusto ?? ""))
+        {
+            var m = await DefinirMascaraCentrosAsync(empresaId, cfg.MascaraCentroCusto, usuarioId, converterCentros, ct);
+            if (!m.Sucesso) return m;
+        }
         await repositorio.SalvarConfiguracaoAsync(empresaId, cfg with { ModeloPlano = atual.ModeloPlano }, ct);
         return Resultado.Ok();
     }

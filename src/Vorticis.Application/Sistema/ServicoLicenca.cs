@@ -22,10 +22,10 @@ public interface IRepositorioConfiguracao
     Task<IReadOnlyDictionary<string, (string Valor, DateTimeOffset AlteradoEm)>> LerAsync(IEnumerable<string> chaves, CancellationToken ct);
     Task GravarAsync(IReadOnlyDictionary<string, string?> valores, long? usuarioId, CancellationToken ct);
     /// <summary>
-    /// Apaga empresas, cadastros e usuários e recria o administrador padrão com <paramref name="hashSenhaAdmin"/>
-    /// (core.fn_limpar_banco). Retorna quantas empresas foram excluídas.
+    /// Apaga empresas, cadastros e todos os usuários (core.fn_limpar_banco): o banco volta ao estado de instalação nova,
+    /// onde só vale o usuário de implantação. Retorna quantas empresas foram excluídas.
     /// </summary>
-    Task<int> LimparBancoAsync(long usuarioId, string hashSenhaAdmin, CancellationToken ct);
+    Task<int> LimparBancoAsync(long usuarioId, CancellationToken ct);
 }
 
 public sealed class ServicoLicenca(IRepositorioConfiguracao repositorio)

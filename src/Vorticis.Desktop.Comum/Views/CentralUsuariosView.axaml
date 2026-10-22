@@ -11,7 +11,7 @@
     </Style>
   </UserControl.Styles>
   <TabControl Name="AbasUsuarios" SelectedIndex="{Binding AbaSelecionada}" Padding="0">
-    <TabItem Header="Usuários" IsEnabled="{Binding PodeAdministrar}">
+    <TabItem Header="Usuários" IsEnabled="{Binding PodeUsuarios}">
       <ContentControl Content="{Binding Main.Usuarios}" />
     </TabItem>
     <TabItem Header="Perfis de acesso" IsEnabled="{Binding PodePerfis}">

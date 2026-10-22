@@ -34,11 +34,17 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
     [ObservableProperty] private string _codigoPai = "";
     [ObservableProperty] private bool _ativo = true;
     [ObservableProperty] private bool _sintetico;
-    [ObservableProperty] private string _mascara = "";          // máscara em uso (vazia = cadastro livre)
-    [ObservableProperty] private string _mascaraEdicao = "";
-    [ObservableProperty] private bool _converterExistentes;
+    [ObservableProperty] private string _mascara = "";          // máscara em uso (vazia = cadastro livre); definida na aba Contabilidade da empresa
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(AvisoNaoUsa))] private bool _empresaUsaCentros = true;
 
-    public static IReadOnlyList<string> Mascaras { get; } = ["9.99.999", "9.99.99.999", "9.9.99.999", "9.99.9999"];
+    /// <summary>A empresa ainda não ativou "Usar centros de custo" (aba Contabilidade do cadastro da empresa).</summary>
+    public bool AvisoNaoUsa => !EmpresaUsaCentros;
+
+    /// <summary>A máscara e o uso de centros de custo são definidos no cadastro da empresa, aba Contabilidade (só administrador).</summary>
+    public bool PodeAbrirEmpresa => Contexto.Pode(Permissao.AdministrarSistema);
+
+    [RelayCommand]
+    private void AbrirCadastroEmpresa() => Contexto.AbrirTela(TelasComuns.Empresas);
     public string ResumoMascara => Mascara.Length == 0 ? "Sem máscara: códigos livres." : $"Máscara {Mascara}: ex. {Exemplo(Mascara)}";
 
     private static string Exemplo(string mascara) =>
@@ -71,9 +77,10 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
         var geracao = NovaGeracao();
         var centros = await app.PlanoContas.ListarCentrosAsync(empresa, sessao.Id);
         var mascara = await app.PlanoContas.ObterMascaraCentrosAsync(empresa, sessao.Id) ?? "";
+        var usa = (await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id)).UsaCentroCusto;
         if (!EhAtual(geracao)) return;
         Mascara = mascara;
-        MascaraEdicao = mascara;
+        EmpresaUsaCentros = usa;
         var id = Selecionado?.Centro.Id;
         var codigos = centros.ToDictionary(c => c.Id, c => c.Codigo);
         Lista.Clear();
@@ -125,16 +132,6 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
         }, Permissao.CentroCustoManter);
         return ok;
     }
-
-    /// <summary>Grava a máscara do plano de centros da empresa (vazia = sem máscara); opcionalmente converte os códigos existentes.</summary>
-    [RelayCommand]
-    private Task SalvarMascaraAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var r = await app.PlanoContas.DefinirMascaraCentrosAsync(empresa, MascaraEdicao, usuario, ConverterExistentes);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarAsync();
-        Mensagem = Mascara.Length == 0 ? "Máscara removida: os códigos dos centros voltam a ser livres." : $"Máscara {Mascara} definida para o plano de centros de custo.";
-    }, Permissao.CentroCustoManter);
 
     protected override async Task<bool> ExcluirSelecionadoAsync()
     {

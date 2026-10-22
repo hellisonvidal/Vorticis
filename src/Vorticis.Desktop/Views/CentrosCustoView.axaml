@@ -24,10 +24,10 @@
       <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
       <TextBlock Text="Máscara do plano" FontWeight="SemiBold" Foreground="#1F3A5F" />
       <TextBlock Text="{Binding ResumoMascara}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
-      <AutoCompleteBox Text="{Binding MascaraEdicao}" ItemsSource="{x:Static vm:CentrosCustoViewModel.Mascaras}" MinimumPrefixLength="0"
-                       Watermark="ex.: 9.99.999 (vazio = sem máscara)" IsEnabled="{Binding PodeEditar}" />
-      <CheckBox Content="Converter os códigos existentes (1.1 → 1.01)" IsChecked="{Binding ConverterExistentes}" IsEnabled="{Binding PodeEditar}" />
-      <Button Content="Definir máscara" Command="{Binding SalvarMascaraCommand}" IsEnabled="{Binding PodeEditar}" />
+      <TextBlock Text="A máscara e o uso de centros de custo são definidos no cadastro da empresa, aba Contabilidade." FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <TextBlock Text="Esta empresa ainda não ativou &quot;Usar centros de custo&quot; (aba Contabilidade): os lançamentos não pedem centro." Classes="erro" FontSize="11"
+                 IsVisible="{Binding AvisoNaoUsa}" />
+      <Button Content="Abrir o cadastro da empresa" Command="{Binding AbrirCadastroEmpresaCommand}" IsVisible="{Binding PodeAbrirEmpresa}" />
       <Separator Margin="0,4" />
       <TextBlock Text="Centro de custo" FontWeight="SemiBold" Foreground="#1F3A5F" />
       <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">

@@ -16,7 +16,7 @@
       <Setter Property="Background" Value="#DDE3EC" />
     </Style>
     <Style Selector="Border.janela-aberta.ativa">
-      <Setter Property="Background" Value="#2B4C76" />
+      <Setter Property="Background" Value="{DynamicResource CorDestaqueModulo}" />
     </Style>
     <Style Selector="Border.janela-aberta.ativa Button.chip">
       <Setter Property="Foreground" Value="White" />
@@ -39,11 +39,16 @@
 
   <DockPanel>
     <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
-    <Border DockPanel.Dock="Top" Background="#2B4C76" Padding="4,0,8,0" IsVisible="{Binding Logado}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-      <!-- Os itens vêm do módulo (IModuloDesktop.Menus) e são montados em MainWindow.axaml.cs -->
-      <Menu Name="MenuPrincipal" />
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+    <!-- A cor da barra e a faixa de destaque são do módulo (IModuloDesktop.CorBarra / CorDestaque) -->
+    <Border DockPanel.Dock="Top" BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
+    <Border Background="{Binding PincelBarra}" Padding="4,0,8,0">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <Border Background="{Binding PincelDestaque}" CornerRadius="3" Padding="10,2" Margin="4,3,8,3" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Modulo.NomeCurto}" Foreground="White" FontWeight="Bold" FontSize="12" />
+        </Border>
+        <!-- Os itens vêm do módulo (IModuloDesktop.Menus) e são montados em MainWindow.axaml.cs -->
+        <Menu Name="MenuPrincipal" Grid.Column="1" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
                     MinWidth="280" MaxWidth="400" FontSize="12" MinHeight="24" Padding="8,1"
@@ -57,9 +62,10 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
         </StackPanel>
-        <TextBlock Grid.Column="3" Text="{Binding UsuarioRotulo}" Foreground="#C9D6E8" FontSize="12"
+        <TextBlock Grid.Column="4" Text="{Binding UsuarioRotulo}" Foreground="#E3E8F2" FontSize="12"
                    VerticalAlignment="Center" Margin="12,0,0,0" />
       </Grid>
+    </Border>
     </Border>
 
     <!-- Funções abertas (cada uma em sua janela flutuante): clicar traz para a frente, ✕ fecha -->

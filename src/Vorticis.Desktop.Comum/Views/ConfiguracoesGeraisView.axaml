@@ -26,7 +26,7 @@
       <StackPanel Spacing="8">
         <TextBlock Text="Limpar banco de dados (NÃO RECOMENDADO)" FontWeight="SemiBold" Foreground="#B3261E" />
         <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#5A2A27"
-                   Text="Apaga definitivamente TODAS as empresas e a escrituração (lançamentos, planos, períodos, imobilizado, clientes, fornecedores), contadores, escritórios, tabelas do plano referencial, layouts, usuários e perfis personalizados. Depois de digitar LIMPAR, o sistema pede a senha de administrador; ao final volta à tela de login (usuário ADMIN, senha VORTICIS). Use apenas para recomeçar do zero — um backup é gerado antes." />
+                   Text="Apaga definitivamente TODAS as empresas e a escrituração (lançamentos, planos, períodos, imobilizado, clientes, fornecedores), contadores, escritórios, tabelas do plano referencial, layouts, usuários e perfis personalizados. Depois de digitar LIMPAR, o sistema pede a senha de administrador; ao final volta à tela de login, como numa instalação nova: só entra o usuário de implantação (vorticis / vorticis), que cadastra o administrador. Use apenas para recomeçar do zero — um backup é gerado antes." />
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Text="Digite LIMPAR para confirmar:" VerticalAlignment="Center" />
           <TextBox Text="{Binding ConfirmacaoLimpeza}" Width="120" />

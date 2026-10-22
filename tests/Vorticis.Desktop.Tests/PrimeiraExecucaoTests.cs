@@ -58,7 +58,7 @@ public class PrimeiraExecucaoTests(SessaoHeadless headless)
                 var vm = new MainViewModel();
                 await vm.IniciarAsync();
                 var login = Assert.IsType<LoginViewModel>(vm.Conteudo);
-                Assert.True(login.EmPrimeiroAcesso);
+                Assert.True(login.ImplantacaoAtiva);
                 Assert.Contains("banco local do Vorticis", vm.Status);
                 var cfg = Configuracao.Carregar();
                 Assert.Equal(ModoBanco.Local, cfg.Modo);

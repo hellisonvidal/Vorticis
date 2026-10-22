@@ -10,8 +10,9 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
     public async Task<PeriodoInfo?> ObterPeriodoAsync(long empresaId, DateOnly data, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT e.id, e.data_inicio, e.data_fim, e.encerrado, p.status::text
+            SELECT e.id, e.data_inicio, e.data_fim, e.encerrado, p.status::text, emp.data_bloqueio, emp.exige_documento
               FROM contabil.exercicio e
+              JOIN core.empresa emp ON emp.id = e.empresa_id
               LEFT JOIN contabil.periodo p
                      ON p.exercicio_id = e.id AND p.competencia = date_trunc('month', @d::date)::date
              WHERE e.empresa_id = @e AND @d::date BETWEEN e.data_inicio AND e.data_fim
@@ -20,7 +21,8 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
         if (!await r.ReadAsync(ct)) return null;
         var status = r.IsDBNull(4) ? null : r.GetString(4);
         return new PeriodoInfo(r.GetInt64(0), r.GetFieldValue<DateOnly>(1), r.GetFieldValue<DateOnly>(2), r.GetBoolean(3),
-                               status is not null, status == "ABERTO");
+                               status is not null, status == "ABERTO",
+                               r.IsDBNull(5) ? null : r.GetFieldValue<DateOnly>(5), r.GetBoolean(6));
     }
 
     public async Task<IReadOnlyDictionary<string, ContaInfo>> ObterContasAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct)

@@ -67,18 +67,22 @@ Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; DestName: "Vorticis.ico"
 Source: "..\publish\VorticisContabil.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "..\publish\VorticisFiscal.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "..\publish\VorticisFolha.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
+; Ícone de cada módulo (atalhos): espiral verde (Contábil), laranja (Fiscal) e roxa (Folha)
+Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
+Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
+Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
 
 [Dirs]
 ; Pasta padrão dos backups (dentro da instalação), gravável pelos usuários; não é apagada na desinstalação.
 Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 
 [Icons]
-Name: "{autoprograms}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; Components: contabil
-Name: "{autoprograms}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; Components: fiscal
-Name: "{autoprograms}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; Components: folha
-Name: "{autodesktop}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; Tasks: desktopicon; Components: contabil
-Name: "{autodesktop}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; Tasks: desktopicon; Components: fiscal
-Name: "{autodesktop}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; Tasks: desktopicon; Components: folha
+Name: "{autoprograms}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Components: contabil
+Name: "{autoprograms}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Components: fiscal
+Name: "{autoprograms}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Components: folha
+Name: "{autodesktop}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Tasks: desktopicon; Components: contabil
+Name: "{autodesktop}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Tasks: desktopicon; Components: fiscal
+Name: "{autodesktop}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Tasks: desktopicon; Components: folha
 
 [Run]
 ; Ao final, só o primeiro módulo instalado é aberto por padrão; os demais podem ser marcados.

@@ -9,6 +9,9 @@ public partial class InicioViewModel(MainViewModelBase main) : ModuloViewModel(m
     /// <summary>Nome curto do módulo ("Contábil"), em maiúsculas ao fundo da tela inicial.</summary>
     public string NomeCurto => main.Modulo.NomeCurto.ToUpper(Formato.PtBr);
 
+    /// <summary>Cor de destaque do módulo (nome ao fundo da tela inicial).</summary>
+    public Avalonia.Media.IBrush PincelDestaque => main.PincelDestaque;
+
     public string Versao => $"versão {SobreViewModel.Versao}";
 
     [ObservableProperty] private string? _dica;

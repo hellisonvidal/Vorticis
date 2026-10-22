@@ -33,8 +33,6 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
 
     /// <summary>Senha de administrador inicial (pedida para restaurar backup e limpar o banco). Troque-a em Configurações gerais.</summary>
     public const string SenhaAdministradorPadrao = "VORTICIS";
-    /// <summary>Login e senha do administrador recriado depois da limpeza do banco.</summary>
-    public const string LoginAdministradorPadrao = "ADMIN";
     private const string ChaveSenhaAdministrador = "senha_administrador";
 
     /// <summary>Confere a senha de administrador (hash em configuracao_sistema; enquanto não for trocada, vale a padrão).</summary>
@@ -62,9 +60,11 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
     }
 
     /// <summary>
-    /// Limpa o banco de dados: exclui TODAS as empresas com a escrituração, contadores, escritórios, tabelas do plano
-    /// referencial, layouts, usuários e perfis personalizados, e recria o administrador padrão (ADMIN / VORTICIS, com troca
-    /// de senha no primeiro acesso). Não recomendado: só o administrador, digitando LIMPAR e informando a senha de administrador.
+    /// Limpa o banco de dados: exclui TODAS as empresas com a escrituração, contadores, escritórios, certificados, tabelas do
+    /// plano referencial, layouts, TODOS os usuários e os perfis personalizados, e volta a senha de administrador à padrão.
+    /// O banco fica como numa instalação nova: o próximo acesso é o do usuário de implantação (vorticis / vorticis, ver
+    /// <see cref="Seguranca.ServicoUsuarios.LoginImplantacao"/>), que cadastra o administrador e depois segue o fluxo normal
+    /// (definição dos perfis). Não recomendado: só o administrador, digitando LIMPAR e informando a senha de administrador.
     /// </summary>
     public async Task<Resultado<int>> LimparBancoAsync(SessaoUsuario admin, string confirmacao, string? senhaAdministrador, CancellationToken ct = default)
     {
@@ -74,7 +74,7 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
         if (!await VerificarSenhaAdministradorAsync(senhaAdministrador, ct)) return Resultado<int>.Falha("Senha de administrador incorreta.");
         try
         {
-            return Resultado<int>.Ok(await repositorio.LimparBancoAsync(admin.Id, Senha.GerarHash(SenhaAdministradorPadrao), ct));
+            return Resultado<int>.Ok(await repositorio.LimparBancoAsync(admin.Id, ct));
         }
         catch (ViolacaoRegraException ex) { return Resultado<int>.Falha(ex.Message); }
     }

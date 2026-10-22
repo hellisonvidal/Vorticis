@@ -7,8 +7,8 @@
     <Title>Vorticis Folha de Pagamento</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <!-- Mesmo ícone da suíte por enquanto -->
-    <ApplicationIcon>..\..\instalador\icone\VorticisContabil.ico</ApplicationIcon>
+    <!-- Ícone do módulo (gerado por instalador/icone/gerar_icone.py) -->
+    <ApplicationIcon>..\..\instalador\icone\VorticisFolha.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorticis.Desktop.Comum\Vorticis.Desktop.Comum.csproj" />

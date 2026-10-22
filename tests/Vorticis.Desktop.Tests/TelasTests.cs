@@ -114,19 +114,62 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // inicia sempre maximizada, já no login
 
-            // 1. Primeiro acesso: cria o administrador
+            // 1. Instalação nova: só entra o usuário de implantação (vorticis/vorticis) e o único caminho é cadastrar o administrador
             var login = Assert.IsType<LoginViewModel>(vm.Conteudo);
-            Assert.True(login.EmPrimeiroAcesso);
-            (login.Nome, login.Usuario, login.Senha, login.Confirmacao) = ("Maria Contadora", "maria", "Senha1234", "Senha1234");
+            Assert.True(login.ImplantacaoAtiva);
+            Foto(janela, "01_implantacao");
+            (login.Usuario, login.Senha) = ("maria", "Senha1234");
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);                                    // outro usuário/senha não entra
+            Assert.NotEmpty(login.Erros);
+            (login.Usuario, login.Senha) = ("vorticis", "outra");
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);
+            LoginSalvo.Esquecer();
+            (login.Usuario, login.Senha, login.SalvarLogin) = ("vorticis", "vorticis", true);
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.True(vm.Logado, string.Join("; ", login.Erros));
+            Assert.True(vm.EmImplantacao);
+            Assert.Null(LoginSalvo.Obter());                            // o acesso de implantação nunca fica salvo
+            Assert.Equal(WindowState.Maximized, janela.WindowState);
+
+            // 1a. Abre sozinho o cadastro de usuários, só para incluir o administrador; o resto fica bloqueado
+            Assert.Same(vm.CentralUsuarios, vm.Conteudo);
+            for (var i = 0; i < 100 && !vm.Usuarios.EmInclusao; i++) await Task.Delay(50);   // carga em segundo plano
+            Assert.True(vm.Usuarios.EmInclusao);
+            Assert.Equal(["Administrador"], vm.Usuarios.PerfisDisponiveis.Select(p => p.Nome));
+            Assert.True(vm.Usuarios.PerfilEdicao?.Administrador);
+            Assert.False(vm.Usuarios.MostrarAcessos);                   // administrador acessa todas as empresas
+            foreach (var bloqueada in new[] { Telas.Empresas, Telas.Lancamento, Telas.Inicio, Telas.Backup, TelasComuns.Perfis, TelasComuns.Certificados })
+                Assert.False(vm.AbrirCommand.CanExecute(bloqueada), bloqueada);
+            Assert.False(vm.Usuarios.AlterarCommand.CanExecute(null));
+            Assert.False(vm.Usuarios.ExcluirCommand.CanExecute(null));
+            Foto(janela, "01a_implantacao_cadastro_administrador");
+            (vm.Usuarios.Login, vm.Usuarios.NomeEdicao, vm.Usuarios.NovaSenha) = ("vorticis", "Maria Contadora", "Senha1234");
+            await vm.Usuarios.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(vm.Usuarios.Erros, e => e.Contains("reservado"));   // login da implantação não serve para o administrador
+            vm.Usuarios.Login = "maria";
+            await vm.Usuarios.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Usuarios.Erros);
+
+            // 1b. O acesso de implantação termina: volta ao login (sem aviso de implantação) com o novo administrador
+            Assert.False(vm.Logado);
+            Assert.Same(vm.Login, vm.Conteudo);
+            Assert.Equal("maria", vm.Login.Usuario);
+            Assert.False(vm.Login.ImplantacaoAtiva);
+            (vm.Login.Usuario, vm.Login.Senha) = ("vorticis", "vorticis");
+            await vm.Login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);
+            (login.Usuario, login.Senha) = ("maria", "Senha1234");
             LoginSalvo.Esquecer();
             login.SalvarLogin = true;                                   // "Salvar login neste computador"
-            Foto(janela, "01_primeiro_acesso");
-            await login.CriarAdministradorCommand.ExecuteAsync(null);
+            await login.EntrarCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
+            Assert.False(vm.EmImplantacao);
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // continua maximizada após o login
             Assert.Equal("maria", LoginSalvo.Obter()?.Usuario);
 
-            // 1b. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
+            // 1c. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
             Assert.Same(vm.CentralUsuarios, vm.Conteudo);
             Assert.Equal(CentralUsuariosViewModel.AbaPerfis, vm.CentralUsuarios.AbaSelecionada);
             Assert.True(vm.Perfis.ConfiguracaoInicial);

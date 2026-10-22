@@ -30,7 +30,11 @@ public enum Permissao
 
 public sealed record DefinicaoPermissao(Permissao Permissao, string Codigo, string Grupo, string Descricao);
 
-public sealed record SessaoUsuario(long Id, string Login, string Nome, bool Administrador, bool DeveTrocarSenha);
+/// <param name="Implantacao">
+/// Sessão do usuário de implantação (vorticis/vorticis, só enquanto o banco não tem administrador): não é um usuário do
+/// banco (Id 0), não é administrador e só pode cadastrar o primeiro administrador.
+/// </param>
+public sealed record SessaoUsuario(long Id, string Login, string Nome, bool Administrador, bool DeveTrocarSenha, bool Implantacao = false);
 
 /// <summary>Permissões que um usuário tem em uma empresa (o administrador tem todas).</summary>
 public sealed record PermissoesEfetivas(bool Administrador, IReadOnlySet<Permissao> Liberadas, string? NomePerfil)
