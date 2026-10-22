@@ -132,10 +132,48 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
             await using var cmd = ds.CreateCommand("""
                 INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil_id)
                 SELECT @u, e.id, @p FROM core.empresa e
-                ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id
+                ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id;
+                UPDATE core.usuario SET todas_empresas = TRUE WHERE id = @u;
                 """).Com("u", usuarioId).Com("p", perfilId);
             return await cmd.ExecuteNonQueryAsync(ct);
         });
+
+    public Task DefinirAcessosAsync(long usuarioId, IReadOnlyList<(long EmpresaId, long? PerfilId)> acessos, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            foreach (var (empresaId, perfilId) in acessos)
+                await AplicarAcesso(con, tx, usuarioId, empresaId, perfilId, ct);
+            await RecalcularTodasEmpresas(con, tx, usuarioId, ct);
+            await tx.CommitAsync(ct);
+            return 0;
+        });
+
+    private static async Task AplicarAcesso(NpgsqlConnection con, NpgsqlTransaction tx, long usuarioId, long empresaId, long? perfilId, CancellationToken ct)
+    {
+        await using var cmd = perfilId is null
+            ? new NpgsqlCommand("DELETE FROM core.usuario_empresa WHERE usuario_id = @u AND empresa_id = @e", con, tx)
+            : new NpgsqlCommand("""
+                INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil_id) VALUES (@u, @e, @p)
+                ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id
+                """, con, tx).Com("p", perfilId.Value);
+        cmd.Com("u", usuarioId).Com("e", empresaId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    /// <summary>"Todas as empresas" = tem acesso a todas as cadastradas; só então as empresas novas são liberadas automaticamente.</summary>
+    private static async Task RecalcularTodasEmpresas(NpgsqlConnection con, NpgsqlTransaction tx, long usuarioId, CancellationToken ct)
+    {
+        await using var cmd = new NpgsqlCommand("""
+            UPDATE core.usuario u
+               SET todas_empresas = NOT EXISTS (SELECT 1 FROM core.empresa e
+                                                 WHERE NOT EXISTS (SELECT 1 FROM core.usuario_empresa ue
+                                                                    WHERE ue.usuario_id = u.id AND ue.empresa_id = e.id))
+             WHERE u.id = @u
+            """, con, tx).Com("u", usuarioId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
 
     public Task ExcluirAsync(long usuarioId, CancellationToken ct)
         => Mapeamentos.TraduzirErrosAsync(async () =>
@@ -174,17 +212,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
     }
 
     public Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct)
-        => Mapeamentos.TraduzirErrosAsync(async () =>
-        {
-            await using var cmd = perfilId is null
-                ? ds.CreateCommand("DELETE FROM core.usuario_empresa WHERE usuario_id = @u AND empresa_id = @e")
-                : ds.CreateCommand("""
-                    INSERT INTO core.usuario_empresa (usuario_id, empresa_id, perfil_id) VALUES (@u, @e, @p)
-                    ON CONFLICT (usuario_id, empresa_id) DO UPDATE SET perfil_id = EXCLUDED.perfil_id
-                    """).Com("p", perfilId.Value);
-            cmd.Com("u", usuarioId).Com("e", empresaId);
-            return await cmd.ExecuteNonQueryAsync(ct);
-        });
+        => DefinirAcessosAsync(usuarioId, [(empresaId, perfilId)], ct);
 
     public async Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct)
     {

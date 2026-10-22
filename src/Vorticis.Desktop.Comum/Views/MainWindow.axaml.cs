@@ -39,12 +39,28 @@ public partial class MainWindow : Window
             if (_vm is not null)
             {
                 Title = _vm.Modulo.Nome;
+                AplicarIdentidadeVisual(_vm);
                 MontarMenu(_vm);
                 MontarAtalhos(_vm);
                 _vm.PropertyChanged += AoMudarVm;
                 _vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
             }
         };
+    }
+
+    /// <summary>Ícone e cor do módulo (Contábil verde, Fiscal laranja, Folha roxo) na janela e nas janelas das funções.</summary>
+    private void AplicarIdentidadeVisual(MainViewModelBase vm)
+    {
+        Resources["CorDestaqueModulo"] = vm.PincelDestaque;
+        try
+        {
+            using var stream = Avalonia.Platform.AssetLoader.Open(new Uri($"avares://Vorticis.Desktop.Comum/Assets/{vm.Modulo.NomeExecutavel}.ico"));
+            Icon = new WindowIcon(stream);
+        }
+        catch (Exception)
+        {
+            // sem o ícone do módulo, fica o ícone padrão da janela
+        }
     }
 
     // ------------------------------------------------------------------ janelas flutuantes das funções
@@ -101,7 +117,7 @@ public partial class MainWindow : Window
         };
         var cabecalho = new Border
         {
-            Background = new SolidColorBrush(Color.Parse("#3A5F8F")), Height = 30,
+            Background = _vm?.PincelDestaque ?? new SolidColorBrush(Color.Parse("#3A5F8F")), Height = 30,
             Child = new DockPanel { Children = { fechar, titulo } },
         };
         DockPanel.SetDock(cabecalho, Dock.Top);

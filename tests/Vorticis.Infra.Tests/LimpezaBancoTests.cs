@@ -33,12 +33,14 @@ public class LimpezaBancoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.empresa"));
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM contabil.lancamento"));
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.certificado_digital"));
-        // Só fica o administrador padrão: ADMIN / VORTICIS, com troca de senha no primeiro acesso
-        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));
-        var login = await db.App.Usuarios.AutenticarAsync("ADMIN", "VORTICIS", ct);
+        // Banco como numa instalação nova: nenhum usuário; só vale o usuário de implantação (vorticis/vorticis)
+        Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));
+        Assert.True(await db.App.Usuarios.ImplantacaoAtivaAsync(ct));
+        Assert.False((await db.App.Usuarios.AutenticarAsync("ADMIN", "VORTICIS", ct)).Sucesso);
+        var login = await db.App.Usuarios.AutenticarAsync("vorticis", "vorticis", ct);
         Assert.True(login.Sucesso, string.Join("; ", login.Erros));
-        Assert.True(login.Valor.Administrador);
-        Assert.True(login.Valor.DeveTrocarSenha);
+        Assert.True(login.Valor.Implantacao);
+        Assert.True(await db.App.Perfis.ConfiguracaoInicialPendenteAsync(ct));       // os perfis voltam a ser configurados no primeiro uso
         Assert.True(await svc.VerificarSenhaAdministradorAsync("VORTICIS", ct));    // senha de administrador volta à padrão
         Assert.True(await db.EscalarAsync<long>("SELECT count(*) FROM imobilizado.grupo") > 0);
     }

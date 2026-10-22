@@ -37,8 +37,13 @@ public interface IRepositorioUsuarios
                            bool somenteSeNaoHouverUsuarios, CancellationToken ct);
     Task<PerfilDoUsuario?> ObterPerfilAsync(long perfilId, CancellationToken ct);
     Task<long?> IdPerfilAdministradorAsync(CancellationToken ct);
-    /// <summary>Concede o perfil em todas as empresas cadastradas (substitui acessos existentes).</summary>
+    /// <summary>Concede o perfil em todas as empresas cadastradas (substitui acessos existentes) e marca o usuário como "todas as empresas".</summary>
     Task AtribuirPerfilEmTodasEmpresasAsync(long usuarioId, long perfilId, CancellationToken ct);
+    /// <summary>
+    /// Aplica de uma vez os acessos do usuário por empresa (perfil nulo = sem acesso) e recalcula se ele acessa todas as empresas
+    /// (nesse caso, as empresas cadastradas depois também são liberadas a ele).
+    /// </summary>
+    Task DefinirAcessosAsync(long usuarioId, IReadOnlyList<(long EmpresaId, long? PerfilId)> acessos, CancellationToken ct);
     Task<IReadOnlyList<RegistroAcesso>> ListarRegistroAcessoAsync(int limite, CancellationToken ct);
     /// <summary>Exclui o usuário do banco (o histórico fica sem o vínculo; a auditoria guarda o login).</summary>
     Task ExcluirAsync(long usuarioId, CancellationToken ct);
@@ -64,29 +69,29 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     public static readonly TimeSpan TempoBloqueio = TimeSpan.FromMinutes(15);
     private const string MensagemGenerica = "Usuário ou senha inválidos.";
 
+    /// <summary>
+    /// Usuário de implantação: vale somente enquanto o banco não tem NENHUM usuário (instalação nova ou banco limpo), em qualquer
+    /// módulo. Ele não existe no banco: é tratado aqui, conferido pelo mesmo hash de senha dos demais usuários. Só permite
+    /// cadastrar o primeiro administrador; assim que esse existe, a combinação deixa de funcionar (nada a desativar).
+    /// </summary>
+    public const string LoginImplantacao = "vorticis";
+    public const string SenhaImplantacao = "vorticis";
+    private static readonly Lazy<string> HashImplantacao = new(() => Senha.GerarHash(SenhaImplantacao));
+
     // Hash de referência para gastar o mesmo tempo quando o login não existe (evita descobrir logins pelo tempo de resposta).
     private static readonly Lazy<string> HashFicticio = new(() => Senha.GerarHash(Guid.NewGuid().ToString()));
 
     private readonly TimeProvider _relogio = relogio ?? TimeProvider.System;
 
-    public Task<bool> PrecisaCriarAdministradorAsync(CancellationToken ct = default) => NaoExiste(ct);
+    /// <summary>
+    /// A implantação está ativa: o banco ainda não tem nenhum usuário (nem o administrador do cliente). Nesse estado só o usuário
+    /// de implantação entra, para cadastrar o primeiro administrador.
+    /// </summary>
+    public async Task<bool> ImplantacaoAtivaAsync(CancellationToken ct = default) => !await repositorio.ExisteAlgumAsync(ct);
 
-    private async Task<bool> NaoExiste(CancellationToken ct) => !await repositorio.ExisteAlgumAsync(ct);
-
-    /// <summary>Primeiro acesso: cria o administrador. Só funciona enquanto não houver nenhum usuário.</summary>
-    public async Task<Resultado<SessaoUsuario>> CriarPrimeiroAdministradorAsync(string login, string nome, string senha, string confirmacao,
-                                                                              CancellationToken ct = default)
-    {
-        var erros = ValidarNovo(login, nome, senha, confirmacao);
-        if (erros.Count > 0) return Resultado<SessaoUsuario>.Falha(erros);
-
-        var id = await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senha), administrador: true,
-                                              await repositorio.IdPerfilAdministradorAsync(ct),
-                                              deveTrocarSenha: false, somenteSeNaoHouverUsuarios: true, ct);
-        if (id is null) return Resultado<SessaoUsuario>.Falha("Já existe usuário cadastrado. Entre com seu login.");
-        await repositorio.RegistrarSucessoAsync(id.Value, login.Trim(), null, Environment.MachineName, ct);
-        return Resultado<SessaoUsuario>.Ok(new SessaoUsuario(id.Value, login.Trim(), nome.Trim(), true, false));
-    }
+    /// <summary>Perfil Administrador, o único que a implantação pode atribuir (null fora da implantação).</summary>
+    public async Task<PerfilDoUsuario?> PerfilDeImplantacaoAsync(SessaoUsuario sessao, CancellationToken ct = default)
+        => sessao.Implantacao && await repositorio.IdPerfilAdministradorAsync(ct) is long id ? await repositorio.ObterPerfilAsync(id, ct) : null;
 
     public async Task<Resultado<SessaoUsuario>> AutenticarAsync(string login, string senha, CancellationToken ct = default)
     {
@@ -97,6 +102,15 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         var u = await repositorio.ObterPorLoginAsync(login, ct);
         if (u is null)
         {
+            if (await ImplantacaoAtivaAsync(ct))
+            {
+                // & (sem curto-circuito): o mesmo tempo para login certo ou errado
+                if (string.Equals(login, LoginImplantacao, StringComparison.OrdinalIgnoreCase) & Senha.Verificar(senha, HashImplantacao.Value))
+                    return Resultado<SessaoUsuario>.Ok(new SessaoUsuario(0, LoginImplantacao, "Usuário de implantação", false, false, Implantacao: true));
+                await repositorio.RegistrarFalhaAsync(null, login, 0, null, "IMPLANTACAO_INVALIDA", estacao, ct);
+                return Resultado<SessaoUsuario>.Falha(
+                    $"Instalação nova, sem usuários: entre com o usuário \"{LoginImplantacao}\" e a senha \"{SenhaImplantacao}\" para cadastrar o administrador.");
+            }
             Senha.Verificar(senha, HashFicticio.Value);
             await repositorio.RegistrarFalhaAsync(null, login, 0, null, "USUARIO_INEXISTENTE", estacao, ct);
             return Resultado<SessaoUsuario>.Falha(MensagemGenerica);
@@ -141,22 +155,35 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     // ---------------------------------------------------------------- administração
 
     /// <summary>
-    /// Cadastra um usuário com o perfil informado. O perfil Administrador torna o usuário administrador do sistema;
-    /// os demais perfis são concedidos em todas as empresas (e nas que forem cadastradas depois).
+    /// Cadastra um usuário com o perfil informado. O perfil Administrador torna o usuário administrador do sistema (acessa todas
+    /// as empresas); os demais perfis são concedidos nas empresas de <paramref name="empresaIds"/> — nulo = todas, inclusive as
+    /// cadastradas depois. Na implantação (sessão do usuário vorticis) só é aceito o perfil Administrador e o cadastro só vale
+    /// enquanto o banco não tiver nenhum usuário.
     /// </summary>
     public async Task<Resultado<long>> CriarUsuarioAsync(SessaoUsuario admin, string login, string nome, string senhaInicial,
-                                                        long? perfilId, CancellationToken ct = default)
+                                                        long? perfilId, CancellationToken ct = default, IReadOnlyCollection<long>? empresaIds = null)
     {
-        if (!admin.Administrador) return Resultado<long>.Falha("Somente administradores podem cadastrar usuários.");
+        if (!admin.Administrador && !admin.Implantacao) return Resultado<long>.Falha("Somente administradores podem cadastrar usuários.");
         var erros = ValidarNovo(login, nome, senhaInicial, senhaInicial);
         var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
         if (perfil is null) erros.Add("Informe o perfil do usuário.");
+        if (admin.Implantacao)
+        {
+            if (perfil is { Administrador: false }) erros.Add("Na implantação só é possível cadastrar um usuário com o perfil Administrador.");
+            if (string.Equals(login.Trim(), LoginImplantacao, StringComparison.OrdinalIgnoreCase))
+                erros.Add($"O login \"{LoginImplantacao}\" é reservado à implantação; escolha outro login para o administrador.");
+        }
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
         if (await repositorio.LoginExisteAsync(login.Trim(), ct)) return Resultado<long>.Falha($"O login \"{login.Trim()}\" já está em uso.");
-        var id = (await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senhaInicial), perfil!.Administrador, perfil.Id,
-                                               deveTrocarSenha: true, somenteSeNaoHouverUsuarios: false, ct))!.Value;
-        if (!perfil.Administrador) await repositorio.AtribuirPerfilEmTodasEmpresasAsync(id, perfil.Id, ct);
-        return Resultado<long>.Ok(id);
+        var id = await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senhaInicial), perfil!.Administrador, perfil.Id,
+                                              deveTrocarSenha: !admin.Implantacao, somenteSeNaoHouverUsuarios: admin.Implantacao, ct);
+        if (id is null) return Resultado<long>.Falha("A implantação já foi concluída: existe usuário cadastrado. Entre com o login do administrador.");
+        if (!perfil.Administrador)
+        {
+            if (empresaIds is null) await repositorio.AtribuirPerfilEmTodasEmpresasAsync(id.Value, perfil.Id, ct);
+            else await repositorio.DefinirAcessosAsync(id.Value, [.. empresaIds.Distinct().Select(e => (e, (long?)perfil.Id))], ct);
+        }
+        return Resultado<long>.Ok(id.Value);
     }
 
     public async Task<Resultado> RedefinirSenhaAsync(SessaoUsuario admin, long usuarioId, string senhaTemporaria, CancellationToken ct = default)
@@ -206,6 +233,25 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         }
     }
 
+    /// <summary>
+    /// Define de uma vez as empresas que o usuário acessa e o perfil em cada uma (perfil nulo = sem acesso). Empresas não citadas
+    /// ficam como estão. O usuário só "acessa todas as empresas" (e recebe as futuras) enquanto tiver acesso a todas.
+    /// </summary>
+    public async Task<Resultado> DefinirAcessosAsync(SessaoUsuario admin, long usuarioId, IReadOnlyDictionary<long, long?> acessos,
+                                                    CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado.Falha("Somente administradores podem conceder acesso.");
+        try
+        {
+            await repositorio.DefinirAcessosAsync(usuarioId, [.. acessos.Select(a => (a.Key, a.Value))], ct);
+            return Resultado.Ok();
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado.Falha(ex.Message);
+        }
+    }
+
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(SessaoUsuario admin, CancellationToken ct = default)
         => admin.Administrador ? await repositorio.ListarAsync(ct) : [];
 
@@ -235,8 +281,9 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     public Task<IReadOnlyList<AcessoEmpresa>> ListarAcessosAsync(long usuarioId, CancellationToken ct = default)
         => repositorio.ListarAcessosAsync(usuarioId, ct);
 
-    public Task<IReadOnlyList<EmpresaPermitida>> EmpresasPermitidasAsync(SessaoUsuario sessao, CancellationToken ct = default)
-        => repositorio.ListarEmpresasPermitidasAsync(sessao.Id, sessao.Administrador, ct);
+    /// <summary>Empresas que o usuário pode acessar: todas para o administrador; as liberadas no cadastro para os demais; nenhuma na implantação.</summary>
+    public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasPermitidasAsync(SessaoUsuario sessao, CancellationToken ct = default)
+        => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasAsync(sessao.Id, sessao.Administrador, ct);
 
     private static List<string> ValidarNovo(string login, string nome, string senha, string confirmacao)
     {

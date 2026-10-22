@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Seguranca;
 using Vorticis.Application.Sistema;
 
 namespace Vorticis.Desktop.Comum.ViewModels;
@@ -45,8 +46,8 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
 
     /// <summary>
     /// Apaga todas as empresas, cadastros e usuários. Pede para digitar LIMPAR e, num alerta, a senha de administrador;
-    /// gera um backup antes (se não conseguir, pergunta se continua), limpa e volta à tela de login, onde se entra com
-    /// o administrador padrão (ADMIN / VORTICIS).
+    /// gera um backup antes (se não conseguir, pergunta se continua), limpa e volta à tela de login, onde só entra o
+    /// usuário de implantação (vorticis / vorticis), que cadastra o novo administrador.
     /// </summary>
     [RelayCommand]
     private async Task LimparBancoAsync()
@@ -62,8 +63,8 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
         }
         var senha = await Contexto.SolicitarSenhaAsync("Limpar banco de dados — NÃO RECOMENDADO",
             "ATENÇÃO: esta operação apaga DEFINITIVAMENTE todas as empresas e toda a escrituração, os cadastros, os usuários e os " +
-            "perfis personalizados. Ao final o sistema volta à tela de login, onde se entra com o administrador padrão " +
-            $"(usuário {ServicoConfiguracoesGerais.LoginAdministradorPadrao}, senha {ServicoConfiguracoesGerais.SenhaAdministradorPadrao}).\n\n" +
+            "perfis personalizados. Ao final o sistema volta à tela de login, como numa instalação nova: só entra o usuário " +
+            $"de implantação (usuário {ServicoUsuarios.LoginImplantacao}, senha {ServicoUsuarios.SenhaImplantacao}), para cadastrar o administrador.\n\n" +
             "Um backup será gerado antes. Para confirmar, informe a senha de administrador:", "Limpar tudo", "Cancelar");
         if (senha is null) return;
         if (!await app.ConfiguracoesGerais.VerificarSenhaAdministradorAsync(senha)) { Erros.Add("Senha de administrador incorreta. Nada foi apagado."); return; }
@@ -86,8 +87,8 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ConfirmacaoLimpeza = "";
             await Contexto.ReiniciarParaLoginAsync(
-                $"Banco de dados limpo ({r.Valor} empresa(s) excluída(s)). Entre com o usuário {ServicoConfiguracoesGerais.LoginAdministradorPadrao} " +
-                $"e a senha {ServicoConfiguracoesGerais.SenhaAdministradorPadrao}." + (copia is null ? "" : $" Backup anterior à limpeza: {copia}"));
+                $"Banco de dados limpo ({r.Valor} empresa(s) excluída(s)). Entre com o usuário {ServicoUsuarios.LoginImplantacao} " +
+                $"e a senha {ServicoUsuarios.SenhaImplantacao} para cadastrar o administrador." + (copia is null ? "" : $" Backup anterior à limpeza: {copia}"));
         }
         catch (Exception ex) { Erros.Add(ex.Message); }
         finally { Ocupado = false; }

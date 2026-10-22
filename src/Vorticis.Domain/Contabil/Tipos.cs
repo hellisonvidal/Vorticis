@@ -65,7 +65,9 @@ public sealed record PeriodoInfo(
     DateOnly FimExercicio,
     bool ExercicioEncerrado,
     bool PeriodoExiste,
-    bool PeriodoAberto);
+    bool PeriodoAberto,
+    DateOnly? DataBloqueio = null,
+    bool ExigeDocumento = false);
 
 /// <summary>Dados de cadastro resolvidos para validar uma proposta.</summary>
 public sealed record ContextoValidacao(

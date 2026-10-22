@@ -45,20 +45,28 @@
         </Grid>
 
         <StackPanel Spacing="6" IsVisible="{Binding MostrarAcessos}">
-          <TextBlock Text="Acesso às empresas (exceções)" FontWeight="SemiBold" Margin="0,8,0,0" />
-          <TextBlock Text="Por padrão o usuário tem o seu perfil em todas as empresas. Ao alterar, é possível usar outro perfil em uma empresa ou retirar o acesso."
+          <TextBlock Text="Empresas que o usuário pode acessar" FontWeight="SemiBold" Margin="0,8,0,0" />
+          <TextBlock Text="Marque as empresas liberadas; o usuário só vê e seleciona essas. O perfil ao lado vale em cada empresa. Empresas cadastradas depois só são liberadas automaticamente a quem tem todas marcadas."
                      FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding Acessos}" IsEnabled="{Binding EmAlteracao}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:AcessoLinha">
-                <Grid ColumnDefinitions="*,170" Margin="0,2">
-                  <TextBlock Text="{Binding Empresa}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12" />
-                  <ComboBox Grid.Column="1" ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Perfil}"
-                            HorizontalAlignment="Stretch" FontSize="12" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <TextBox Text="{Binding FiltroEmpresas}" Watermark="Buscar empresa (nome, código ou CNPJ)" />
+          <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding EmEdicao}">
+            <Button Content="Marcar todas" Command="{Binding MarcarTodasCommand}" />
+            <Button Content="Desmarcar todas" Command="{Binding DesmarcarTodasCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding ResumoEmpresas}" FontSize="11" Foreground="#44506A" />
+          <ScrollViewer MaxHeight="320">
+            <ItemsControl ItemsSource="{Binding AcessosFiltrados}" IsEnabled="{Binding EmEdicao}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AcessoLinha">
+                  <Grid ColumnDefinitions="*,150" Margin="0,2">
+                    <CheckBox IsChecked="{Binding Marcada}" Content="{Binding Rotulo}" FontSize="12" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Perfil}" IsEnabled="{Binding Marcada}"
+                              HorizontalAlignment="Stretch" FontSize="12" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
         </StackPanel>
 
         <StackPanel Spacing="6" IsVisible="{Binding TemSelecionado}" Margin="0,8,0,0">

@@ -121,7 +121,7 @@
           <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding AnoExercicio}" Minimum="2000" Maximum="2100" FormatString="0" Width="180"
                          HorizontalAlignment="Left" IsVisible="{Binding EmInclusao}" />
           <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
-                     Text="O modelo de plano de contas, a máscara, o uso de participantes e as demais opções contábeis ficam na aba Contabilidade." />
+                     Text="O modelo de plano de contas, as máscaras, o uso de participantes e de centros de custo e as demais opções contábeis ficam na aba Contabilidade." />
         </Grid>
         <v:MensagensView Margin="0,8,0,0" />
       </StackPanel>
@@ -199,6 +199,19 @@
                          Text="Clientes e fornecedores ficam alocados dentro das contas contábeis: o lançamento informa o participante e o balancete mostra a soma na conta, com detalhamento opcional por participante. O grupo (conta sintética) onde cada conta aloca seus participantes é indicado no plano de contas." />
               <CheckBox Content="Usar centros de custo" IsChecked="{Binding UsaCentroCusto}" />
             </StackPanel>
+            <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}"
+                  IsVisible="{Binding UsaCentroCusto}">
+              <TextBlock Classes="rotulo" Text="Máscara dos centros" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox Text="{Binding MascaraCentroCusto}" Watermark="ex.: 9.99.999 (vazio = códigos livres)" FontFamily="Consolas, Menlo, monospace" />
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:CadastroEmpresaViewModel.MascarasCentroCusto}" SelectedItem="{Binding MascaraCentroCustoModelo}"
+                          PlaceholderText="Modelos" Width="150" />
+              </Grid>
+              <CheckBox Grid.Row="1" Grid.Column="1" Content="Converter os códigos dos centros existentes para a nova máscara (1.1 → 1.01)"
+                        IsChecked="{Binding ConverterCentros}" IsVisible="{Binding !EmInclusao}" />
+              <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                         Text="Define os níveis do plano de centros de custo (Cadastros › Centros de custo), onde ficam os grupos e centros. Os centros já cadastrados precisam caber na máscara (ou ser convertidos)." />
+            </Grid>
 
             <TextBlock Classes="secao" Text="Escrituração" />
             <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
@@ -218,6 +231,17 @@
             </Grid>
             <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                        Text="O regime tributário é definido na aba Dados cadastrais (na inclusão). A forma de apuração do IRPJ vale para o Lucro Real e o regime de caixa para o Presumido e o Simples Nacional." />
+
+            <TextBlock Classes="secao" Text="Regras dos lançamentos" />
+            <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+              <CheckBox Grid.Column="1" Content="Exigir o nº do documento em todos os lançamentos" IsChecked="{Binding ExigeDocumento}"
+                        ToolTip.Tip="Cada partida precisa informar o documento/arquivo de suporte (ECD I250.NUM_ARQ). Saldos iniciais, encerramento e estornos ficam isentos." />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Bloquear lançamentos até" />
+              <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding DataBloqueio}" Width="180" HorizontalAlignment="Left"
+                                  ToolTip.Tip="Lançamentos com data igual ou anterior são recusados (escrituração já conferida/entregue). Apague a data para liberar." />
+              <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                         Text="O histórico já é sempre obrigatório. Saldos iniciais e o lançamento de encerramento do exercício não são afetados pelo bloqueio." />
+            </Grid>
 
             <TextBlock Classes="secao" Text="Contas do encerramento do exercício" />
             <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">

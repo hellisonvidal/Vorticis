@@ -111,6 +111,22 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private string _contaPrejuizos = "";
     [ObservableProperty] private OpcaoApuracaoIrpj? _apuracaoIrpj;
     [ObservableProperty] private bool _regimeCaixa;
+    /// <summary>Máscara do plano de centros de custo (vazia = códigos livres); vale quando a empresa usa centros de custo.</summary>
+    [ObservableProperty] private string _mascaraCentroCusto = "";
+    [ObservableProperty] private string? _mascaraCentroCustoModelo;
+    /// <summary>Ao trocar a máscara de uma empresa com centros cadastrados, converte os códigos existentes (1.1 → 1.01).</summary>
+    [ObservableProperty] private bool _converterCentros;
+    /// <summary>Exige o nº do documento em todas as partidas dos lançamentos (ver ValidadorLancamento).</summary>
+    [ObservableProperty] private bool _exigeDocumento;
+    /// <summary>Lançamentos até esta data (inclusive) são recusados; vazio = sem bloqueio.</summary>
+    [ObservableProperty] private DateTime? _dataBloqueio;
+
+    public static IReadOnlyList<string> MascarasCentroCusto { get; } = ["9.99.999", "9.99.99.999", "9.9.99.999", "9.99.9999"];
+
+    partial void OnMascaraCentroCustoModeloChanged(string? value)
+    {
+        if (value is not null) MascaraCentroCusto = value;
+    }
 
     private ConfiguracaoContabil _configuracao = new();
 
@@ -134,7 +150,9 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 
     private ConfiguracaoContabil ConfiguracaoDoFormulario() => new(
         ModeloSelecionado?.Id, Mascara, InicioEscrituracao is { } d ? DateOnly.FromDateTime(d) : null, UsaCentroCusto, GrandePorte,
-        ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa);
+        ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa,
+        UsaCentroCusto ? MascaraCentroCusto : _configuracao.MascaraCentroCusto, ExigeDocumento,
+        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null);
 
     private void MostrarConfiguracao(ConfiguracaoContabil c)
     {
@@ -144,6 +162,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (Mascara, InicioEscrituracao, UsaCentroCusto, GrandePorte) = (c.MascaraPlano ?? "", c.InicioEscrituracao?.ToDateTime(TimeOnly.MinValue), c.UsaCentroCusto, c.GrandePorte);
         (ContaApuracao, ContaLucros, ContaPrejuizos) = (c.ContaApuracao ?? "", c.ContaLucros ?? "", c.ContaPrejuizos ?? "");
         (ApuracaoIrpj, RegimeCaixa) = (OpcaoApuracaoIrpj.Todas.FirstOrDefault(o => o.Valor == c.ApuracaoIrpj), c.RegimeCaixa);
+        (MascaraCentroCusto, ConverterCentros, ExigeDocumento) = (c.MascaraCentroCusto ?? "", false, c.ExigeDocumento);
+        DataBloqueio = c.DataBloqueio?.ToDateTime(TimeOnly.MinValue);
     }
 
     public string TituloFormulario => Modo switch
@@ -312,7 +332,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             }
         }
         var c = await app.PlanoContas.SalvarConfiguracaoAsync(empresaId, ConfiguracaoDoFormulario(),
-                                                              DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), usuarioId);
+                                                              DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), usuarioId,
+                                                              converterCentros: ConverterCentros);
         if (!c.Sucesso) { MostrarResultado(c, ""); return false; }
         Mensagem += aplicado;
         return true;

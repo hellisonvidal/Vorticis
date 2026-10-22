@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Cadastros;
@@ -29,6 +30,11 @@ public interface IContexto
     string DescricaoEmpresa { get; }
     /// <summary>Abre outra função (ver <see cref="TelasComuns"/> e as chaves de cada módulo), como pelo menu.</summary>
     void AbrirTela(string tela);
+    /// <summary>
+    /// O primeiro administrador foi cadastrado pela sessão de implantação: o acesso vorticis/vorticis deixa de valer e o sistema
+    /// volta à tela de login para o novo administrador entrar.
+    /// </summary>
+    Task ConcluirImplantacaoAsync(string loginAdministrador);
 }
 
 /// <summary>Telas comuns a todos os módulos. A chave é o CommandParameter do item de menu.</summary>
@@ -65,12 +71,15 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     private IConsultaCnpj? _consultaCnpj;
     private IConsultaInscricaoEstadual? _consultaIe;
     private bool _configuracaoInicialPendente;
+    private bool _implantacao;
     private readonly CatalogoTelas _catalogo = new();
     private readonly Dictionary<string, object> _instancias = [];
 
     protected MainViewModelBase(IModuloDesktop modulo)
     {
         Modulo = modulo;
+        PincelDestaque = new SolidColorBrush(Color.Parse(modulo.CorDestaque));
+        PincelBarra = new SolidColorBrush(Color.Parse(modulo.CorBarra));
         Login = new LoginViewModel(this);
         RegistrarTelasComuns(_catalogo);
         modulo.RegistrarTelas(_catalogo);
@@ -82,6 +91,12 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     /// <summary>O módulo (Contábil, Fiscal, Folha) que este executável hospeda.</summary>
     public IModuloDesktop Modulo { get; }
+
+    /// <summary>Cor de destaque do módulo (<see cref="IModuloDesktop.CorDestaque"/>): faixa, nome do módulo, cabeçalho das janelas.</summary>
+    public IBrush PincelDestaque { get; }
+
+    /// <summary>Cor da barra de menus do módulo (<see cref="IModuloDesktop.CorBarra"/>).</summary>
+    public IBrush PincelBarra { get; }
 
     /// <summary>Menu completo: Cadastros (comuns + do módulo), menus do módulo, Configurações e Ajuda.</summary>
     public IReadOnlyList<ItemMenu> Menus { get; }
@@ -235,6 +250,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     public bool ConfiguracaoInicialPendente => _configuracaoInicialPendente;
 
+    /// <summary>Sessão do usuário de implantação (vorticis): só o cadastro do primeiro administrador está liberado.</summary>
+    public bool EmImplantacao => _implantacao;
+
     public string UsuarioRotulo => Sessao is null ? "" : $"{Sessao.Nome}{(Sessao.Administrador ? " (administrador)" : "")}";
 
     /// <summary>O usuário tem algum acesso (perfil) na empresa ativa.</summary>
@@ -289,8 +307,17 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         Sessao = sessao;
         Logado = true;
+        _implantacao = sessao.Implantacao;
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
+        if (_implantacao)
+        {
+            // Instalação nova: abre o cadastro de usuários, que só permite incluir o administrador, até concluir.
+            AbrirCommand.NotifyCanExecuteChanged();
+            Abrir(TelasComuns.Usuarios);
+            Status = $"Implantação: cadastre o usuário administrador. Depois disso o acesso {ServicoUsuarios.LoginImplantacao}/{ServicoUsuarios.SenhaImplantacao} deixa de funcionar.";
+            return;
+        }
         if (_configuracaoInicialPendente)
         {
             // Primeiro uso: definir os perfis de acesso é obrigatório; o cadastro de empresas pode ficar para depois.
@@ -312,9 +339,19 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         AtualizarStatus();
     }
 
+    public async Task ConcluirImplantacaoAsync(string loginAdministrador)
+    {
+        Sair();
+        Login.Usuario = loginAdministrador;
+        Login.Mensagem = $"Administrador {loginAdministrador} cadastrado. O acesso de implantação ({ServicoUsuarios.LoginImplantacao}) foi desativado: " +
+                         "entre com o login e a senha do administrador.";
+        await Login.AtualizarImplantacaoAsync();
+    }
+
     [RelayCommand]
     private void Sair()
     {
+        _implantacao = false;
         Sessao = null;
         FecharTodasAsJanelas();
         Logado = false;
@@ -327,6 +364,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         RecriarModulos();
         Login.Limpar();
         Login.CarregarLoginSalvo();
+        _ = Disparar(Login.AtualizarImplantacaoAsync);
         Conteudo = Login;
         Status = $"Sessão encerrada. Conectado a {Configuracao.Descrever(_connectionString)}.";
     }
@@ -374,9 +412,11 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             : EmpresaSelecionada is not null && _permissoes.Pode(permissao));
 
     public bool PodeAbrir(string? tela) => Logado && tela is not null && _catalogo.Telas.TryGetValue(tela, out var def)
-        && (!_configuracaoInicialPendente
-            ? def.Pode(this)
-            : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios);
+        && (_implantacao
+            ? tela is TelasComuns.Usuarios or TelasComuns.Sobre
+            : !_configuracaoInicialPendente
+                ? def.Pode(this)
+                : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios);
 
     /// <summary>A chave pertence a uma tela registrada (comum ou do módulo)?</summary>
     public bool ConheceTela(string chave) => _catalogo.Telas.ContainsKey(chave);
@@ -403,7 +443,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         {
             TelasComuns.Perfis => CentralUsuariosViewModel.AbaPerfis,
             TelasComuns.AlterarSenha => CentralUsuariosViewModel.AbaSenha,
-            _ => central.PodeAdministrar ? CentralUsuariosViewModel.AbaUsuarios
+            _ => central.PodeUsuarios ? CentralUsuariosViewModel.AbaUsuarios
                : central.PodePerfis ? CentralUsuariosViewModel.AbaPerfis : CentralUsuariosViewModel.AbaSenha,
         };
         if (central.AbaSelecionada == aba) CarregarAbaUsuarios();
@@ -417,7 +457,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (!ReferenceEquals(Conteudo, CentralUsuarios)) return;
         switch (CentralUsuarios.AbaSelecionada)
         {
-            case CentralUsuariosViewModel.AbaUsuarios when CentralUsuarios.PodeAdministrar: _ = Disparar(Usuarios.CarregarAsync); break;
+            case CentralUsuariosViewModel.AbaUsuarios when CentralUsuarios.PodeUsuarios: _ = Disparar(Usuarios.CarregarAsync); break;
             case CentralUsuariosViewModel.AbaPerfis when CentralUsuarios.PodePerfis: _ = Disparar(Perfis.CarregarAsync); break;
             case CentralUsuariosViewModel.AbaRegistro when CentralUsuarios.PodeAdministrar: _ = Disparar(CentralUsuarios.CarregarRegistrosAsync); break;
         }

@@ -15,6 +15,8 @@ public sealed class ModuloFolha : IModuloDesktop
     public string NomeCurto => "Folha";
     public string Subtitulo => "Folha de pagamento e eSocial";
     public string NomeExecutavel => "VorticisFolha";
+    public string CorDestaque => "#6D28D9";   // roxo
+    public string CorBarra => "#4C1D95";
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [];
 

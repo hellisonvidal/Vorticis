@@ -21,8 +21,18 @@ public interface IModuloDesktop
     /// <summary>Descrição de uma linha, mostrada no login e na tela Sobre ("Escrituração Fiscal Contábil").</summary>
     string Subtitulo { get; }
 
-    /// <summary>Nome do executável sem extensão ("VorticisContabil").</summary>
+    /// <summary>Nome do executável sem extensão ("VorticisContabil"); também nomeia o ícone (Assets/VorticisContabil.ico).</summary>
     string NomeExecutavel { get; }
+
+    /// <summary>
+    /// Cor de destaque do módulo (#RRGGBB), para o usuário não confundir qual sistema está usando: faixa sob os menus,
+    /// nome do módulo no login e na tela inicial, cabeçalho das janelas das funções. Contábil verde, Fiscal laranja,
+    /// Folha roxo (os ícones de instalador/icone/gerar_icone.py usam as mesmas cores).
+    /// </summary>
+    string CorDestaque { get; }
+
+    /// <summary>Cor da barra de menus (#RRGGBB): um tom escuro da família da cor de destaque.</summary>
+    string CorBarra { get; }
 
     /// <summary>
     /// Itens do módulo no menu Cadastros, depois dos cadastros comuns (Empresas, Contadores, Clientes, Fornecedores).

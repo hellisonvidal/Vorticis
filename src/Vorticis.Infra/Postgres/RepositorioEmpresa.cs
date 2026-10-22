@@ -24,10 +24,10 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                                           cod_municipio_ibge, data_inicio_ativ, cep, logradouro, numero, complemento, bairro,
                                           municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual,
                                           nire, plano_modelo, mascara_plano, inicio_escrituracao, usa_centro_custo, grande_porte,
-                                          conta_apuracao, conta_lucros, conta_prejuizos)
+                                          conta_apuracao, conta_lucros, conta_prejuizos, mascara_centro_custo, exige_documento, data_bloqueio)
                 VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
                         @municipio, @email, @tel, @sit, @fonte, @consultado, @ie,
-                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej) RETURNING id
+                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej, @mcc, @exdoc, @bloq) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
@@ -41,7 +41,9 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .ComTexto("modelo", e.Contabil?.ModeloPlano).ComTexto("mascara", e.Contabil?.MascaraPlano)
                 .Com("inicioesc", NpgsqlTypes.NpgsqlDbType.Date, e.Contabil?.InicioEscrituracao)
                 .Com("cc", e.Contabil?.UsaCentroCusto ?? false).Com("porte", e.Contabil?.GrandePorte ?? false)
-                .ComTexto("capur", e.Contabil?.ContaApuracao).ComTexto("cluc", e.Contabil?.ContaLucros).ComTexto("cprej", e.Contabil?.ContaPrejuizos))
+                .ComTexto("capur", e.Contabil?.ContaApuracao).ComTexto("cluc", e.Contabil?.ContaLucros).ComTexto("cprej", e.Contabil?.ContaPrejuizos)
+                .ComTexto("mcc", e.Contabil?.MascaraCentroCusto).Com("exdoc", e.Contabil?.ExigeDocumento ?? false)
+                .Com("bloq", NpgsqlTypes.NpgsqlDbType.Date, e.Contabil?.DataBloqueio))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
             await using (var cmd = new NpgsqlCommand("""

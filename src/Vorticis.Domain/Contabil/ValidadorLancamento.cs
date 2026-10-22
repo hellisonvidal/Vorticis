@@ -51,6 +51,14 @@ public static class ValidadorLancamento
             else if (!per.PeriodoAberto) erros.Add($"O período {l.Data:MM/yyyy} está fechado.");
             if (l.Indicador == IndicadorLancamento.Encerramento && l.Data != per.FimExercicio)
                 erros.Add($"Lançamento de encerramento deve ter a data final do exercício ({per.FimExercicio:dd/MM/yyyy}).");
+            // Regras da empresa (aba Contabilidade): bloqueio de datas e documento obrigatório. Saldos iniciais e encerramento ficam isentos.
+            var isento = l.Origem == OrigemLancamento.SaldoInicial || l.Indicador == IndicadorLancamento.Encerramento;
+            if (!isento && per.DataBloqueio is { } bloqueio && l.Data <= bloqueio)
+                erros.Add($"Lançamentos até {bloqueio:dd/MM/yyyy} estão bloqueados nesta empresa (a data {l.Data:dd/MM/yyyy} é anterior ou igual à data de bloqueio).");
+            if (!isento && l.Origem != OrigemLancamento.Estorno && per.ExigeDocumento)
+                for (int i = 0; i < partidas.Count; i++)
+                    if (string.IsNullOrWhiteSpace(partidas[i].NumeroArquivo))
+                        erros.Add($"Linha {i + 1}: informe o nº do documento (a empresa exige documento em todos os lançamentos).");
         }
         if ((l.Indicador == IndicadorLancamento.Extemporaneo) != l.DataExtemporanea.HasValue)
             erros.Add("Lançamento extemporâneo exige a data do fato (e só ele a aceita).");

@@ -33,6 +33,9 @@ public partial class CentralUsuariosViewModel(MainViewModelBase main) : ModuloVi
     /// <summary>Cadastro de usuários e registro de acessos: administrador, depois da configuração inicial dos perfis.</summary>
     public bool PodeAdministrar => main.Sessao?.Administrador == true && !main.ConfiguracaoInicialPendente;
 
+    /// <summary>Aba Usuários: administrador (depois da configuração inicial) ou, na implantação, só para incluir o primeiro administrador.</summary>
+    public bool PodeUsuarios => PodeAdministrar || main.EmImplantacao;
+
     public bool PodePerfis => main.Sessao?.Administrador == true;
 
     partial void OnAbaSelecionadaChanged(int value) => main.CarregarAbaUsuarios();
@@ -40,6 +43,7 @@ public partial class CentralUsuariosViewModel(MainViewModelBase main) : ModuloVi
     public void AtualizarAcesso()
     {
         OnPropertyChanged(nameof(PodeAdministrar));
+        OnPropertyChanged(nameof(PodeUsuarios));
         OnPropertyChanged(nameof(PodePerfis));
     }
 

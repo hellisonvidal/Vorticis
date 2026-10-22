@@ -5,8 +5,10 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Ícone único da suíte (usado nas janelas) -->
+    <!-- Ícones dos módulos (usados nas janelas; cada executável usa o seu, ver IModuloDesktop.NomeExecutavel) -->
     <AvaloniaResource Include="..\..\instalador\icone\VorticisContabil.ico" Link="Assets\VorticisContabil.ico" />
+    <AvaloniaResource Include="..\..\instalador\icone\VorticisFiscal.ico" Link="Assets\VorticisFiscal.ico" />
+    <AvaloniaResource Include="..\..\instalador\icone\VorticisFolha.ico" Link="Assets\VorticisFolha.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />

@@ -15,27 +15,53 @@ public sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
 public class PrimeiroAcessoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 {
     [Fact]
-    public async Task Cria_o_primeiro_administrador_uma_unica_vez()
+    public async Task Instalacao_nova_so_aceita_o_usuario_de_implantacao_e_ele_serve_apenas_para_criar_o_administrador()
     {
         BancoDeTeste.ExigirBanco();
         var ct = TestContext.Current.CancellationToken;
         var svc = db.App.Usuarios;
 
-        Assert.True(await svc.PrecisaCriarAdministradorAsync(ct));
-        Assert.Contains((await svc.CriarPrimeiroAdministradorAsync("admin", "Admin", "curta", "curta", ct)).Erros, e => e.Contains("8 caracteres"));
-        Assert.Contains((await svc.CriarPrimeiroAdministradorAsync("admin", "Admin", "Senha1234", "Senha9999", ct)).Erros, e => e.Contains("confirmação"));
+        Assert.True(await svc.ImplantacaoAtivaAsync(ct));
+        // nenhuma outra combinação entra, nem mesmo um login "ADMIN"
+        Assert.False((await svc.AutenticarAsync("admin", "VORTICIS", ct)).Sucesso);
+        Assert.False((await svc.AutenticarAsync("vorticis", "Vorticis1", ct)).Sucesso);
+        Assert.False((await svc.AutenticarAsync("maria", "vorticis", ct)).Sucesso);
+        Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));   // a senha não está no banco: o usuário não existe lá
 
-        var r = await svc.CriarPrimeiroAdministradorAsync("admin", "Administradora", "Senha1234", "Senha1234", ct);
+        var r = await svc.AutenticarAsync("VORTICIS", "vorticis", ct);   // sem distinção de caixa no login
         Assert.True(r.Sucesso, string.Join("; ", r.Erros));
-        Assert.True(r.Valor.Administrador);
-        Assert.False(await svc.PrecisaCriarAdministradorAsync(ct));
+        var impl = r.Valor;
+        Assert.True(impl.Implantacao);
+        Assert.False(impl.Administrador);
+        Assert.Empty(await svc.EmpresasPermitidasAsync(impl, ct));
 
-        var outro = await svc.CriarPrimeiroAdministradorAsync("intruso", "Intruso", "Senha1234", "Senha1234", ct);
-        Assert.Contains(outro.Erros, e => e.Contains("Já existe usuário"));
+        // só cadastra administrador; as demais operações administrativas ficam fechadas
+        var consulta = await db.PerfilIdAsync("Consulta");
+        var admin = await db.PerfilIdAsync("Administrador");
+        Assert.Contains("só é possível", (await svc.CriarUsuarioAsync(impl, "joao", "João", "Senha1234", consulta, ct)).Erros[0]);
+        Assert.Contains("reservado", (await svc.CriarUsuarioAsync(impl, "Vorticis", "X", "Senha1234", admin, ct)).Erros[0]);
+        Assert.Contains((await svc.CriarUsuarioAsync(impl, "maria", "Maria", "curta", admin, ct)).Erros, e => e.Contains("8 caracteres"));
+        Assert.False((await svc.RedefinirSenhaAsync(impl, 1, "Senha1234", ct)).Sucesso);
+        Assert.False((await svc.DefinirAcessosAsync(impl, 1, new Dictionary<long, long?>(), ct)).Sucesso);
+        Assert.Empty(await svc.ListarAsync(impl, ct));
+        Assert.Equal("Administrador", (await svc.PerfilDeImplantacaoAsync(impl, ct))?.Nome);
 
-        var login = await svc.AutenticarAsync("ADMIN", "Senha1234", ct);   // login sem distinção de caixa
+        var criado = await svc.CriarUsuarioAsync(impl, "maria", "Maria Contadora", "Senha1234", admin, ct);
+        Assert.True(criado.Sucesso, string.Join("; ", criado.Erros));
+
+        // a implantação termina: vorticis/vorticis deixa de valer e a sessão de implantação não cria mais nada
+        Assert.False(await svc.ImplantacaoAtivaAsync(ct));
+        var depois = await svc.AutenticarAsync("vorticis", "vorticis", ct);
+        Assert.False(depois.Sucesso);
+        Assert.Equal("Usuário ou senha inválidos.", depois.Erros[0]);
+        Assert.Contains("já foi concluída", (await svc.CriarUsuarioAsync(impl, "intruso", "Intruso", "Senha1234", admin, ct)).Erros[0]);
+        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario"));
+
+        var login = await svc.AutenticarAsync("MARIA", "Senha1234", ct);
         Assert.True(login.Sucesso);
-        Assert.Equal("Administradora", login.Valor.Nome);
+        Assert.True(login.Valor.Administrador);
+        Assert.False(login.Valor.DeveTrocarSenha);   // quem a implantação cria define a própria senha
+        Assert.False(login.Valor.Implantacao);
     }
 }
 

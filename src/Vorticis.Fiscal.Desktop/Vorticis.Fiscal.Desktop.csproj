@@ -7,8 +7,8 @@
     <Title>Vorticis Fiscal</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <!-- Mesmo ícone da suíte por enquanto -->
-    <ApplicationIcon>..\..\instalador\icone\VorticisContabil.ico</ApplicationIcon>
+    <!-- Ícone do módulo (gerado por instalador/icone/gerar_icone.py) -->
+    <ApplicationIcon>..\..\instalador\icone\VorticisFiscal.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorticis.Desktop.Comum\Vorticis.Desktop.Comum.csproj" />

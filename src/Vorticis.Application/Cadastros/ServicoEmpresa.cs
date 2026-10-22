@@ -90,7 +90,10 @@ public sealed partial record ConfiguracaoContabil(
     string? ContaLucros = null,
     string? ContaPrejuizos = null,
     string? ApuracaoIrpj = null,
-    bool RegimeCaixa = false)
+    bool RegimeCaixa = false,
+    string? MascaraCentroCusto = null,
+    bool ExigeDocumento = false,
+    DateOnly? DataBloqueio = null)
 {
     public const string Trimestral = "TRIMESTRAL";
     public const string AnualEstimativa = "ANUAL_ESTIMATIVA";
@@ -111,6 +114,10 @@ public sealed partial record ConfiguracaoContabil(
             if (!string.IsNullOrWhiteSpace(codigo) && (!FormatoCodigo().IsMatch(codigo.Trim()) || codigo.Trim().Length > 30))
                 erros.Add($"Código da conta de {rotulo} inválido: use números separados por ponto (ex.: 2.3.03.001).");
         if (ApuracaoIrpj is not (null or Trimestral or AnualEstimativa)) erros.Add("Forma de apuração do IRPJ inválida.");
+        if (!string.IsNullOrWhiteSpace(MascaraCentroCusto) && !Domain.Contabil.MascaraPlano.Ler(MascaraCentroCusto).Sucesso)
+            erros.Add("Máscara do plano de centros de custo inválida: use, por exemplo, 9.99.999.");
+        if (DataBloqueio is { } b && inicioAtividades is { } ini2 && b < ini2)
+            erros.Add($"A data de bloqueio dos lançamentos não pode ser anterior ao início das atividades ({ini2:dd/MM/yyyy}).");
         return erros;
     }
 
@@ -119,8 +126,9 @@ public sealed partial record ConfiguracaoContabil(
     {
         static string? N(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
         var mascara = N(MascaraPlano) is { } m && Domain.Contabil.MascaraPlano.Ler(m) is { Sucesso: true } r ? r.Valor.Texto : N(MascaraPlano);
+        var mascaraCc = N(MascaraCentroCusto) is { } mc && Domain.Contabil.MascaraPlano.Ler(mc) is { Sucesso: true } rc ? rc.Valor.Texto : N(MascaraCentroCusto);
         return this with { MascaraPlano = mascara, ContaApuracao = N(ContaApuracao), ContaLucros = N(ContaLucros), ContaPrejuizos = N(ContaPrejuizos),
-                           ApuracaoIrpj = N(ApuracaoIrpj) };
+                           ApuracaoIrpj = N(ApuracaoIrpj), MascaraCentroCusto = mascaraCc };
     }
 }
 

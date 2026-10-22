@@ -114,19 +114,62 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // inicia sempre maximizada, já no login
 
-            // 1. Primeiro acesso: cria o administrador
+            // 1. Instalação nova: só entra o usuário de implantação (vorticis/vorticis) e o único caminho é cadastrar o administrador
             var login = Assert.IsType<LoginViewModel>(vm.Conteudo);
-            Assert.True(login.EmPrimeiroAcesso);
-            (login.Nome, login.Usuario, login.Senha, login.Confirmacao) = ("Maria Contadora", "maria", "Senha1234", "Senha1234");
+            Assert.True(login.ImplantacaoAtiva);
+            Foto(janela, "01_implantacao");
+            (login.Usuario, login.Senha) = ("maria", "Senha1234");
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);                                    // outro usuário/senha não entra
+            Assert.NotEmpty(login.Erros);
+            (login.Usuario, login.Senha) = ("vorticis", "outra");
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);
+            LoginSalvo.Esquecer();
+            (login.Usuario, login.Senha, login.SalvarLogin) = ("vorticis", "vorticis", true);
+            await login.EntrarCommand.ExecuteAsync(null);
+            Assert.True(vm.Logado, string.Join("; ", login.Erros));
+            Assert.True(vm.EmImplantacao);
+            Assert.Null(LoginSalvo.Obter());                            // o acesso de implantação nunca fica salvo
+            Assert.Equal(WindowState.Maximized, janela.WindowState);
+
+            // 1a. Abre sozinho o cadastro de usuários, só para incluir o administrador; o resto fica bloqueado
+            Assert.Same(vm.CentralUsuarios, vm.Conteudo);
+            for (var i = 0; i < 100 && !vm.Usuarios.EmInclusao; i++) await Task.Delay(50);   // carga em segundo plano
+            Assert.True(vm.Usuarios.EmInclusao);
+            Assert.Equal(["Administrador"], vm.Usuarios.PerfisDisponiveis.Select(p => p.Nome));
+            Assert.True(vm.Usuarios.PerfilEdicao?.Administrador);
+            Assert.False(vm.Usuarios.MostrarAcessos);                   // administrador acessa todas as empresas
+            foreach (var bloqueada in new[] { Telas.Empresas, Telas.Lancamento, Telas.Inicio, Telas.Backup, TelasComuns.Perfis, TelasComuns.Certificados })
+                Assert.False(vm.AbrirCommand.CanExecute(bloqueada), bloqueada);
+            Assert.False(vm.Usuarios.AlterarCommand.CanExecute(null));
+            Assert.False(vm.Usuarios.ExcluirCommand.CanExecute(null));
+            Foto(janela, "01a_implantacao_cadastro_administrador");
+            (vm.Usuarios.Login, vm.Usuarios.NomeEdicao, vm.Usuarios.NovaSenha) = ("vorticis", "Maria Contadora", "Senha1234");
+            await vm.Usuarios.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(vm.Usuarios.Erros, e => e.Contains("reservado"));   // login da implantação não serve para o administrador
+            vm.Usuarios.Login = "maria";
+            await vm.Usuarios.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Usuarios.Erros);
+
+            // 1b. O acesso de implantação termina: volta ao login (sem aviso de implantação) com o novo administrador
+            Assert.False(vm.Logado);
+            Assert.Same(vm.Login, vm.Conteudo);
+            Assert.Equal("maria", vm.Login.Usuario);
+            Assert.False(vm.Login.ImplantacaoAtiva);
+            (vm.Login.Usuario, vm.Login.Senha) = ("vorticis", "vorticis");
+            await vm.Login.EntrarCommand.ExecuteAsync(null);
+            Assert.False(vm.Logado);
+            (login.Usuario, login.Senha) = ("maria", "Senha1234");
             LoginSalvo.Esquecer();
             login.SalvarLogin = true;                                   // "Salvar login neste computador"
-            Foto(janela, "01_primeiro_acesso");
-            await login.CriarAdministradorCommand.ExecuteAsync(null);
+            await login.EntrarCommand.ExecuteAsync(null);
             Assert.True(vm.Logado, string.Join("; ", login.Erros));
+            Assert.False(vm.EmImplantacao);
             Assert.Equal(WindowState.Maximized, janela.WindowState);   // continua maximizada após o login
             Assert.Equal("maria", LoginSalvo.Obter()?.Usuario);
 
-            // 1b. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
+            // 1c. Configuração inicial obrigatória: perfis de acesso (o cadastro de empresas não é exigido)
             Assert.Same(vm.CentralUsuarios, vm.Conteudo);
             Assert.Equal(CentralUsuariosViewModel.AbaPerfis, vm.CentralUsuarios.AbaSelecionada);
             Assert.True(vm.Perfis.ConfiguracaoInicial);
@@ -740,6 +783,26 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("35201234567", await db.EscalarAsync<string>("SELECT nire FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
             Assert.True(await db.EscalarAsync<bool>("SELECT grande_porte AND usa_centro_custo FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
 
+            // Aba Contabilidade: máscara dos centros de custo (aqui, não na tela de centros), documento obrigatório e bloqueio de datas
+            await empPart.CarregarSelecionadaAsync();
+            Assert.True(empPart.UsaCentroCusto);
+            empPart.AlterarCommand.Execute(null);
+            (empPart.MascaraCentroCusto, empPart.ExigeDocumento, empPart.DataBloqueio) = ("9.99.999", true, new DateTime(2025, 12, 31));
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(empPart.Erros, e => e.Contains("não cabe na máscara"));    // os centros já cadastrados precisam caber na máscara
+            Assert.True(empPart.EmEdicao);
+            empPart.MascaraCentroCusto = "";
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.True(empPart.Erros.Count == 0, string.Join("; ", empPart.Erros));
+            Assert.True(await db.EscalarAsync<bool>("SELECT exige_documento AND data_bloqueio = DATE '2025-12-31' FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
+            await empPart.CarregarSelecionadaAsync();
+            Assert.Equal(("", true, new DateTime(2025, 12, 31)), (empPart.MascaraCentroCusto, empPart.ExigeDocumento, empPart.DataBloqueio));
+            // sem regras que atrapalhem o restante do fluxo (os lançamentos seguintes não informam documento)
+            empPart.AlterarCommand.Execute(null);
+            (empPart.ExigeDocumento, empPart.DataBloqueio) = (false, null);
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(empPart.Erros);
+
             vm.AbrirCommand.Execute(Telas.Balancete);
             (vm.Balancete.Inicio, vm.Balancete.Fim, vm.Balancete.DetalharParticipantes) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31), true);
             await vm.Balancete.GerarCommand.ExecuteAsync(null);
@@ -964,6 +1027,30 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             var acesso = Assert.Single(u.Acessos);
             Assert.Equal("Auditor externo", acesso.Perfil.Nome);          // perfil já concedido na empresa
+            Assert.True(acesso.Marcada);                                  // lista de empresas: a do usuário vem marcada
+            Assert.Equal("1 de 1 empresa(s) liberada(s)", u.ResumoEmpresas);
+            u.AlterarCommand.Execute(null);
+            u.DesmarcarTodasCommand.Execute(null);
+            u.FiltroEmpresas = "zzz inexistente";
+            Assert.Empty(u.AcessosFiltrados);
+            u.FiltroEmpresas = acesso.Empresa[..5].ToLowerInvariant();
+            Assert.Single(u.AcessosFiltrados);
+            u.FiltroEmpresas = "";
+            Assert.False(acesso.Marcada);
+            await u.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(u.Erros);
+            Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario_empresa ue JOIN core.usuario u ON u.id = ue.usuario_id WHERE u.login = 'joao'"));
+            Assert.False(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
+            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            u.AlterarCommand.Execute(null);
+            u.MarcarTodasCommand.Execute(null);                           // volta a liberar (o restante do fluxo usa o João na empresa)
+            Assert.Equal("1 de 1 empresa(s) liberada(s)", u.ResumoEmpresas);
+            await u.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(u.Erros);
+            Assert.True(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
+            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            acesso = Assert.Single(u.Acessos);
+            Assert.True(acesso.Marcada);
             u.AlterarCommand.Execute(null);
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Equal("Alterações salvas.", u.Mensagem);
