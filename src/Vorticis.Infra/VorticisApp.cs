@@ -1,3 +1,4 @@
+using Vorticis.Application.Obrigacoes;
 using Vorticis.Application.Conciliacao;
 using Vorticis.Application.Imobilizado;
 using Npgsql;
@@ -60,6 +61,7 @@ public sealed class VorticisApp : IAsyncDisposable
         Ecd = new ServicoEcd(consultasEcd, repoContabil, Responsaveis, autorizador, AssinadorSped);
         Ecf = new ServicoEcf(new ConsultasEcf(ds, consultasEcd), Ecd, autorizador, AssinadorSped);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
+        Obrigacoes = new ServicoObrigacoes(new RepositorioObrigacoes(ds), autorizador);
         Migrador = new Migrador(ds);
     }
 
@@ -94,6 +96,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoEcf Ecf { get; }
     public IAssinadorSped AssinadorSped { get; }
     public ServicoBackup Backup { get; }
+    public ServicoObrigacoes Obrigacoes { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }
     public Migrador Migrador { get; }

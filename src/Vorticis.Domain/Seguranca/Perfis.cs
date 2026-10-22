@@ -25,6 +25,9 @@ public enum Permissao
     SpedEcdGerar,
     SpedEcfGerar,
 
+    /// <summary>Marcar obrigações como cumpridas e manter as obrigações personalizadas da empresa (calendário de obrigações).</summary>
+    ObrigacoesManter,
+
     // Folha de pagamento
     FolhaConsultar,
     FolhaCadastrosManter,
@@ -90,6 +93,7 @@ public static class Permissoes
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
         new(Permissao.SpedEcdGerar, "SPED_ECD_GERAR", "Integrações", "Gerar e assinar o arquivo da ECD (SPED Contábil)"),
         new(Permissao.SpedEcfGerar, "SPED_ECF_GERAR", "Integrações", "Gerar e assinar o arquivo da ECF (Escrituração Contábil Fiscal)"),
+        new(Permissao.ObrigacoesManter, "OBRIGACOES_MANTER", "Cadastros", "Calendário de obrigações: marcar como cumpridas e manter obrigações personalizadas"),
         new(Permissao.FolhaConsultar, "FOLHA_CONSULTAR", "Folha de pagamento", "Consultar funcionários, rubricas e a folha calculada"),
         new(Permissao.FolhaCadastrosManter, "FOLHA_CADASTROS_MANTER", "Folha de pagamento", "Manter funcionários, dependentes, cargos, departamentos e rubricas"),
         new(Permissao.FolhaParametrosManter, "FOLHA_PARAMETROS_MANTER", "Folha de pagamento", "Manter parâmetros de encargos (RAT, FAP, terceiros) e regras de contabilização da folha"),

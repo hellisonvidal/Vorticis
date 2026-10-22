@@ -51,6 +51,7 @@ public static class TelasComuns
     public const string AlterarSenha = "senha";
     public const string Conexao = "conexao";
     public const string Backup = "backup";
+    public const string Obrigacoes = "obrigacoes";
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Certificados = "certificados";
     public const string Licenca = "licenca";
@@ -138,6 +139,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public ConfiguracoesGeraisViewModel ConfiguracoesGerais => Instancia<ConfiguracoesGeraisViewModel>();
     public CertificadosViewModel Certificados => Instancia<CertificadosViewModel>();
     public BackupViewModel Backup => Instancia<BackupViewModel>();
+    public ObrigacoesViewModel Obrigacoes => Instancia<ObrigacoesViewModel>();
 
     /// <summary>Telas comuns a todos os módulos (os menus delas ficam em <see cref="MontarMenus"/>).</summary>
     private void RegistrarTelasComuns(CatalogoTelas c)
@@ -148,8 +150,11 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Conexao), m => new ConexaoViewModel(m), fixa: true)
             .Tela(TelasComuns.Conexao, "Configurações › Conexão com o banco de dados", Admin,
                   v => { v.CarregarDe(BancoDoAplicativo.EhBancoLocal(_connectionString) ? Configuracao.Padrao : _connectionString, null); return Task.CompletedTask; });
-        c.Instancia(nameof(Inicio), m => new InicioViewModel(m), fixa: true)
+        c.Instancia(nameof(Inicio), m => new InicioViewModel(m), fixa: true, aoTrocarEmpresa: (v, _) => v.AtualizarProximasAsync())
             .Tela(TelasComuns.Inicio, "", null, v => { v.Atualizar(); return Task.CompletedTask; });
+        c.Instancia(nameof(Obrigacoes), m => new ObrigacoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.Obrigacoes, "Agenda › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
 
         c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade)],
                     atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
@@ -210,6 +215,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         [
             ItemMenu.Submenu("_Cadastros", [.. cadastros]),
             .. Modulo.Menus,
+            ItemMenu.Submenu("A_genda", ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes)),
             ItemMenu.Submenu("Con_figurações",
                 ItemMenu.Tela("Configurações gerais", TelasComuns.ConfiguracoesGerais),
                 ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados),
