@@ -202,7 +202,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     {
         (Descricao, ExigeCc, ExigeParticipante, Ativa) = ("", false, false, true);
         GrupoParticipantes = null;
-        Reduzido = ((_plano.Max(x => x.CodigoReduzido) ?? 0) + 1).ToString();   // próximo número; pode ser trocado
+        Reduzido = Vorticis.Domain.Comum.Sequencia.MenorLivre(_plano.Where(x => x.CodigoReduzido.HasValue).Select(x => x.CodigoReduzido!.Value)).ToString();   // menor número livre; pode ser trocado
         DataInclusao = new DateTime(DateTime.Today.Year, 1, 1);
         if (Selecionada?.Conta is { } c)
         {

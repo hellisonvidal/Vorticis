@@ -100,7 +100,7 @@ public sealed class ServicoCadastrosFolha(IRepositorioCadastrosFolha repositorio
         => await autorizador.PodeVerAsync(usuarioId, empresaId, ct) ? await repositorio.ObterFuncionarioAsync(empresaId, id, ct) : null;
 
     public static string ProximaMatricula(IEnumerable<Funcionario> existentes)
-        => (existentes.Select(f => int.TryParse(f.Matricula, out var n) ? n : 0).DefaultIfEmpty(0).Max() + 1).ToString("000000");
+        => Vorticis.Domain.Comum.Sequencia.MenorLivre(existentes.Select(f => f.Matricula)).ToString("000000");
 
     /// <summary>Regras de cadastro do funcionário; devolve os erros.</summary>
     public static IReadOnlyList<string> Validar(Funcionario f, DateOnly hoje)

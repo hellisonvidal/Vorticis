@@ -256,7 +256,7 @@ public partial class GruposDepreciacaoViewModel(IContexto contexto) : CadastroVi
     {
         Selecionado = null;
         MostrarSelecionado();
-        Codigo = (Lista.Select(l => int.TryParse(l.Codigo, out var n) ? n : 0).DefaultIfEmpty(0).Max() + 1).ToString("00");
+        Codigo = Vorticis.Domain.Comum.Sequencia.MenorLivre(Lista.Select(l => l.Codigo)).ToString("00");
     }
 
     protected override async Task<bool> GravarAsync(bool inclusao)

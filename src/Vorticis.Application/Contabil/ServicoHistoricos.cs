@@ -27,9 +27,9 @@ public sealed class ServicoHistoricos(IRepositorioHistoricos repositorio, Autori
             ? (await repositorio.ListarAsync(empresaId, ct)).OrderBy(h => h.Codigo.Length).ThenBy(h => h.Codigo, StringComparer.Ordinal).ToList()
             : [];
 
-    /// <summary>Próximo código livre (maior código numérico + 1).</summary>
+    /// <summary>Próximo código livre (menor número livre, preenchendo lacunas).</summary>
     public static string ProximoCodigo(IEnumerable<HistoricoPadrao> existentes) =>
-        ((existentes.Select(h => int.TryParse(h.Codigo, out var n) ? n : 0).DefaultIfEmpty(0).Max()) + 1).ToString();
+        Vorticis.Domain.Comum.Sequencia.MenorLivre(existentes.Select(h => h.Codigo)).ToString();
 
     public async Task<Resultado<long>> IncluirAsync(long empresaId, string? codigo, string descricao, long usuarioId, CancellationToken ct = default)
     {

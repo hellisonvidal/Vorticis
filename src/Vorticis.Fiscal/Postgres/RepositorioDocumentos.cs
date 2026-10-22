@@ -124,7 +124,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         }
 
         string codigo;
-        await using (var prox = new NpgsqlCommand("SELECT COALESCE(MAX(codigo::bigint), 0) + 1 FROM core.participante WHERE empresa_id = @e AND codigo ~ '^[0-9]{1,15}$'", con, tx).Com("e", empresaId))
+        await using (var prox = new NpgsqlCommand("SELECT core.fn_proximo_participante(@e)", con, tx).Com("e", empresaId))
             codigo = ((long)(await prox.ExecuteScalarAsync(ct))!).ToString();
         var nomeNovo = Cortar(string.IsNullOrWhiteSpace(parte.Nome) ? doc : parte.Nome, 150)!;
         await using var ins = new NpgsqlCommand("""
@@ -174,7 +174,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
             await using var ins = new NpgsqlCommand("""
                 INSERT INTO fiscal.produto (empresa_id, codigo, descricao, unidade, ncm, cest, gtin, origem, tipo_item, cfop_entrada, cfop_saida,
                                             cst_icms_entrada, cst_icms_saida, aliq_icms, aliq_ipi, aliq_pis, aliq_cofins)
-                VALUES (@e, (SELECT COALESCE(MAX(codigo), 0) + 1 FROM fiscal.produto WHERE empresa_id = @e), @d, @un, @ncm, @cest, @g, @orig, '00', @ce, @cs,
+                VALUES (@e, fiscal.fn_proximo_produto(@e), @d, @un, @ncm, @cest, @g, @orig, '00', @ce, @cs,
                         @cste, @csts, @aicms, @aipi, @apis, @acof)
                 RETURNING id
                 """, con, tx)

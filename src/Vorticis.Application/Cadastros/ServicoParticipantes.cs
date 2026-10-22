@@ -49,7 +49,7 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
     }
 
     public static string ProximoCodigo(IEnumerable<Participante> existentes) =>
-        ((existentes.Select(p => int.TryParse(p.Codigo, out var n) ? n : 0).DefaultIfEmpty(0).Max()) + 1).ToString();
+        Vorticis.Domain.Comum.Sequencia.MenorLivre(existentes.Select(p => p.Codigo)).ToString();
 
     public async Task<Resultado<long>> GravarAsync(long empresaId, Participante p, long usuarioId, CancellationToken ct = default)
     {

@@ -98,7 +98,7 @@ public sealed class ServicoImobilizado(IRepositorioImobilizado repositorio, IRep
             ? (await repositorio.ListarBensAsync(empresaId, ct)).OrderBy(b => b.Codigo).ToList()
             : [];
 
-    public static int ProximoCodigo(IEnumerable<BemImobilizado> bens) => bens.Select(b => b.Codigo).DefaultIfEmpty(0).Max() + 1;
+    public static int ProximoCodigo(IEnumerable<BemImobilizado> bens) => Vorticis.Domain.Comum.Sequencia.MenorLivre(bens.Select(b => b.Codigo));
 
     public async Task<Resultado<long>> GravarBemAsync(long empresaId, BemImobilizado b, long usuarioId, CancellationToken ct = default)
     {

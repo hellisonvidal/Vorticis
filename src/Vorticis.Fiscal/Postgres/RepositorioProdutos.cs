@@ -48,7 +48,7 @@ public sealed class RepositorioProdutos(NpgsqlDataSource ds) : IRepositorioProdu
                 ? new NpgsqlCommand("""
                     INSERT INTO fiscal.produto (empresa_id, codigo, descricao, unidade, ncm, cest, gtin, origem, tipo_item, cfop_entrada, cfop_saida,
                                                 cst_icms_entrada, cst_icms_saida, aliq_icms, aliq_ipi, aliq_pis, aliq_cofins, ativo)
-                    VALUES (@e, (SELECT COALESCE(MAX(codigo), 0) + 1 FROM fiscal.produto WHERE empresa_id = @e), @d, @un, @ncm, @cest, @g, @orig, @tipo,
+                    VALUES (@e, fiscal.fn_proximo_produto(@e), @d, @un, @ncm, @cest, @g, @orig, @tipo,
                             @ce, @cs, @cste, @csts, @aicms, @aipi, @apis, @acof, @ativo)
                     RETURNING id
                     """, con, tx)
