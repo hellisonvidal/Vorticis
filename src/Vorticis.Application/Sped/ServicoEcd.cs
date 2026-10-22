@@ -21,6 +21,8 @@ namespace Vorticis.Application.Sped;
 /// <param name="CodigoQualificacaoSocio">Código de qualificação do sócio responsável (tabela do J930); nulo = deduzido da
 /// qualificação no QSA (sócio-administrador → 205 Administrador...).</param>
 /// <param name="NumeroCertidaoCrc">Certidão de regularidade profissional do contador (J930.NUM_SEQ_CRC, formato UF/AAAA/NÚMERO).</param>
+/// <param name="AssinarComoProcurador">O responsável pela assinatura é o procurador da empresa (qualificação 309), com procuração vigente
+/// na data da geração, no lugar do sócio ou do e-CNPJ. A transmissão exige a procuração eletrônica cadastrada no e-CAC.</param>
 public sealed record OpcoesEcd(
     int? NumeroOrdem = null,
     string NaturezaLivro = "DIÁRIO GERAL",
@@ -35,7 +37,8 @@ public sealed record OpcoesEcd(
     string? CodigoQualificacaoSocio = null,
     string? NumeroCertidaoCrc = null,
     DateOnly? ValidadeCertidaoCrc = null,
-    bool MudancaPlanoContas = false);
+    bool MudancaPlanoContas = false,
+    bool AssinarComoProcurador = false);
 
 /// <summary>Resultado da conferência prévia (passo "pendências" do assistente).</summary>
 public sealed record PreviaEcd(int Ano, DateOnly Inicio, DateOnly Fim, int NumeroOrdem, string? CodPlanRef, IReadOnlyList<SignatarioEcd> Signatarios,
@@ -137,10 +140,11 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
             c.FimExercicio, opcoes.NivelAglutinacao, opcoes.Mutacoes, opcoes.IncluirHistoricosPadronizados, opcoes.MudancaPlanoContas,
             c.ResultadoAnterior);
         var signatarios = await SignatariosAsync(empresaId, c.Empresa.Nome, c.Empresa.Cnpj, opcoes.ResponsavelPessoaJuridica, opcoes.CodigoQualificacaoSocio,
-            opcoes.NumeroCertidaoCrc, opcoes.ValidadeCertidaoCrc, ct);
+            opcoes.NumeroCertidaoCrc, opcoes.ValidadeCertidaoCrc, opcoes.AssinarComoProcurador, ct);
         var dados = new DadosEcd(c.Empresa, parametros, c.Plano, c.CentrosCusto, c.Historicos, c.SaldosAbertura, c.Lancamentos, signatarios);
         var calc = new CalculoEcd(dados);
         var pendencias = ValidadorEcd.Validar(dados, calc).ToList();
+        if (opcoes.AssinarComoProcurador) await AjustarPendenciasProcuradorAsync(empresaId, signatarios, pendencias, "ECD", ct);
 
         if (c.PeriodosAbertos.Count > 0)
             pendencias.Add(new(GravidadePendencia.Aviso, "PERIODOS_ABERTOS",
@@ -170,16 +174,46 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
         return Resultado<Preparo>.Ok(new Preparo(c, dados, calc, pendencias));
     }
 
+    /// <summary>
+    /// Pendências da assinatura como procurador: sem procuração vigente hoje a geração é bloqueada (no lugar de "sem responsável") e,
+    /// com ela, um aviso de que a transmissão exige a procuração eletrônica cadastrada no e-CAC.
+    /// </summary>
+    public async Task AjustarPendenciasProcuradorAsync(long empresaId, IReadOnlyList<SignatarioEcd> signatarios, List<PendenciaEcd> pendencias, string escrituracao,
+                                                       CancellationToken ct)
+    {
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        if (signatarios.Any(s => s.CodigoQualificacao == QualificacaoAssinante.Procurador))
+        {
+            pendencias.Add(new(GravidadePendencia.Aviso, "PROCURACAO_ECAC",
+                $"Assinatura como procurador: para transmitir a {escrituracao}, a procuração eletrônica precisa estar cadastrada no e-CAC (Procurações), com poderes para a {escrituracao}, e o certificado usado deve ser o do procurador."));
+            return;
+        }
+        pendencias.RemoveAll(p => p.Codigo == "SEM_RESPONSAVEL");
+        var ultimo = await responsaveis.UltimoProcuradorAsync(empresaId, ct);
+        pendencias.Add(new(GravidadePendencia.Bloqueante, "PROCURADOR_NAO_VIGENTE", ultimo is null
+            ? "Nenhum procurador cadastrado para a empresa (Cadastros › Procurador): cadastre-o com a vigência da procuração ou assine como responsável."
+            : $"A procuração de {ultimo.Nome} não está vigente em {hoje:dd/MM/yyyy} (vigência de {ultimo.VigenciaInicio:dd/MM/yyyy} " +
+              $"{(ultimo.VigenciaFim is { } f ? $"a {f:dd/MM/yyyy}" : "sem fim")}): renove a procuração no cadastro ou assine como responsável."));
+    }
+
     /// <summary>Signatários do livro (contador e responsável), compartilhado com a ECF (0930 usa os mesmos códigos de qualificação).</summary>
     public async Task<IReadOnlyList<SignatarioEcd>> SignatariosAsync(long empresaId, string nomeEmpresa, string cnpjEmpresa, bool responsavelPessoaJuridica,
-                                                                      string? codigoQualificacaoSocio, string? numeroCertidaoCrc, DateOnly? validadeCertidaoCrc, CancellationToken ct)
+                                                                      string? codigoQualificacaoSocio, string? numeroCertidaoCrc, DateOnly? validadeCertidaoCrc,
+                                                                      bool assinarComoProcurador, CancellationToken ct)
     {
         var lista = new List<SignatarioEcd>();
         if (await responsaveis.SignatarioEcdEcfAsync(empresaId, ct) is { } contador)
             lista.Add(new SignatarioEcd(contador.Nome, contador.Cpf, QualificacaoAssinante.Descricao(QualificacaoAssinante.Contador),
                 QualificacaoAssinante.Contador, false, contador.Crc, contador.UfCrc, contador.Email, contador.Telefone,
                 numeroCertidaoCrc?.Trim().ToUpperInvariant(), validadeCertidaoCrc));
-        if (responsavelPessoaJuridica)
+        if (assinarComoProcurador)
+        {
+            // Procurador com procuração vigente hoje assina no lugar do responsável (qualificação 309 – Procurador).
+            if (await responsaveis.ProcuradorVigenteAsync(empresaId, DateOnly.FromDateTime(DateTime.Today), ct) is { } procurador)
+                lista.Add(new SignatarioEcd(procurador.Nome, procurador.Cpf, QualificacaoAssinante.Descricao(QualificacaoAssinante.Procurador),
+                    QualificacaoAssinante.Procurador, true, Email: procurador.Email, Telefone: procurador.Telefone));
+        }
+        else if (responsavelPessoaJuridica)
             lista.Add(new SignatarioEcd(nomeEmpresa, cnpjEmpresa, QualificacaoAssinante.Descricao(QualificacaoAssinante.PessoaJuridica),
                 QualificacaoAssinante.PessoaJuridica, true));
         else if (await responsaveis.SocioResponsavelAsync(empresaId, ct) is { } socio && socio.TipoPessoa == 'F')

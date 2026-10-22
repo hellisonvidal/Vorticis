@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using Vorticis.Application.Seguranca;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 
@@ -9,7 +10,7 @@ namespace Vorticis.Application.Sistema;
 /// <summary>Certificado guardado no repositório (sem o conteúdo do arquivo).</summary>
 public sealed record CertificadoDigital(long Id, string Tipo, string Descricao, string Titular, string? Documento, string Emissor,
                                         DateTimeOffset ValidoDe, DateTimeOffset ValidoAte, string Impressao, long? EmpresaId,
-                                        bool PadraoContador = false, bool PadraoResponsavel = false)
+                                        bool PadraoContador = false, bool PadraoResponsavel = false, bool PadraoProcurador = false)
 {
     public int DiasParaVencer(DateTimeOffset agora) => (int)Math.Floor((ValidoAte - agora).TotalDays);
 
@@ -26,7 +27,7 @@ public sealed record DadosCertificado(string Titular, string? Documento, string 
                                       string Impressao, bool TemChavePrivada, string? Tipo = null);
 
 /// <summary>Papel de quem assina com o certificado padrão.</summary>
-public enum PapelAssinatura { Contador, Responsavel }
+public enum PapelAssinatura { Contador, Responsavel, Procurador }
 
 public interface IRepositorioCertificados
 {
@@ -44,7 +45,7 @@ public interface IRepositorioCertificados
 /// própria senha, que não é gravada; A3 (token/cartão) é só registrado (o certificado fica no dispositivo). Só o
 /// administrador mantém o repositório.
 /// </summary>
-public sealed class ServicoCertificados(IRepositorioCertificados repositorio, TimeProvider? relogio = null)
+public sealed class ServicoCertificados(IRepositorioCertificados repositorio, TimeProvider? relogio = null, Autorizador? autorizador = null)
 {
     private readonly TimeProvider _relogio = relogio ?? TimeProvider.System;
     public DateTimeOffset Agora => _relogio.GetUtcNow();
@@ -124,16 +125,62 @@ public sealed class ServicoCertificados(IRepositorioCertificados repositorio, Ti
     public async Task<Resultado<CertificadoDigital?>> ObterPadraoAsync(SessaoUsuario usuario, PapelAssinatura papel, long? empresaId, CancellationToken ct = default)
     {
         if (!usuario.Administrador) return Resultado<CertificadoDigital?>.Falha("Somente o administrador usa os certificados digitais.");
+        return Resultado<CertificadoDigital?>.Ok(await PadraoAsync(papel, empresaId, ct));
+    }
+
+    private async Task<CertificadoDigital?> PadraoAsync(PapelAssinatura papel, long? empresaId, CancellationToken ct)
+    {
         var padroes = (await repositorio.ListarAsync(ct))
-            .Where(c => (papel == PapelAssinatura.Contador ? c.PadraoContador : c.PadraoResponsavel) && c.ValidoAte >= Agora).ToList();
-        var achado = padroes.FirstOrDefault(c => empresaId is not null && c.EmpresaId == empresaId) ?? padroes.FirstOrDefault(c => c.EmpresaId is null);
-        return Resultado<CertificadoDigital?>.Ok(achado);
+            .Where(c => papel switch { PapelAssinatura.Contador => c.PadraoContador, PapelAssinatura.Procurador => c.PadraoProcurador, _ => c.PadraoResponsavel } && c.ValidoAte >= Agora).ToList();
+        return padroes.FirstOrDefault(c => empresaId is not null && c.EmpresaId == empresaId) ?? padroes.FirstOrDefault(c => c.EmpresaId is null);
+    }
+
+    // ------------------------------------------------------------------ uso na assinatura da ECD/ECF
+    // Cadastrar, importar, excluir e definir o padrão continuam só do administrador. Para ASSINAR a ECD/ECF, quem tem a função de gerá-las na
+    // empresa (perfil Contador, por exemplo) lista e usa os certificados cadastrados dessa empresa (ou gerais), inclusive o padrão.
+
+    private async Task<string?> NegarAssinaturaAsync(SessaoUsuario usuario, long empresaId, CancellationToken ct)
+    {
+        if (usuario.Administrador) return null;
+        const string recusa = "Seu perfil não permite usar os certificados digitais para assinar a ECD/ECF.";
+        if (autorizador is null) return recusa;
+        if (await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.SpedEcdGerar, ct) is null) return null;
+        return await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.SpedEcfGerar, ct) is null ? null : recusa;
+    }
+
+    /// <summary>Certificados da empresa e os gerais (sem empresa), para escolher o de cada signatário da ECD/ECF.</summary>
+    public async Task<Resultado<IReadOnlyList<CertificadoDigital>>> ListarParaAssinaturaAsync(SessaoUsuario usuario, long empresaId, CancellationToken ct = default)
+    {
+        if (await NegarAssinaturaAsync(usuario, empresaId, ct) is { } negado) return Resultado<IReadOnlyList<CertificadoDigital>>.Falha(negado);
+        return Resultado<IReadOnlyList<CertificadoDigital>>.Ok((await repositorio.ListarAsync(ct))
+            .Where(c => c.EmpresaId is null || c.EmpresaId == empresaId).OrderBy(c => c.ValidoAte).ToList());
+    }
+
+    /// <summary>Certificado padrão do papel para assinar a ECD/ECF da empresa.</summary>
+    public async Task<Resultado<CertificadoDigital?>> ObterPadraoParaAssinaturaAsync(SessaoUsuario usuario, PapelAssinatura papel, long empresaId, CancellationToken ct = default)
+    {
+        if (await NegarAssinaturaAsync(usuario, empresaId, ct) is { } negado) return Resultado<CertificadoDigital?>.Falha(negado);
+        return Resultado<CertificadoDigital?>.Ok(await PadraoAsync(papel, empresaId, ct));
+    }
+
+    /// <summary>Abre o A1 guardado para assinar a ECD/ECF da empresa (só certificados da empresa ou gerais).</summary>
+    public async Task<Resultado<X509Certificate2>> AbrirA1ParaAssinaturaAsync(SessaoUsuario usuario, long empresaId, long id, string senha, CancellationToken ct = default)
+    {
+        if (await NegarAssinaturaAsync(usuario, empresaId, ct) is { } negado) return Resultado<X509Certificate2>.Falha(negado);
+        var c = (await repositorio.ListarAsync(ct)).FirstOrDefault(x => x.Id == id);
+        if (c is null || (c.EmpresaId is not null && c.EmpresaId != empresaId)) return Resultado<X509Certificate2>.Falha("Certificado não disponível para esta empresa.");
+        return await AbrirAsync(id, senha, ct);
     }
 
     /// <summary>Carrega o certificado A1 guardado, pronto para assinar ou autenticar (a senha é pedida no uso).</summary>
     public async Task<Resultado<X509Certificate2>> AbrirA1Async(SessaoUsuario usuario, long id, string senha, CancellationToken ct = default)
     {
         if (!usuario.Administrador) return Resultado<X509Certificate2>.Falha("Somente o administrador usa os certificados digitais.");
+        return await AbrirAsync(id, senha, ct);
+    }
+
+    private async Task<Resultado<X509Certificate2>> AbrirAsync(long id, string senha, CancellationToken ct)
+    {
         if (await repositorio.ObterArquivoAsync(id, ct) is not { } pfx) return Resultado<X509Certificate2>.Falha("Certificado A1 não encontrado.");
         try
         {

@@ -512,4 +512,45 @@ public class EcfTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal(["C040", hash, "01012025", "31122025", "", CnpjAssina, "3", "35212345678", "DIÁRIO GERAL", "9.00", "G", "N", "N", "0", "0", "1"],
                      regs.Single(x => x[0] == "C040"));
     }
+
+    [Fact]
+    public async Task Assina_como_procurador_no_0930_com_o_certificado_do_procurador_e_avisa_do_ecac()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        const string cpfProcurador = "11144477735";
+        var (empresa, adm) = await EmpresaRealAsync("11444777000161");
+        var opcoes = new OpcoesEcf(AssinarComoProcurador: true);
+
+        var sem = await db.App.Ecf.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.Contains(sem.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Bloqueante);
+        Assert.False((await db.App.Ecf.GerarAsync(empresa, 2025, opcoes, adm, ct: ct)).Sucesso);
+
+        var proc = new Procurador(0, "Pedro Procurador", cpfProcurador, "pedro@exemplo.com.br", "(11) 98888-7777", new DateOnly(2025, 3, 1), new DateOnly(2030, 3, 1));
+        Assert.True((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc, adm, ct)).Sucesso);
+        Assert.False((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { Cpf = "11111111111" }, adm, ct)).Sucesso);                     // CPF inválido
+        Assert.False((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { VigenciaFim = new DateOnly(2025, 1, 1) }, adm, ct)).Sucesso);   // fim antes do início
+
+        var previa = await db.App.Ecf.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.True(previa.Valor.PodeGerar, string.Join("; ", previa.Valor.Bloqueantes.Select(b => b.Mensagem)));
+        Assert.Contains(previa.Valor.Avisos, p => p.Codigo == "PROCURACAO_ECAC" && p.Mensagem.Contains("e-CAC") && p.Mensagem.Contains("ECF"));
+
+        using var certContador = Certificado($"JOSE DA SILVA CONTADOR:{CpfContador}");
+        using var certProc = Certificado($"PEDRO PROCURADOR:{cpfProcurador}");
+        using var certSocia = Certificado($"MARIA SOCIA:{CpfSocia}");
+        Assert.False((await db.App.Ecf.GerarAsync(empresa, 2025, opcoes, adm, [new(certSocia, "309")], ct)).Sucesso);       // CPF do certificado ≠ CPF do procurador
+        var r = await db.App.Ecf.GerarAsync(empresa, 2025, opcoes, adm, [new(certContador, "900"), new(certProc, "309")], ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        Assert.Equal([("SBRCAAEPDR01900", CpfContador), ("SBRCAAEPDR02309", cpfProcurador)], r.Valor.Assinaturas.Select(x => (x.Etiqueta, x.Documento)));
+        Assert.All(r.Valor.Assinaturas, x => Assert.True(x.Valida, x.Erro));
+        var regs = Registros(r.Valor.Conteudo, db.App.AssinadorSped.TamanhoSemAssinaturas(r.Valor.Conteudo));
+        Assert.Equal(["0930", "Pedro Procurador", cpfProcurador, "309", "", "pedro@exemplo.com.br", "11988887777"], regs.Single(x => x[0] == "0930" && x[3] == "309"));
+        Assert.DoesNotContain(regs, x => x[0] == "0930" && x[3] == "205");
+
+        // Assinar depois: o procurador assina o arquivo gerado só com o contador
+        var parcial = (await db.App.Ecf.GerarAsync(empresa, 2025, opcoes, adm, [new(certContador, "900")], ct)).Valor;
+        var completo = db.App.Ecf.Assinar(parcial.Conteudo, [new(certProc, "309")]);
+        Assert.True(completo.Sucesso, string.Join("; ", completo.Erros));
+        Assert.Equal(["SBRCAAEPDR01900", "SBRCAAEPDR02309"], db.App.Ecf.LerAssinaturas(completo.Valor).Select(x => x.Etiqueta));
+    }
 }

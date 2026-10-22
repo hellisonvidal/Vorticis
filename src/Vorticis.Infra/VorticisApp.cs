@@ -48,7 +48,7 @@ public sealed class VorticisApp : IAsyncDisposable
         var repoConfiguracao = new RepositorioConfiguracao(ds);
         Licenca = new ServicoLicenca(repoConfiguracao);
         ConfiguracoesGerais = new ServicoConfiguracoesGerais(repoConfiguracao);
-        Certificados = new ServicoCertificados(new RepositorioCertificados(ds));
+        Certificados = new ServicoCertificados(new RepositorioCertificados(ds), null, autorizador);
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);

@@ -11,6 +11,7 @@ public static class QualificacaoAssinante
 {
     public const string PessoaJuridica = "001";
     public const string Administrador = "205";
+    public const string Procurador = "309";
     public const string Contador = "900";
     public const string Outros = "999";
 

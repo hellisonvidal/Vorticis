@@ -106,6 +106,13 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
     [ObservableProperty] private string _mutacoes = OpcaoDmpl;
     [ObservableProperty] private bool _historicosPadronizados = true;
     [ObservableProperty] private bool _responsavelPessoaJuridica;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(AvisoProcuracao), nameof(TemAvisoProcuracao))] private bool _assinarComoProcurador;
+
+    /// <summary>Lembrete do passo final: a transmissão por procurador exige a procuração eletrônica no e-CAC.</summary>
+    public string AvisoProcuracao => AssinarComoProcurador
+        ? "Assinatura como procurador: para transmitir, a procuração eletrônica precisa estar cadastrada no e-CAC (Procurações), com poderes para a ECD, e o certificado usado deve ser o do procurador."
+        : "";
+    public bool TemAvisoProcuracao => AssinarComoProcurador;
     [ObservableProperty] private string _certidaoCrc = "";
     public string[] OpcoesMutacoes { get; } = [OpcaoDmpl, OpcaoDlpa];
 
@@ -120,6 +127,7 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
         Mutacoes: Mutacoes == OpcaoDlpa ? TipoMutacoesEcd.Dlpa : TipoMutacoesEcd.Dmpl,
         IncluirHistoricosPadronizados: HistoricosPadronizados,
         ResponsavelPessoaJuridica: ResponsavelPessoaJuridica,
+        AssinarComoProcurador: AssinarComoProcurador,
         NumeroCertidaoCrc: string.IsNullOrWhiteSpace(CertidaoCrc) ? null : CertidaoCrc.Trim());
 
     /// <summary>Carrega os dados da empresa ativa para conferência (abrir a tela e trocar de empresa).</summary>
@@ -169,6 +177,7 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
         ("Cadastro da empresa (CNPJ, NIRE, município)", ["CNPJ_", "NIRE_", "MUNICIPIO_", "UF_", "NOME_", "PERIODO_"], Telas.Empresas, "Abrir Cadastro de empresas"),
         ("Contador cadastrado (CPF, CRC, e-mail, telefone)", ["SEM_CONTADOR", "CONTADOR_"], Telas.Contabilidade, "Abrir Contabilidade da empresa"),
         ("Responsável pela assinatura (sócio)", ["SEM_RESPONSAVEL", "RESPONSAVEIS", "SIGNATARIO_"], Telas.Socios, "Abrir Sócios"),
+        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Procuradores, "Abrir Procurador"),
         ("Lançamentos e saldos consistentes", ["ABERTURA_", "BALANCETE_", "BALANCO_", "LANCAMENTO_", "HISTORICO_", "EXTEMPORANEO_", "SALDO_", "SEM_LANCAMENTOS", "SEM_BALANCO", "SEM_DRE", "RASCUNHO", "LACUNA"], Telas.DiferencasSaldos, "Abrir Diferenças de saldos"),
     ];
 
@@ -212,106 +221,24 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
     }
 
     // ---------------------------------------------------------------- passo 4
-    public ObservableCollection<SignatarioAssinatura> Signatarios { get; } = [];
-    public ObservableCollection<DadosCertificado> Instalados { get; } = [];
-    public ObservableCollection<CertificadoDigital> Cadastrados { get; } = [];
-    public bool RepositorioWindowsDisponivel => OperatingSystem.IsWindows();
-    public string AvisoRepositorio => RepositorioWindowsDisponivel ? ""
-        : "Certificados A3 / repositório do Windows só estão disponíveis no Windows. Use um arquivo A1 (.pfx), um certificado cadastrado ou assine no PVA.";
-    private readonly List<CertificadoAssinante> _assinantes = [];
+    private AssinantesSped? _assinantesSped;
+    public AssinantesSped Assinantes => _assinantesSped ??= new AssinantesSped(Contexto, Erros);
+    public ObservableCollection<SignatarioAssinatura> Signatarios => Assinantes.Signatarios;
+    public ObservableCollection<DadosCertificado> Instalados => Assinantes.Instalados;
+    public ObservableCollection<CertificadoDigital> Cadastrados => Assinantes.Cadastrados;
+    public bool RepositorioWindowsDisponivel => AssinantesSped.RepositorioWindowsDisponivel;
+    public string AvisoRepositorio => AssinantesSped.AvisoRepositorio;
 
-    /// <summary>Lê os certificados do usuário no Windows e os cadastrados em Configurações › Certificados digitais.</summary>
+    /// <summary>Lê os certificados do usuário no Windows e os cadastrados em Configurações › Certificados.</summary>
     [RelayCommand]
     public async Task CarregarCertificadosAsync()
     {
-        Instalados.Clear();
-        Cadastrados.Clear();
-        try { foreach (var d in ServicoCertificados.ListarInstaladosNoWindows(ServicoCertificados.TipoA3)) Instalados.Add(d); }   // A3: nunca os A1
-        catch (Exception ex) { Erros.Add($"Não foi possível ler o repositório do Windows: {ex.Message}"); }
-        if (Contexto.App is { } app && Contexto.Sessao is { } sessao)
-        {
-            var r = await app.Certificados.ListarAsync(sessao);
-            if (r.Sucesso) foreach (var c in r.Valor) Cadastrados.Add(c);
-            // Certificados padrão (Configurações › Certificados digitais): já vêm escolhidos, com a senha guardada neste computador.
-            foreach (var s in Signatarios.Where(x => x.Modo == ModoAssinatura.Nenhum))
-            {
-                var padrao = await app.Certificados.ObterPadraoAsync(sessao, s.Signatario.Contador ? PapelAssinatura.Contador : PapelAssinatura.Responsavel, Contexto.EmpresaId);
-                if (!padrao.Sucesso || padrao.Valor is not { } p) continue;
-                s.Cadastrado = Cadastrados.FirstOrDefault(c => c.Id == p.Id);
-                s.Senha = p.Tipo == "A1" ? SenhasCertificados.Obter(p.Id) ?? "" : "";
-                s.Modo = ModoAssinatura.Cadastrado;
-            }
-        }
+        await Assinantes.CarregarCertificadosAsync();
         OnPropertyChanged(nameof(RepositorioWindowsDisponivel));
         OnPropertyChanged(nameof(AvisoRepositorio));
     }
 
-    /// <summary>Confere cada escolha de certificado e abre os certificados (A1 com senha, A3 pelo repositório do Windows).</summary>
-    private async Task<bool> PrepararAssinantesAsync()
-    {
-        Erros.Clear();
-        foreach (var c in _assinantes) c.Certificado.Dispose();
-        _assinantes.Clear();
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return false;
-        var ok = true;
-        foreach (var s in Signatarios)
-        {
-            if (!s.DocumentoValido)
-            {
-                Erros.Add($"{s.Nome}: o CPF/CNPJ {s.Documento} do cadastro é inválido. Corrija no cadastro (Sócios ou Contabilidade) antes de assinar.");
-                ok = false;
-                continue;
-            }
-            if (s.Modo == ModoAssinatura.Nenhum) continue;
-            try
-            {
-                X509Certificate2? cert = null;
-                switch (s.Modo)
-                {
-                    case ModoAssinatura.ArquivoA1:
-                        if (string.IsNullOrWhiteSpace(s.ArquivoPfx) || !File.Exists(s.ArquivoPfx)) { Erros.Add($"{s.Nome}: escolha o arquivo .pfx do certificado A1."); ok = false; continue; }
-                        cert = CertificadosSped.AbrirPfx(await File.ReadAllBytesAsync(s.ArquivoPfx), s.Senha);
-                        break;
-                    case ModoAssinatura.RepositorioWindows:
-                        if (!RepositorioWindowsDisponivel) { Erros.Add($"{s.Nome}: {AvisoRepositorio}"); ok = false; continue; }
-                        if (s.Instalado is null) { Erros.Add($"{s.Nome}: escolha o certificado do repositório do Windows."); ok = false; continue; }
-                        cert = CertificadosSped.DoRepositorioWindows(s.Instalado.Impressao);
-                        if (cert is null) { Erros.Add($"{s.Nome}: certificado não encontrado no Windows (token conectado?)."); ok = false; continue; }
-                        break;
-                    case ModoAssinatura.Cadastrado:
-                        if (s.Cadastrado is not { } cad) { Erros.Add($"{s.Nome}: escolha o certificado cadastrado."); ok = false; continue; }
-                        if (cad.Tipo == "A1")
-                        {
-                            var a1 = await app.Certificados.AbrirA1Async(sessao, cad.Id, s.Senha);
-                            if (!a1.Sucesso) { foreach (var e in a1.Erros) Erros.Add($"{s.Nome}: {e}"); ok = false; continue; }
-                            cert = a1.Valor;
-                        }
-                        else
-                        {
-                            cert = OperatingSystem.IsWindows() ? CertificadosSped.DoRepositorioWindows(cad.Impressao) : null;
-                            if (cert is null) { Erros.Add($"{s.Nome}: o certificado A3 \"{cad.Descricao}\" não está disponível neste computador."); ok = false; continue; }
-                        }
-                        break;
-                }
-                if (cert is null) continue;
-                var doc = ServicoEcd.DocumentoIcpBrasil(cert);
-                if (doc is not null && doc != s.Signatario.CpfCnpj)
-                {
-                    Erros.Add($"{s.Nome}: o certificado escolhido é de outro titular ({doc}); o J930 pede {s.Documento}.");
-                    cert.Dispose();
-                    ok = false;
-                    continue;
-                }
-                _assinantes.Add(new CertificadoAssinante(cert, s.Signatario.CodigoQualificacao));
-            }
-            catch (Exception ex)
-            {
-                Erros.Add($"{s.Nome}: {ex.Message}");
-                ok = false;
-            }
-        }
-        return ok;
-    }
+    private Task<bool> PrepararAssinantesAsync() => Assinantes.PrepararAsync();
 
     // ---------------------------------------------------------------- passo 5
     [ObservableProperty] private ArquivoEcd? _arquivo;
@@ -334,7 +261,7 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
         Arquivo = null;
         CaminhoSalvo = "";
         if (!await PrepararAssinantesAsync()) return;
-        var r = await app.Ecd.GerarAsync(empresa, AnoInt, Opcoes(), usuario, _assinantes.Count == 0 ? null : _assinantes.ToList());
+        var r = await app.Ecd.GerarAsync(empresa, AnoInt, Opcoes(), usuario, Assinantes.Assinantes.Count == 0 ? null : Assinantes.Assinantes.ToList());
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Arquivo = r.Valor;
         var a = r.Valor;

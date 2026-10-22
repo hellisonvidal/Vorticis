@@ -61,6 +61,13 @@ public partial class EcfAssistenteViewModel : ModuloViewModel
     [ObservableProperty] private string _numeroRecibo = "";
     [ObservableProperty] private bool _informarEcd;
     [ObservableProperty] private bool _responsavelPessoaJuridica;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(AvisoProcuracao), nameof(TemAvisoProcuracao))] private bool _assinarComoProcurador;
+
+    /// <summary>Lembrete do passo final: a transmissão por procurador exige a procuração eletrônica no e-CAC.</summary>
+    public string AvisoProcuracao => AssinarComoProcurador
+        ? "Assinatura como procurador: para transmitir, a procuração eletrônica precisa estar cadastrada no e-CAC (Procurações), com poderes para a ECF, e o certificado usado deve ser o do procurador."
+        : "";
+    public bool TemAvisoProcuracao => AssinarComoProcurador;
 
     public bool PodeGerarEcf => Contexto.Pode(Permissao.SpedEcfGerar);
     private int AnoInt => (int)(Ano ?? DateTime.Today.Year - 1);
@@ -69,7 +76,8 @@ public partial class EcfAssistenteViewModel : ModuloViewModel
         Retificadora: Retificadora,
         NumeroRecibo: string.IsNullOrWhiteSpace(NumeroRecibo) ? null : NumeroRecibo.Trim(),
         InformarEcd: InformarEcd,
-        ResponsavelPessoaJuridica: ResponsavelPessoaJuridica);
+        ResponsavelPessoaJuridica: ResponsavelPessoaJuridica,
+        AssinarComoProcurador: AssinarComoProcurador);
 
     /// <summary>Carrega os dados da empresa ativa para conferência (abrir a tela e trocar de empresa).</summary>
     public async Task CarregarAsync()
@@ -101,6 +109,7 @@ public partial class EcfAssistenteViewModel : ModuloViewModel
         ("Cadastro da empresa (CNPJ, natureza jurídica, CNAE, endereço, e-mail)", ["CNPJ_", "NOME_", "UF_", "MUNICIPIO_", "NATUREZA_", "CNAE", "ENDERECO", "EMAIL_EMPRESA", "RECIBO_"], Telas.Empresas, "Abrir Cadastro de empresas"),
         ("Contador cadastrado (CPF, CRC, e-mail, telefone)", ["SEM_CONTADOR", "CONTADOR_"], Telas.Contabilidade, "Abrir Contabilidade da empresa"),
         ("Responsável pela assinatura e sócios (Y600)", ["SEM_RESPONSAVEL", "RESPONSAVEIS", "SIGNATARIO_", "SEM_SOCIOS", "SOCIO"], Telas.Socios, "Abrir Sócios"),
+        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Procuradores, "Abrir Procurador"),
     ];
 
     /// <summary>Roda a validação prévia e monta o checklist e a lista de pendências.</summary>

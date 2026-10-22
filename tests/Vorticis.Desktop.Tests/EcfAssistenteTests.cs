@@ -87,6 +87,44 @@ public class EcfAssistenteTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public void Assinar_como_procurador_vai_nas_opcoes_e_avisa_do_ecac()
+    {
+        var vm = new EcfAssistenteViewModel(new ContextoDeTeste(null, null, null));
+        Assert.False(vm.TemAvisoProcuracao);
+        Assert.Equal("", vm.AvisoProcuracao);
+        Assert.False(vm.Opcoes().AssinarComoProcurador);
+        vm.AssinarComoProcurador = true;
+        Assert.True(vm.Opcoes().AssinarComoProcurador);
+        Assert.True(vm.TemAvisoProcuracao);
+        Assert.Contains("e-CAC", vm.AvisoProcuracao);
+    }
+
+    [Fact]
+    public async Task Procuradores_cadastra_pelo_viewmodel_e_o_assistente_ecd_tambem_avisa()
+    {
+        BancoDeTeste.ExigirBanco();
+        var empresa = await db.CriarEmpresaAsync("56007569000133", 2025);
+        var adm = await db.AdminAsync();
+        var ctx = new ContextoDeTeste(db.App, new SessaoUsuario(adm, "admin_teste", "Admin de Teste", true, false), empresa);
+        var vm = new Vorticis.Desktop.Comum.ViewModels.ProcuradoresViewModel(ctx);
+        await vm.CarregarAsync();
+        Assert.Empty(vm.Lista);
+        vm.IncluirCommand.Execute(null);
+        (vm.Nome, vm.Cpf, vm.Email, vm.Inicio) = ("Pedro Procurador", "11144477735", "pedro@exemplo.com.br", new DateTime(2025, 1, 1));
+        await vm.SalvarCommand.ExecuteAsync(null);
+        Assert.Empty(vm.Erros);
+        var linha = Assert.Single(vm.Lista);
+        Assert.Equal("111.444.777-35", linha.CpfFormatado);
+        Assert.Equal("indeterminado", linha.Fim);
+
+        var ecd = new EcdAssistenteViewModel(ctx);
+        Assert.Equal("", ecd.AvisoProcuracao);
+        ecd.AssinarComoProcurador = true;
+        Assert.True(ecd.Opcoes().AssinarComoProcurador);
+        Assert.Contains("ECD", ecd.AvisoProcuracao);
+    }
+
+    [Fact]
     public async Task A1_exige_arquivo_no_passo_de_assinaturas()
     {
         var (vm, _) = await CriarAsync("33000167000101");

@@ -7,6 +7,7 @@ namespace Vorticis.Application.Sped;
 
 /// <summary>Escolhas do usuário para a ECF (tela/assistente). Os nulos são deduzidos do cadastro.</summary>
 /// <param name="InformarEcd">Informa o hash da ECD gerada pelo Vorticis no ano (C040). Padrão: bloco C sem dados (o PVA recupera a ECD).</param>
+/// <param name="AssinarComoProcurador">O procurador da empresa (procuração vigente, qualificação 309) assina no lugar do responsável; a transmissão exige a procuração eletrônica no e-CAC.</param>
 /// <param name="IndicadorReceita">0010.IND_REC_RECEITA (Lucro Presumido): 1 caixa, 2 competência; nulo = pelo regime de caixa do cadastro (1) ou competência (2).</param>
 public sealed record OpcoesEcf(
     bool Retificadora = false,
@@ -15,7 +16,8 @@ public sealed record OpcoesEcf(
     char? IndicadorSituacaoInicio = null,
     char? IndicadorReceita = null,
     bool ResponsavelPessoaJuridica = false,
-    string? CodigoQualificacaoSocio = null);
+    string? CodigoQualificacaoSocio = null,
+    bool AssinarComoProcurador = false);
 
 /// <summary>Resultado da conferência prévia (passo "pendências" do assistente).</summary>
 public sealed record PreviaEcf(int Ano, DateOnly Inicio, DateOnly Fim, FormaTributacaoEcf Forma, IReadOnlyList<SignatarioEcd> Signatarios,
@@ -122,11 +124,12 @@ public sealed class ServicoEcf(IConsultasEcf consultas, ServicoEcd ecd, Autoriza
         var parametros = new ParametrosEcf(ano, c.InicioExercicio, c.FimExercicio, forma, c.CodPlanRef, indicadorInicio, opcoes.Retificadora,
             opcoes.NumeroRecibo?.Trim(), opcoes.InformarEcd, opcoes.IndicadorReceita ?? (c.RegimeCaixa ? '1' : '2'));
         var signatarios = await ecd.SignatariosAsync(empresaId, c.Empresa.Nome, c.Empresa.Cnpj, opcoes.ResponsavelPessoaJuridica, opcoes.CodigoQualificacaoSocio,
-            null, null, ct);
+            null, null, opcoes.AssinarComoProcurador, ct);
         var dados = new DadosEcf(c.Empresa, parametros, c.Plano, c.SaldosAbertura, c.Lancamentos, c.Referencial, c.Apuracoes, c.Lalur, c.ParteB, c.Socios,
             signatarios, opcoes.InformarEcd ? c.Ecd : null);
         var calc = new CalculoEcf(dados);
         var pendencias = ValidadorEcf.Validar(dados, calc).ToList();
+        if (opcoes.AssinarComoProcurador) await ecd.AjustarPendenciasProcuradorAsync(empresaId, signatarios, pendencias, "ECF", ct);
         if (opcoes.InformarEcd && c.Ecd is null)
             pendencias.Add(new(GravidadePendencia.Aviso, "SEM_ECD_GERADA", "Nenhuma ECD gerada pelo Vorticis para o ano: o bloco C saiu sem dados."));
         if (c.PeriodosAbertos.Count > 0)

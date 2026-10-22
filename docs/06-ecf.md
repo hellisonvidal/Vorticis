@@ -132,6 +132,13 @@ remuneração de sócios gerados com valores padrão, competências abertas.
 - A assinatura segue o formato do PVA (ver [05-ecd.md](05-ecd.md)); a ECF assina o hash SHA-1 do arquivo sem assinaturas, com etiqueta
   `SBRCAAEPDR` + ordem + código de qualificação do 0930.
 
+## Certificados e procurador
+
+Valem para a ECF as mesmas regras da ECD (ver [05-ecd.md](05-ecd.md#contador-usa-o-certificado-da-empresa-assinatura-como-procurador)): o perfil
+Contador usa os certificados cadastrados da empresa para assinar (cadastro continua do administrador) e a opção **Assinar como procurador**
+coloca no 0930 o procurador com vigência na data da geração, com `IDENT_QUALIF = 309` (Procurador), conferindo o CPF do certificado. A
+transmissão por procurador exige a procuração eletrônica no e-CAC (aviso `PROCURACAO_ECAC` e lembrete no passo final).
+
 ## Como validar no PVA
 
 1. Gerar no Vorticis (Auditoria › Gerar ECF (SPED)), resolvendo as pendências bloqueantes.

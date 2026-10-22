@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.ProcuradoresView"
+             x:DataType="vm:ProcuradoresViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo"><Setter Property="FontSize" Value="12" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="*,12,380" RowDefinitions="Auto,*" Margin="8">
+    <v:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Procuradores (assinatura da ECD e da ECF)" Margin="0,0,0,6" />
+      <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resumo}" FontWeight="SemiBold" Margin="0,6,0,0" />
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
+          <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" MinWidth="200" />
+          <DataGridTextColumn Header="CPF" Binding="{ReflectionBinding CpfFormatado}" Width="140" />
+          <DataGridTextColumn Header="Início" Binding="{ReflectionBinding Inicio}" Width="110" />
+          <DataGridTextColumn Header="Fim" Binding="{ReflectionBinding Fim}" Width="120" />
+          <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="130" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <ScrollViewer Grid.Row="1" Grid.Column="2">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <TextBlock Text="Dados do procurador" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="O procurador assina a ECD/ECF no lugar do responsável (qualificação 309) com o certificado dele. Para transmitir, a procuração eletrônica precisa estar cadastrada no e-CAC."
+                   TextWrapping="Wrap" FontSize="11" Foreground="Gray" />
+        <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
+          <TextBox Text="{Binding Nome}" Watermark="Nome completo" />
+          <TextBox Text="{Binding Cpf}" Watermark="CPF" v:Mascara.Tipo="Cpf" />
+          <TextBox Text="{Binding Email}" Watermark="E-mail" />
+          <TextBox Text="{Binding Telefone}" Watermark="Telefone" />
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+            <TextBlock Classes="rotulo" Text="Vigência desde" />
+            <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Inicio}" />
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="Vigência até" />
+            <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Fim}" />
+          </Grid>
+          <TextBox Text="{Binding Observacao}" Watermark="Observação (ex.: identificação da procuração no e-CAC)" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

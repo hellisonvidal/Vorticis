@@ -44,6 +44,7 @@
             </Grid>
             <CheckBox IsChecked="{Binding HistoricosPadronizados}" Content="Incluir os históricos padronizados (I075)" />
             <CheckBox IsChecked="{Binding ResponsavelPessoaJuridica}" Content="Responsável pela assinatura: e-CNPJ da empresa (em vez do sócio com e-CPF)" />
+            <CheckBox IsChecked="{Binding AssinarComoProcurador}" Content="Assinar como procurador (qualificação 309), no lugar do responsável — exige procuração vigente cadastrada em Cadastros › Procurador" />
           </StackPanel>
 
           <!-- 2. Pré-requisitos -->
@@ -129,6 +130,9 @@
 
           <!-- 5. Gerar e salvar -->
           <StackPanel Spacing="8" IsVisible="{Binding NoPasso5}">
+            <Border Background="#FFF4E5" CornerRadius="4" Padding="12,8" IsVisible="{Binding TemAvisoProcuracao}">
+              <TextBlock Text="{Binding AvisoProcuracao}" TextWrapping="Wrap" Foreground="#7A4B00" />
+            </Border>
             <Button Content="Gerar arquivo da ECD" Command="{Binding GerarCommand}" Classes="accent" HorizontalAlignment="Left" />
             <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="{Binding Gerado}">
               <TextBlock Text="{Binding ResumoArquivo}" TextWrapping="Wrap" FontFamily="Consolas, Menlo, monospace" FontSize="12" />
