@@ -39,9 +39,14 @@ foreach ($d in "share\doc", "share\locale\*\LC_MESSAGES\pgadmin*") {
 $bin = Join-Path $Destino "bin"
 foreach ($dll in "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll") {
     if (-not (Test-Path (Join-Path $bin $dll))) {
-        Copy-Item (Join-Path $env:SystemRoot "System32\$dll") $bin
+        $origemDll = Join-Path $env:SystemRoot "System32\$dll"
+        if (-not (Test-Path $origemDll)) { throw "$dll não encontrado em System32: instale o Visual C++ Redistributable 2015-2022 (x64) nesta máquina." }
+        Copy-Item $origemDll $bin
         Write-Host "Copiado $dll do sistema"
     }
+}
+foreach ($f in "initdb.exe", "pg_ctl.exe", "postgres.exe", "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll") {
+    if (-not (Test-Path (Join-Path $bin $f))) { throw "Faltou $f em $bin" }
 }
 
 Copy-Item (Join-Path $PSScriptRoot "LICENCA-PostgreSQL.txt") $Destino

@@ -37,7 +37,7 @@ CloseApplications=yes
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-ptbr.FinishedLabel=O Vorticis foi instalado.%n%nNa primeira abertura o programa cria sozinho o seu banco de dados (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.
+ptbr.FinishedLabel=O Vorticis foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
 
 [Types]
 Name: "completa"; Description: "Instalação completa (Contábil, Fiscal e Folha de Pagamento)"
@@ -71,6 +71,11 @@ Source: "..\publish\VorticisFolha.exe"; DestDir: "{app}"; Flags: ignoreversion; 
 Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
+
+#ifexist "..\publish\vc_redist.x64.exe"
+; Microsoft Visual C++ Redistributable 2015-2022 (x64), instalado em silêncio só se ainda não existir (ver InstalarVcRuntime)
+Source: "..\publish\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not VcRuntimeInstalado
+#endif
 
 [Dirs]
 ; Pasta padrão dos backups (dentro da instalação), gravável pelos usuários; não é apagada na desinstalação.
@@ -117,6 +122,76 @@ begin
   begin
     MsgBox('Escolha pelo menos um módulo do Vorticis para instalar.', mbError, MB_OK);
     Result := False;
+  end;
+end;
+
+var
+  Progresso: TOutputProgressWizardPage;
+
+// Runtime do Visual C++ 2015-2022 (x64): exigido pelos binários do PostgreSQL e pelo próprio programa.
+function VcRuntimeInstalado(): Boolean;
+var
+  Instalado: Cardinal;
+begin
+  Result := RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Installed', Instalado) and (Instalado = 1);
+  if not Result then
+    Result := FileExists(ExpandConstant('{sys}\vcruntime140_1.dll')) and FileExists(ExpandConstant('{sys}\msvcp140.dll'));
+end;
+
+// Instala o redistribuível em silêncio (o instalador do Visual C++ pede elevação por conta própria: "runas").
+procedure InstalarVcRuntime();
+var
+  Codigo: Integer;
+  Arquivo: String;
+begin
+  Arquivo := ExpandConstant('{tmp}\vc_redist.x64.exe');
+  if (not FileExists(Arquivo)) or VcRuntimeInstalado() then Exit;
+  Progresso.SetText('Instalando o Microsoft Visual C++ Redistributable (x64)...', '');
+  // Se o usuário recusar a elevação, segue: as DLLs também vão em pgsql\bin, e a tela de Conexão explica o que faltar.
+  ShellExec('runas', Arquivo, '/install /quiet /norestart', '', SW_HIDE, ewWaitUntilTerminated, Codigo);
+end;
+
+function ModuloParaConfigurar(): String;
+begin
+  if WizardIsComponentSelected('contabil') then Result := 'VorticisContabil.exe'
+  else if WizardIsComponentSelected('fiscal') then Result := 'VorticisFiscal.exe'
+  else Result := 'VorticisFolha.exe';
+end;
+
+// Configuração automática do banco: o primeiro módulo selecionado roda com --configurar-banco (sem janela; código 0 = pronto).
+procedure ConfigurarBanco();
+var
+  Codigo: Integer;
+  ArquivoLog: String;
+begin
+  ArquivoLog := ExpandConstant('{localappdata}\Vorticis\logs\configuracao-banco.log');
+  Progresso.SetText('Configurando o banco de dados do Vorticis (pode levar até um minuto)...', '');
+  Progresso.SetProgress(0, 0);
+  if (not Exec(ExpandConstant('{app}\' + ModuloParaConfigurar()), '--configurar-banco', ExpandConstant('{app}'), SW_HIDE,
+               ewWaitUntilTerminated, Codigo)) then
+    Codigo := -1;
+  Log('Configuração automática do banco: código de saída ' + IntToStr(Codigo));
+  if Codigo = 0 then
+    Progresso.SetText('Banco de dados configurado com sucesso.', '')
+  else
+  begin
+    Progresso.SetText('O banco de dados não pôde ser configurado agora.', '');
+    MsgBox('Não foi possível configurar o banco de dados automaticamente (código ' + IntToStr(Codigo) + ').' + #13#10#13#10 +
+           'A instalação foi concluída. Ao abrir o Vorticis, a tela de Conexão mostrará o botão "Configurar automaticamente" ' +
+           'para tentar de novo.' + #13#10#13#10 + 'Detalhes no registro: ' + ArquivoLog, mbInformation, MB_OK);
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep <> ssPostInstall then Exit;
+  Progresso := CreateOutputProgressPage('Configurando o Vorticis', 'Preparando o runtime e o banco de dados');
+  Progresso.Show;
+  try
+    InstalarVcRuntime();
+    ConfigurarBanco();
+  finally
+    Progresso.Hide;
   end;
 end;
 

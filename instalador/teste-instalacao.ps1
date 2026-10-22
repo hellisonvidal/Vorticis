@@ -18,6 +18,17 @@ foreach ($f in $app, (Join-Path $pasta "VorticisFiscal.exe"), (Join-Path $pasta 
 }
 Write-Host "Instalado em $pasta"
 
+# 0. configuração automática feita pelo instalador (VorticisContabil.exe --configurar-banco), antes de abrir o programa
+$logConfig = Join-Path $env:LOCALAPPDATA "Vorticis\logs\configuracao-banco.log"
+if (-not (Test-Path $logConfig)) { throw "O instalador não gerou $logConfig (configuração automática do banco não executou)." }
+$textoLog = Get-Content $logConfig -Raw -Encoding UTF8
+if ($textoLog -notmatch "CONCLUÍDO") { Write-Host $textoLog; throw "A configuração automática do banco falhou durante a instalação." }
+if (-not (Test-Path (Join-Path $env:APPDATA "Vorticis\vorticis.json"))) { throw "Configuração não gravada pela configuração automática." }
+# o modo sem interface para o banco ao terminar; repetir o comando deve funcionar e dar código 0 (idempotente)
+$pc = Start-Process $app -ArgumentList "--configurar-banco" -Wait -PassThru
+if ($pc.ExitCode -ne 0) { Get-Content $logConfig -Tail 40; throw "--configurar-banco terminou com código $($pc.ExitCode)" }
+Write-Host "Configuração automática do banco: OK (código 0, log em $logConfig)"
+
 $dados = Join-Path $env:LOCALAPPDATA "Vorticis\banco"
 $cfgArquivo = Join-Path $env:APPDATA "Vorticis\vorticis.json"
 $logPg = Join-Path $env:LOCALAPPDATA "Vorticis\logs\postgres.log"
@@ -54,7 +65,7 @@ $senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::
 $env:PGPASSWORD = $senha
 $porta = [int]$cfg.Local.Porta
 $psql = Join-Path $pgBin "psql.exe"
-$conexao = "host=localhost port=$porta user=postgres dbname=vorticis connect_timeout=5"
+$conexao = "host=127.0.0.1 port=$porta user=postgres dbname=vorticis connect_timeout=5"
 $script:ultimoErro = ""
 function Consultar($sql) {
     # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop".
@@ -75,7 +86,7 @@ while ($migracoes -lt 7) {
 }
 Write-Host "Conectado na porta ${porta}: $migracoes migrações aplicadas"
 $escuta = Consultar "SHOW listen_addresses"
-if ($escuta -ne "localhost") { Falhar "O banco local escuta em '$escuta' (esperado: localhost)." }
+if ($escuta -ne "127.0.0.1") { Falhar "O banco local escuta em '$escuta' (esperado: 127.0.0.1)." }
 if ($proc.HasExited) { Falhar "O Vorticis fechou inesperadamente." }
 
 # 3. ao fechar o programa, o banco local é parado

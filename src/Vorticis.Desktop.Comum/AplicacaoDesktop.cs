@@ -41,6 +41,13 @@ public static class AplicacaoDesktop
         Configuracao.MigrarPastasDoNomeAnterior();
         try
         {
+            // Instalador: configura o banco sem abrir janela (código de saída 0 = pronto, 1 = falhou; log em
+            // %LOCALAPPDATA%\Vorticis\logs\configuracao-banco.log).
+            if (ConfiguracaoAutomatica.Solicitada(args))
+            {
+                Environment.ExitCode = ConfiguracaoAutomatica.ExecutarAsync(args).GetAwaiter().GetResult();
+                return;
+            }
             Configurar<TApp>().StartWithClassicDesktopLifetime(args);
         }
         finally

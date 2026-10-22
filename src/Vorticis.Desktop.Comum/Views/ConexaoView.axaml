@@ -8,8 +8,33 @@
     <StackPanel Spacing="10" MaxWidth="640" HorizontalAlignment="Left" Margin="8">
       <TextBlock Classes="titulo" Text="Conexão com o banco de dados" />
       <TextBlock Text="{Binding ConexaoAtual}" FontWeight="SemiBold" Foreground="#1F3A5F" />
-      <TextBlock Classes="erro" Text="{Binding Falha, StringFormat='Falha ao conectar: {0}'}"
+      <TextBlock Classes="erro" Text="{Binding Falha, StringFormat='Falha ao conectar: {0}'}" TextWrapping="Wrap"
                  IsVisible="{Binding Falha, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock Text="{Binding AvisoLogin}" TextWrapping="Wrap" FontSize="12" Foreground="#8A5A00" />
+
+      <!-- Configuração automática -->
+      <Border BorderBrush="#1F3A5F" BorderThickness="2" CornerRadius="4" Padding="12" Background="#F3F7FC">
+        <StackPanel Spacing="8">
+          <TextBlock FontWeight="SemiBold" Text="Configuração automática do banco de dados (recomendado)" />
+          <TextBlock TextWrapping="Wrap" FontSize="12"
+                     Text="Localiza o banco embutido, confere o Visual C++, cria e inicia o banco, aplica as migrações e testa a conexão, mostrando cada passo. Não é preciso digitar nada." />
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="6" IsVisible="{Binding PedirCredenciais}">
+            <TextBlock Text="Usuário do PostgreSQL" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding UsuarioAuto}" />
+            <TextBlock Grid.Row="1" Text="Senha" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SenhaAuto}" PasswordChar="●" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Configurar automaticamente" Classes="accent" Command="{Binding ConfigurarAutomaticamenteCommand}" IsEnabled="{Binding PodeConfigurar}" />
+            <Button Content="Recriar o banco local (preserva a pasta antiga como backup)" Command="{Binding RecriarBancoLocalCommand}"
+                    IsVisible="{Binding OferecerRecriar}" IsEnabled="{Binding PodeConfigurar}" />
+            <Button Content="Copiar diagnóstico" Click="CopiarDiagnostico_Click" />
+          </StackPanel>
+          <TextBox Text="{Binding LogConfiguracao, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="220"
+                   FontFamily="Consolas,Menlo,monospace" FontSize="11" IsVisible="{Binding TemLog}" />
+          <TextBlock FontSize="11" Foreground="Gray" Text="{Binding ArquivoLogConfiguracao, StringFormat='Registro gravado em {0}'}" />
+        </StackPanel>
+      </Border>
 
       <!-- Banco local -->
       <Border BorderBrush="#C8D3E6" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding BancoLocalDisponivel}">
@@ -33,7 +58,8 @@
         </StackPanel>
       </Border>
 
-      <!-- Servidor -->
+      <!-- Servidor (avançado) -->
+      <Expander Header="Avançado: usar um servidor PostgreSQL externo (rede ou nuvem)" IsExpanded="{Binding ServidorExpandido}">
       <Border BorderBrush="#C8D3E6" BorderThickness="1" CornerRadius="4" Padding="12">
         <StackPanel Spacing="8">
           <RadioButton GroupName="ModoBanco" IsChecked="{Binding EditandoServidor}" FontWeight="SemiBold" IsVisible="{Binding BancoLocalDisponivel}"
@@ -53,6 +79,7 @@
           </Grid>
         </StackPanel>
       </Border>
+      </Expander>
 
       <CheckBox Content="Mostrar senhas" IsChecked="{Binding MostrarSenha}" />
       <StackPanel Orientation="Horizontal" Spacing="8">

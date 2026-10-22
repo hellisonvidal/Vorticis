@@ -23,6 +23,33 @@ public partial class ConexaoViewModel(MainViewModelBase main) : ModuloViewModel(
     [ObservableProperty] private string _novaSenhaLocal = "";
     [ObservableProperty] private string _confirmacaoSenhaLocal = "";
 
+    // configuração automática
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeConfigurar))] private bool _configurando;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemLog))] private string _logConfiguracao = "";
+    [ObservableProperty] private bool _oferecerRecriar;
+    [ObservableProperty] private bool _pedirCredenciais;
+    [ObservableProperty] private string _usuarioAuto = "postgres";
+    [ObservableProperty] private string _senhaAuto = "";
+    /// <summary>Servidor PostgreSQL externo é opção avançada: só abre sozinho quando não há banco local.</summary>
+    [ObservableProperty] private bool _servidorExpandido;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemFalhaLocal))] private bool _falhouNoBancoLocal;
+
+    public bool PodeConfigurar => !Configurando;
+    public bool TemLog => LogConfiguracao.Length > 0;
+    public bool TemFalhaLocal => FalhouNoBancoLocal;
+    public string ArquivoLogConfiguracao => Configuracao.LogConfiguracaoBanco;
+
+    public string AvisoLogin =>
+        "Atenção: \"vorticis\" / \"vorticis\" é o login do aplicativo no primeiro acesso (depois que o banco estiver conectado), " +
+        "não o usuário e a senha do banco de dados. O banco local é criado e configurado sozinho; use o botão abaixo.";
+
+    /// <summary>Texto para "Copiar diagnóstico": falha, ambiente e o log da configuração automática.</summary>
+    public string Diagnostico =>
+        $"Vorticis - diagnóstico do banco de dados ({DateTime.Now:yyyy-MM-dd HH:mm:ss}){Environment.NewLine}" +
+        $"Falha: {Falha ?? "(nenhuma)"}{Environment.NewLine}Binários: {Vorticis.Infra.Sistema.ServidorPostgresEmbutido.LocalizarBinarios() ?? "(não encontrados)"}{Environment.NewLine}" +
+        $"Dados: {PastaBancoLocal}{Environment.NewLine}Configuração: {Arquivo}{Environment.NewLine}Log: {ArquivoLogConfiguracao}{Environment.NewLine}" +
+        $"{Environment.NewLine}{LogConfiguracao}";
+
     public bool EditandoServidor
     {
         get => !UsarBancoLocal;
@@ -56,12 +83,55 @@ public partial class ConexaoViewModel(MainViewModelBase main) : ModuloViewModel(
         Falha = falha;
         UsandoBancoLocal = main.App is not null && BancoDoAplicativo.EhBancoLocal(main.ConnectionString);
         UsarBancoLocal = BancoLocalDisponivel && (UsandoBancoLocal || Configuracao.Carregar().Modo == ModoBanco.Local);
+        FalhouNoBancoLocal = falha is not null && UsarBancoLocal;
+        ServidorExpandido = !UsarBancoLocal;
+        (OferecerRecriar, PedirCredenciais) = (false, false);
         var cfg = Configuracao.Carregar();
         PortaLocal = BancoDoAplicativo.PortaLocal ?? (cfg.Modo == ModoBanco.Local && cfg.Porta > 0 ? cfg.Porta : Vorticis.Infra.Sistema.ServidorPostgresEmbutido.PortaPreferida);
         (NovaSenhaLocal, ConfirmacaoSenhaLocal, MostrarSenha) = ("", "", false);
         OnPropertyChanged(nameof(ConexaoAtual));
         Erros.Clear();
         Mensagem = null;
+    }
+
+    /// <summary>Configuração automática do banco (embutido ou PostgreSQL local), com log passo a passo.</summary>
+    [RelayCommand]
+    private Task ConfigurarAutomaticamenteAsync() => ConfigurarAsync(new OpcoesConfiguracaoBanco(
+        Usuario: PedirCredenciais ? UsuarioAuto : null, Senha: PedirCredenciais ? SenhaAuto : null));
+
+    /// <summary>Existe banco local com senha desconhecida: preserva a pasta antiga (backup) e cria outro.</summary>
+    [RelayCommand]
+    private Task RecriarBancoLocalAsync() => ConfigurarAsync(new OpcoesConfiguracaoBanco(RecriarBancoExistente: true));
+
+    private async Task ConfigurarAsync(OpcoesConfiguracaoBanco opcoes)
+    {
+        if (Configurando) return;
+        Configurando = true;
+        Erros.Clear();
+        Mensagem = null;
+        OferecerRecriar = false;
+        LogConfiguracao = "";
+        try
+        {
+            var r = await new ConfiguradorBanco(linha => LogConfiguracao += linha + Environment.NewLine).ExecutarAsync(opcoes);
+            if (r.Sucesso)
+            {
+                Falha = null;
+                (FalhouNoBancoLocal, PedirCredenciais) = (false, false);
+                Mensagem = $"Configuração concluída: {r.Resumo}";
+                await main.IniciarAsync();
+            }
+            else
+            {
+                Erros.Add(r.Resumo);
+                (OferecerRecriar, PedirCredenciais) = (r.PodeRecriar, r.PrecisaCredenciais);
+                if (r.PrecisaCredenciais) ServidorExpandido = false;
+            }
+        }
+        finally
+        {
+            Configurando = false;
+        }
     }
 
     /// <summary>Salva o modo escolhido (local ou servidor) e reconecta.</summary>

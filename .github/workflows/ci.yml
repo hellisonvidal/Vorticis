@@ -68,12 +68,20 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
           Move-Item pgsql publish/pgsql
+          # Visual C++ Redistributable 2015-2022 (x64): o instalador o instala em silêncio se faltar; vai também nos portáteis
+          Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile publish/vc_redist.x64.exe -UseBasicParsing
+          if ((Get-Item publish/vc_redist.x64.exe).Length -lt 10MB) { throw "vc_redist.x64.exe baixado está incompleto" }
+          foreach ($dll in "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll") {
+            if (-not (Test-Path "publish/pgsql/bin/$dll")) { throw "pgsql/bin sem $dll (runtime do Visual C++)" }
+          }
+          if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
           # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
           foreach ($modulo in "Contabil", "Fiscal", "Folha") {
             $pasta = "portatil/Vorticis$modulo"
             New-Item -ItemType Directory -Path $pasta -Force | Out-Null
             Copy-Item "publish/Vorticis$modulo.exe" $pasta
             Copy-Item publish/pgsql "$pasta/pgsql" -Recurse
+            Copy-Item publish/vc_redist.x64.exe $pasta
           }
       - name: Gerar instalador (Inno Setup)
         shell: pwsh

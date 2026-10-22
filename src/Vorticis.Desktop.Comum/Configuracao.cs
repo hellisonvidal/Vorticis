@@ -34,9 +34,15 @@ public static class Configuracao
     /// <summary>Marcas dos módulos abertos (um arquivo travado por processo): o último a fechar para o banco local compartilhado.</summary>
     public static string PastaExecucao => Path.Combine(PastaLocal, "execucao");
 
+    /// <summary>Trava entre processos: só um módulo por vez cria/inicia o banco local (evita disputa pelo cluster).</summary>
+    public static string ArquivoTrava => Path.Combine(PastaLocal, "banco.lock");
+
+    /// <summary>Registro da configuração automática do banco (também exibido na tela de conexão).</summary>
+    public static string LogConfiguracaoBanco => Path.Combine(PastaLocal, "logs", "configuracao-banco.log");
+
     public static string LogBancoLocal => Path.Combine(PastaLocal, "logs", "postgres.log");
 
-    private static string PastaLocal =>
+    public static string PastaLocal =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Vorticis");
 
     /// <summary>
@@ -78,7 +84,7 @@ public static class Configuracao
             {
                 // O banco local guarda porta e senha em uma seção própria, preservada quando se configura um servidor.
                 var local = cfg["Local"] as JsonObject;
-                var senhaLocal = local is null ? null : Revelar(local);
+                var senhaLocal = local is null ? null : RevelarOuNulo(local);
                 if (cfg["Modo"]?.GetValue<string>() == nameof(ModoBanco.Local))
                     return new(ModoBanco.Local, Porta: local?["Porta"]?.GetValue<int>() ?? 0, Senha: senhaLocal);
                 if (cfg["ConnectionString"]?.GetValue<string>() is { Length: > 0 } cs)
@@ -155,6 +161,19 @@ public static class Configuracao
             return Ler();
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Senha cifrada por outro usuário do Windows (ou de outra máquina) não é decifrável: trata como desconhecida.</summary>
+    private static string? RevelarOuNulo(JsonObject cfg)
+    {
+        try
+        {
+            return Revelar(cfg);
+        }
+        catch (Exception ex) when (ex is CryptographicException or FormatException)
         {
             return null;
         }

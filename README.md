@@ -35,7 +35,8 @@ docs/                       Arquitetura, regras, desafios fiscais, roadmap
 1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub).
 2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
 3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha de Pagamento** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
-4. Abra o módulo desejado. Na primeira abertura ele **cria sozinho o banco de dados** e vai direto à criação do administrador. Os módulos compartilham o mesmo banco, login, empresas e configurações; o banco sobe com o primeiro módulo aberto e só para quando o último fecha.
+4. Ao final da instalação, o instalador instala o *Visual C++ Redistributable* (se faltar) e **configura o banco automaticamente** (página de progresso; roda `VorticisContabil.exe --configurar-banco`, sem janela). Se falhar, a instalação termina assim mesmo e avisa onde está o log.
+5. Abra o módulo desejado. Na primeira abertura (se o banco ainda não estiver pronto) ele **cria sozinho o banco de dados** e vai direto à criação do administrador. Os módulos compartilham o mesmo banco, login, empresas e configurações; o banco sobe com o primeiro módulo aberto e só para quando o último fecha.
 
 Não é preciso instalar nem configurar o PostgreSQL: o instalador traz os binários oficiais do PostgreSQL 16 (pasta `pgsql`), e o Vorticis
 cuida do resto:
@@ -43,7 +44,7 @@ cuida do resto:
 | Item | Como funciona |
 |---|---|
 | Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Vorticis\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Vorticis\vorticis.json` |
-| Execução | O servidor sobe quando o primeiro módulo do Vorticis abre e para quando o último fecha; escuta só em `localhost`, na porta 54329 (ou outra livre, se ocupada) |
+| Execução | O servidor sobe quando o primeiro módulo do Vorticis abre e para quando o último fecha; escuta só em `127.0.0.1`, na porta 54329 (ou outra livre, se ocupada) |
 | Segurança | Nenhum serviço do Windows nem privilégio de administrador; outros usuários do Windows não leem a senha |
 | Atualização | Basta rodar o instalador novo: ele para o banco, troca os arquivos e preserva os dados |
 | Desinstalação | Remove o programa, **não** os dados (`%LOCALAPPDATA%\Vorticis`) — apague a pasta manualmente se quiser |
@@ -51,6 +52,16 @@ cuida do resto:
 | Rede | Para vários computadores usarem o mesmo banco, *Configurações › Conexão* aceita um servidor PostgreSQL; o botão "Usar o banco local" volta ao banco embutido |
 
 Também há os artefatos portáteis **VorticisContabil-portatil**, **VorticisFiscal-portatil** e **VorticisFolha-portatil** (pasta com o `.exe` do módulo + `pgsql`): descompacte e execute, sem instalar.
+
+### Solução de problemas do banco
+
+Se o programa abrir na tela **Conexão com o banco de dados**, clique em **Configurar automaticamente**: ela localiza o `pgsql`, confere o Visual C++, remove `postmaster.pid` órfão, cria/inicia o banco, aplica as migrações, grava a configuração e testa a conexão, mostrando cada passo. **Copiar diagnóstico** copia o log (também em `%LOCALAPPDATA%\Vorticis\logs\configuracao-banco.log`; o do PostgreSQL fica em `postgres.log` na mesma pasta). Sem Windows/instalador: `VorticisContabil.exe --configurar-banco` faz o mesmo sem janela (código de saída 0 = pronto).
+
+- `vorticis` / `vorticis` é o **login do aplicativo** no primeiro acesso, não usuário/senha do banco; o banco local não pede nada.
+- *Existe banco local, mas a senha não é conhecida* (config apagada ou de outro usuário do Windows): use **Recriar o banco local**; a pasta antiga é preservada como `banco.backup-<data>`.
+- *Faltam DLLs do Visual C++*: instale `vc_redist.x64.exe` (vai no instalador e nos portáteis).
+- Sem `pgsql` ao lado do programa, a configuração tenta um PostgreSQL em `localhost:5432` e pede só usuário e senha. Servidor externo é opção avançada na mesma tela.
+- Os módulos podem abrir juntos: uma trava entre processos (`%LOCALAPPDATA%\Vorticis\banco.lock`) evita disputa pela criação do banco.
 
 ## Executar (desenvolvimento)
 
@@ -204,7 +215,7 @@ O job `instalador-windows` do CI faz tudo em um Windows limpo (os ícones dos m�
 2. roda o teste do banco embutido no Windows (`ServidorEmbutidoTests`: initdb, start, migrações, reinício, stop);
 3. publica `VorticisContabil.exe`, `VorticisFiscal.exe` e `VorticisFolha.exe` (arquivo único, sem exigir .NET instalado) na pasta `publish`, com a pasta `pgsql` ao lado, e monta os portáteis (exe + `pgsql` de cada módulo);
 4. compila `instalador/Vorticis.iss` com o Inno Setup → `Setup-Vorticis-<versão>.exe` (seleção de módulos);
-5. `instalador/teste-instalacao.ps1` instala em modo silencioso (todos os módulos), abre o Contábil e confere que o banco foi criado, migrado e parado ao fechar.
+5. `instalador/teste-instalacao.ps1` instala em modo silencioso (todos os módulos), confere a configuração automática do banco (log e `--configurar-banco`), abre o Contábil e confere que o banco foi criado, migrado e parado ao fechar.
 
 Artefatos do CI: **Setup-Vorticis**, **VorticisContabil-portatil**, **VorticisFiscal-portatil**, **VorticisFolha-portatil**.
 

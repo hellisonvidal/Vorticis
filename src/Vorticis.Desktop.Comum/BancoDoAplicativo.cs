@@ -22,36 +22,51 @@ public static class BancoDoAplicativo
         var bin = ServidorPostgresEmbutido.LocalizarBinarios()
                   ?? throw new InvalidOperationException(
                       "Esta cópia do Vorticis não contém o banco de dados local (pasta pgsql ao lado do programa). " +
-                      "Instale pelo instalador Setup-VorticisContabil.exe ou informe abaixo um servidor PostgreSQL.");
-        _servidor ??= new ServidorPostgresEmbutido(bin, Configuracao.PastaBancoLocal, Configuracao.LogBancoLocal);
+                      "Instale pelo instalador Setup-Vorticis.exe ou use \"Configurar automaticamente\" / informe um servidor PostgreSQL.");
+        var servidor = ObterServidor(bin);
+
+        // Contábil, Fiscal e Folha podem abrir juntos: só um por vez cria/inicia o cluster. A configuração é relida
+        // depois da trava, porque o outro módulo pode ter acabado de gravar a senha e a porta.
+        using var trava = await TravaEntreProcessos.AdquirirAsync(Configuracao.ArquivoTrava, TimeSpan.FromMinutes(4),
+            () => status("Aguardando outro módulo do Vorticis preparar o banco de dados..."), ct);
+        cfg = Configuracao.Carregar();
+        servidor.LimparPidOrfao();
 
         var senha = cfg.Senha;
-        if (!_servidor.Inicializado)
+        if (!servidor.Inicializado)
         {
             status("Primeira execução: criando o banco de dados local (pode levar até um minuto)...");
             senha ??= ServidorPostgresEmbutido.GerarSenha();
             Configuracao.SalvarLocal(senha: senha);
-            await _servidor.InicializarAsync(senha, ct);
+            await servidor.InicializarAsync(senha, ct);
         }
         else if (senha is null)
         {
             throw new InvalidOperationException(
                 $"O banco local existe em {Configuracao.PastaBancoLocal}, mas a senha dele não está em {Configuracao.ArquivoConfiguracao} " +
-                "(arquivo apagado ou copiado de outro usuário do Windows). Restaure o arquivo de configuração a partir de um backup.");
+                "(arquivo apagado ou copiado de outro usuário do Windows). Use \"Configurar automaticamente\" para recriar o banco " +
+                "(a pasta atual é preservada como backup) ou restaure o arquivo de configuração.");
         }
 
         status("Iniciando o banco de dados local...");
-        var porta = await _servidor.IniciarAsync(cfg.Porta > 0 ? cfg.Porta : ServidorPostgresEmbutido.PortaPreferida, ct);
+        var porta = await servidor.IniciarAsync(cfg.Porta > 0 ? cfg.Porta : ServidorPostgresEmbutido.PortaPreferida, ct);
         if (porta != cfg.Porta) Configuracao.SalvarLocal(porta);
         _portaLocal = porta;
-        RegistrarPresenca();
+        RegistrarPresenca();   // ainda dentro da trava: o outro módulo só prossegue (e só fecha) sabendo que este existe
 
-        return new NpgsqlConnectionStringBuilder
-        {
-            Host = "localhost", Port = porta, Database = Configuracao.NomeBanco,
-            Username = ServidorPostgresEmbutido.Usuario, Password = senha,
-        }.ConnectionString;
+        return StringConexao(porta, senha!);
     }
+
+    /// <summary>Connection string do banco local (127.0.0.1: o servidor escuta só em IPv4, sem depender da resolução de "localhost").</summary>
+    public static string StringConexao(int porta, string senha) => new NpgsqlConnectionStringBuilder
+    {
+        Host = "127.0.0.1", Port = porta, Database = Configuracao.NomeBanco,
+        Username = ServidorPostgresEmbutido.Usuario, Password = senha,
+    }.ConnectionString;
+
+    /// <summary>O servidor local deste processo (criado uma vez; a configuração automática e a abertura do programa usam o mesmo).</summary>
+    public static ServidorPostgresEmbutido ObterServidor(string bin) =>
+        _servidor ??= new ServidorPostgresEmbutido(bin, Configuracao.PastaBancoLocal, Configuracao.LogBancoLocal);
 
     public static bool EhBancoLocal(string connectionString)
     {
@@ -77,6 +92,14 @@ public static class BancoDoAplicativo
         }
         Configuracao.SalvarLocal(senha: novaSenha);
         NpgsqlConnection.ClearAllPools();
+    }
+
+    /// <summary>Esquece o servidor em cache (testes que trocam as pastas do perfil entre execuções).</summary>
+    internal static void Reiniciar()
+    {
+        Encerrar();
+        _servidor = null;
+        _portaLocal = null;
     }
 
     /// <summary>Para o banco local (para reiniciar em outra porta); a próxima preparação o inicia de novo.</summary>

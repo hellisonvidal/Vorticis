@@ -102,7 +102,49 @@ public class PrimeiraExecucaoTests(SessaoHeadless headless)
         }
         finally
         {
-            BancoDoAplicativo.Encerrar();
+            BancoDoAplicativo.Reiniciar();
+            foreach (var (v, valor) in anteriores) Environment.SetEnvironmentVariable(v, valor);
+            try { Directory.Delete(perfil, recursive: true); } catch (IOException) { }
+        }
+    }
+
+    /// <summary>Configuração automática real (initdb, start, migrações) sobre os binários de /usr/lib/postgresql.</summary>
+    [Fact]
+    public async Task Configuracao_automatica_cria_o_banco_e_reaproveita_na_segunda_vez()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux() && Environment.UserName != "root" && Binarios() is not null,
+            "Requer Linux, usuário comum (initdb recusa root) e PostgreSQL em /usr/lib/postgresql.");
+        Assert.SkipWhen(Environment.GetEnvironmentVariable("VORTICIS_DB") is not null, "VORTICIS_DB definida.");
+
+        var perfil = Path.Combine(Path.GetTempPath(), $"vorticis-auto-{Guid.NewGuid():N}");
+        var anteriores = new[] { "XDG_CONFIG_HOME", "XDG_DATA_HOME", "VORTICIS_PG_EMBUTIDO_BIN" }
+            .ToDictionary(v => v, Environment.GetEnvironmentVariable);
+        Directory.CreateDirectory(Path.Combine(perfil, "config"));
+        Directory.CreateDirectory(Path.Combine(perfil, "dados"));
+        Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(perfil, "config"));
+        Environment.SetEnvironmentVariable("XDG_DATA_HOME", Path.Combine(perfil, "dados"));
+        Environment.SetEnvironmentVariable("VORTICIS_PG_EMBUTIDO_BIN", Binarios());
+        BancoDoAplicativo.Reiniciar();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var r = await new ConfiguradorBanco().ExecutarAsync(ct: ct);
+            Assert.True(r.Sucesso, r.Resumo);
+            Assert.True(File.Exists(Path.Combine(Configuracao.PastaBancoLocal, "PG_VERSION")));
+            Assert.True(File.Exists(Configuracao.LogConfiguracaoBanco));
+            Assert.NotNull(Configuracao.Carregar().Senha);
+
+            // órfão deixado por queda + segunda execução: reaproveita o cluster e a senha
+            BancoDoAplicativo.PararLocal();
+            File.WriteAllText(Path.Combine(Configuracao.PastaBancoLocal, "postmaster.pid"), "2147483000\n");
+            var senha = Configuracao.Carregar().Senha;
+            r = await new ConfiguradorBanco().ExecutarAsync(ct: ct);
+            Assert.True(r.Sucesso, r.Resumo);
+            Assert.Equal(senha, Configuracao.Carregar().Senha);
+        }
+        finally
+        {
+            BancoDoAplicativo.Reiniciar();
             foreach (var (v, valor) in anteriores) Environment.SetEnvironmentVariable(v, valor);
             try { Directory.Delete(perfil, recursive: true); } catch (IOException) { }
         }
