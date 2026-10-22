@@ -37,6 +37,27 @@ public class MenusTests
     }
 
     [Fact]
+    public void Cada_modulo_tem_cor_e_icone_proprios_para_nao_confundir_os_sistemas()
+    {
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9"], modulos.Select(m => m.Modulo.CorDestaque));
+        Assert.Equal(3, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
+        Assert.Equal("#14305A", modulos[0].Modulo.CorBarra);                      // azul-marinho da logo
+        // a cor chega ao casco como pincel (faixa sob os menus, login e tela inicial)
+        Assert.Equal(Avalonia.Media.Color.Parse("#C2410C"), ((Avalonia.Media.ISolidColorBrush)modulos[1].PincelDestaque).Color);
+        Assert.Equal(Avalonia.Media.Color.Parse("#4C1D95"), ((Avalonia.Media.ISolidColorBrush)modulos[2].PincelBarra).Color);
+        Assert.Same(modulos[1].PincelDestaque, modulos[1].Login.PincelDestaque);
+        Assert.Same(modulos[2].PincelDestaque, modulos[2].Inicio.PincelDestaque);
+        // um ícone por executável (fonte em instalador/icone, embutido no casco e usado pelo exe e pelo instalador)
+        var pasta = new DirectoryInfo(AppContext.BaseDirectory);
+        while (pasta is not null && !Directory.Exists(Path.Combine(pasta.FullName, "instalador", "icone"))) pasta = pasta.Parent;
+        Assert.NotNull(pasta);
+        var tamanhos = modulos.Select(m => new FileInfo(Path.Combine(pasta.FullName, "instalador", "icone", $"{m.Modulo.NomeExecutavel}.ico")))
+                              .Select(f => { Assert.True(f.Exists, f.Name); return File.ReadAllBytes(f.FullName); }).ToList();
+        Assert.Equal(3, tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))).Distinct().Count());   // ícones diferentes
+    }
+
+    [Fact]
     public void Menu_tem_os_menus_comuns_em_volta_dos_do_modulo()
     {
         var titulos = new MainViewModel().Menus.Select(m => m.Titulo).ToList();

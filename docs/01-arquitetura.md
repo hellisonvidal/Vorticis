@@ -64,6 +64,7 @@ Vorticis.Desktop (VorticisContabil)  Vorticis.Fiscal.Desktop (VorticisFiscal)  V
 | Membro | Uso |
 |---|---|
 | `Nome`, `NomeCurto`, `Subtitulo`, `NomeExecutavel` | Título da janela, login, tela inicial e Sobre |
+| `CorDestaque`, `CorBarra` | Identidade visual do módulo (`#RRGGBB`): faixa e selo sob/ao lado dos menus, nome no login e na tela inicial, cabeçalho das janelas de função. Contábil `#1B7F5A`/`#14305A`, Fiscal `#C2410C`/`#7C2D12`, Folha `#6D28D9`/`#4C1D95`. O ícone é `Assets/<NomeExecutavel>.ico` (fonte em `instalador/icone`, gerado por `gerar_icone.py`) |
 | `ItensCadastros` | Itens do módulo no menu Cadastros (depois de Empresas, Contadores, Clientes, Fornecedores) |
 | `Menus` | Menus do módulo, entre Cadastros e Configurações; item = `ItemMenu.Tela(titulo, chave)`, `Submenu`, `Separador` ou `EmBreve` (desabilitado) |
 | `Atalhos` | Atalhos de teclado (`AtalhoTela(gesto, chave, descrição)`), listados na tela Sobre |

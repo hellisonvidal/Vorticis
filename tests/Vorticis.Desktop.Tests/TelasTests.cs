@@ -783,6 +783,26 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("35201234567", await db.EscalarAsync<string>("SELECT nire FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
             Assert.True(await db.EscalarAsync<bool>("SELECT grande_porte AND usa_centro_custo FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
 
+            // Aba Contabilidade: máscara dos centros de custo (aqui, não na tela de centros), documento obrigatório e bloqueio de datas
+            await empPart.CarregarSelecionadaAsync();
+            Assert.True(empPart.UsaCentroCusto);
+            empPart.AlterarCommand.Execute(null);
+            (empPart.MascaraCentroCusto, empPart.ExigeDocumento, empPart.DataBloqueio) = ("9.99.999", true, new DateTime(2025, 12, 31));
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Contains(empPart.Erros, e => e.Contains("não cabe na máscara"));    // os centros já cadastrados precisam caber na máscara
+            Assert.True(empPart.EmEdicao);
+            empPart.MascaraCentroCusto = "";
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.True(empPart.Erros.Count == 0, string.Join("; ", empPart.Erros));
+            Assert.True(await db.EscalarAsync<bool>("SELECT exige_documento AND data_bloqueio = DATE '2025-12-31' FROM core.empresa WHERE id = @id", ("id", empresa.Id)));
+            await empPart.CarregarSelecionadaAsync();
+            Assert.Equal(("", true, new DateTime(2025, 12, 31)), (empPart.MascaraCentroCusto, empPart.ExigeDocumento, empPart.DataBloqueio));
+            // sem regras que atrapalhem o restante do fluxo (os lançamentos seguintes não informam documento)
+            empPart.AlterarCommand.Execute(null);
+            (empPart.ExigeDocumento, empPart.DataBloqueio) = (false, null);
+            await empPart.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(empPart.Erros);
+
             vm.AbrirCommand.Execute(Telas.Balancete);
             (vm.Balancete.Inicio, vm.Balancete.Fim, vm.Balancete.DetalharParticipantes) = (new DateTime(2026, 3, 1), new DateTime(2026, 3, 31), true);
             await vm.Balancete.GerarCommand.ExecuteAsync(null);
@@ -984,6 +1004,30 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             var acesso = Assert.Single(u.Acessos);
             Assert.Equal("Auditor externo", acesso.Perfil.Nome);          // perfil já concedido na empresa
+            Assert.True(acesso.Marcada);                                  // lista de empresas: a do usuário vem marcada
+            Assert.Equal("1 de 1 empresa(s) liberada(s)", u.ResumoEmpresas);
+            u.AlterarCommand.Execute(null);
+            u.DesmarcarTodasCommand.Execute(null);
+            u.FiltroEmpresas = "zzz inexistente";
+            Assert.Empty(u.AcessosFiltrados);
+            u.FiltroEmpresas = acesso.Empresa[..5].ToLowerInvariant();
+            Assert.Single(u.AcessosFiltrados);
+            u.FiltroEmpresas = "";
+            Assert.False(acesso.Marcada);
+            await u.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(u.Erros);
+            Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario_empresa ue JOIN core.usuario u ON u.id = ue.usuario_id WHERE u.login = 'joao'"));
+            Assert.False(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
+            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            u.AlterarCommand.Execute(null);
+            u.MarcarTodasCommand.Execute(null);                           // volta a liberar (o restante do fluxo usa o João na empresa)
+            Assert.Equal("1 de 1 empresa(s) liberada(s)", u.ResumoEmpresas);
+            await u.SalvarCommand.ExecuteAsync(null);
+            Assert.Empty(u.Erros);
+            Assert.True(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
+            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            acesso = Assert.Single(u.Acessos);
+            Assert.True(acesso.Marcada);
             u.AlterarCommand.Execute(null);
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Equal("Alterações salvas.", u.Mensagem);
