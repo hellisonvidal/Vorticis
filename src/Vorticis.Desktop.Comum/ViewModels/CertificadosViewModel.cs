@@ -20,7 +20,7 @@ public sealed record CertificadoLinha(CertificadoDigital C, DateTimeOffset Agora
     public string Situacao => C.Situacao(Agora);
     public bool Alerta => C.DiasParaVencer(Agora) <= 30;
     public string Emissor => C.Emissor;
-    public string Padrao => string.Join(" e ", new[] { C.PadraoContador ? "Contador" : null, C.PadraoResponsavel ? "Responsável" : null }.OfType<string>());
+    public string Padrao => string.Join(" e ", new[] { C.PadraoContador ? "Contador" : null, C.PadraoResponsavel ? "Responsável" : null, C.PadraoProcurador ? "Procurador" : null }.OfType<string>());
 }
 
 /// <summary>
@@ -38,7 +38,7 @@ public partial class CertificadosViewModel(IContexto contexto) : ModuloViewModel
     [ObservableProperty] private string _senhaProtecao = "";
     [ObservableProperty] private string _senhaPadrao = "";
     public bool RepositorioWindowsDisponivel => OperatingSystem.IsWindows();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand), nameof(PadraoContadorCommand), nameof(PadraoResponsavelCommand), nameof(RetirarPadraoCommand))] private CertificadoLinha? _selecionado;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand), nameof(PadraoContadorCommand), nameof(PadraoResponsavelCommand), nameof(PadraoProcuradorCommand), nameof(RetirarPadraoCommand))] private CertificadoLinha? _selecionado;
     [ObservableProperty] private DadosCertificado? _instaladoSelecionado;
 
     // Importação de A1
@@ -149,18 +149,20 @@ public partial class CertificadosViewModel(IContexto contexto) : ModuloViewModel
             SenhaPadrao = "";
         }
         await CarregarAsync();
-        Mensagem = $"\"{s.Descricao}\" é agora o certificado padrão {(papel == PapelAssinatura.Contador ? "do contador" : "do responsável")}.{aviso}";
+        Mensagem = $"\"{s.Descricao}\" é agora o certificado padrão {(papel switch { PapelAssinatura.Contador => "do contador", PapelAssinatura.Procurador => "do procurador", _ => "do responsável" })}.{aviso}";
     });
 
     [RelayCommand(CanExecute = nameof(TemSelecionado))] private Task PadraoContadorAsync() => DefinirPadraoAsync(PapelAssinatura.Contador);
 
     [RelayCommand(CanExecute = nameof(TemSelecionado))] private Task PadraoResponsavelAsync() => DefinirPadraoAsync(PapelAssinatura.Responsavel);
 
+    [RelayCommand(CanExecute = nameof(TemSelecionado))] private Task PadraoProcuradorAsync() => DefinirPadraoAsync(PapelAssinatura.Procurador);
+
     [RelayCommand(CanExecute = nameof(TemSelecionado))]
     private Task RetirarPadraoAsync() => ExecutarAdminAsync(async (app, sessao) =>
     {
         if (Selecionado is not { } s) return;
-        foreach (var papel in new[] { PapelAssinatura.Contador, PapelAssinatura.Responsavel })
+        foreach (var papel in new[] { PapelAssinatura.Contador, PapelAssinatura.Responsavel, PapelAssinatura.Procurador })
             await app.Certificados.DefinirPadraoAsync(sessao, s.C.Id, papel, false);
         SenhasCertificados.Esquecer(s.C.Id);
         await CarregarAsync();

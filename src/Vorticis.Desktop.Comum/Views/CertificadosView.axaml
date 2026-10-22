@@ -90,6 +90,7 @@
         <TextBox Text="{Binding SenhaPadrao}" PasswordChar="●" Watermark="Senha do A1 selecionado" Width="200" />
         <Button Content="Padrão do contador" Command="{Binding PadraoContadorCommand}" />
         <Button Content="Padrão do responsável" Command="{Binding PadraoResponsavelCommand}" />
+        <Button Content="Padrão do procurador" Command="{Binding PadraoProcuradorCommand}" />
         <Button Content="Retirar padrão" Command="{Binding RetirarPadraoCommand}" />
       </StackPanel>
       <Button Content="Excluir do repositório" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeAlterar}" />

@@ -30,6 +30,12 @@ public sealed record Socio(long Id, string Nome, char TipoPessoa, string? CpfCnp
     public bool Ativo => DataSaida is null;
 }
 
+/// <summary>Procurador da empresa: pessoa física com procuração para assinar a ECD e a ECF (qualificação 309 – Procurador). A procuração eletrônica fica no e-CAC.</summary>
+public sealed record Procurador(long Id, string Nome, string Cpf, string? Email, string? Telefone, DateOnly VigenciaInicio, DateOnly? VigenciaFim, string? Observacao = null)
+{
+    public bool VigenteEm(DateOnly data) => VigenciaInicio <= data && (VigenciaFim is null || VigenciaFim >= data);
+}
+
 public interface IRepositorioResponsaveis
 {
     Task<IReadOnlyList<Contador>> ListarContadoresAsync(CancellationToken ct);
@@ -49,6 +55,10 @@ public interface IRepositorioResponsaveis
     Task<IReadOnlyList<Socio>> ListarSociosAsync(long empresaId, CancellationToken ct);
     Task<long> SalvarSocioAsync(long empresaId, Socio s, long usuarioId, CancellationToken ct);
     Task ExcluirSocioAsync(long empresaId, long socioId, long usuarioId, CancellationToken ct);
+
+    Task<IReadOnlyList<Procurador>> ListarProcuradoresAsync(long empresaId, CancellationToken ct);
+    Task<long> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct);
+    Task ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct);
 }
 
 /// <summary>
@@ -226,6 +236,44 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
         return await GravarSemValor(() => repositorio.ExcluirSocioAsync(empresaId, socioId, usuarioId, ct));
+    }
+
+    // ------------------------------------------------------------------ procuradores (assinatura da ECD/ECF)
+
+    public async Task<Resultado<IReadOnlyList<Procurador>>> ListarProcuradoresAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
+            ? Resultado<IReadOnlyList<Procurador>>.Ok(await repositorio.ListarProcuradoresAsync(empresaId, ct))
+            : Resultado<IReadOnlyList<Procurador>>.Falha("Você não tem acesso a esta empresa.");
+
+    /// <summary>Procurador com procuração vigente na data (o de vigência iniciada mais recentemente); nulo se não houver.</summary>
+    public async Task<Procurador?> ProcuradorVigenteAsync(long empresaId, DateOnly data, CancellationToken ct = default)
+        => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).Where(p => p.VigenteEm(data)).OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();
+
+    /// <summary>Procurador mais recente cadastrado (vigente ou não): serve para explicar por que a procuração não vale.</summary>
+    public async Task<Procurador?> UltimoProcuradorAsync(long empresaId, CancellationToken ct = default)
+        => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();
+
+    public async Task<Resultado<long>> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return negado;
+        var cpf = Cnpj.SomenteDigitos(p.Cpf);
+        var erros = new List<string>();
+        if (string.IsNullOrWhiteSpace(p.Nome)) erros.Add("Informe o nome do procurador.");
+        if (!Cpf.Valido(cpf)) erros.Add("CPF do procurador inválido.");
+        if (p.VigenciaFim is { } fim && fim < p.VigenciaInicio) erros.Add("O fim da vigência da procuração não pode ser anterior ao início.");
+        if (!string.IsNullOrWhiteSpace(p.Email) && !System.Text.RegularExpressions.Regex.IsMatch(p.Email.Trim(), @"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$"))
+            erros.Add("E-mail do procurador inválido.");
+        if (erros.Count > 0) return Resultado<long>.Falha(erros);
+        return await Gravar(() => repositorio.SalvarProcuradorAsync(empresaId, p with
+        {
+            Nome = p.Nome.Trim(), Cpf = cpf, Email = Limpar(p.Email)?.ToLowerInvariant(), Telefone = Limpar(p.Telefone), Observacao = Limpar(p.Observacao),
+        }, usuarioId, ct));
+    }
+
+    public async Task<Resultado> ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
+        return await GravarSemValor(() => repositorio.ExcluirProcuradorAsync(empresaId, procuradorId, usuarioId, ct));
     }
 
     /// <summary>Busca o QSA da empresa na base pública da RFB e inclui os sócios que ainda não estão cadastrados.</summary>

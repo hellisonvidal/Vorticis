@@ -151,6 +151,39 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
     public Task ExcluirSocioAsync(long empresaId, long socioId, long usuarioId, CancellationToken ct)
         => Executar(usuarioId, "DELETE FROM core.socio WHERE id = @id AND empresa_id = @e", c => c.Com("id", socioId).Com("e", empresaId), ct);
 
+    public async Task<IReadOnlyList<Procurador>> ListarProcuradoresAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT id, nome, cpf, email, telefone, vigencia_inicio, vigencia_fim, observacao FROM core.procurador WHERE empresa_id = @e ORDER BY vigencia_inicio DESC, id DESC
+            """).Com("e", empresaId);
+        var res = new List<Procurador>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new Procurador(r.GetInt64(0), r.GetString(1), r.GetString(2).Trim(), T(r, 3), T(r, 4), r.GetFieldValue<DateOnly>(5),
+                r.IsDBNull(6) ? null : r.GetFieldValue<DateOnly>(6), T(r, 7)));
+        return res;
+    }
+
+    public Task<long> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct)
+        => ComUsuario(usuarioId, async (con, tx) =>
+        {
+            await using var cmd = new NpgsqlCommand(p.Id == 0
+                ? """
+                  INSERT INTO core.procurador (empresa_id, nome, cpf, email, telefone, vigencia_inicio, vigencia_fim, observacao)
+                  VALUES (@e, @n, @cpf, @em, @tel, @vi, @vf, @o) RETURNING id
+                  """
+                : """
+                  UPDATE core.procurador SET nome = @n, cpf = @cpf, email = @em, telefone = @tel, vigencia_inicio = @vi, vigencia_fim = @vf, observacao = @o
+                   WHERE id = @id AND empresa_id = @e RETURNING id
+                  """, con, tx)
+                .Com("id", p.Id).Com("e", empresaId).Com("n", p.Nome).Com("cpf", p.Cpf).ComTexto("em", p.Email).ComTexto("tel", p.Telefone)
+                .Com("vi", p.VigenciaInicio).Com("vf", NpgsqlDbType.Date, p.VigenciaFim).ComTexto("o", p.Observacao);
+            return await cmd.ExecuteScalarAsync(ct) is long id ? id : throw new Domain.Comum.ViolacaoRegraException("Procurador não encontrado.");
+        }, ct);
+
+    public Task ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct)
+        => Executar(usuarioId, "DELETE FROM core.procurador WHERE id = @id AND empresa_id = @e", c => c.Com("id", procuradorId).Com("e", empresaId), ct);
+
     private static string? T(NpgsqlDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
 
     private Task<T> ComUsuario<T>(long usuarioId, Func<NpgsqlConnection, NpgsqlTransaction, Task<T>> acao, CancellationToken ct)

@@ -9,7 +9,7 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
     public async Task<IReadOnlyList<CertificadoDigital>> ListarAsync(CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, tipo, descricao, titular, documento, emissor, valido_de, valido_ate, impressao, empresa_id, padrao_contador, padrao_responsavel
+            SELECT id, tipo, descricao, titular, documento, emissor, valido_de, valido_ate, impressao, empresa_id, padrao_contador, padrao_responsavel, padrao_procurador
               FROM core.certificado_digital ORDER BY valido_ate
             """);
         var res = new List<CertificadoDigital>();
@@ -17,7 +17,7 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
         while (await r.ReadAsync(ct))
             res.Add(new CertificadoDigital(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4),
                 r.GetString(5), r.GetFieldValue<DateTimeOffset>(6), r.GetFieldValue<DateTimeOffset>(7), r.GetString(8),
-                r.IsDBNull(9) ? null : r.GetInt64(9), r.GetBoolean(10), r.GetBoolean(11)));
+                r.IsDBNull(9) ? null : r.GetInt64(9), r.GetBoolean(10), r.GetBoolean(11), r.GetBoolean(12)));
         return res;
     }
 
@@ -41,7 +41,7 @@ public sealed class RepositorioCertificados(NpgsqlDataSource ds) : IRepositorioC
 
     public async Task DefinirPadraoAsync(long id, PapelAssinatura papel, bool padrao, CancellationToken ct)
     {
-        var coluna = papel == PapelAssinatura.Contador ? "padrao_contador" : "padrao_responsavel";
+        var coluna = papel switch { PapelAssinatura.Contador => "padrao_contador", PapelAssinatura.Procurador => "padrao_procurador", _ => "padrao_responsavel" };
         await using var con = await ds.OpenConnectionAsync(ct);
         await using var tx = await con.BeginTransactionAsync(ct);
         if (padrao)

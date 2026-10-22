@@ -152,6 +152,21 @@ conferida e guardada só no computador, protegida pelo Windows (DPAPI); o banco 
 no Windows (chave exportável) podem ser importados para o Vorticis como A1. Os mesmos certificados padrão assinam relatórios em PDF
 (opção "Assinar digitalmente o PDF": assinatura CMS destacada `adbe.pkcs7.detached`, SHA-256, com PDFsharp).
 
+## Contador usa o certificado da empresa; assinatura como procurador
+
+- **Quem pode usar os certificados.** Cadastrar, importar, excluir e definir o padrão continuam **só do administrador**. Para **assinar a ECD/ECF**,
+  quem tem a função `SPED_ECD_GERAR` ou `SPED_ECF_GERAR` na empresa (perfil Contador, por exemplo) lista os certificados da empresa e os gerais,
+  usa o certificado padrão de cada papel e abre o A1 com a senha guardada neste computador: `ServicoCertificados.ListarParaAssinaturaAsync`,
+  `ObterPadraoParaAssinaturaAsync` e `AbrirA1ParaAssinaturaAsync` (certificado de outra empresa é recusado). `ListarAsync`, `ObterPadraoAsync` e
+  `AbrirA1Async` seguem exclusivos do administrador. O assistente usa os métodos "para assinatura".
+- **Procurador (migração 027).** Cadastros › Procurador guarda nome, CPF, e-mail, telefone e a **vigência da procuração** (`core.procurador`;
+  permissão de manter responsáveis). Na opção **Assinar como procurador** (passo 1), o responsável do J930 passa a ser o procurador com
+  `COD_ASSIN = 309` (Procurador, conforme a tabela de qualificação do assinante dos manuais da ECD e da ECF) e `IND_RESP_LEGAL = S`, no lugar do sócio
+  ou do e-CNPJ. Validações: procuração **vigente na data da geração** (senão `PROCURADOR_NAO_VIGENTE`, bloqueante, dizendo se não há procurador ou
+  qual a vigência) e **CPF do certificado = CPF do procurador** (o certificado de outra pessoa é recusado como nas demais qualificações). O
+  certificado padrão do papel **procurador** é definido em Configurações › Certificados (`padrao_procurador`). O aviso `PROCURACAO_ECAC` e o passo
+  final lembram que a **procuração eletrônica precisa estar cadastrada no e-CAC** (Procurações) para a transmissão.
+
 ## Como validar no PVA
 
 1. Gerar no Vorticis (Auditoria › Gerar ECD — assistente em 5 passos: dados, pré-requisitos, validação, assinaturas, gerar e salvar), resolvendo as pendências bloqueantes.

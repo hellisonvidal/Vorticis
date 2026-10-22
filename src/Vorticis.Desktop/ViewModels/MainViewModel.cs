@@ -31,5 +31,6 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public DepreciacaoViewModel Depreciacao => Instancia<DepreciacaoViewModel>();
     public ConciliacaoViewModel Conciliacao => Instancia<ConciliacaoViewModel>();
     public EcdAssistenteViewModel EcdAssistente => Instancia<EcdAssistenteViewModel>();
+    public EcfAssistenteViewModel EcfAssistente => Instancia<EcfAssistenteViewModel>();
     public DiferencasSaldosViewModel DiferencasSaldos => Instancia<DiferencasSaldosViewModel>();
 }

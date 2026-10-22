@@ -379,4 +379,52 @@ public class EcdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var sha256 = new AssinadorSpedCms(HashAlgorithmName.SHA256).Assinar(semAss.Conteudo, [new(certContador, "900")]);
         Assert.True(Assert.Single(db.App.AssinadorSped.LerAssinaturas(sha256)).Valida);
     }
+
+    private const string CpfProcurador = "11144477735";
+
+    [Fact]
+    public async Task Assina_como_procurador_com_procuracao_vigente_e_certificado_do_procurador()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var (empresa, adm) = await PrepararAsync("56007569000133");
+        var opcoes = Opcoes with { AssinarComoProcurador = true };
+
+        // Sem procurador cadastrado: bloqueia (no lugar de "sem responsável")
+        var sem = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.Contains(sem.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Bloqueante && p.Mensagem.Contains("Nenhum procurador"));
+        Assert.DoesNotContain(sem.Valor.Pendencias, p => p.Codigo == "SEM_RESPONSAVEL");
+        Assert.False((await db.App.Ecd.GerarAsync(empresa, 2025, opcoes, adm, ct: ct)).Sucesso);
+
+        // Procuração vencida: bloqueia explicando a vigência
+        var proc = new Procurador(0, "Pedro Procurador", CpfProcurador, "pedro@exemplo.com.br", "(11) 98888-7777", new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 31));
+        var id = (await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc, adm, ct)).Valor;
+        var vencida = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.Contains(vencida.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Mensagem.Contains("não está vigente"));
+
+        // Vigente: signatário 309 com IND_RESP_LEGAL = S no lugar do sócio, aviso do e-CAC
+        Assert.True((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { Id = id, VigenciaFim = null }, adm, ct)).Sucesso);
+        var previa = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.True(previa.Valor.PodeGerar, string.Join("; ", previa.Valor.Bloqueantes.Select(b => b.Mensagem)));
+        Assert.Contains(previa.Valor.Avisos, p => p.Codigo == "PROCURACAO_ECAC" && p.Mensagem.Contains("e-CAC"));
+        Assert.Equal(["900", "309"], previa.Valor.Signatarios.Select(s => s.CodigoQualificacao));
+
+        using var certContador = Certificado($"JOSE DA SILVA CONTADOR:{CpfContador}");
+        using var certProc = Certificado($"PEDRO PROCURADOR:{CpfProcurador}");
+        using var certSocia = Certificado($"MARIA SOCIA:{CpfSocia}");
+        // O certificado da sócia não vale para a qualificação 309 (CPF diferente do procurador)
+        var recusa = await db.App.Ecd.GerarAsync(empresa, 2025, opcoes, adm, [new(certContador, "900"), new(certSocia, "309")], ct);
+        Assert.False(recusa.Sucesso);
+        Assert.Contains(recusa.Erros, e => e.Contains("não é de nenhum signatário"));
+
+        var r = await db.App.Ecd.GerarAsync(empresa, 2025, opcoes, adm, [new(certContador, "900"), new(certProc, "309")], ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        Assert.All(r.Valor.Assinaturas, a => Assert.True(a.Valida, a.Erro));
+        Assert.Equal([("SBRCAAEPDR01900", CpfContador), ("SBRCAAEPDR02309", CpfProcurador)], r.Valor.Assinaturas.Select(a => (a.Etiqueta, a.Documento)));
+        var regs = Registros(r.Valor.Conteudo, db.App.AssinadorSped.TamanhoSemAssinaturas(r.Valor.Conteudo));
+        var j930 = regs.Where(x => x[0] == "J930").ToList();
+        Assert.Equal(2, j930.Count);
+        Assert.Equal(["J930", "Pedro Procurador", CpfProcurador, "Procurador", "309", "", "pedro@exemplo.com.br", "11988887777", "", "", "", "S"], j930.Single(x => x[4] == "309"));
+        Assert.DoesNotContain(j930, x => x[2] == CpfSocia);
+    }
 }
