@@ -136,7 +136,8 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
             opcoes.IndicadorSituacaoEspecial, opcoes.DataArquivamentoAtos ?? c.Empresa.DataInicioAtividades, opcoes.DataArquivamentoConversao,
             c.FimExercicio, opcoes.NivelAglutinacao, opcoes.Mutacoes, opcoes.IncluirHistoricosPadronizados, opcoes.MudancaPlanoContas,
             c.ResultadoAnterior);
-        var signatarios = await SignatariosAsync(empresaId, c.Empresa, opcoes, ct);
+        var signatarios = await SignatariosAsync(empresaId, c.Empresa.Nome, c.Empresa.Cnpj, opcoes.ResponsavelPessoaJuridica, opcoes.CodigoQualificacaoSocio,
+            opcoes.NumeroCertidaoCrc, opcoes.ValidadeCertidaoCrc, ct);
         var dados = new DadosEcd(c.Empresa, parametros, c.Plano, c.CentrosCusto, c.Historicos, c.SaldosAbertura, c.Lancamentos, signatarios);
         var calc = new CalculoEcd(dados);
         var pendencias = ValidadorEcd.Validar(dados, calc).ToList();
@@ -169,19 +170,21 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
         return Resultado<Preparo>.Ok(new Preparo(c, dados, calc, pendencias));
     }
 
-    private async Task<IReadOnlyList<SignatarioEcd>> SignatariosAsync(long empresaId, EmpresaEcd empresa, OpcoesEcd opcoes, CancellationToken ct)
+    /// <summary>Signatários do livro (contador e responsável), compartilhado com a ECF (0930 usa os mesmos códigos de qualificação).</summary>
+    public async Task<IReadOnlyList<SignatarioEcd>> SignatariosAsync(long empresaId, string nomeEmpresa, string cnpjEmpresa, bool responsavelPessoaJuridica,
+                                                                      string? codigoQualificacaoSocio, string? numeroCertidaoCrc, DateOnly? validadeCertidaoCrc, CancellationToken ct)
     {
         var lista = new List<SignatarioEcd>();
         if (await responsaveis.SignatarioEcdEcfAsync(empresaId, ct) is { } contador)
             lista.Add(new SignatarioEcd(contador.Nome, contador.Cpf, QualificacaoAssinante.Descricao(QualificacaoAssinante.Contador),
                 QualificacaoAssinante.Contador, false, contador.Crc, contador.UfCrc, contador.Email, contador.Telefone,
-                opcoes.NumeroCertidaoCrc?.Trim().ToUpperInvariant(), opcoes.ValidadeCertidaoCrc));
-        if (opcoes.ResponsavelPessoaJuridica)
-            lista.Add(new SignatarioEcd(empresa.Nome, empresa.Cnpj, QualificacaoAssinante.Descricao(QualificacaoAssinante.PessoaJuridica),
+                numeroCertidaoCrc?.Trim().ToUpperInvariant(), validadeCertidaoCrc));
+        if (responsavelPessoaJuridica)
+            lista.Add(new SignatarioEcd(nomeEmpresa, cnpjEmpresa, QualificacaoAssinante.Descricao(QualificacaoAssinante.PessoaJuridica),
                 QualificacaoAssinante.PessoaJuridica, true));
         else if (await responsaveis.SocioResponsavelAsync(empresaId, ct) is { } socio && socio.TipoPessoa == 'F')
         {
-            var codigo = opcoes.CodigoQualificacaoSocio ?? QualificacaoAssinante.DeQualificacaoSocio(socio.QualificacaoCodigo, socio.Qualificacao);
+            var codigo = codigoQualificacaoSocio ?? QualificacaoAssinante.DeQualificacaoSocio(socio.QualificacaoCodigo, socio.Qualificacao);
             lista.Add(new SignatarioEcd(socio.Nome, socio.CpfCnpj ?? "", QualificacaoAssinante.Descricao(codigo), codigo, true,
                 Email: socio.Email, Telefone: socio.Telefone));
         }
@@ -191,7 +194,7 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
     // ------------------------------------------------------------------------------------------------ assinatura
 
     /// <summary>Confere cada certificado com o J930 (código de qualificação e CPF/CNPJ) e assina.</summary>
-    private Resultado<byte[]> AssinarConferindo(byte[] arquivo, IReadOnlyList<CertificadoAssinante> assinantes, IReadOnlyList<SignatarioEcd> signatarios)
+    public Resultado<byte[]> AssinarConferindo(byte[] arquivo, IReadOnlyList<CertificadoAssinante> assinantes, IReadOnlyList<SignatarioEcd> signatarios)
     {
         if (assinador is null) return Resultado<byte[]>.Falha("Assinatura digital não configurada.");
         var erros = new List<string>();
@@ -240,7 +243,7 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
     }
 
     /// <summary>Signatários (J930) lidos do próprio arquivo, para assinar um arquivo gerado antes.</summary>
-    private static IReadOnlyList<SignatarioEcd> LerSignatariosDoArquivo(byte[] arquivo, int tamanho)
+    public static IReadOnlyList<SignatarioEcd> LerSignatariosDoArquivo(byte[] arquivo, int tamanho)
     {
         var texto = FormatoSped.Latin1.GetString(arquivo, 0, tamanho);
         var res = new List<SignatarioEcd>();

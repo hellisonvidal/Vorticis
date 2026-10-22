@@ -16,7 +16,7 @@ public sealed record ItemPreRequisito(string Titulo, bool Ok, string Detalhe, st
 {
     public string Marca => Ok ? "✔" : "✖";
     public string Cor => Ok ? "#1B7F3B" : "#B3261E";
-    public bool TemAtalho => !Ok;
+    public bool TemAtalho => !Ok && Tela.Length > 0;
 }
 
 /// <summary>Pendência mostrada na validação prévia (passo 3).</summary>

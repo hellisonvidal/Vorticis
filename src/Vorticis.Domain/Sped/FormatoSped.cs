@@ -22,6 +22,12 @@ public static class FormatoSped
     public static string Valor(decimal valor) => Math.Abs(Math.Round(valor, 2, MidpointRounding.AwayFromZero))
         .ToString("0.00", CultureInfo.InvariantCulture).Replace('.', ',');
 
+    /// <summary>Valor com sinal ("-" na frente quando negativo), duas casas e vírgula decimal: campos numéricos com sinal (NS) da ECF.</summary>
+    public static string ValorComSinal(decimal valor) => (valor < 0 && Math.Round(valor, 2, MidpointRounding.AwayFromZero) != 0 ? "-" : "") + Valor(valor);
+
+    /// <summary>Percentual com duas a quatro casas e vírgula decimal (ex.: 60,00; 33,3333).</summary>
+    public static string Percentual(decimal valor) => valor.ToString("0.00##", CultureInfo.InvariantCulture).Replace('.', ',');
+
     /// <summary>Indicador D/C de um saldo com sinal (débito positivo). Saldo zero recebe <paramref name="seZero"/>.</summary>
     public static string Indicador(decimal saldoComSinal, char seZero = 'D') => saldoComSinal > 0 ? "D" : saldoComSinal < 0 ? "C" : seZero.ToString();
 

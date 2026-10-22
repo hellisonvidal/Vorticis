@@ -56,7 +56,9 @@ public sealed class VorticisApp : IAsyncDisposable
         Assinaturas = new ServicoAssinaturas(Responsaveis);
         Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas);
         AssinadorSped = new AssinadorSpedCms();
-        Ecd = new ServicoEcd(new ConsultasEcd(ds), repoContabil, Responsaveis, autorizador, AssinadorSped);
+        var consultasEcd = new ConsultasEcd(ds);
+        Ecd = new ServicoEcd(consultasEcd, repoContabil, Responsaveis, autorizador, AssinadorSped);
+        Ecf = new ServicoEcf(new ConsultasEcf(ds, consultasEcd), Ecd, autorizador, AssinadorSped);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Migrador = new Migrador(ds);
     }
@@ -88,6 +90,8 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoLivros Livros { get; }
     /// <summary>Geração e assinatura do arquivo da ECD (SPED Contábil).</summary>
     public ServicoEcd Ecd { get; }
+    /// <summary>Geração e assinatura do arquivo da ECF (Escrituração Contábil Fiscal).</summary>
+    public ServicoEcf Ecf { get; }
     public IAssinadorSped AssinadorSped { get; }
     public ServicoBackup Backup { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }

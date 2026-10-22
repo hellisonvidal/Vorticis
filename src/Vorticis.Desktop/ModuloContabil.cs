@@ -68,7 +68,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa))),
         ItemMenu.Submenu("_Auditoria",
             ItemMenu.Tela("Gerar ECD (SPED Contábil)", Telas.EcdAssistente),
-            ItemMenu.EmBreve("Gerar ECF (SPED)")),
+            ItemMenu.Tela("Gerar ECF (SPED)", Telas.EcfAssistente)),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -136,6 +136,9 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia(nameof(MainViewModel.EcdAssistente), m => new EcdAssistenteViewModel(m), aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.EcdAssistente, "Auditoria › Gerar ECD (SPED Contábil)", m => m.Pode(Permissao.SpedEcdGerar), v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.EcfAssistente), m => new EcfAssistenteViewModel(m), aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.EcfAssistente, "Auditoria › Gerar ECF (SPED)", m => m.Pode(Permissao.SpedEcfGerar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.DiferencasSaldos), m => new DiferencasSaldosViewModel(m))
             .Tela(Telas.DiferencasSaldos, "Consultas › Diferenças de saldos", m => m.Pode(Permissao.RelatorioBalancete));
 
