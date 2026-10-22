@@ -23,7 +23,7 @@ src/Vorticis.Application     Casos de uso (ServicoLancamento, ServicoPeriodo, Se
 src/Vorticis.Infra           PostgreSQL (Npgsql), migrador, plano de contas modelo
 src/Vorticis.Desktop.Comum   Casco comum dos executáveis (Avalonia/MVVM): bootstrap, janela principal com menu do módulo, login, banco, empresas, usuários, perfis, certificados, backup, configurações
 src/Vorticis.Desktop         Executável do módulo Contábil (VorticisContabil.exe)
-src/Vorticis.Fiscal(.Desktop)  Regras/serviços e executável do módulo Fiscal (VorticisFiscal.exe) — estrutura pronta, funções em breve
+src/Vorticis.Fiscal(.Desktop)  Regras, serviços, repositórios e executável do módulo Fiscal (VorticisFiscal.exe): XML de NF-e/NFS-e, livros, contabilização, Simples, Lucro Presumido/Real, retenções e guias
 src/Vorticis.Folha(.Desktop)   Regras/serviços e executável do módulo Folha de Pagamento (VorticisFolha.exe) — estrutura pronta, funções em breve
 tests/                      Unitários, integração com PostgreSQL e testes de interface headless
 docs/                       Arquitetura, regras, desafios fiscais, roadmap
@@ -76,6 +76,7 @@ O administrador cria **perfis** marcando função a função o que cada um liber
 | Lançamentos | Incluir lançamentos · Estornar · Saldos iniciais · Fechar períodos · Reabrir períodos |
 | Cadastros | Manter plano de contas · Manter centros de custo |
 | Relatórios | Balancete · Livro Razão · Livro Diário · Exportar (PDF, Excel, CSV) |
+| Fiscal | Importar XML · Consultar documentos · Contabilizar notas (e regras) · Apurar tributos · LALUR/LACS · Retenções e guias · Relatórios fiscais |
 
 Perfis padrão (não excluíveis): **Administrador** (todas as funções, sempre, e a administração do sistema: empresas, usuários, perfis, conexão e backup), **Contador** (todas as funções contábeis), **Assistente** (lança e estorna, não fecha nem reabre períodos), **Consulta** (relatórios). As permissões são verificadas **nos serviços** (não só no menu): mesmo que a tela seja contornada, a operação é recusada.
 
@@ -117,6 +118,20 @@ Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 t
 - **Relatórios na tela:** Balancete, Razão, Diário e Balanço/DRE são sempre exibidos na tela, com os botões **PDF**, **Excel (.xlsx)** e **CSV** (abre no Excel em pt-BR). A exportação exige a permissão *Exportar relatórios*.
 - **Ajuda › Licença e registro:** para quem o Vorticis está registrado (titular, CPF/CNPJ, e-mail — o administrador registra) e as licenças dos componentes de terceiros.
 - **Configurações › Conexão com o banco de dados:** permite editar a conexão a qualquer momento — banco local (porta, troca da senha, pasta dos dados) ou servidor PostgreSQL (servidor, porta, banco, usuário, senha, com *Mostrar senhas* e *Testar conexão*).
+
+### Módulo Fiscal
+
+Executável `VorticisFiscal.exe` (esquema `fiscal`, migrações 030 a 034). Menus: *Documentos fiscais*, *Apuração*, *Obrigações* e *Relatórios*; os relatórios têm tela e exportam para PDF, Excel e CSV (mesma barra dos relatórios contábeis).
+
+- **Importação de XML:** NF-e e NFC-e (modelos 55 e 65, `nfeProc`) e NFS-e padrão nacional (ADN), por arquivo, pasta (com subpastas) ou `.zip`. Identifica **entrada ou saída** pelo CNPJ da empresa (e dos estabelecimentos), recusa notas de terceiros, **deduplica por chave de acesso**, aplica eventos de cancelamento (mesmo antes da nota), cria ou vincula o cliente/fornecedor em `core.participante` e guarda itens (CFOP, NCM, CST, valores) e tributos (ICMS, ICMS-ST, IPI, PIS, COFINS, ISS e retenções). O XML original fica compactado no banco. NFS-e usa o CFOP convencional `NFSE`.
+- **Consulta, livros e resumo:** consulta com filtros (período, sentido, modelo, situação, CFOP, texto, contabilizada), **Livro de Registro de Entradas** e **de Saídas** (uma linha por nota e CFOP, cancelados sem valores) e **Resumo por CFOP**.
+- **Contabilização automática:** *Regras de contabilização* ligam CFOP (código, prefixo ou `NFSE`), sentido e, se quiser, participante a uma conta de débito e uma de crédito (vale a regra mais específica). *Contabilizar notas fiscais* pré-visualiza, gera os lançamentos pelo `ServicoLancamento` (documento = número da nota, histórico com as variáveis do histórico padrão) e marca as notas; *Desfazer* estorna o lançamento e libera a nota.
+- **Simples Nacional:** anexos I a V da LC 123/2006 por vigência (`core.parametro_legal`, chave `SIMPLES_NACIONAL`, semeada do programa), RBT12 (com proporcionalidade no início de atividade), **Fator R** (Anexo III × V), alíquota efetiva, segregação por atividade com ST, monofásico, ISS retido e exportação, **DAS com repartição por tributo e memória de cálculo**. *Histórico de receita e folha* guarda os meses anteriores ao sistema.
+- **Lucro Presumido e Real:** IRPJ (15% + adicional de 10% sobre o que passa de R$ 20 mil por mês) e CSLL (9%) **trimestrais**; presunção de 8%/16%/32% (IRPJ) e 12%/32% (CSLL) por atividade; Lucro Real parte do resultado contábil das contas de resultado, com **LALUR/LACS Parte A** (adições e exclusões) e **Parte B** (prejuízos fiscais e base negativa, compensação limitada a 30%). **PIS/COFINS** cumulativo (0,65% e 3%) e não cumulativo (1,65% e 7,6%, com créditos sobre as entradas).
+- **Retenções e guias:** IRRF, CSRF (PIS/COFINS/CSLL, 4,65%), INSS 11% e ISS, sofridas e efetuadas, geradas das notas ou lançadas à mão. *Guias de recolhimento* por competência e vencimento: DAS, DARF com código de receita (2089, 2372, 0220, 6012, 6912, 5856, 8109, 2172, 1708, 5952), DCTFWeb/GPS do INSS (informativo) e ISS; marcar como paga. *Contas dos tributos* + *Contabilizar provisão* lançam a provisão de cada apuração (origem `APURACAO_TRIBUTO`) e podem ser desfeitas.
+- **Dados para a ECF:** `fiscal.apuracao_lucro` (bases, adicional, compensações, prejuízo do período), `fiscal.lalur_lancamento` (Parte A, com `codigo_ecf`; M300/M350), `fiscal.lalur_parte_b` (razão da Parte B; M010/M410) e `fiscal.apuracao_pis_cofins`; o gerador da ECF virá depois.
+- **Funções (perfis):** Importar XML · Consultar documentos · Contabilizar · Apurar tributos · Manter LALUR/LACS · Manter retenções e guias · Relatórios fiscais (Contador: todas; Assistente: importar, consultar, contabilizar e relatórios; Consulta: consultar e relatórios).
+- **Pendente:** ICMS/IPI (EFD), SPED EFD-Contribuições, CT-e, estimativa mensal do Lucro Real, parcelamento do IRPJ/CSLL em cotas, ICMS/ISS fora do DAS acima do sublimite (hoje só são excluídos do DAS), NFS-e fora do padrão nacional e controle de saldo credor de PIS/COFINS. Confira as tabelas de alíquotas e a repartição do Simples com a legislação vigente antes do uso em produção.
 
 ### Imobilizado
 
