@@ -22,7 +22,7 @@ public class MenusTests
     }
 
     [Fact]
-    public void Fiscal_tem_menu_comum_e_itens_do_modulo_desabilitados()
+    public void Fiscal_tem_menu_comum_e_itens_em_breve_desabilitados()
     {
         MainViewModelBase vm = new Vorticis.Fiscal.Desktop.MainViewModel();
         Assert.StartsWith("Vorticis ", vm.Modulo.Nome);
@@ -30,7 +30,8 @@ public class MenusTests
         Assert.Equal("_Ajuda", vm.Menus[^1].Titulo);
         var proprios = vm.Menus.Skip(1).SkipLast(2);
         Assert.NotEmpty(proprios);
-        Assert.All(Folhas(proprios), i => Assert.False(i.Habilitado || i.Chave is not null, i.Titulo));
+        // item habilitado tem chave; o que falta fica "em breve" (desabilitado e sem chave)
+        Assert.All(Folhas(proprios).Where(i => !i.EhSeparador), i => Assert.Equal(i.Chave is not null, i.Habilitado));
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
     }
 

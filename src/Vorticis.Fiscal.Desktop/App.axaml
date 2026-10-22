@@ -2,10 +2,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Vorticis.Fiscal.Desktop.App"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Fiscal.Desktop.Views"
              RequestedThemeVariant="Light">
   <Application.DataTemplates>
-    <!-- Telas comuns (login, empresas, usuários, backup...); as telas do módulo entram aqui como DataTemplate -->
+    <!-- Telas comuns (login, empresas, usuários, backup...) -->
     <c:TemplatesComuns />
+    <!-- Telas do módulo Fiscal -->
+    <DataTemplate DataType="vm:TabelaExibida"><v:TabelaExibidaView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoXmlViewModel"><v:ImportacaoXmlView /></DataTemplate>
+    <DataTemplate DataType="vm:DocumentosViewModel"><v:DocumentosView /></DataTemplate>
+    <DataTemplate DataType="vm:LivroEntradasViewModel"><v:LivroFiscalView /></DataTemplate>
+    <DataTemplate DataType="vm:LivroSaidasViewModel"><v:LivroFiscalView /></DataTemplate>
+    <DataTemplate DataType="vm:ResumoCfopViewModel"><v:ResumoCfopView /></DataTemplate>
+    <DataTemplate DataType="vm:RegrasContabilizacaoViewModel"><v:RegrasContabilizacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ContabilizarNotasViewModel"><v:ContabilizarNotasView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoSimplesViewModel"><v:ApuracaoSimplesView /></DataTemplate>
+    <DataTemplate DataType="vm:BaseMensalViewModel"><v:BaseMensalView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoPresumidoViewModel"><v:ApuracaoPresumidoView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoRealViewModel"><v:ApuracaoRealView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoPisCofinsViewModel"><v:ApuracaoPisCofinsView /></DataTemplate>
+    <DataTemplate DataType="vm:RetencoesViewModel"><v:RetencoesView /></DataTemplate>
+    <DataTemplate DataType="vm:GuiasViewModel"><v:GuiasView /></DataTemplate>
+    <DataTemplate DataType="vm:ContasTributosViewModel"><v:ContasTributosView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>
     <StyleInclude Source="avares://Vorticis.Desktop.Comum/Estilos.axaml" />
