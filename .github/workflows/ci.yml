@@ -97,22 +97,6 @@ jobs:
         run: |
           $setup = (Get-ChildItem saida/Setup-Vorticis-*.exe).FullName
           ./instalador/teste-instalacao.ps1 -Setup $setup
-      # Navegadores e antivírus bloqueiam .exe novo sem assinatura de código; dentro de um .7z com senha
-      # (senha: vorticis) o download não é inspecionado. Extraia com o 7-Zip.
-      - name: Pacote .7z com senha (download sem bloqueio do navegador)
-        shell: pwsh
-        run: |
-          $7z = "${env:ProgramFiles}\7-Zip\7z.exe"
-          New-Item -ItemType Directory -Force pacote | Out-Null
-          & $7z a -t7z -mhe=on -pvorticis pacote/Vorticis-instalador.7z ./saida/Setup-Vorticis-*.exe
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & $7z a -t7z -mhe=on -pvorticis pacote/Vorticis-portateis.7z ./portatil/*
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Vorticis-7z-senha-vorticis
-          path: pacote/*.7z
-          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: Setup-Vorticis
