@@ -19,6 +19,7 @@ public sealed class ServicosFolha
     public ServicoContabilizacaoFolha Contabilizacao { get; }
     public ServicoRelatoriosFolha Relatorios { get; }
     public ServicoESocial ESocial { get; }
+    public ServicoTransmissaoEsocial Transmissao { get; }
 
     public ServicosFolha(VorticisApp app)
     {
@@ -30,7 +31,9 @@ public sealed class ServicosFolha
         Folha = new ServicoFolha(cadastros, movimento, contab, app.Autorizador);
         Contabilizacao = new ServicoContabilizacaoFolha(contab, movimento, app.Lancamentos, app.Autorizador);
         Relatorios = new ServicoRelatoriosFolha(cadastros, movimento, contab, new GeradorPdf(), app.Autorizador);
-        ESocial = new ServicoESocial(cadastros, movimento, new RepositorioESocial(ds), app.Autorizador);
+        var repoEsocial = new RepositorioESocial(ds);
+        ESocial = new ServicoESocial(cadastros, movimento, repoEsocial, app.Autorizador);
+        Transmissao = new ServicoTransmissaoEsocial(cadastros, repoEsocial, new RepositorioTransmissaoEsocial(ds), app.Responsaveis, app.Autorizador);
     }
 
     public static ServicosFolha De(VorticisApp app) => Instancias.GetValue(app, a => new ServicosFolha(a));

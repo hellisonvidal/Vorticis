@@ -54,13 +54,39 @@ public static class AssinadorEsocial
         return certificado is not null && s.CheckSignature(certificado, verifySignatureOnly: true);
     }
 
-    /// <summary>CPF ou CNPJ (só dígitos) do titular, lido do subject do certificado e-CPF/e-CNPJ ICP-Brasil (CN "NOME:documento"), se houver.</summary>
+    /// <summary>
+    /// CPF ou CNPJ (só dígitos) do titular de um certificado ICP-Brasil. Lê primeiro o CN ("NOME:documento") e, se não houver, os campos
+    /// otherName do SubjectAltName: OID 2.16.76.1.3.3 (CNPJ) e 2.16.76.1.3.1 (data de nascimento DDMMAAAA + CPF + NIS + RG).
+    /// </summary>
     public static string? DocumentoDoCertificado(X509Certificate2 c)
     {
         var cn = c.GetNameInfo(X509NameType.SimpleName, false) ?? "";
         var i = cn.LastIndexOf(':');
         var doc = i >= 0 ? new string(cn[(i + 1)..].Where(char.IsDigit).ToArray()) : "";
-        return doc.Length is 11 or 14 ? doc : null;
+        if (doc.Length is 11 or 14) return doc;
+        var san = c.Extensions["2.5.29.17"]?.RawData;
+        if (san is null) return null;
+        // OID DER (06 09 ...) seguido do valor (A0 len 0C/13/16 len texto)
+        byte[] oidCnpj = [0x06, 0x09, 0x60, 0x4C, 0x01, 0x03, 0x03], oidCpf = [0x06, 0x09, 0x60, 0x4C, 0x01, 0x03, 0x01];
+        if (TextoApos(san, oidCnpj) is { } t14 && t14.Length >= 14) return t14[..14];
+        if (TextoApos(san, oidCpf) is { } t11 && t11.Length >= 19) return t11.Substring(8, 11);
+        return null;
+    }
+
+    private static string? TextoApos(byte[] dados, byte[] oid)
+    {
+        for (var p = 0; p + oid.Length < dados.Length; p++)
+        {
+            if (!dados.AsSpan(p, oid.Length).SequenceEqual(oid)) continue;
+            var q = p + oid.Length;
+            // A0 len (explícito) -> string (0C UTF8, 13 Printable, 16 IA5) len texto
+            while (q + 2 < dados.Length && dados[q] is not (0x0C or 0x13 or 0x16 or 0x1E)) q++;
+            if (q + 2 >= dados.Length) return null;
+            var len = dados[q + 1];
+            if (q + 2 + len > dados.Length) return null;
+            return System.Text.Encoding.ASCII.GetString(dados, q + 2, len);
+        }
+        return null;
     }
 
     private static XmlDocument Carregar(string xml)

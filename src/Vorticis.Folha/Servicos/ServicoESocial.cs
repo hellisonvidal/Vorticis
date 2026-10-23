@@ -23,7 +23,8 @@ public sealed record ResumoGeracaoEsocial(int Gerados, int Ignorados, IReadOnlyL
 
 /// <summary>
 /// Geração e exportação dos XMLs do eSocial por competência. Os eventos ficam gravados com o status GERADO e passam a EXPORTADO
-/// ao serem gravados em arquivo; eventos já exportados não são regerados. Sem assinatura nem transmissão nesta etapa.
+/// ao serem gravados em arquivo; eventos já exportados, enviados ou processados não são regerados (gerados, assinados e rejeitados são
+/// substituídos). Assinatura e transmissão: <see cref="ServicoTransmissaoEsocial"/>.
 /// </summary>
 public sealed class ServicoESocial(IRepositorioCadastrosFolha cadastros, IRepositorioMovimentoFolha movimento, IRepositorioESocial repositorio, Autorizador autorizador)
 {
@@ -53,7 +54,7 @@ public sealed class ServicoESocial(IRepositorioCadastrosFolha cadastros, IReposi
 
         async Task Gravar(string tipo, DateOnly? comp, string referencia, Func<string, string> xml)
         {
-            if (existentes.Any(x => x.Tipo == tipo && x.Referencia == referencia && x.Competencia == comp && x.Status == "EXPORTADO"))
+            if (existentes.Any(x => x.Tipo == tipo && x.Referencia == referencia && x.Competencia == comp && x.Status is "EXPORTADO" or "ENVIADO" or "PROCESSADO"))
             { ignorados++; return; }
             await repositorio.ExcluirNaoExportadosAsync(empresaId, tipo, comp, referencia, ct);
             var id = GeradoresEsocial.GerarId(empresa.Cnpj, agora, ++seq);

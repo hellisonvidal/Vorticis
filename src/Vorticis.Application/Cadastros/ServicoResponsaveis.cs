@@ -245,6 +245,10 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
             ? Resultado<IReadOnlyList<Procurador>>.Ok(await repositorio.ListarProcuradoresAsync(empresaId, ct))
             : Resultado<IReadOnlyList<Procurador>>.Falha("Você não tem acesso a esta empresa.");
 
+    /// <summary>Vínculos contábeis da empresa, sem checagem de acesso (para uso por serviços que já autorizaram o usuário, como a transmissão do eSocial).</summary>
+    public Task<IReadOnlyList<VinculoContabil>> ListarVinculosParaTransmissaoAsync(long empresaId, CancellationToken ct = default)
+        => repositorio.ListarVinculosAsync(empresaId, ct);
+
     /// <summary>Procurador com procuração vigente na data (o de vigência iniciada mais recentemente); nulo se não houver.</summary>
     public async Task<Procurador?> ProcuradorVigenteAsync(long empresaId, DateOnly data, CancellationToken ct = default)
         => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).Where(p => p.VigenteEm(data)).OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();

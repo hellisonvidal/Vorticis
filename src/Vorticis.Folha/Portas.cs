@@ -112,7 +112,34 @@ public interface IRepositorioContabilizacaoFolha
 }
 
 public sealed record EventoEsocial(long Id, string Tipo, DateOnly? Competencia, string Referencia, string IdEvento, string Xml, string Status,
-                                   DateTimeOffset GeradoEm, DateTimeOffset? ExportadoEm);
+                                   DateTimeOffset GeradoEm, DateTimeOffset? ExportadoEm, string? XmlAssinado = null, int? Ambiente = null, long? LoteId = null,
+                                   string? Recibo = null, int? CodigoResposta = null, string? OcorrenciasJson = null, DateTimeOffset? AssinadoEm = null,
+                                   DateTimeOffset? ProcessadoEm = null);
+
+/// <summary>Lote enviado ao eSocial (um por grupo e por até 50 eventos).</summary>
+public sealed record LoteEsocial(long Id, int Ambiente, int Grupo, string TransmissorPapel, int TransmissorTpInsc, string TransmissorNrInsc, string? Protocolo,
+                                 string Status, int? CodigoResposta, string? DescricaoResposta, string? OcorrenciasJson, DateTimeOffset EnviadoEm,
+                                 DateTimeOffset? ConsultadoEm, int QtdEventos, string? XmlEnvio = null, string? XmlRetornoEnvio = null, string? XmlRetornoConsulta = null);
+
+public sealed record NovoLoteEsocial(int Ambiente, int Grupo, string TransmissorPapel, int TransmissorTpInsc, string TransmissorNrInsc, string? Protocolo,
+                                     string Status, int? CodigoResposta, string? DescricaoResposta, string? OcorrenciasJson, string XmlEnvio, string? XmlRetornoEnvio);
+
+/// <summary>Persistência da assinatura e da transmissão dos eventos do eSocial.</summary>
+public interface IRepositorioTransmissaoEsocial
+{
+    Task MarcarAssinadoAsync(long empresaId, long eventoId, string xmlAssinado, int ambiente, long usuarioId, CancellationToken ct);
+    /// <summary>Registra o motivo de o evento não poder ser assinado/enviado (status volta/permanece GERADO).</summary>
+    Task RegistrarFalhaPreparoAsync(long empresaId, long eventoId, string ocorrenciasJson, CancellationToken ct);
+    Task<long> CriarLoteAsync(long empresaId, NovoLoteEsocial lote, long usuarioId, CancellationToken ct);
+    /// <summary>Liga os eventos ao lote com o status informado (ENVIADO, ou ERRO se o lote foi recusado).</summary>
+    Task VincularEventosAsync(long empresaId, IReadOnlyList<long> eventoIds, long loteId, string status, string? ocorrenciasJson, int? codigo, CancellationToken ct);
+    Task AtualizarLoteAsync(long empresaId, long loteId, string status, int? codigo, string? descricao, string? ocorrenciasJson, string xmlRetornoConsulta, CancellationToken ct);
+    Task RegistrarResultadoEventoAsync(long empresaId, long loteId, string idEvento, string status, string? recibo, int codigo, string? ocorrenciasJson, CancellationToken ct);
+    /// <summary>Eventos do lote ainda sem resultado (status ENVIADO) passam a ERRO com o motivo informado.</summary>
+    Task RejeitarEventosPendentesDoLoteAsync(long empresaId, long loteId, int codigo, string? ocorrenciasJson, CancellationToken ct);
+    Task<IReadOnlyList<LoteEsocial>> ListarLotesAsync(long empresaId, int limite, CancellationToken ct);
+    Task<LoteEsocial?> ObterLoteAsync(long empresaId, long loteId, CancellationToken ct);
+}
 
 public interface IRepositorioESocial
 {
