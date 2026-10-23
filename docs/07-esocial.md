@@ -78,7 +78,7 @@ O Vorticis impõe essa ordem: não envia um grupo enquanto houver evento de grup
 
 **Transmitindo com procurador ou contador**
 - [ ] Procuração eletrônica outorgada no **e-CAC** (ou módulo de procurações do eSocial) ao CPF/CNPJ do certificado, com os perfis dos eventos (Especial, Rotinas, Desligamento…) e prazo vigente.
-- [ ] Procurador cadastrado no Vorticis com a vigência (*Cadastros › Procuradores*); contador/escritório com vínculo vigente.
+- [ ] Contador procurador cadastrado no Vorticis, com vigência e abrangência eSocial (*Cadastros › Contadores*, Procuração eletrônica); contador/escritório com vínculo vigente.
 
 **Teste e produção**
 - [ ] Transmitir tudo na **produção restrita** primeiro (S-1000 → tabelas → não periódicos → periódicos → S-1299), consultando o retorno entre as etapas; corrigir as ocorrências e regerar os eventos rejeitados.

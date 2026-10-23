@@ -9,7 +9,7 @@ Cada função segue o mesmo roteiro: **para que serve**, **onde fica no menu**, 
 | Área | Conteúdo |
 |---|---|
 | [Primeiros passos](01-primeiros-passos.md) | Instalação, módulos, banco de dados, primeiro acesso, usuários e perfis |
-| [Cadastros comuns](02-cadastros-comuns.md) | Empresas, clientes e fornecedores, sócios, contadores e procuradores |
+| [Cadastros comuns](02-cadastros-comuns.md) | Empresas, clientes e fornecedores, sócios e contadores (com procuração eletrônica) |
 | [Contábil](03-contabil.md) | Plano de contas, lançamentos, fechamentos, imobilizado, consultas e relatórios |
 | [Auditoria (ECD e ECF)](04-auditoria.md) | Geração dos arquivos do SPED Contábil e da ECF |
 | [Fiscal](05-fiscal.md) | Notas fiscais, apurações de impostos, guias e SPED Fiscal |

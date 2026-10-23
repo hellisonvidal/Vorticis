@@ -106,16 +106,24 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 
 1. Escolha **Contador** (CPF, CRC/UF) ou **Escritório contábil** (CNPJ, CRC). O cadastro é único e reaproveitado entre empresas: se já existe, escolha na lista "Já cadastrado".
 2. Informe o início do vínculo e contatos (e-mail e telefone são exigidos pela ECD).
-3. Marque **Responsável técnico** (apenas um vigente por empresa) e **Assina ECD/ECF** se for o signatário. Sem marcação, assina o responsável técnico.
+3. Marque **Responsável técnico** (apenas um vigente por empresa) e **Assina ECD/ECF** se for o signatário. Sem marcação, assina o responsável técnico. Quem assina como contador precisa ter o CRC informado.
+4. Se o contador também é procurador da empresa, preencha a seção **Procuração eletrônica** (veja abaixo).
 
 **Dica:** na troca de contabilidade, **encerre o vínculo** (campo *Fim do vínculo*); não exclua.
 
-## Procuradores
+### Procuração eletrônica
 
-**Para que serve:** pessoa que assina a ECD/ECF e transmite o eSocial pela empresa, com procuração eletrônica.
-**Onde fica:** *Cadastros › Procurador (assinatura ECD/ECF)*.
+**Para que serve:** registrar que o contador é **procurador da empresa**: ele assina a ECD/ECF no lugar do responsável (qualificação 309 – Procurador) e pode transmitir o eSocial com o certificado dele. Não existe mais um cadastro separado de procuradores: o procurador é um contador da empresa.
+**Onde fica:** *Cadastros › Contadores*, seção **Procuração eletrônica**, ao **Incluir** o contador ou ao **Alterar** o vínculo dele.
 
-1. **Incluir**: nome, CPF, e-mail, telefone e a vigência (desde / até).
-2. Use a observação para anotar a identificação da procuração no e-CAC.
+1. Marque **É procurador da empresa**.
+2. Informe a vigência: **desde** (obrigatório) e **até** (deixe em branco se o prazo é indeterminado).
+3. Marque a **abrangência**: **ECD**, **ECF**, **EFD** e/ou **eSocial**, conforme os poderes da procuração.
+4. Use a **observação** para anotar a identificação da procuração no e-CAC.
+5. **Salvar**. A lista de contadores mostra a procuração na coluna *Procuração eletrônica*.
 
-**Importante:** a procuração em si deve ser outorgada no e-CAC da Receita; o cadastro no Vorticis apenas registra quem é o procurador e por quanto tempo.
+**Quem não é contador:** se o procurador não tem CRC, deixe o CRC em branco e desmarque *Responsável técnico* e *Assina ECD/ECF*; ele fica cadastrado só para a procuração.
+
+**Regras:** o assistente da ECD/ECF e a transmissão do eSocial só aceitam o procurador com procuração **vigente hoje** e com a **abrangência** da obrigação (ex.: procuração marcada só para ECF não vale para a ECD). O certificado usado deve ser o do próprio procurador (mesmo CPF).
+
+**Importante:** a procuração em si deve ser outorgada no e-CAC da Receita; o Vorticis apenas registra quem é o procurador, por quanto tempo e para quais obrigações.

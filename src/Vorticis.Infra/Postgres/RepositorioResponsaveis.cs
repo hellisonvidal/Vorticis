@@ -12,7 +12,7 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
         var res = new List<Contador>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
-            res.Add(new Contador(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4), T(r, 5), T(r, 6), r.IsDBNull(7) ? null : r.GetInt64(7),
+            res.Add(new Contador(r.GetInt64(0), r.GetString(1), r.GetString(2), T(r, 3) ?? "", T(r, 4) ?? "", T(r, 5), T(r, 6), r.IsDBNull(7) ? null : r.GetInt64(7),
                                      r.GetBoolean(8)));
         return res;
     }
@@ -33,7 +33,7 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
             await using var cmd = ds.CreateCommand("""
                 INSERT INTO core.contador (nome, cpf, crc, uf_crc, email, telefone, escritorio_id, assina_ecd_ecf)
                 VALUES (@n, @cpf, @crc, @uf, @em, @tel, @esc, @ass)
-                ON CONFLICT (cpf) DO UPDATE SET nome = EXCLUDED.nome, crc = EXCLUDED.crc, uf_crc = EXCLUDED.uf_crc,
+                ON CONFLICT (cpf) DO UPDATE SET nome = EXCLUDED.nome, crc = COALESCE(EXCLUDED.crc, core.contador.crc), uf_crc = COALESCE(EXCLUDED.uf_crc, core.contador.uf_crc),
                        email = COALESCE(EXCLUDED.email, core.contador.email), telefone = COALESCE(EXCLUDED.telefone, core.contador.telefone),
                        escritorio_id = COALESCE(EXCLUDED.escritorio_id, core.contador.escritorio_id), assina_ecd_ecf = EXCLUDED.assina_ecd_ecf
                 RETURNING id
@@ -64,7 +64,8 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
                         THEN CASE WHEN position(c.uf_crc IN c.crc) > 0 THEN c.crc ELSE c.uf_crc || '-' || c.crc END
                         ELSE CASE WHEN e.crc IS NULL OR position(COALESCE(e.uf_crc, '##') IN e.crc) > 0 THEN e.crc ELSE e.uf_crc || '-' || e.crc END
                    END,
-                   v.inicio, v.fim, v.responsavel_tecnico, COALESCE(c.assina_ecd_ecf, FALSE)
+                   v.inicio, v.fim, v.responsavel_tecnico, COALESCE(c.assina_ecd_ecf, FALSE),
+                   v.procurador, v.procuracao_inicio, v.procuracao_fim, v.procuracao_abrangencia, v.procuracao_observacao
               FROM core.empresa_contabilidade v
               LEFT JOIN core.contador c ON c.id = v.contador_id
               LEFT JOIN core.escritorio_contabil e ON e.id = v.escritorio_id
@@ -76,21 +77,31 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
         while (await r.ReadAsync(ct))
             res.Add(new VinculoContabil(r.GetInt64(0), r.IsDBNull(1) ? null : r.GetInt64(1), r.IsDBNull(2) ? null : r.GetInt64(2), r.GetString(3),
                 r.GetString(4), T(r, 5), r.GetFieldValue<DateOnly>(6), r.IsDBNull(7) ? null : r.GetFieldValue<DateOnly>(7), r.GetBoolean(8),
-                r.GetBoolean(9)));
+                r.GetBoolean(9),
+                r.GetBoolean(10) ? new Procuracao(true, r.IsDBNull(11) ? null : r.GetFieldValue<DateOnly>(11), r.IsDBNull(12) ? null : r.GetFieldValue<DateOnly>(12),
+                                                  r.GetFieldValue<string[]>(13), T(r, 14)) : null));
         return res;
     }
 
-    public Task<long> IncluirVinculoAsync(long empresaId, long? contadorId, long? escritorioId, DateOnly inicio, bool responsavel, long usuarioId,
-                                          CancellationToken ct)
+    public Task<long> IncluirVinculoAsync(long empresaId, long? contadorId, long? escritorioId, DateOnly inicio, bool responsavel, Procuracao? procuracao,
+                                          long usuarioId, CancellationToken ct)
         => ComUsuario(usuarioId, async (con, tx) =>
         {
             await using var cmd = new NpgsqlCommand("""
-                INSERT INTO core.empresa_contabilidade (empresa_id, contador_id, escritorio_id, inicio, responsavel_tecnico)
-                VALUES (@e, @c, @esc, @i, @r) RETURNING id
+                INSERT INTO core.empresa_contabilidade (empresa_id, contador_id, escritorio_id, inicio, responsavel_tecnico,
+                                                        procurador, procuracao_inicio, procuracao_fim, procuracao_abrangencia, procuracao_observacao)
+                VALUES (@e, @c, @esc, @i, @r, @pr, @pi, @pf, @pa, @po) RETURNING id
                 """, con, tx).Com("e", empresaId).Com("c", NpgsqlDbType.Bigint, contadorId).Com("esc", NpgsqlDbType.Bigint, escritorioId)
-                             .Com("i", inicio).Com("r", responsavel);
+                             .Com("i", inicio).Com("r", responsavel).ComProcuracao(procuracao);
             return (long)(await cmd.ExecuteScalarAsync(ct))!;
         }, ct);
+
+    public Task DefinirProcuracaoAsync(long empresaId, long vinculoId, Procuracao procuracao, long usuarioId, CancellationToken ct)
+        => Executar(usuarioId, """
+            UPDATE core.empresa_contabilidade SET procurador = @pr, procuracao_inicio = @pi, procuracao_fim = @pf, procuracao_abrangencia = @pa,
+                   procuracao_observacao = @po
+             WHERE id = @id AND empresa_id = @e AND contador_id IS NOT NULL
+            """, c => c.Com("id", vinculoId).Com("e", empresaId).ComProcuracao(procuracao), ct);
 
     public Task EncerrarVinculoAsync(long empresaId, long vinculoId, DateOnly fim, long usuarioId, CancellationToken ct)
         => Executar(usuarioId, "UPDATE core.empresa_contabilidade SET fim = @f WHERE id = @id AND empresa_id = @e",
@@ -154,35 +165,19 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
     public async Task<IReadOnlyList<Procurador>> ListarProcuradoresAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, nome, cpf, email, telefone, vigencia_inicio, vigencia_fim, observacao FROM core.procurador WHERE empresa_id = @e ORDER BY vigencia_inicio DESC, id DESC
+            SELECT v.id, c.nome, c.cpf, c.email, c.telefone, v.procuracao_inicio, v.procuracao_fim, v.procuracao_abrangencia, v.procuracao_observacao
+              FROM core.empresa_contabilidade v
+              JOIN core.contador c ON c.id = v.contador_id
+             WHERE v.empresa_id = @e AND v.procurador
+             ORDER BY v.procuracao_inicio DESC, v.id DESC
             """).Com("e", empresaId);
         var res = new List<Procurador>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new Procurador(r.GetInt64(0), r.GetString(1), r.GetString(2).Trim(), T(r, 3), T(r, 4), r.GetFieldValue<DateOnly>(5),
-                r.IsDBNull(6) ? null : r.GetFieldValue<DateOnly>(6), T(r, 7)));
+                r.IsDBNull(6) ? null : r.GetFieldValue<DateOnly>(6), r.GetFieldValue<string[]>(7), T(r, 8)));
         return res;
     }
-
-    public Task<long> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct)
-        => ComUsuario(usuarioId, async (con, tx) =>
-        {
-            await using var cmd = new NpgsqlCommand(p.Id == 0
-                ? """
-                  INSERT INTO core.procurador (empresa_id, nome, cpf, email, telefone, vigencia_inicio, vigencia_fim, observacao)
-                  VALUES (@e, @n, @cpf, @em, @tel, @vi, @vf, @o) RETURNING id
-                  """
-                : """
-                  UPDATE core.procurador SET nome = @n, cpf = @cpf, email = @em, telefone = @tel, vigencia_inicio = @vi, vigencia_fim = @vf, observacao = @o
-                   WHERE id = @id AND empresa_id = @e RETURNING id
-                  """, con, tx)
-                .Com("id", p.Id).Com("e", empresaId).Com("n", p.Nome).Com("cpf", p.Cpf).ComTexto("em", p.Email).ComTexto("tel", p.Telefone)
-                .Com("vi", p.VigenciaInicio).Com("vf", NpgsqlDbType.Date, p.VigenciaFim).ComTexto("o", p.Observacao);
-            return await cmd.ExecuteScalarAsync(ct) is long id ? id : throw new Domain.Comum.ViolacaoRegraException("Procurador não encontrado.");
-        }, ct);
-
-    public Task ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct)
-        => Executar(usuarioId, "DELETE FROM core.procurador WHERE id = @id AND empresa_id = @e", c => c.Com("id", procuradorId).Com("e", empresaId), ct);
 
     private static string? T(NpgsqlDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
 
@@ -204,4 +199,15 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
             parametros(cmd);
             return await cmd.ExecuteNonQueryAsync(ct);
         }, ct);
+}
+
+internal static class ProcuracaoParametros
+{
+    /// <summary>Parâmetros @pr, @pi, @pf, @pa e @po da procuração (sem procuração: não é procurador e os demais campos ficam vazios).</summary>
+    public static NpgsqlCommand ComProcuracao(this NpgsqlCommand cmd, Procuracao? p)
+        => cmd.Com("pr", p is { Procurador: true })
+              .Com("pi", NpgsqlDbType.Date, p is { Procurador: true } ? p.Inicio : null)
+              .Com("pf", NpgsqlDbType.Date, p is { Procurador: true } ? p.Fim : null)
+              .Com("pa", NpgsqlDbType.Array | NpgsqlDbType.Text, p is { Procurador: true } ? p.Abrangencia.ToArray() : Array.Empty<string>())
+              .ComTexto("po", p is { Procurador: true } ? p.Observacao : null);
 }

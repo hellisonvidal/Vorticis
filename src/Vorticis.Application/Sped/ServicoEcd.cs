@@ -140,7 +140,7 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
             c.FimExercicio, opcoes.NivelAglutinacao, opcoes.Mutacoes, opcoes.IncluirHistoricosPadronizados, opcoes.MudancaPlanoContas,
             c.ResultadoAnterior);
         var signatarios = await SignatariosAsync(empresaId, c.Empresa.Nome, c.Empresa.Cnpj, opcoes.ResponsavelPessoaJuridica, opcoes.CodigoQualificacaoSocio,
-            opcoes.NumeroCertidaoCrc, opcoes.ValidadeCertidaoCrc, opcoes.AssinarComoProcurador, ct);
+            opcoes.NumeroCertidaoCrc, opcoes.ValidadeCertidaoCrc, opcoes.AssinarComoProcurador, "ECD", ct);
         var dados = new DadosEcd(c.Empresa, parametros, c.Plano, c.CentrosCusto, c.Historicos, c.SaldosAbertura, c.Lancamentos, signatarios);
         var calc = new CalculoEcd(dados);
         var pendencias = ValidadorEcd.Validar(dados, calc).ToList();
@@ -191,15 +191,17 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
         pendencias.RemoveAll(p => p.Codigo == "SEM_RESPONSAVEL");
         var ultimo = await responsaveis.UltimoProcuradorAsync(empresaId, ct);
         pendencias.Add(new(GravidadePendencia.Bloqueante, "PROCURADOR_NAO_VIGENTE", ultimo is null
-            ? "Nenhum procurador cadastrado para a empresa (Cadastros › Procurador): cadastre-o com a vigência da procuração ou assine como responsável."
-            : $"A procuração de {ultimo.Nome} não está vigente em {hoje:dd/MM/yyyy} (vigência de {ultimo.VigenciaInicio:dd/MM/yyyy} " +
-              $"{(ultimo.VigenciaFim is { } f ? $"a {f:dd/MM/yyyy}" : "sem fim")}): renove a procuração no cadastro ou assine como responsável."));
+            ? "Nenhum procurador cadastrado para a empresa (Cadastros › Contadores, seção Procuração eletrônica): marque o contador como procurador, com a vigência da procuração, ou assine como responsável."
+            : ultimo.VigenteEm(hoje)
+                ? $"A procuração de {ultimo.Nome} não abrange a {escrituracao} (abrangência: {string.Join(", ", ultimo.Abrangencia.Select(AbrangenciaProcuracao.Descricao))}): marque a {escrituracao} na procuração do contador ou assine como responsável."
+                : $"A procuração de {ultimo.Nome} não está vigente em {hoje:dd/MM/yyyy} (vigência de {ultimo.VigenciaInicio:dd/MM/yyyy} " +
+                  $"{(ultimo.VigenciaFim is { } f ? $"a {f:dd/MM/yyyy}" : "sem fim")}): renove a procuração no cadastro do contador ou assine como responsável."));
     }
 
     /// <summary>Signatários do livro (contador e responsável), compartilhado com a ECF (0930 usa os mesmos códigos de qualificação).</summary>
     public async Task<IReadOnlyList<SignatarioEcd>> SignatariosAsync(long empresaId, string nomeEmpresa, string cnpjEmpresa, bool responsavelPessoaJuridica,
                                                                       string? codigoQualificacaoSocio, string? numeroCertidaoCrc, DateOnly? validadeCertidaoCrc,
-                                                                      bool assinarComoProcurador, CancellationToken ct)
+                                                                      bool assinarComoProcurador, string escrituracao, CancellationToken ct)
     {
         var lista = new List<SignatarioEcd>();
         if (await responsaveis.SignatarioEcdEcfAsync(empresaId, ct) is { } contador)
@@ -209,7 +211,7 @@ public sealed class ServicoEcd(IConsultasEcd consultas, IRepositorioContabil con
         if (assinarComoProcurador)
         {
             // Procurador com procuração vigente hoje assina no lugar do responsável (qualificação 309 – Procurador).
-            if (await responsaveis.ProcuradorVigenteAsync(empresaId, DateOnly.FromDateTime(DateTime.Today), ct) is { } procurador)
+            if (await responsaveis.ProcuradorVigenteAsync(empresaId, DateOnly.FromDateTime(DateTime.Today), escrituracao, ct) is { } procurador)
                 lista.Add(new SignatarioEcd(procurador.Nome, procurador.Cpf, QualificacaoAssinante.Descricao(QualificacaoAssinante.Procurador),
                     QualificacaoAssinante.Procurador, true, Email: procurador.Email, Telefone: procurador.Telefone));
         }

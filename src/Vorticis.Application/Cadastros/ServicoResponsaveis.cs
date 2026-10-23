@@ -6,20 +6,22 @@ using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Application.Cadastros;
 
-/// <summary>Contador (pessoa física com CRC). <paramref name="AssinaEcdEcf"/>: é quem assina a ECD e a ECF (J930/0930).</summary>
+/// <summary>Contador (pessoa física, em geral com CRC; o procurador que não é contador fica sem CRC). <paramref name="AssinaEcdEcf"/>: é quem assina a ECD e a ECF (J930/0930).</summary>
 public sealed record Contador(long Id, string Nome, string Cpf, string Crc, string UfCrc, string? Email, string? Telefone, long? EscritorioId,
                               bool AssinaEcdEcf = false)
 {
     /// <summary>CRC como impresso nos termos: "UF-número", sem repetir a UF quando ela já faz parte do número (ex.: 1SP123456/O-7).</summary>
-    public string CrcCompleto => Crc.Contains(UfCrc, StringComparison.OrdinalIgnoreCase) ? Crc : $"{UfCrc}-{Crc}";
+    public string CrcCompleto => string.IsNullOrWhiteSpace(Crc) ? "" : Crc.Contains(UfCrc, StringComparison.OrdinalIgnoreCase) ? Crc : $"{UfCrc}-{Crc}";
 }
 
 public sealed record EscritorioContabil(long Id, string Cnpj, string RazaoSocial, string? Crc, string? UfCrc, string? Email, string? Telefone);
 
 public sealed record VinculoContabil(long Id, long? ContadorId, long? EscritorioId, string Nome, string Documento, string? Crc,
-                                     DateOnly Inicio, DateOnly? Fim, bool ResponsavelTecnico, bool AssinaEcdEcf = false)
+                                     DateOnly Inicio, DateOnly? Fim, bool ResponsavelTecnico, bool AssinaEcdEcf = false,
+                                     Procuracao? Procuracao = null)
 {
     public bool Vigente => Fim is null;
+    public bool EhProcurador => Procuracao is { Procurador: true };
     public string Tipo => ContadorId is not null ? "Contador" : "Escritório contábil";
 }
 
@@ -30,10 +32,30 @@ public sealed record Socio(long Id, string Nome, char TipoPessoa, string? CpfCnp
     public bool Ativo => DataSaida is null;
 }
 
-/// <summary>Procurador da empresa: pessoa física com procuração para assinar a ECD e a ECF (qualificação 309 – Procurador). A procuração eletrônica fica no e-CAC.</summary>
-public sealed record Procurador(long Id, string Nome, string Cpf, string? Email, string? Telefone, DateOnly VigenciaInicio, DateOnly? VigenciaFim, string? Observacao = null)
+/// <summary>Códigos da abrangência da procuração eletrônica (para quais obrigações o procurador pode assinar/transmitir).</summary>
+public static class AbrangenciaProcuracao
+{
+    public const string Ecd = "ECD", Ecf = "ECF", Efd = "EFD", Esocial = "ESOCIAL";
+    public static readonly IReadOnlyList<string> Todas = [Ecd, Ecf, Efd, Esocial];
+
+    public static string Descricao(string codigo) => codigo switch { Esocial => "eSocial", _ => codigo };
+}
+
+/// <summary>
+/// Procuração eletrônica do contador vinculado à empresa: é procurador da empresa, a vigência e a abrangência (ECD, ECF, EFD, ESOCIAL).
+/// A procuração eletrônica em si é cadastrada no e-CAC.
+/// </summary>
+public sealed record Procuracao(bool Procurador, DateOnly? Inicio, DateOnly? Fim, IReadOnlyList<string> Abrangencia, string? Observacao = null)
+{
+    public static Procuracao Nenhuma { get; } = new(false, null, null, []);
+}
+
+/// <summary>Procurador da empresa: o contador marcado como procurador no vínculo (qualificação 309 – Procurador na ECD/ECF). A procuração eletrônica fica no e-CAC.</summary>
+public sealed record Procurador(long Id, string Nome, string Cpf, string? Email, string? Telefone, DateOnly VigenciaInicio, DateOnly? VigenciaFim,
+                                IReadOnlyList<string> Abrangencia, string? Observacao = null)
 {
     public bool VigenteEm(DateOnly data) => VigenciaInicio <= data && (VigenciaFim is null || VigenciaFim >= data);
+    public bool Abrange(string obrigacao) => Abrangencia.Contains(obrigacao, StringComparer.OrdinalIgnoreCase);
 }
 
 public interface IRepositorioResponsaveis
@@ -46,7 +68,8 @@ public interface IRepositorioResponsaveis
     Task<long> SalvarEscritorioAsync(EscritorioContabil e, CancellationToken ct);
 
     Task<IReadOnlyList<VinculoContabil>> ListarVinculosAsync(long empresaId, CancellationToken ct);
-    Task<long> IncluirVinculoAsync(long empresaId, long? contadorId, long? escritorioId, DateOnly inicio, bool responsavel, long usuarioId, CancellationToken ct);
+    Task<long> IncluirVinculoAsync(long empresaId, long? contadorId, long? escritorioId, DateOnly inicio, bool responsavel, Procuracao? procuracao, long usuarioId, CancellationToken ct);
+    Task DefinirProcuracaoAsync(long empresaId, long vinculoId, Procuracao procuracao, long usuarioId, CancellationToken ct);
     Task EncerrarVinculoAsync(long empresaId, long vinculoId, DateOnly fim, long usuarioId, CancellationToken ct);
     Task DefinirResponsavelAsync(long empresaId, long vinculoId, long usuarioId, CancellationToken ct);
     Task DefinirAssinaEcdEcfAsync(long contadorId, bool assina, long usuarioId, CancellationToken ct);
@@ -57,8 +80,6 @@ public interface IRepositorioResponsaveis
     Task ExcluirSocioAsync(long empresaId, long socioId, long usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<Procurador>> ListarProcuradoresAsync(long empresaId, CancellationToken ct);
-    Task<long> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct);
-    Task ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct);
 }
 
 /// <summary>
@@ -106,6 +127,7 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
         var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).FirstOrDefault(x => x.Id == vinculoId);
         if (v is null) return Resultado.Falha("Vínculo não encontrado.");
         if (v.ContadorId is not long contador) return Resultado.Falha("Só um contador (pessoa física com CRC) assina a ECD/ECF.");
+        if (assina && string.IsNullOrWhiteSpace(v.Crc)) return Resultado.Falha("Informe o CRC do contador no cadastro para ele assinar a ECD/ECF.");
         return await GravarSemValor(() => repositorio.DefinirAssinaEcdEcfAsync(contador, assina, usuarioId, ct));
     }
 
@@ -122,28 +144,34 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
     // ------------------------------------------------------------------ contabilidade
 
     public async Task<Resultado<long>> VincularContadorAsync(long empresaId, Contador dados, DateOnly inicio, bool responsavelTecnico, long usuarioId,
-                                                            CancellationToken ct = default)
+                                                            CancellationToken ct = default, Procuracao? procuracao = null)
     {
         if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return negado;
         var cpf = Cnpj.SomenteDigitos(dados.Cpf);
         var erros = new List<string>();
         if (string.IsNullOrWhiteSpace(dados.Nome)) erros.Add("Informe o nome do contador.");
         if (!Cpf.Valido(cpf)) erros.Add("CPF do contador inválido.");
-        if (string.IsNullOrWhiteSpace(dados.Crc)) erros.Add("Informe o número do CRC.");
-        if (!Uf.Valida(dados.UfCrc)) erros.Add("UF do CRC inválida.");
+        // Só o procurador que não assina como contador (nem é responsável técnico) pode ficar sem CRC.
+        var semCrc = procuracao is { Procurador: true } && !responsavelTecnico && !dados.AssinaEcdEcf && string.IsNullOrWhiteSpace(dados.Crc);
+        if (!semCrc)
+        {
+            if (string.IsNullOrWhiteSpace(dados.Crc)) erros.Add("Informe o número do CRC.");
+            if (!Uf.Valida(dados.UfCrc)) erros.Add("UF do CRC inválida.");
+        }
+        erros.AddRange(ValidarProcuracao(procuracao));
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
 
         var vinculos = await repositorio.ListarVinculosAsync(empresaId, ct);
         var contadorId = await repositorio.SalvarContadorAsync(dados with
         {
-            Nome = dados.Nome.Trim(), Cpf = cpf, Crc = dados.Crc.Trim().ToUpperInvariant(), UfCrc = dados.UfCrc.Trim().ToUpperInvariant(),
+            Nome = dados.Nome.Trim(), Cpf = cpf, Crc = semCrc ? "" : dados.Crc.Trim().ToUpperInvariant(), UfCrc = semCrc ? "" : dados.UfCrc.Trim().ToUpperInvariant(),
             Email = Limpar(dados.Email)?.ToLowerInvariant(), Telefone = Limpar(dados.Telefone),
         }, ct);
         if (vinculos.Any(v => v.Vigente && v.ContadorId == contadorId))
             return Resultado<long>.Falha("Este contador já está vinculado à empresa (dados cadastrais atualizados).");
         if (responsavelTecnico && vinculos.FirstOrDefault(v => v.Vigente && v.ResponsavelTecnico) is { } atual)
             return Resultado<long>.Falha($"{atual.Nome} já é o responsável técnico vigente. Encerre o vínculo dele ou vincule sem marcar como responsável.");
-        return await Gravar(() => repositorio.IncluirVinculoAsync(empresaId, contadorId, null, inicio, responsavelTecnico, usuarioId, ct));
+        return await Gravar(() => repositorio.IncluirVinculoAsync(empresaId, contadorId, null, inicio, responsavelTecnico, NormalizarProcuracao(procuracao), usuarioId, ct));
     }
 
     public async Task<Resultado<long>> VincularEscritorioAsync(long empresaId, EscritorioContabil dados, DateOnly inicio, long usuarioId,
@@ -164,7 +192,7 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
         }, ct);
         if ((await repositorio.ListarVinculosAsync(empresaId, ct)).Any(v => v.Vigente && v.EscritorioId == id))
             return Resultado<long>.Falha("Este escritório já está vinculado à empresa (dados cadastrais atualizados).");
-        return await Gravar(() => repositorio.IncluirVinculoAsync(empresaId, null, id, inicio, false, usuarioId, ct));
+        return await Gravar(() => repositorio.IncluirVinculoAsync(empresaId, null, id, inicio, false, null, usuarioId, ct));
     }
 
     public async Task<Resultado> EncerrarVinculoAsync(long empresaId, long vinculoId, DateOnly fim, long usuarioId, CancellationToken ct = default)
@@ -183,6 +211,7 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
         var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).FirstOrDefault(x => x.Id == vinculoId);
         if (v is null) return Resultado.Falha("Vínculo não encontrado.");
         if (v.ContadorId is null) return Resultado.Falha("O responsável técnico deve ser um contador (pessoa física com CRC).");
+        if (string.IsNullOrWhiteSpace(v.Crc)) return Resultado.Falha("Informe o CRC do contador no cadastro para ele ser o responsável técnico.");
         if (!v.Vigente) return Resultado.Falha("O vínculo está encerrado.");
         return await GravarSemValor(() => repositorio.DefinirResponsavelAsync(empresaId, vinculoId, usuarioId, ct));
     }
@@ -238,47 +267,53 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
         return await GravarSemValor(() => repositorio.ExcluirSocioAsync(empresaId, socioId, usuarioId, ct));
     }
 
-    // ------------------------------------------------------------------ procuradores (assinatura da ECD/ECF)
+    // ------------------------------------------------------------------ procuração eletrônica (contador procurador da empresa)
 
     public async Task<Resultado<IReadOnlyList<Procurador>>> ListarProcuradoresAsync(long empresaId, long usuarioId, CancellationToken ct = default)
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
             ? Resultado<IReadOnlyList<Procurador>>.Ok(await repositorio.ListarProcuradoresAsync(empresaId, ct))
             : Resultado<IReadOnlyList<Procurador>>.Falha("Você não tem acesso a esta empresa.");
 
-    /// <summary>Vínculos contábeis da empresa, sem checagem de acesso (para uso por serviços que já autorizaram o usuário, como a transmissão do eSocial).</summary>
     public Task<IReadOnlyList<VinculoContabil>> ListarVinculosParaTransmissaoAsync(long empresaId, CancellationToken ct = default)
         => repositorio.ListarVinculosAsync(empresaId, ct);
 
-    /// <summary>Procurador com procuração vigente na data (o de vigência iniciada mais recentemente); nulo se não houver.</summary>
-    public async Task<Procurador?> ProcuradorVigenteAsync(long empresaId, DateOnly data, CancellationToken ct = default)
-        => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).Where(p => p.VigenteEm(data)).OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();
+    /// <summary>
+    /// Contador procurador com procuração vigente na data e que abrange a obrigação (ECD, ECF, EFD ou ESOCIAL); havendo mais de um,
+    /// o de vigência iniciada mais recentemente. Nulo se não houver.
+    /// </summary>
+    public async Task<Procurador?> ProcuradorVigenteAsync(long empresaId, DateOnly data, string abrangencia, CancellationToken ct = default)
+        => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).Where(p => p.VigenteEm(data) && p.Abrange(abrangencia))
+                                                                   .OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();
 
     /// <summary>Procurador mais recente cadastrado (vigente ou não): serve para explicar por que a procuração não vale.</summary>
     public async Task<Procurador?> UltimoProcuradorAsync(long empresaId, CancellationToken ct = default)
         => (await repositorio.ListarProcuradoresAsync(empresaId, ct)).OrderByDescending(p => p.VigenciaInicio).FirstOrDefault();
 
-    public async Task<Resultado<long>> SalvarProcuradorAsync(long empresaId, Procurador p, long usuarioId, CancellationToken ct = default)
-    {
-        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return negado;
-        var cpf = Cnpj.SomenteDigitos(p.Cpf);
-        var erros = new List<string>();
-        if (string.IsNullOrWhiteSpace(p.Nome)) erros.Add("Informe o nome do procurador.");
-        if (!Cpf.Valido(cpf)) erros.Add("CPF do procurador inválido.");
-        if (p.VigenciaFim is { } fim && fim < p.VigenciaInicio) erros.Add("O fim da vigência da procuração não pode ser anterior ao início.");
-        if (!string.IsNullOrWhiteSpace(p.Email) && !System.Text.RegularExpressions.Regex.IsMatch(p.Email.Trim(), @"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$"))
-            erros.Add("E-mail do procurador inválido.");
-        if (erros.Count > 0) return Resultado<long>.Falha(erros);
-        return await Gravar(() => repositorio.SalvarProcuradorAsync(empresaId, p with
-        {
-            Nome = p.Nome.Trim(), Cpf = cpf, Email = Limpar(p.Email)?.ToLowerInvariant(), Telefone = Limpar(p.Telefone), Observacao = Limpar(p.Observacao),
-        }, usuarioId, ct));
-    }
-
-    public async Task<Resultado> ExcluirProcuradorAsync(long empresaId, long procuradorId, long usuarioId, CancellationToken ct = default)
+    /// <summary>Marca/desmarca o contador do vínculo como procurador da empresa e grava a vigência, a abrangência e a observação.</summary>
+    public async Task<Resultado> DefinirProcuracaoAsync(long empresaId, long vinculoId, Procuracao procuracao, long usuarioId, CancellationToken ct = default)
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
-        return await GravarSemValor(() => repositorio.ExcluirProcuradorAsync(empresaId, procuradorId, usuarioId, ct));
+        var v = (await repositorio.ListarVinculosAsync(empresaId, ct)).FirstOrDefault(x => x.Id == vinculoId);
+        if (v is null) return Resultado.Falha("Vínculo não encontrado.");
+        if (v.ContadorId is null) return Resultado.Falha("Só uma pessoa física (contador) pode ser procuradora da empresa.");
+        var erros = ValidarProcuracao(procuracao).ToList();
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        return await GravarSemValor(() => repositorio.DefinirProcuracaoAsync(empresaId, vinculoId, NormalizarProcuracao(procuracao)!, usuarioId, ct));
     }
+
+    private static IEnumerable<string> ValidarProcuracao(Procuracao? p)
+    {
+        if (p is not { Procurador: true }) yield break;
+        if (p.Inicio is null) yield return "Informe o início da vigência da procuração.";
+        if (p.Inicio is { } i && p.Fim is { } f && f < i) yield return "O fim da vigência da procuração não pode ser anterior ao início.";
+        if (p.Abrangencia.Count == 0) yield return "Marque ao menos uma abrangência da procuração (ECD, ECF, EFD ou eSocial).";
+        if (p.Abrangencia.Any(a => !AbrangenciaProcuracao.Todas.Contains(a.Trim().ToUpperInvariant()))) yield return "Abrangência da procuração inválida.";
+    }
+
+    /// <summary>Sem a marcação de procurador, os demais campos da procuração são descartados.</summary>
+    private static Procuracao? NormalizarProcuracao(Procuracao? p)
+        => p is not { Procurador: true } ? null
+         : p with { Abrangencia = p.Abrangencia.Select(a => a.Trim().ToUpperInvariant()).Distinct().ToList(), Observacao = Limpar(p.Observacao) };
 
     /// <summary>Busca o QSA da empresa na base pública da RFB e inclui os sócios que ainda não estão cadastrados.</summary>
     public async Task<Resultado<int>> ImportarDaReceitaAsync(long empresaId, long usuarioId, CancellationToken ct = default)

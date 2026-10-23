@@ -397,13 +397,17 @@ public class EcdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.False((await db.App.Ecd.GerarAsync(empresa, 2025, opcoes, adm, ct: ct)).Sucesso);
 
         // Procuração vencida: bloqueia explicando a vigência
-        var proc = new Procurador(0, "Pedro Procurador", CpfProcurador, "pedro@exemplo.com.br", "(11) 98888-7777", new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 31));
-        var id = (await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc, adm, ct)).Valor;
+        var id = await db.App.CadastrarProcuradorAsync(empresa, adm, "Pedro Procurador", CpfProcurador, new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 31),
+            "pedro@exemplo.com.br", "(11) 98888-7777");
         var vencida = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
         Assert.Contains(vencida.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Mensagem.Contains("não está vigente"));
 
         // Vigente: signatário 309 com IND_RESP_LEGAL = S no lugar do sócio, aviso do e-CAC
-        Assert.True((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { Id = id, VigenciaFim = null }, adm, ct)).Sucesso);
+        // Procuração só da ECF: não vale para a ECD
+        Assert.True((await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, id, new Procuracao(true, new DateOnly(2024, 1, 1), null, ["ECF"]), adm, ct)).Sucesso);
+        var semAbrangencia = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
+        Assert.Contains(semAbrangencia.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Mensagem.Contains("não abrange a ECD"));
+        Assert.True((await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, id, new Procuracao(true, new DateOnly(2024, 1, 1), null, ["ECD", "ECF"]), adm, ct)).Sucesso);
         var previa = await db.App.Ecd.ValidarAsync(empresa, 2025, opcoes, adm, ct);
         Assert.True(previa.Valor.PodeGerar, string.Join("; ", previa.Valor.Bloqueantes.Select(b => b.Mensagem)));
         Assert.Contains(previa.Valor.Avisos, p => p.Codigo == "PROCURACAO_ECAC" && p.Mensagem.Contains("e-CAC"));

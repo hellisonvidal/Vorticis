@@ -177,7 +177,7 @@ public partial class EcdAssistenteViewModel(IContexto contexto) : ModuloViewMode
         ("Cadastro da empresa (CNPJ, NIRE, município)", ["CNPJ_", "NIRE_", "MUNICIPIO_", "UF_", "NOME_", "PERIODO_"], Telas.Empresas, "Abrir Cadastro de empresas"),
         ("Contador cadastrado (CPF, CRC, e-mail, telefone)", ["SEM_CONTADOR", "CONTADOR_"], Telas.Contabilidade, "Abrir Contabilidade da empresa"),
         ("Responsável pela assinatura (sócio)", ["SEM_RESPONSAVEL", "RESPONSAVEIS", "SIGNATARIO_"], Telas.Socios, "Abrir Sócios"),
-        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Procuradores, "Abrir Procurador"),
+        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Contabilidade, "Abrir Contadores"),
         ("Lançamentos e saldos consistentes", ["ABERTURA_", "BALANCETE_", "BALANCO_", "LANCAMENTO_", "HISTORICO_", "EXTEMPORANEO_", "SALDO_", "SEM_LANCAMENTOS", "SEM_BALANCO", "SEM_DRE", "RASCUNHO", "LACUNA"], Telas.DiferencasSaldos, "Abrir Diferenças de saldos"),
     ];
 

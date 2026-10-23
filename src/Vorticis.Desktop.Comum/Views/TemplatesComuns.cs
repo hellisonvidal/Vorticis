@@ -18,7 +18,6 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(CadastroEmpresaViewModel)] = () => new CadastroEmpresaView(),
         [typeof(ContabilidadeEmpresaViewModel)] = () => new ContabilidadeEmpresaView(),
         [typeof(SociosViewModel)] = () => new SociosView(),
-        [typeof(ProcuradoresViewModel)] = () => new ProcuradoresView(),
         [typeof(ClientesViewModel)] = () => new ParticipantesView(),
         [typeof(FornecedoresViewModel)] = () => new ParticipantesView(),
         [typeof(UsuariosViewModel)] = () => new UsuariosView(),

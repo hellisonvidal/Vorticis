@@ -10,7 +10,6 @@ sobre=01-primeiros-passos.md#tela-inicial-e-ajuda
 empresas=02-cadastros-comuns.md#empresas
 contabilidade=02-cadastros-comuns.md#contadores
 socios=02-cadastros-comuns.md#socios
-procuradores=02-cadastros-comuns.md#procuradores
 clientes=02-cadastros-comuns.md#clientes-e-fornecedores-participantes
 fornecedores=02-cadastros-comuns.md#clientes-e-fornecedores-participantes
 usuarios=01-primeiros-passos.md#usuarios-perfis-e-empresas-por-usuario

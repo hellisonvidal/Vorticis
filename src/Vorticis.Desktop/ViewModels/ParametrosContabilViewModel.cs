@@ -53,7 +53,7 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
                 [Atalho("Abrir Centros de custo", Telas.CentrosCusto)]),
             new("Encerramento do exercício", "Contas padrão usadas pela tela Encerramento do exercício.", enc,
                 [Atalho("Abrir Encerramento do exercício", Telas.Encerramento)]),
-            new("SPED Contábil (ECD) e ECF", "Dados da empresa usados na geração dos arquivos. O restante (responsáveis, contador, procurador) fica nos cadastros.", sped,
+            new("SPED Contábil (ECD) e ECF", "Dados da empresa usados na geração dos arquivos. O restante (responsáveis, contador e procuração eletrônica) fica nos cadastros.", sped,
                 [Atalho("Abrir Empresas", Telas.Empresas)]),
         ];
     }

@@ -49,7 +49,6 @@ public static class TelasComuns
     public const string Empresas = "empresas";
     public const string Contabilidade = "contabilidade";
     public const string Socios = "socios";
-    public const string Procuradores = "procuradores";
     public const string Clientes = "clientes";
     public const string Fornecedores = "fornecedores";
     public const string Usuarios = "usuarios";
@@ -142,7 +141,6 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public PerfisViewModel Perfis => Instancia<PerfisViewModel>();
     public ContabilidadeEmpresaViewModel Contabilidade => Instancia<ContabilidadeEmpresaViewModel>();
     public SociosViewModel Socios => Instancia<SociosViewModel>();
-    public ProcuradoresViewModel Procuradores => Instancia<ProcuradoresViewModel>();
     public AlterarSenhaViewModel AlterarSenha => Instancia<AlterarSenhaViewModel>();
     public SobreViewModel Sobre => Instancia<SobreViewModel>();
     public ManualViewModel Manual => Instancia<ManualViewModel>();
@@ -184,9 +182,6 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Socios), m => new SociosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa || AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaSocios) ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Socios, "Cadastros › Sócios", ComAcesso, v => v.CarregarAsync());
-        c.Instancia(nameof(Procuradores), m => new ProcuradoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(TelasComuns.Procuradores, "Cadastros › Procurador", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(Clientes), m => new ClientesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(TelasComuns.Clientes, "Cadastros › Clientes", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(Fornecedores), m => new FornecedoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
@@ -223,7 +218,6 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         {
             ItemMenu.Tela("Empresas", TelasComuns.Empresas),
             ItemMenu.Tela("Contadores", TelasComuns.Contabilidade),
-            ItemMenu.Tela("Procurador (assinatura ECD/ECF)", TelasComuns.Procuradores),
             ItemMenu.Tela("Clientes", TelasComuns.Clientes),
             ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores),
         };

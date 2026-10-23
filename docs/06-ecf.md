@@ -136,7 +136,7 @@ remuneração de sócios gerados com valores padrão, competências abertas.
 
 Valem para a ECF as mesmas regras da ECD (ver [05-ecd.md](05-ecd.md#contador-usa-o-certificado-da-empresa-assinatura-como-procurador)): o perfil
 Contador usa os certificados cadastrados da empresa para assinar (cadastro continua do administrador) e a opção **Assinar como procurador**
-coloca no 0930 o procurador com vigência na data da geração, com `IDENT_QUALIF = 309` (Procurador), conferindo o CPF do certificado. A
+coloca no 0930 o contador procurador com vigência na data da geração e abrangência ECF, com `IDENT_QUALIF = 309` (Procurador), conferindo o CPF do certificado. A
 transmissão por procurador exige a procuração eletrônica no e-CAC (aviso `PROCURACAO_ECAC` e lembrete no passo final).
 
 ## Como validar no PVA

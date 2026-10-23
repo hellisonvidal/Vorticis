@@ -174,6 +174,14 @@ public class TransmissaoEsocialTests(BancoFolha db) : IClassFixture<BancoFolha>
         Assert.Equal("PROCESSADO", (await es.ListarAsync(empresa, competencia, adm, Ct)).Single(e => e.Tipo == "S-2200").Status);
     }
 
+    private static async Task<long> CadastrarProcuradorAsync(Vorticis.Infra.VorticisApp app, long empresa, long usuario, string nome, string cpf, DateOnly inicio, DateOnly? fim)
+    {
+        var r = await app.Responsaveis.VincularContadorAsync(empresa, new Contador(0, nome, cpf, "", "", null, null, null, false), inicio, false, usuario, Ct,
+            new Procuracao(true, inicio, fim, ["ECD", "ECF", "ESOCIAL"]));
+        Ok(r);
+        return r.Valor;
+    }
+
     [Fact]
     public async Task Lote_recusado_marca_erro_e_permite_reenviar_e_procurador_exige_procuracao_vigente()
     {
@@ -189,10 +197,14 @@ public class TransmissaoEsocialTests(BancoFolha db) : IClassFixture<BancoFolha>
         // Procurador: CPF do certificado = CPF do procurador, com procuração vigente
         using var certProc = AssinaturaEsocialTests.CertificadoTeste("JOAO PROCURADOR:52998224725");
         var hoje = DateOnly.FromDateTime(DateTime.Today);
-        Ok(await db.App.Responsaveis.SalvarProcuradorAsync(empresa, new Procurador(0, "João Procurador", "52998224725", null, null, hoje.AddYears(-2), hoje.AddDays(-5)), adm, Ct));
+        await CadastrarProcuradorAsync(db.App, empresa, adm, "João Procurador", "52998224725", hoje.AddYears(-2), hoje.AddDays(-5));
         Assert.Contains("não está vigente", (await tx.ResolverTransmissorAsync(empresa, PapelTransmissor.Procurador, certProc, Ct)).Erros[0]);
-        Ok(await db.App.Responsaveis.SalvarProcuradorAsync(empresa, new Procurador(0, "Maria Procuradora", "11144477735", null, null, hoje.AddDays(-1), null), adm, Ct));
+        var maria = await CadastrarProcuradorAsync(db.App, empresa, adm, "Maria Procuradora", "11144477735", hoje.AddDays(-1), null);
         Assert.Contains("não é do procurador", (await tx.ResolverTransmissorAsync(empresa, PapelTransmissor.Procurador, certProc, Ct)).Erros[0]);
+        // Abrangência: a procuração só da ECD não vale para o eSocial
+        Ok(await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, maria, new Procuracao(true, hoje.AddDays(-1), null, ["ECD"]), adm, Ct));
+        Assert.Contains("não abrange o eSocial", (await tx.ResolverTransmissorAsync(empresa, PapelTransmissor.Procurador, certProc, Ct)).Erros[0]);
+        Ok(await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, maria, new Procuracao(true, hoje.AddDays(-1), null, ["ESOCIAL"]), adm, Ct));
         using var certProc2 = AssinaturaEsocialTests.CertificadoTeste("MARIA PROCURADORA:11144477735");
         var t = await tx.ResolverTransmissorAsync(empresa, PapelTransmissor.Procurador, certProc2, Ct);
         Ok(t);

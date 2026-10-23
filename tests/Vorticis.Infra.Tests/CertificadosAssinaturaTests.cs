@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Vorticis.Application.Cadastros;
 using Vorticis.Application.Sistema;
 using Vorticis.Domain.Seguranca;
 
@@ -80,7 +81,7 @@ public class CertificadosAssinaturaTests(BancoDeTeste db) : IClassFixture<BancoD
     }
 
     [Fact]
-    public async Task Procurador_so_e_mantido_com_a_funcao_de_responsaveis_e_a_vigencia_define_quem_vale()
+    public async Task Procuracao_no_contador_so_e_mantida_com_a_funcao_de_responsaveis_e_vigencia_e_abrangencia_definem_quem_vale()
     {
         BancoDeTeste.ExigirBanco();
         var ct = TestContext.Current.CancellationToken;
@@ -88,25 +89,40 @@ public class CertificadosAssinaturaTests(BancoDeTeste db) : IClassFixture<BancoD
         var empresa = await db.CriarEmpresaAsync("34238864000168", 2025);
         var consulta = await UsuarioAsync("consulta_proc", "Consulta", empresa);
         var resp = db.App.Responsaveis;
-        var p = new Vorticis.Application.Cadastros.Procurador(0, "  Pedro Procurador ", "111.444.777-35", " PEDRO@Exemplo.com.br ", "(11) 98888-7777",
-            new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31), "Procuração e-CAC 123");
+        var contador = new Contador(0, "  Pedro Procurador ", "111.444.777-35", "", "", " PEDRO@Exemplo.com.br ", "(11) 98888-7777", null, false);
+        var proc = new Procuracao(true, new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31), ["ECD", "esocial"], "Procuração e-CAC 123");
 
-        Assert.False((await resp.SalvarProcuradorAsync(empresa, p, consulta.Id, ct)).Sucesso);
-        var id = (await resp.SalvarProcuradorAsync(empresa, p, adm, ct)).Valor;
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, consulta.Id, ct, proc)).Sucesso);
+        // procurador sem CRC só se não for responsável técnico nem assinar como contador
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), true, adm, ct, proc)).Sucesso);
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, adm, ct)).Sucesso);   // sem procuração, o CRC é obrigatório
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, adm, ct, proc with { Fim = new DateOnly(2024, 1, 1) })).Sucesso);
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, adm, ct, proc with { Abrangencia = [] })).Sucesso);
+        Assert.False((await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, adm, ct, proc with { Abrangencia = ["XYZ"] })).Sucesso);
+        var id = (await resp.VincularContadorAsync(empresa, contador, new DateOnly(2025, 1, 1), false, adm, ct, proc)).Valor;
+
         var salvo = (await resp.ListarProcuradoresAsync(empresa, adm, ct)).Valor.Single();
         Assert.Equal(("Pedro Procurador", "11144477735", "pedro@exemplo.com.br", "Procuração e-CAC 123"), (salvo.Nome, salvo.Cpf, salvo.Email, salvo.Observacao));
-        Assert.Equal(id, (await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2025, 6, 1), ct))!.Id);
-        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2026, 1, 1), ct));          // vencida
-        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2024, 12, 31), ct));        // ainda não vigente
+        Assert.Equal(["ECD", "ESOCIAL"], salvo.Abrangencia.Order());
+        Assert.Equal(id, (await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2025, 6, 1), "ECD", ct))!.Id);
+        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2025, 6, 1), "ECF", ct));      // fora da abrangência
+        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2025, 6, 1), "EFD", ct));
+        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2026, 1, 1), "ECD", ct));      // vencida
+        Assert.Null(await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2024, 12, 31), "ECD", ct));    // ainda não vigente
         Assert.Equal(id, (await resp.UltimoProcuradorAsync(empresa, ct))!.Id);
+        // o vínculo mostra a procuração e o contador sem CRC não assina como contador
+        Assert.True((await resp.ListarVinculosAsync(empresa, adm, ct)).Valor.Single().EhProcurador);
+        Assert.False((await resp.DefinirResponsavelAsync(empresa, id, adm, ct)).Sucesso);
+        Assert.False((await resp.DefinirAssinaEcdEcfAsync(empresa, id, true, adm, ct)).Sucesso);
 
-        // Nova procuração (prazo indeterminado) a partir de 2026: a vigente passa a ser a mais recente
-        var novo = (await resp.SalvarProcuradorAsync(empresa, p with { Nome = "Paula Procuradora", Cpf = "39053344705", VigenciaInicio = new DateOnly(2026, 1, 1), VigenciaFim = null }, adm, ct)).Valor;
-        Assert.Equal(novo, (await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2026, 6, 1), ct))!.Id);
-        Assert.False((await resp.SalvarProcuradorAsync(empresa, p with { Id = id, Email = "sem-arroba" }, adm, ct)).Sucesso);
+        // Nova procuração (prazo indeterminado) a partir de 2026 para outra pessoa: a vigente passa a ser a mais recente
+        var novo = await db.App.CadastrarProcuradorAsync(empresa, adm, "Paula Procuradora", "39053344705", new DateOnly(2026, 1, 1), null, abrangencia: ["ECD"]);
+        Assert.Equal(novo, (await resp.ProcuradorVigenteAsync(empresa, new DateOnly(2026, 6, 1), "ECD", ct))!.Id);
 
-        Assert.False((await resp.ExcluirProcuradorAsync(empresa, id, consulta.Id, ct)).Sucesso);
-        Assert.True((await resp.ExcluirProcuradorAsync(empresa, id, adm, ct)).Sucesso);
+        // Desmarcar o procurador limpa a procuração (só o administrador/quem mantém responsáveis)
+        Assert.False((await resp.DefinirProcuracaoAsync(empresa, id, Procuracao.Nenhuma, consulta.Id, ct)).Sucesso);
+        Assert.True((await resp.DefinirProcuracaoAsync(empresa, id, Procuracao.Nenhuma, adm, ct)).Sucesso);
         Assert.Single((await resp.ListarProcuradoresAsync(empresa, adm, ct)).Valor);
+        Assert.Null((await resp.ListarVinculosAsync(empresa, adm, ct)).Valor.Single(v => v.Id == id).Procuracao);
     }
 }

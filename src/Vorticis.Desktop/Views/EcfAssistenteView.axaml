@@ -28,7 +28,7 @@
             <CheckBox IsChecked="{Binding Retificadora}" Content="ECF retificadora" />
             <CheckBox IsChecked="{Binding InformarEcd}" Content="Informar o hash da ECD gerada pelo Vorticis no bloco C (C040); senão o bloco C sai sem dados e o PVA recupera a ECD" />
             <CheckBox IsChecked="{Binding ResponsavelPessoaJuridica}" Content="Responsável pela assinatura: e-CNPJ da empresa (em vez do sócio com e-CPF)" />
-            <CheckBox IsChecked="{Binding AssinarComoProcurador}" Content="Assinar como procurador (qualificação 309), no lugar do responsável — exige procuração vigente cadastrada em Cadastros › Procurador" />
+            <CheckBox IsChecked="{Binding AssinarComoProcurador}" Content="Assinar como procurador (qualificação 309), no lugar do responsável — exige procuração vigente do contador procurador, em Cadastros › Contadores" />
           </StackPanel>
 
           <!-- 2. Pré-requisitos -->

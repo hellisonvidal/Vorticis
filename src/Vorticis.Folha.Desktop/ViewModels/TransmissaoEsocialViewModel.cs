@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Cadastros;
 using Vorticis.Application.Sistema;
 using Vorticis.Desktop.Comum;
 using Vorticis.Desktop.Comum.ViewModels;
@@ -51,7 +52,7 @@ public partial class TransmissaoEsocialViewModel(IContexto contexto) : ModuloVie
     public static IReadOnlyList<OpcaoTransmissor> Transmissores { get; } =
     [
         new(PapelTransmissor.Empregador, PapelAssinatura.Responsavel, "Empregador (e-CNPJ da empresa)"),
-        new(PapelTransmissor.Procurador, PapelAssinatura.Procurador, "Procurador cadastrado (procuração eletrônica)"),
+        new(PapelTransmissor.Procurador, PapelAssinatura.Procurador, "Contador procurador (procuração eletrônica)"),
         new(PapelTransmissor.Contador, PapelAssinatura.Contador, "Contador / escritório (procuração eletrônica)"),
     ];
 
@@ -59,7 +60,7 @@ public partial class TransmissaoEsocialViewModel(IContexto contexto) : ModuloVie
         "Antes de transmitir:\n" +
         "1. Cadastros completos: empresa (CNPJ, CNAE, município), parâmetros da Folha (classificação tributária, FPAS, RAT/FAP), funcionários (CPF, CBO, sindicato, endereço) e rubricas.\n" +
         "2. Certificado ICP-Brasil A1/A3 válido em Configurações › Certificados digitais, definido como padrão do papel (responsável, procurador ou contador).\n" +
-        "3. Transmitindo por procurador/contador: procuração eletrônica no e-CAC / módulo de procurações do eSocial, com o perfil dos eventos, e o procurador com vigência cadastrada em Cadastros › Procuradores.\n" +
+        "3. Transmitindo por procurador/contador: procuração eletrônica no e-CAC / módulo de procurações do eSocial, com o perfil dos eventos, e o contador procurador com vigência e abrangência eSocial cadastradas em Cadastros › Contadores (Procuração eletrônica).\n" +
         "4. Teste primeiro na PRODUÇÃO RESTRITA. Ordem: S-1000 → tabelas (S-1005, S-1010, S-1020) → não periódicos (S-2200, S-2206, S-2230, S-2299) → periódicos (S-1200, S-1210) → S-1299.\n" +
         "5. Envie, aguarde e use \"Consultar retorno\" até o lote ser processado; só então envie o grupo seguinte.\n" +
         "Guia completo: docs/07-esocial.md";
@@ -130,9 +131,9 @@ public partial class TransmissaoEsocialViewModel(IContexto contexto) : ModuloVie
         var papel = Transmissor.Valor;
         if (papel == PapelTransmissor.Procurador)
         {
-            var p = await app.Responsaveis.ProcuradorVigenteAsync(empresa, DateOnly.FromDateTime(DateTime.Today));
+            var p = await app.Responsaveis.ProcuradorVigenteAsync(empresa, DateOnly.FromDateTime(DateTime.Today), AbrangenciaProcuracao.Esocial);
             SituacaoTransmissor = p is null
-                ? "Nenhum procurador com procuração vigente cadastrado (Cadastros › Procuradores). Cadastre também a procuração eletrônica no e-CAC / eSocial."
+                ? "Nenhum contador procurador com procuração vigente para o eSocial (Cadastros › Contadores, seção Procuração eletrônica). Cadastre também a procuração eletrônica no e-CAC / eSocial."
                 : $"Procurador vigente: {p.Nome} (CPF {p.Cpf}) desde {p.VigenciaInicio:dd/MM/yyyy}{(p.VigenciaFim is { } f ? $" até {f:dd/MM/yyyy}" : "")}. A procuração no e-CAC/eSocial precisa cobrir o perfil dos eventos.";
         }
         else if (papel == PapelTransmissor.Contador)

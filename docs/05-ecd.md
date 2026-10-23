@@ -159,10 +159,11 @@ no Windows (chave exportável) podem ser importados para o Vorticis como A1. Os 
   usa o certificado padrão de cada papel e abre o A1 com a senha guardada neste computador: `ServicoCertificados.ListarParaAssinaturaAsync`,
   `ObterPadraoParaAssinaturaAsync` e `AbrirA1ParaAssinaturaAsync` (certificado de outra empresa é recusado). `ListarAsync`, `ObterPadraoAsync` e
   `AbrirA1Async` seguem exclusivos do administrador. O assistente usa os métodos "para assinatura".
-- **Procurador (migração 027).** Cadastros › Procurador guarda nome, CPF, e-mail, telefone e a **vigência da procuração** (`core.procurador`;
-  permissão de manter responsáveis). Na opção **Assinar como procurador** (passo 1), o responsável do J930 passa a ser o procurador com
+- **Procurador (migrações 027 e 052).** O procurador é o **contador** do vínculo da empresa marcado como procurador (Cadastros › Contadores, seção
+  Procuração eletrônica): colunas `procurador`, `procuracao_inicio/fim`, `procuracao_abrangencia` (ECD, ECF, EFD, ESOCIAL) e `procuracao_observacao`
+  em `core.empresa_contabilidade` (permissão de manter responsáveis). A tabela `core.procurador` foi migrada para os contadores (CPF) e removida. Na opção **Assinar como procurador** (passo 1), o responsável do J930 passa a ser o procurador com
   `COD_ASSIN = 309` (Procurador, conforme a tabela de qualificação do assinante dos manuais da ECD e da ECF) e `IND_RESP_LEGAL = S`, no lugar do sócio
-  ou do e-CNPJ. Validações: procuração **vigente na data da geração** (senão `PROCURADOR_NAO_VIGENTE`, bloqueante, dizendo se não há procurador ou
+  ou do e-CNPJ. Validações: procuração **vigente na data da geração e que abrange a ECD** (senão `PROCURADOR_NAO_VIGENTE`, bloqueante, dizendo se não há procurador ou
   qual a vigência) e **CPF do certificado = CPF do procurador** (o certificado de outra pessoa é recusado como nas demais qualificações). O
   certificado padrão do papel **procurador** é definido em Configurações › Certificados (`padrao_procurador`). O aviso `PROCURACAO_ECAC` e o passo
   final lembram que a **procuração eletrônica precisa estar cadastrada no e-CAC** (Procurações) para a transmissão.

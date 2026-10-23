@@ -43,4 +43,4 @@ Em seguida, siga o último passo mostrado na tela: no PVA da ECD, *Escrituraçã
 
 No PVA da ECF: *Escrituração › Importar*, depois *Escrituração › Recuperar ECD* se o bloco C vier sem dados, e *Escrituração › Validar*.
 
-**Transmissão por procurador:** exige a procuração eletrônica no e-CAC; o assistente lembra no passo final.
+**Transmissão por procurador:** exige a procuração eletrônica no e-CAC e o contador marcado como procurador (com vigência e abrangência ECD/ECF) em *Cadastros › Contadores*, seção **Procuração eletrônica**; o assistente lembra no passo final.

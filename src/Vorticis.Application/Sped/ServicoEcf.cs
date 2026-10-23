@@ -124,7 +124,7 @@ public sealed class ServicoEcf(IConsultasEcf consultas, ServicoEcd ecd, Autoriza
         var parametros = new ParametrosEcf(ano, c.InicioExercicio, c.FimExercicio, forma, c.CodPlanRef, indicadorInicio, opcoes.Retificadora,
             opcoes.NumeroRecibo?.Trim(), opcoes.InformarEcd, opcoes.IndicadorReceita ?? (c.RegimeCaixa ? '1' : '2'));
         var signatarios = await ecd.SignatariosAsync(empresaId, c.Empresa.Nome, c.Empresa.Cnpj, opcoes.ResponsavelPessoaJuridica, opcoes.CodigoQualificacaoSocio,
-            null, null, opcoes.AssinarComoProcurador, ct);
+            null, null, opcoes.AssinarComoProcurador, "ECF", ct);
         var dados = new DadosEcf(c.Empresa, parametros, c.Plano, c.SaldosAbertura, c.Lancamentos, c.Referencial, c.Apuracoes, c.Lalur, c.ParteB, c.Socios,
             signatarios, opcoes.InformarEcd ? c.Ecd : null);
         var calc = new CalculoEcf(dados);

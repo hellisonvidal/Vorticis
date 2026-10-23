@@ -526,10 +526,10 @@ public class EcfTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Contains(sem.Valor.Pendencias, p => p.Codigo == "PROCURADOR_NAO_VIGENTE" && p.Bloqueante);
         Assert.False((await db.App.Ecf.GerarAsync(empresa, 2025, opcoes, adm, ct: ct)).Sucesso);
 
-        var proc = new Procurador(0, "Pedro Procurador", cpfProcurador, "pedro@exemplo.com.br", "(11) 98888-7777", new DateOnly(2025, 3, 1), new DateOnly(2030, 3, 1));
-        Assert.True((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc, adm, ct)).Sucesso);
-        Assert.False((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { Cpf = "11111111111" }, adm, ct)).Sucesso);                     // CPF inválido
-        Assert.False((await db.App.Responsaveis.SalvarProcuradorAsync(empresa, proc with { VigenciaFim = new DateOnly(2025, 1, 1) }, adm, ct)).Sucesso);   // fim antes do início
+        var vinculo = await db.App.CadastrarProcuradorAsync(empresa, adm, "Pedro Procurador", cpfProcurador, new DateOnly(2025, 3, 1), new DateOnly(2030, 3, 1),
+            "pedro@exemplo.com.br", "(11) 98888-7777", ["ECF"]);
+        Assert.False((await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, vinculo, new Procuracao(true, new DateOnly(2025, 3, 1), new DateOnly(2025, 1, 1), ["ECF"]), adm, ct)).Sucesso);  // fim antes do início
+        Assert.False((await db.App.Responsaveis.DefinirProcuracaoAsync(empresa, vinculo, new Procuracao(true, new DateOnly(2025, 3, 1), null, []), adm, ct)).Sucesso);                         // sem abrangência
 
         var previa = await db.App.Ecf.ValidarAsync(empresa, 2025, opcoes, adm, ct);
         Assert.True(previa.Valor.PodeGerar, string.Join("; ", previa.Valor.Bloqueantes.Select(b => b.Mensagem)));

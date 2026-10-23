@@ -125,7 +125,7 @@ Exige também a permissão de incluir lançamentos (e de estornar, para desfazer
 
 ### Antes
 - Certificado A1 ou A3 em *Configurações › Certificados digitais*, definido como **padrão** (responsável, procurador ou contador).
-- Para transmitir como **procurador** ou **contador**: procuração eletrônica no e-CAC e o procurador cadastrado em *Cadastros › Procurador*, com vigência.
+- Para transmitir como **procurador** ou **contador**: procuração eletrônica no e-CAC e o contador procurador cadastrado em *Cadastros › Contadores* (seção **Procuração eletrônica**), com vigência e abrangência **eSocial**.
 
 ### Passo a passo
 1. Escolha a competência, o **ambiente** (comece pela **produção restrita**, sem efeito legal) e **Transmitir com** (empregador, procurador ou contador).
@@ -137,7 +137,7 @@ A tela traz um painel **Passo a passo** com o roteiro.
 
 ## Procuração e procurador
 
-O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de procurações do eSocial) para o CPF/CNPJ do certificado, com os perfis dos eventos e prazo vigente. No sistema, cadastre o procurador em *Cadastros › Procurador (assinatura ECD/ECF)* e escolha **procurador** em *Transmitir com*.
+O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de procurações do eSocial) para o CPF/CNPJ do certificado, com os perfis dos eventos e prazo vigente. No sistema, marque o contador como procurador em *Cadastros › Contadores* (seção **Procuração eletrônica**, abrangência **eSocial**, com a vigência) e escolha **procurador** em *Transmitir com*.
 
 ## Relatórios da folha
 

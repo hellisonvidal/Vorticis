@@ -51,8 +51,7 @@ public static class Telas
     public const string Empresas = TelasComuns.Empresas;
     public const string Contabilidade = TelasComuns.Contabilidade;
     public const string Socios = TelasComuns.Socios;
-    public const string Procuradores = TelasComuns.Procuradores;
-    public const string Clientes = TelasComuns.Clientes;
+        public const string Clientes = TelasComuns.Clientes;
     public const string Fornecedores = TelasComuns.Fornecedores;
     public const string Usuarios = TelasComuns.Usuarios;
     public const string Perfis = TelasComuns.Perfis;

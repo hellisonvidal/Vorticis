@@ -100,22 +100,24 @@ public class EcfAssistenteTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
-    public async Task Procuradores_cadastra_pelo_viewmodel_e_o_assistente_ecd_tambem_avisa()
+    public async Task Contador_procurador_cadastra_pelo_viewmodel_e_o_assistente_ecd_tambem_avisa()
     {
         BancoDeTeste.ExigirBanco();
         var empresa = await db.CriarEmpresaAsync("56007569000133", 2025);
         var adm = await db.AdminAsync();
         var ctx = new ContextoDeTeste(db.App, new SessaoUsuario(adm, "admin_teste", "Admin de Teste", true, false), empresa);
-        var vm = new Vorticis.Desktop.Comum.ViewModels.ProcuradoresViewModel(ctx);
+        var vm = new Vorticis.Desktop.Comum.ViewModels.ContabilidadeEmpresaViewModel(ctx);
         await vm.CarregarAsync();
-        Assert.Empty(vm.Lista);
+        Assert.Empty(vm.Vinculos);
         vm.IncluirCommand.Execute(null);
-        (vm.Nome, vm.Cpf, vm.Email, vm.Inicio) = ("Pedro Procurador", "11144477735", "pedro@exemplo.com.br", new DateTime(2025, 1, 1));
+        (vm.ContadorNome, vm.ContadorCpf, vm.ContadorEmail, vm.ContadorResponsavel, vm.ContadorAssinaEcdEcf) =
+            ("Pedro Procurador", "11144477735", "pedro@exemplo.com.br", false, false);
+        (vm.ProcuracaoNova.Procurador, vm.ProcuracaoNova.Inicio, vm.ProcuracaoNova.Efd) = (true, new DateTime(2025, 1, 1), true);
         await vm.SalvarCommand.ExecuteAsync(null);
         Assert.Empty(vm.Erros);
-        var linha = Assert.Single(vm.Lista);
-        Assert.Equal("111.444.777-35", linha.CpfFormatado);
-        Assert.Equal("indeterminado", linha.Fim);
+        var linha = Assert.Single(vm.Vinculos);
+        Assert.Equal("111.444.777-35", linha.Documento);
+        Assert.Equal("✓ procurador (ECD, ECF, EFD, eSocial) 01/01/2025 a sem fim", linha.Procuracao);
 
         var ecd = new EcdAssistenteViewModel(ctx);
         Assert.Equal("", ecd.AvisoProcuracao);

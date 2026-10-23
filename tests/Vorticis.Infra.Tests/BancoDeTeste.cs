@@ -81,3 +81,17 @@ public sealed class BancoDeTeste : IAsyncLifetime
         await cmd.ExecuteNonQueryAsync();
     }
 }
+
+public static class ProcuradoresDeTeste
+{
+    /// <summary>Cadastra o contador (sem CRC) vinculado à empresa e marcado como procurador; devolve o id do vínculo.</summary>
+    public static async Task<long> CadastrarProcuradorAsync(this VorticisApp app, long empresa, long usuario, string nome, string cpf, DateOnly inicio, DateOnly? fim,
+                                                     string? email = null, string? telefone = null, string[]? abrangencia = null, string? observacao = null)
+    {
+        var r = await app.Responsaveis.VincularContadorAsync(empresa,
+            new Vorticis.Application.Cadastros.Contador(0, nome, cpf, "", "", email, telefone, null, false), inicio, false, usuario, default,
+            new Vorticis.Application.Cadastros.Procuracao(true, inicio, fim, abrangencia ?? ["ECD", "ECF", "ESOCIAL"], observacao));
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        return r.Valor;
+    }
+}

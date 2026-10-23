@@ -109,7 +109,7 @@ public partial class EcfAssistenteViewModel : ModuloViewModel
         ("Cadastro da empresa (CNPJ, natureza jurídica, CNAE, endereço, e-mail)", ["CNPJ_", "NOME_", "UF_", "MUNICIPIO_", "NATUREZA_", "CNAE", "ENDERECO", "EMAIL_EMPRESA", "RECIBO_"], Telas.Empresas, "Abrir Cadastro de empresas"),
         ("Contador cadastrado (CPF, CRC, e-mail, telefone)", ["SEM_CONTADOR", "CONTADOR_"], Telas.Contabilidade, "Abrir Contabilidade da empresa"),
         ("Responsável pela assinatura e sócios (Y600)", ["SEM_RESPONSAVEL", "RESPONSAVEIS", "SIGNATARIO_", "SEM_SOCIOS", "SOCIO"], Telas.Socios, "Abrir Sócios"),
-        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Procuradores, "Abrir Procurador"),
+        ("Procurador com procuração vigente (assinatura como procurador)", ["PROCURADOR_", "PROCURACAO_"], Telas.Contabilidade, "Abrir Contadores"),
     ];
 
     /// <summary>Roda a validação prévia e monta o checklist e a lista de pendências.</summary>

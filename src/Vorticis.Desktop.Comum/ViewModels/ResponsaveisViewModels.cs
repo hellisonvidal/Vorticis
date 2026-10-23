@@ -19,6 +19,9 @@ public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
     public string Fim => Vinculo.Fim?.ToString("dd/MM/yyyy") ?? "vigente";
     public string Responsavel => Vinculo.ResponsavelTecnico ? "✓ responsável técnico" : "";
     public string AssinaEcdEcf => Vinculo.AssinaEcdEcf ? "✓ assina ECD/ECF" : "";
+    public string Procuracao => Vinculo.Procuracao is { Procurador: true } p
+        ? $"✓ procurador ({string.Join(", ", p.Abrangencia.Select(AbrangenciaProcuracao.Descricao))}) {p.Inicio:dd/MM/yyyy} a {(p.Fim is { } f ? f.ToString("dd/MM/yyyy") : "sem fim")}"
+        : "";
 }
 
 /// <summary>Cadastros › Contadores (contador responsável e escritório contábil) da empresa selecionada; também é a aba Contadores de Cadastros › Empresas.</summary>
@@ -34,6 +37,10 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
     [ObservableProperty] private bool _responsavelEdicao;
     [ObservableProperty] private bool _assinaEdicao;
     [ObservableProperty] private DateTime? _fimEdicao;
+
+    /// <summary>Procuração eletrônica na inclusão de um contador e na alteração do vínculo selecionado.</summary>
+    public ProcuracaoEditor ProcuracaoNova { get; } = new();
+    public ProcuracaoEditor ProcuracaoAlterar { get; } = new();
 
     public bool SelecionadoEhContador => Selecionado?.Vinculo.ContadorId is not null;
 
@@ -55,6 +62,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         (EscritorioCnpj, EscritorioRazao, EscritorioCrc, EscritorioEmail, EscritorioTelefone, EscritorioExistente) = ("", "", "", "", "", null);
         (ContadorInicio, EscritorioInicio, ContadorResponsavel) = (new DateTime(DateTime.Today.Year, 1, 1), new DateTime(DateTime.Today.Year, 1, 1), true);
         ContadorAssinaEcdEcf = true;
+        ProcuracaoNova.Limpar();
     }
 
     protected override void MostrarSelecionado()
@@ -62,6 +70,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         ResponsavelEdicao = Selecionado?.Vinculo.ResponsavelTecnico ?? false;
         AssinaEdicao = Selecionado?.Vinculo.AssinaEcdEcf ?? false;
         FimEdicao = Selecionado?.Vinculo.Fim?.ToDateTime(TimeOnly.MinValue);
+        ProcuracaoAlterar.Carregar(Selecionado?.Vinculo.Procuracao);
     }
 
     partial void OnSelecionadoChanged(VinculoContabilLinha? value)
@@ -90,6 +99,11 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
                 var r = await app.Responsaveis.DefinirAssinaEcdEcfAsync(empresa, v.Id, AssinaEdicao, usuario);
                 if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             }
+            if (v.ContadorId is not null && ProcuracaoAlterar.ParaProcuracao() is var nova && !SemMudanca(v.Procuracao, nova))
+            {
+                var r = await app.Responsaveis.DefinirProcuracaoAsync(empresa, v.Id, nova, usuario);
+                if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            }
             if (FimEdicao is { } fim && v.Fim != DateOnly.FromDateTime(fim))
             {
                 var r = await app.Responsaveis.EncerrarVinculoAsync(empresa, v.Id, DateOnly.FromDateTime(fim), usuario);
@@ -102,6 +116,12 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
         }, Permissao.EmpresaResponsaveisManter);
         return ok;
     }
+
+    private static bool SemMudanca(Procuracao? atual, Procuracao nova)
+        => atual is { Procurador: true } a
+            ? nova.Procurador && a.Inicio == nova.Inicio && a.Fim == nova.Fim && (a.Observacao ?? "") == (nova.Observacao ?? "").Trim()
+              && a.Abrangencia.Order().SequenceEqual(nova.Abrangencia.Order())
+            : !nova.Procurador;
 
     protected override async Task<bool> ExcluirSelecionadoAsync()
     {
@@ -199,7 +219,7 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
     {
         var r = await app.Responsaveis.VincularContadorAsync(empresa,
             new Contador(0, ContadorNome, ContadorCpf, ContadorCrc, ContadorUf, ContadorEmail, ContadorTelefone, null, ContadorAssinaEcdEcf),
-            DateOnly.FromDateTime(ContadorInicio ?? DateTime.Today), ContadorResponsavel, usuario);
+            DateOnly.FromDateTime(ContadorInicio ?? DateTime.Today), ContadorResponsavel, usuario, procuracao: ProcuracaoNova.ParaProcuracao());
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         ok = true;
         Modo = ModoCadastro.Consulta;

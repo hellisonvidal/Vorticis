@@ -41,7 +41,7 @@ public sealed class ServicoTransmissaoEsocial(IRepositorioCadastrosFolha cadastr
 
     /// <summary>
     /// Confere se o certificado serve para o papel escolhido e devolve o ideTransmissor. Empregador: e-CNPJ da mesma raiz do CNPJ da empresa.
-    /// Procurador: CPF do certificado = CPF do procurador cadastrado, com procuração vigente hoje. Contador: documento do certificado =
+    /// Procurador: CPF do certificado = CPF do contador procurador, com procuração vigente hoje e abrangendo o eSocial. Contador: documento do certificado =
     /// documento do contador/escritório com vínculo vigente.
     /// </summary>
     public async Task<Resultado<TransmissorEsocial>> ResolverTransmissorAsync(long empresaId, PapelTransmissor papel, X509Certificate2 certificado,
@@ -62,13 +62,15 @@ public sealed class ServicoTransmissaoEsocial(IRepositorioCadastrosFolha cadastr
                 return Resultado<TransmissorEsocial>.Ok(new("EMPREGADOR", 1, doc));
             case PapelTransmissor.Procurador:
             {
-                var vigente = await responsaveis.ProcuradorVigenteAsync(empresaId, Hoje, ct);
+                var vigente = await responsaveis.ProcuradorVigenteAsync(empresaId, Hoje, AbrangenciaProcuracao.Esocial, ct);
                 if (vigente is null)
                 {
                     var ultimo = await responsaveis.UltimoProcuradorAsync(empresaId, ct);
                     return Resultado<TransmissorEsocial>.Falha(ultimo is null
-                        ? "Não há procurador cadastrado para a empresa. Cadastre-o (com a vigência da procuração) em Cadastros › Procuradores."
-                        : $"A procuração de {ultimo.Nome} não está vigente hoje (vigência {ultimo.VigenciaInicio:dd/MM/yyyy} a {(ultimo.VigenciaFim is { } f ? f.ToString("dd/MM/yyyy") : "indeterminada")}). Atualize o cadastro do procurador.");
+                        ? "Não há procurador cadastrado para a empresa. Marque o contador como procurador (com a vigência da procuração) em Cadastros › Contadores, seção Procuração eletrônica."
+                        : ultimo.VigenteEm(Hoje)
+                            ? $"A procuração de {ultimo.Nome} não abrange o eSocial. Marque eSocial na abrangência da procuração, em Cadastros › Contadores."
+                            : $"A procuração de {ultimo.Nome} não está vigente hoje (vigência {ultimo.VigenciaInicio:dd/MM/yyyy} a {(ultimo.VigenciaFim is { } f ? f.ToString("dd/MM/yyyy") : "indeterminada")}). Atualize a procuração no cadastro do contador.");
                 }
                 if (doc != Digitos(vigente.Cpf))
                     return Resultado<TransmissorEsocial>.Falha($"O certificado ({Formatar(doc)}) não é do procurador cadastrado ({vigente.Nome}, CPF {Formatar(Digitos(vigente.Cpf))}).");

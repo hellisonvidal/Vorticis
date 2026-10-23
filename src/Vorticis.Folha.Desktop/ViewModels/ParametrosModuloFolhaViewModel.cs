@@ -23,7 +23,7 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
     private static readonly IReadOnlyList<OpcaoParametro> Graus = [new("1", "1% – risco leve"), new("2", "2% – risco médio"), new("3", "3% – risco grave")];
     private static readonly IReadOnlyList<OpcaoParametro> Ambientes = [new("2", "Produção restrita (testes)"), new("1", "PRODUÇÃO (valendo)")];
     private static readonly IReadOnlyList<OpcaoParametro> Transmissores =
-        [new("EMPREGADOR", "Empregador (e-CNPJ da empresa)"), new("PROCURADOR", "Procurador cadastrado"), new("CONTADOR", "Contador / escritório")];
+        [new("EMPREGADOR", "Empregador (e-CNPJ da empresa)"), new("PROCURADOR", "Contador procurador (procuração eletrônica)"), new("CONTADOR", "Contador / escritório")];
 
     protected override IReadOnlyList<GrupoParametros> MontarGrupos()
     {
