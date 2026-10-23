@@ -58,4 +58,15 @@
   <Style Selector="DataGridCell, DataGridColumnHeader">
     <Setter Property="FontSize" Value="12.5" />
   </Style>
+  <!-- Cabeçalho com dica (nome completo da coluna); colunas numéricas (classe "num") alinhadas à direita -->
+  <Style Selector="DataGridColumnHeader">
+    <Setter Property="ToolTip.Tip" Value="{Binding $self.Content}" />
+  </Style>
+  <Style Selector="DataGridColumnHeader TextBlock">
+    <Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" />
+  </Style>
+  <Style Selector="DataGridCell.num TextBlock">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="TextAlignment" Value="Right" />
+  </Style>
 </Styles>

@@ -16,7 +16,8 @@ public sealed record DocumentoFiscal(
     long Id, ModeloDocumento Modelo, string Chave, TipoOperacao Operacao, string Numero, string Serie, DateOnly Emissao, DateOnly DataLivro,
     string? NaturezaOperacao, SituacaoDocumento Situacao, ParteDocumento Emitente, ParteDocumento? Destinatario, long? ParticipanteId,
     string? ParticipanteCodigo, TotaisDocumento Totais, long? LancamentoId, bool Contabilizado,
-    string Origem = "XML", long? CentroCustoId = null, string? CentroCustoCodigo = null)
+    string Origem = "XML", long? CentroCustoId = null, string? CentroCustoCodigo = null,
+    string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null)
 {
     public bool Digitado => Origem == "DIGITADO";
 
@@ -34,12 +35,23 @@ public sealed record GravacaoDocumento(bool Duplicado, long DocumentoId, bool Pa
 
 public sealed record CancelamentoRegistrado(bool Encontrado, bool JaCancelado, bool Contabilizado, long DocumentoId, string? Numero);
 
+/// <summary>Transação de importação em lote. <see cref="ConfirmarAsync"/> grava o que foi aceito; sem confirmar, o descarte desfaz tudo.</summary>
+public interface ILoteGravacao : IAsyncDisposable
+{
+    /// <summary>Grava a nota; se falhar, desfaz só esta nota (a exceção é propagada) e o lote continua utilizável.</summary>
+    Task<GravacaoDocumento> GravarAsync(DocumentoLido documento, Identificacao identificacao, CancellationToken ct);
+    Task ConfirmarAsync(CancellationToken ct);
+}
+
 public interface IRepositorioDocumentos
 {
     Task<EmpresaFiscal?> ObterEmpresaAsync(long empresaId, CancellationToken ct);
 
     /// <summary>Grava documento e itens numa transação; vincula (ou cria) o participante. Chave já importada: <see cref="GravacaoDocumento.Duplicado"/>.</summary>
     Task<GravacaoDocumento> GravarAsync(long empresaId, DocumentoLido documento, Identificacao identificacao, long usuarioId, CancellationToken ct);
+
+    /// <summary>Abre uma transação para gravar muitas notas de uma vez (importação em lote); cada nota é isolada por savepoint.</summary>
+    Task<ILoteGravacao> IniciarLoteAsync(long empresaId, long usuarioId, CancellationToken ct);
 
     /// <summary>Marca o documento da chave como cancelado (evento de cancelamento importado).</summary>
     Task<CancelamentoRegistrado> CancelarPorChaveAsync(long empresaId, string chave, CancellationToken ct);
@@ -57,23 +69,52 @@ public interface IRepositorioDocumentos
     Task<byte[]?> ObterXmlAsync(long empresaId, long documentoId, CancellationToken ct);
 }
 
-public enum SituacaoImportacao { Importado, Duplicado, Cancelado, Ignorado, Erro }
+public enum SituacaoImportacao { Importado, Duplicado, Cancelado, Ignorado, Erro, OutraEmpresa }
 
 public sealed record ArquivoXml(string Nome, byte[] Conteudo);
 
 public sealed record ResultadoArquivo(string Arquivo, SituacaoImportacao Situacao, string Mensagem, string? Chave = null, string? Numero = null,
-                                      TipoOperacao? Operacao = null, decimal Valor = 0);
+                                      TipoOperacao? Operacao = null, decimal Valor = 0, DateOnly? DataLivro = null);
 
-public sealed record ResultadoImportacao(IReadOnlyList<ResultadoArquivo> Arquivos)
+/// <summary>Andamento da importação em lote (<see cref="Total"/> = 0 quando a quantidade não é conhecida de antemão).</summary>
+public sealed record ProgressoImportacao(int Processados, int Total, string Arquivo);
+
+/// <summary>
+/// Resultado da importação. <see cref="Interrompida"/> = o usuário cancelou: o que já tinha sido gravado foi mantido e
+/// <see cref="NaoProcessados"/> arquivos ficaram de fora.
+/// </summary>
+public sealed record ResultadoImportacao(IReadOnlyList<ResultadoArquivo> Arquivos, bool Interrompida = false, int NaoProcessados = 0)
 {
     public int Importados => Arquivos.Count(a => a.Situacao == SituacaoImportacao.Importado);
     public int Duplicados => Arquivos.Count(a => a.Situacao == SituacaoImportacao.Duplicado);
     public int Cancelamentos => Arquivos.Count(a => a.Situacao == SituacaoImportacao.Cancelado);
     public int Ignorados => Arquivos.Count(a => a.Situacao == SituacaoImportacao.Ignorado);
+    public int OutrasEmpresas => Arquivos.Count(a => a.Situacao == SituacaoImportacao.OutraEmpresa);
     public int Erros => Arquivos.Count(a => a.Situacao == SituacaoImportacao.Erro);
 
     public string Resumo => $"{Arquivos.Count} arquivo(s): {Importados} importado(s), {Duplicados} já importado(s), {Cancelamentos} cancelamento(s), " +
-                            $"{Ignorados} ignorado(s), {Erros} com erro.";
+                            $"{Ignorados} ignorado(s), {OutrasEmpresas} de outra empresa, {Erros} com erro." +
+                            (Interrompida ? $" Importação cancelada pelo usuário: {NaoProcessados} arquivo(s) não processado(s)." : "");
+
+    /// <summary>Relatório do resumo em CSV (separador ";"): uma linha por arquivo com situação e motivo, para conferência.</summary>
+    public string ParaCsv()
+    {
+        static string C(string? t) => "\"" + (t ?? "").Replace("\"", "\"\"") + "\"";
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Arquivo;Resultado;Numero;Operacao;Valor;Chave;Mensagem");
+        foreach (var a in Arquivos)
+            sb.AppendLine(string.Join(';', C(a.Arquivo), C(RotuloSituacao(a.Situacao)), C(a.Numero), C(a.Operacao?.Rotulo()),
+                a.Valor == 0 ? "" : a.Valor.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")), C(a.Chave), C(a.Mensagem)));
+        sb.AppendLine();
+        sb.AppendLine(C(Resumo));
+        return sb.ToString();
+    }
+
+    public static string RotuloSituacao(SituacaoImportacao s) => s switch
+    {
+        SituacaoImportacao.Importado => "Importado", SituacaoImportacao.Duplicado => "Já importado", SituacaoImportacao.Cancelado => "Cancelamento",
+        SituacaoImportacao.Ignorado => "Ignorado", SituacaoImportacao.OutraEmpresa => "Outra empresa", _ => "Erro",
+    };
 }
 
 /// <summary>
@@ -84,41 +125,83 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
 {
     // ------------------------------------------------------------------ importação
 
+    /// <summary>Notas gravadas por transação: o lote é confirmado a cada tanto (e antes de cancelamentos) para não segurar o banco por muito tempo.</summary>
+    internal const int TamanhoLote = 200;
+
     /// <summary>
-    /// Importa os arquivos: cada um é gravado em transação própria, de modo que um arquivo com erro não impede os demais.
-    /// Arquivos .zip têm os XMLs de dentro importados. Chaves já importadas são ignoradas (deduplicação por empresa).
+    /// Importa os arquivos em lotes: várias notas por transação, cada uma isolada por savepoint, de modo que um arquivo com erro não impede
+    /// os demais. Arquivos .zip (inclusive com subpastas) têm os XMLs de dentro importados. Chaves já importadas são ignoradas (deduplicação
+    /// por empresa). Se <paramref name="ct"/> for cancelado, o que já foi aceito é mantido e o resultado vem marcado como interrompido.
     /// </summary>
     public async Task<Resultado<ResultadoImportacao>> ImportarAsync(long empresaId, IEnumerable<ArquivoXml> arquivos, long usuarioId,
-                                                                   IProgress<int>? progresso = null, CancellationToken ct = default)
+                                                                   IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default, int total = 0)
     {
-        if (await autorizador.NegarAsync<ResultadoImportacao>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
-        var empresa = await repositorio.ObterEmpresaAsync(empresaId, ct);
+        if (await autorizador.NegarAsync<ResultadoImportacao>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, CancellationToken.None) is { } negado) return negado;
+        var empresa = await repositorio.ObterEmpresaAsync(empresaId, CancellationToken.None);   // cancelar antes de começar não é erro: resulta em importação interrompida
         if (empresa is null) return Resultado<ResultadoImportacao>.Falha("Empresa não encontrada.");
 
         var resultados = new List<ResultadoArquivo>();
-        foreach (var arquivo in Expandir(arquivos))
+        var lote = new LoteAberto(repositorio, empresaId, usuarioId);
+        var interrompida = false;
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            resultados.Add(await ImportarUmAsync(empresa, arquivo, usuarioId, ct));
-            progresso?.Report(resultados.Count);
+            foreach (var arquivo in Expandir(arquivos))
+            {
+                if (ct.IsCancellationRequested) { interrompida = true; break; }
+                try { resultados.Add(await ImportarUmAsync(empresa, arquivo, lote, ct)); }
+                catch (OperationCanceledException) { interrompida = true; break; }
+                if (lote.Gravadas >= TamanhoLote) await lote.FecharAsync();
+                progresso?.Report(new ProgressoImportacao(resultados.Count, Math.Max(total, resultados.Count), arquivo.Nome));
+            }
         }
-        return Resultado<ResultadoImportacao>.Ok(new ResultadoImportacao(resultados));
+        finally { await lote.FecharAsync(); }
+        return Resultado<ResultadoImportacao>.Ok(new ResultadoImportacao(resultados, interrompida, interrompida ? Math.Max(0, total - resultados.Count) : 0));
     }
 
-    /// <summary>Importa os .xml (e .zip) de uma pasta, opcionalmente com as subpastas.</summary>
+    /// <summary>Importa os .xml (e .zip) de uma pasta, opcionalmente com as subpastas (em qualquer profundidade).</summary>
     public Task<Resultado<ResultadoImportacao>> ImportarPastaAsync(long empresaId, string pasta, bool subpastas, long usuarioId,
-                                                                  IProgress<int>? progresso = null, CancellationToken ct = default)
+                                                                  IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default)
     {
         if (!Directory.Exists(pasta)) return Task.FromResult(Resultado<ResultadoImportacao>.Falha("Pasta não encontrada."));
-        var opcao = subpastas ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        var caminhos = Directory.EnumerateFiles(pasta, "*.*", opcao)
-            .Where(f => f.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
-        return ImportarAsync(empresaId, LerArquivos(caminhos), usuarioId, progresso, ct);
+        return ImportarArquivosAsync(empresaId, ListarArquivosDaPasta(pasta, subpastas), usuarioId, progresso, ct);
     }
 
     public Task<Resultado<ResultadoImportacao>> ImportarArquivosAsync(long empresaId, IEnumerable<string> caminhos, long usuarioId,
-                                                                     IProgress<int>? progresso = null, CancellationToken ct = default)
-        => ImportarAsync(empresaId, LerArquivos(caminhos), usuarioId, progresso, ct);
+                                                                     IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default)
+    {
+        var lista = caminhos.ToList();
+        return ImportarAsync(empresaId, LerArquivos(lista), usuarioId, progresso, ct, ContarArquivos(lista));
+    }
+
+    /// <summary>Caminhos dos .xml e .zip de uma pasta (com as subpastas, se pedido), ignorando pastas sem acesso.</summary>
+    public static List<string> ListarArquivosDaPasta(string pasta, bool subpastas)
+    {
+        var opcoes = new EnumerationOptions { RecurseSubdirectories = subpastas, IgnoreInaccessible = true, MatchCasing = MatchCasing.CaseInsensitive };
+        return Directory.EnumerateFiles(pasta, "*.*", opcoes)
+            .Where(f => f.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            .Order(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>Quantidade de XMLs a processar (os .zip contam pelos .xml de dentro), para a barra de progresso.</summary>
+    public static int ContarArquivos(IEnumerable<string> caminhos)
+    {
+        var n = 0;
+        foreach (var c in caminhos)
+        {
+            if (!c.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) { n++; continue; }
+            try
+            {
+                using var zip = ZipFile.OpenRead(c);
+                var xmls = zip.Entries.Count(e => EhXmlDoZip(e));
+                n += Math.Max(1, xmls);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException) { n++; }
+        }
+        return n;
+    }
+
+    private static bool EhXmlDoZip(ZipArchiveEntry e) =>
+        e.Name.Length > 0 && !e.FullName.StartsWith("__MACOSX/", StringComparison.Ordinal) && e.Name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase);
 
     private static IEnumerable<ArquivoXml> LerArquivos(IEnumerable<string> caminhos)
     {
@@ -137,31 +220,57 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
         foreach (var a in arquivos)
         {
             if (!a.Nome.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) { yield return a; continue; }
-            foreach (var interno in ExtrairZip(a)) yield return interno;
+            foreach (var interno in ExtrairZip(a, 0)) yield return interno;
         }
     }
 
-    private static List<ArquivoXml> ExtrairZip(ArquivoXml a)
+    /// <summary>XMLs de um .zip em qualquer subpasta (e de .zip dentro de .zip, até 3 níveis), lidos um a um.</summary>
+    private static IEnumerable<ArquivoXml> ExtrairZip(ArquivoXml a, int nivel)
     {
-        var internos = new List<ArquivoXml>();
-        try
+        ZipArchive? zip = null;
+        try { zip = new ZipArchive(new MemoryStream(a.Conteudo), ZipArchiveMode.Read); }
+        catch (InvalidDataException) { }
+        if (zip is null) { yield return new ArquivoXml(a.Nome, []); yield break;   /* vira erro "arquivo vazio ou ilegível" */ }
+        using (zip)
         {
-            using var zip = new ZipArchive(new MemoryStream(a.Conteudo), ZipArchiveMode.Read);
-            foreach (var e in zip.Entries.Where(e => e.Name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)))
+            foreach (var e in zip.Entries)
             {
+                if (e.Name.Length == 0 || e.FullName.StartsWith("__MACOSX/", StringComparison.Ordinal)) continue;
+                var zipInterno = e.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+                if (!zipInterno && !EhXmlDoZip(e)) continue;
                 using var ms = new MemoryStream();
                 using (var s = e.Open()) s.CopyTo(ms);
-                internos.Add(new ArquivoXml($"{a.Nome}/{e.FullName}", ms.ToArray()));
+                var nome = $"{a.Nome}/{e.FullName}";
+                if (!zipInterno) yield return new ArquivoXml(nome, ms.ToArray());
+                else if (nivel < 3) foreach (var x in ExtrairZip(new ArquivoXml(nome, ms.ToArray()), nivel + 1)) yield return x;
             }
-            return internos;
-        }
-        catch (InvalidDataException)
-        {
-            return [new ArquivoXml(a.Nome, [])];   // vira erro "arquivo vazio ou ilegível"
         }
     }
 
-    private async Task<ResultadoArquivo> ImportarUmAsync(EmpresaFiscal empresa, ArquivoXml arquivo, long usuarioId, CancellationToken ct)
+    /// <summary>Transação de importação aberta sob demanda e confirmada a cada lote, antes de cancelamentos e ao final.</summary>
+    private sealed class LoteAberto(IRepositorioDocumentos repositorio, long empresaId, long usuarioId)
+    {
+        private ILoteGravacao? _lote;
+        public int Gravadas { get; private set; }
+
+        public async Task<GravacaoDocumento> GravarAsync(DocumentoLido doc, Identificacao ident, CancellationToken ct)
+        {
+            _lote ??= await repositorio.IniciarLoteAsync(empresaId, usuarioId, ct);
+            var g = await _lote.GravarAsync(doc, ident, ct);
+            Gravadas++;
+            return g;
+        }
+
+        public async Task FecharAsync()
+        {
+            if (_lote is null) return;
+            var l = _lote;
+            (_lote, Gravadas) = (null, 0);
+            await using (l) await l.ConfirmarAsync(CancellationToken.None);
+        }
+    }
+
+    private async Task<ResultadoArquivo> ImportarUmAsync(EmpresaFiscal empresa, ArquivoXml arquivo, LoteAberto lote, CancellationToken ct)
     {
         if (arquivo.Conteudo.Length == 0) return new(arquivo.Nome, SituacaoImportacao.Erro, "Arquivo vazio ou ilegível.");
         var leitura = LeitorXmlFiscal.Ler(arquivo.Conteudo);
@@ -172,6 +281,7 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
 
             case LeituraCancelamento canc:
             {
+                await lote.FecharAsync();   // a nota cancelada pode estar no lote ainda não confirmado
                 var r = await repositorio.CancelarPorChaveAsync(empresa.Id, canc.Chave, ct);
                 if (!r.Encontrado) return new(arquivo.Nome, SituacaoImportacao.Ignorado, "Cancelamento de documento que não está importado.", canc.Chave);
                 if (r.JaCancelado) return new(arquivo.Nome, SituacaoImportacao.Duplicado, "Documento já estava cancelado.", canc.Chave, r.Numero);
@@ -184,19 +294,23 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
             {
                 var doc = lido.Documento;
                 var ident = IdentificadorOperacao.Identificar(doc, empresa.Cnpjs);
-                if (!ident.Sucesso) return new(arquivo.Nome, SituacaoImportacao.Erro, string.Join(" ", ident.Erros), doc.Chave, doc.Numero);
+                if (!ident.Sucesso) return new(arquivo.Nome, SituacaoImportacao.OutraEmpresa, string.Join(" ", ident.Erros), doc.Chave, doc.Numero);
                 try
                 {
-                    var g = await repositorio.GravarAsync(empresa.Id, doc, ident.Valor, usuarioId, ct);
-                    if (g.Duplicado) return new(arquivo.Nome, SituacaoImportacao.Duplicado, "Documento já importado (mesma chave de acesso).", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total);
+                    var g = await lote.GravarAsync(doc, ident.Valor, ct);
+                    if (g.Duplicado) return new(arquivo.Nome, SituacaoImportacao.Duplicado, "Documento já importado (mesma chave de acesso).", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total, doc.DataLivro);
                     var aviso = Math.Abs(doc.DiferencaItens) > 0.05m ? $" Atenção: a soma dos itens difere do total da nota em {Formato.Moeda(doc.DiferencaItens)}." : "";
                     var part = g.ParticipanteCriado ? $" Participante cadastrado: {g.ParticipanteNome}." : "";
                     return new(arquivo.Nome, SituacaoImportacao.Importado,
-                        $"{doc.Modelo.Rotulo()} {doc.Numero} ({ident.Valor.Operacao.Rotulo().ToLowerInvariant()}) importada.{part}{aviso}", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total);
+                        $"{doc.Modelo.Rotulo()} {doc.Numero} ({ident.Valor.Operacao.Rotulo().ToLowerInvariant()}) importada.{part}{aviso}", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total, doc.DataLivro);
                 }
                 catch (ViolacaoRegraException ex)
                 {
                     return new(arquivo.Nome, SituacaoImportacao.Erro, ex.Message, doc.Chave, doc.Numero);
+                }
+                catch (Npgsql.PostgresException ex)
+                {
+                    return new(arquivo.Nome, SituacaoImportacao.Erro, $"Erro ao gravar no banco: {ex.MessageText}", doc.Chave, doc.Numero);
                 }
             }
             default:

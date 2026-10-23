@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.RegrasContabilizacaoView"
@@ -36,7 +37,7 @@
       </Grid>
       <c:MensagensView />
     </StackPanel>
-    <DataGrid ItemsSource="{Binding Regras}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Regras}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Prior." Binding="{ReflectionBinding Prioridade}" Width="60" />
         <DataGridTextColumn Header="CFOP" Binding="{ReflectionBinding Cfop}" Width="85" />

@@ -137,7 +137,7 @@ public class ImportacaoDocumentosTests(BancoDeTeste db) : IClassFixture<BancoDeT
         var arquivos = r.Valor.Arquivos;
         Assert.Equal(3, r.Valor.Importados);
         Assert.Equal(1, r.Valor.Duplicados);
-        Assert.Equal(2, r.Valor.Erros);
+        Assert.Equal((1, 1), (r.Valor.Erros, r.Valor.OutrasEmpresas));
         Assert.Contains("não pertence à empresa", arquivos.Single(a => a.Arquivo == "terceiros.xml").Mensagem);
         Assert.Equal(TipoOperacao.Saida, arquivos.First(a => a.Arquivo == "venda.xml").Operacao);
         Assert.Equal(TipoOperacao.Entrada, arquivos.Single(a => a.Arquivo == "compra.xml").Operacao);

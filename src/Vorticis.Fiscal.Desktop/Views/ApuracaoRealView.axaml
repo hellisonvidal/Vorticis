@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.ApuracaoRealView"
@@ -57,7 +58,7 @@
           </StackPanel>
           <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="LALUR / LACS · Parte A (adições e exclusões do ano)" FontWeight="SemiBold" Foreground="#1F3A5F" />
-            <DataGrid ItemsSource="{Binding Lalur}" SelectedItem="{Binding LalurSelecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lalur}" SelectedItem="{Binding LalurSelecionada}" IsReadOnly="True" AutoGenerateColumns="False">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Período" Binding="{ReflectionBinding Periodo}" Width="85" />
                 <DataGridTextColumn Header="Tributo" Binding="{ReflectionBinding Tributo}" Width="95" />
@@ -79,7 +80,7 @@
           </StackPanel>
           <DockPanel>
             <TextBlock DockPanel.Dock="Top" Text="Parte B · prejuízos fiscais e base negativa (razão)" FontWeight="SemiBold" Foreground="#1F3A5F" />
-            <DataGrid ItemsSource="{Binding ParteB}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding ParteB}" IsReadOnly="True" AutoGenerateColumns="False">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Tributo" Binding="{ReflectionBinding Tributo}" Width="70" />
                 <DataGridTextColumn Header="Movimento" Binding="{ReflectionBinding Tipo}" Width="120" />

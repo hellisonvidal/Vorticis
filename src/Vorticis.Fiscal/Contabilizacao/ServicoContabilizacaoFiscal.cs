@@ -166,4 +166,28 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
         if (desfeitos.Count > 0) await repositorio.DesmarcarAsync(desfeitos, ct);
         return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(desfeitos.Count, 0, falhas));
     }
+
+    /// <summary>
+    /// Exclui notas (digitadas ou importadas de XML). Nota contabilizada só é excluída com <paramref name="desfazerContabilizacao"/>:
+    /// o lançamento é estornado primeiro (exige também a função de contabilizar). Se o estorno falhar, nada é excluído.
+    /// </summary>
+    public async Task<Resultado<int>> ExcluirDocumentosAsync(long empresaId, IReadOnlyCollection<long> ids, bool desfazerContabilizacao, long usuarioId,
+                                                             CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
+        if (ids.Count == 0) return Resultado<int>.Falha("Selecione ao menos um documento.");
+        var contabilizados = (await documentos.ListarAsync(empresaId, new FiltroDocumentos(Contabilizado: true, Limite: 100000), ct))
+            .Where(d => ids.Contains(d.Id)).Select(d => d.Id).ToList();
+        if (contabilizados.Count > 0)
+        {
+            if (!desfazerContabilizacao)
+                return Resultado<int>.Falha("Há nota(s) contabilizada(s): é preciso desfazer a contabilização antes de excluir (use \"Desfazer contabilização e excluir\").");
+            var d = await DesfazerAsync(empresaId, contabilizados, null, usuarioId, ct);
+            if (!d.Sucesso) return Resultado<int>.Falha(d.Erros);
+            if (d.Valor.Falhas.Count > 0)
+                return Resultado<int>.Falha(d.Valor.Falhas.SelectMany(f => f.Erros.Select(e => $"Nota {f.Documento}: {e}")).Append("Nenhuma nota foi excluída.").ToList());
+        }
+        var n = await documentos.ExcluirAsync(empresaId, ids, ct);
+        return n == 0 ? Resultado<int>.Falha("Nenhum documento excluído.") : Resultado<int>.Ok(n);
+    }
 }

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.DocumentosView"
@@ -28,7 +29,7 @@
       <c:MensagensView />
     </StackPanel>
     <Grid RowDefinitions="*,6,180">
-      <DataGrid ItemsSource="{Binding Documentos}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Documentos}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />
           <DataGridTextColumn Header="Modelo" Binding="{ReflectionBinding Modelo}" Width="70" />
@@ -44,7 +45,7 @@
           <DataGridTextColumn Header="Chave de acesso" Binding="{ReflectionBinding Chave}" Width="330" />
         </DataGrid.Columns>
       </DataGrid>
-      <DataGrid Grid.Row="2" ItemsSource="{Binding Itens}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid g:GradesFiscais.Ajustar="True" Grid.Row="2" ItemsSource="{Binding Itens}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Item" Binding="{ReflectionBinding N}" Width="50" />
           <DataGridTextColumn Header="CFOP" Binding="{ReflectionBinding Cfop}" Width="65" />

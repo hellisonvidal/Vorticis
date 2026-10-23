@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Desktop.Comum;
+using Vorticis.Application.Cadastros;
+using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Produtos;
@@ -36,12 +38,16 @@ public sealed record CentroOpcao(long? Id, string Texto, string? Codigo = null)
     public override string ToString() => Texto;
 }
 
-public sealed record ItemNotaLinha(ItemFiscal Item)
+public sealed record ItemNotaLinha(ItemFiscal Item, string? ProdutoVinculado = null)
 {
     public int N => Item.Numero;
     public string Produto => Item.CodProduto ?? "";
     public string Descricao => Item.Descricao ?? "";
-    public string Cfop => Item.Cfop;
+    /// <summary>CFOP do XML/da digitação (o original, que não muda nas notas importadas).</summary>
+    public string Cfop => Item.CfopOriginal ?? Item.Cfop;
+    /// <summary>CFOP de escrituração (ex.: de entrada), quando diferente do original.</summary>
+    public string CfopEscrituracao => Item.CfopOriginal is { } o && o != Item.Cfop ? Item.Cfop : "";
+    public string Vinculo => ProdutoVinculado ?? "";
     public string Quantidade => Item.Quantidade.ToString("0.####", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     public string Unitario => Numeros.Moeda(Item.ValorUnitario);
     public string Total => Numeros.Moeda(Item.ValorContabil);
@@ -174,7 +180,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     public ObservableCollection<CentroOpcao> Centros { get; } = [new CentroOpcao(null, "(sem centro de custo)")];
     public ItemForm Item { get; } = new();
 
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand))] private DocumentoLinha? _selecionada;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand))] [NotifyCanExecuteChangedFor(nameof(EditarCommand))] private DocumentoLinha? _selecionada;
     [ObservableProperty] private DateTime? _filtroInicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _filtroFim = DateTime.Today;
     [ObservableProperty] private int _modelo;
@@ -193,13 +199,48 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeEditar))] private bool _contabilizado;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeEditar))] private bool _usaCentroCusto;
     [ObservableProperty] private string _situacaoDocumento = "Nova nota";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeEditar))] [NotifyPropertyChangedFor(nameof(PodeEditarEscrituracao))] private bool _importada;
+    [ObservableProperty] private string _observacoes = "";
+    [ObservableProperty] private string _contaDebito = "";
+    [ObservableProperty] private string _contaCredito = "";
+    [ObservableProperty] private string _escProduto = "";
+
+    // Fornecedor/cliente: busca automática pelo CPF/CNPJ digitado (cadastrados da empresa e, para CNPJ, a base pública).
+    [ObservableProperty] private string _participanteInfo = "";
+    [ObservableProperty] private bool _temNovoParticipante;
+    [ObservableProperty] private string _novoNome = "";
+    [ObservableProperty] private string _novoUf = "";
+    [ObservableProperty] private string _novoMunicipio = "";
+    [ObservableProperty] private string _novoIe = "";
 
     private long _documentoId;
     private long _participanteId;
+    private Participante? _novoParticipante;
+    private bool _suprimirBusca;
+    private int _buscaGeracao;
+    private IReadOnlyDictionary<long, string> _produtosPorId = new Dictionary<long, string>();
+    private ImportacaoXmlViewModel? _importador;
+
+    /// <summary>Importar XML na própria tela de lançamentos (arquivos, pasta ou .zip); as notas importadas aparecem na lista.</summary>
+    public ImportacaoXmlViewModel Importador => _importador ??= CriarImportador();
+
+    private ImportacaoXmlViewModel CriarImportador()
+    {
+        var imp = new ImportacaoXmlViewModel(Contexto);
+        imp.Concluida += AposImportacaoAsync;
+        return imp;
+    }
     private TotaisDocumento _retencoes = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0);
 
     public bool PodeManter => Contexto.Pode(Permissao.FiscalDocumentosImportar);
-    public bool PodeEditar => PodeManter && !Contabilizado;
+    /// <summary>Dados da nota (cabeçalho, itens, valores): só nas notas digitadas e não contabilizadas. Nas importadas, o XML original é imutável.</summary>
+    public bool PodeEditar => PodeManter && !Contabilizado && !Importada;
+    /// <summary>Escrituração (CFOP de entrada, centro de custo, produto vinculado, contas, observações): também nas importadas, se não contabilizadas.</summary>
+    public bool PodeEditarEscrituracao => PodeManter && !Contabilizado;
+    public bool PodeEditarDigitada => PodeEditar;
+    public bool MostraGravarNota => !Importada;
+    public string AvisoImportada => "Nota importada de XML: os dados do XML original (valores, chave de acesso, participante e itens) não podem ser alterados. " +
+                                    "Você pode editar a escrituração: CFOP de entrada, centro de custo, produto vinculado, contas e observações.";
     public bool MostraCentro => UsaCentroCusto;
 
     partial void OnUsaCentroCustoChanged(bool value) => OnPropertyChanged(nameof(MostraCentro));
@@ -208,11 +249,28 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     {
         OnPropertyChanged(nameof(PodeManter));
         OnPropertyChanged(nameof(PodeEditar));
+        OnPropertyChanged(nameof(PodeEditarEscrituracao));
+        OnPropertyChanged(nameof(PodeEditarDigitada));
+        Importador.AtualizarPermissoes();
     }
+
+    partial void OnImportadaChanged(bool value) => OnPropertyChanged(nameof(MostraGravarNota));
+
+    partial void OnContabilizadoChanged(bool value) => OnPropertyChanged(nameof(PodeEditarEscrituracao));
 
     partial void OnSelecionadaChanged(DocumentoLinha? value)
     {
         if (value is not null) _ = CarregarDocumentoAsync(value.Id);
+        EditarCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnParticipanteChanged(string value)
+    {
+        if (_suprimirBusca) return;
+        _participanteId = 0;
+        (_novoParticipante, TemNovoParticipante, ParticipanteInfo) = (null, false, "");
+        // CNPJ completo (14 dígitos): busca sozinha ao digitar. CPF e demais textos: ao sair do campo ou em "Buscar".
+        if (ServicoParticipanteNota.DocumentoDigitado(value) is { Length: 14 }) _ = BuscarParticipanteAsync();
     }
 
     partial void OnItemSelecionadoChanged(ItemNotaLinha? value)
@@ -220,6 +278,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (value is null) return;
         Item.Carregar(value.Item);
         CentroItem = Centros.FirstOrDefault(c => c.Id == value.Item.CentroCustoId) ?? Centros[0];
+        EscProduto = value.ProdutoVinculado?.Split(" - ")[0] ?? "";
     }
 
     /// <summary>Carga ao abrir: configuração (centros de custo), centros e notas digitadas do período.</summary>
@@ -233,6 +292,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
             foreach (var c in (await app.PlanoContas.ListarCentrosAsync(empresa, usuario)).Where(c => c.Ativo && c.Analitico))
                 Centros.Add(new CentroOpcao(c.Id, $"{c.Codigo} - {c.Descricao}", c.Codigo));
         CentroDocumento = CentroItem = Centros[0];
+        var produtos = await app.Fiscal().Produtos.ListarAsync(empresa, false, null, usuario);
+        _produtosPorId = produtos.Sucesso ? produtos.Valor.ToDictionary(p => p.Id, p => $"{p.Codigo} - {p.Descricao}") : new Dictionary<long, string>();
         await ListarAsync(app, empresa, usuario);
     });
 
@@ -242,7 +303,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         var r = await app.Fiscal().Documentos.ConsultarAsync(empresa, f, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Lista.Clear();
-        foreach (var d in r.Valor.Where(d => d.Digitado)) Lista.Add(new DocumentoLinha(d));
+        foreach (var d in r.Valor) Lista.Add(new DocumentoLinha(d));
     }
 
     [RelayCommand]
@@ -260,25 +321,37 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         (Modelo, Serie, Numero, Chave, Emissao, DataLivro, Natureza) =
             (Math.Max(0, ModelosValores.ToList().IndexOf(d.Modelo)), d.Serie, d.Numero, d.Chave ?? "", d.Emissao.ToDateTime(TimeOnly.MinValue), d.DataLivro.ToDateTime(TimeOnly.MinValue), d.Natureza ?? "");
         var lista = await app.Participantes.ListarAsync(empresa, sessao.Id);
+        _suprimirBusca = true;
         Participante = lista.FirstOrDefault(p => p.Id == d.ParticipanteId)?.Nome ?? "";
+        _suprimirBusca = false;
+        (_novoParticipante, TemNovoParticipante, ParticipanteInfo) = (null, false, "");
+        (Observacoes, ContaDebito, ContaCredito, EscProduto) = (d.Observacoes ?? "", d.ContaDebito ?? "", d.ContaCredito ?? "", "");
+        Importada = d.Importado;
         CentroDocumento = Centros.FirstOrDefault(c => c.Id == d.CentroCustoId) ?? Centros[0];
         Itens.Clear();
-        foreach (var i in d.Itens) Itens.Add(new ItemNotaLinha(i));
+        foreach (var i in d.Itens) Itens.Add(Linha(i));
         TotalInformado = "";
         Contabilizado = d.Contabilizado;
-        SituacaoDocumento = d.Contabilizado ? "Nota contabilizada: somente consulta (desfaça a contabilização para alterar)" : $"Alterando a nota {d.Numero}";
+        SituacaoDocumento = d.Contabilizado ? "Nota contabilizada: somente consulta (use \"Desfazer contabilização e excluir\" para removê-la, ou desfaça a contabilização para alterar)"
+            : d.Importado ? $"Nota importada de XML {d.Numero}: só a escrituração pode ser alterada" : $"Alterando a nota {d.Numero}";
         AtualizarTotais();
         Erros.Clear();
         Mensagem = null;
     }
+
+    private ItemNotaLinha Linha(ItemFiscal i) => new(i, i.ProdutoId is { } pid && _produtosPorId.TryGetValue(pid, out var nome) ? nome : null);
 
     [RelayCommand]
     private void Novo()
     {
         Selecionada = null;
         (_documentoId, _participanteId) = (0, 0);
+        _suprimirBusca = true;
         _retencoes = _retencoes with { IssRetido = false, RetPis = 0, RetCofins = 0, RetCsll = 0, Irrf = 0, RetPrev = 0 };
         (Modelo, Serie, Numero, Chave, Emissao, DataLivro, Natureza, Participante, TotalInformado) = (0, "1", "", "", DateTime.Today, DateTime.Today, "", "", "");
+        _suprimirBusca = false;
+        (_novoParticipante, TemNovoParticipante, ParticipanteInfo) = (null, false, "");
+        (Observacoes, ContaDebito, ContaCredito, EscProduto, Importada) = ("", "", "", "", false);
         CentroDocumento = CentroItem = Centros[0];
         Itens.Clear();
         Item.Limpar();
@@ -368,28 +441,186 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [RelayCommand]
     private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
+        if (Importada) { Erros.Add("Nota importada de XML: use \"Gravar escrituração\" (os dados do XML não podem ser alterados)."); return; }
         if (string.IsNullOrWhiteSpace(Participante)) { Erros.Add($"Informe o {RotuloParticipante.ToLowerInvariant()}."); return; }
-        var part = await Resolvedores.ParticipanteAsync(app, empresa, usuario, Participante);
-        if (part is null) { Erros.Add($"Participante \"{Participante.Trim()}\" não encontrado (informe o código, o nome ou o CPF/CNPJ cadastrado)."); return; }
+        var part = await ResolverParticipanteAsync(app, empresa, usuario);
+        if (part is null) return;
         _participanteId = part.Value.Id;
         var totais = CalcularTotais();
         if (Numeros.LerValor(TotalInformado) is { } informado) totais = totais with { Total = informado };   // total conferido com a soma dos itens
         var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
-            Natureza, _participanteId, CentroDocumento?.Id, totais, Itens.Select(i => i.Item).ToList());
+            Natureza, _participanteId, CentroDocumento?.Id, totais, Itens.Select(i => i.Item).ToList(),
+            Observacoes: Texto(Observacoes), ContaDebito: Texto(ContaDebito), ContaCredito: Texto(ContaCredito));
         var r = await app.Fiscal().Digitacao.GravarAsync(empresa, doc, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        AmpliarPeriodo([Data(DataLivro, default).ToDateTime(TimeOnly.MinValue)]);   // a nota gravada sempre aparece na lista
         await ListarAsync(app, empresa, usuario);
         _documentoId = r.Valor;
         Selecionada = Lista.FirstOrDefault(d => d.Id == r.Valor);
         Mensagem = "Nota gravada.";
     }, Permissao.FiscalDocumentosImportar);
 
+    private static string? Texto(string? t) => string.IsNullOrWhiteSpace(t) ? null : t.Trim();
+
+    /// <summary>
+    /// Participante da nota: o já cadastrado (código, nome ou CPF/CNPJ) ou, se o CPF/CNPJ digitado não existe, o cadastro novo — com os dados
+    /// da base pública do CNPJ já conferidos na tela — criado aqui, depois da confirmação do usuário. Null = não resolveu (erro já exibido).
+    /// </summary>
+    private async Task<(long Id, string Codigo, string Nome)?> ResolverParticipanteAsync(VorticisApp app, long empresa, long usuario)
+    {
+        var part = await Resolvedores.ParticipanteAsync(app, empresa, usuario, Participante);
+        if (part is not null) return part;
+        var servico = app.Fiscal().ParticipantesNota;
+        var doc = ServicoParticipanteNota.DocumentoDigitado(Participante);
+        if (doc is null)
+        {
+            Erros.Add($"Participante \"{Participante.Trim()}\" não encontrado (informe o código, o nome ou o CPF/CNPJ).");
+            return null;
+        }
+        Participante? novo = _novoParticipante is { } pendente && pendente.CpfCnpj == doc ? pendente : null;
+        if (novo is null)
+        {
+            var busca = await servico.BuscarAsync(empresa, Participante, Operacao, usuario);
+            if (!busca.Sucesso) { MostrarResultado(busca, ""); return null; }
+            if (busca.Valor.Cadastrado is { } c) return (c.Id, c.Codigo, c.Nome);
+            if (busca.Valor.Novo is null) { Erros.Add("Participante não encontrado."); return null; }
+            AplicarNovoParticipante(busca.Valor);
+            novo = busca.Valor.Novo;
+        }
+        novo = novo with { Nome = NovoNome.Trim(), Uf = Texto(NovoUf)?.ToUpperInvariant(), Municipio = Texto(NovoMunicipio), InscricaoEstadual = Texto(NovoIe) };
+        if (string.IsNullOrWhiteSpace(novo.Nome))
+        {
+            TemNovoParticipante = true;
+            Erros.Add($"Informe o nome / razão social do novo {RotuloParticipante.ToLowerInvariant()}.");
+            return null;
+        }
+        var rotulo = RotuloParticipante.ToLowerInvariant();
+        if (!await Contexto.ConfirmarAsync($"Cadastrar {rotulo}",
+                $"O {(doc.Length == 14 ? "CNPJ" : "CPF")} {(doc.Length == 14 ? Vorticis.Domain.Cadastros.Cnpj.Formatar(doc) : Vorticis.Domain.Cadastros.Cpf.Formatar(doc))} não está cadastrado.\n" +
+                $"Cadastrar \"{novo.Nome}\" como {rotulo} e gravar a nota?", "Cadastrar e gravar", "Cancelar"))
+            return null;
+        var cad = await servico.CadastrarAsync(empresa, novo, usuario);
+        if (!cad.Sucesso) { MostrarResultado(cad, ""); return null; }
+        (_novoParticipante, TemNovoParticipante) = (null, false);
+        ParticipanteInfo = $"{RotuloParticipante} cadastrado: {cad.Valor.Codigo} - {cad.Valor.Nome}";
+        return (cad.Valor.Id, cad.Valor.Codigo, cad.Valor.Nome);
+    }
+
+    /// <summary>Busca o participante pelo CPF/CNPJ digitado: nos cadastrados da empresa e, se não existir, na base pública do CNPJ.</summary>
+    [RelayCommand]
+    private async Task BuscarParticipanteAsync()
+    {
+        if (!PodeEditar || Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
+        var texto = Participante;
+        if (ServicoParticipanteNota.DocumentoDigitado(texto) is not { } doc) return;
+        if (_participanteId != 0 || _novoParticipante?.CpfCnpj == doc) return;   // já resolvido: não refaz a consulta nem apaga a edição
+        var geracao = ++_buscaGeracao;
+        try
+        {
+            ParticipanteInfo = "Buscando...";
+            var r = await app.Fiscal().ParticipantesNota.BuscarAsync(empresa, texto, Operacao, sessao.Id);
+            if (geracao != _buscaGeracao || texto != Participante) return;   // o usuário continuou digitando
+            Erros.Clear();
+            if (!r.Sucesso) { ParticipanteInfo = ""; foreach (var e in r.Erros) Erros.Add(e); return; }
+            if (r.Valor.Cadastrado is { } c)
+            {
+                (_participanteId, _novoParticipante, TemNovoParticipante) = (c.Id, null, false);
+                ParticipanteInfo = $"{RotuloParticipante} cadastrado: {c.Codigo} - {c.Nome}" + (string.IsNullOrWhiteSpace(c.Uf) ? "" : $" ({c.Municipio} / {c.Uf})");
+            }
+            else if (r.Valor.Novo is not null) AplicarNovoParticipante(r.Valor);
+            else ParticipanteInfo = "";
+        }
+        catch (Exception ex) { ParticipanteInfo = ""; Erros.Add(ex.Message); }
+    }
+
+    private void AplicarNovoParticipante(ParticipanteResolvido r)
+    {
+        var n = r.Novo!;
+        _novoParticipante = n;
+        (NovoNome, NovoUf, NovoMunicipio, NovoIe) = (n.Nome, n.Uf ?? "", n.Municipio ?? "", n.InscricaoEstadual ?? "");
+        TemNovoParticipante = true;
+        ParticipanteInfo = $"{RotuloParticipante} não cadastrado: será cadastrado ao gravar a nota (confirmação).".Trim() +
+                           (r.Fonte is null ? "" : $" Dados da base pública ({r.Fonte}).") + (string.IsNullOrWhiteSpace(r.Aviso) ? "" : " " + r.Aviso);
+    }
+
+    // ------------------------------------------------------------------ escrituração (notas importadas e digitadas)
+
+    /// <summary>Aplica ao item selecionado o CFOP de escrituração, o produto vinculado e o centro de custo informados (os dados do XML não mudam).</summary>
+    [RelayCommand]
+    private Task AplicarEscrituracaoItemAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (ItemSelecionado is not { } sel) { Erros.Add("Selecione o item da nota."); return; }
+        long? produtoId = sel.Item.ProdutoId;
+        string? produtoNome = sel.ProdutoVinculado;
+        if (string.IsNullOrWhiteSpace(EscProduto)) (produtoId, produtoNome) = (null, null);
+        else
+        {
+            var p = await Resolvedores.ProdutoAsync(app, empresa, usuario, EscProduto, true);
+            if (p is null) { Erros.Add($"Produto \"{EscProduto.Trim()}\" não encontrado ou ambíguo (cadastre em Cadastros › Produtos)."); return; }
+            (produtoId, produtoNome) = (p.Id, $"{p.Codigo} - {p.Descricao}");
+        }
+        var cfop = string.IsNullOrWhiteSpace(Item.Cfop) ? sel.Cfop : Item.Cfop.Trim().ToUpperInvariant();
+        var novo = sel.Item with { Cfop = cfop, ProdutoId = produtoId, CentroCustoId = CentroItem?.Id, CentroCustoCodigo = CentroItem?.Codigo };
+        var pos = Itens.IndexOf(sel);
+        Itens[pos] = new ItemNotaLinha(novo, produtoNome);
+        ItemSelecionado = Itens[pos];
+        Mensagem = $"Item {novo.Numero} atualizado na tela. Clique em \"Gravar escrituração\" para salvar.";
+    });
+
+    /// <summary>Grava somente a escrituração da nota importada: CFOP, produto e centro de custo dos itens, centro de custo da nota, contas e observações.</summary>
+    [RelayCommand]
+    private Task SalvarEscrituracaoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (_documentoId == 0) { Erros.Add("Selecione uma nota na lista."); return; }
+        var esc = new EscrituracaoDocumento(_documentoId, Texto(Observacoes), CentroDocumento?.Id, Texto(ContaDebito), Texto(ContaCredito),
+            Itens.Select(i => new EscrituracaoItem(i.N, i.Item.Cfop, i.Item.ProdutoId, i.Item.CentroCustoId)).ToList());
+        var r = await app.Fiscal().Digitacao.GravarEscrituracaoAsync(empresa, esc, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var id = _documentoId;
+        await ListarAsync(app, empresa, usuario);
+        await CarregarDocumentoAsync(id);
+        Selecionada = Lista.FirstOrDefault(d => d.Id == id);
+        Mensagem = "Escrituração gravada.";
+    }, Permissao.FiscalDocumentosImportar);
+
+    // ------------------------------------------------------------------ importação de XML na tela
+
+    /// <summary>Depois de importar: ajusta o período da lista para incluir as notas importadas desta operação e as seleciona.</summary>
+    private async Task AposImportacaoAsync(ResultadoImportacao r)
+    {
+        var minhas = r.Arquivos.Where(a => a.Situacao == SituacaoImportacao.Importado && a.Operacao == Operacao).ToList();
+        var outras = r.Arquivos.Count(a => a.Situacao == SituacaoImportacao.Importado && a.Operacao != Operacao);
+        var datas = minhas.Where(a => a.DataLivro is not null).Select(a => a.DataLivro!.Value.ToDateTime(TimeOnly.MinValue)).ToList();
+        AmpliarPeriodo(datas);
+        await ExecutarAsync(ListarAsync, Permissao.FiscalDocumentosConsultar);
+        if (minhas.Count > 0) Selecionada = Lista.FirstOrDefault(d => d.Chave == minhas[0].Chave);
+        Mensagem = $"{minhas.Count} nota(s) de {Operacao.Rotulo().ToLowerInvariant()} importada(s) e listada(s) abaixo." +
+                   (outras > 0 ? $" {outras} nota(s) da outra operação (entrada/saída) também foram importadas e aparecem na tela correspondente." : "");
+    }
+
+    private void AmpliarPeriodo(IReadOnlyCollection<DateTime> datas)
+    {
+        if (datas.Count == 0) return;
+        if (FiltroInicio is null || datas.Min() < FiltroInicio) FiltroInicio = datas.Min();
+        if (FiltroFim is null || datas.Max() > FiltroFim) FiltroFim = datas.Max();
+    }
+
+    [RelayCommand(CanExecute = nameof(TemSelecionada))]
+    private Task EditarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada is not { } s) return;
+        await CarregarDocumentoAsync(s.Id);   // recarrega do banco, descartando alterações não gravadas
+        if (Contabilizado) Mensagem = "Nota contabilizada: para alterar, desfaça a contabilização (ou use \"Desfazer contabilização e excluir\").";
+        else if (Importada) Mensagem = "Nota importada: edite a escrituração abaixo (os dados do XML são somente leitura) e clique em \"Gravar escrituração\".";
+        else Mensagem = "Altere os dados da nota e clique em \"Gravar nota\".";
+    }, Permissao.FiscalDocumentosConsultar);
+
     [RelayCommand(CanExecute = nameof(TemSelecionada))]
     private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionada is not { } s) return;
-        if (!await Contexto.ConfirmarAsync("Excluir nota", $"Excluir a nota {s.Modelo} {s.Numero}?", "Excluir", "Cancelar")) return;
-        var r = await app.Fiscal().Documentos.ExcluirAsync(empresa, [s.Id], usuario);
+        var r = await ExclusaoNotas.ExcluirAsync(Contexto, app, empresa, usuario, s);   // contabilizada: "Desfazer contabilização e excluir"
+        if (r is null) return;
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Lista.Remove(s);
         Novo();

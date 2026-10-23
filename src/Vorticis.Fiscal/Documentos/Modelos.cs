@@ -45,7 +45,7 @@ public sealed record ItemFiscal(
     string? CstPis, decimal BcPis, decimal AliqPis, decimal Pis,
     string? CstCofins, decimal BcCofins, decimal AliqCofins, decimal Cofins,
     decimal BcIss, decimal AliqIss, decimal Iss,
-    string? Gtin = null, long? ProdutoId = null, long? CentroCustoId = null, string? CentroCustoCodigo = null);
+    string? Gtin = null, long? ProdutoId = null, long? CentroCustoId = null, string? CentroCustoCodigo = null, string? CfopOriginal = null);
 
 /// <summary>Totais e retenções do documento.</summary>
 public sealed record TotaisDocumento(

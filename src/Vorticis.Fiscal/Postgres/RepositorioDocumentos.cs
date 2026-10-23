@@ -26,12 +26,63 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     public Task<GravacaoDocumento> GravarAsync(long empresaId, DocumentoLido d, Identificacao ident, long usuarioId, CancellationToken ct)
         => Sql.TraduzirErrosAsync(async () =>
         {
-            await using var con = await ds.OpenConnectionAsync(ct);
-            await using var tx = await con.BeginTransactionAsync(ct);
+            await using var lote = await IniciarLoteAsync(empresaId, usuarioId, ct);
+            var g = await lote.GravarAsync(d, ident, ct);
+            await lote.ConfirmarAsync(ct);
+            return g;
+        });
+
+    public async Task<ILoteGravacao> IniciarLoteAsync(long empresaId, long usuarioId, CancellationToken ct)
+    {
+        var con = await ds.OpenConnectionAsync(ct);
+        try
+        {
+            var tx = await con.BeginTransactionAsync(ct);
             await Sql.DefinirUsuarioAsync(con, tx, usuarioId, ct);
             await using (var cmd = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtext('fiscal_importacao'), @e::int)", con, tx).Com("e", empresaId))
                 await cmd.ExecuteNonQueryAsync(ct);
+            return new LoteGravacao(con, tx, empresaId, usuarioId);
+        }
+        catch
+        {
+            await con.DisposeAsync();
+            throw;
+        }
+    }
 
+    /// <summary>Várias notas na mesma transação; cada uma num savepoint, de modo que uma falha desfaz só aquela nota.</summary>
+    private sealed class LoteGravacao(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long usuarioId) : ILoteGravacao
+    {
+        public async Task<GravacaoDocumento> GravarAsync(DocumentoLido d, Identificacao ident, CancellationToken ct)
+        {
+            await using (var sp = new NpgsqlCommand("SAVEPOINT nota", con, tx)) await sp.ExecuteNonQueryAsync(ct);
+            try
+            {
+                var g = await Sql.TraduzirErrosAsync(() => GravarNaTransacaoAsync(con, tx, empresaId, d, ident, usuarioId, ct));
+                await using var rel = new NpgsqlCommand("RELEASE SAVEPOINT nota", con, tx);
+                await rel.ExecuteNonQueryAsync(CancellationToken.None);
+                return g;
+            }
+            catch
+            {
+                try { await using var rb = new NpgsqlCommand("ROLLBACK TO SAVEPOINT nota", con, tx); await rb.ExecuteNonQueryAsync(CancellationToken.None); }
+                catch (Exception) { /* conexão perdida: a transação inteira será descartada */ }
+                throw;
+            }
+        }
+
+        public Task ConfirmarAsync(CancellationToken ct) => tx.CommitAsync(ct);
+
+        public async ValueTask DisposeAsync()
+        {
+            await tx.DisposeAsync();
+            await con.DisposeAsync();
+        }
+    }
+
+    private static async Task<GravacaoDocumento> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, DocumentoLido d,
+                                                                       Identificacao ident, long usuarioId, CancellationToken ct)
+    {
             await using (var existe = new NpgsqlCommand("SELECT id FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c", con, tx)
                              .Com("e", empresaId).Com("c", d.Chave))
                 if (await existe.ExecuteScalarAsync(ct) is long id)
@@ -96,9 +147,8 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     .Com("prod", NpgsqlDbType.Bigint, produtoId).ComTexto("gtin", i.Gtin);
                 await item.ExecuteNonQueryAsync(ct);
             }
-            await tx.CommitAsync(ct);
             return new GravacaoDocumento(false, documentoId, criado, nomePart);
-        });
+    }
 
     /// <summary>Procura o participante pelo CPF/CNPJ na empresa (cria se não existir) e marca cliente (saída) ou fornecedor (entrada).</summary>
     private static async Task<(long? Id, bool Criado, string? Nome)> VincularParticipanteAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId,
@@ -234,7 +284,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         d.valor_produtos, d.valor_desconto, d.valor_frete, d.valor_seguro, d.valor_outras, d.valor_total,
         d.vl_bc_icms, d.vl_icms, d.vl_bc_icms_st, d.vl_icms_st, d.vl_ipi, d.vl_pis, d.vl_cofins, d.vl_iss, d.iss_retido,
         d.vl_ret_pis, d.vl_ret_cofins, d.vl_ret_csll, d.vl_irrf, d.vl_ret_prev,
-        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE), d.origem, d.centro_custo_id, ccd.codigo
+        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE), d.origem, d.centro_custo_id, ccd.codigo, d.observacoes, d.conta_debito, d.conta_credito
         """;
 
     public async Task<IReadOnlyList<DocumentoFiscal>> ListarAsync(long empresaId, FiltroDocumentos f, CancellationToken ct)
@@ -290,17 +340,17 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 r.GetString(4), r.GetString(5), r.GetFieldValue<DateOnly>(6), r.GetFieldValue<DateOnly>(7), r.Texto(8), ModelosExtensions.SituacaoDe(r.GetString(9)),
                 new ParteDocumento(r.Texto(10), r.Texto(11), r.Texto(12)),
                 r.IsDBNull(13) && r.IsDBNull(14) ? null : new ParteDocumento(r.Texto(13), r.Texto(14), r.Texto(15)),
-                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39), r.GetString(40), r.LongOuNulo(41), r.Texto(42)));
+                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39), r.GetString(40), r.LongOuNulo(41), r.Texto(42), r.Texto(43), r.Texto(44), r.Texto(45)));
         }
         return res;
     }
 
     internal const string ColunasItemSql = """
-        i.n_item, i.cod_produto, i.descricao, i.ncm, i.cest, i.cfop, i.unidade, i.quantidade, i.valor_unitario, i.valor_produto, i.valor_desconto,
+        i.n_item, i.cod_produto, i.descricao, i.ncm, i.cest, COALESCE(i.cfop_escrituracao, i.cfop), i.unidade, i.quantidade, i.valor_unitario, i.valor_produto, i.valor_desconto,
         i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, i.cst_icms, i.origem_mercadoria, i.vl_bc_icms, i.aliq_icms, i.vl_icms,
         i.vl_bc_icms_st, i.vl_icms_st, i.cst_ipi, i.vl_bc_ipi, i.aliq_ipi, i.vl_ipi, i.cst_pis, i.vl_bc_pis, i.aliq_pis, i.vl_pis,
         i.cst_cofins, i.vl_bc_cofins, i.aliq_cofins, i.vl_cofins, i.vl_bc_iss, i.aliq_iss, i.vl_iss,
-        i.gtin, i.produto_id, i.centro_custo_id, cci.codigo
+        i.gtin, i.produto_id, i.centro_custo_id, cci.codigo, i.cfop
         """;
 
     internal static ItemFiscal LerItemSql(NpgsqlDataReader r, int o) => new(
@@ -310,7 +360,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         r.GetDecimal(o + 21), r.Texto(o + 22), r.GetDecimal(o + 23), r.GetDecimal(o + 24), r.GetDecimal(o + 25), r.Texto(o + 26),
         r.GetDecimal(o + 27), r.GetDecimal(o + 28), r.GetDecimal(o + 29), r.Texto(o + 30), r.GetDecimal(o + 31), r.GetDecimal(o + 32),
         r.GetDecimal(o + 33), r.GetDecimal(o + 34), r.GetDecimal(o + 35), r.GetDecimal(o + 36),
-        r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40));
+        r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40), r.Texto(o + 41));
 
     public async Task<IReadOnlyList<ItemFiscal>> ListarItensDoDocumentoAsync(long documentoId, CancellationToken ct)
     {

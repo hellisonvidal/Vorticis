@@ -31,6 +31,7 @@ public sealed class TabelaExibidaView : UserControl
                 Width = c.LarguraCm > 0 ? new DataGridLength(Math.Max(60, c.LarguraCm * 38)) : numerico ? new DataGridLength(110) : c.Tipo == TipoColuna.Data ? new DataGridLength(95) : new DataGridLength(1, DataGridLengthUnitType.Star),
                 MinWidth = 50,
             };
+            GradesFiscais.AjustarColuna(coluna, numerico, grade.FontSize);
             grade.Columns.Add(coluna);
         }
         // Linhas de total em negrito.

@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
+using Vorticis.Infra;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Relatorios;
 
@@ -9,7 +11,26 @@ namespace Vorticis.Fiscal.Desktop.ViewModels;
 
 public sealed record ResultadoImportacaoLinha(string Arquivo, string Situacao, string Numero, string Operacao, string Valor, string Mensagem);
 
-/// <summary>Documentos fiscais › Importação de XML: arquivos ou pastas (inclusive .zip) com NF-e, NFC-e e NFS-e nacional.</summary>
+/// <summary>Repassa o andamento da importação à tela no máximo a cada 100 ms (milhares de arquivos não inundam a fila de eventos).</summary>
+internal sealed class ProgressoLimitado(Action<ProgressoImportacao> aplicar) : IProgress<ProgressoImportacao>
+{
+    private readonly SynchronizationContext? _contexto = SynchronizationContext.Current;
+    private long _ultimo;
+
+    public void Report(ProgressoImportacao valor)
+    {
+        var agora = Environment.TickCount64;
+        if (agora - Interlocked.Read(ref _ultimo) < 100 && valor.Processados < valor.Total) return;
+        Interlocked.Exchange(ref _ultimo, agora);
+        if (_contexto is null) aplicar(valor); else _contexto.Post(_ => aplicar(valor), null);
+    }
+}
+
+/// <summary>
+/// Documentos fiscais › Importação de XML: arquivos, vários arquivos, pastas (com subpastas) ou .zip (inclusive com subpastas) com NF-e, NFC-e e
+/// NFS-e nacional. Roda em segundo plano (a tela continua livre), com barra de progresso, cancelamento e resumo final exportável. Também é usada
+/// dentro de Lançamentos › Documentos fiscais › Entrada e Saída, que reage ao evento <see cref="Concluida"/>.
+/// </summary>
 public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<ResultadoImportacaoLinha> Resultados { get; } = [];
@@ -17,33 +38,100 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
     [ObservableProperty] private string _pasta = "";
     [ObservableProperty] private bool _incluirSubpastas = true;
     [ObservableProperty] private string _resumo = "";
-    public bool PodeImportar => Contexto.Pode(Permissao.FiscalDocumentosImportar);
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeIniciar))] [NotifyCanExecuteChangedFor(nameof(CancelarCommand))] private bool _importando;
+    [ObservableProperty] private double _percentual;
+    [ObservableProperty] private bool _indeterminado;
+    [ObservableProperty] private string _andamento = "";
+    [ObservableProperty] private bool _temResumo;
 
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeImportar));
+    /// <summary>Resultado da última importação concluída (ou interrompida).</summary>
+    public ResultadoImportacao? Ultimo { get; private set; }
+
+    /// <summary>Disparado na tela, depois de cada importação, com o resultado (os dados já estão gravados).</summary>
+    public event Func<ResultadoImportacao, Task>? Concluida;
+
+    private CancellationTokenSource? _cancelamento;
+
+    public bool PodeImportar => Contexto.Pode(Permissao.FiscalDocumentosImportar);
+    public bool PodeIniciar => PodeImportar && !Importando;
+
+    public void AtualizarPermissoes()
+    {
+        OnPropertyChanged(nameof(PodeImportar));
+        OnPropertyChanged(nameof(PodeIniciar));
+    }
 
     [RelayCommand]
-    private Task ImportarPastaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private Task ImportarPastaAsync()
     {
-        if (string.IsNullOrWhiteSpace(Pasta) || !Directory.Exists(Pasta)) { Erros.Add("Selecione uma pasta existente."); return; }
-        MostrarResultadoImportacao(await app.Fiscal().Documentos.ImportarPastaAsync(empresa, Pasta.Trim(), IncluirSubpastas, usuario));
-    }, Permissao.FiscalDocumentosImportar);
+        if (string.IsNullOrWhiteSpace(Pasta) || !Directory.Exists(Pasta)) { Erros.Clear(); Erros.Add("Selecione uma pasta existente."); return Task.CompletedTask; }
+        return ImportarPastaAsync(Pasta.Trim(), IncluirSubpastas);
+    }
+
+    /// <summary>Importa os .xml e .zip da pasta; com <paramref name="subpastas"/>, de todas as subpastas.</summary>
+    public Task ImportarPastaAsync(string pasta, bool subpastas)
+        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarPastaAsync(empresa, pasta, subpastas, usuario, progresso, ct));
 
     /// <summary>Importa os arquivos escolhidos na tela (.xml e .zip).</summary>
-    public Task ImportarArquivosAsync(IReadOnlyList<string> caminhos) => ExecutarAsync(async (app, empresa, usuario) =>
-        MostrarResultadoImportacao(await app.Fiscal().Documentos.ImportarArquivosAsync(empresa, caminhos, usuario)), Permissao.FiscalDocumentosImportar);
+    public Task ImportarArquivosAsync(IReadOnlyList<string> caminhos)
+        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarArquivosAsync(empresa, caminhos, usuario, progresso, ct));
 
-    private void MostrarResultadoImportacao(Vorticis.Domain.Comum.Resultado<ResultadoImportacao> r)
+    private bool PodeCancelar() => Importando;
+
+    [RelayCommand(CanExecute = nameof(PodeCancelar))]
+    private void Cancelar()
+    {
+        _cancelamento?.Cancel();
+        Andamento = "Cancelando... as notas já gravadas serão mantidas.";
+    }
+
+    /// <summary>Resumo da última importação em CSV (para exportar), ou null se não houve importação.</summary>
+    public string? ResumoCsv() => Ultimo?.ParaCsv();
+
+    private Task ExecutarLoteAsync(Func<ServicoDocumentosFiscais, long, long, IProgress<ProgressoImportacao>, CancellationToken, Task<Resultado<ResultadoImportacao>>> importar)
+        => ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Importando) { Erros.Add("Já existe uma importação em andamento."); return; }
+            using var cancelamento = _cancelamento = new CancellationTokenSource();
+            Importando = true;
+            (Percentual, Indeterminado, Andamento, Resumo, TemResumo) = (0, true, "Preparando a importação...", "", false);
+            Resultados.Clear();
+            try
+            {
+                var progresso = new ProgressoLimitado(p =>
+                {
+                    if (!Importando) return;
+                    (Indeterminado, Percentual) = (p.Total <= 0, p.Total > 0 ? 100.0 * p.Processados / p.Total : 0);
+                    Andamento = $"{p.Processados} de {p.Total} - {p.Arquivo}";
+                });
+                var servico = app.Fiscal().Documentos;
+                // Em segundo plano: leitura dos arquivos, XML e gravação não rodam na thread da tela.
+                var r = await Task.Run(() => importar(servico, empresa, usuario, progresso, cancelamento.Token));
+                MostrarResultadoImportacao(r);
+                if (r.Sucesso && Concluida is { } aviso)
+                    foreach (var ouvinte in aviso.GetInvocationList().Cast<Func<ResultadoImportacao, Task>>()) await ouvinte(r.Valor);
+            }
+            finally
+            {
+                _cancelamento = null;
+                (Importando, Indeterminado) = (false, false);
+            }
+        }, Permissao.FiscalDocumentosImportar);
+
+    private void MostrarResultadoImportacao(Resultado<ResultadoImportacao> r)
     {
         Resultados.Clear();
-        if (!r.Sucesso) { MostrarResultado(r, ""); Resumo = ""; return; }
+        Ultimo = r.Sucesso ? r.Valor : null;
+        if (!r.Sucesso) { MostrarResultado(r, ""); Resumo = ""; TemResumo = false; Andamento = ""; return; }
         foreach (var a in r.Valor.Arquivos)
-            Resultados.Add(new ResultadoImportacaoLinha(a.Arquivo, a.Situacao switch
-            {
-                SituacaoImportacao.Importado => "Importado", SituacaoImportacao.Duplicado => "Já importado", SituacaoImportacao.Cancelado => "Cancelamento",
-                SituacaoImportacao.Ignorado => "Ignorado", _ => "Erro",
-            }, a.Numero ?? "", a.Operacao?.Rotulo() ?? "", a.Valor == 0 ? "" : Numeros.Moeda(a.Valor), a.Mensagem));
+            Resultados.Add(new ResultadoImportacaoLinha(a.Arquivo, ResultadoImportacao.RotuloSituacao(a.Situacao), a.Numero ?? "", a.Operacao?.Rotulo() ?? "",
+                a.Valor == 0 ? "" : Numeros.Moeda(a.Valor), a.Mensagem));
         Resumo = r.Valor.Resumo;
-        Mensagem = r.Valor.Erros == 0 ? "Importação concluída." : "Importação concluída com erros: veja a lista abaixo.";
+        TemResumo = true;
+        Percentual = r.Valor.Interrompida ? Percentual : 100;
+        Andamento = r.Valor.Interrompida ? "Importação cancelada." : "Importação concluída.";
+        Mensagem = r.Valor.Interrompida ? "Importação cancelada: o que já foi importado foi mantido."
+                 : r.Valor.Erros + r.Valor.OutrasEmpresas == 0 ? "Importação concluída." : "Importação concluída com pendências: veja a lista com o motivo de cada arquivo.";
     }
 }
 
@@ -62,6 +150,7 @@ public sealed record DocumentoLinha(DocumentoFiscal Documento)
     public string Situacao => Documento.Situacao.Rotulo();
     public string Contabilizado => Documento.Contabilizado ? "Sim" : "Não";
     public string Chave => Documento.Chave;
+    public string Origem => Documento.Digitado ? "Digitada" : "XML";
 }
 
 public sealed record ItemDocumentoLinha(ItemFiscal Item)
@@ -140,10 +229,11 @@ public partial class DocumentosViewModel(IContexto contexto) : ModuloViewModel(c
     private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionado is not { } s) return;
-        if (!await Contexto.ConfirmarAsync("Excluir documento", $"Excluir o documento {s.Modelo} {s.Numero} importado? O XML original também será removido.", "Excluir", "Cancelar")) return;
-        var r = await app.Fiscal().Documentos.ExcluirAsync(empresa, [s.Id], usuario);
+        var r = await ExclusaoNotas.ExcluirAsync(Contexto, app, empresa, usuario, s);
+        if (r is null) return;
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Documentos.Remove(s);
+        Itens.Clear();
         Mensagem = "Documento excluído.";
     }, Permissao.FiscalDocumentosImportar);
 
@@ -216,4 +306,21 @@ public partial class ResumoCfopViewModel(IContexto contexto) : RelatorioFiscalVi
         Mostrar(TabelasFiscais.ResumoCfop(r.Valor));
         Mensagem = r.Valor.Count == 0 ? "Nenhum documento no período." : "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
     }, Permissao.FiscalRelatorios);
+}
+
+/// <summary>Exclusão de notas (digitadas ou importadas) com confirmação; nota contabilizada pede "Desfazer contabilização e excluir".</summary>
+internal static class ExclusaoNotas
+{
+    /// <summary>Null = o usuário desistiu na confirmação.</summary>
+    public static async Task<Resultado<int>?> ExcluirAsync(IContexto contexto, VorticisApp app, long empresa, long usuario, DocumentoLinha nota)
+    {
+        var contabilizada = nota.Documento.Contabilizado;
+        var origem = nota.Documento.Digitado ? "digitada" : "importada de XML (o XML original também será removido)";
+        var confirmou = contabilizada
+            ? await contexto.ConfirmarAsync("Desfazer contabilização e excluir",
+                $"A nota {nota.Modelo} {nota.Numero} está contabilizada. O lançamento contábil será estornado e, em seguida, a nota ({origem}) será excluída. Continuar?",
+                "Desfazer contabilização e excluir", "Cancelar")
+            : await contexto.ConfirmarAsync("Excluir nota", $"Excluir a nota {nota.Modelo} {nota.Numero}, {origem}?", "Excluir", "Cancelar");
+        return confirmou ? await app.Fiscal().Contabilizacao.ExcluirDocumentosAsync(empresa, [nota.Id], contabilizada, usuario) : null;
+    }
 }

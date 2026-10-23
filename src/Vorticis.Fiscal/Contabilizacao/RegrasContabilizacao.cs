@@ -68,6 +68,14 @@ public static class MotorContabilizacao
             var valor = Dinheiro.Arredondar(grupo.Sum(i => i.ValorContabil));
             if (valor <= 0) continue;
             var regra = Escolher(regras, doc.Operacao, grupo.Key.Cfop, doc.ParticipanteId);
+            // Contas escolhidas na própria nota (escrituração) sobrepõem as da regra; com as duas informadas, a regra nem é exigida.
+            if (!string.IsNullOrWhiteSpace(doc.ContaDebito) || !string.IsNullOrWhiteSpace(doc.ContaCredito))
+            {
+                var deb = string.IsNullOrWhiteSpace(doc.ContaDebito) ? regra?.ContaDebito : doc.ContaDebito.Trim();
+                var cre = string.IsNullOrWhiteSpace(doc.ContaCredito) ? regra?.ContaCredito : doc.ContaCredito.Trim();
+                if (deb is not null && cre is not null)
+                    regra = (regra ?? new RegraContabilizacao(0, 0, null, null, null, null, deb, cre, "NF {DOCUMENTO} - {PARTICIPANTE}")) with { ContaDebito = deb, ContaCredito = cre };
+            }
             if (regra is null)
             {
                 erros.Add($"Documento {doc.Numero}: nenhuma regra de contabilização para o CFOP {grupo.Key.Cfop} ({doc.Operacao.Rotulo().ToLowerInvariant()}).");

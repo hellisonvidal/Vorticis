@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.GuiasView"
@@ -41,7 +42,7 @@
         </WrapPanel>
       </StackPanel>
     </Border>
-    <DataGrid ItemsSource="{Binding Linhas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Linhas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="100" />
         <DataGridTextColumn Header="Compet." Binding="{ReflectionBinding Competencia}" Width="80" />

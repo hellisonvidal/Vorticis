@@ -34,6 +34,7 @@ public sealed class ServicosFiscais
         Parametros = new ParametrosFiscaisPostgres(ds);
         Documentos = new ServicoDocumentosFiscais(repoDocumentos, autorizador);
         Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
+        ParticipantesNota = new ServicoParticipanteNota(app);
         Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
         Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador);
         Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
@@ -46,6 +47,7 @@ public sealed class ServicosFiscais
     public IParametrosFiscais Parametros { get; }
     public ServicoDocumentosFiscais Documentos { get; }
     public ServicoDigitacaoFiscal Digitacao { get; }
+    public ServicoParticipanteNota ParticipantesNota { get; }
     public ServicoProdutos Produtos { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
     public ServicoSimplesNacional Simples { get; }

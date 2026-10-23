@@ -13,7 +13,21 @@ namespace Vorticis.Fiscal.Documentos;
 public sealed record DocumentoDigitado(
     long Id, TipoOperacao Operacao, ModeloDocumento Modelo, string Serie, string Numero, string? Chave, DateOnly Emissao, DateOnly DataLivro,
     string? Natureza, long ParticipanteId, long? CentroCustoId, TotaisDocumento Totais, IReadOnlyList<ItemFiscal> Itens,
-    bool Contabilizado = false, string Origem = "DIGITADO");
+    bool Contabilizado = false, string Origem = "DIGITADO", string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null)
+{
+    /// <summary>Nota importada de XML: valores, chave e itens do XML original não se alteram; só a escrituração.</summary>
+    public bool Importado => Origem == "XML";
+}
+
+/// <summary>Escrituração de um item: CFOP de escrituração (em branco = o do documento), produto vinculado e centro de custo.</summary>
+public sealed record EscrituracaoItem(int Numero, string? Cfop, long? ProdutoId, long? CentroCustoId);
+
+/// <summary>
+/// Campos de escrituração, editáveis inclusive nas notas importadas: observações, centro de custo, contas de contabilização
+/// (sobrepõem as da regra; código da conta analítica) e, por item, CFOP, produto e centro de custo.
+/// </summary>
+public sealed record EscrituracaoDocumento(long DocumentoId, string? Observacoes, long? CentroCustoId, string? ContaDebito, string? ContaCredito,
+                                           IReadOnlyList<EscrituracaoItem> Itens);
 
 /// <summary>Participante como usado na digitação (a outra parte da nota).</summary>
 public sealed record ParticipanteNota(long Id, string Nome, string? CpfCnpj, string? Uf);
@@ -38,6 +52,11 @@ public interface IRepositorioDigitacao
     Task<long> GravarAsync(long empresaId, DocumentoDigitado doc, EmpresaFiscal empresa, ParticipanteNota participante, long usuarioId, CancellationToken ct);
 
     Task<DocumentoDigitado?> ObterAsync(long empresaId, long documentoId, CancellationToken ct);
+
+    Task<bool> ContaAnaliticaExisteAsync(long empresaId, string codigo, CancellationToken ct);
+
+    /// <summary>Grava somente a escrituração (nunca os dados do XML). Recusa nota contabilizada ou inexistente.</summary>
+    Task GravarEscrituracaoAsync(long empresaId, EscrituracaoDocumento escrituracao, long usuarioId, CancellationToken ct);
 }
 
 /// <summary>Cálculos da nota digitada, sem banco.</summary>
@@ -229,6 +248,60 @@ public sealed class ServicoDigitacaoFiscal(IRepositorioDigitacao repositorio, IR
         };
         try { return Resultado<long>.Ok(await repositorio.GravarAsync(empresaId, final, empresa, participante!, usuarioId, ct)); }
         catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }
+    }
+
+    /// <summary>
+    /// Altera a escrituração de uma nota (digitada ou importada de XML) sem tocar nos dados do XML. Nota contabilizada não pode ser alterada.
+    /// </summary>
+    public async Task<Resultado> GravarEscrituracaoAsync(long empresaId, EscrituracaoDocumento esc, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return Resultado.Falha(negado);
+        var doc = await repositorio.ObterAsync(empresaId, esc.DocumentoId, ct);
+        if (doc is null) return Resultado.Falha("Documento não encontrado.");
+        if (doc.Contabilizado) return Resultado.Falha("A nota está contabilizada: desfaça a contabilização para alterar a escrituração.");
+        var config = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
+        var erros = new List<string>();
+        var obs = string.IsNullOrWhiteSpace(esc.Observacoes) ? null : esc.Observacoes.Trim();
+        if (obs is { Length: > 2000 }) erros.Add("As observações podem ter até 2000 caracteres.");
+        async Task<string?> Conta(string? codigo, string rotulo)
+        {
+            if (string.IsNullOrWhiteSpace(codigo)) return null;
+            codigo = codigo.Trim();
+            if (!await repositorio.ContaAnaliticaExisteAsync(empresaId, codigo, ct)) erros.Add($"{rotulo}: conta \"{codigo}\" não encontrada entre as analíticas ativas.");
+            return codigo;
+        }
+        var contaD = await Conta(esc.ContaDebito, "Conta de débito");
+        var contaC = await Conta(esc.ContaCredito, "Conta de crédito");
+        var centros = esc.Itens.Select(i => i.CentroCustoId).Append(esc.CentroCustoId).Where(c => c is not null).Select(c => c!.Value).Distinct().ToList();
+        if (centros.Count > 0)
+        {
+            if (!config.CentroCustoAtivo) erros.Add("Centros de custo não estão habilitados no Fiscal desta empresa (Cadastros › Configurações fiscais).");
+            else if ((await repositorio.CentrosValidosAsync(empresaId, centros, ct)) is var validos && centros.Any(c => !validos.Contains(c)))
+                erros.Add("Centro de custo inexistente ou inativo.");
+        }
+        var produtos = await repositorio.ObterProdutosAsync(empresaId, esc.Itens.Where(i => i.ProdutoId is not null).Select(i => i.ProdutoId!.Value).Distinct(), ct);
+        var itens = new List<EscrituracaoItem>();
+        foreach (var i in esc.Itens)
+        {
+            var original = doc.Itens.FirstOrDefault(x => x.Numero == i.Numero);
+            if (original is null) { erros.Add($"Item {i.Numero} não existe na nota."); continue; }
+            if (i.ProdutoId is { } pid && !produtos.ContainsKey(pid)) erros.Add($"Item {i.Numero}: produto não encontrado.");
+            var cfop = string.IsNullOrWhiteSpace(i.Cfop) ? original.CfopOriginal ?? original.Cfop : i.Cfop.Trim().ToUpperInvariant();
+            if (doc.Modelo != ModeloDocumento.NFSe)
+            {
+                if (Cfop.Operacao(cfop) is not { } sentido) erros.Add($"Item {i.Numero}: CFOP inválido (4 dígitos).");
+                else if (sentido != doc.Operacao && cfop != (original.CfopOriginal ?? original.Cfop))
+                    erros.Add($"Item {i.Numero}: o CFOP {cfop} não é de {doc.Operacao.Rotulo().ToLowerInvariant()} (entradas começam por 1, 2 ou 3; saídas por 5, 6 ou 7).");
+            }
+            itens.Add(i with { Cfop = cfop });
+        }
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        try
+        {
+            await repositorio.GravarEscrituracaoAsync(empresaId, new EscrituracaoDocumento(esc.DocumentoId, obs, esc.CentroCustoId, contaD, contaC, itens), usuarioId, ct);
+            return Resultado.Ok();
+        }
+        catch (ViolacaoRegraException ex) { return Resultado.Falha(ex.Message); }
     }
 
     private static string? Digitos(string? t) => string.IsNullOrWhiteSpace(t) ? null : new string(t.Where(char.IsAsciiDigit).ToArray()) is { Length: > 0 } d ? d : null;
