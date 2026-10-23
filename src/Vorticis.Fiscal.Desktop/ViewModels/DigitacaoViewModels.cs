@@ -313,6 +313,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     {
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var r = await app.Fiscal().Digitacao.ObterAsync(empresa, id, sessao.Id);
+        // a seleção mudou durante a consulta (ex.: "Novo" logo depois de gravar): não sobrescreve a tela
+        if (Selecionada?.Id != id) return;
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var d = r.Valor;
         _documentoId = d.Id;
@@ -321,6 +323,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         (Modelo, Serie, Numero, Chave, Emissao, DataLivro, Natureza) =
             (Math.Max(0, ModelosValores.ToList().IndexOf(d.Modelo)), d.Serie, d.Numero, d.Chave ?? "", d.Emissao.ToDateTime(TimeOnly.MinValue), d.DataLivro.ToDateTime(TimeOnly.MinValue), d.Natureza ?? "");
         var lista = await app.Participantes.ListarAsync(empresa, sessao.Id);
+        if (Selecionada?.Id != id) return;
         _suprimirBusca = true;
         Participante = lista.FirstOrDefault(p => p.Id == d.ParticipanteId)?.Nome ?? "";
         _suprimirBusca = false;
