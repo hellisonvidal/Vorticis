@@ -18,7 +18,7 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
                                      long? cargo = null, long? depto = null, IReadOnlyList<DependenteFolha>? deps = null, string? pis = null)
         => new(0, matricula, nome, cpf, pis, new DateOnly(1990, 5, 20), "F", 6, 1, "09", "func@exemplo.com.br", "11999998888", "01310100", "Av. Paulista", "1000", null, "Bela Vista",
                "3550308", "SP", DateOnly.Parse(admissao), "101", "INDETERMINADO", null, cargo, depto, "252105", "MENSAL", salario, 44, 220, centro, 0, false,
-               "341", "1234", "56789-0", "CORRENTE", null, "ATIVO", null, null, deps ?? []);
+               "341", "1234", "56789-0", "CORRENTE", null, "ATIVO", null, null, deps ?? [], TipoLogradouro: "AV", CnpjSindicato: "11222333000181");
 
     private static void Ok(Vorticis.Domain.Comum.Resultado r) => Assert.True(r.Sucesso, string.Join("; ", r.Erros));
 
@@ -327,6 +327,9 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
             Assert.Equal(e.IdEvento, evt.Attribute("Id")!.Value);
             Assert.Equal(36, evt.Attribute("Id")!.Value.Length);
         }
+        // Validação contra os XSDs oficiais S-1.3 embutidos
+        var errosXsd = eventos.SelectMany(e => ValidadorXsdEsocial.ValidarEvento(e.Xml, exigirAssinatura: false).Select(m => $"{e.Tipo}: {m}")).Distinct().ToList();
+        Assert.True(errosXsd.Count == 0, string.Join("\n", errosXsd));
         var s2200 = XDocument.Parse(eventos.Single(e => e.Tipo == "S-2200").Xml);
         string Txt(XDocument d, string nome) => d.Descendants().First(x => x.Name.LocalName == nome).Value;
         Assert.Equal(("52998224725", "000000", "2020-01-01"), (Txt(s2200, "cpfTrab"), "000000", Txt(s2200, "dtAdm")));

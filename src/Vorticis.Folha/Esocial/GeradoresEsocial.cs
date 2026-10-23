@@ -6,9 +6,9 @@ using Vorticis.Folha.Regras;
 namespace Vorticis.Folha.Esocial;
 
 /// <summary>
-/// Geração dos XMLs dos eventos do eSocial (leiaute S-1.3), sem assinatura e sem transmissão nesta etapa. Os eventos seguem a
-/// estrutura e a ordem dos elementos principais do leiaute; antes de transmitir, valide cada arquivo contra os XSDs oficiais
-/// (pacote de schemas S-1.3 do portal do eSocial) e assine com o certificado digital da empresa.
+/// Geração dos XMLs dos eventos do eSocial (leiaute S-1.3). Os eventos seguem os XSDs oficiais (pacote de 01/07/2026, embutido
+/// e conferido por <see cref="ValidadorXsdEsocial"/>); a assinatura XMLDSig e a transmissão ficam em <see cref="AssinadorEsocial"/>
+/// e no cliente de envio de lotes.
 /// </summary>
 public static class GeradoresEsocial
 {
@@ -71,35 +71,31 @@ public static class GeradoresEsocial
     public static string S1000(string id, EmpresaFolha e, ParametroEmpresa p, DateOnly iniValid, int ambiente = 2)
         => Montar("evtInfoEmpregador", id, ns =>
         [
-            IdeEvento(ns, ambiente, comRetif: true),
+            IdeEvento(ns, ambiente, comRetif: false),
             IdeEmpregador(ns, e.Cnpj),
             E(ns, "infoEmpregador", E(ns, "inclusao",
-                E(ns, "idePeriodoValidade", E(ns, "iniValid", Periodo(iniValid))),
+                E(ns, "idePeriodo", E(ns, "iniValid", Periodo(iniValid))),
                 E(ns, "infoCadastro",
-                    E(ns, "classTrib", p.ClassTrib), E(ns, "indCoop", 0), E(ns, "indConstr", 0), E(ns, "indDesFolha", 0), E(ns, "indOptRegEletron", 0),
-                    E(ns, "contato", E(ns, "nmCtt", p.ResponsavelNome ?? e.RazaoSocial), E(ns, "cpfCtt", Digitos(p.ResponsavelCpf)),
-                      p.ResponsavelTelefone is { Length: > 0 } t ? E(ns, "foneFixo", Digitos(t)) : null,
-                      p.ResponsavelEmail is { Length: > 0 } m ? E(ns, "email", m) : null)))),
+                    E(ns, "classTrib", p.ClassTrib), E(ns, "indCoop", 0), E(ns, "indConstr", 0), E(ns, "indDesFolha", 0), E(ns, "indOptRegEletron", 0)))),
         ]);
 
     /// <summary>S-1005 – Tabela de estabelecimentos (matriz): CNAE preponderante e alíquotas RAT/FAP.</summary>
     public static string S1005(string id, EmpresaFolha e, ParametroEmpresa p, DateOnly iniValid, int ambiente = 2)
         => Montar("evtTabEstab", id, ns =>
         [
-            IdeEvento(ns, ambiente),
+            IdeEvento(ns, ambiente, comRetif: false),
             IdeEmpregador(ns, e.Cnpj),
             E(ns, "infoEstab", E(ns, "inclusao",
                 E(ns, "ideEstab", E(ns, "tpInsc", 1), E(ns, "nrInsc", Digitos(e.Cnpj)), E(ns, "iniValid", Periodo(iniValid))),
                 E(ns, "dadosEstab", E(ns, "cnaePrep", Digitos(e.CnaePrincipal)),
-                    E(ns, "aliqGilrat", E(ns, "aliqRat", Decimal(p.RatAliquota).TrimEnd('0').TrimEnd('.')), E(ns, "fap", p.Fap.ToString("0.0000", Inv)),
-                      E(ns, "aliqRatAjust", Decimal(p.RatAliquota * p.Fap)))))),
+                    E(ns, "aliqGilrat", E(ns, "aliqRat", ((int)Math.Round(p.RatAliquota)).ToString(Inv)), E(ns, "fap", p.Fap.ToString("0.0000", Inv)))))),
         ]);
 
     /// <summary>S-1010 – Tabela de rubricas.</summary>
     public static string S1010(string id, EmpresaFolha e, Rubrica r, DateOnly iniValid, int ambiente = 2)
         => Montar("evtTabRubrica", id, ns =>
         [
-            IdeEvento(ns, ambiente),
+            IdeEvento(ns, ambiente, comRetif: false),
             IdeEmpregador(ns, e.Cnpj),
             E(ns, "infoRubrica", E(ns, "inclusao",
                 E(ns, "ideRubrica", E(ns, "codRubr", r.Codigo), E(ns, "ideTabRubr", "TAB1"), E(ns, "iniValid", Periodo(iniValid))),
@@ -112,7 +108,7 @@ public static class GeradoresEsocial
     public static string S1020(string id, EmpresaFolha e, string codigo, ParametroEmpresa p, DateOnly iniValid, int ambiente = 2)
         => Montar("evtTabLotacao", id, ns =>
         [
-            IdeEvento(ns, ambiente),
+            IdeEvento(ns, ambiente, comRetif: false),
             IdeEmpregador(ns, e.Cnpj),
             E(ns, "infoLotacao", E(ns, "inclusao",
                 E(ns, "ideLotacao", E(ns, "codLotacao", codigo), E(ns, "iniValid", Periodo(iniValid))),
@@ -130,7 +126,8 @@ public static class GeradoresEsocial
             E(ns, "remuneracao", E(ns, "vrSalFx", Decimal(salario)), E(ns, "undSalFixo", UnidadeSalario(f))),
             E(ns, "duracao", E(ns, "tpContr", f.TipoContrato is "DETERMINADO" or "EXPERIENCIA" ? 2 : 1), dtTermino is { } t ? E(ns, "dtTerm", Data(t)) : null),
             E(ns, "localTrabalho", E(ns, "localTrabGeral", E(ns, "tpInsc", 1), E(ns, "nrInsc", Digitos(e.Cnpj)))),
-            E(ns, "horContratual", E(ns, "qtdHrsSem", Decimal(f.JornadaSemanal)), E(ns, "tpJornada", 1), E(ns, "tmpParc", 0)));
+            E(ns, "horContratual", E(ns, "qtdHrsSem", Decimal(f.JornadaSemanal)), E(ns, "tpJornada", f.TipoJornada), E(ns, "tmpParc", 0),
+              E(ns, "dscJorn", f.DescricaoJornada ?? $"Jornada contratual de {f.JornadaSemanal:0.##} horas semanais")));
 
     /// <summary>S-2200 – Cadastramento inicial do vínculo e admissão do trabalhador.</summary>
     public static string S2200(string id, EmpresaFolha e, Funcionario f, int ambiente = 2)
@@ -143,6 +140,7 @@ public static class GeradoresEsocial
                 E(ns, "grauInstr", f.GrauInstrucao),
                 E(ns, "nascimento", E(ns, "dtNascto", Data(f.Nascimento)), E(ns, "paisNascto", "105"), E(ns, "paisNac", "105")),
                 f.Logradouro is null ? null : E(ns, "endereco", E(ns, "brasil",
+                    f.TipoLogradouro is { Length: > 0 } tl ? E(ns, "tpLograd", tl) : null,
                     E(ns, "dscLograd", f.Logradouro), E(ns, "nrLograd", f.Numero ?? "S/N"),
                     f.Complemento is { Length: > 0 } c ? E(ns, "complemento", c) : null,
                     f.Bairro is { Length: > 0 } b ? E(ns, "bairro", b) : null,
@@ -156,7 +154,7 @@ public static class GeradoresEsocial
             E(ns, "vinculo",
                 E(ns, "matricula", f.Matricula), E(ns, "tpRegTrab", 1), E(ns, "tpRegPrev", 1), E(ns, "cadIni", "N"),
                 E(ns, "infoRegimeTrab", E(ns, "infoCeletista", E(ns, "dtAdm", Data(f.Admissao)), E(ns, "tpAdmissao", 1), E(ns, "indAdmissao", 1),
-                    E(ns, "tpRegJor", 1), E(ns, "natAtividade", 1))),
+                    E(ns, "tpRegJor", 1), E(ns, "natAtividade", 1), E(ns, "cnpjSindCategProf", Digitos(f.CnpjSindicato)))),
                 InfoContrato(ns, e, f, f.CargoNome ?? "Não informado", f.Cbo ?? "000000", f.Salario, f.TerminoContrato)),
         ]);
 
@@ -168,9 +166,9 @@ public static class GeradoresEsocial
             IdeEmpregador(ns, e.Cnpj),
             IdeVinculo(ns, f.Cpf, f.Matricula),
             E(ns, "altContratual", E(ns, "dtAlteracao", Data(a.Data)), E(ns, "dscAlt", a.Descricao),
-                E(ns, "vinculo", E(ns, "tpRegPrev", 1)),
-                E(ns, "infoRegimeTrab", E(ns, "infoCeletista", E(ns, "tpRegJor", 1), E(ns, "natAtividade", 1))),
-                InfoContrato(ns, e, f, a.CargoNovo ?? f.CargoNome ?? "Não informado", f.Cbo ?? "000000", a.SalarioNovo ?? f.Salario, f.TerminoContrato)),
+                E(ns, "vinculo", E(ns, "tpRegPrev", 1),
+                    E(ns, "infoRegimeTrab", E(ns, "infoCeletista", E(ns, "tpRegJor", 1), E(ns, "natAtividade", 1), E(ns, "cnpjSindCategProf", Digitos(f.CnpjSindicato)))),
+                    InfoContrato(ns, e, f, a.CargoNovo ?? f.CargoNome ?? "Não informado", f.Cbo ?? "000000", a.SalarioNovo ?? f.Salario, f.TerminoContrato))),
         ]);
 
     /// <summary>S-2230 – Afastamento temporário (início ou término).</summary>
@@ -218,22 +216,23 @@ public static class GeradoresEsocial
             E(ns, "ideTrabalhador", E(ns, "cpfTrab", Digitos(f.Cpf))),
             .. calculos.Select(c => E(ns, "dmDev", E(ns, "ideDmDev", CodigoDemonstrativo(c)), E(ns, "codCateg", f.Categoria),
                 E(ns, "infoPerApur", E(ns, "ideEstabLot", E(ns, "tpInsc", 1), E(ns, "nrInsc", Digitos(e.Cnpj)), E(ns, "codLotacao", codLotacao),
-                    c.Itens.Where(i => i.Tipo is 'P' or 'D' && i.Valor > 0).Select(i => E(ns, "detVerbas", E(ns, "codRubr", i.Codigo), E(ns, "ideTabRubr", "TAB1"),
-                        i.Referencia > 0 && i.Codigo != RubricasPadrao.Salario ? E(ns, "qtdRubr", i.Referencia.ToString("0.##", Inv)) : null,
-                        E(ns, "vrRubr", Decimal(i.Valor)))))))),
+                    E(ns, "remunPerApur", E(ns, "matricula", f.Matricula),
+                        c.Itens.Where(i => i.Tipo is 'P' or 'D' && i.Valor > 0).Select(i => E(ns, "itensRemun", E(ns, "codRubr", i.Codigo), E(ns, "ideTabRubr", "TAB1"),
+                            i.Referencia > 0 && i.Codigo != RubricasPadrao.Salario ? E(ns, "qtdRubr", i.Referencia.ToString("0.##", Inv)) : null,
+                            E(ns, "vrRubr", Decimal(i.Valor))))))))),
         ]);
 
-    /// <summary>S-1210 – Pagamentos de rendimentos do trabalho.</summary>
-    public static string S1210(string id, EmpresaFolha e, Funcionario f, DateOnly perApur, int indApuracao, IReadOnlyList<CalculoGravado> calculos, DateOnly dataPagamento,
+    /// <summary>S-1210 – Pagamentos de rendimentos do trabalho (um por trabalhador e mês; inclui folha mensal, férias, rescisão e 13º pagos no período).</summary>
+    public static string S1210(string id, EmpresaFolha e, Funcionario f, DateOnly perApur, IReadOnlyList<CalculoGravado> calculos, DateOnly dataPagamentoPadrao,
                                int ambiente = 2)
         => Montar("evtPgtos", id, ns =>
         [
-            IdeEvento(ns, ambiente, comRetif: true, indApuracao, indApuracao == 2 ? perApur.Year.ToString(Inv) : Periodo(perApur)),
+            IdeEvento(ns, ambiente, comRetif: true, null, Periodo(perApur)),
             IdeEmpregador(ns, e.Cnpj),
             E(ns, "ideBenef", E(ns, "cpfBenef", Digitos(f.Cpf)),
-                E(ns, "infoPgto", E(ns, "dtPgto", Data(dataPagamento)), E(ns, "tpPgto", 1), E(ns, "indResBr", "S"),
-                    calculos.Select(c => E(ns, "detPgtoFl", E(ns, "perRef", indApuracao == 2 ? perApur.Year.ToString(Inv) : Periodo(c.Competencia)),
-                        E(ns, "ideDmDev", CodigoDemonstrativo(c)), E(ns, "indPgtoTt", "S"), E(ns, "vrLiq", Decimal(c.Liquido)))))),
+                calculos.Select(c => E(ns, "infoPgto", E(ns, "dtPgto", Data(c.DataPagamento ?? dataPagamentoPadrao)), E(ns, "tpPgto", 1),
+                    E(ns, "perRef", c.Tipo == TipoFolha.Decimo2 ? c.Competencia.Year.ToString(Inv) : Periodo(c.Competencia)),
+                    E(ns, "ideDmDev", CodigoDemonstrativo(c)), E(ns, "vrLiq", Decimal(c.Liquido))))),
         ]);
 
     /// <summary>S-1299 – Fechamento dos eventos periódicos.</summary>
@@ -242,9 +241,7 @@ public static class GeradoresEsocial
         [
             IdeEvento(ns, ambiente, comRetif: false, 1, Periodo(perApur)),
             IdeEmpregador(ns, e.Cnpj),
-            E(ns, "ideRespInf", E(ns, "nmResp", p.ResponsavelNome ?? e.RazaoSocial), E(ns, "cpfResp", Digitos(p.ResponsavelCpf)),
-                p.ResponsavelTelefone is { Length: > 0 } t ? E(ns, "telefone", Digitos(t)) : null, p.ResponsavelEmail is { Length: > 0 } m ? E(ns, "email", m) : null),
-            E(ns, "infoFech", E(ns, "evtRemun", SN(temRemuneracao)), E(ns, "evtPgtos", SN(temPagamentos)), E(ns, "evtAqProd", "N"), E(ns, "evtComProd", "N"),
-                E(ns, "evtContratAvNP", "N"), E(ns, "evtInfoComplPer", "N"), E(ns, "transDCTFWeb", "S"), E(ns, "naoValid", "N")),
+            E(ns, "infoFech", E(ns, "evtRemun", SN(temRemuneracao)), E(ns, "evtPgtos", SN(temPagamentos)), E(ns, "evtComProd", "N"),
+                E(ns, "evtContratAvNP", "N"), E(ns, "evtInfoComplPer", "N"), E(ns, "transDCTFWeb", "S")),
         ]);
 }

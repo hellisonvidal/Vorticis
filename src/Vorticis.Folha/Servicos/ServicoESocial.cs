@@ -57,7 +57,11 @@ public sealed class ServicoESocial(IRepositorioCadastrosFolha cadastros, IReposi
             { ignorados++; return; }
             await repositorio.ExcluirNaoExportadosAsync(empresaId, tipo, comp, referencia, ct);
             var id = GeradoresEsocial.GerarId(empresa.Cnpj, agora, ++seq);
-            await repositorio.GravarAsync(empresaId, tipo, comp, referencia, id, xml(id), usuarioId, ct);
+            var conteudo = xml(id);
+            // Confere contra o XSD oficial já na geração; o evento é gravado mesmo assim, para o usuário corrigir o cadastro e regerar.
+            if (ValidadorXsdEsocial.ValidarEvento(conteudo, exigirAssinatura: false) is { Count: > 0 } erros)
+                avisos.Add($"{tipo} {referencia}: {ResumirErroXsd(erros[0])}");
+            await repositorio.GravarAsync(empresaId, tipo, comp, referencia, id, conteudo, usuarioId, ct);
             gerados++;
         }
 
@@ -113,13 +117,17 @@ public sealed class ServicoESocial(IRepositorioCadastrosFolha cadastros, IReposi
                 {
                     var f = funcionarios[g.Key];
                     var lista = g.OrderBy(c => c.Tipo).ThenBy(c => c.OrigemId).ToList();
-                    var chave = ind == 1 ? f.Matricula : f.Matricula + "/13";
-                    if (tipos.Contains("S-1200")) await Gravar("S-1200", competencia, chave, id => GeradoresEsocial.S1200(id, empresa, f, competencia, ind, lista, Lotacao(f), Ambiente));
-                    if (tipos.Contains("S-1210"))
-                    {
-                        var dataPg = lista.Select(c => c.DataPagamento).FirstOrDefault(d => d is not null) ?? competencia.AddMonths(1).AddDays(4);
-                        await Gravar("S-1210", competencia, chave, id => GeradoresEsocial.S1210(id, empresa, f, competencia, ind, lista, dataPg, Ambiente));
-                    }
+                    if (tipos.Contains("S-1200"))
+                        await Gravar("S-1200", competencia, ind == 1 ? f.Matricula : f.Matricula + "/13", id => GeradoresEsocial.S1200(id, empresa, f, competencia, ind, lista, Lotacao(f), Ambiente));
+                }
+            // S-1210: um evento por trabalhador no mês, com todos os pagamentos (folha, férias, rescisão e 13º).
+            if (tipos.Contains("S-1210"))
+                foreach (var g in calculos.GroupBy(c => c.FuncionarioId))
+                {
+                    var f = funcionarios[g.Key];
+                    var lista = g.OrderBy(c => c.Tipo).ThenBy(c => c.OrigemId).ToList();
+                    var dataPg = lista.Select(c => c.DataPagamento).FirstOrDefault(d => d is not null) ?? competencia.AddMonths(1).AddDays(4);
+                    await Gravar("S-1210", competencia, f.Matricula, id => GeradoresEsocial.S1210(id, empresa, f, competencia, lista, dataPg, Ambiente));
                 }
         }
         if (tipos.Contains("S-1299"))
@@ -129,6 +137,14 @@ public sealed class ServicoESocial(IRepositorioCadastrosFolha cadastros, IReposi
             await Gravar("S-1299", competencia, empresa.Cnpj, id => GeradoresEsocial.S1299(id, empresa, p, competencia, mensais.Count + decimos.Count > 0, mensais.Count + decimos.Count > 0, Ambiente));
         }
         return Resultado<ResumoGeracaoEsocial>.Ok(new ResumoGeracaoEsocial(gerados, ignorados, avisos));
+    }
+
+    /// <summary>Traduz as mensagens mais comuns do validador para orientar o preenchimento do cadastro.</summary>
+    internal static string ResumirErroXsd(string msg)
+    {
+        if (msg.Contains("cnpjSindCategProf")) return "informe o CNPJ do sindicato da categoria no cadastro do funcionário.";
+        var i = msg.IndexOf("The element", StringComparison.Ordinal);
+        return "fora do leiaute S-1.3 – " + System.Text.RegularExpressions.Regex.Replace(msg, @"in namespace '[^']*'|'?http://www\.esocial\.gov\.br/schema/evt/[^:']*:?", "").Trim();
     }
 
     /// <summary>Grava os eventos escolhidos como arquivos XML em <paramref name="pasta"/> e os marca como exportados.</summary>

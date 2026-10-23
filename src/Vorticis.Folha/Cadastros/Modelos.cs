@@ -17,7 +17,8 @@ public sealed record Funcionario(
     string TipoSalario, decimal Salario, decimal JornadaSemanal, decimal JornadaMensal, long? CentroCustoId, decimal Insalubridade, bool Periculosidade,
     string? Banco, string? Agencia, string? Conta, string? TipoConta, string? ChavePix,
     string Situacao, DateOnly? Desligamento, string? MotivoDesligamento, IReadOnlyList<DependenteFolha> Dependentes,
-    string? CargoNome = null, string? DepartamentoNome = null, string? CentroCustoCodigo = null)
+    string? CargoNome = null, string? DepartamentoNome = null, string? CentroCustoCodigo = null,
+    string? TipoLogradouro = null, string? CnpjSindicato = null, int TipoJornada = 9, string? DescricaoJornada = null)
 {
     public bool Ativo => Situacao != "DESLIGADO";
 

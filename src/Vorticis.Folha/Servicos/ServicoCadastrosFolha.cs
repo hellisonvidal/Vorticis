@@ -125,6 +125,8 @@ public sealed class ServicoCadastrosFolha(IRepositorioCadastrosFolha repositorio
         if (f.Insalubridade is not (0 or 10 or 20 or 40)) erros.Add("Insalubridade: 0, 10, 20 ou 40%.");
         if (!string.IsNullOrWhiteSpace(f.Cbo) && new string(f.Cbo.Where(char.IsDigit).ToArray()).Length != 6) erros.Add("O CBO deve ter 6 dígitos.");
         if (!string.IsNullOrWhiteSpace(f.Uf) && !Uf.Valida(f.Uf)) erros.Add("UF inválida.");
+        if (f.CnpjSindicato is { Length: > 0 } sind && !Cnpj.Valido(sind)) erros.Add("CNPJ do sindicato inválido.");
+        if (f.TipoJornada is not (2 or 3 or 4 or 5 or 6 or 7 or 9)) erros.Add("Tipo de jornada inválido (2 a 7 ou 9).");
         if (f.Situacao is not ("ATIVO" or "AFASTADO" or "DESLIGADO")) erros.Add("Situação inválida.");
         if (f.Situacao == "DESLIGADO" && f.Desligamento is null) erros.Add("Informe a data do desligamento.");
         if (f.Desligamento is { } d && d < f.Admissao) erros.Add("O desligamento não pode ser anterior à admissão.");
@@ -148,6 +150,8 @@ public sealed class ServicoCadastrosFolha(IRepositorioCadastrosFolha repositorio
         {
             Matricula = matricula, Nome = f.Nome.Trim(), Cpf = Cnpj.SomenteDigitos(f.Cpf), PisNis = Texto(Cnpj.SomenteDigitos(f.PisNis)),
             Cbo = Texto(cbo), Uf = Texto(f.Uf?.ToUpperInvariant()), Cep = Texto(Cnpj.SomenteDigitos(f.Cep)), Banco = Texto(f.Banco),
+            TipoLogradouro = Texto(f.TipoLogradouro?.ToUpperInvariant()), CnpjSindicato = Texto(Cnpj.SomenteDigitos(f.CnpjSindicato)),
+            DescricaoJornada = Texto(f.DescricaoJornada),
             Dependentes = f.Dependentes.Select(d => d with { Nome = d.Nome.Trim(), Cpf = Texto(Cnpj.SomenteDigitos(d.Cpf)) }).ToArray(),
         };
         var erros = Validar(norm, hoje);

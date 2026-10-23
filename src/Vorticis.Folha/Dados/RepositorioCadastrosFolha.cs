@@ -72,7 +72,7 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
                f.data_admissao, f.categoria_esocial, f.tipo_contrato, f.data_termino_contrato, f.cargo_id, f.departamento_id, f.cbo,
                f.tipo_salario, f.salario, f.jornada_semanal_horas, f.jornada_mensal_horas, f.centro_custo_id, f.insalubridade_percentual, f.periculosidade,
                f.banco, f.agencia, f.conta, f.tipo_conta, f.chave_pix, f.situacao, f.data_desligamento, f.motivo_desligamento,
-               c.nome, d.nome, cc.codigo
+               c.nome, d.nome, cc.codigo, f.tipo_logradouro, f.cnpj_sindicato, f.tipo_jornada, f.descricao_jornada
           FROM folha.funcionario f
           LEFT JOIN folha.cargo c ON c.id = f.cargo_id
           LEFT JOIN folha.departamento d ON d.id = f.departamento_id
@@ -85,7 +85,7 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
         r.GetFieldValue<DateOnly>(19), r.GetString(20), r.GetString(21), r.Data(22), r.Id(23), r.Id(24), r.Texto(25),
         r.GetString(26), r.GetDecimal(27), r.GetDecimal(28), r.GetDecimal(29), r.Id(30), r.GetDecimal(31), r.GetBoolean(32),
         r.Texto(33), r.Texto(34), r.Texto(35), r.Texto(36), r.Texto(37), r.GetString(38), r.Data(39), r.Texto(40), [],
-        r.Texto(41), r.Texto(42), r.Texto(43));
+        r.Texto(41), r.Texto(42), r.Texto(43), r.Texto(44), r.Texto(45), r.GetInt16(46), r.Texto(47));
 
     private async Task<Dictionary<long, List<DependenteFolha>>> DependentesAsync(long empresaId, long? funcionarioId, CancellationToken ct)
     {
@@ -152,7 +152,8 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
                 cod_municipio_ibge = @mun, uf = @uf, data_admissao = @adm, categoria_esocial = @cat, tipo_contrato = @contrato, data_termino_contrato = @termino,
                 cargo_id = @cargo, departamento_id = @depto, cbo = @cbo, tipo_salario = @tsal, salario = @salario, jornada_semanal_horas = @jsem,
                 jornada_mensal_horas = @jmes, centro_custo_id = @cc, insalubridade_percentual = @insal, periculosidade = @peric, banco = @banco,
-                agencia = @ag, conta = @conta, tipo_conta = @tconta, chave_pix = @pix, situacao = @sit, data_desligamento = @deslig, motivo_desligamento = @motivo
+                agencia = @ag, conta = @conta, tipo_conta = @tconta, chave_pix = @pix, situacao = @sit, data_desligamento = @deslig, motivo_desligamento = @motivo,
+                tipo_logradouro = @tplogr, cnpj_sindicato = @sind, tipo_jornada = @tpjor, descricao_jornada = @dscjor
                 """;
             long id;
             NpgsqlCommand Cmd(string sql)
@@ -166,7 +167,8 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
                  .ComTexto("cbo", f.Cbo).Com("tsal", f.TipoSalario).Com("salario", f.Salario).Com("jsem", f.JornadaSemanal).Com("jmes", f.JornadaMensal)
                  .ComId("cc", f.CentroCustoId).Com("insal", f.Insalubridade).Com("peric", f.Periculosidade).ComTexto("banco", f.Banco).ComTexto("ag", f.Agencia)
                  .ComTexto("conta", f.Conta).ComTexto("tconta", f.TipoConta).ComTexto("pix", f.ChavePix).Com("sit", f.Situacao).ComData("deslig", f.Desligamento)
-                 .ComTexto("motivo", f.MotivoDesligamento);
+                 .ComTexto("motivo", f.MotivoDesligamento).ComTexto("tplogr", f.TipoLogradouro).ComTexto("sind", f.CnpjSindicato)
+                 .Com("tpjor", (short)f.TipoJornada).ComTexto("dscjor", f.DescricaoJornada);
                 return c;
             }
             if (f.Id == 0)
@@ -175,9 +177,11 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
                     INSERT INTO folha.funcionario (empresa_id, matricula, nome, cpf, pis_nis, data_nascimento, sexo, raca_cor, estado_civil, grau_instrucao, email, telefone,
                         cep, logradouro, numero, complemento, bairro, cod_municipio_ibge, uf, data_admissao, categoria_esocial, tipo_contrato, data_termino_contrato,
                         cargo_id, departamento_id, cbo, tipo_salario, salario, jornada_semanal_horas, jornada_mensal_horas, centro_custo_id, insalubridade_percentual,
-                        periculosidade, banco, agencia, conta, tipo_conta, chave_pix, situacao, data_desligamento, motivo_desligamento)
+                        periculosidade, banco, agencia, conta, tipo_conta, chave_pix, situacao, data_desligamento, motivo_desligamento,
+                        tipo_logradouro, cnpj_sindicato, tipo_jornada, descricao_jornada)
                     VALUES (@e, @matricula, @nome, @cpf, @pis, @nasc, @sexo, @raca, @civil, @grau, @email, @tel, @cep, @logr, @num, @compl, @bairro, @mun, @uf, @adm, @cat,
-                        @contrato, @termino, @cargo, @depto, @cbo, @tsal, @salario, @jsem, @jmes, @cc, @insal, @peric, @banco, @ag, @conta, @tconta, @pix, @sit, @deslig, @motivo)
+                        @contrato, @termino, @cargo, @depto, @cbo, @tsal, @salario, @jsem, @jmes, @cc, @insal, @peric, @banco, @ag, @conta, @tconta, @pix, @sit, @deslig, @motivo,
+                        @tplogr, @sind, @tpjor, @dscjor)
                     RETURNING id
                     """);
                 id = (long)(await ins.ExecuteScalarAsync(ct))!;
