@@ -40,6 +40,43 @@ Estes cadastros existem em todos os módulos e têm o mesmo código em todos ele
 - Não é possível trocar o plano de contas depois que existem lançamentos.
 - A consulta de CNPJ usa a base pública da Receita (via BrasilAPI e Minha Receita); empresas muito recentes podem não constar. A consulta de IE permite 3 consultas por minuto.
 
+## Parâmetros
+
+**Para que serve:** reunir, numa tela só, as configurações do módulo para a **empresa ativa**. Cada grupo tem um texto curto de ajuda. Nada é guardado em duplicidade: o que você muda aqui é o mesmo que aparece nas telas próprias.
+
+**Onde fica:** *Cadastros › Parâmetros* (em todos os módulos).
+
+**Como usar:**
+1. Escolha a empresa no topo da janela e abra *Cadastros › Parâmetros*.
+2. Altere os campos desejados. Os botões de cada grupo (por exemplo, *Abrir Encerramento do exercício*) levam à tela completa daquela configuração.
+3. Clique em **Salvar**. *Descartar alterações* volta aos valores gravados.
+
+Se o seu perfil não permite alterar, a tela só mostra os valores. Se você apertar Esc com alterações não salvas, o sistema pergunta antes de fechar.
+
+### Contábil
+| Grupo | O que tem |
+|---|---|
+| Lançamentos | Usar estorno de lançamentos, exigir número do documento nas partidas, bloquear lançamentos até uma data. |
+| Centros de custo e participantes | Usar centros de custo; plano de contas com participantes. |
+| Encerramento do exercício | Contas de apuração do resultado, de lucros e de prejuízos acumulados. |
+| SPED Contábil (ECD) e ECF | Empresa de grande porte. |
+
+### Fiscal
+| Grupo | O que tem |
+|---|---|
+| Lançamento das notas | Informar centro de custo nos itens das notas. |
+| EFD ICMS/IPI | Perfil, atividade, códigos de receita e dia de vencimento do ICMS (o assistente já abre preenchido). |
+| EFD-Contribuições | Natureza da pessoa jurídica e atividade. |
+| Contabilização e tributos | Atalhos para *Regras de contabilização* e *Contas dos tributos*. |
+
+### Folha
+| Grupo | O que tem |
+|---|---|
+| Encargos patronais | RAT, FAP e alíquota de terceiros (FPAS, Simples e responsável continuam em *Funcionários › Parâmetros e tabelas legais*). |
+| Pagamento | Dia de pagamento dos salários. |
+| eSocial | Ambiente e transmissor padrão; a tela *Transmissão* já abre com eles escolhidos. |
+| Contabilização | Atalho para a tela *Contabilização*. |
+
 ## Clientes e fornecedores (participantes)
 
 **Para que serve:** cadastrar quem compra e quem vende. A mesma pessoa pode ser cliente e fornecedor (são menus separados).

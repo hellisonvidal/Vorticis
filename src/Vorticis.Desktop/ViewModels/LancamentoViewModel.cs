@@ -91,7 +91,7 @@ public sealed record ContaSelecionavel(string Codigo, string Descricao, int? Red
 /// uma linha com conta débito e conta crédito é um lançamento (partida dobrada); linhas com uma conta só (débito ou
 /// crédito) são partidas simples que, somadas, precisam fechar (débitos = créditos) para formar um lançamento.
 /// </summary>
-public partial class LancamentoViewModel : ModuloViewModel
+public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAlteracoesPendentes
 {
     private IReadOnlyList<ContaSelecionavel> _todasContas = [];
     private Dictionary<string, ContaSelecionavel> _porCodigo = [];
@@ -123,6 +123,7 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _temDados;
     /// <summary>Janela pop-up de digitação aberta (a tela mostra só a grade dos lançamentos efetuados).</summary>
     [ObservableProperty] private bool _digitacaoAberta;
+    public bool TemAlteracoesPendentes => DigitacaoAberta && TemDados;
 
     /// <summary>"Novo lançamento": digitação em branco no pop-up.</summary>
     [RelayCommand]

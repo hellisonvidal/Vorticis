@@ -147,13 +147,12 @@ public class EcdAssistenteTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
-    public void Menu_auditoria_tem_ecd_e_ecf_e_exportar_nao_tem_sped()
+    public void Menu_exportar_tem_ecd_e_ecf_e_nao_ha_menu_auditoria()
     {
         var menus = new MainViewModel().Menus;
-        var auditoria = menus.Single(m => m.Titulo == "_Auditoria");
-        Assert.Contains(auditoria.Filhos!, i => i.Chave == Telas.EcdAssistente && i.Habilitado);
-        Assert.Contains(auditoria.Filhos!, i => i.Chave == Telas.EcfAssistente && i.Titulo == "Gerar ECF (SPED)" && i.Habilitado);
+        Assert.DoesNotContain(menus, m => m.Titulo == "_Auditoria");
         var exportar = menus.Single(m => m.Titulo == "_Integrações").Filhos!.Single(i => i.Titulo == "_Exportar");
-        Assert.DoesNotContain(exportar.Filhos!, i => i.Titulo.Contains("SPED"));
+        Assert.Contains(exportar.Filhos!, i => i.Chave == Telas.EcdAssistente && i.Titulo == "Gerar ECD (SPED Contábil)" && i.Habilitado);
+        Assert.Contains(exportar.Filhos!, i => i.Chave == Telas.EcfAssistente && i.Titulo == "Gerar ECF (SPED)" && i.Habilitado);
     }
 }

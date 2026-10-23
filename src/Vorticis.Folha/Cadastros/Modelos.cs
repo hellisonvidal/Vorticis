@@ -38,6 +38,12 @@ public sealed record ParametroEmpresa(decimal RatAliquota, decimal Fap, decimal 
     public static readonly ParametroEmpresa Padrao = new(2m, 1m, 5.8m, "515", "0079", null, "99", null, null, null, null);
 }
 
+/// <summary>Configuração da folha por empresa (folha.configuracao_empresa): dia de pagamento e padrões do eSocial.</summary>
+public sealed record ConfiguracaoFolha(int DiaPagamento = 5, int AmbienteEsocial = 2, string TransmissorEsocial = "EMPREGADOR")
+{
+    public static readonly ConfiguracaoFolha Padrao = new();
+}
+
 public sealed record EventoVariavel(long Id, long FuncionarioId, string FuncionarioNome, DateOnly Competencia, string RubricaCodigo, string RubricaDescricao,
                                     decimal Referencia, decimal? Valor, string? Observacao);
 

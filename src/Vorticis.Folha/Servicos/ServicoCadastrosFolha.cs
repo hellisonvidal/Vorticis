@@ -229,6 +229,21 @@ public sealed class ServicoCadastrosFolha(IRepositorioCadastrosFolha repositorio
         return Resultado.Ok();
     }
 
+    public async Task<ConfiguracaoFolha> ObterConfiguracaoAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => await autorizador.PodeVerAsync(usuarioId, empresaId, ct) ? await repositorio.ObterConfiguracaoAsync(empresaId, ct) : ConfiguracaoFolha.Padrao;
+
+    public async Task<Resultado> GravarConfiguracaoAsync(long empresaId, ConfiguracaoFolha c, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, empresaId, Permissao.FolhaParametrosManter, ct) is { } negado) return Resultado.Falha(negado);
+        var erros = new List<string>();
+        if (c.DiaPagamento is < 1 or > 31) erros.Add("O dia de pagamento deve estar entre 1 e 31.");
+        if (c.AmbienteEsocial is not (1 or 2)) erros.Add("Ambiente do eSocial inválido.");
+        if (c.TransmissorEsocial is not ("EMPREGADOR" or "PROCURADOR" or "CONTADOR")) erros.Add("Transmissor do eSocial inválido.");
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        await repositorio.GravarConfiguracaoAsync(empresaId, c, usuarioId, ct);
+        return Resultado.Ok();
+    }
+
     /// <summary>Tabelas legais cadastradas (INSS, IRRF, salário-família, salário mínimo, FGTS) com as vigências.</summary>
     public async Task<IReadOnlyList<ParametroLegal>> ListarTabelasLegaisAsync(long empresaId, long usuarioId, CancellationToken ct = default)
         => await autorizador.PodeVerAsync(usuarioId, empresaId, ct) ? await repositorio.ListarParametrosLegaisAsync(ct) : [];

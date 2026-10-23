@@ -90,6 +90,9 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("Produtos", m => new ProdutosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.Produtos, "Cadastros › Produtos", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("ParametrosModulo", m => new ParametrosFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia("ConfiguracoesFiscais", m => new ConfiguracoesFiscaisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.ConfiguracoesFiscais, "Cadastros › Configurações fiscais", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());

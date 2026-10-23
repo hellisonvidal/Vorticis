@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Vorticis.Desktop.Comum.ViewModels;
 using Vorticis.Desktop.Comum.Views;
 using Vorticis.Desktop.ViewModels;
 
@@ -55,6 +56,15 @@ public partial class LancamentoView : UserControl
             if (_vm?.DigitacaoAberta == true) _vm.CancelarDigitacao();   // fechou pelo X/Alt+F4: descarta
             Dispatcher.UIThread.Post(() => ListaEfetuados.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
         };
+        // Esc fecha o pop-up; com digitação não salva, pergunta antes (o fechamento descarta a digitação).
+        popup.KeyDown += (_, e) => MainWindow.TratarEsc(e, async () =>
+        {
+            if (_vm is { TemDados: true } && principal?.DataContext is MainViewModelBase m
+                && !await m.ConfirmarAsync("Fechar o lançamento", "O lançamento digitado ainda não foi salvo. Deseja descartá-lo e fechar?",
+                                           "Descartar e fechar", "Continuar editando"))
+                return;
+            popup.Close();
+        });
         _popup = popup;
         if (principal is not null) principal.ModalAberta = popup;
         _ = popup.ShowDialog(dono);

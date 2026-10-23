@@ -58,6 +58,8 @@ public static class TelasComuns
     public const string Conexao = "conexao";
     public const string Backup = "backup";
     public const string Obrigacoes = "obrigacoes";
+    /// <summary>Cadastros › Parâmetros: cada módulo registra a sua tela com esta chave.</summary>
+    public const string Parametros = "parametros";
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Certificados = "certificados";
     public const string Licenca = "licenca";
@@ -226,14 +228,22 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores),
         };
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
-        // O calendário de obrigações fica dentro de "Obrigações": no menu do módulo, se existir; senão, o casco cria o menu.
+        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros)]);
+        // O calendário de obrigações fica em "Obrigações", se o módulo tem esse menu; senão, em "Consultas";
+        // sem nenhum dos dois, o casco cria o menu "Obrigações".
         var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);
         var menusModulo = Modulo.Menus.ToList();
         var posObrig = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Obrigações");
+        var posConsultas = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Consultas");
         if (posObrig >= 0)
         {
             var o = menusModulo[posObrig];
             menusModulo[posObrig] = o with { Filhos = [calendario, ItemMenu.Separador, .. o.Filhos ?? []] };
+        }
+        else if (posConsultas >= 0)
+        {
+            var c = menusModulo[posConsultas];
+            menusModulo[posConsultas] = c with { Filhos = [.. c.Filhos ?? [], ItemMenu.Separador, calendario] };
         }
         else menusModulo.Add(ItemMenu.Submenu("_Obrigações", calendario));
         return
@@ -566,6 +576,22 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             }
         }
         ReiniciarModulo(f.ViewModel);
+    }
+
+    /// <summary>
+    /// Tecla Esc: fecha a função (a ativa, se não for informada). Com digitação não salva, pergunta antes.
+    /// </summary>
+    /// <returns>True se a função foi fechada.</returns>
+    public async Task<bool> FecharFuncaoComConfirmacaoAsync(FuncaoAberta? f = null)
+    {
+        f ??= FuncaoAtiva;
+        if (f is null || !JanelasAbertas.Contains(f)) return false;
+        if (f.ViewModel is IAlteracoesPendentes { TemAlteracoesPendentes: true }
+            && !await ConfirmarAsync("Fechar a tela", "Há alterações que ainda não foram salvas. Deseja fechar mesmo assim e perder o que foi digitado?",
+                                     "Fechar sem salvar", "Continuar editando"))
+            return false;
+        FecharFuncao(f);
+        return true;
     }
 
     /// <summary>

@@ -10,8 +10,10 @@ public enum ModoCadastro { Consulta, Inclusao, Alteracao }
 /// Em consulta o formulário mostra o registro selecionado (somente leitura); Incluir limpa o formulário para um
 /// registro novo; Alterar libera a edição do selecionado; Excluir pede confirmação.
 /// </summary>
-public abstract partial class CadastroViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public abstract partial class CadastroViewModel(IContexto contexto) : ModuloViewModel(contexto), IAlteracoesPendentes
 {
+    public bool TemAlteracoesPendentes => EmEdicao;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EmEdicao), nameof(EmInclusao), nameof(EmAlteracao), nameof(EmConsulta), nameof(SituacaoCadastro))]
     private ModoCadastro _modo;

@@ -1,11 +1,11 @@
 # Auditoria (ECD e ECF)
 
-Os dois assistentes geram o arquivo do SPED já pronto para **importar e validar no PVA** (programa validador da Receita Federal). Eles têm cinco passos e, ao final, guardam o histórico dos arquivos gerados. Menu: *Auditoria*.
+Os dois assistentes geram o arquivo do SPED já pronto para **importar e validar no PVA** (programa validador da Receita Federal). Eles têm cinco passos e, ao final, guardam o histórico dos arquivos gerados. Menu: *Integrações › Exportar*.
 
 ## ECD (SPED Contábil)
 
 **Para que serve:** gerar a Escrituração Contábil Digital (Livro G), com assinatura digital opcional.
-**Onde fica:** *Auditoria › Gerar ECD (SPED Contábil)*.
+**Onde fica:** *Integrações › Exportar › Gerar ECD (SPED Contábil)*.
 
 ### Antes de começar
 - Plano de contas **vinculado ao plano referencial** (*Integrações › Importar › Vínculo ao plano referencial*).
@@ -29,7 +29,7 @@ Em seguida, siga o último passo mostrado na tela: no PVA da ECD, *Escrituraçã
 ## ECF (Escrituração Contábil Fiscal)
 
 **Para que serve:** gerar o arquivo da ECF do ano-calendário a partir da contabilidade e das apurações do módulo Fiscal.
-**Onde fica:** *Auditoria › Gerar ECF (SPED)*.
+**Onde fica:** *Integrações › Exportar › Gerar ECF (SPED)*.
 
 ### Antes de começar
 - Regime Lucro Real ou Presumido (empresas do Simples e MEI não entregam ECF: o assistente avisa e não gera).

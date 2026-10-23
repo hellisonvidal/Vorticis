@@ -80,6 +80,9 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia(nameof(MainViewModel.Rubricas), m => new RubricasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Rubricas, "Folha › Funcionários › Rubricas (eventos)", Ver, v => v.CarregarAsync());
+        c.Instancia("ParametrosModulo", m => new ParametrosModuloFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Parametros), m => new ParametrosFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Parametros, "Folha › Parâmetros e tabelas legais", Ver, v => v.CarregarAsync());

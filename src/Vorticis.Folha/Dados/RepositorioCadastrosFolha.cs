@@ -346,6 +346,29 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
                                     r.Texto(8), r.Texto(9), r.Texto(10));
     }
 
+    public async Task<ConfiguracaoFolha> ObterConfiguracaoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT dia_pagamento, esocial_ambiente, esocial_transmissor FROM folha.configuracao_empresa WHERE empresa_id = @e")
+            .Com("e", empresaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? new ConfiguracaoFolha(r.GetInt16(0), r.GetInt16(1), r.GetString(2)) : ConfiguracaoFolha.Padrao;
+    }
+
+    public Task GravarConfiguracaoAsync(long empresaId, ConfiguracaoFolha c, long usuarioId, CancellationToken ct) => Sql.TraduzirAsync(async () =>
+    {
+        await using var con = await ds.OpenConnectionAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        await Sql.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+        await using var cmd = new NpgsqlCommand("""
+            INSERT INTO folha.configuracao_empresa (empresa_id, dia_pagamento, esocial_ambiente, esocial_transmissor)
+            VALUES (@e, @d, @a, @t)
+            ON CONFLICT (empresa_id) DO UPDATE SET dia_pagamento = @d, esocial_ambiente = @a, esocial_transmissor = @t, atualizado_em = now()
+            """, con, tx).Com("e", empresaId).Com("d", (short)c.DiaPagamento).Com("a", (short)c.AmbienteEsocial).Com("t", c.TransmissorEsocial);
+        await cmd.ExecuteNonQueryAsync(ct);
+        await tx.CommitAsync(ct);
+        return 0;
+    });
+
     public Task GravarParametrosAsync(long empresaId, ParametroEmpresa p, long usuarioId, CancellationToken ct) => Sql.TraduzirAsync(async () =>
     {
         await using var con = await ds.OpenConnectionAsync(ct);

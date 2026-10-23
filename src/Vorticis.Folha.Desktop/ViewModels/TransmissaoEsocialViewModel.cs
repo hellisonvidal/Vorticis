@@ -95,13 +95,24 @@ public partial class TransmissaoEsocialViewModel(IContexto contexto) : ModuloVie
         if (value.E.Recibo is { } r) Ocorrencias.Insert(0, $"Recibo: {r}");
     }
 
-    public void Limpar() { Eventos.Clear(); Lotes.Clear(); Ocorrencias.Clear(); Xml = ""; }
+    private bool _padroesAplicados;
+
+    public void Limpar() { _padroesAplicados = false; Eventos.Clear(); Lotes.Clear(); Ocorrencias.Clear(); Xml = ""; }
 
     public async Task CarregarAsync()
     {
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var g = NovaGeracao();
         var folha = app.Folha();
+        if (!_padroesAplicados)
+        {
+            // Padrões de Cadastros › Parâmetros (ambiente e transmissor); depois disso a escolha do usuário na tela prevalece.
+            var cfg = await folha.Cadastros.ObterConfiguracaoAsync(empresa, sessao.Id);
+            if (!EhAtual(g)) return;
+            _padroesAplicados = true;
+            Ambiente = Ambientes.FirstOrDefault(a => (int)a.Valor == cfg.AmbienteEsocial) ?? Ambientes[0];
+            Transmissor = Transmissores.FirstOrDefault(t => t.Valor.ToString().Equals(cfg.TransmissorEsocial, StringComparison.OrdinalIgnoreCase)) ?? Transmissores[0];
+        }
         var eventos = await folha.ESocial.ListarAsync(empresa, Comp, sessao.Id);
         var lotes = await folha.Transmissao.ListarLotesAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;

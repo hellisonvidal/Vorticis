@@ -3,7 +3,7 @@
 ## Calendário de obrigações
 
 **Para que serve:** acompanhar os vencimentos das obrigações da empresa (Contábil, Fiscal e Folha) e marcar o que já foi cumprido.
-**Onde fica:** *Obrigações › Calendário de obrigações* (em todos os módulos). As próximas obrigações também aparecem na tela inicial.
+**Onde fica:** *Obrigações › Calendário de obrigações* no Fiscal e na Folha, e *Consultas › Calendário de obrigações* no Contábil. As próximas obrigações também aparecem na tela inicial.
 
 ### Passo a passo
 1. Escolha a empresa no topo e navegue pelos meses com **◀** e **▶** (**Mês atual** volta ao mês corrente).

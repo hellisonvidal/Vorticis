@@ -30,6 +30,8 @@ public interface IRepositorioCadastrosFolha
 
     Task<ParametroEmpresa> ObterParametrosAsync(long empresaId, CancellationToken ct);
     Task GravarParametrosAsync(long empresaId, ParametroEmpresa p, long usuarioId, CancellationToken ct);
+    Task<ConfiguracaoFolha> ObterConfiguracaoAsync(long empresaId, CancellationToken ct);
+    Task GravarConfiguracaoAsync(long empresaId, ConfiguracaoFolha c, long usuarioId, CancellationToken ct);
     /// <summary>Regime tributário (texto do banco, ex.: SIMPLES_NACIONAL) vigente na data; nulo se não houver.</summary>
     Task<string?> ObterRegimeTributarioAsync(long empresaId, DateOnly data, CancellationToken ct);
 

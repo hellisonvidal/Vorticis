@@ -34,7 +34,7 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(ManualViewModel)] = () => new ManualView(),
     };
 
-    public bool Match(object? data) => data is not null && Mapa.ContainsKey(data.GetType());
+    public bool Match(object? data) => data is ParametrosViewModel || (data is not null && Mapa.ContainsKey(data.GetType()));
 
-    public Control? Build(object? data) => data is not null && Mapa.TryGetValue(data.GetType(), out var criar) ? criar() : null;
+    public Control? Build(object? data) => data is ParametrosViewModel ? new ParametrosView() : data is not null && Mapa.TryGetValue(data.GetType(), out var criar) ? criar() : null;
 }

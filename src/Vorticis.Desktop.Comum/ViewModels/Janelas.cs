@@ -2,6 +2,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Vorticis.Desktop.Comum.ViewModels;
 
+/// <summary>Tela que sabe se há digitação não salva; a tecla Esc pergunta antes de fechar a função.</summary>
+public interface IAlteracoesPendentes
+{
+    bool TemAlteracoesPendentes { get; }
+}
+
 /// <summary>Função aberta em janela flutuante (uma janela por tela; reabrir a mesma função traz a janela para a frente).</summary>
 public sealed partial class FuncaoAberta(object viewModel, string tela, string titulo) : ObservableObject
 {

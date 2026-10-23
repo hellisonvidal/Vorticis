@@ -21,6 +21,7 @@ backup=08-configuracoes.md#backup-e-restauracao
 configuracoesgerais=08-configuracoes.md#configuracoes-gerais
 certificados=08-configuracoes.md#certificados-digitais
 obrigacoes=07-obrigacoes.md#calendario-de-obrigacoes
+parametros=02-cadastros-comuns.md#parametros
 
 ; ---- Contábil
 planocontas=03-contabil.md#plano-de-contas

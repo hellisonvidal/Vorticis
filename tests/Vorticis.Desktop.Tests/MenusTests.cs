@@ -67,14 +67,43 @@ public class MenusTests
     }
 
     [Fact]
-    public void Calendario_de_obrigacoes_fica_no_menu_Obrigacoes_de_todos_os_modulos()
+    public void Calendario_fica_em_Consultas_no_contabil_e_em_Obrigacoes_no_fiscal_e_na_folha()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
-        foreach (var vm in modulos)
+        var contabil = new MainViewModel();
+        Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+        var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
+        Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
             var obrig = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
             Assert.Contains(Folhas(obrig.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
+        }
+    }
+
+    [Fact]
+    public void Contabil_exporta_ECD_e_ECF_em_Integracoes_sem_menu_Auditoria_nem_eSocial()
+    {
+        var vm = new MainViewModel();
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") == "Auditoria");
+        var integ = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Integrações");
+        var exportar = Assert.Single(integ.Filhos!, m => m.Titulo.Replace("_", "") == "Exportar");
+        var folhas = Folhas(exportar.Filhos!).ToList();
+        Assert.Contains(folhas, i => i.Chave == Telas.EcdAssistente);
+        Assert.Contains(folhas, i => i.Chave == Telas.EcfAssistente);
+        Assert.DoesNotContain(folhas, i => i.Titulo.Contains("eSocial"));
+    }
+
+    [Fact]
+    public void Todos_os_modulos_tem_Parametros_no_menu_Cadastros()
+    {
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            var cadastros = vm.Menus[0];
+            Assert.Contains(cadastros.Filhos!, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);
+            Assert.True(vm.ConheceTela(TelasComuns.Parametros));
         }
     }
 

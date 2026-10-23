@@ -22,6 +22,8 @@ public partial class MainWindow : Window
         Opened += (_, _) => WindowState = WindowState.Maximized;
         // Fechar o sistema sempre pede confirmação.
         Closing += AoFechar;
+        // Esc na janela principal fecha a função do topo (as janelas das funções tratam o próprio Esc).
+        KeyDown += (_, e) => { if (_vm?.Logado == true && _vm.FuncaoAtiva is { } topo) TratarEsc(e, () => _vm.FecharFuncaoComConfirmacaoAsync(topo)); };
         // As janelas das funções ocupam a área de trabalho (abaixo do título, menus e barra de janelas) e a acompanham.
         PositionChanged += (_, _) => ReposicionarJanelas();
         AreaPrincipal.PropertyChanged += (_, e) =>
@@ -153,9 +155,18 @@ public partial class MainWindow : Window
         {
             if (!_fechandoPorCodigo.Remove(w)) _vm?.FecharFuncao(f);   // Alt+F4
         };
+        w.KeyDown += (_, e) => TratarEsc(e, () => _vm?.FecharFuncaoComConfirmacaoAsync(f));   // Esc fecha a função
         w.KeyBindings.AddRange(KeyBindings);   // mesmos atalhos (Ctrl+L, Ctrl+B, F1)
         _janelas[f] = w;
         w.Show(this);
+    }
+
+    /// <summary>Esc (sem outra tecla e não tratado por um campo, lista ou caixa aberta) executa o fechamento.</summary>
+    public static void TratarEsc(KeyEventArgs e, Func<Task?> fechar)
+    {
+        if (e.Handled || e.Key != Key.Escape || e.KeyModifiers != KeyModifiers.None) return;
+        e.Handled = true;
+        _ = fechar();
     }
 
     /// <summary>Encaixa a janela da função na área de trabalho da janela principal (tela cheia sem cobrir título e menus).</summary>

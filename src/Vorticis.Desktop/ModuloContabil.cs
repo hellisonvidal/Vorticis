@@ -58,7 +58,8 @@ public sealed class ModuloContabil : IModuloDesktop
             ItemMenu.Submenu("_Exportar",
                 ItemMenu.Tela("Lançamentos contábeis (Excel, PDF, CSV)", Telas.ExportarLancamentos),
                 ItemMenu.Separador,
-                ItemMenu.EmBreve("eSocial"))),
+                ItemMenu.Tela("Gerar ECD (SPED Contábil)", Telas.EcdAssistente),
+                ItemMenu.Tela("Gerar ECF (SPED)", Telas.EcfAssistente))),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Submenu("_Contábeis",
                 ItemMenu.Tela("Livro Contábil Completo", Telas.LivrosPdf),
@@ -71,9 +72,6 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Balanço Patrimonial e DRE", Telas.Demonstracoes),
                 ItemMenu.Tela("DMPL (mutações do patrimônio líquido)", Telas.Dmpl),
                 ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa))),
-        ItemMenu.Submenu("_Auditoria",
-            ItemMenu.Tela("Gerar ECD (SPED Contábil)", Telas.EcdAssistente),
-            ItemMenu.Tela("Gerar ECF (SPED)", Telas.EcfAssistente)),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -87,6 +85,10 @@ public sealed class ModuloContabil : IModuloDesktop
     public void RegistrarTelas(CatalogoTelas c)
     {
         static bool ComAcesso(Comum.ViewModels.MainViewModelBase m) => m.TemAcessoNaEmpresa;
+
+        c.Instancia("ParametrosModulo", m => new ParametrosContabilViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", ComAcesso, v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Lancamento), m => new LancamentoViewModel(m), aoTrocarEmpresa: (v, _) => v.AoTrocarEmpresaAsync())
             .Tela(Telas.Lancamento, "Lançamentos › Lançamento contábil",
@@ -147,10 +149,10 @@ public sealed class ModuloContabil : IModuloDesktop
                   v => { v.AtualizarPermissoes(); v.AbaSelecionada = ConsultasViewModel.AbaLancamentos; return Task.CompletedTask; });
         c.Instancia(nameof(MainViewModel.EcdAssistente), m => new EcdAssistenteViewModel(m), aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.EcdAssistente, "Auditoria › Gerar ECD (SPED Contábil)", m => m.Pode(Permissao.SpedEcdGerar), v => v.CarregarAsync());
+            .Tela(Telas.EcdAssistente, "Integrações › Exportar › Gerar ECD (SPED Contábil)", m => m.Pode(Permissao.SpedEcdGerar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.EcfAssistente), m => new EcfAssistenteViewModel(m), aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.EcfAssistente, "Auditoria › Gerar ECF (SPED)", m => m.Pode(Permissao.SpedEcfGerar), v => v.CarregarAsync());
+            .Tela(Telas.EcfAssistente, "Integrações › Exportar › Gerar ECF (SPED)", m => m.Pode(Permissao.SpedEcfGerar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.DiferencasSaldos), m => new DiferencasSaldosViewModel(m))
             .Tela(Telas.DiferencasSaldos, "Consultas › Diferenças de saldos", m => m.Pode(Permissao.RelatorioBalancete));
 
