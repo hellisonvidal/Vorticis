@@ -92,6 +92,8 @@ public partial class FuncionariosViewModel(IContexto contexto) : CadastroViewMod
     [ObservableProperty] private Cargo? _cargo;
     [ObservableProperty] private Departamento? _departamento;
     [ObservableProperty] private string _cbo = "";
+    [ObservableProperty] private string _tipoLogradouro = "";
+    [ObservableProperty] private string _cnpjSindicato = "";
     [ObservableProperty] private Opcao? _tipoSalario = TiposSalario[0];
     [ObservableProperty] private string _salario = "";
     [ObservableProperty] private string _jornadaSemanal = "44";
@@ -165,6 +167,7 @@ public partial class FuncionariosViewModel(IContexto contexto) : CadastroViewMod
             (f.Email ?? "", f.Telefone ?? "", f.Cep ?? "", f.Logradouro ?? "", f.Numero ?? "", f.Complemento ?? "", f.Bairro ?? "", f.CodMunicipioIbge ?? "", f.Uf ?? "");
         (Admissao, Categoria, Contrato, Termino) = (Dt(f.Admissao), Achar(Categorias, f.Categoria), Achar(Contratos, f.TipoContrato), Dt(f.TerminoContrato));
         (Cargo, Departamento, Cbo) = (Cargos.FirstOrDefault(c => c.Id == f.CargoId), Departamentos.FirstOrDefault(d => d.Id == f.DepartamentoId), f.Cbo ?? "");
+        (TipoLogradouro, CnpjSindicato) = (f.TipoLogradouro ?? "", f.CnpjSindicato ?? "");
         (TipoSalario, Salario) = (Achar(TiposSalario, f.TipoSalario), f.Salario.ToString("N2", Formato.PtBr));
         (JornadaSemanal, JornadaMensal, Centro) = (Formato.Num(f.JornadaSemanal), Formato.Num(f.JornadaMensal), Centros.FirstOrDefault(c => c.Id == f.CentroCustoId));
         (Insalubridade, Periculosidade) = (Achar(Insalubridades, ((int)f.Insalubridade).ToString()), f.Periculosidade);
@@ -179,6 +182,7 @@ public partial class FuncionariosViewModel(IContexto contexto) : CadastroViewMod
         (Matricula, Nome, Cpf, Pis, Nascimento, Sexo, Raca, EstadoCivil) = ("", "", "", "", null, Sexos[1], Racas[5], EstadosCivis[0]);
         (Email, Telefone, Cep, Logradouro, Numero, Complemento, Bairro, CodMunicipio, Uf) = ("", "", "", "", "", "", "", "", "");
         (Admissao, Categoria, Contrato, Termino, Cargo, Departamento, Cbo) = (DateTime.Today, Categorias[0], Contratos[0], null, null, null, "");
+        (TipoLogradouro, CnpjSindicato) = ("", "");
         (TipoSalario, Salario, JornadaSemanal, JornadaMensal, Centro, Insalubridade, Periculosidade) = (TiposSalario[0], "", "44", "220", null, Insalubridades[0], false);
         (Banco, Agencia, Conta, TipoConta, ChavePix, Situacao, Desligamento) = ("", "", "", TiposConta[0], "", Situacoes[0], null);
     }
@@ -212,7 +216,8 @@ public partial class FuncionariosViewModel(IContexto contexto) : CadastroViewMod
                 int.Parse(EstadoCivil?.Codigo ?? "1"), atual?.GrauInstrucao ?? "09", Email, Telefone, Cep, Logradouro, Numero, Complemento, Bairro, CodMunicipio, Uf,
                 DateOnly.FromDateTime(Admissao.Value), Categoria?.Codigo ?? "101", Contrato?.Codigo ?? "INDETERMINADO", FolhaExtensoes.Data(Termino), Cargo?.Id, Departamento?.Id, Cbo,
                 TipoSalario?.Codigo ?? "MENSAL", salario.Value, Num(JornadaSemanal, 44), Num(JornadaMensal, 220), Centro?.Id, decimal.Parse(Insalubridade?.Codigo ?? "0"), Periculosidade,
-                Banco, Agencia, Conta, TipoConta?.Codigo, ChavePix, Situacao?.Codigo ?? "ATIVO", FolhaExtensoes.Data(Desligamento), atual?.MotivoDesligamento, deps!);
+                Banco, Agencia, Conta, TipoConta?.Codigo, ChavePix, Situacao?.Codigo ?? "ATIVO", FolhaExtensoes.Data(Desligamento), atual?.MotivoDesligamento, deps!,
+                TipoLogradouro: TipoLogradouro, CnpjSindicato: CnpjSindicato, TipoJornada: atual?.TipoJornada ?? 9, DescricaoJornada: atual?.DescricaoJornada);
             var r = await app.Folha().Cadastros.GravarFuncionarioAsync(empresa, f, usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;

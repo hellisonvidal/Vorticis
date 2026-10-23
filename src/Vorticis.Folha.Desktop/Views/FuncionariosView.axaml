@@ -55,9 +55,10 @@
               <TextBlock Grid.Row="10" Classes="rotulo" Text="CEP" />
               <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding Cep}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
               <TextBlock Grid.Row="11" Classes="rotulo" Text="Logradouro" />
-              <Grid Grid.Row="11" Grid.Column="1" ColumnDefinitions="*,6,90">
-                <TextBox Text="{Binding Logradouro}" IsEnabled="{Binding EmEdicao}" />
-                <TextBox Grid.Column="2" Text="{Binding Numero}" IsEnabled="{Binding EmEdicao}" Watermark="Nº" />
+              <Grid Grid.Row="11" Grid.Column="1" ColumnDefinitions="60,6,*,6,90">
+                <TextBox Text="{Binding TipoLogradouro}" IsEnabled="{Binding EmEdicao}" Watermark="Tipo" MaxLength="4" ToolTip.Tip="Tipo de logradouro (eSocial, tabela 20): R, AV, TV..." />
+                <TextBox Grid.Column="2" Text="{Binding Logradouro}" IsEnabled="{Binding EmEdicao}" />
+                <TextBox Grid.Column="4" Text="{Binding Numero}" IsEnabled="{Binding EmEdicao}" Watermark="Nº" />
               </Grid>
               <TextBlock Grid.Row="12" Classes="rotulo" Text="Complemento" />
               <TextBox Grid.Row="12" Grid.Column="1" Text="{Binding Complemento}" IsEnabled="{Binding EmEdicao}" />
@@ -87,7 +88,11 @@
                 <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Cargo"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
               </ComboBox>
               <TextBlock Grid.Row="5" Classes="rotulo" Text="CBO" />
-              <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Cbo}" IsEnabled="{Binding EmEdicao}" Width="120" HorizontalAlignment="Left" MaxLength="7" />
+              <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <TextBox Text="{Binding Cbo}" IsEnabled="{Binding EmEdicao}" Width="120" MaxLength="7" />
+                <TextBlock Text="CNPJ do sindicato" VerticalAlignment="Center" />
+                <TextBox Text="{Binding CnpjSindicato}" IsEnabled="{Binding EmEdicao}" Width="180" MaxLength="18" ToolTip.Tip="Sindicato representativo da categoria (obrigatório no S-2200 do eSocial)" />
+              </StackPanel>
               <TextBlock Grid.Row="6" Classes="rotulo" Text="Departamento" />
               <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{Binding Departamentos}" SelectedItem="{Binding Departamento}" IsEnabled="{Binding EmEdicao}" Width="260">
                 <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Departamento"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
