@@ -75,6 +75,22 @@ public class ReorganizacaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public async Task Reorganizar_atualiza_a_copia_do_numero_guardada_pela_folha()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = await db.AdminAsync();
+        var empresa = await db.CriarEmpresaAsync("60701190000104");
+        await LancarAsync(empresa, new(2026, 3, 5), 10m);    // nº 1
+        await LancarAsync(empresa, new(2026, 1, 10), 20m);   // nº 2 (a data anterior passa a ser o nº 1)
+        var lanc = await db.EscalarAsync<long>("SELECT id FROM contabil.lancamento WHERE empresa_id = @e AND numero = 1", ("e", empresa));
+        await db.EscalarAsync<long>("INSERT INTO folha.contabilizacao (empresa_id, competencia, tipo, lancamento_id, numero_lancamento, valor_total) VALUES (@e, '2026-03-01', 'FOLHA', @l, 1, 10) RETURNING id", ("e", empresa), ("l", lanc));
+        Assert.True((await db.App.Reorganizacao.ReorganizarLancamentosAsync(empresa, 2026, Senha, adm, ct)).Sucesso);
+        Assert.Equal(2L, await db.EscalarAsync<long>("SELECT numero_lancamento FROM folha.contabilizacao WHERE lancamento_id = @l", ("l", lanc)));
+        Assert.Equal(2L, await db.EscalarAsync<long>("SELECT numero FROM contabil.lancamento WHERE id = @l", ("l", lanc)));
+    }
+
+    [Fact]
     public async Task Periodo_fechado_ou_ecd_gerada_bloqueiam_a_reorganizacao()
     {
         BancoDeTeste.ExigirBanco();

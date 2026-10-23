@@ -56,6 +56,14 @@ public sealed class RepositorioReorganizacao(NpgsqlDataSource ds) : IRepositorio
              WHERE l.id = n.id;
             """, con, tx).Com("x", exercicioId))
             await cmd.ExecuteNonQueryAsync(ct);
+        // A Folha guarda uma cópia do número do lançamento (folha.contabilizacao.numero_lancamento): acompanha a renumeração.
+        // (O Fiscal guarda só lancamento_id, sem cópia do número.)
+        await using (var cmd = new NpgsqlCommand("""
+            UPDATE folha.contabilizacao c SET numero_lancamento = l.numero
+              FROM contabil.lancamento l
+             WHERE l.id = c.lancamento_id AND l.id IN (SELECT id FROM _antes) AND c.numero_lancamento IS DISTINCT FROM l.numero
+            """, con, tx))
+            await cmd.ExecuteNonQueryAsync(ct);
         int total, alterados;
         await using (var cmd = new NpgsqlCommand("""
             SELECT COUNT(*), COUNT(*) FILTER (WHERE a.numero <> l.numero)
