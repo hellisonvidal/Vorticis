@@ -19,7 +19,8 @@
     <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
     <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>
     <DataTemplate DataType="vm:EncerramentoViewModel"><v:EncerramentoView /></DataTemplate>
-    <DataTemplate DataType="vm:DemonstracoesViewModel"><v:DemonstracoesView /></DataTemplate>
+    <DataTemplate DataType="vm:BalancoViewModel"><v:BalancoView /></DataTemplate>
+    <DataTemplate DataType="vm:DreViewModel"><v:DreView /></DataTemplate>
     <DataTemplate DataType="vm:LivrosPdfViewModel"><v:LivrosPdfView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoReferencialViewModel"><v:ImportacaoReferencialView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoPlanoViewModel"><v:ImportacaoPlanoView /></DataTemplate>

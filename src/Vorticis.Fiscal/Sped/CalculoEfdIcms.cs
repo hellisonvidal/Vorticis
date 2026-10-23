@@ -13,9 +13,13 @@ public sealed record LinhaIpi(string Cfop, string Cst, decimal Contabil, decimal
 /// <summary>Apuração do IPI (E520).</summary>
 public sealed record ApuracaoIpiEfd(IReadOnlyList<LinhaIpi> Linhas, decimal Debitos, decimal Creditos, decimal SaldoDevedor, decimal SaldoCredor);
 
+/// <summary>Valores de um CFOP na apuração (livro de apuração): valor contábil, base de cálculo e imposto.</summary>
+public sealed record LinhaApuracaoCfop(string Cfop, decimal Operacao, decimal Base, decimal Imposto);
+
 /// <summary>Apuração do ICMS (E110) e, quando houver, do ICMS-ST (E210) e do IPI (E520), calculada dos registros analíticos C190.</summary>
 public sealed record ApuracaoEfdIcms(decimal Debitos, decimal Creditos, decimal SaldoCredorAnterior, decimal SaldoApurado, decimal Deducoes, decimal Recolher,
-                                     decimal SaldoCredorTransportar, IReadOnlyList<ApuracaoStUf> St, ApuracaoIpiEfd? Ipi);
+                                     decimal SaldoCredorTransportar, IReadOnlyList<ApuracaoStUf> St, ApuracaoIpiEfd? Ipi,
+                                     IReadOnlyList<LinhaApuracaoCfop>? DebitosCfop = null, IReadOnlyList<LinhaApuracaoCfop>? CreditosCfop = null);
 
 /// <summary>Cálculo da EFD ICMS/IPI: registros analíticos por documento e apuração do período. Puro e determinístico.</summary>
 public static class CalculoEfdIcms
@@ -45,15 +49,20 @@ public static class CalculoEfdIcms
         var docs = Escrituraveis(d.Documentos).Where(x => x.Autorizada).ToList();
         decimal debitos = 0, creditos = 0;
         var st = new Dictionary<string, decimal>();
+        var deb = new SortedDictionary<string, LinhaApuracaoCfop>(StringComparer.Ordinal);
+        var cred = new SortedDictionary<string, LinhaApuracaoCfop>(StringComparer.Ordinal);
+        static void Somar(SortedDictionary<string, LinhaApuracaoCfop> d, AnaliticoC190 a) =>
+            d[a.Cfop] = d.TryGetValue(a.Cfop, out var x) ? new(a.Cfop, x.Operacao + a.Operacao, x.Base + a.BaseIcms, x.Imposto + a.Icms) : new(a.Cfop, a.Operacao, a.BaseIcms, a.Icms);
         foreach (var doc in docs)
             foreach (var a in Analitico(doc))
             {
                 if (CamposEfd.CfopSaida(a.Cfop))
                 {
                     debitos += a.Icms;
+                    Somar(deb, a);
                     if (a.IcmsSt != 0) st[doc.DestinatarioUf ?? d.Empresa.Uf] = st.GetValueOrDefault(doc.DestinatarioUf ?? d.Empresa.Uf) + a.IcmsSt;
                 }
-                else if (CamposEfd.CfopEntrada(a.Cfop)) creditos += a.Icms;
+                else if (CamposEfd.CfopEntrada(a.Cfop)) { creditos += a.Icms; Somar(cred, a); }
             }
 
         var saldoAnterior = d.Opcoes.SaldoCredorAnterior;
@@ -63,13 +72,19 @@ public static class CalculoEfdIcms
         var transportar = Math.Max(0, -apurado);
 
         var stUf = st.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k => new ApuracaoStUf(k.Key, k.Value, k.Value, 0)).ToList();
-        return new ApuracaoEfdIcms(debitos, creditos, saldoAnterior, apurado, deducoes, recolher, transportar, stUf, ApurarIpi(d, docs));
+        return new ApuracaoEfdIcms(debitos, creditos, saldoAnterior, apurado, deducoes, recolher, transportar, stUf, ApurarIpi(d, docs),
+            [.. deb.Values], [.. cred.Values]);
     }
 
     private static ApuracaoIpiEfd? ApurarIpi(DadosEfdIcms d, List<DocumentoEfd> docs)
     {
-        if (d.Opcoes.IndicadorAtividade != '0') return null;
-        var linhas = docs.SelectMany(doc => doc.Itens).Where(i => !string.IsNullOrWhiteSpace(i.CstIpi))
+        return d.Opcoes.IndicadorAtividade != '0' ? null : CalcularIpi(docs);
+    }
+
+    /// <summary>Apuração do IPI (E510/E520) das notas autorizadas, sem considerar o indicador de atividade; o livro de apuração do IPI usa o mesmo cálculo da EFD.</summary>
+    public static ApuracaoIpiEfd? CalcularIpi(IEnumerable<DocumentoEfd> documentos)
+    {
+        var linhas = Escrituraveis(documentos).Where(x => x.Autorizada).SelectMany(doc => doc.Itens).Where(i => !string.IsNullOrWhiteSpace(i.CstIpi))
             .GroupBy(i => (Cfop: i.CfopNumerico, Cst: CstIpiEscrituracao(i.CstIpi)))
             .OrderBy(g => g.Key.Cfop, StringComparer.Ordinal).ThenBy(g => g.Key.Cst, StringComparer.Ordinal)
             .Select(g => new LinhaIpi(g.Key.Cfop, g.Key.Cst, g.Sum(i => i.ValorContabil), g.Sum(i => i.BcIpi), g.Sum(i => i.Ipi))).ToList();

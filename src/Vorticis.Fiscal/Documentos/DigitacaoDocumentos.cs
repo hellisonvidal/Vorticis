@@ -193,7 +193,7 @@ public sealed class ServicoDigitacaoFiscal(IRepositorioDigitacao repositorio, IR
         var centros = doc.Itens.Select(i => i.CentroCustoId).Append(doc.CentroCustoId).Where(c => c is not null).Select(c => c!.Value).Distinct().ToList();
         if (centros.Count > 0)
         {
-            if (!config.CentroCustoAtivo) erros.Add("Centros de custo não estão habilitados no Fiscal desta empresa (Cadastros › Configurações fiscais).");
+            if (!config.CentroCustoAtivo) erros.Add("Centros de custo não estão habilitados no Fiscal desta empresa (Cadastros › Parâmetros).");
             else
             {
                 var validos = await repositorio.CentrosValidosAsync(empresaId, centros, ct);
@@ -275,7 +275,7 @@ public sealed class ServicoDigitacaoFiscal(IRepositorioDigitacao repositorio, IR
         var centros = esc.Itens.Select(i => i.CentroCustoId).Append(esc.CentroCustoId).Where(c => c is not null).Select(c => c!.Value).Distinct().ToList();
         if (centros.Count > 0)
         {
-            if (!config.CentroCustoAtivo) erros.Add("Centros de custo não estão habilitados no Fiscal desta empresa (Cadastros › Configurações fiscais).");
+            if (!config.CentroCustoAtivo) erros.Add("Centros de custo não estão habilitados no Fiscal desta empresa (Cadastros › Parâmetros).");
             else if ((await repositorio.CentrosValidosAsync(empresaId, centros, ct)) is var validos && centros.Any(c => !validos.Contains(c)))
                 erros.Add("Centro de custo inexistente ou inativo.");
         }

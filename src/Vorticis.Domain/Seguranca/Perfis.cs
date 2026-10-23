@@ -93,7 +93,7 @@ public static class Permissoes
         new(Permissao.RelatorioBalancete, "RELATORIO_BALANCETE", "Relatórios", "Balancete de verificação"),
         new(Permissao.RelatorioRazao, "RELATORIO_RAZAO", "Relatórios", "Livro Razão"),
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
-        new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
+        new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial, DRE e demais demonstrações"),
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
         new(Permissao.OrcamentoManter, "ORCAMENTO_MANTER", "Relatórios", "Manter o orçamento anual (Orçado x Realizado)"),
         new(Permissao.SpedEcdGerar, "SPED_ECD_GERAR", "Integrações", "Gerar e assinar o arquivo da ECD (SPED Contábil)"),

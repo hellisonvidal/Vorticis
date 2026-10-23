@@ -53,7 +53,8 @@ termos=03-contabil.md#termos-de-abertura-e-encerramento
 diario=03-contabil.md#livro-diario
 razao=03-contabil.md#livro-razao
 balancete=03-contabil.md#balancete-de-verificacao
-demonstracoes=03-contabil.md#balanco-patrimonial-e-dre
+balanco=03-contabil.md#balanco-patrimonial
+dre=03-contabil.md#demonstracao-do-resultado-dre
 dmpl=03-contabil.md#dmpl
 dlpa=03-contabil.md#dlpa
 gerencial.centrocusto=03-contabil.md#contabilizacao-por-centro-de-custo
@@ -66,7 +67,6 @@ ecf=04-auditoria.md#ecf-escrituracao-contabil-fiscal
 
 ; ---- Fiscal
 produtos=05-fiscal.md#produtos
-configuracoesfiscais=05-fiscal.md#configuracoes-fiscais-da-empresa
 notaentrada=05-fiscal.md#documentos-de-entrada-e-de-saida-digitacao
 notasaida=05-fiscal.md#documentos-de-entrada-e-de-saida-digitacao
 importacaoxml=05-fiscal.md#importacao-de-xml-nf-e-nfc-e-nfs-e
@@ -85,6 +85,8 @@ efdicmsipi=05-fiscal.md#sped-efd-icms-ipi
 efdcontribuicoes=05-fiscal.md#sped-efd-contribuicoes
 livroentradas=05-fiscal.md#relatorios-fiscais
 livrosaidas=05-fiscal.md#relatorios-fiscais
+livroapuracaoicms=05-fiscal.md#livros-de-apuracao-do-icms-e-do-ipi
+livroapuracaoipi=05-fiscal.md#livros-de-apuracao-do-icms-e-do-ipi
 resumocfop=05-fiscal.md#relatorios-fiscais
 relprodutos=05-fiscal.md#relatorios-fiscais
 relitensnotas=05-fiscal.md#relatorios-fiscais

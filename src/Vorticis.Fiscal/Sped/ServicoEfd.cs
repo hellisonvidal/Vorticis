@@ -10,6 +10,9 @@ namespace Vorticis.Fiscal.Sped;
 /// <summary>Linha do resumo mostrado na tela e devolvido com o arquivo (ex.: "ICMS a recolher").</summary>
 public sealed record ResumoItemEfd(string Rotulo, decimal Valor);
 
+/// <summary>Apuração mensal para os livros de apuração do ICMS e do IPI (o IPI é nulo se não há itens com IPI no mês).</summary>
+public sealed record LivroApuracao(DateOnly Inicio, DateOnly Fim, ApuracaoEfdIcms Icms, ApuracaoIpiEfd? Ipi);
+
 /// <summary>Resultado da conferência prévia (passo "pendências" do assistente).</summary>
 public sealed record PreviaEfd(TipoEfd Tipo, DateOnly Inicio, DateOnly Fim, IReadOnlyList<PendenciaEcd> Pendencias, int Documentos, IReadOnlyList<ResumoItemEfd> Resumo)
 {
@@ -48,6 +51,22 @@ public sealed class ServicoEfd(IRepositorioEfd repositorio, Autorizador autoriza
         if (c.ContribIndicadorAtividade is not ('0' or '1' or '2' or '3' or '4' or '9')) return Resultado<bool>.Falha("Indicador de atividade da EFD-Contribuições inválido.");
         await repositorio.SalvarConfiguracaoAsync(empresaId, c, ct);
         return Resultado<bool>.Ok(true);
+    }
+
+    // ------------------------------------------------------------------------------------------------ livros de apuração
+
+    /// <summary>
+    /// Livros de Registro de Apuração do ICMS (modelo 9) e do IPI (modelo 8) de um mês, com os mesmos números do E110 e do E520 da EFD ICMS/IPI
+    /// (o cálculo é o do gerador da EFD). Exige a permissão de relatórios fiscais.
+    /// </summary>
+    public async Task<Resultado<LivroApuracao>> LivroApuracaoAsync(long empresaId, DateOnly competencia, decimal saldoCredorAnterior, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<LivroApuracao>(usuarioId, empresaId, Permissao.FiscalRelatorios, ct) is { } negado) return negado;
+        if (saldoCredorAnterior < 0) return Resultado<LivroApuracao>.Falha("O saldo credor do período anterior não pode ser negativo.");
+        var p = await PrepararIcmsAsync(empresaId, competencia, new OpcoesEfdIcms(SaldoCredorAnterior: saldoCredorAnterior), ct);
+        if (!p.Sucesso) return Resultado<LivroApuracao>.Falha(p.Erros);
+        var (d, ap, _) = p.Valor;
+        return Resultado<LivroApuracao>.Ok(new LivroApuracao(d.Inicio, d.Fim, ap, CalculoEfdIcms.CalcularIpi(d.Documentos)));
     }
 
     // ------------------------------------------------------------------------------------------------ EFD ICMS/IPI

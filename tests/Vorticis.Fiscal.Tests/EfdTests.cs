@@ -196,6 +196,56 @@ public class EfdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public async Task Livros_de_apuracao_do_icms_e_do_ipi_batem_com_o_e110_e_o_e520_da_efd()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await EmpresaCompletaAsync(75);
+        var cnpj = await db.EscalarAsync<string>("SELECT cnpj FROM core.empresa WHERE id = @e", ("e", empresa));
+        var adm = await db.AdminAsync();
+        var fiscal = db.App.Fiscal();
+        await fiscal.Documentos.ImportarAsync(empresa,
+        [
+            Arq("v.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 1, Mar, [new ItemNfe("5102", 1_000m, 180m, Ipi: 50m), new ItemNfe("5101", 500m, 90m)], chave: Chave(cnpj, 1))),
+            Arq("c.xml", XmlsDeTeste.Nfe(XmlsDeTeste.CnpjFornecedor, cnpj, 0, 5, Mar, [new ItemNfe("1102", 400m, 72m, Ipi: 20m)], chave: Chave(XmlsDeTeste.CnpjFornecedor, 5))),
+        ], adm, ct: ct);
+
+        var livro = await fiscal.Efd.LivroApuracaoAsync(empresa, Mar, 8m, adm, ct);
+        Assert.True(livro.Sucesso, string.Join(";", livro.Erros));
+        var icms = livro.Valor.Icms;
+        Assert.Equal(new[] { "5101", "5102" }, icms.DebitosCfop!.Select(l => l.Cfop));
+        Assert.Equal(270m, icms.DebitosCfop!.Sum(l => l.Imposto));
+        Assert.Equal(1_550m, icms.DebitosCfop!.Sum(l => l.Operacao));   // valor contábil inclui o IPI
+        Assert.Equal(72m, Assert.Single(icms.CreditosCfop!).Imposto);
+
+        var efd = await fiscal.Efd.GerarIcmsAsync(empresa, Mar, new OpcoesEfdIcms('B', IndicadorAtividade: '0', CodigoReceitaIcms: "046-2", SaldoCredorAnterior: 8m), adm, null, ct);
+        Assert.True(efd.Sucesso, string.Join(";", efd.Erros));
+        var e110 = Reg(efd.Valor.Conteudo, "E110");
+        string V(decimal v) => v.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        Assert.Equal(V(icms.Debitos), e110[0]);
+        Assert.Equal(V(icms.Creditos), e110[4]);
+        Assert.Equal(V(icms.SaldoCredorAnterior), e110[8]);
+        Assert.Equal(V(icms.Recolher), e110[11]);
+        Assert.Equal(V(icms.SaldoCredorTransportar), e110[12]);
+
+        var ipi = Assert.IsType<ApuracaoIpiEfd>(livro.Valor.Ipi);
+        var e520 = Reg(efd.Valor.Conteudo, "E520");
+        Assert.Equal(V(ipi.Debitos), e520[1]);
+        Assert.Equal(V(ipi.Creditos), e520[2]);
+        Assert.Equal(V(ipi.SaldoCredor), e520[5]);
+        Assert.Equal(V(ipi.SaldoDevedor), e520[6]);
+        Assert.Equal(30m, ipi.SaldoDevedor);
+
+        var tabela = Vorticis.Fiscal.Relatorios.TabelasFiscais.LivroApuracaoIcms(livro.Valor);
+        Assert.Contains(tabela.Linhas, l => Equals(l.Valores[0], "Imposto a recolher") && Equals(l.Valores[4], icms.Recolher));
+        var tIpi = Vorticis.Fiscal.Relatorios.TabelasFiscais.LivroApuracaoIpi(livro.Valor);
+        Assert.Contains(tIpi.Linhas, l => Equals(l.Valores[0], "Saldo devedor (imposto a recolher)") && Equals(l.Valores[4], 30m));
+
+        var semPermissao = await fiscal.Efd.LivroApuracaoAsync(empresa, Mar, 0, 0, ct);
+        Assert.False(semPermissao.Sucesso);
+    }
+
+    [Fact]
     public async Task Efd_contribuicoes_gera_bloco_m_conforme_a_apuracao_e_as_notas()
     {
         BancoDeTeste.ExigirBanco();

@@ -19,11 +19,12 @@ public static class Telas
     public const string EfdContribuicoes = "efdcontribuicoes";
     public const string LivroEntradas = "livroentradas";
     public const string LivroSaidas = "livrosaidas";
+    public const string LivroApuracaoIcms = "livroapuracaoicms";
+    public const string LivroApuracaoIpi = "livroapuracaoipi";
     public const string ResumoCfop = "resumocfop";
     public const string NotaEntrada = "notaentrada";
     public const string NotaSaida = "notasaida";
     public const string Produtos = "produtos";
-    public const string ConfiguracoesFiscais = "configuracoesfiscais";
     public const string RelProdutos = "relprodutos";
     public const string RelItensNotas = "relitensnotas";
 }

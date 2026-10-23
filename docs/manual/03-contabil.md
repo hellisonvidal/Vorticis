@@ -234,8 +234,11 @@ Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**. E
 ### Balancete de verificação
 *Relatórios › Contábeis › Balancete de verificação* (atalho **Ctrl+B**): saldo anterior, débitos, créditos e saldo final. Opções: *Incluir contas zeradas* e *Detalhar participantes* (uma linha por cliente/fornecedor abaixo da conta).
 
-### Balanço Patrimonial e DRE
-*Relatórios › Contábeis › Balanço Patrimonial e DRE*: escolha o **nível** de detalhe e **Gerar**. Antes do encerramento, o resultado do período aparece no patrimônio líquido para o balanço fechar; a DRE ignora os lançamentos de encerramento.
+### Balanço Patrimonial
+*Relatórios › Contábeis › Balanço Patrimonial*: escolha a **data** do balanço e o **nível** de detalhe e clique em **Gerar**. Antes do encerramento, o resultado do período aparece no patrimônio líquido para o balanço fechar. Use os botões de exportação para PDF, Excel ou CSV.
+
+### Demonstração do Resultado (DRE)
+*Relatórios › Contábeis › Demonstração do Resultado (DRE)*: informe o **período** e o **nível** de detalhe e clique em **Gerar**. A DRE ignora os lançamentos de encerramento. Exporte em PDF, Excel ou CSV. O Livro Contábil Completo continua incluindo o Balanço e a DRE.
 
 ### DMPL
 *Relatórios › Contábeis › DMPL*: mutações do patrimônio líquido (CPC 26) por componente (capital, reservas, lucros ou prejuízos acumulados). Informe o período e **Gerar**. O saldo final confere com o balanço.

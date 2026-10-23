@@ -7,7 +7,7 @@ namespace Vorticis.Fiscal.Desktop.ViewModels;
 
 /// <summary>
 /// Cadastros › Parâmetros (Fiscal): centros de custo nas notas e padrões da escrituração SPED (EFD) da empresa ativa.
-/// Usa os mesmos serviços das telas Configurações fiscais e SPED; as contas dos tributos e as regras de contabilização,
+/// Usa os mesmos serviços das funções de digitação e SPED; as contas dos tributos e as regras de contabilização,
 /// por serem tabelas, ficam em suas telas e aparecem aqui como atalhos.
 /// </summary>
 public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosViewModel(contexto)
@@ -33,7 +33,7 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         var notas = new CampoParametro[]
         {
             new("usaCentroCusto", "Informar centro de custo nos itens das notas", TipoCampoParametro.SimNao,
-                "Só pode ser ligado se a empresa usa centros de custo na contabilidade."),
+                "As notas aceitam centro de custo no documento e nos itens, e a contabilização leva o centro de custo às partidas. Só pode ser ligado se a empresa usa centros de custo (Cadastros › Empresas, aba Contabilidade)."),
         };
         var icms = new CampoParametro[]
         {
@@ -51,8 +51,7 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         Observar([.. notas, .. icms, .. contrib]);
         return
         [
-            new("Lançamento das notas", "Opções usadas na digitação de notas de entrada e saída.", notas,
-                [Atalho("Abrir Configurações fiscais da empresa", Telas.ConfiguracoesFiscais)]),
+            new("Lançamento das notas", "Opções usadas na digitação de notas de entrada e saída.", notas),
             new("EFD ICMS/IPI (SPED Fiscal)", "Escolhas que se repetem a cada mês; o assistente já abre preenchido. Exige permissão de gerar SPED.", icms),
             new("EFD-Contribuições (PIS/COFINS)", "Escolhas que se repetem a cada mês na EFD-Contribuições. Exige permissão de gerar SPED.", contrib),
             new("Contabilização e tributos", "Tabelas que têm tela própria.", [],

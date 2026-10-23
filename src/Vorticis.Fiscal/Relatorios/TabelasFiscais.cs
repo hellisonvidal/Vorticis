@@ -6,6 +6,7 @@ using Vorticis.Fiscal.Lucro;
 using Vorticis.Fiscal.Produtos;
 using Vorticis.Fiscal.Retencoes;
 using Vorticis.Fiscal.Simples;
+using Vorticis.Fiscal.Sped;
 
 namespace Vorticis.Fiscal.Relatorios;
 
@@ -32,6 +33,65 @@ public static class TabelasFiscais
         rows.Add(L(true, null, "", "", "TOTAL", null, "", "", "", "", linhas.Sum(l => l.ValorContabil), linhas.Sum(l => l.BcIcms), null, linhas.Sum(l => l.Icms), linhas.Sum(l => l.IcmsSt),
             linhas.Sum(l => l.Ipi), linhas.Sum(l => l.Pis), linhas.Sum(l => l.Cofins), linhas.Sum(l => l.Iss), ""));
         return new TabelaRelatorio(titulo, colunas, rows, $"{linhas.Select(l => l.DocumentoId).Distinct().Count()} documento(s), {linhas.Count} linha(s) por CFOP. Cancelados e denegados aparecem sem valores.");
+    }
+
+    private static readonly ColunaRelatorio[] ColunasApuracao =
+        [new("Descrição"), new("CFOP", LarguraCm: 1.8), new("Valor contábil", TipoColuna.Valor), new("Base de cálculo", TipoColuna.Valor), new("Imposto", TipoColuna.Valor)];
+
+    private static IEnumerable<LinhaRelatorio> BlocoCfop(string titulo, IReadOnlyList<LinhaApuracaoCfop> linhas, string total)
+    {
+        yield return L(true, titulo, "", null, null, null);
+        foreach (var l in linhas) yield return L(false, "   Operações com o CFOP", l.Cfop, l.Operacao, l.Base, l.Imposto);
+        yield return L(true, total, "", linhas.Sum(l => l.Operacao), linhas.Sum(l => l.Base), linhas.Sum(l => l.Imposto));
+    }
+
+    private static LinhaRelatorio Valor(string descricao, decimal v) => L(false, descricao, "", null, null, v);
+
+    /// <summary>Livro de Registro de Apuração do ICMS (modelo 9); os valores são os do registro E110 da EFD ICMS/IPI.</summary>
+    public static TabelaRelatorio LivroApuracaoIcms(LivroApuracao livro)
+    {
+        var a = livro.Icms;
+        var rows = new List<LinhaRelatorio>();
+        rows.AddRange(BlocoCfop("1. DÉBITO DO IMPOSTO — saídas e prestações", a.DebitosCfop ?? [], "Total dos débitos por saídas e prestações"));
+        rows.Add(Valor("   Outros débitos", 0));
+        rows.Add(Valor("   Estornos de créditos", 0));
+        rows.Add(L(true, "Total dos débitos", "", null, null, a.Debitos));
+        rows.AddRange(BlocoCfop("2. CRÉDITO DO IMPOSTO — entradas e aquisições", a.CreditosCfop ?? [], "Total dos créditos por entradas"));
+        rows.Add(Valor("   Outros créditos", 0));
+        rows.Add(Valor("   Estornos de débitos", 0));
+        rows.Add(L(true, "Total dos créditos", "", null, null, a.Creditos));
+        rows.Add(L(true, "3. APURAÇÃO DO SALDO", "", null, null, null));
+        rows.Add(Valor("   Saldo credor do período anterior", a.SaldoCredorAnterior));
+        rows.Add(Valor("   Saldo devedor apurado", Math.Max(0, a.SaldoApurado)));
+        rows.Add(Valor("   Deduções", a.Deducoes));
+        rows.Add(L(true, "Imposto a recolher", "", null, null, a.Recolher));
+        rows.Add(L(true, "Saldo credor a transportar para o período seguinte", "", null, null, a.SaldoCredorTransportar));
+        return new TabelaRelatorio($"Livro de Registro de Apuração do ICMS — {livro.Inicio:MM/yyyy}", ColunasApuracao, rows,
+            "Mesmos valores do registro E110 da EFD ICMS/IPI. Notas canceladas e denegadas e NFS-e não entram.");
+    }
+
+    /// <summary>Livro de Registro de Apuração do IPI (modelo 8); os valores são os do registro E520 da EFD ICMS/IPI.</summary>
+    public static TabelaRelatorio LivroApuracaoIpi(LivroApuracao livro)
+    {
+        var ipi = livro.Ipi;
+        var linhas = ipi?.Linhas ?? [];
+        var rows = new List<LinhaRelatorio>();
+        LinhaApuracaoCfop[] Por(Func<string, bool> f) => [.. linhas.Where(l => f(l.Cfop)).GroupBy(l => l.Cfop)
+            .Select(g => new LinhaApuracaoCfop(g.Key, g.Sum(l => l.Contabil), g.Sum(l => l.Base), g.Sum(l => l.Ipi)))];
+        rows.AddRange(BlocoCfop("1. SAÍDAS — débito do imposto", Por(CamposEfd.CfopSaida), "Total dos débitos por saídas"));
+        rows.Add(Valor("   Outros débitos", 0));
+        rows.Add(Valor("   Estornos de créditos", 0));
+        rows.Add(L(true, "Total dos débitos", "", null, null, ipi?.Debitos ?? 0));
+        rows.AddRange(BlocoCfop("2. ENTRADAS — crédito do imposto", Por(CamposEfd.CfopEntrada), "Total dos créditos por entradas"));
+        rows.Add(Valor("   Outros créditos", 0));
+        rows.Add(Valor("   Estornos de débitos", 0));
+        rows.Add(L(true, "Total dos créditos", "", null, null, ipi?.Creditos ?? 0));
+        rows.Add(L(true, "3. APURAÇÃO DO SALDO", "", null, null, null));
+        rows.Add(Valor("   Saldo credor do período anterior", 0));
+        rows.Add(L(true, "Saldo devedor (imposto a recolher)", "", null, null, ipi?.SaldoDevedor ?? 0));
+        rows.Add(L(true, "Saldo credor a transportar para o período seguinte", "", null, null, ipi?.SaldoCredor ?? 0));
+        return new TabelaRelatorio($"Livro de Registro de Apuração do IPI — {livro.Inicio:MM/yyyy}", ColunasApuracao, rows,
+            "Mesmos valores dos registros E510 e E520 da EFD ICMS/IPI. Só entram os itens com situação tributária de IPI informada.");
     }
 
     public static TabelaRelatorio Produtos(IReadOnlyList<Produto> produtos)

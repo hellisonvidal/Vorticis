@@ -696,12 +696,18 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Contains("lançamento nº 5", saldos.Mensagem);       // após o nº 1 manual, os nº 2 e 3 importados e o estorno nº 4
 
             // Relatórios › Balanço Patrimonial e DRE (antes do encerramento: resultado destacado no PL)
-            vm.AbrirCommand.Execute(Telas.Demonstracoes);
-            var dem = vm.Demonstracoes;
+            vm.AbrirCommand.Execute(Telas.Balanco);
+            var bal = vm.Balanco;
+            bal.Data31 = new DateTime(2026, 12, 31);
+            await bal.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(bal.Erros);
+            Assert.StartsWith("✓", bal.Resumo);
+            Assert.NotEmpty(bal.Ativo);
+            vm.AbrirCommand.Execute(Telas.Dre);
+            var dem = vm.Dre;
             (dem.Inicio, dem.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
             await dem.GerarCommand.ExecuteAsync(null);
             Assert.Empty(dem.Erros);
-            Assert.StartsWith("✓", dem.Resumo);
             Assert.Contains(dem.Dre, l => l.Descricao == "LUCRO LÍQUIDO DO PERÍODO" && l.Valor == "1.500,00");
             Foto(janela, "08a_demonstracoes");
 

@@ -642,28 +642,3 @@ public sealed class NotaSaidaViewModel(IContexto contexto) : DigitacaoDocumentoV
 {
     public override TipoOperacao Operacao => TipoOperacao.Saida;
 }
-
-/// <summary>Cadastros › Configurações fiscais: opções do Fiscal por empresa.</summary>
-public partial class ConfiguracoesFiscaisViewModel(IContexto contexto) : ModuloViewModel(contexto)
-{
-    [ObservableProperty] private bool _usaCentroCusto;
-    [ObservableProperty] private bool _empresaUsaCentroCusto;
-    public bool PodeManter => Contexto.Pode(Permissao.FiscalDocumentosImportar);
-
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeManter));
-
-    public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var r = await app.Fiscal().Digitacao.ObterConfiguracaoAsync(empresa, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        (UsaCentroCusto, EmpresaUsaCentroCusto) = (r.Valor.UsaCentroCusto, r.Valor.EmpresaUsaCentroCusto);
-    });
-
-    [RelayCommand]
-    private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var r = await app.Fiscal().Digitacao.GravarConfiguracaoAsync(empresa, UsaCentroCusto, usuario);
-        MostrarResultado(r, "Configurações gravadas.");
-        if (!r.Sucesso) UsaCentroCusto = false;
-    }, Permissao.FiscalDocumentosImportar);
-}

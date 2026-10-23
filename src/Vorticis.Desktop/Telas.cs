@@ -18,7 +18,8 @@ public static class Telas
     public const string CentrosCusto = "centroscusto";
     public const string SaldosIniciais = "saldosiniciais";
     public const string Encerramento = "encerramento";
-    public const string Demonstracoes = "demonstracoes";
+    public const string Balanco = "balanco";
+    public const string Dre = "dre";
     public const string LivrosPdf = "livrospdf";
     public const string ImportacaoReferencial = "importacaoreferencial";
     public const string MapeamentoReferencial = "mapeamentoreferencial";

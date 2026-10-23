@@ -21,7 +21,6 @@ public sealed class ModuloFiscal : IModuloDesktop
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Produtos", Telas.Produtos),
-        ItemMenu.Tela("Configurações fiscais da empresa", Telas.ConfiguracoesFiscais),
     ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
@@ -55,8 +54,11 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("EFD ICMS/IPI (SPED Fiscal)", Telas.EfdIcms),
                 ItemMenu.Tela("EFD-Contribuições (PIS/COFINS)", Telas.EfdContribuicoes))),
         ItemMenu.Submenu("_Relatórios",
-            ItemMenu.Tela("Livro de Registro de Entradas", Telas.LivroEntradas),
-            ItemMenu.Tela("Livro de Registro de Saídas", Telas.LivroSaidas),
+            ItemMenu.Submenu("_Livros",
+                ItemMenu.Tela("Livro de Registro de Entradas", Telas.LivroEntradas),
+                ItemMenu.Tela("Livro de Registro de Saídas", Telas.LivroSaidas),
+                ItemMenu.Tela("Livro de Apuração do ICMS", Telas.LivroApuracaoIcms),
+                ItemMenu.Tela("Livro de Apuração do IPI", Telas.LivroApuracaoIpi)),
             ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
             ItemMenu.Separador,
             ItemMenu.Tela("Produtos cadastrados", Telas.RelProdutos),
@@ -93,9 +95,6 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("ParametrosModulo", m => new ParametrosFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
-        c.Instancia("ConfiguracoesFiscais", m => new ConfiguracoesFiscaisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.ConfiguracoesFiscais, "Cadastros › Configurações fiscais", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
 
         c.Instancia("Simples", m => new ApuracaoSimplesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Simples, "Apuração › Simples Nacional", m => m.Pode(Permissao.FiscalApurar));
@@ -124,9 +123,13 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.EfdContribuicoes, "Obrigações › SPED › EFD-Contribuições", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
 
         c.Instancia("LivroEntradas", m => new LivroEntradasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.LivroEntradas, "Relatórios › Livro de Registro de Entradas", m => m.Pode(Permissao.FiscalRelatorios));
+            .Tela(Telas.LivroEntradas, "Relatórios › Livros › Livro de Registro de Entradas", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("LivroApuracaoIcms", m => new LivroApuracaoIcmsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.LivroApuracaoIcms, "Relatórios › Livros › Livro de Apuração do ICMS", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("LivroApuracaoIpi", m => new LivroApuracaoIpiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.LivroApuracaoIpi, "Relatórios › Livros › Livro de Apuração do IPI", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("LivroSaidas", m => new LivroSaidasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.LivroSaidas, "Relatórios › Livro de Registro de Saídas", m => m.Pode(Permissao.FiscalRelatorios));
+            .Tela(Telas.LivroSaidas, "Relatórios › Livros › Livro de Registro de Saídas", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelProdutos", m => new RelatorioProdutosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.RelProdutos, "Relatórios › Produtos cadastrados", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelItensNotas", m => new RelatorioItensNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

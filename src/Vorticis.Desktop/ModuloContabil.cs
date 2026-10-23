@@ -69,7 +69,8 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Livro Razão", Telas.Razao),
                 ItemMenu.Tela("Balancete de verificação", Telas.Balancete, "Ctrl+B"),
                 ItemMenu.Separador,
-                ItemMenu.Tela("Balanço Patrimonial e DRE", Telas.Demonstracoes),
+                ItemMenu.Tela("Balanço Patrimonial", Telas.Balanco),
+                ItemMenu.Tela("Demonstração do Resultado (DRE)", Telas.Dre),
                 ItemMenu.Tela("DMPL (mutações do patrimônio líquido)", Telas.Dmpl),
                 ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa)),
             ItemMenu.Submenu("_Gerenciais",
@@ -180,8 +181,10 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.ExportarLancamentos, "Integrações › Exportar › Lançamentos contábeis",
                   m => m.Pode(Permissao.RelatorioDiario) || m.Pode(Permissao.LancamentoIncluir));
 
-        c.Instancia(nameof(MainViewModel.Demonstracoes), m => new DemonstracoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
-            .Tela(Telas.Demonstracoes, "Relatórios › Contábeis › Balanço Patrimonial e DRE", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.Balanco), m => new BalancoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.Balanco, "Relatórios › Contábeis › Balanço Patrimonial", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.Dre), m => new DreViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.Dre, "Relatórios › Contábeis › Demonstração do Resultado (DRE)", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.Dmpl), m => new DmplViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.Dmpl, "Relatórios › Contábeis › DMPL", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.Dlpa), m => new DlpaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())

@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Relatorios;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Infra;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Relatorios;
+using Vorticis.Fiscal.Sped;
 
 namespace Vorticis.Fiscal.Desktop.ViewModels;
 
@@ -278,6 +280,61 @@ public sealed class LivroSaidasViewModel(IContexto contexto) : LivroFiscalViewMo
 {
     protected override TipoOperacao Operacao => TipoOperacao.Saida;
     public override string Titulo => "Livro de Registro de Saídas";
+}
+
+/// <summary>Base dos livros de apuração do ICMS e do IPI: um mês por vez.</summary>
+public abstract partial class LivroApuracaoViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
+{
+    private DateOnly _competencia;
+
+    public static IReadOnlyList<string> Meses { get; } =
+        ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+    [ObservableProperty] private int _mes = DateTime.Today.AddMonths(-1).Month - 1;
+    [ObservableProperty] private string _ano = DateTime.Today.AddMonths(-1).Year.ToString();
+    [ObservableProperty] private string _saldoCredorAnterior = "";
+
+    public abstract string Titulo { get; }
+    public abstract bool MostrarSaldo { get; }
+    protected abstract string Prefixo { get; }
+    protected abstract TabelaRelatorio Montar(LivroApuracao livro);
+    protected override string TituloRelatorio => Titulo;
+    protected override string Parametros => $"Período: {_competencia:MM/yyyy}";
+    protected override string NomeArquivo => $"{Prefixo}_{_competencia:yyyyMM}";
+
+    private void Falhar(string erro) { Erros.Clear(); Erros.Add(erro); Limpar(); }
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (!int.TryParse(Ano, out var ano) || ano is < 1990 or > 2100 || Mes is < 0 or > 11) { Falhar("Informe um mês e um ano válidos."); return; }
+        decimal saldo = 0;
+        if (MostrarSaldo && !string.IsNullOrWhiteSpace(SaldoCredorAnterior) &&
+            !decimal.TryParse(SaldoCredorAnterior.Replace("R$", "").Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out saldo))
+        { Falhar("Saldo credor do período anterior inválido."); return; }
+        var comp = new DateOnly(ano, Mes + 1, 1);
+        var r = await app.Fiscal().Efd.LivroApuracaoAsync(empresa, comp, saldo, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _competencia = comp;
+        Mostrar(Montar(r.Valor));
+        Mensagem = "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
+    }, Permissao.FiscalRelatorios);
+}
+
+public sealed class LivroApuracaoIcmsViewModel(IContexto contexto) : LivroApuracaoViewModel(contexto)
+{
+    public override string Titulo => "Livro de Apuração do ICMS";
+    public override bool MostrarSaldo => true;
+    protected override string Prefixo => "livro_apuracao_icms";
+    protected override TabelaRelatorio Montar(LivroApuracao livro) => TabelasFiscais.LivroApuracaoIcms(livro);
+}
+
+public sealed class LivroApuracaoIpiViewModel(IContexto contexto) : LivroApuracaoViewModel(contexto)
+{
+    public override string Titulo => "Livro de Apuração do IPI";
+    public override bool MostrarSaldo => false;
+    protected override string Prefixo => "livro_apuracao_ipi";
+    protected override TabelaRelatorio Montar(LivroApuracao livro) => TabelasFiscais.LivroApuracaoIpi(livro);
 }
 
 /// <summary>Relatórios › Resumo por CFOP (valor contábil e tributos por CFOP, entradas e saídas).</summary>

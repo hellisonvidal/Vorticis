@@ -11,10 +11,6 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 2. Informe os padrões fiscais: CFOP e CST de entrada e de saída, e as alíquotas de ICMS, IPI, PIS e COFINS.
 3. **Salvar**. O filtro busca por descrição, código, GTIN ou NCM; *Somente ativos* esconde os inativos.
 
-## Configurações fiscais da empresa
-
-*Cadastros › Configurações fiscais da empresa*: marque **Usar centros de custo no fiscal** se os itens das notas devem receber centro de custo, e **Salvar**.
-
 ## Documentos de entrada e de saída (digitação)
 
 **Para que serve:** lançar à mão notas que não têm XML.
@@ -145,9 +141,20 @@ Guias com vencimento próximo aparecem no calendário de obrigações e na tela 
 
 Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 
-- **Livro de Registro de Entradas** e **de Saídas** (*Relatórios*): uma linha por nota e CFOP; notas canceladas aparecem sem valores. Informe o período e **Gerar**.
+- **Livro de Registro de Entradas** e **de Saídas** (*Relatórios › Livros*): uma linha por nota e CFOP; notas canceladas aparecem sem valores. Informe o período e **Gerar**.
 - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
+
+## Livros de apuração do ICMS e do IPI
+
+**Para que serve:** conferir e imprimir a apuração mensal do ICMS e do IPI, com os mesmos valores que vão para a EFD ICMS/IPI.
+**Onde fica:** *Relatórios › Livros › Livro de Apuração do ICMS* e *Livro de Apuração do IPI*.
+
+1. Escolha o **mês** e o **ano**. No livro do ICMS, informe também o **saldo credor anterior**, se houver.
+2. Clique em **Gerar**: aparecem os débitos pelas saídas e os créditos pelas entradas, separados por CFOP, e o resultado do mês (imposto a recolher ou saldo credor a transportar).
+3. Use **Exportar** para PDF, Excel ou CSV. O PDF sai com o cabeçalho da empresa, como os demais livros.
+
+Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os itens com situação tributária do IPI preenchida. Outros débitos, outros créditos e estornos aparecem zerados, como na EFD.
 
 ## SPED EFD ICMS/IPI
 
