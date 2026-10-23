@@ -200,7 +200,7 @@ public class EfdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     {
         BancoDeTeste.ExigirBanco();
         var ct = TestContext.Current.CancellationToken;
-        var empresa = await EmpresaCompletaAsync(75);
+        var empresa = await EmpresaCompletaAsync(77);
         var cnpj = await db.EscalarAsync<string>("SELECT cnpj FROM core.empresa WHERE id = @e", ("e", empresa));
         var adm = await db.AdminAsync();
         var fiscal = db.App.Fiscal();
