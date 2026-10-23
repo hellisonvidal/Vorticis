@@ -52,15 +52,15 @@ public sealed class ServicoObrigacoes(IRepositorioObrigacoes repositorio, Autori
     private async Task<string?> ExigirAcessoAsync(long usuarioId, long empresaId, CancellationToken ct)
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? null : "Você não tem acesso a esta empresa.";
 
-    /// <param name="modulo">Null = todos os módulos; senão só as obrigações desse módulo (e as de "todos"/personalizadas).</param>
+    /// <param name="modulos">Null = todos os módulos; senão só as obrigações desses módulos (e as de "todos"/personalizadas).</param>
     public async Task<Resultado<IReadOnlyList<ItemObrigacao>>> ListarAsync(long usuarioId, long empresaId, DateOnly de, DateOnly ate, DateOnly hoje,
-                                                                         ModuloObrigacao? modulo = null, CancellationToken ct = default)
+                                                                         IEnumerable<ModuloObrigacao>? modulos = null, CancellationToken ct = default)
     {
         if (await ExigirAcessoAsync(usuarioId, empresaId, ct) is { } negado) return Resultado<IReadOnlyList<ItemObrigacao>>.Falha(negado);
         var perfil = await repositorio.ObterPerfilAsync(empresaId, ct);
         var personalizadas = (await repositorio.ListarPersonalizadasAsync(empresaId, ct)).Where(p => p.Ativa).Select(p => p.ParaDefinicao());
         var definicoes = CatalogoObrigacoes.Federais.Where(d => d.AplicaA(perfil.Regimes, perfil.TemEmpregados)
-                                                                 && (modulo is null || d.Modulo == modulo || d.Modulo == ModuloObrigacao.Todos))
+                                                                 && (modulos is null || d.Modulo == ModuloObrigacao.Todos || modulos.Contains(d.Modulo)))
                                                     .Concat(personalizadas);
         var baixas = (await repositorio.ListarBaixasAsync(empresaId, ct)).ToDictionary(b => (b.Obrigacao, b.Competencia));
         var itens = CalendarioObrigacoes.Ocorrencias(definicoes, de, ate).Select(o =>
@@ -73,9 +73,10 @@ public sealed class ServicoObrigacoes(IRepositorioObrigacoes repositorio, Autori
 
     /// <summary>Quadro da tela inicial: atrasadas (últimos 90 dias) e pendentes dos próximos <paramref name="dias"/> dias, sem as cumpridas.</summary>
     public async Task<Resultado<IReadOnlyList<ItemObrigacao>>> ProximasAsync(long usuarioId, long empresaId, DateOnly hoje, int dias = 15, int maximo = 8,
+                                                                           IEnumerable<ModuloObrigacao>? modulos = null,
                                                                            CancellationToken ct = default)
     {
-        var r = await ListarAsync(usuarioId, empresaId, hoje.AddDays(-90), hoje.AddDays(dias), hoje, null, ct);
+        var r = await ListarAsync(usuarioId, empresaId, hoje.AddDays(-90), hoje.AddDays(dias), hoje, modulos, ct);
         if (!r.Sucesso) return r;
         return Resultado<IReadOnlyList<ItemObrigacao>>.Ok(r.Valor.Where(i => i.Status != StatusObrigacao.Cumprida).Take(maximo).ToList());
     }

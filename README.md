@@ -249,3 +249,5 @@ Os testes de integração criam e apagam um banco temporário por classe de test
 | [02 — Partidas dobradas](docs/02-partidas-dobradas.md) | Regras de validação no banco e na aplicação |
 | [03 — Desafios fiscais](docs/03-desafios-fiscais.md) | Reforma Tributária, SPED, regimes, folha, eSocial, integrações |
 | [04 — Roadmap](docs/04-roadmap.md) | Fases do MVP à versão completa, critérios de saída |
+
+**Códigos compartilhados:** empresas (código = id global) e cadastros comuns (participantes, sócios, contadores, procuradores) têm o mesmo código em todos os módulos; o "menor número livre" considera todos os registros da tabela, independentemente do módulo ativo.

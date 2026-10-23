@@ -98,38 +98,54 @@ public sealed class GeradorPdf : IGeradorPdf
         ps.Orientation = Orientation.Portrait;
         ps.PageWidth = Unit.FromCentimeter(d.Paisagem ? 29.7 : 21.0);
         ps.PageHeight = Unit.FromCentimeter(d.Paisagem ? 21.0 : 29.7);
-        ps.TopMargin = Unit.FromCentimeter(2.6);
+        var largura = (d.Paisagem ? 29.7 : 21.0) - 2.8;
+        ps.HeaderDistance = Unit.FromCentimeter(0.8);
+        // A margem superior acompanha a altura do cabeçalho (identificação + título): se fosse fixa, um cabeçalho com várias
+        // linhas ultrapassaria a margem e se sobreporia ao corpo da página.
+        ps.TopMargin = Unit.FromCentimeter(0.8 + AlturaCabecalhoCm(d, largura));
         ps.BottomMargin = Unit.FromCentimeter(1.6);
         ps.LeftMargin = ps.RightMargin = Unit.FromCentimeter(1.4);
-        ps.HeaderDistance = Unit.FromCentimeter(0.8);
         ps.FooterDistance = Unit.FromCentimeter(0.7);
         s.PageSetup = ps;
 
-        // Cabeçalho: título à esquerda, número da folha/página à direita; identificação logo abaixo.
+        // Cabeçalho: identificação (empresa/CNPJ/período) no alto, com a folha à direita; o TÍTULO do relatório fica ABAIXO dela.
         var cab = s.Headers.Primary;
         var t = cab.AddTable();
-        var largura = (d.Paisagem ? 29.7 : 21.0) - 2.8;
         t.AddColumn(Unit.FromCentimeter(largura - 4));
         t.AddColumn(Unit.FromCentimeter(4));
         var r = t.AddRow();
-        var titulo = r.Cells[0].AddParagraph(d.Titulo);
-        titulo.Format.Font.Bold = true;
-        titulo.Format.Font.Size = 11;
+        var ident = d.Cabecalho.Count > 0 ? d.Cabecalho[0] : "";
+        var p0 = r.Cells[0].AddParagraph(ident);
+        p0.Format.Font.Size = 8;
+        p0.Format.Font.Bold = true;
         var pag = r.Cells[1].AddParagraph($"{d.RotuloPagina} ");
         pag.AddPageField();
         pag.Format.Alignment = ParagraphAlignment.Right;
-        foreach (var linha in d.Cabecalho)
+        pag.Format.Font.Size = 8;
+        foreach (var linha in d.Cabecalho.Skip(1))
         {
             var p = cab.AddParagraph(linha);
             p.Format.Font.Size = 8;
         }
-        var sep = cab.AddParagraph();
-        sep.Format.Borders.Bottom.Width = 0.5;
+        var titulo = cab.AddParagraph(d.Titulo);
+        titulo.Format.Font.Bold = true;
+        titulo.Format.Font.Size = 11;
+        titulo.Format.SpaceBefore = Unit.FromPoint(5);
+        titulo.Format.Borders.Bottom.Width = 0.5;
+        titulo.Format.Borders.DistanceFromBottom = Unit.FromPoint(2);
 
         var rod = s.Footers.Primary.AddParagraph($"Vorticis Contábil — emitido em {DateTime.Now:dd/MM/yyyy HH:mm}");
         rod.Format.Font.Size = 6.5;
         rod.Format.Font.Color = Colors.Gray;
         return s;
+    }
+
+    /// <summary>Estimativa (conservadora) da altura do cabeçalho em cm, considerando quebra de linhas longas.</summary>
+    private static double AlturaCabecalhoCm(DocumentoRelatorio d, double larguraCm)
+    {
+        static int Linhas(string? t, double cm, double caracteresPorCm) => Math.Max(1, (int)Math.Ceiling((t ?? "").Length / (cm * caracteresPorCm)));
+        var ident = d.Cabecalho.Count == 0 ? 1 : Linhas(d.Cabecalho[0], larguraCm - 4, 5.6) + d.Cabecalho.Skip(1).Sum(l => Linhas(l, larguraCm, 6.2));
+        return ident * 0.38 + Linhas(d.Titulo, larguraCm, 4.6) * 0.5 + 0.35;
     }
 
     private static void AdicionarTermo(Document doc, DocumentoRelatorio d, Termo termo, string texto)

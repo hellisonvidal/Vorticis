@@ -50,7 +50,7 @@ public partial class InicioViewModel(MainViewModelBase main) : ModuloViewModel(m
         try
         {
             var hoje = DateOnly.FromDateTime(DateTime.Today);
-            var r = await app.Obrigacoes.ProximasAsync(sessao.Id, empresa, hoje);
+            var r = await app.Obrigacoes.ProximasAsync(sessao.Id, empresa, hoje, modulos: ObrigacoesViewModel.ModuloDe(main) is { } mo ? [mo] : null);
             if (g != Volatile.Read(ref _geracaoProximas)) return;
             Proximas.Clear();
             if (r.Sucesso)

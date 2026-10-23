@@ -124,9 +124,9 @@
  },
  {
   "codigo": "IRRF",
-  "nome": "DARF IRRF (retenções na fonte)",
+  "nome": "DARF IRRF sobre salários (retenções na fonte)",
   "orgao": "RFB",
-  "modulo": "Fiscal",
+  "modulo": "Folha",
   "periodicidade": "Mensal",
   "regra": "DiaFixo",
   "dia": 20,

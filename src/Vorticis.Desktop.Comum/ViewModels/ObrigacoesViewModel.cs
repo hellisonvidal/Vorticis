@@ -54,7 +54,10 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
 
     [ObservableProperty] private int _visao;
     [ObservableProperty] private DateOnly _mes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    [ObservableProperty] private bool _todosModulos;
+    // filtros de módulo: por padrão só o módulo atual
+    [ObservableProperty] private bool _verContabil = ModuloDe(main) == ModuloObrigacao.Contabil;
+    [ObservableProperty] private bool _verFiscal = ModuloDe(main) == ModuloObrigacao.Fiscal;
+    [ObservableProperty] private bool _verFolha = ModuloDe(main) == ModuloObrigacao.Folha;
     [ObservableProperty] private bool _ocultarCumpridas;
     [ObservableProperty] private LinhaObrigacao? _selecionada;
     [ObservableProperty] private DateTime? _dataCumprimento = DateTime.Today;
@@ -84,7 +87,8 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
     public bool PUsaDia => PRegra != 2;
     public string NomeModulo => main.Modulo.NomeCurto;
 
-    private ModuloObrigacao? ModuloAtual => TodosModulos ? null : main.Modulo.NomeCurto.ToLowerInvariant() switch
+    /// <summary>Módulo do casco em execução (null se desconhecido).</summary>
+    public static ModuloObrigacao? ModuloDe(MainViewModelBase m) => m.Modulo.NomeCurto.ToLowerInvariant() switch
     {
         var n when n.StartsWith("cont") => ModuloObrigacao.Contabil,
         var n when n.StartsWith("fisc") => ModuloObrigacao.Fiscal,
@@ -92,8 +96,24 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
         _ => null,
     };
 
+    /// <summary>Módulos marcados; null (sem filtro) quando nenhum ou módulo desconhecido e nada marcado.</summary>
+    private IReadOnlyList<ModuloObrigacao>? ModulosSelecionados
+    {
+        get
+        {
+            var l = new List<ModuloObrigacao>();
+            if (VerContabil) l.Add(ModuloObrigacao.Contabil);
+            if (VerFiscal) l.Add(ModuloObrigacao.Fiscal);
+            if (VerFolha) l.Add(ModuloObrigacao.Folha);
+            return l.Count == 3 || (l.Count == 0 && ModuloDe(main) is null) ? null : l;
+        }
+    }
+
+    private string TextoModulos => ModulosSelecionados is not { } l ? "todos os módulos"
+        : l.Count == 0 ? "nenhum módulo (somente personalizadas)" : "módulo(s) " + string.Join(", ", l.Select(m => m == ModuloObrigacao.Contabil ? "Contábil" : m.ToString()));
+
     protected override string TituloRelatorio => "Calendário de obrigações";
-    protected override string Parametros => $"{(VisaoMensal ? $"Vencimentos em {TituloMes}" : "Atrasadas e próximos 90 dias")} — {(ModuloAtual is null ? "todos os módulos" : $"módulo {NomeModulo}")}";
+    protected override string Parametros => $"{(VisaoMensal ? $"Vencimentos em {TituloMes}" : "Atrasadas e próximos 90 dias")} — {TextoModulos}";
     protected override string NomeArquivo => $"calendario_obrigacoes_{(VisaoMensal ? Mes.ToString("yyyy-MM") : DateTime.Today.ToString("yyyy-MM-dd"))}";
     protected override bool Paisagem => true;
 
@@ -114,7 +134,9 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
 
     partial void OnVisaoChanged(int value) { OnPropertyChanged(nameof(VisaoMensal)); _ = CarregarAsync(); }
     partial void OnMesChanged(DateOnly value) { OnPropertyChanged(nameof(TituloMes)); _ = CarregarAsync(); }
-    partial void OnTodosModulosChanged(bool value) => _ = CarregarAsync();
+    partial void OnVerContabilChanged(bool value) => _ = CarregarAsync();
+    partial void OnVerFiscalChanged(bool value) => _ = CarregarAsync();
+    partial void OnVerFolhaChanged(bool value) => _ = CarregarAsync();
     partial void OnOcultarCumpridasChanged(bool value) => _ = CarregarAsync();
     partial void OnPPeriodicidadeChanged(int value) => OnPropertyChanged(nameof(PEhAnual));
     partial void OnPRegraChanged(int value) { OnPropertyChanged(nameof(PEhDiaFixo)); OnPropertyChanged(nameof(PUsaDia)); }
@@ -147,7 +169,7 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
         var (de, ate) = VisaoMensal ? (Mes, Mes.AddMonths(1).AddDays(-1)) : (hoje.AddDays(-180), hoje.AddDays(90));
         try
         {
-            var r = await app.Obrigacoes.ListarAsync(sessao.Id, empresa, de, ate, hoje, ModuloAtual);
+            var r = await app.Obrigacoes.ListarAsync(sessao.Id, empresa, de, ate, hoje, ModulosSelecionados);
             var p = await app.Obrigacoes.ListarPersonalizadasAsync(sessao.Id, empresa);
             if (!EhAtual(g)) return;
             Erros.Clear();

@@ -163,7 +163,7 @@ public class ObrigacoesTests
         Assert.Equal(StatusObrigacao.Atrasada, das.Status);
         Assert.DoesNotContain(r.Valor, i => i.Ocorrencia.Definicao.Codigo is "PIS_COFINS" or "FGTS" or "ESOCIAL"); // regime e sem empregados
 
-        var apenasFolha = await svc.ListarAsync(1, 1, D(2026, 4, 1), D(2026, 4, 30), hoje, ModuloObrigacao.Folha, ct);
+        var apenasFolha = await svc.ListarAsync(1, 1, D(2026, 4, 1), D(2026, 4, 30), hoje, [ModuloObrigacao.Folha], ct);
         Assert.DoesNotContain(apenasFolha.Valor, i => i.Ocorrencia.Definicao.Codigo == "DAS");
 
         var m = await svc.MarcarCumpridaAsync(1, 1, "DAS", "2026-03", D(2026, 4, 17), "Pago", ct);
@@ -188,7 +188,7 @@ public class ObrigacoesTests
         Assert.Contains(r.Valor, i => i.Ocorrencia.Definicao.Codigo == "FGTS" && i.Ocorrencia.Vencimento == D(2026, 6, 19));
         Assert.Contains(r.Valor, i => i.Ocorrencia.Definicao.Codigo == "ESOCIAL" && i.Ocorrencia.Vencimento == D(2026, 6, 15));
         await svc.MarcarCumpridaAsync(1, 1, "ESOCIAL", "2026-05", hoje, null, ct);
-        var prox = await svc.ProximasAsync(1, 1, hoje, 7, 50, ct);
+        var prox = await svc.ProximasAsync(1, 1, hoje, 7, 50, null, ct);
         Assert.DoesNotContain(prox.Valor, i => i.Ocorrencia.Definicao.Codigo == "ESOCIAL" && i.Ocorrencia.Competencia == new Competencia(2026, 5));
         Assert.All(prox.Valor, i => Assert.True(i.Ocorrencia.Vencimento <= hoje.AddDays(7)));
     }

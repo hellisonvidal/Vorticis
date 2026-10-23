@@ -50,6 +50,34 @@ public class SequenciasLacunasTests(BancoDeTeste db) : IClassFixture<BancoDeTest
     }
 
     [Fact]
+    public async Task Empresa_so_no_fiscal_ocupa_o_codigo_tambem_nos_demais_modulos()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = await db.AdminAsync();
+        var sessao = new Vorticis.Domain.Seguranca.SessaoUsuario(adm, "admin_teste", "Admin de Teste", true, false);
+        var r = await db.App.Empresas.CadastrarAsync(new NovaEmpresa("73712451000125", "Empresa Fiscal LTDA", null, "2062", "4751201", "SP", "3550308",
+            new DateOnly(2020, 1, 1), RegimeTributario.LucroPresumido, 2026, Modulos: ModulosEmpresa.Fiscal), ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var soFiscal = r.Valor;
+        Assert.DoesNotContain(await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Contabil, ct), e => e.Id == soFiscal);
+
+        // o código (id) da empresa é global: a próxima empresa nunca reaproveita o número, em qualquer módulo
+        var outra = await db.CriarEmpresaAsync("58421733000180");
+        Assert.NotEqual(soFiscal, outra);
+        Assert.True(outra > soFiscal);
+
+        // participantes cadastrados "no Fiscal" ocupam o código também para o Contábil (a lacuna considera toda a tabela)
+        var svc = db.App.Participantes;
+        Participante Novo(string nome, string doc) => new(0, "", nome, null, doc, null, "SP", null, null, null, null, true, false, "1.1.02.001", true);
+        Assert.True((await svc.GravarAsync(soFiscal, Novo("A", "11222333000181"), adm, ct)).Sucesso);
+        Assert.True((await svc.GravarAsync(soFiscal, Novo("B", "52998224725"), adm, ct)).Sucesso);
+        var lista = await svc.ListarAsync(soFiscal, adm, ct);
+        Assert.Equal("3", ServicoParticipantes.ProximoCodigo(lista));
+        Assert.Equal(["1", "2"], lista.Select(p => p.Codigo));
+    }
+
+    [Fact]
     public async Task Reduzido_do_plano_excluido_do_meio_e_ocupado_pela_proxima_conta()
     {
         BancoDeTeste.ExigirBanco();

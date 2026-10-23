@@ -19,7 +19,9 @@
           <Button Content="Mês atual" Command="{Binding MesAtualCommand}" IsVisible="{Binding VisaoMensal}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="14">
-          <CheckBox IsChecked="{Binding TodosModulos}" Content="Todos os módulos" />
+          <CheckBox IsChecked="{Binding VerContabil}" Content="Contábil" />
+          <CheckBox IsChecked="{Binding VerFiscal}" Content="Fiscal" />
+          <CheckBox IsChecked="{Binding VerFolha}" Content="Folha" />
           <CheckBox IsChecked="{Binding OcultarCumpridas}" Content="Ocultar cumpridas" />
           <TextBlock Text="{Binding NomeModulo, StringFormat='Módulo atual: {0}'}" Classes="rotulo" Foreground="Gray" />
         </StackPanel>
