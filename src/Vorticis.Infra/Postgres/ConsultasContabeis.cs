@@ -163,4 +163,49 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
                                     r.IsDBNull(12) ? null : r.GetString(12)));
         return res;
     }
+
+    public async Task<IReadOnlyList<CentroPlano>> ObterCentrosAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id, codigo, descricao, centro_pai_id, ativo, tipo = 'A' FROM contabil.centro_custo WHERE empresa_id = @e ORDER BY codigo")
+            .Com("e", empresaId);
+        var res = new List<CentroPlano>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new CentroPlano(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetInt64(3), r.GetBoolean(4), r.GetBoolean(5)));
+        return res;
+    }
+
+    public async Task<IReadOnlyList<MovimentoCentro>> ObterMovimentosCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT p.conta_id, COALESCE(p.centro_custo_id, 0), date_trunc('month', l.data_lancamento)::date,
+                   SUM(CASE WHEN p.ind_dc = 'D' THEN p.valor ELSE 0 END), SUM(CASE WHEN p.ind_dc = 'C' THEN p.valor ELSE 0 END)
+              FROM contabil.partida p
+              JOIN contabil.lancamento l ON l.id = p.lancamento_id
+             WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.ind_lcto IS DISTINCT FROM 'E'
+               AND l.data_lancamento BETWEEN @ini AND @fim
+             GROUP BY 1, 2, 3
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<MovimentoCentro>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new MovimentoCentro(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetDecimal(4)));
+        return res;
+    }
+
+    public async Task<IReadOnlyList<DetalheCentro>> ObterDetalhesCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT p.conta_id, COALESCE(p.centro_custo_id, 0), l.data_lancamento, COALESCE(l.numero, 0), p.ind_dc::text, p.valor, COALESCE(p.historico, '')
+              FROM contabil.partida p
+              JOIN contabil.lancamento l ON l.id = p.lancamento_id
+             WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.ind_lcto IS DISTINCT FROM 'E'
+               AND l.data_lancamento BETWEEN @ini AND @fim
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<DetalheCentro>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new DetalheCentro(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetInt64(3), Mapeamentos.DC(r.GetString(4)), r.GetDecimal(5), r.GetString(6)));
+        return res;
+    }
 }

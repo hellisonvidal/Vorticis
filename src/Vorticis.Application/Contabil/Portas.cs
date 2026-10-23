@@ -79,6 +79,23 @@ public interface IConsultasContabeis
     /// <summary>Saldo anterior e movimento por conta e participante (só partidas com participante).</summary>
     Task<IReadOnlyList<MovimentoParticipante>> ObterMovimentosParticipantesAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     Task<IReadOnlyList<LinhaDiario>> ObterDiarioAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+
+    /// <summary>Centros de custo da empresa (para somar analíticos nos sintéticos).</summary>
+    Task<IReadOnlyList<CentroPlano>> ObterCentrosAsync(long empresaId, CancellationToken ct);
+
+    /// <summary>Movimento por conta, centro de custo (0 = sem centro) e mês, sem rascunhos nem lançamentos de encerramento.</summary>
+    Task<IReadOnlyList<MovimentoCentro>> ObterMovimentosCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+
+    /// <summary>Partidas do período com os dados do lançamento, para detalhar o relatório por centro de custo.</summary>
+    Task<IReadOnlyList<DetalheCentro>> ObterDetalhesCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+}
+
+/// <summary>Persistência do orçamento anual.</summary>
+public interface IRepositorioOrcamento
+{
+    Task<IReadOnlyList<LinhaOrcamento>> ListarAsync(long empresaId, int ano, CancellationToken ct);
+    /// <summary>Substitui todo o orçamento do ano (numa transação).</summary>
+    Task SubstituirAsync(long empresaId, int ano, IReadOnlyList<LinhaOrcamento> linhas, CancellationToken ct);
 }
 
 public sealed record LinhaRazao(DateOnly Data, long Numero, string Historico, IndicadorDC DC, decimal Valor, decimal SaldoAcumulado, bool Estornado);

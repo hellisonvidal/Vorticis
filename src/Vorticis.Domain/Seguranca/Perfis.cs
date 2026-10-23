@@ -22,6 +22,9 @@ public enum Permissao
     RelatorioDiario,
     RelatorioDemonstracoes,
     RelatorioExportar,
+
+    /// <summary>Manter o orçamento anual (Relatórios › Gerenciais › Orçado x Realizado).</summary>
+    OrcamentoManter,
     SpedEcdGerar,
     SpedEcfGerar,
 
@@ -92,6 +95,7 @@ public static class Permissoes
         new(Permissao.RelatorioDiario, "RELATORIO_DIARIO", "Relatórios", "Livro Diário"),
         new(Permissao.RelatorioDemonstracoes, "RELATORIO_DEMONSTRACOES", "Relatórios", "Balanço Patrimonial e DRE"),
         new(Permissao.RelatorioExportar, "RELATORIO_EXPORTAR", "Relatórios", "Exportar relatórios para planilha (CSV)"),
+        new(Permissao.OrcamentoManter, "ORCAMENTO_MANTER", "Relatórios", "Manter o orçamento anual (Orçado x Realizado)"),
         new(Permissao.SpedEcdGerar, "SPED_ECD_GERAR", "Integrações", "Gerar e assinar o arquivo da ECD (SPED Contábil)"),
         new(Permissao.SpedEcfGerar, "SPED_ECF_GERAR", "Integrações", "Gerar e assinar o arquivo da ECF (Escrituração Contábil Fiscal)"),
         new(Permissao.ObrigacoesManter, "OBRIGACOES_MANTER", "Cadastros", "Calendário de obrigações: marcar como cumpridas e manter obrigações personalizadas"),

@@ -71,7 +71,13 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Separador,
                 ItemMenu.Tela("Balanço Patrimonial e DRE", Telas.Demonstracoes),
                 ItemMenu.Tela("DMPL (mutações do patrimônio líquido)", Telas.Dmpl),
-                ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa))),
+                ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa)),
+            ItemMenu.Submenu("_Gerenciais",
+                ItemMenu.Tela("Contabilização por centro de custo", Telas.CentroCustoRelatorio),
+                ItemMenu.Tela("Orçado x Realizado", Telas.OrcadoRealizado),
+                ItemMenu.Tela("Orçamento", Telas.Orcamento),
+                ItemMenu.Tela("Relação de custos", Telas.RelacaoCustos),
+                ItemMenu.Tela("Receita por centro de custo", Telas.ReceitaCentro))),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -180,6 +186,23 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.Dmpl, "Relatórios › Contábeis › DMPL", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.Dlpa), m => new DlpaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.Dlpa, "Relatórios › Contábeis › DLPA", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.CentroCustoRelatorio), m => new CentroCustoRelatorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.CentroCustoRelatorio, "Relatórios › Gerenciais › Contabilização por centro de custo", m => m.Pode(Permissao.RelatorioBalancete),
+                  v => v.CarregarCentrosAsync());
+        c.Instancia(nameof(MainViewModel.RelacaoCustos), m => new RelacaoCustosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.RelacaoCustos, "Relatórios › Gerenciais › Relação de custos", m => m.Pode(Permissao.RelatorioDemonstracoes), v => v.CarregarCentrosAsync());
+        c.Instancia(nameof(MainViewModel.ReceitaCentro), m => new ReceitaCentroViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.ReceitaCentro, "Relatórios › Gerenciais › Receita por centro de custo", m => m.Pode(Permissao.RelatorioDemonstracoes), v => v.CarregarCentrosAsync());
+        c.Instancia(nameof(MainViewModel.OrcadoRealizado), m => new OrcadoRealizadoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.OrcadoRealizado, "Relatórios › Gerenciais › Orçado x Realizado", m => m.Pode(Permissao.RelatorioDemonstracoes), v => v.CarregarCentrosAsync());
+        c.Instancia(nameof(MainViewModel.Orcamento), m => new OrcamentoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.Orcamento, "Relatórios › Gerenciais › Orçamento",
+                  m => m.Pode(Permissao.RelatorioDemonstracoes) || m.Pode(Permissao.OrcamentoManter), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Termos), m => new TermosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.PreencherResponsaveisAsync() : Task.CompletedTask)
             .Tela(Telas.Termos, "Relatórios › Contábeis › Termos", m => m.Pode(Permissao.RelatorioDiario), v => v.PreencherResponsaveisAsync());

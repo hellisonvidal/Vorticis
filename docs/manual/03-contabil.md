@@ -243,6 +243,44 @@ Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**. E
 ### DLPA
 *Relatórios › Contábeis › DLPA*: demonstração de lucros ou prejuízos acumulados (Lei 6.404, art. 186). Informe o período e **Gerar**.
 
+## Relatórios gerenciais
+
+*Relatórios › Gerenciais* reúne relatórios para acompanhar custos, receitas e metas por centro de custo. Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**, com as mesmas opções de assinatura dos relatórios contábeis (veja [Assinaturas](#assinaturas) e [PDF assinado](#pdf-assinado)). Os lançamentos de encerramento do exercício não entram. Os centros de custo vêm do cadastro [Centros de custo](#centros-de-custo): cada centro sintético mostra a soma dos centros analíticos abaixo dele.
+
+### Contabilização por centro de custo
+*Relatórios › Gerenciais › Contabilização por centro de custo*: mostra, para cada centro de custo, os débitos, créditos e o saldo do período e, abaixo, as contas com movimento.
+1. Informe o período (datas inicial e final).
+2. Se quiser, escolha um **centro** (o relatório mostra ele e os centros abaixo dele), digite uma **conta ou grupo** (por exemplo, 4.2 mostra só as contas que começam com 4.2) e o **nível do centro** (1 mostra só os centros de topo, com as contas somadas; 0 mostra todos).
+3. Marque **Detalhar lançamentos** para ver cada lançamento (data, número e histórico) abaixo da conta.
+4. Clique em **Gerar**. Partidas sem centro de custo aparecem em *Sem centro de custo*.
+
+### Orçamento
+*Relatórios › Gerenciais › Orçamento*: onde se digita o orçamento do ano. Cada linha é uma conta de resultado (receita, custo ou despesa), um centro de custo (opcional) e o valor de cada mês, de Jan a Dez. Quem não tem a permissão *Manter o orçamento* só consulta.
+1. Informe o **ano** e clique em **Abrir orçamento do ano**.
+2. Clique em **Adicionar linha** e digite o código da conta (a descrição aparece sozinha), o centro e os valores dos 12 meses. **Remover linha** apaga a linha selecionada.
+3. Para partir do que já existe, informe o **reajuste (%)** (por exemplo, 5 para mais 5%; negativo reduz) e use **Copiar orçamento do ano anterior** ou **Copiar realizado do ano anterior**. A grade é preenchida para você conferir e ajustar; nada é gravado ainda.
+4. Para importar de uma planilha, escolha o arquivo (.xlsx ou .csv) em **Procurar...** e clique em **Importar planilha**. A primeira linha tem os títulos: *Conta*, *Centro de custo* (opcional) e *Jan* a *Dez* (ou, em vez dos meses, as colunas *Mês* de 1 a 12 e *Valor*). Linhas repetidas da mesma conta e centro são somadas. Se alguma linha tiver erro, o sistema informa o número da linha e não importa nada.
+5. Clique em **Salvar orçamento**. Ele substitui o orçamento anterior do mesmo ano.
+
+Digite os valores como positivos, na natureza da conta: a receita e a despesa orçadas são números positivos.
+
+### Orçado x Realizado
+*Relatórios › Gerenciais › Orçado x Realizado*: compara o orçamento com o que foi lançado na contabilidade.
+1. Informe o **ano** e o **mês inicial e final** (1 a 12).
+2. Se quiser, filtre por **centro** ou por **conta ou grupo**. Marque **Somar os centros** para ver uma linha por conta, sem separar por centro.
+3. Marque **Mês a mês** para ver uma linha por mês com o acumulado; sem essa opção, o relatório mostra o total dos meses escolhidos.
+4. Clique em **Gerar**. As colunas são *Orçado*, *Realizado*, *Diferença* (realizado − orçado) e *%* (realizado ÷ orçado). No total do período aparecem ainda as receitas, os custos e despesas e o resultado.
+
+### Relação de custos
+*Relatórios › Gerenciais › Relação de custos*: lista os custos e despesas (contas de resultado de natureza devedora, inclusive deduções da receita) do período, com a **participação %** de cada linha no total.
+1. Informe o período e, se quiser, centro, conta ou grupo e nível.
+2. Em **agrupamento**, escolha *Por centro de custo (e contas)* ou *Por conta (e centros)*.
+3. Em **comparação**, escolha *Período anterior (mesma duração)*, *Mesmo período do ano anterior* ou *Sem comparação*. Com comparação, o relatório mostra o valor do outro período, a variação e a variação %.
+4. Clique em **Gerar**.
+
+### Receita por centro de custo
+*Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**.
+
 ## Livro Contábil Completo
 
 **Para que serve:** gerar em um único PDF o livro com termos, demonstrações e assinaturas, seguindo a ITG 2000.

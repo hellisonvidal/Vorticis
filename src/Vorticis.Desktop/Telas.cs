@@ -29,6 +29,11 @@ public static class Telas
     public const string ExportarLancamentos = "exportarlancamentos";
     public const string Dmpl = "dmpl";
     public const string Dlpa = "dlpa";
+    public const string CentroCustoRelatorio = "gerencial.centrocusto";
+    public const string OrcadoRealizado = "gerencial.orcadorealizado";
+    public const string Orcamento = "gerencial.orcamento";
+    public const string RelacaoCustos = "gerencial.custos";
+    public const string ReceitaCentro = "gerencial.receitacentro";
     public const string Termos = "termos";
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";

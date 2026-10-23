@@ -27,6 +27,11 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public ExportacaoLancamentosViewModel ExportacaoLancamentos => Instancia<ExportacaoLancamentosViewModel>();
     public DmplViewModel Dmpl => Instancia<DmplViewModel>();
     public DlpaViewModel Dlpa => Instancia<DlpaViewModel>();
+    public CentroCustoRelatorioViewModel CentroCustoRelatorio => Instancia<CentroCustoRelatorioViewModel>();
+    public RelacaoCustosViewModel RelacaoCustos => Instancia<RelacaoCustosViewModel>();
+    public ReceitaCentroViewModel ReceitaCentro => Instancia<ReceitaCentroViewModel>();
+    public OrcadoRealizadoViewModel OrcadoRealizado => Instancia<OrcadoRealizadoViewModel>();
+    public OrcamentoViewModel Orcamento => Instancia<OrcamentoViewModel>();
     public TermosViewModel Termos => Instancia<TermosViewModel>();
     public BensViewModel Bens => Instancia<BensViewModel>();
     public GruposDepreciacaoViewModel GruposDepreciacao => Instancia<GruposDepreciacaoViewModel>();

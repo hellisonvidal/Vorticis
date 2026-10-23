@@ -43,6 +43,7 @@ public sealed class VorticisApp : IAsyncDisposable
         Importacao = new ServicoImportacao(new RepositorioImportacao(ds), Lancamentos, autorizador);
         Consultas = new ConsultasContabeis(ds);
         Relatorios = new ServicoRelatorios(Consultas, autorizador);
+        Gerenciais = new ServicoGerenciais(Consultas, new RepositorioOrcamento(ds), autorizador);
         DiferencasSaldos = new ServicoDiferencasSaldos(Relatorios, repoContabil, autorizador);
         RepositorioEmpresas = new RepositorioEmpresa(ds);
         Empresas = new ServicoEmpresa(RepositorioEmpresas, new PlanoModeloEmbutido(), consultaCnpj, consultaIe);
@@ -84,6 +85,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoCertificados Certificados { get; }
     public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }
+    public ServicoGerenciais Gerenciais { get; }
     public ServicoDiferencasSaldos DiferencasSaldos { get; }
     public ServicoEmpresa Empresas { get; }
     public ServicoEncerramento Encerramento { get; }

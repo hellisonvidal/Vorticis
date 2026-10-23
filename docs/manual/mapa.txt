@@ -56,6 +56,11 @@ balancete=03-contabil.md#balancete-de-verificacao
 demonstracoes=03-contabil.md#balanco-patrimonial-e-dre
 dmpl=03-contabil.md#dmpl
 dlpa=03-contabil.md#dlpa
+gerencial.centrocusto=03-contabil.md#contabilizacao-por-centro-de-custo
+gerencial.orcamento=03-contabil.md#orcamento
+gerencial.orcadorealizado=03-contabil.md#orcado-x-realizado
+gerencial.custos=03-contabil.md#relacao-de-custos
+gerencial.receitacentro=03-contabil.md#receita-por-centro-de-custo
 ecd=04-auditoria.md#ecd-sped-contabil
 ecf=04-auditoria.md#ecf-escrituracao-contabil-fiscal
 
