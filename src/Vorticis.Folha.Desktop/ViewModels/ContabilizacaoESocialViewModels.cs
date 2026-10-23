@@ -150,7 +150,11 @@ public sealed record EventoEsocialLinha(EventoEsocial E)
     public string Tipo => E.Tipo;
     public string Referencia => E.Referencia;
     public string Id => E.IdEvento;
-    public string Status => E.Status == "EXPORTADO" ? $"Exportado {E.ExportadoEm?.ToLocalTime():dd/MM/yyyy HH:mm}" : "Gerado";
+    public string Status => E.Status switch
+    {
+        "EXPORTADO" => $"Exportado {E.ExportadoEm?.ToLocalTime():dd/MM/yyyy HH:mm}", "ASSINADO" => "Assinado", "ENVIADO" => "Enviado", "PROCESSADO" => "Processado",
+        "ERRO" => "Erro/rejeitado", _ => "Gerado",
+    };
     public string Gerado => E.GeradoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
 }
 
@@ -215,7 +219,7 @@ public partial class ESocialViewModel(IContexto contexto) : ModuloViewModel(cont
             var r = await app.Folha().ESocial.ExportarAsync(empresa, Comp, ids, string.IsNullOrWhiteSpace(Pasta) ? PastaPadrao() : Pasta, usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             await CarregarAsync();
-            Mensagem = $"{r.Valor.Count} arquivo(s) XML gravado(s) em {Path.GetDirectoryName(r.Valor[0])}. Valide com os XSDs oficiais e assine antes de transmitir.";
+            Mensagem = $"{r.Valor.Count} arquivo(s) XML gravado(s) em {Path.GetDirectoryName(r.Valor[0])}. Para assinar e transmitir pelo sistema, use Obrigações › eSocial › Transmissão.";
         }, Permissao.FolhaESocial);
     }
 

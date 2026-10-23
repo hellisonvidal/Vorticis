@@ -21,6 +21,28 @@ public static class CertificadosPadrao
         return await AbrirAsync(contexto, c);
     }
 
+    /// <summary>
+    /// Certificado padrão do papel para assinar/transmitir o eSocial da empresa ativa (quem tem a função de eSocial na empresa pode usar,
+    /// não só o administrador). Papel Responsável = certificado da própria empresa (e-CNPJ) ou do responsável.
+    /// </summary>
+    public static async Task<Resultado<X509Certificate2>> AbrirParaEsocialAsync(IContexto contexto, PapelAssinatura papel)
+    {
+        if (contexto.App is not { } app || contexto.Sessao is not { } sessao || contexto.EmpresaId is not { } empresa)
+            return Resultado<X509Certificate2>.Falha("Sessão encerrada ou empresa não selecionada.");
+        var r = await app.Certificados.ObterPadraoParaAssinaturaAsync(sessao, papel, empresa);
+        if (!r.Sucesso) return Resultado<X509Certificate2>.Falha(r.Erros);
+        if (r.Valor is not { } c)
+            return Resultado<X509Certificate2>.Falha($"Não há certificado padrão ({papel switch { PapelAssinatura.Contador => "do contador", PapelAssinatura.Procurador => "do procurador", _ => "da empresa/responsável" }}) válido. Defina em Configurações › Certificados digitais.");
+        if (c.Tipo == "A1")
+        {
+            var senha = SenhasCertificados.Obter(c.Id)
+                        ?? await contexto.SolicitarSenhaAsync("Senha do certificado", $"Informe a senha do certificado \"{c.Descricao}\".");
+            if (senha is null) return Resultado<X509Certificate2>.Falha("Operação cancelada: senha do certificado não informada.");
+            return await app.Certificados.AbrirA1ParaAssinaturaAsync(sessao, empresa, c.Id, senha);
+        }
+        return await AbrirAsync(contexto, c);
+    }
+
     public static async Task<Resultado<X509Certificate2>> AbrirAsync(IContexto contexto, CertificadoDigital c)
     {
         if (contexto.App is not { } app || contexto.Sessao is not { } sessao) return Resultado<X509Certificate2>.Falha("Sessão encerrada. Entre novamente.");

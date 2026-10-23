@@ -30,6 +30,7 @@ public static class FolhaTelas
     public const string Provisoes = "folha.provisoes";
     public const string Contabilizacao = "folha.contabilizacao";
     public const string ESocial = "folha.esocial";
+    public const string Transmissao = "folha.esocial.transmissao";
     public const string Resumo = "folha.resumo";
     public const string Encargos = "folha.encargos";
 }

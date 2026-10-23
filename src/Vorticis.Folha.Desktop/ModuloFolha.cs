@@ -40,7 +40,9 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
             ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao)),
         ItemMenu.Submenu("_Obrigações",
-            ItemMenu.Tela("eSocial", FolhaTelas.ESocial),
+            ItemMenu.Submenu("eSocial",
+                ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
+                ItemMenu.Tela("Transmissão", FolhaTelas.Transmissao)),
             ItemMenu.EmBreve("FGTS (GFD)"),
             ItemMenu.EmBreve("DCTFWeb e INSS"),
             ItemMenu.EmBreve("RAIS e DIRF")),
@@ -108,6 +110,10 @@ public sealed class ModuloFolha : IModuloDesktop
                     aoLimpar: v => { v.Eventos.Clear(); v.Xml = ""; },
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.ESocial, "Obrigações › eSocial", m => Pode(m, Permissao.FolhaESocial), v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.Transmissao), m => new TransmissaoEsocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.Transmissao, "Obrigações › eSocial › Transmissão", m => Pode(m, Permissao.FolhaESocial), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Resumo), m => new ResumoFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.Resumo, "Relatórios › Resumo da folha", m => Pode(m, Permissao.FolhaRelatorios));
