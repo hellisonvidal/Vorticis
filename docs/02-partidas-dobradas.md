@@ -15,7 +15,7 @@ A integridade é garantida em **duas camadas**:
 | R4 | Só contas **analíticas**, ativas, da mesma empresa, existentes na data | ECD I050/I250 | Trigger |
 | R5 | Centro de custo / participante quando a conta exigir | Política da empresa / ECD I250 | Trigger |
 | R6 | Data dentro do exercício e em **período aberto** | Fechamento mensal | Trigger |
-| R7 | Lançamento efetivado é **imutável**; correção só por estorno | ITG 2000 itens 31–36 (retificação por estorno, transferência ou complementação) | Triggers |
+| R7 | Lançamento efetivado é **imutável**; correção só por estorno (empresa com `usa_estorno`). Sem estorno, a migração 049 libera exclusão/alteração em transação declarada (`vorticis.mantendo_lancamentos`), com período aberto, exercício não encerrado e sem ECD, e registra `EXCLUI`/`ALTERA` na auditoria | ITG 2000 itens 31–36 (retificação por estorno, transferência ou complementação) | Triggers |
 | R8 | Numeração sequencial, sem lacunas, atribuída só na efetivação | Livro Diário — ordem cronológica, sem intervalos/rasuras (CC art. 1.183) | App (sequência com lock) |
 | R9 | Encerramento de resultado (`IND_LCTO = 'E'`) só na data final do exercício | ECD I200 | Trigger |
 | R10 | Histórico obrigatório em toda partida | ECD I250.HIST | `NOT NULL` |

@@ -24,11 +24,11 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                                           cod_municipio_ibge, data_inicio_ativ, cep, logradouro, numero, complemento, bairro,
                                           municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual,
                                           nire, plano_modelo, mascara_plano, inicio_escrituracao, usa_centro_custo, grande_porte,
-                                          conta_apuracao, conta_lucros, conta_prejuizos, mascara_centro_custo, exige_documento, data_bloqueio,
+                                          conta_apuracao, conta_lucros, conta_prejuizos, mascara_centro_custo, exige_documento, data_bloqueio, usa_estorno,
                                           modulo_contabil, modulo_fiscal, modulo_folha)
                 VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
                         @municipio, @email, @tel, @sit, @fonte, @consultado, @ie,
-                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej, @mcc, @exdoc, @bloq, @mc, @mf, @mp) RETURNING id
+                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej, @mcc, @exdoc, @bloq, @estorno, @mc, @mf, @mp) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
@@ -45,6 +45,7 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .ComTexto("capur", e.Contabil?.ContaApuracao).ComTexto("cluc", e.Contabil?.ContaLucros).ComTexto("cprej", e.Contabil?.ContaPrejuizos)
                 .ComTexto("mcc", e.Contabil?.MascaraCentroCusto).Com("exdoc", e.Contabil?.ExigeDocumento ?? false)
                 .Com("bloq", NpgsqlTypes.NpgsqlDbType.Date, e.Contabil?.DataBloqueio)
+                .Com("estorno", e.Contabil?.UsaEstorno ?? true)
                 .Com("mc", e.Modulos.HasFlag(ModulosEmpresa.Contabil)).Com("mf", e.Modulos.HasFlag(ModulosEmpresa.Fiscal))
                 .Com("mp", e.Modulos.HasFlag(ModulosEmpresa.Folha)))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;

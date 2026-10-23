@@ -133,6 +133,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private bool _converterCentros;
     /// <summary>Exige o nº do documento em todas as partidas dos lançamentos (ver ValidadorLancamento).</summary>
     [ObservableProperty] private bool _exigeDocumento;
+    [ObservableProperty] private bool _usaEstorno = true;
     /// <summary>Lançamentos até esta data (inclusive) são recusados; vazio = sem bloqueio.</summary>
     [ObservableProperty] private DateTime? _dataBloqueio;
 
@@ -167,7 +168,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         ModeloSelecionado?.Id, Mascara, InicioEscrituracao is { } d ? DateOnly.FromDateTime(d) : null, UsaCentroCusto, GrandePorte,
         ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa,
         UsaCentroCusto ? MascaraCentroCusto : _configuracao.MascaraCentroCusto, ExigeDocumento,
-        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null);
+        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null, UsaEstorno);
 
     private void MostrarConfiguracao(ConfiguracaoContabil c)
     {
@@ -179,6 +180,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (ApuracaoIrpj, RegimeCaixa) = (OpcaoApuracaoIrpj.Todas.FirstOrDefault(o => o.Valor == c.ApuracaoIrpj), c.RegimeCaixa);
         (MascaraCentroCusto, ConverterCentros, ExigeDocumento) = (c.MascaraCentroCusto ?? "", false, c.ExigeDocumento);
         DataBloqueio = c.DataBloqueio?.ToDateTime(TimeOnly.MinValue);
+        UsaEstorno = c.UsaEstorno;
     }
 
     public string TituloFormulario => Modo switch

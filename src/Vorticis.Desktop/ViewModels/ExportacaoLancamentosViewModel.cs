@@ -47,7 +47,7 @@ public partial class ExportacaoLancamentosViewModel(IContexto contexto) : Relato
     ];
 
     private static string Situacao(LinhaDiario l) => l.Status == StatusLancamento.Estornado ? "Estornado"
-        : l.Historico.StartsWith("Estorno", StringComparison.OrdinalIgnoreCase) ? "Estorno" : "Efetivado";
+        : l.Historico.StartsWith("Estorno", StringComparison.OrdinalIgnoreCase) ? "Estorno" : "";
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>

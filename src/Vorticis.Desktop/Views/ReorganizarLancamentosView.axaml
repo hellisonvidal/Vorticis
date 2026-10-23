@@ -11,7 +11,7 @@
       <Button Content="Reorganizar numeração" Command="{Binding ReorganizarCommand}" Classes="accent" IsEnabled="{Binding PodeReorganizar}" />
     </StackPanel>
     <TextBlock TextWrapping="Wrap" Foreground="Gray" MaxWidth="640" HorizontalAlignment="Left"
-               Text="Renumera em sequência (1, 2, 3...) os lançamentos efetivados do exercício, em ordem de data e número atual, preenchendo lacunas. Bloqueado com exercício encerrado, período fechado com lançamentos ou ECD já gerada para o ano. Pede a senha de administrador e registra a operação na auditoria." />
+               Text="Renumera em sequência (1, 2, 3...) os lançamentos do exercício, em ordem de data e número atual, preenchendo lacunas. Bloqueado com exercício encerrado, período fechado com lançamentos ou ECD já gerada para o ano. Pede a senha de administrador e registra a operação na auditoria." />
     <c:MensagensView />
   </StackPanel>
 </UserControl>

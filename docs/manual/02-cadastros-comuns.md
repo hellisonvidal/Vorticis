@@ -30,6 +30,7 @@ Estes cadastros existem em todos os módulos e têm o mesmo código em todos ele
 | Início da escrituração | Data a partir da qual a empresa é escriturada no sistema. |
 | Exigir nº do documento | Cada partida do lançamento precisa do número do documento (saldos iniciais, encerramento e estornos ficam isentos). |
 | Bloquear lançamentos até | Recusa lançamentos com data até a data informada. |
+| Usar estorno de lançamentos | Ligado (padrão): lançamentos gravados são corrigidos por estorno. Desligado: não há estorno; **Editar** altera o próprio lançamento e **Excluir** o remove (sempre com registro na Auditoria). Veja o tópico Lançamentos. |
 | Plano com participantes | Clientes e fornecedores ficam dentro das contas contábeis (veja [Participantes](#clientes-e-fornecedores-participantes)). |
 | Grande porte, apuração do IRPJ, regime de caixa | Informações usadas na ECD e nas apurações. |
 | Contas do encerramento | Apuração do resultado, lucros e prejuízos acumulados, usadas como padrão em *Encerramento do exercício*. |

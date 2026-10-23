@@ -16,7 +16,7 @@
         <Button Name="BotaoNovo" Content="Novo (Ctrl+N)" Command="{Binding NovoLancamentoCommand}" HotKey="Ctrl+N" Classes="accent" />
         <Button Name="BotaoEditar" Content="Editar" Command="{Binding EditarSelecionadoCommand}" ToolTip.Tip="Abre o lançamento selecionado no pop-up para alteração" />
         <Button Name="BotaoConsultar" Content="Consultar" Command="{Binding ConsultarSelecionadoCommand}" ToolTip.Tip="Abre o lançamento selecionado somente para leitura" />
-        <Button Name="BotaoExcluir" Content="Excluir" Command="{Binding ExcluirSelecionadoCommand}" ToolTip.Tip="Só rascunho se exclui; efetivado é estornado" />
+        <Button Name="BotaoExcluir" Content="Excluir" Command="{Binding ExcluirSelecionadoCommand}" IsVisible="{Binding PodeExcluir}" ToolTip.Tip="Exclui o lançamento selecionado, após confirmação" />
         <Button Name="BotaoEstornarGrade" Content="Estornar" Command="{Binding EstornarCommand}" IsVisible="{Binding PodeEstornar}" />
         <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" Margin="8,0,0,0"
                    ToolTip.Tip="Duplo clique ou Enter num lançamento para abri-lo" />

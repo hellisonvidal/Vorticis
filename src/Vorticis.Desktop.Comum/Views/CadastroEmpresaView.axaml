@@ -240,13 +240,15 @@
                        Text="O regime tributário é definido na aba Dados cadastrais (na inclusão). A forma de apuração do IRPJ vale para o Lucro Real e o regime de caixa para o Presumido e o Simples Nacional." />
 
             <TextBlock Classes="secao" Text="Regras dos lançamentos" />
-            <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+            <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
               <CheckBox Grid.Column="1" Content="Exigir o nº do documento em todos os lançamentos" IsChecked="{Binding ExigeDocumento}"
                         ToolTip.Tip="Cada partida precisa informar o documento/arquivo de suporte (ECD I250.NUM_ARQ). Saldos iniciais, encerramento e estornos ficam isentos." />
               <TextBlock Grid.Row="1" Classes="rotulo" Text="Bloquear lançamentos até" />
               <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding DataBloqueio}" Width="180" HorizontalAlignment="Left"
                                   ToolTip.Tip="Lançamentos com data igual ou anterior são recusados (escrituração já conferida/entregue). Apague a data para liberar." />
-              <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+              <CheckBox Grid.Row="2" Grid.Column="1" Content="Usar estorno de lançamentos" IsChecked="{Binding UsaEstorno}"
+                        ToolTip.Tip="Ligado: lançamentos gravados são corrigidos por estorno (o histórico fica na lista). Desligado: não há estorno; Editar altera o próprio lançamento e Excluir o remove, sempre com registro na trilha de auditoria." />
+              <TextBlock Grid.Row="3" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                          Text="O histórico já é sempre obrigatório. Saldos iniciais e o lançamento de encerramento do exercício não são afetados pelo bloqueio." />
             </Grid>
 

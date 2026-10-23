@@ -8,7 +8,7 @@ using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
 
-/// <summary>Lançamentos › Contábeis › Reorganizar lançamentos: renumera os efetivados do exercício sem lacunas (confirmação + senha de administrador).</summary>
+/// <summary>Lançamentos › Contábeis › Reorganizar lançamentos: renumera os lançamentos do exercício sem lacunas (confirmação + senha de administrador).</summary>
 public partial class ReorganizarLancamentosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     [ObservableProperty] private decimal? _ano = DateTime.Today.Year;
@@ -46,7 +46,7 @@ public partial class ReorganizarSaldosViewModel(IContexto contexto) : ModuloView
         var ano = (int)(Ano ?? DateTime.Today.Year);
         Alteracoes.Clear();
         if (!await Contexto.ConfirmarAsync("Reorganizar saldos",
-                $"Os saldos mensais de {ano} serão recalculados a partir das partidas efetivadas. As contas corrigidas serão listadas com os valores antes e depois.",
+                $"Os saldos mensais de {ano} serão recalculados a partir das partidas dos lançamentos. As contas corrigidas serão listadas com os valores antes e depois.",
                 "Reorganizar", "Cancelar")) return;
         var r = await app.Reorganizacao.ReorganizarSaldosAsync(empresa, ano, usuario);
         if (r.Sucesso) foreach (var a in r.Valor) Alteracoes.Add(new AlteracaoSaldoView(a));

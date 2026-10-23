@@ -74,19 +74,36 @@ A tela mostra os **lançamentos efetuados** do período, com os botões **Novo (
 - Linhas com **uma conta só** somam um único lançamento que precisa fechar (débitos = créditos). Se faltar a contrapartida, o sistema pergunta e oferece incluir a linha.
 
 ### Editar um lançamento
-Dê **duplo clique** (ou Enter) no lançamento efetuado, ou clique em **Editar**. Ao salvar, o original é **estornado na data dele** e o corrigido é gravado, tudo numa única operação: lançamentos efetivados nunca são alterados no lugar. **Consultar** abre só para leitura.
+Dê **duplo clique** (ou Enter) no lançamento da lista, ou clique em **Editar**. O que acontece ao salvar depende da configuração **Usar estorno de lançamentos** da empresa (aba Contabilidade do cadastro da empresa):
+- **Ligada (padrão):** o original é **estornado na data dele** e o corrigido é gravado, tudo numa única operação.
+- **Desligada:** não há estorno. O próprio lançamento é alterado, **com o mesmo número**, e a alteração fica registrada na *Auditoria*.
+
+**Consultar** abre só para leitura. Só lançamentos digitados à mão podem ser editados.
+
+### Excluir um lançamento
+1. Selecione o lançamento na lista e clique em **Excluir**.
+2. O sistema pergunta: "Deseja realmente excluir o lançamento nº ... de ..., valor R$ ...?". Confirme para excluir.
+
+O lançamento e suas partidas são removidos, os saldos das contas são atualizados e a exclusão fica registrada na *Auditoria* (o registro do que foi excluído permanece). Se o lançamento faz par com um estorno, os dois são excluídos juntos. A numeração dos demais lançamentos **não muda**; para eliminar a lacuna use *Lançamentos › Utilitários › Reorganizar lançamentos*.
+
+O sistema **não exclui** (e explica o motivo na tela) quando:
+- o período do lançamento está **fechado** (reabra-o em *Fechamento de períodos*) ou o exercício está **encerrado**;
+- já existe **ECD gerada** para o ano;
+- a data está antes da data de bloqueio da empresa, ou a partida está **conciliada** (desfaça a conciliação antes);
+- o lançamento veio de outro módulo (**Fiscal**, **Folha**, **Imobilizado** ou **Encerramento do exercício**): desfaça a operação no módulo de origem, por exemplo em *Folha › Contabilização* ou *Documentos fiscais › Contabilizar notas fiscais*.
 
 ### Estornar
+Disponível quando a empresa usa estorno de lançamentos (configuração acima).
 1. Selecione o lançamento na lista.
 2. Informe a **data** do estorno e o **motivo** (obrigatório).
-3. Clique em **Estornar**. É criado um lançamento inverso.
+3. Clique em **Estornar**. É criado um lançamento inverso; o original continua na lista, marcado como estornado.
 
 ### Regras e erros comuns
 - "Período fechado": reabra a competência em *Fechamento de períodos*.
 - "Data bloqueada": a empresa tem *Bloquear lançamentos até* na aba Contabilidade.
 - Débitos diferentes de créditos: o lançamento não é salvo.
 - Conta sintética não recebe lançamento; use a analítica.
-- Só rascunhos podem ser excluídos; lançamento efetivado se estorna.
+- Para remover um lançamento já gravado use **Excluir** (veja acima); com estorno ligado, também é possível estornar.
 - Se a empresa exige o nº do documento, informe-o em todas as partidas.
 
 ## Saldos iniciais

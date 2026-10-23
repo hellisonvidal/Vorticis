@@ -14,7 +14,7 @@ public static class Estorno
         if (original.Status != StatusLancamento.Efetivado)
             erros.Add(original.Status == StatusLancamento.Estornado
                 ? $"Lançamento nº {original.Numero} já foi estornado."
-                : "Só lançamentos efetivados podem ser estornados.");
+                : "Só lançamentos gravados podem ser estornados.");
         if (original.Origem == OrigemLancamento.Estorno)
             erros.Add("Não é possível estornar um estorno; faça um novo lançamento.");
         if (original.Origem == OrigemLancamento.Encerramento)

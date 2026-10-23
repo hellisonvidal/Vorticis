@@ -66,6 +66,7 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
         if (original is null) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Lançamento não encontrado.");
         if (original.Origem != OrigemLancamento.Manual)
             return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Só lançamentos manuais podem ser alterados; os demais são corrigidos por estorno.");
+        if (!await repositorio.UsaEstornoAsync(novo.EmpresaId, ct)) return await AlterarSemEstornoAsync(original, novo, usuarioId, ct);
 
         var estorno = Estorno.Gerar(original, original.Data, $"alteração do lançamento nº {original.Numero}");
         if (!estorno.Sucesso) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(estorno.Erros);
@@ -81,6 +82,87 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
         {
             return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(ex.Message);
         }
+    }
+
+    /// <summary>A empresa corrige lançamentos por estorno (padrão) ou altera/exclui o próprio lançamento? (aba Contabilidade do cadastro da empresa).</summary>
+    public async Task<bool> UsaEstornoAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => !(await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso || await repositorio.UsaEstornoAsync(empresaId, ct);
+
+    /// <summary>Empresa sem estorno: regrava data e partidas no mesmo lançamento e número, com saldo e auditoria.</summary>
+    private async Task<Resultado<IReadOnlyList<LancamentoEfetivado>>> AlterarSemEstornoAsync(LancamentoRegistrado original, LancamentoProposto novo,
+                                                                                           long usuarioId, CancellationToken ct)
+    {
+        static Resultado<IReadOnlyList<LancamentoEfetivado>> Falha(params string[] e) => Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(e);
+        var sit = await repositorio.ObterSituacaoLancamentoAsync(novo.EmpresaId, original.Id, ct);
+        if (sit is null) return Falha("Lançamento não encontrado.");
+        var impedimento = ImpedimentoManutencao(sit, "alterado");
+        if (impedimento is not null) return Falha(impedimento);
+        var validacao = (await ValidarLoteAsync([novo], ct))[0];
+        if (!validacao.Sucesso) return Falha(validacao.Erros.ToArray());
+        if (validacao.Valor.ExercicioId != sit.ExercicioId) return Falha("A nova data precisa continuar no mesmo exercício do lançamento.");
+        try
+        {
+            await repositorio.AlterarLancamentoAsync(original.Id, validacao.Valor, usuarioId, ct);
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Ok([new LancamentoEfetivado(original.Id, sit.Numero ?? 0)]);
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Falha(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Exclui um lançamento gravado (a tela pede a confirmação). Recusa período fechado, exercício encerrado, ECD já gerada,
+    /// data bloqueada, partida conciliada e lançamentos gerados por outros módulos (esses se desfazem no módulo de origem).
+    /// Se o lançamento faz par com um estorno (ou é o estorno), os dois são excluídos juntos. Devolve os lançamentos removidos.
+    /// </summary>
+    public async Task<Resultado<IReadOnlyList<LancamentoEfetivado>>> ExcluirAsync(long empresaId, long lancamentoId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<LancamentoEfetivado>>(usuarioId, empresaId, Permissao.LancamentoEstornar, ct) is { } negado) return negado;
+        var sit = await repositorio.ObterSituacaoLancamentoAsync(empresaId, lancamentoId, ct);
+        if (sit is null) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha("Lançamento não encontrado.");
+        var impedimento = ImpedimentoManutencao(sit, "excluído");
+        if (impedimento is not null) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(impedimento);
+        try
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Ok(await repositorio.ExcluirLancamentoAsync(empresaId, lancamentoId, usuarioId, ct));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(ex.Message);
+        }
+    }
+
+    /// <summary>Mensagem clara do que impede excluir/alterar o lançamento (null = pode). <paramref name="verbo"/>: "excluído" ou "alterado".</summary>
+    internal static string? ImpedimentoManutencao(SituacaoLancamento s, string verbo)
+    {
+        var nome = $"O lançamento nº {s.Numero}";
+        if (s.Status == StatusLancamento.Rascunho) return $"{nome} é um rascunho.";
+        foreach (var o in s.Vinculados.Select(v => v.Origem).Append(s.Origem).Distinct())
+        {
+            var origem = o switch
+            {
+                OrigemLancamento.NFe or OrigemLancamento.NFSe or OrigemLancamento.CTe =>
+                    "pelo módulo Fiscal; desfaça a contabilização em Documentos fiscais › Contabilizar notas fiscais",
+                OrigemLancamento.ApuracaoTributo => "pelo módulo Fiscal; desfaça a provisão na tela de Apuração correspondente",
+                OrigemLancamento.Folha => "pelo módulo Folha; desfaça a contabilização em Folha › Contabilização",
+                OrigemLancamento.Depreciacao => "pelo módulo Imobilizado; desfaça o lançamento em Imobilizado › Cálculo e lançamento da depreciação",
+                OrigemLancamento.Encerramento => "pelo encerramento do exercício; desfaça-o em Lançamentos › Encerramento do exercício",
+                _ => null,
+            };
+            if (origem is not null) return $"{nome} foi gerado {origem}. Ele não pode ser {verbo} por aqui.";
+        }
+        if (s.Indicador == IndicadorLancamento.Encerramento)
+            return $"{nome} é de encerramento do exercício: desfaça-o em Lançamentos › Encerramento do exercício.";
+        if (s.ExercicioEncerrado) return $"O exercício {s.Ano} está encerrado: o lançamento nº {s.Numero} não pode ser {verbo}.";
+        if (s.EcdGerada) return $"Já existe ECD gerada para {s.Ano}: o lançamento nº {s.Numero} não pode ser {verbo}.";
+        if (!s.PeriodoAberto) return $"O período {s.Data:MM/yyyy} está fechado: reabra-o para que o lançamento nº {s.Numero} possa ser {verbo}.";
+        if (s.DataBloqueio is { } b && s.Data <= b && s.Origem != OrigemLancamento.SaldoInicial)
+            return $"Lançamentos até {b:dd/MM/yyyy} estão bloqueados nesta empresa: o lançamento nº {s.Numero} não pode ser {verbo}.";
+        if (s.Conciliado) return $"{nome} tem partida conciliada: desfaça a conciliação antes.";
+        if (verbo == "alterado" && (s.Status == StatusLancamento.Estornado || s.EstornoDeId is not null || s.Vinculados.Count > 0))
+            return $"{nome} faz parte de um estorno e não pode ser alterado.";
+        return null;
     }
 
     /// <summary>

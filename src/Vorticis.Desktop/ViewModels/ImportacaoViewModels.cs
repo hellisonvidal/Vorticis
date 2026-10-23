@@ -68,7 +68,7 @@ public abstract partial class ImportacaoLancamentosBase(IContexto contexto) : Mo
     {
         var validos = Previa.Count(p => p.Item.Valido);
         if (!await Contexto.ConfirmarAsync("Importar lançamentos",
-                $"Serão efetivados {validos} lançamento(s), numa única operação (se um falhar, nenhum é gravado).", "Importar", "Cancelar")) return;
+                $"Serão gravados {validos} lançamento(s), numa única operação (se um falhar, nenhum é gravado).", "Importar", "Cancelar")) return;
         var r = await app.Importacao.ImportarAsync(empresa, _lidos, Origem, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         LimparPrevia();

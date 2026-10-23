@@ -147,22 +147,7 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
             .Com("est", l.EstornoDeId).Com("u", usuarioId))
             id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
-        await using (var cmd = new NpgsqlCommand("""
-            INSERT INTO contabil.partida (lancamento_id, sequencia, conta_id, centro_custo_id, participante_id,
-                                          ind_dc, valor, historico, num_arquivo)
-            SELECT @id, t.s, t.c, t.cc, t.pa, t.d::contabil.indicador_dc, t.v, t.h, t.a
-              FROM unnest(@seq, @conta, @cc, @part, @dc, @valor, @hist, @arq) AS t(s, c, cc, pa, d, v, h, a)
-            """, con, tx)
-            .Com("id", id)
-            .Com("seq", l.Partidas.Select(p => p.Sequencia).ToArray())
-            .Com("conta", l.Partidas.Select(p => p.ContaId).ToArray())
-            .Com("cc", l.Partidas.Select(p => p.CentroCustoId).ToArray())
-            .Com("part", l.Partidas.Select(p => p.ParticipanteId).ToArray())
-            .Com("dc", l.Partidas.Select(p => p.DC.ToString()).ToArray())
-            .Com("valor", l.Partidas.Select(p => p.Valor).ToArray())
-            .Com("hist", l.Partidas.Select(p => p.Historico).ToArray())
-            .Com("arq", l.Partidas.Select(p => p.NumeroArquivo).ToArray()))
-            await cmd.ExecuteNonQueryAsync(ct);
+        await InserirPartidasAsync(con, tx, id, l, ct);
 
         await using (var cmd = new NpgsqlCommand("""
             UPDATE contabil.lancamento SET status = 'EFETIVADO', numero = @n, efetivado_em = now() WHERE id = @id
@@ -181,6 +166,167 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
 
         return new LancamentoEfetivado(id, numero);
     }
+
+    private static async Task InserirPartidasAsync(NpgsqlConnection con, NpgsqlTransaction tx, long id, LancamentoValidado l, CancellationToken ct)
+    {
+        await using (var cmd = new NpgsqlCommand("""
+            INSERT INTO contabil.partida (lancamento_id, sequencia, conta_id, centro_custo_id, participante_id,
+                                          ind_dc, valor, historico, num_arquivo)
+            SELECT @id, t.s, t.c, t.cc, t.pa, t.d::contabil.indicador_dc, t.v, t.h, t.a
+              FROM unnest(@seq, @conta, @cc, @part, @dc, @valor, @hist, @arq) AS t(s, c, cc, pa, d, v, h, a)
+            """, con, tx)
+            .Com("id", id)
+            .Com("seq", l.Partidas.Select(p => p.Sequencia).ToArray())
+            .Com("conta", l.Partidas.Select(p => p.ContaId).ToArray())
+            .Com("cc", l.Partidas.Select(p => p.CentroCustoId).ToArray())
+            .Com("part", l.Partidas.Select(p => p.ParticipanteId).ToArray())
+            .Com("dc", l.Partidas.Select(p => p.DC.ToString()).ToArray())
+            .Com("valor", l.Partidas.Select(p => p.Valor).ToArray())
+            .Com("hist", l.Partidas.Select(p => p.Historico).ToArray())
+            .Com("arq", l.Partidas.Select(p => p.NumeroArquivo).ToArray()))
+            await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<bool> UsaEstornoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT usa_estorno FROM core.empresa WHERE id = @e").Com("e", empresaId);
+        return await cmd.ExecuteScalarAsync(ct) is not bool b || b;
+    }
+
+    public async Task<SituacaoLancamento?> ObterSituacaoLancamentoAsync(long empresaId, long lancamentoId, CancellationToken ct)
+    {
+        await using var con = await ds.OpenConnectionAsync(ct);
+        return await SituacaoAsync(con, null, empresaId, lancamentoId, ct);
+    }
+
+    private static async Task<SituacaoLancamento?> SituacaoAsync(NpgsqlConnection con, NpgsqlTransaction? tx, long empresaId, long lancamentoId, CancellationToken ct)
+    {
+        long exercicioId; int ano; long? numero, estornoDe; DateOnly data; string status, origem, ind;
+        bool encerrado, periodoAberto, ecd; DateOnly? bloqueio;
+        await using (var cmd = new NpgsqlCommand("""
+            SELECT l.exercicio_id, ex.ano, l.numero, l.data_lancamento, l.status::text, l.origem::text, l.ind_lcto::text, l.estorno_de_id,
+                   ex.encerrado, COALESCE(p.status = 'ABERTO', FALSE),
+                   EXISTS (SELECT 1 FROM contabil.ecd_gerada g WHERE g.empresa_id = l.empresa_id AND g.ano = ex.ano), emp.data_bloqueio
+              FROM contabil.lancamento l
+              JOIN contabil.exercicio ex ON ex.id = l.exercicio_id
+              JOIN core.empresa emp ON emp.id = l.empresa_id
+              LEFT JOIN contabil.periodo p ON p.exercicio_id = l.exercicio_id AND p.competencia = date_trunc('month', l.data_lancamento)::date
+             WHERE l.id = @id AND l.empresa_id = @e
+            """, con, tx).Com("id", lancamentoId).Com("e", empresaId))
+        await using (var r = await cmd.ExecuteReaderAsync(ct))
+        {
+            if (!await r.ReadAsync(ct)) return null;
+            exercicioId = r.GetInt64(0); ano = r.GetInt16(1);
+            numero = r.IsDBNull(2) ? null : r.GetInt64(2); data = r.GetFieldValue<DateOnly>(3);
+            (status, origem, ind) = (r.GetString(4), r.GetString(5), r.GetString(6));
+            estornoDe = r.IsDBNull(7) ? null : r.GetInt64(7);
+            (encerrado, periodoAberto, ecd) = (r.GetBoolean(8), r.GetBoolean(9), r.GetBoolean(10));
+            bloqueio = r.IsDBNull(11) ? null : r.GetFieldValue<DateOnly>(11);
+        }
+        var vinculados = new List<VinculoLancamento>();
+        await using (var cmd = new NpgsqlCommand("""
+            SELECT id, numero, origem::text FROM contabil.lancamento
+             WHERE empresa_id = @e AND (id = (SELECT estorno_de_id FROM contabil.lancamento WHERE id = @id) OR estorno_de_id = @id)
+             ORDER BY id
+            """, con, tx).Com("id", lancamentoId).Com("e", empresaId))
+        await using (var r = await cmd.ExecuteReaderAsync(ct))
+            while (await r.ReadAsync(ct))
+                vinculados.Add(new VinculoLancamento(r.GetInt64(0), r.IsDBNull(1) ? null : r.GetInt64(1), Mapeamentos.Origem(r.GetString(2))));
+        bool conciliado;
+        await using (var cmd = new NpgsqlCommand("""
+            SELECT EXISTS (SELECT 1 FROM contabil.conciliacao_partida cp JOIN contabil.partida p ON p.id = cp.partida_id
+                            WHERE p.lancamento_id = @id OR p.lancamento_id IN (SELECT id FROM contabil.lancamento WHERE estorno_de_id = @id OR id = @est))
+            """, con, tx).Com("id", lancamentoId).Com("est", estornoDe))
+            conciliado = (bool)(await cmd.ExecuteScalarAsync(ct))!;
+        var indicador = ind switch { "E" => IndicadorLancamento.Encerramento, "X" => IndicadorLancamento.Extemporaneo, _ => IndicadorLancamento.Normal };
+        return new SituacaoLancamento(lancamentoId, empresaId, exercicioId, ano, numero, data, Mapeamentos.Status(status), Mapeamentos.Origem(origem),
+                                      indicador, estornoDe, encerrado, periodoAberto, ecd, bloqueio, conciliado, vinculados);
+    }
+
+    private static async Task DeclararManutencaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, CancellationToken ct)
+    {
+        await using var cmd = new NpgsqlCommand("SELECT set_config('vorticis.mantendo_lancamentos', @e, true)", con, tx).Com("e", empresaId.ToString());
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task AjustarSaldoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long id, int sinal, CancellationToken ct)
+    {
+        await using var cmd = new NpgsqlCommand("SELECT contabil.fn_ajusta_saldo_lancamento(@id, @s)", con, tx).Com("id", id).Com("s", sinal);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task AuditarAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long id, string operacao, string sqlJson, CancellationToken ct)
+    {
+        await using var cmd = new NpgsqlCommand(
+            $"SELECT core.fn_registrar_evento_auditoria(@e, 'contabil.lancamento', @id, @op, {sqlJson})", con, tx)
+            .Com("e", empresaId).Com("id", id).Com("op", operacao);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public Task<IReadOnlyList<LancamentoEfetivado>> ExcluirLancamentoAsync(long empresaId, long lancamentoId, long? usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            await DeclararManutencaoAsync(con, tx, empresaId, ct);
+            var sit = await SituacaoAsync(con, tx, empresaId, lancamentoId, ct) ?? throw new ViolacaoRegraException("Lançamento não encontrado.");
+            await using (var cmd = new NpgsqlCommand("SELECT 1 FROM contabil.exercicio WHERE id = @x FOR UPDATE", con, tx).Com("x", sit.ExercicioId))
+                await cmd.ExecuteNonQueryAsync(ct);
+            // O estorno é removido antes do original (chave estrangeira estorno_de_id).
+            var ids = new List<(long Id, long? Numero)> { (sit.Id, sit.Numero) };
+            ids.AddRange(sit.Vinculados.Select(v => (v.Id, v.Numero)));
+            var ordem = new List<(long Id, long? Numero)>();
+            foreach (var x in ids)
+            {
+                await using var cmd = new NpgsqlCommand("SELECT estorno_de_id IS NOT NULL FROM contabil.lancamento WHERE id = @id", con, tx).Com("id", x.Id);
+                if ((bool)(await cmd.ExecuteScalarAsync(ct))!) ordem.Insert(0, x); else ordem.Add(x);
+            }
+            foreach (var (id, numero) in ordem)
+            {
+                await AuditarAsync(con, tx, empresaId, id, "EXCLUI",
+                    "jsonb_build_object('acao', 'excluir_lancamento', 'lancamento', contabil.fn_retrato_lancamento(@id))", ct);
+                await AjustarSaldoAsync(con, tx, id, -1, ct);
+                await using (var cmd = new NpgsqlCommand("DELETE FROM contabil.partida WHERE lancamento_id = @id", con, tx).Com("id", id))
+                    await cmd.ExecuteNonQueryAsync(ct);
+                await using (var cmd = new NpgsqlCommand("DELETE FROM contabil.lancamento WHERE id = @id", con, tx).Com("id", id))
+                    await cmd.ExecuteNonQueryAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return (IReadOnlyList<LancamentoEfetivado>)ordem.Select(x => new LancamentoEfetivado(x.Id, x.Numero ?? 0)).ToList();
+        });
+
+    public Task AlterarLancamentoAsync(long lancamentoId, LancamentoValidado novo, long? usuarioId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var con = await ds.OpenConnectionAsync(ct);
+            await using var tx = await con.BeginTransactionAsync(ct);
+            await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+            await DeclararManutencaoAsync(con, tx, novo.EmpresaId, ct);
+            await using (var cmd = new NpgsqlCommand("SELECT 1 FROM contabil.exercicio WHERE id = @x FOR UPDATE", con, tx).Com("x", novo.ExercicioId))
+                await cmd.ExecuteNonQueryAsync(ct);
+            string antes;
+            await using (var cmd = new NpgsqlCommand("SELECT contabil.fn_retrato_lancamento(@id)::text", con, tx).Com("id", lancamentoId))
+                antes = (string)(await cmd.ExecuteScalarAsync(ct) ?? throw new ViolacaoRegraException("Lançamento não encontrado."));
+            await AjustarSaldoAsync(con, tx, lancamentoId, -1, ct);
+            await using (var cmd = new NpgsqlCommand("DELETE FROM contabil.partida WHERE lancamento_id = @id", con, tx).Com("id", lancamentoId))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await using (var cmd = new NpgsqlCommand("""
+                UPDATE contabil.lancamento SET data_lancamento = @d, ind_lcto = @ind::contabil.ind_lcto, data_lcto_ext = @dext
+                 WHERE id = @id AND empresa_id = @e
+                """, con, tx)
+                .Com("d", novo.Data).Com("ind", novo.Indicador.Sql()).Com("dext", novo.DataExtemporanea).Com("id", lancamentoId).Com("e", novo.EmpresaId))
+                if (await cmd.ExecuteNonQueryAsync(ct) != 1) throw new ViolacaoRegraException("Lançamento não encontrado.");
+            await InserirPartidasAsync(con, tx, lancamentoId, novo, ct);
+            await AjustarSaldoAsync(con, tx, lancamentoId, 1, ct);
+            await using (var cmd = new NpgsqlCommand("""
+                SELECT core.fn_registrar_evento_auditoria(@e, 'contabil.lancamento', @id, 'ALTERA',
+                       jsonb_build_object('acao', 'alterar_lancamento', 'antes', @antes::jsonb, 'depois', contabil.fn_retrato_lancamento(@id)))
+                """, con, tx).Com("e", novo.EmpresaId).Com("id", lancamentoId).Com("antes", antes))
+                await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);   // partidas dobradas (diferido) conferem aqui
+            return 0;
+        });
 
     public async Task<IReadOnlyList<LancamentoRegistrado>> ListarLancamentosAtivosAsync(long empresaId, long exercicioId, OrigemLancamento origem,
                                                                                        CancellationToken ct)

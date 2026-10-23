@@ -151,7 +151,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
         await using var cmd = ds.CreateCommand("""
             SELECT e.plano_modelo, e.mascara_plano, e.inicio_escrituracao, e.usa_centro_custo, e.grande_porte,
                    e.conta_apuracao, e.conta_lucros, e.conta_prejuizos, r.apuracao_irpj, COALESCE(r.regime_caixa, FALSE),
-                   e.mascara_centro_custo, e.exige_documento, e.data_bloqueio
+                   e.mascara_centro_custo, e.exige_documento, e.data_bloqueio, e.usa_estorno
               FROM core.empresa e
               LEFT JOIN LATERAL (SELECT apuracao_irpj, regime_caixa FROM core.empresa_regime
                                   WHERE empresa_id = e.id ORDER BY vigencia_inicio DESC LIMIT 1) r ON TRUE
@@ -162,7 +162,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
         string? T(int i) => rd.IsDBNull(i) ? null : rd.GetString(i);
         return new Application.Cadastros.ConfiguracaoContabil(T(0), T(1), rd.IsDBNull(2) ? null : rd.GetFieldValue<DateOnly>(2), rd.GetBoolean(3),
                                                               rd.GetBoolean(4), T(5), T(6), T(7), T(8), rd.GetBoolean(9), T(10), rd.GetBoolean(11),
-                                                              rd.IsDBNull(12) ? null : rd.GetFieldValue<DateOnly>(12));
+                                                              rd.IsDBNull(12) ? null : rd.GetFieldValue<DateOnly>(12), rd.GetBoolean(13));
     }
 
     public Task SalvarConfiguracaoAsync(long empresaId, Application.Cadastros.ConfiguracaoContabil c, CancellationToken ct)
@@ -176,7 +176,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                 UPDATE core.empresa
                    SET mascara_plano = @mascara, inicio_escrituracao = @inicio, usa_centro_custo = @cc, grande_porte = @porte,
                        conta_apuracao = @ap, conta_lucros = @lu, conta_prejuizos = @pr,
-                       exige_documento = @exdoc, data_bloqueio = @bloq
+                       exige_documento = @exdoc, data_bloqueio = @bloq, usa_estorno = @estorno
                  WHERE id = @e;
                 UPDATE core.empresa_regime SET apuracao_irpj = @irpj, regime_caixa = @caixa
                  WHERE id = (SELECT id FROM core.empresa_regime WHERE empresa_id = @e ORDER BY vigencia_inicio DESC LIMIT 1);
@@ -184,7 +184,7 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
                 .Com("e", empresaId).ComTexto("mascara", c.MascaraPlano).Com("inicio", NpgsqlTypes.NpgsqlDbType.Date, c.InicioEscrituracao)
                 .Com("cc", c.UsaCentroCusto).Com("porte", c.GrandePorte).ComTexto("ap", c.ContaApuracao).ComTexto("lu", c.ContaLucros)
                 .ComTexto("pr", c.ContaPrejuizos).ComTexto("irpj", c.ApuracaoIrpj).Com("caixa", c.RegimeCaixa)
-                .Com("exdoc", c.ExigeDocumento).Com("bloq", NpgsqlTypes.NpgsqlDbType.Date, c.DataBloqueio))
+                .Com("exdoc", c.ExigeDocumento).Com("bloq", NpgsqlTypes.NpgsqlDbType.Date, c.DataBloqueio).Com("estorno", c.UsaEstorno))
                 await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;

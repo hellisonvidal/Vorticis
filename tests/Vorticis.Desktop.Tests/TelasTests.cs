@@ -381,7 +381,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(l.Erros);
             Assert.Equal("Lançamento nº 1 salvo.", l.Mensagem);
             var efetuado = Assert.Single(l.Efetuados);                         // lista dos lançamentos efetuados
-            Assert.Equal((1L, "NF 123", "Efetivado"), (efetuado.Numero, efetuado.Documento, efetuado.Situacao));
+            Assert.Equal((1L, "NF 123", ""), (efetuado.Numero, efetuado.Documento, efetuado.Situacao));
             Assert.Equal("10/03/2026", l.Linhas[0].Data);                     // a data segue para o próximo
             (l.Linhas[0].Conta, l.Linhas[0].ContaCredito, l.Linhas[0].Valor, l.Linhas[0].Historico) = ("4.2.02.001", "1.1.01.002", "2.300,00", "Aluguel de março");
             Foto(janela, "03_lancamento");
@@ -764,10 +764,15 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.NotNull(dig.FindControl<ItemsControl>("LinhasLancamento"));
             la.CancelarDigitacao();
             Assert.False(la.DigitacaoAberta);
-            // Botões da grade: Excluir (efetivado só se estorna), Consultar (somente leitura + Estornar) e Editar (pop-up para alteração)
+            // Botões da grade: Excluir (com confirmação), Consultar (somente leitura + Estornar) e Editar (pop-up para alteração)
             la.EfetuadoSelecionado = la.Efetuados.Single(e => e.Numero == 8);
-            la.ExcluirSelecionadoCommand.Execute(null);
-            Assert.Contains("use Estornar", Assert.Single(la.Erros));
+            var excluindoLanc = la.ExcluirSelecionadoCommand.ExecuteAsync(null);     // sempre pede confirmação; cancelar não exclui
+            var confirmaExclusao = (await AguardarConfirmacao(vm)).Mensagem;
+            Assert.Contains("Deseja realmente excluir o lançamento nº 8 de ", confirmaExclusao);
+            Assert.Contains(", valor R$ ", confirmaExclusao);
+            vm.ResponderConfirmacaoCommand.Execute(false);
+            await excluindoLanc;
+            Assert.Contains(la.Efetuados, e => e.Numero == 8);
             await la.ConsultarSelecionadoCommand.ExecuteAsync(null);
             Assert.True(la.DigitacaoAberta && la.SomenteLeitura);
             Dispatcher.UIThread.RunJobs();

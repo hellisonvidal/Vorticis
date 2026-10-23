@@ -30,9 +30,34 @@ public interface IRepositorioContabil
 
     /// <summary>Número do lançamento efetivado (não estornado) com a origem dada no exercício, se houver.</summary>
     Task<long?> ObterNumeroLancamentoAtivoAsync(long empresaId, long exercicioId, OrigemLancamento origem, CancellationToken ct);
+
+    /// <summary>A empresa corrige lançamentos por estorno (true, padrão) ou altera/exclui o próprio lançamento (false).</summary>
+    Task<bool> UsaEstornoAsync(long empresaId, CancellationToken ct);
+
+    /// <summary>Dados para decidir se um lançamento gravado pode ser excluído ou alterado (null = não existe na empresa).</summary>
+    Task<SituacaoLancamento?> ObterSituacaoLancamentoAsync(long empresaId, long lancamentoId, CancellationToken ct);
+
+    /// <summary>
+    /// Exclui o lançamento (e o par estorno/original, se houver): remove as partidas, desfaz o saldo mensal e registra o que foi
+    /// excluído na trilha de auditoria, numa só transação. Devolve os lançamentos removidos.
+    /// </summary>
+    Task<IReadOnlyList<LancamentoEfetivado>> ExcluirLancamentoAsync(long empresaId, long lancamentoId, long? usuarioId, CancellationToken ct);
+
+    /// <summary>Regrava data e partidas no mesmo lançamento e no mesmo número (sem estorno), com saldo e auditoria.</summary>
+    Task AlterarLancamentoAsync(long lancamentoId, LancamentoValidado novo, long? usuarioId, CancellationToken ct);
+
     Task<IReadOnlyList<Inconsistencia>> VerificarInvariantesAsync(long empresaId, DateOnly competencia, CancellationToken ct);
     Task AlterarStatusPeriodoAsync(long empresaId, DateOnly competencia, bool fechar, long? usuarioId, CancellationToken ct);
 }
+
+/// <summary>Um lançamento ligado ao consultado por estorno (o original ou o estorno dele).</summary>
+public sealed record VinculoLancamento(long Id, long? Numero, OrigemLancamento Origem);
+
+/// <summary>Situação de um lançamento gravado para as regras de exclusão e alteração.</summary>
+public sealed record SituacaoLancamento(
+    long Id, long EmpresaId, long ExercicioId, int Ano, long? Numero, DateOnly Data, StatusLancamento Status, OrigemLancamento Origem,
+    IndicadorLancamento Indicador, long? EstornoDeId, bool ExercicioEncerrado, bool PeriodoAberto, bool EcdGerada, DateOnly? DataBloqueio,
+    bool Conciliado, IReadOnlyList<VinculoLancamento> Vinculados);
 
 public sealed record CompetenciaStatus(DateOnly Competencia, bool Aberto);
 
