@@ -13,6 +13,8 @@
     <DataTemplate DataType="vm:RazaoViewModel"><v:RazaoView /></DataTemplate>
     <DataTemplate DataType="vm:DiarioViewModel"><v:DiarioView /></DataTemplate>
     <DataTemplate DataType="vm:PeriodosViewModel"><v:PeriodosView /></DataTemplate>
+    <DataTemplate DataType="vm:ReorganizarLancamentosViewModel"><v:ReorganizarLancamentosView /></DataTemplate>
+    <DataTemplate DataType="vm:ReorganizarSaldosViewModel"><v:ReorganizarSaldosView /></DataTemplate>
     <DataTemplate DataType="vm:PlanoContasViewModel"><v:PlanoContasView /></DataTemplate>
     <DataTemplate DataType="vm:CentrosCustoViewModel"><v:CentrosCustoView /></DataTemplate>
     <DataTemplate DataType="vm:SaldosIniciaisViewModel"><v:SaldosIniciaisView /></DataTemplate>

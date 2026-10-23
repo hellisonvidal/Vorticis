@@ -718,6 +718,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.False(la.SalvarPeloEnter());                                // linha vazia: Enter segue para a próxima linha
             await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 6));
             Assert.True(la.EmEdicao);
+            Assert.True(la.DigitacaoAberta);                               // a digitação abre no pop-up
             var editada = Assert.Single(la.Linhas);
             Assert.Equal(("1.1.01.004", "1.1.02.001", "50,00", "25/03/2026"), (editada.Conta, editada.ContaCredito, editada.Valor, editada.Data));
             Assert.Equal("Clientes", editada.NomeContaCredito);
@@ -727,12 +728,18 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(la.Erros);
             Assert.Equal("Lançamento nº 6 alterado: estornado pelo nº 7 e regravado como nº 8.", la.Mensagem);
             Assert.False(la.EmEdicao);
+            Assert.False(la.DigitacaoAberta);                              // salvou: o pop-up fecha e a grade se atualiza
             Assert.Equal("Estornado", la.Efetuados.Single(e => e.Numero == 6).Situacao);
             await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 6));    // estornado: não abre
             Assert.Contains("estornado", Assert.Single(la.Erros));
             await la.EditarAsync(la.Efetuados.Single(e => e.Numero == 2));    // importado: corrige-se por estorno
             Assert.Contains("não foi digitado manualmente", Assert.Single(la.Erros));
             Assert.False(la.EmEdicao);
+            Assert.False(la.DigitacaoAberta);
+            la.NovoLancamentoCommand.Execute(null);                        // "Novo lançamento" abre o pop-up em branco
+            Assert.True(la.DigitacaoAberta);
+            la.CancelarDigitacao();
+            Assert.False(la.DigitacaoAberta);
             vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
 
             // Plano de contas com participantes: opção na empresa, cliente alocado na conta Clientes, participante no lançamento

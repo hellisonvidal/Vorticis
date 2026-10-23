@@ -135,7 +135,8 @@ public class CertificadosPadraoDesktopTests(BancoDeTeste db) : IClassFixture<Ban
         Assert.Contains(lanc[0].Filhos!, i => i.Chave == Telas.Lancamento);
         Assert.Contains(lanc[0].Filhos!, i => i.Chave == Telas.SaldosIniciais);
         Assert.Contains(lanc[1].Filhos!, i => i.Chave == Telas.Conciliacao);
-        Assert.Equal([Telas.Periodos, Telas.Encerramento], lanc[2].Filhos!.Select(i => i.Chave));
+        Assert.Equal([Telas.Periodos, Telas.Encerramento, Telas.ReorganizarSaldos], lanc[2].Filhos!.Where(i => !i.EhSeparador).Select(i => i.Chave));
+        Assert.Contains(lanc[0].Filhos!, i => i.Chave == Telas.ReorganizarLancamentos);
     }
 
     [Fact]

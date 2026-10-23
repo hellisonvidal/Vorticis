@@ -9,6 +9,8 @@ public static class Telas
     public const string Lancamento = "lancamento";
     public const string Estorno = "estorno";
     public const string Periodos = "periodos";
+    public const string ReorganizarLancamentos = "reorganizarlancamentos";
+    public const string ReorganizarSaldos = "reorganizarsaldos";
     public const string Balancete = "balancete";
     public const string Razao = "razao";
     public const string Diario = "diario";

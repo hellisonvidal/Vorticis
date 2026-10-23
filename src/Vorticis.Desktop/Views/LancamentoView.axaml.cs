@@ -1,159 +1,76 @@
-using System.Collections.Specialized;
-using Avalonia;
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
+using Vorticis.Desktop.Comum.Views;
 using Vorticis.Desktop.ViewModels;
-using Vorticis.Domain.Contabil;
 
 namespace Vorticis.Desktop.Views;
 
 /// <summary>
-/// Digitação pelo teclado: Enter avança de campo (pula a conta quando o reduzido já a identificou), seta para baixo
-/// desce de linha e, na última, cria outra; seta para cima sobe e cancela a linha recém-criada ainda vazia;
-/// Ctrl+Delete exclui a linha; Enter no último campo salva quando o lançamento fecha. Valor formatado ao sair do campo;
-/// nome da conta resolvido ao sair do campo da conta. Duplo clique num lançamento efetuado o abre para alteração.
+/// Tela de lançamentos: grade dos lançamentos efetuados em tela cheia. A digitação (novo lançamento, ou duplo clique/Enter
+/// num existente) abre numa janela pop-up modal com <see cref="LancamentoDigitacaoView"/>; ao salvar, o pop-up fecha, a
+/// grade se atualiza e o foco volta para ela.
 /// </summary>
 public partial class LancamentoView : UserControl
 {
-    private static readonly string[] CamposLinha =
-        ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
-
-    /// <summary>Sugestões de conta: reduzido, início do código ou parte do nome.</summary>
-    public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =
-        (texto, item) => item is ContaSelecionavel c && LancamentoViewModel.Combina(c, texto);
-
     private LancamentoViewModel? _vm;
+    private Window? _popup;
 
     public LancamentoView()
     {
         InitializeComponent();
-        AddHandler(KeyDownEvent, AoTeclar, RoutingStrategies.Tunnel);
-        AddHandler(GotFocusEvent, AoEntrarNoCampo, RoutingStrategies.Bubble);
-        AddHandler(LostFocusEvent, AoSairDoCampo, RoutingStrategies.Bubble);
         DataContextChanged += (_, _) =>
         {
-            if (_vm is not null) { _vm.Linhas.CollectionChanged -= AoMudarLinhas; _vm.FocoSolicitado -= Focar; }
+            if (_vm is not null) _vm.PropertyChanged -= AoMudarVm;
             _vm = DataContext as LancamentoViewModel;
-            if (_vm is not null) { _vm.Linhas.CollectionChanged += AoMudarLinhas; _vm.FocoSolicitado += Focar; }
+            if (_vm is not null) { _vm.PropertyChanged += AoMudarVm; if (_vm.DigitacaoAberta) AbrirPopup(); }
         };
     }
 
-    /// <summary>Ordem dos campos no Enter; o participante só existe no plano com participantes.</summary>
-    private string[] Campos => _vm?.UsaParticipantes == true ? CamposLinha : CamposLinha[..^1];
-    private ItemsControl Linhas => LinhasLancamento;
-
-    /// <summary>Linhas recomeçadas (abrir, Limpar, Salvar): foco no primeiro campo.</summary>
-    private void AoMudarLinhas(object? sender, NotifyCollectionChangedEventArgs e)
+    private void AoMudarVm(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Reset) Focar(0, Campos[0]);
+        if (e.PropertyName != nameof(LancamentoViewModel.DigitacaoAberta) || _vm is null) return;
+        if (_vm.DigitacaoAberta) AbrirPopup(); else FecharPopup();
     }
 
-    /// <summary>Campo (TextBox ou AutoCompleteBox com Tag) que contém o elemento.</summary>
-    private static (Control? Campo, string? Tag) CampoDe(object? origem)
+    private void AbrirPopup()
     {
-        for (var v = origem as Visual; v is not null; v = v.GetVisualParent())
-            if (v is Control { Tag: string tag } c && (c is TextBox or AutoCompleteBox)) return (c, tag);
-        return (null, null);
-    }
-
-    private void AoTeclar(object? sender, KeyEventArgs e)
-    {
-        if (_vm is null) return;
-        var (campo, tag) = CampoDe(e.Source);
-        if (campo?.DataContext is not LinhaLancamentoViewModel linha || tag is null) return;
-        var i = _vm.Linhas.IndexOf(linha);
-        if (i < 0) return;
-        var listaAberta = campo is AutoCompleteBox { IsDropDownOpen: true };
-
-        switch (e.Key)
+        if (_popup is not null || _vm is null || TopLevel.GetTopLevel(this) is not Window dono) return;
+        var popup = new Window
         {
-            case Key.Enter when e.KeyModifiers == KeyModifiers.None && !listaAberta:
-                e.Handled = true;
-                Avancar(linha, i, tag);
-                break;
-            case Key.Down when e.KeyModifiers == KeyModifiers.None && !listaAberta:
-                e.Handled = true;
-                if (i == _vm.Linhas.Count - 1)
-                {
-                    _vm.AdicionarLinha();
-                    Focar(i + 1, Campos[0]);
-                }
-                else Focar(i + 1, tag);
-                break;
-            case Key.Up when e.KeyModifiers == KeyModifiers.None && !listaAberta:
-                e.Handled = true;
-                if (i == 0) break;
-                _vm.CancelarLinhaNova(linha);
-                Focar(i - 1, tag);
-                break;
-            case Key.Delete when e.KeyModifiers == KeyModifiers.Control:
-                e.Handled = true;
-                _vm.ExcluirLinhaCommand.Execute(null);
-                Focar(Math.Min(i, _vm.Linhas.Count - 1), tag);
-                break;
-        }
-    }
-
-    /// <summary>Enter: próximo campo; no último, salva (se o lançamento fecha) ou vai à próxima linha (criada se preciso).</summary>
-    private void Avancar(LinhaLancamentoViewModel linha, int i, string tag)
-    {
-        var campos = Campos;
-        var p = Array.IndexOf(campos, tag) + 1;
-        // Reduzido já identificou a conta: pula o campo da conta.
-        if (tag == "reduzido" && linha.NomeConta.Length > 0 && linha.Reduzido.Trim().Length > 0) p++;
-        if (tag == "reduzidocredito" && linha.NomeContaCredito.Length > 0 && linha.ReduzidoCredito.Trim().Length > 0) p++;
-        if (p < campos.Length)
+            Title = _vm.EmEdicao ? "Lançamento contábil — alteração" : "Lançamento contábil",
+            Width = 1120, Height = 440, MinWidth = 900,
+            CanResize = true,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new LancamentoDigitacaoView { DataContext = _vm },
+            Icon = dono.Icon,
+        };
+        var principal = dono.Owner as MainWindow;
+        popup.Closed += (_, _) =>
         {
-            Focar(i, campos[p]);
-            return;
-        }
-        if (_vm!.SalvarPeloEnter()) return;
-        if (i == _vm.Linhas.Count - 1) _vm.AdicionarLinha();
-        Focar(i + 1, campos[0]);
+            _popup = null;
+            if (principal is not null && ReferenceEquals(principal.ModalAberta, popup)) principal.ModalAberta = null;
+            if (_vm?.DigitacaoAberta == true) _vm.CancelarDigitacao();   // fechou pelo X/Alt+F4: descarta
+            Dispatcher.UIThread.Post(() => ListaEfetuados.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+        };
+        _popup = popup;
+        if (principal is not null) principal.ModalAberta = popup;
+        _ = popup.ShowDialog(dono);
     }
 
-    /// <summary>Foca o campo depois que a linha existir na tela.</summary>
-    private void Focar(int linha, string tag) => Dispatcher.UIThread.Post(() =>
-    {
-        if (Linhas.ContainerFromIndex(linha) is not { } container) return;
-        var alvo = container.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag && (c is TextBox || c is AutoCompleteBox));
-        if (alvo is AutoCompleteBox acb) alvo = acb.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? alvo;
-        alvo?.Focus(NavigationMethod.Tab);
-        if (alvo is TextBox tb && tag != "historico") tb.SelectAll();
-    }, DispatcherPriority.Loaded);
+    private void FecharPopup() => _popup?.Close();
 
     private async void AoDuploCliqueEfetuado(object? sender, TappedEventArgs e)
     {
         if (_vm is not null && (e.Source as Control)?.DataContext is LancamentoEfetuadoLinha efetuado) await _vm.EditarAsync(efetuado);
     }
 
-    private void AoEntrarNoCampo(object? sender, GotFocusEventArgs e)
+    private async void AoTeclarLista(object? sender, KeyEventArgs e)
     {
-        var (campo, tag) = CampoDe(e.Source);
-        if (_vm is null || campo?.DataContext is not LinhaLancamentoViewModel linha) return;
-        _vm.LinhaSelecionada = linha;
-        // Histórico: seleciona a primeira variável {X} ainda sem preencher (digita-se por cima); senão, cursor no fim para completar.
-        if (tag == "historico" && campo is TextBox tb)
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (VariaveisHistorico.PrimeiroPendente(tb.Text) is var (inicio, tamanho)) { tb.SelectionStart = inicio; tb.SelectionEnd = inicio + tamanho; }
-                else { tb.ClearSelection(); tb.CaretIndex = tb.Text?.Length ?? 0; }
-            });
-    }
-
-    private void AoSairDoCampo(object? sender, RoutedEventArgs e)
-    {
-        var (campo, tag) = CampoDe(e.Source);
-        if (_vm is null || campo?.DataContext is not LinhaLancamentoViewModel linha) return;
-        switch (tag)
-        {
-            case "valor": linha.FormatarValor(); break;
-            case "conta" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: false); break;
-            case "contacredito" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: true); break;
-            case "data" when linha.Data.Trim().Length > 0: linha.Data = _vm.DataCompleta(linha.Data); break;
-        }
+        if (e.Key != Key.Enter || _vm?.EfetuadoSelecionado is not { } efetuado) return;
+        e.Handled = true;
+        await _vm.EditarAsync(efetuado);
     }
 }

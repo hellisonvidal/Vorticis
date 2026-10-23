@@ -8,6 +8,8 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public RazaoViewModel Razao => Instancia<RazaoViewModel>();
     public DiarioViewModel Diario => Instancia<DiarioViewModel>();
     public PeriodosViewModel Periodos => Instancia<PeriodosViewModel>();
+    public ReorganizarLancamentosViewModel ReorganizarLancamentos => Instancia<ReorganizarLancamentosViewModel>();
+    public ReorganizarSaldosViewModel ReorganizarSaldos => Instancia<ReorganizarSaldosViewModel>();
     public PlanoContasViewModel PlanoContas => Instancia<PlanoContasViewModel>();
     public CentrosCustoViewModel CentrosCusto => Instancia<CentrosCustoViewModel>();
     public SaldosIniciaisViewModel SaldosIniciais => Instancia<SaldosIniciaisViewModel>();

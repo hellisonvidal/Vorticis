@@ -85,6 +85,9 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Janela modal em primeiro plano (pop-up de uma função); os diálogos de confirmação abrem sobre ela.</summary>
+    public Window? ModalAberta { get; set; }
+
     public Window? JanelaAtiva => _vm?.FuncaoAtiva is { } f && _janelas.TryGetValue(f, out var w) ? w : null;
 
     public Window? JanelaDa(object viewModel) => _janelas.FirstOrDefault(kv => ReferenceEquals(kv.Key.ViewModel, viewModel)).Value;
@@ -235,7 +238,7 @@ public partial class MainWindow : Window
             if (!_fechandoPorCodigo.Remove(dialogo) && ReferenceEquals(_vm?.Confirmacao, pedido)) _vm.ResponderConfirmacaoCommand.Execute(false);
         };
         _dialogo = dialogo;
-        _ = dialogo.ShowDialog(JanelaAtiva ?? this);
+        _ = dialogo.ShowDialog(ModalAberta ?? JanelaAtiva ?? this);
     }
 
     /// <summary>Ao entrar ou sair do sistema, volta a maximizar (caso o usuário tenha restaurado o tamanho).</summary>

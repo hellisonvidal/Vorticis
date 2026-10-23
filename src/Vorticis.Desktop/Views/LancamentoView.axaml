@@ -5,133 +5,17 @@
              xmlns:v="using:Vorticis.Desktop.Views"
              x:Class="Vorticis.Desktop.Views.LancamentoView"
              x:DataType="vm:LancamentoViewModel">
-  <UserControl.Styles>
-    <Style Selector="Border.linha">
-      <Setter Property="Padding" Value="0,1" />
-      <Setter Property="BorderBrush" Value="#E3E8EF" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
-    </Style>
-    <Style Selector="Border.linha:focus-within">
-      <Setter Property="Background" Value="#E8F0FB" />
-    </Style>
-    <!-- Linhas com aparência de planilha: campos sem moldura, separados por uma linha fina -->
-    <Style Selector="Border.linha TextBox">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="Padding" Value="6,3" />
-      <Setter Property="BorderThickness" Value="0,0,1,0" />
-      <Setter Property="BorderBrush" Value="#E3E8EF" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="CornerRadius" Value="0" />
-    </Style>
-    <Style Selector="Border.linha TextBox:focus /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="BorderBrush" Value="#3A6EA5" />
-      <Setter Property="BorderThickness" Value="1" />
-    </Style>
-    <Style Selector="Border.linha TextBox:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#F5F8FC" />
-    </Style>
-    <Style Selector="Border.linha AutoCompleteBox">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="TextBox.valor">
-      <Setter Property="TextAlignment" Value="Right" />
-    </Style>
-    <Style Selector="TextBlock.cab">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="#5A6478" />
-      <Setter Property="Margin" Value="6,0,0,2" />
-    </Style>
-  </UserControl.Styles>
-
-  <Grid ColumnDefinitions="*,240" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="8,4,8,6">
-    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,2">
-      <TextBlock Classes="titulo" Text="Lançamento contábil" VerticalAlignment="Center" />
-      <Border Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="3" Padding="8,1" IsVisible="{Binding EmEdicao}">
-        <TextBlock Text="{Binding TextoEdicao}" FontSize="11" Foreground="#5A4500" VerticalAlignment="Center" />
-      </Border>
+  <Grid RowDefinitions="Auto,Auto,*" Margin="8,4,8,6">
+    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
+      <TextBlock Classes="titulo" Text="Lançamentos contábeis" VerticalAlignment="Center" />
     </StackPanel>
-
-    <!-- Cabeçalhos (mesmas larguras das linhas) -->
-    <Grid Grid.Row="1" ColumnDefinitions="84,46,130,46,130,92,76,40,*,58,Auto">
-      <TextBlock Classes="cab" Text="Data" />
-      <TextBlock Classes="cab" Grid.Column="1" Text="Red. D" />
-      <TextBlock Classes="cab" Grid.Column="2" Text="Conta débito" />
-      <TextBlock Classes="cab" Grid.Column="3" Text="Red. C" />
-      <TextBlock Classes="cab" Grid.Column="4" Text="Conta crédito" />
-      <TextBlock Classes="cab" Grid.Column="5" Text="Valor" HorizontalAlignment="Right" Margin="0,0,8,2" />
-      <TextBlock Classes="cab" Grid.Column="6" Text="Documento" />
-      <TextBlock Classes="cab" Grid.Column="7" Text="Hist." />
-      <TextBlock Classes="cab" Grid.Column="8" Text="Histórico" />
-      <TextBlock Classes="cab" Grid.Column="9" Text="C. custo" />
-      <TextBlock Classes="cab" Grid.Column="10" Text="Part." Width="56" IsVisible="{Binding UsaParticipantes}"
-                 ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
-    </Grid>
-
-    <!-- Uma linha com débito e crédito é um lançamento; linhas com uma conta só somam um lançamento único -->
-    <ScrollViewer Grid.Row="2" Name="Rolagem" MaxHeight="136">
-      <ItemsControl Name="LinhasLancamento" ItemsSource="{Binding Linhas}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
-            <Border Classes="linha">
-              <Grid ColumnDefinitions="84,46,130,46,130,92,76,40,*,58,Auto">
-                <TextBox Tag="data" Text="{Binding Data}" c:Mascara.Tipo="Data" />
-                <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
-                  <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
-                                   ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
-                                   FilterMode="Custom" ItemFilter="{x:Static v:LancamentoView.FiltroConta}"
-                                   ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
-                    <AutoCompleteBox.ItemTemplate>
-                      <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                  </AutoCompleteBox>
-                <TextBox Grid.Column="3" Tag="reduzidocredito" Text="{Binding ReduzidoCredito}" />
-                  <AutoCompleteBox Grid.Column="4" Tag="contacredito" Text="{Binding ContaCredito}" ToolTip.Tip="{Binding NomeContaCredito}"
-                                   ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
-                                   FilterMode="Custom" ItemFilter="{x:Static v:LancamentoView.FiltroConta}"
-                                   ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
-                    <AutoCompleteBox.ItemTemplate>
-                      <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                  </AutoCompleteBox>
-                <TextBox Grid.Column="5" Tag="valor" Classes="valor" Text="{Binding Valor}" />
-                <TextBox Grid.Column="6" Tag="documento" Text="{Binding Documento}" />
-                <TextBox Grid.Column="7" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
-                <TextBox Grid.Column="8" Tag="historico" Text="{Binding Historico}" />
-                <TextBox Grid.Column="9" Tag="centrocusto" Text="{Binding CentroCusto}" />
-                <TextBox Grid.Column="10" Tag="participante" Text="{Binding Participante}" Width="56"
-                         IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-
-    <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" Margin="0,4">
-      <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-        <TextBlock Text="{Binding TotalDebito, StringFormat='Débitos: {0}'}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding TotalCredito, StringFormat='Créditos: {0}'}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Diferenca, StringFormat='Diferença: {0}'}" FontWeight="SemiBold" VerticalAlignment="Center"
-                   Foreground="{Binding Balanceado, Converter={x:Static c:Conversores.OkOuErro}}" />
-      </StackPanel>
-      <TextBlock Grid.Column="1" Margin="16,0" FontSize="12" Foreground="#1F3A5F" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                 Text="{Binding LinhaSelecionada.ResumoContas}" />
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button Content="Limpar" Command="{Binding LimparCommand}" />
-        <Button Content="Salvar (Ctrl+Enter)" Command="{Binding SalvarCommand}" HotKey="Ctrl+Enter" Classes="accent" />
-      </StackPanel>
-    </Grid>
-
-    <c:MensagensView Grid.Row="4" />
-
+    <c:MensagensView Grid.Row="1" />
     <!-- Lançamentos efetuados (os estornados permanecem, marcados) e o estorno do selecionado -->
-    <DockPanel Grid.Row="5" Margin="0,2,0,0">
+    <DockPanel Grid.Row="2" Margin="0,2,0,0">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
-        <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center"
-                   ToolTip.Tip="Duplo clique num lançamento para alterá-lo" />
+        <Button Content="Novo lançamento (Ctrl+N)" Command="{Binding NovoLancamentoCommand}" HotKey="Ctrl+N" Classes="accent" />
+        <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" Margin="8,0,0,0"
+                   ToolTip.Tip="Duplo clique ou Enter num lançamento para abri-lo" />
         <CalendarDatePicker SelectedDate="{Binding ListaInicio}" Width="128" />
         <TextBlock Text="a" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding ListaFim}" Width="128" />
@@ -144,7 +28,7 @@
         <Button Content="Estornar" Command="{Binding EstornarCommand}" />
       </StackPanel>
       <DataGrid x:Name="ListaEfetuados" ItemsSource="{Binding Efetuados}" SelectedItem="{Binding EfetuadoSelecionado}" IsReadOnly="True"
-                AutoGenerateColumns="False" DoubleTapped="AoDuploCliqueEfetuado">
+                AutoGenerateColumns="False" DoubleTapped="AoDuploCliqueEfetuado" KeyDown="AoTeclarLista">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="58" />
           <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" />
@@ -158,17 +42,5 @@
       </DataGrid>
     </DockPanel>
 
-    <DockPanel Grid.Column="1" Grid.RowSpan="6" Margin="10,0,0,0">
-      <TextBlock DockPanel.Dock="Top" Text="Contas analíticas" FontWeight="SemiBold"
-                 ToolTip.Tip="Clique numa conta para preenchê-la na linha atual" />
-      <TextBox DockPanel.Dock="Top" Text="{Binding FiltroConta}" Watermark="Filtrar: reduzido, código ou nome" Margin="0,4" />
-      <ListBox ItemsSource="{Binding Contas}" SelectedItem="{Binding ContaSelecionada}" Focusable="False">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:ContaSelecionavel">
-            <TextBlock Text="{Binding Rotulo}" FontSize="11.5" FontFamily="Consolas, Menlo, monospace" />
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-    </DockPanel>
   </Grid>
 </UserControl>

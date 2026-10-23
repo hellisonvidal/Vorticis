@@ -49,6 +49,7 @@ public sealed class VorticisApp : IAsyncDisposable
         var repoConfiguracao = new RepositorioConfiguracao(ds);
         Licenca = new ServicoLicenca(repoConfiguracao);
         ConfiguracoesGerais = new ServicoConfiguracoesGerais(repoConfiguracao);
+        Reorganizacao = new ServicoReorganizacao(new RepositorioReorganizacao(ds), ConfiguracoesGerais, autorizador);
         Certificados = new ServicoCertificados(new RepositorioCertificados(ds), null, autorizador);
         Encerramento = new ServicoEncerramento(repoContabil, Consultas, autorizador);
         PlanoReferencial = new ServicoPlanoReferencial(new RepositorioPlanoReferencial(ds), autorizador);
@@ -79,6 +80,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoImobilizado Imobilizado { get; }
     public ServicoParticipantes Participantes { get; }
     public ServicoConfiguracoesGerais ConfiguracoesGerais { get; }
+    public ServicoReorganizacao Reorganizacao { get; }
     public ServicoCertificados Certificados { get; }
     public ServicoImportacao Importacao { get; }
     public ServicoRelatorios Relatorios { get; }

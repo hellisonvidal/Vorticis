@@ -121,6 +121,28 @@ public partial class LancamentoViewModel : ModuloViewModel
     [ObservableProperty] private bool _balanceado;
     /// <summary>Há algo digitado para salvar (o salvamento confere se fecha e, se faltar a contrapartida, pergunta).</summary>
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _temDados;
+    /// <summary>Janela pop-up de digitação aberta (a tela mostra só a grade dos lançamentos efetuados).</summary>
+    [ObservableProperty] private bool _digitacaoAberta;
+
+    /// <summary>"Novo lançamento": digitação em branco no pop-up.</summary>
+    [RelayCommand]
+    private void NovoLancamento()
+    {
+        Erros.Clear();
+        Mensagem = "";
+        if (!Contexto.Pode(Permissao.LancamentoIncluir)) { Erros.Add("Sem permissão para incluir lançamentos."); return; }
+        Limpar();
+        DigitacaoAberta = true;
+    }
+
+    /// <summary>Fecha o pop-up descartando a digitação (ou a alteração) em andamento.</summary>
+    [RelayCommand]
+    public void CancelarDigitacao()
+    {
+        Limpar();
+        DigitacaoAberta = false;
+    }
+
     /// <summary>Plano com participantes: a coluna Part. aparece e as contas dos participantes exigem o código.</summary>
     [ObservableProperty] private bool _usaParticipantes;
 
@@ -279,6 +301,7 @@ public partial class LancamentoViewModel : ModuloViewModel
             if (linha.Participante.Length > 0 && _participantes.TryGetValue(linha.Participante, out var pe)) linha.NomeParticipante = pe.Nome;
         }
         LinhaSelecionada = Linhas[0];
+        DigitacaoAberta = true;
     }, Permissao.LancamentoIncluir);
 
     /// <summary>Enter no último campo: salva quando o lançamento já fecha; senão (false) segue para a próxima linha.</summary>
@@ -464,6 +487,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         var ultimaData = preenchidas[^1].Data;
         Limpar();
         Linhas[0].Data = ultimaData;
+        DigitacaoAberta = false;                            // fecha o pop-up; a grade se atualiza e recebe o foco
         await CarregarEfetuadosAsync();
     }, Permissao.LancamentoIncluir);
 

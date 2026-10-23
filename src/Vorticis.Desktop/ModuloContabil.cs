@@ -28,11 +28,15 @@ public sealed class ModuloContabil : IModuloDesktop
             ItemMenu.Submenu("_Contábeis",
                 ItemMenu.Tela("Lançamento contábil", Telas.Lancamento, "Ctrl+L"),
                 ItemMenu.Tela("Saldos iniciais (implantação)", Telas.SaldosIniciais),
-                ItemMenu.Tela("Importar lançamentos (layout padrão)", Telas.ImportarLancamentos)),
+                ItemMenu.Tela("Importar lançamentos (layout padrão)", Telas.ImportarLancamentos),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Reorganizar lançamentos", Telas.ReorganizarLancamentos)),
             ItemMenu.Submenu("C_onciliações", ItemMenu.Tela("Conciliação automática", Telas.Conciliacao)),
             ItemMenu.Submenu("_Fechamentos",
                 ItemMenu.Tela("Fechamento de períodos", Telas.Periodos),
-                ItemMenu.Tela("Encerramento do exercício", Telas.Encerramento))),
+                ItemMenu.Tela("Encerramento do exercício", Telas.Encerramento),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Reorganizar saldos", Telas.ReorganizarSaldos))),
         ItemMenu.Submenu("I_mobilizado",
             ItemMenu.Tela("Cadastro de bens", Telas.Bens),
             ItemMenu.Tela("Regras de depreciação (grupos)", Telas.GruposDepreciacao),
@@ -99,6 +103,13 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia(nameof(MainViewModel.Diario), m => new DiarioViewModel(m),
                     atualizarPermissoes: v => { v.AtualizarPermissoes(); v.AtualizarPermissoesExportacao(); }, aoLimpar: v => v.Linhas.Clear())
             .Tela(Telas.Diario, "Relatórios › Contábeis › Livro Diário", m => m.Pode(Permissao.RelatorioDiario));
+
+        // Utilitários (renumeração justifica ficar em Contábeis, que cuida da numeração; saldos em Fechamentos, junto da conferência dos períodos).
+        c.Instancia(nameof(MainViewModel.ReorganizarLancamentos), m => new ReorganizarLancamentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ReorganizarLancamentos, "Lançamentos › Contábeis › Reorganizar lançamentos", m => m.Pode(Permissao.PeriodoFechar));
+        c.Instancia(nameof(MainViewModel.ReorganizarSaldos), m => new ReorganizarSaldosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoLimpar: v => v.Alteracoes.Clear())
+            .Tela(Telas.ReorganizarSaldos, "Lançamentos › Fechamentos › Reorganizar saldos", m => m.Pode(Permissao.PeriodoFechar));
 
         c.Instancia(nameof(MainViewModel.Periodos), m => new PeriodosViewModel(m), aoTrocarEmpresa: (v, _) => v.CarregarAsync())
             .Tela(Telas.Periodos, "Lançamentos › Fechamento de períodos",
