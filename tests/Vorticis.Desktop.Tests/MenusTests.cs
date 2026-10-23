@@ -67,6 +67,18 @@ public class MenusTests
     }
 
     [Fact]
+    public void Calendario_de_obrigacoes_fica_no_menu_Obrigacoes_de_todos_os_modulos()
+    {
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
+            var obrig = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+            Assert.Contains(Folhas(obrig.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
+        }
+    }
+
+    [Fact]
     public void Menu_da_folha_tem_telas_registradas_e_so_o_que_falta_fica_em_breve()
     {
         var vm = new Vorticis.Folha.Desktop.MainViewModel();

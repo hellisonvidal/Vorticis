@@ -160,7 +160,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.Inicio, "", null, v => { v.Atualizar(); return Task.CompletedTask; });
         c.Instancia(nameof(Obrigacoes), m => new ObrigacoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(TelasComuns.Obrigacoes, "Agenda › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
+            .Tela(TelasComuns.Obrigacoes, "Obrigações › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
 
         c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade)],
                     atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
@@ -217,11 +217,20 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores),
         };
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
+        // O calendário de obrigações fica dentro de "Obrigações": no menu do módulo, se existir; senão, o casco cria o menu.
+        var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);
+        var menusModulo = Modulo.Menus.ToList();
+        var posObrig = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Obrigações");
+        if (posObrig >= 0)
+        {
+            var o = menusModulo[posObrig];
+            menusModulo[posObrig] = o with { Filhos = [calendario, ItemMenu.Separador, .. o.Filhos ?? []] };
+        }
+        else menusModulo.Add(ItemMenu.Submenu("_Obrigações", calendario));
         return
         [
             ItemMenu.Submenu("_Cadastros", [.. cadastros]),
-            .. Modulo.Menus,
-            ItemMenu.Submenu("A_genda", ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes)),
+            .. menusModulo,
             ItemMenu.Submenu("Con_figurações",
                 ItemMenu.Tela("Configurações gerais", TelasComuns.ConfiguracoesGerais),
                 ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados),

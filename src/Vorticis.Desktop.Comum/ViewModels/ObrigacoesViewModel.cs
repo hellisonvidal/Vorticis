@@ -36,7 +36,7 @@ public sealed record LinhaObrigacao(ItemObrigacao Item)
 }
 
 /// <summary>
-/// Agenda › Calendário de obrigações da empresa ativa: lista ou visão mensal, com vencimento calculado, situação (pendente, cumprida,
+/// Obrigações › Calendário de obrigações da empresa ativa: lista ou visão mensal, com vencimento calculado, situação (pendente, cumprida,
 /// atrasada), baixa com data e observação, obrigações personalizadas e exportação (PDF/Excel/CSV) pela barra comum.
 /// </summary>
 public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioViewModel(main)
