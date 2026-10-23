@@ -135,6 +135,35 @@ public partial class LancamentoViewModel : ModuloViewModel
         DigitacaoAberta = true;
     }
 
+    /// <summary>Botão Editar da grade: abre o selecionado no pop-up para alteração.</summary>
+    [RelayCommand]
+    private async Task EditarSelecionadoAsync()
+    {
+        Erros.Clear(); Mensagem = "";
+        if (EfetuadoSelecionado is not { } e) { Erros.Add("Selecione um lançamento na grade para editar."); return; }
+        await EditarAsync(e);
+    }
+
+    /// <summary>Abre o selecionado só para consulta (efetivado não se altera: estorna-se).</summary>
+    [RelayCommand]
+    private async Task ConsultarSelecionadoAsync()
+    {
+        Erros.Clear(); Mensagem = "";
+        if (EfetuadoSelecionado is not { } e) { Erros.Add("Selecione um lançamento na grade para consultar."); return; }
+        await EditarAsync(e, somenteLeitura: true);
+    }
+
+    /// <summary>Botão Excluir: só rascunho se exclui; lançamento efetivado é corrigido por estorno.</summary>
+    [RelayCommand]
+    private void ExcluirSelecionado()
+    {
+        Erros.Clear(); Mensagem = "";
+        if (EfetuadoSelecionado is not { } e) { Erros.Add("Selecione um lançamento na grade para excluir."); return; }
+        Erros.Add(e.Estornado
+            ? $"O lançamento nº {e.Numero} já foi estornado e não pode ser excluído."
+            : $"O lançamento nº {e.Numero} está efetivado e não pode ser excluído: use Estornar (gera o lançamento inverso e preserva o histórico).");
+    }
+
     /// <summary>Fecha o pop-up descartando a digitação (ou a alteração) em andamento.</summary>
     [RelayCommand]
     public void CancelarDigitacao()
@@ -156,10 +185,18 @@ public partial class LancamentoViewModel : ModuloViewModel
     public bool PodeEstornar => Contexto.Pode(Permissao.LancamentoEstornar);
 
     // Alteração de um lançamento efetuado (duplo clique na lista)
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EmEdicao), nameof(TextoEdicao))] private LancamentoEfetuadoLinha? _editando;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EmEdicao), nameof(TextoEdicao), nameof(TituloDigitacao))] private LancamentoEfetuadoLinha? _editando;
     public bool EmEdicao => Editando is not null;
+    /// <summary>Lançamento aberto só para consulta (pop-up sem digitação; só se pode estornar ou fechar).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeDigitar), nameof(TituloDigitacao), nameof(TextoEdicao))] [NotifyCanExecuteChangedFor(nameof(SalvarCommand))] private bool _somenteLeitura;
+    public bool PodeDigitar => !SomenteLeitura;
+    /// <summary>Cabeçalho da digitação: lançamento novo (rascunho ainda não efetivado) ou o número do existente.</summary>
+    public string TituloDigitacao => Editando is { } e
+        ? (SomenteLeitura ? $"Lançamento nº {e.Numero} — consulta" : $"Lançamento nº {e.Numero} — alteração")
+        : "Novo lançamento (rascunho — ainda não efetivado)";
     public string TextoEdicao => Editando is { } e
-        ? $"Alterando o lançamento nº {e.Numero} de {e.Data}. Ao salvar, o original é estornado e o corrigido é gravado. Limpar cancela a alteração."
+        ? SomenteLeitura ? $"Lançamento nº {e.Numero} de {e.Data} aberto somente para consulta. Efetivado não se altera nem exclui: use Estornar."
+        : $"Alterando o lançamento nº {e.Numero} de {e.Data}. Ao salvar, o original é estornado e o corrigido é gravado. Limpar cancela a alteração."
         : "";
 
     /// <summary>Pede o foco num campo (tag) de uma linha: a tela atende depois que a linha existir.</summary>
@@ -250,6 +287,7 @@ public partial class LancamentoViewModel : ModuloViewModel
         var r = await app.Lancamentos.EstornarAsync(empresa, sel.Id, Data(DataEstorno, sel.DataLancamento), MotivoEstorno.Trim(), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         MotivoEstorno = "";
+        if (DigitacaoAberta) CancelarDigitacao();
         await CarregarEfetuadosAsync();
         Mensagem = $"Lançamento nº {sel.Numero} estornado pelo lançamento nº {r.Valor.Numero}.";
     }, Permissao.LancamentoEstornar);
@@ -258,14 +296,14 @@ public partial class LancamentoViewModel : ModuloViewModel
     /// Duplo clique num lançamento efetuado: carrega as partidas na digitação para alterar. Débito e crédito únicos
     /// cabem numa linha; os demais abrem com uma conta por linha (partidas simples).
     /// </summary>
-    public Task EditarAsync(LancamentoEfetuadoLinha efetuado) => ExecutarAsync(async (app, empresa, usuario) =>
+    public Task EditarAsync(LancamentoEfetuadoLinha efetuado, bool somenteLeitura = false) => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (efetuado.Estornado) { Erros.Add($"O lançamento nº {efetuado.Numero} está estornado e não pode ser alterado."); return; }
-        if (!Contexto.Pode(Permissao.LancamentoEstornar)) { Erros.Add("Alterar um lançamento exige permissão para estornar."); return; }
+        if (efetuado.Estornado && !somenteLeitura) { Erros.Add($"O lançamento nº {efetuado.Numero} está estornado e não pode ser alterado."); return; }
+        if (!somenteLeitura && !Contexto.Pode(Permissao.LancamentoEstornar)) { Erros.Add("Alterar um lançamento exige permissão para estornar."); return; }
         var r = await app.Lancamentos.ObterAsync(empresa, efetuado.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var l = r.Valor;
-        if (l.Origem != OrigemLancamento.Manual)
+        if (l.Origem != OrigemLancamento.Manual && !somenteLeitura)
         {
             Erros.Add($"O lançamento nº {efetuado.Numero} não foi digitado manualmente; corrija-o por estorno.");
             return;
@@ -275,6 +313,8 @@ public partial class LancamentoViewModel : ModuloViewModel
                        && ps[0].Historico == ps[1].Historico && ps[0].CodigoCentroCusto == ps[1].CodigoCentroCusto
                        && ps[0].NumeroArquivo == ps[1].NumeroArquivo;
         Editando = efetuado;
+        SomenteLeitura = somenteLeitura;
+        EfetuadoSelecionado = efetuado;
         Data = l.Data.ToDateTime(TimeOnly.MinValue);
         Linhas.Clear();
         var data = l.Data.ToString("dd/MM/yyyy");
@@ -400,6 +440,7 @@ public partial class LancamentoViewModel : ModuloViewModel
     private void Limpar()
     {
         Editando = null;
+        SomenteLeitura = false;
         Linhas.Clear();
         Linhas.Add(new LinhaLancamentoViewModel { Data = (Data ?? DateTime.Today).ToString("dd/MM/yyyy") });
         LinhaSelecionada = Linhas[0];
@@ -422,7 +463,9 @@ public partial class LancamentoViewModel : ModuloViewModel
         LinhaSelecionada = Linhas[Math.Min(pos, Linhas.Count - 1)];
     }
 
-    [RelayCommand(CanExecute = nameof(TemDados))]
+    private bool PodeSalvar() => TemDados && !SomenteLeitura;
+
+    [RelayCommand(CanExecute = nameof(PodeSalvar))]
     private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var preenchidas = Linhas.Where(l => !l.Vazia).ToList();

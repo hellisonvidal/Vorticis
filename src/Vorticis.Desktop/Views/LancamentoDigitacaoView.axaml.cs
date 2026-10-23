@@ -25,6 +25,10 @@ public partial class LancamentoDigitacaoView : UserControl
     public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =
         (texto, item) => item is ContaSelecionavel c && LancamentoViewModel.Combina(c, texto);
 
+    /// <summary>"Cancelar (Esc)" na digitação; "Fechar (Esc)" na consulta.</summary>
+    public static Avalonia.Data.Converters.IValueConverter RotuloFechar { get; } =
+        new Avalonia.Data.Converters.FuncValueConverter<bool, string>(somenteLeitura => somenteLeitura ? "Fechar (Esc)" : "Cancelar (Esc)");
+
     private LancamentoViewModel? _vm;
 
     public LancamentoDigitacaoView()
@@ -73,6 +77,12 @@ public partial class LancamentoDigitacaoView : UserControl
             case Key.Enter when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
                 Avancar(linha, i, tag);
+                break;
+            case Key.Enter when e.KeyModifiers == KeyModifiers.Shift && !listaAberta:      // Shift+Enter volta ao campo anterior
+                e.Handled = true;
+                var anterior = Array.IndexOf(Campos, tag) - 1;
+                if (anterior >= 0) Focar(i, Campos[anterior]);
+                else if (i > 0) Focar(i - 1, Campos[^1]);
                 break;
             case Key.Down when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;

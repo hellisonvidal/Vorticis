@@ -13,7 +13,11 @@
     <!-- Lançamentos efetuados (os estornados permanecem, marcados) e o estorno do selecionado -->
     <DockPanel Grid.Row="2" Margin="0,2,0,0">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
-        <Button Content="Novo lançamento (Ctrl+N)" Command="{Binding NovoLancamentoCommand}" HotKey="Ctrl+N" Classes="accent" />
+        <Button Name="BotaoNovo" Content="Novo (Ctrl+N)" Command="{Binding NovoLancamentoCommand}" HotKey="Ctrl+N" Classes="accent" />
+        <Button Name="BotaoEditar" Content="Editar" Command="{Binding EditarSelecionadoCommand}" ToolTip.Tip="Abre o lançamento selecionado no pop-up para alteração" />
+        <Button Name="BotaoConsultar" Content="Consultar" Command="{Binding ConsultarSelecionadoCommand}" ToolTip.Tip="Abre o lançamento selecionado somente para leitura" />
+        <Button Name="BotaoExcluir" Content="Excluir" Command="{Binding ExcluirSelecionadoCommand}" ToolTip.Tip="Só rascunho se exclui; efetivado é estornado" />
+        <Button Name="BotaoEstornarGrade" Content="Estornar" Command="{Binding EstornarCommand}" IsVisible="{Binding PodeEstornar}" />
         <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" Margin="8,0,0,0"
                    ToolTip.Tip="Duplo clique ou Enter num lançamento para abri-lo" />
         <CalendarDatePicker SelectedDate="{Binding ListaInicio}" Width="128" />

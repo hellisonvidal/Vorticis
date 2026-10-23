@@ -738,8 +738,52 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.False(la.DigitacaoAberta);
             la.NovoLancamentoCommand.Execute(null);                        // "Novo lançamento" abre o pop-up em branco
             Assert.True(la.DigitacaoAberta);
+            Dispatcher.UIThread.RunJobs();
+            var pop = Assert.IsAssignableFrom<Window>(janela.ModalAberta);   // o pop-up existe de verdade e não está vazio
+            pop.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+            var dig = Assert.IsType<LancamentoDigitacaoView>(pop.Content);
+            Foto(pop, "03d_popup_novo_lancamento");
+            Control? Campo(string tag) => dig.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag);
+            // Visíveis de verdade: com tamanho e dentro da área do pop-up (a grade antiga empurrava tudo para fora da janela)
+            foreach (var tag in new[] { "data", "conta", "contacredito", "valor", "documento", "historico" })
+            {
+                var campo = Campo(tag);
+                Assert.True(campo is { IsVisible: true, Bounds.Width: > 0, Bounds.Height: > 0 }, $"campo '{tag}' não aparece no pop-up");
+                var topo = campo!.TranslatePoint(new Point(0, 0), pop)!.Value;
+                Assert.True(topo.X >= 0 && topo.Y >= 0 && topo.Y + campo.Bounds.Height <= pop.ClientSize.Height && topo.X + campo.Bounds.Width <= pop.ClientSize.Width,
+                    $"campo '{tag}' fora da área visível do pop-up ({topo})");
+            }
+            foreach (var nome in new[] { "BotaoSalvar", "BotaoCancelar", "BotaoLimpar", "Detalhes" })
+                Assert.True(dig.FindControl<Control>(nome) is { IsVisible: true, Bounds.Height: > 0 }, nome);
+            // Enter avança para o próximo campo; Shift+Enter volta
+            Campo("data")!.Focus(); Dispatcher.UIThread.RunJobs();
+            pop.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.Enter, null); Dispatcher.UIThread.RunJobs();
+            Assert.Equal("reduzido", (pop.FocusManager!.GetFocusedElement() as Control)?.Tag);
+            pop.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.Shift, Avalonia.Input.PhysicalKey.Enter, null); Dispatcher.UIThread.RunJobs();
+            Assert.Same(Campo("data"), pop.FocusManager!.GetFocusedElement());
+            Assert.NotNull(dig.FindControl<ItemsControl>("LinhasLancamento"));
             la.CancelarDigitacao();
             Assert.False(la.DigitacaoAberta);
+            // Botões da grade: Excluir (efetivado só se estorna), Consultar (somente leitura + Estornar) e Editar (pop-up para alteração)
+            la.EfetuadoSelecionado = la.Efetuados.Single(e => e.Numero == 8);
+            la.ExcluirSelecionadoCommand.Execute(null);
+            Assert.Contains("use Estornar", Assert.Single(la.Erros));
+            await la.ConsultarSelecionadoCommand.ExecuteAsync(null);
+            Assert.True(la.DigitacaoAberta && la.SomenteLeitura);
+            Dispatcher.UIThread.RunJobs();
+            var popLeitura = Assert.IsAssignableFrom<Window>(janela.ModalAberta);
+            var digLeitura = Assert.IsType<LancamentoDigitacaoView>(popLeitura.Content);
+            Assert.False(digLeitura.FindControl<Control>("BotaoSalvar")!.IsVisible);
+            Assert.True(digLeitura.FindControl<Control>("BotaoEstornar")!.IsVisible);
+            Assert.False(la.SalvarCommand.CanExecute(null));
+            la.CancelarDigitacao();
+            await la.EditarSelecionadoCommand.ExecuteAsync(null);
+            Assert.True(la.DigitacaoAberta && la.EmEdicao && !la.SomenteLeitura);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(la.SalvarCommand.CanExecute(null));
+            la.CancelarDigitacao();
+            Assert.False(la.DigitacaoAberta);
+            Assert.Null(janela.ModalAberta);
             vm.FecharFuncaoCommand.Execute(vm.JanelasAbertas.Single(j => j.Tela == Telas.Lancamento));
 
             // Plano de contas com participantes: opção na empresa, cliente alocado na conta Clientes, participante no lançamento

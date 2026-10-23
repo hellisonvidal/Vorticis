@@ -139,6 +139,7 @@ public partial class MainWindow : Window
             Background = Background,
             Icon = Icon,
         };
+        Teclado.SetEnterAvanca(w, true);                       // Enter avança de campo em todas as telas de digitação
         Posicionar(w);
         fechar.Click += (_, _) => _vm?.FecharFuncao(f);
         f.PropertyChanged += (_, e) =>
