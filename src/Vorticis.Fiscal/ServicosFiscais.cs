@@ -8,6 +8,7 @@ using Vorticis.Fiscal.Produtos;
 using Vorticis.Fiscal.Postgres;
 using Vorticis.Fiscal.Retencoes;
 using Vorticis.Fiscal.Simples;
+using Vorticis.Fiscal.Sped;
 using Vorticis.Infra;
 
 namespace Vorticis.Fiscal;
@@ -41,6 +42,7 @@ public sealed class ServicosFiscais
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
         Guias = new ServicoGuias(new RepositorioGuias(ds), repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
+        Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
 
@@ -55,6 +57,7 @@ public sealed class ServicosFiscais
     public ServicoRetencoes Retencoes { get; }
     public ServicoGuias Guias { get; }
     public ServicoProvisoes Provisoes { get; }
+    public ServicoEfd Efd { get; }
 }
 
 public static class VorticisAppFiscalExtensions
