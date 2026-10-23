@@ -82,12 +82,12 @@ SELECT pg_temp.espera_erro($q$
   INSERT INTO contabil.lancamento (empresa_id, exercicio_id, data_lancamento, origem) VALUES (1, 1, '2027-01-02', 'MANUAL');
 $q$, 'fora do exercício');
 
--- Caso 8: alterar partida de lançamento efetivado.
+-- Caso 8: alterar partida de lançamento gravado fora da tela (migração 049: só pela função de alteração).
 SELECT pg_temp.espera_erro($q$ UPDATE contabil.partida SET valor = 1 WHERE lancamento_id = 100 AND sequencia = 1 $q$,
-                           'corrija por estorno');
+                           'altere ou exclua pela tela de lançamentos');
 
--- Caso 9: excluir lançamento efetivado.
-SELECT pg_temp.espera_erro($q$ DELETE FROM contabil.lancamento WHERE id = 100 $q$, 'não pode ser excluído');
+-- Caso 9: excluir lançamento gravado fora da função Excluir.
+SELECT pg_temp.espera_erro($q$ DELETE FROM contabil.lancamento WHERE id = 100 $q$, 'pela função Excluir');
 
 -- Caso 10: alterar data de lançamento efetivado.
 SELECT pg_temp.espera_erro($q$ UPDATE contabil.lancamento SET data_lancamento = '2026-03-12' WHERE id = 100 $q$, 'é imutável');
