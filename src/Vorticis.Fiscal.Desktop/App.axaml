@@ -30,6 +30,8 @@
     <DataTemplate DataType="vm:ApuracaoPisCofinsViewModel"><v:ApuracaoPisCofinsView /></DataTemplate>
     <DataTemplate DataType="vm:RetencoesViewModel"><v:RetencoesView /></DataTemplate>
     <DataTemplate DataType="vm:GuiasViewModel"><v:GuiasView /></DataTemplate>
+    <DataTemplate DataType="vm:EfdIcmsAssistenteViewModel"><v:EfdAssistenteView /></DataTemplate>
+    <DataTemplate DataType="vm:EfdContribuicoesAssistenteViewModel"><v:EfdAssistenteView /></DataTemplate>
     <DataTemplate DataType="vm:ContasTributosViewModel"><v:ContasTributosView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>

@@ -146,7 +146,8 @@ public sealed class ServicoCertificados(IRepositorioCertificados repositorio, Ti
         if (autorizador is null) return recusa;
         if (await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.SpedEcdGerar, ct) is null) return null;
         if (await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.SpedEcfGerar, ct) is null) return null;
-        // Quem transmite o eSocial (Folha › eSocial) também usa os certificados cadastrados da empresa.
+        // Quem gera a EFD (Fiscal › Obrigações › SPED) e quem transmite o eSocial (Folha › eSocial) também usa os certificados cadastrados da empresa.
+        if (await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.FiscalSpedGerar, ct) is null) return null;
         return await autorizador.VerificarAsync(usuario.Id, empresaId, Permissao.FolhaESocial, ct) is null ? null : recusa;
     }
 

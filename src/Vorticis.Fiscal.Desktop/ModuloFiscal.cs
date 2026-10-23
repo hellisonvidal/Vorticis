@@ -51,8 +51,9 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Retenções (IRRF, CSRF, INSS, ISS)", Telas.Retencoes),
             ItemMenu.Tela("Guias de recolhimento", Telas.Guias),
             ItemMenu.Separador,
-            ItemMenu.EmBreve("SPED Fiscal — EFD ICMS/IPI"),
-            ItemMenu.EmBreve("SPED EFD-Contribuições")),
+            ItemMenu.Submenu("SPED",
+                ItemMenu.Tela("EFD ICMS/IPI (SPED Fiscal)", Telas.EfdIcms),
+                ItemMenu.Tela("EFD-Contribuições (PIS/COFINS)", Telas.EfdContribuicoes))),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Tela("Livro de Registro de Entradas", Telas.LivroEntradas),
             ItemMenu.Tela("Livro de Registro de Saídas", Telas.LivroSaidas),
@@ -111,6 +112,13 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.Retencoes, "Obrigações › Retenções", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
         c.Instancia("Guias", m => new GuiasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Guias, "Obrigações › Guias de recolhimento", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
+
+        c.Instancia("EfdIcms", m => new EfdIcmsAssistenteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.EfdIcms, "Obrigações › SPED › EFD ICMS/IPI", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
+        c.Instancia("EfdContribuicoes", m => new EfdContribuicoesAssistenteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.EfdContribuicoes, "Obrigações › SPED › EFD-Contribuições", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
 
         c.Instancia("LivroEntradas", m => new LivroEntradasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.LivroEntradas, "Relatórios › Livro de Registro de Entradas", m => m.Pode(Permissao.FiscalRelatorios));

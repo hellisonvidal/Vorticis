@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Vorticis.Application.Sped;
 using Vorticis.Domain.Sped;
+using Vorticis.Fiscal.Desktop.ViewModels;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Lucro;
 using Vorticis.Fiscal.Sped;
@@ -281,5 +282,55 @@ public class EfdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.False((await efd.SalvarConfiguracaoAsync(empresa, c with { IcmsPerfil = 'Z' }, adm, ct)).Sucesso);
         Assert.True(await db.EscalarAsync<long>("SELECT count(*) FROM core.perfil_permissao pp JOIN core.perfil p ON p.id = pp.perfil_id WHERE pp.permissao = 'FISCAL_SPED_GERAR' AND p.nome = 'Contador'") == 1);
         Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.perfil_permissao pp JOIN core.perfil p ON p.id = pp.perfil_id WHERE pp.permissao = 'FISCAL_SPED_GERAR' AND p.nome = 'Consulta'"));
+    }
+
+    [Fact]
+    public async Task Assistente_percorre_os_passos_gera_salva_e_lista_o_historico()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await EmpresaCompletaAsync(76);
+        var cnpj = await db.EscalarAsync<string>("SELECT cnpj FROM core.empresa WHERE id = @e", ("e", empresa));
+        var adm = await db.AdminAsync();
+        await db.App.Fiscal().Documentos.ImportarAsync(empresa,
+            [Arq("v.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 1, Mar, [new ItemNfe("5102", 1_000m, 180m)], chave: Chave(cnpj, 1)))], adm, ct: ct);
+
+        var vm = new EfdIcmsAssistenteViewModel(new ContextoDeTeste(db.App, adm, empresa)) { Ano = 2026, Mes = 2 };
+        await vm.CarregarAsync();
+        vm.CodigoReceita = "046-2";   // a configuração da empresa (vazia) é carregada ao abrir
+        Assert.Contains("Passo 1 de 5", vm.TituloPasso);
+        await vm.AvancarCommand.ExecuteAsync(null);
+        await vm.AvancarCommand.ExecuteAsync(null);
+        await vm.AvancarCommand.ExecuteAsync(null);
+        Assert.Empty(vm.Erros);
+        Assert.Equal(4, vm.Passo);
+        Assert.True(vm.PodeAvancarValidacao);
+        Assert.Contains(vm.Resumo, r => r.Rotulo == "ICMS a recolher" && r.Valor == "180,00");
+        await vm.AvancarCommand.ExecuteAsync(null);
+        Assert.Equal(5, vm.Passo);
+
+        var pasta = Path.Combine(Path.GetTempPath(), "efd_" + Guid.NewGuid().ToString("N"));
+        vm.Pasta = pasta;
+        await vm.GerarCommand.ExecuteAsync(null);
+        Assert.True(vm.Gerado, string.Join(";", vm.Erros));
+        vm.SalvarCommand.Execute(null);
+        try
+        {
+            Assert.True(vm.Salvo);
+            Assert.Equal(vm.Arquivo!.Conteudo, await File.ReadAllBytesAsync(vm.CaminhoSalvo, ct));
+        }
+        finally { Directory.Delete(pasta, true); }
+        await vm.CarregarGeradasCommand.ExecuteAsync(null);
+        Assert.Single(vm.Geradas);
+
+        // EFD-Contribuições sem apuração: o assistente para na validação
+        var contrib = new EfdContribuicoesAssistenteViewModel(new ContextoDeTeste(db.App, adm, empresa)) { Ano = 2026, Mes = 2 };
+        await contrib.CarregarAsync();
+        await contrib.AvancarCommand.ExecuteAsync(null);
+        await contrib.AvancarCommand.ExecuteAsync(null);
+        await contrib.AvancarCommand.ExecuteAsync(null);
+        Assert.Equal(3, contrib.Passo);
+        Assert.False(contrib.PodeAvancarValidacao);
+        Assert.Contains(contrib.Pendencias, p => p.Bloqueante && p.Mensagem.Contains("apuração"));
     }
 }

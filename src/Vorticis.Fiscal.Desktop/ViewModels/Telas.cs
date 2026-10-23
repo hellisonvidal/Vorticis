@@ -15,6 +15,8 @@ public static class Telas
     public const string ContasTributos = "contastributos";
     public const string Retencoes = "retencoes";
     public const string Guias = "guias";
+    public const string EfdIcms = "efdicmsipi";
+    public const string EfdContribuicoes = "efdcontribuicoes";
     public const string LivroEntradas = "livroentradas";
     public const string LivroSaidas = "livrosaidas";
     public const string ResumoCfop = "resumocfop";
