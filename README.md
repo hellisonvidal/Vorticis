@@ -245,6 +245,7 @@ Os testes de integração criam e apagam um banco temporário por classe de test
 
 | Documento | Conteúdo |
 |---|---|
+| [Manual do usuário](docs/manual/index.md) | Passo a passo de todas as funções (também em *Ajuda › Manual do usuário* e F1) |
 | [01 — Arquitetura](docs/01-arquitetura.md) | Stack, camadas, modelo de dados, fluxos, segurança |
 | [02 — Partidas dobradas](docs/02-partidas-dobradas.md) | Regras de validação no banco e na aplicação |
 | [07 — eSocial](docs/07-esocial.md) | Transmissão direta: requisitos, procuração, ambientes, sequência de envio e checklist |

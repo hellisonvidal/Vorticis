@@ -62,6 +62,10 @@ public static class TelasComuns
     public const string Certificados = "certificados";
     public const string Licenca = "licenca";
     public const string Sobre = "sobre";
+    /// <summary>Ajuda › Manual do usuário (abre no índice ou no último tópico).</summary>
+    public const string Manual = "manual";
+    /// <summary>F1: abre o manual no tópico da tela em uso.</summary>
+    public const string ManualContextual = "manual.f1";
     public const string Inicio = "inicio";
     /// <summary>Item de menu que encerra a sessão (trocar de usuário); não abre tela.</summary>
     public const string Sair = "sair";
@@ -75,6 +79,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 {
     private string _connectionString = "";
     private string? _telaAtual;
+    private string? _telaDaAjuda;
     private PermissoesEfetivas _permissoes = PermissoesEfetivas.Nenhuma;
     private IConsultaCnpj? _consultaCnpj;
     private IConsultaInscricaoEstadual? _consultaIe;
@@ -93,7 +98,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         modulo.RegistrarTelas(_catalogo);
         JanelasAbertas.CollectionChanged += (_, _) => OnPropertyChanged(nameof(TemJanelasAbertas));
         Menus = MontarMenus();
-        Atalhos = [.. modulo.Atalhos, new AtalhoTela("F1", TelasComuns.Sobre, "Esta tela")];
+        Atalhos = [.. modulo.Atalhos, new AtalhoTela("F1", TelasComuns.ManualContextual, "Manual do usuário (tópico desta tela)")];
         RecriarModulos();
     }
 
@@ -109,7 +114,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     /// <summary>Menu completo: Cadastros (comuns + do módulo), menus do módulo, Configurações e Ajuda.</summary>
     public IReadOnlyList<ItemMenu> Menus { get; }
 
-    /// <summary>Atalhos de teclado da janela (do módulo e F1 = Sobre).</summary>
+    /// <summary>Atalhos de teclado da janela (do módulo e F1 = manual).</summary>
     public IReadOnlyList<AtalhoTela> Atalhos { get; }
 
     // ------------------------------------------------------------------ instâncias das telas
@@ -138,6 +143,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public ProcuradoresViewModel Procuradores => Instancia<ProcuradoresViewModel>();
     public AlterarSenhaViewModel AlterarSenha => Instancia<AlterarSenhaViewModel>();
     public SobreViewModel Sobre => Instancia<SobreViewModel>();
+    public ManualViewModel Manual => Instancia<ManualViewModel>();
     public CentralUsuariosViewModel CentralUsuarios => Instancia<CentralUsuariosViewModel>();
     public LicencaViewModel Licenca => Instancia<LicencaViewModel>();
     public ClientesViewModel Clientes => Instancia<ClientesViewModel>();
@@ -201,6 +207,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.Certificados, "Configurações › Certificados digitais", m => m.Sessao?.Administrador == true, v => v.CarregarAsync());
         c.Instancia(nameof(Licenca), m => new LicencaViewModel(m))
             .Tela(TelasComuns.Licenca, "Ajuda › Licença e registro", null, v => v.CarregarAsync());
+        c.Instancia(nameof(Manual), m => new ManualViewModel(m))
+            .Tela(TelasComuns.Manual, "Ajuda › Manual do usuário", null, v => { v.Preparar(); return Task.CompletedTask; })
+            .Tela(TelasComuns.ManualContextual, "Ajuda › Manual do usuário", null, v => { v.IrParaTela(_telaDaAjuda); return Task.CompletedTask; });
         c.Instancia(nameof(Sobre), m => new SobreViewModel(m))
             .Tela(TelasComuns.Sobre, $"Ajuda › Sobre o {Modulo.Nome}", null, v => { v.Atualizar(); return Task.CompletedTask; });
     }
@@ -241,8 +250,10 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                 ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair)),
             ItemMenu.Submenu("_Ajuda",
                 ItemMenu.Tela("Tela inicial", TelasComuns.Inicio),
+                ItemMenu.Tela("Manual do usuário", TelasComuns.Manual, "F1"),
+                ItemMenu.Separador,
                 ItemMenu.Tela("Licença e registro", TelasComuns.Licenca),
-                ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre, "F1")),
+                ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre)),
         ];
     }
 
@@ -441,13 +452,16 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     public bool PodeAbrir(string? tela) => Logado && tela is not null && _catalogo.Telas.TryGetValue(tela, out var def)
         && (_implantacao
-            ? tela is TelasComuns.Usuarios or TelasComuns.Sobre
+            ? tela is TelasComuns.Usuarios or TelasComuns.Sobre or TelasComuns.Manual or TelasComuns.ManualContextual
             : !_configuracaoInicialPendente
                 ? def.Pode(this)
-                : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios);
+                : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios or TelasComuns.Manual or TelasComuns.ManualContextual);
 
     /// <summary>A chave pertence a uma tela registrada (comum ou do módulo)?</summary>
     public bool ConheceTela(string chave) => _catalogo.Telas.ContainsKey(chave);
+
+    /// <summary>Chaves de todas as telas registradas (comuns e do módulo).</summary>
+    internal IEnumerable<string> ChavesDeTelas => _catalogo.Telas.Keys;
 
     public void AbrirTela(string tela) => Abrir(tela);
 
@@ -457,6 +471,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (!PodeAbrir(tela)) return;
         var def = _catalogo.Telas[tela!];
         var vm = _instancias[def.Instancia];
+        // F1: guarda a tela em uso (a janela ativa) para o manual abrir o tópico dela; F1 dentro do próprio manual não muda o tópico
+        if (tela == TelasComuns.ManualContextual)
+            _telaDaAjuda = Conteudo is null || ReferenceEquals(Conteudo, Inicio) || ReferenceEquals(Conteudo, vm) ? null : _telaAtual;
         (Conteudo, TituloTela) = (vm, def.Titulo);
         _telaAtual = tela;
         RegistrarJanela(tela!);

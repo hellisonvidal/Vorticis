@@ -11,6 +11,10 @@
     <AvaloniaResource Include="..\..\instalador\icone\VorticisFolha.ico" Link="Assets\VorticisFolha.ico" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Manual do usuário (Ajuda › Manual do usuário): os .md e o mapa tela → tópico (F1) vão como recurso embutido -->
+    <EmbeddedResource Include="..\..\docs\manual\*.md;..\..\docs\manual\mapa.txt" LogicalName="Manual/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
