@@ -103,8 +103,14 @@ public static class LeitorXmlFiscal
             modelo, chave, (Valor(ide, "nNF") ?? "").Trim(), (Valor(ide, "serie") ?? "").Trim(), emissao,
             Data(Valor(ide, "dhSaiEnt") ?? Valor(ide, "dSaiEnt")), Valor(ide, "natOp"), situacao,
             int.TryParse(Valor(ide, "tpNF"), out var tp) ? tp : null,
-            Parte(emit, "enderEmit"), dest is null ? null : Parte(dest, "enderDest"), total, itens, xml));
+            Parte(emit, "enderEmit"), dest is null ? null : Parte(dest, "enderDest"), total, itens, xml, LerCobranca(inf, emissao)));
     }
+
+    /// <summary>Parcelas da cobrança (&lt;cobr&gt;&lt;dup&gt;: nDup, dVenc, vDup); vazio quando a nota não traz cobrança.</summary>
+    private static IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata> LerCobranca(XElement inf, DateOnly emissao) =>
+        inf.Elements().Where(e => e.Name.LocalName == "cobr").SelectMany(c => c.Elements().Where(e => e.Name.LocalName == "dup"))
+           .Select(d => new Vorticis.Fiscal.Duplicatas.ParcelaDuplicata((Valor(d, "nDup") ?? "").Trim(), Data(Valor(d, "dVenc")) ?? emissao, Num(Valor(d, "vDup"))))
+           .Where(p => p.Valor > 0).ToList();
 
     private static ParteDocumento Parte(XElement? e, string endereco)
     {

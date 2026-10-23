@@ -27,4 +27,9 @@ public static class Telas
     public const string Produtos = "produtos";
     public const string RelProdutos = "relprodutos";
     public const string RelItensNotas = "relitensnotas";
+    public const string Duplicatas = "duplicatas";
+    public const string ConciliacaoDuplicatas = "conciliacaoduplicatas";
+    public const string RelDuplicatasPagar = "relduplicatasapagar";
+    public const string RelDuplicatasReceber = "relduplicatasareceber";
+    public const string RelPosicaoDuplicatas = "relposicaoduplicatas";
 }

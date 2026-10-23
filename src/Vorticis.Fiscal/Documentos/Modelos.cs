@@ -57,7 +57,7 @@ public sealed record TotaisDocumento(
 public sealed record DocumentoLido(
     ModeloDocumento Modelo, string Chave, string Numero, string Serie, DateOnly Emissao, DateOnly? EntradaSaida, string? NaturezaOperacao,
     SituacaoDocumento Situacao, int? TipoNf, ParteDocumento Emitente, ParteDocumento? Destinatario, TotaisDocumento Totais,
-    IReadOnlyList<ItemFiscal> Itens, byte[] Xml)
+    IReadOnlyList<ItemFiscal> Itens, byte[] Xml, IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Duplicatas = null)
 {
     /// <summary>Competência fiscal do livro: data de entrada/saída, ou a emissão se não informada.</summary>
     public DateOnly DataLivro => EntradaSaida ?? Emissao;

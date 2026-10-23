@@ -6,7 +6,7 @@ namespace Vorticis.Fiscal.Desktop;
 
 /// <summary>
 /// Módulo Fiscal: digitação de notas de entrada e saída, produtos, importação de XML (NF-e, NFC-e, NFS-e nacional), consulta, contabilização automática, livros de entradas e saídas,
-/// apuração do Simples Nacional, Lucro Presumido e Lucro Real, PIS/COFINS, retenções e guias de recolhimento.
+/// duplicatas (contas a pagar e a receber), apuração do Simples Nacional, Lucro Presumido e Lucro Real, PIS/COFINS, retenções e guias de recolhimento.
 /// </summary>
 public sealed class ModuloFiscal : IModuloDesktop
 {
@@ -28,7 +28,9 @@ public sealed class ModuloFiscal : IModuloDesktop
         ItemMenu.Submenu("_Lançamentos",
             ItemMenu.Submenu("_Documentos fiscais",
                 ItemMenu.Tela("Entrada", Telas.NotaEntrada),
-                ItemMenu.Tela("Saída", Telas.NotaSaida))),
+                ItemMenu.Tela("Saída", Telas.NotaSaida)),
+            ItemMenu.Tela("Duplicatas (contas a pagar e a receber)", Telas.Duplicatas),
+            ItemMenu.Tela("Conciliação de duplicatas", Telas.ConciliacaoDuplicatas)),
         ItemMenu.Submenu("_Documentos fiscais",
             ItemMenu.Tela("Importação de XML (NF-e, NFC-e, NFS-e)", Telas.ImportacaoXml),
             ItemMenu.Tela("Consulta de documentos", Telas.Documentos),
@@ -61,6 +63,11 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Livro de Apuração do IPI", Telas.LivroApuracaoIpi)),
             ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
             ItemMenu.Separador,
+            ItemMenu.Submenu("_Duplicatas",
+                ItemMenu.Tela("Duplicatas a pagar", Telas.RelDuplicatasPagar),
+                ItemMenu.Tela("Duplicatas a receber", Telas.RelDuplicatasReceber),
+                ItemMenu.Tela("Posição por vencimento", Telas.RelPosicaoDuplicatas)),
+            ItemMenu.Separador,
             ItemMenu.Tela("Produtos cadastrados", Telas.RelProdutos),
             ItemMenu.Tela("Itens das notas fiscais", Telas.RelItensNotas)),
     ];
@@ -89,6 +96,11 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("NotaSaida", m => new NotaSaidaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.NotaSaida, "Lançamentos › Documentos fiscais › Saída", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("Duplicatas", m => new DuplicatasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.Duplicatas, "Lançamentos › Duplicatas", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
+        c.Instancia("ConciliacaoDuplicatas", m => new ConciliacaoDuplicatasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ConciliacaoDuplicatas, "Lançamentos › Conciliação de duplicatas", m => m.Pode(Permissao.FiscalDuplicatasBaixar));
         c.Instancia("Produtos", m => new ProdutosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.Produtos, "Cadastros › Produtos", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
@@ -136,5 +148,11 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.RelItensNotas, "Relatórios › Itens das notas fiscais", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ResumoCfop", m => new ResumoCfopViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ResumoCfop, "Relatórios › Resumo por CFOP", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelDuplicatasPagar", m => new RelDuplicatasPagarViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelDuplicatasPagar, "Relatórios › Duplicatas › Duplicatas a pagar", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelDuplicatasReceber", m => new RelDuplicatasReceberViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelDuplicatasReceber, "Relatórios › Duplicatas › Duplicatas a receber", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelPosicaoDuplicatas", m => new RelPosicaoDuplicatasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelPosicaoDuplicatas, "Relatórios › Duplicatas › Posição por vencimento", m => m.Pode(Permissao.FiscalRelatorios));
     }
 }

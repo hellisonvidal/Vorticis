@@ -53,12 +53,15 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     /// <summary>Várias notas na mesma transação; cada uma num savepoint, de modo que uma falha desfaz só aquela nota.</summary>
     private sealed class LoteGravacao(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long usuarioId) : ILoteGravacao
     {
+        private Duplicatas.ConfiguracaoDuplicatas? _configuracao;
+
         public async Task<GravacaoDocumento> GravarAsync(DocumentoLido d, Identificacao ident, CancellationToken ct)
         {
+            _configuracao ??= await RepositorioDuplicatas.ConfiguracaoAsync(con, tx, empresaId, ct);
             await using (var sp = new NpgsqlCommand("SAVEPOINT nota", con, tx)) await sp.ExecuteNonQueryAsync(ct);
             try
             {
-                var g = await Sql.TraduzirErrosAsync(() => GravarNaTransacaoAsync(con, tx, empresaId, d, ident, usuarioId, ct));
+                var g = await Sql.TraduzirErrosAsync(() => GravarNaTransacaoAsync(con, tx, empresaId, d, ident, usuarioId, _configuracao, ct));
                 await using var rel = new NpgsqlCommand("RELEASE SAVEPOINT nota", con, tx);
                 await rel.ExecuteNonQueryAsync(CancellationToken.None);
                 return g;
@@ -81,7 +84,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     }
 
     private static async Task<GravacaoDocumento> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, DocumentoLido d,
-                                                                       Identificacao ident, long usuarioId, CancellationToken ct)
+                                                                       Identificacao ident, long usuarioId, Duplicatas.ConfiguracaoDuplicatas configuracao, CancellationToken ct)
     {
             await using (var existe = new NpgsqlCommand("SELECT id FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c", con, tx)
                              .Com("e", empresaId).Com("c", d.Chave))
@@ -146,6 +149,18 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss)
                     .Com("prod", NpgsqlDbType.Bigint, produtoId).ComTexto("gtin", i.Gtin);
                 await item.ExecuteNonQueryAsync(ct);
+            }
+
+            // Duplicatas: as parcelas da cobrança do XML ou, sem cobrança, uma parcela à vista (conforme a configuração). NFC-e só tem duplicata se trouxer cobrança.
+            if (situacao == SituacaoDocumento.Autorizada)
+            {
+                var informadas = d.Duplicatas;
+                var parcelas = d.Modelo == ModeloDocumento.NFCe65 && informadas is not { Count: > 0 }
+                    ? []
+                    : RepositorioDuplicatas.ParcelasOuAVista(informadas, configuracao, d.Totais.Total, d.Emissao);
+                if (parcelas.Count > 0)
+                    await RepositorioDuplicatas.InserirDoDocumentoAsync(con, tx, empresaId, documentoId, participanteId, ident.Operacao == TipoOperacao.Entrada, d.Numero, d.Emissao,
+                                                                        parcelas, usuarioId, ct);
             }
             return new GravacaoDocumento(false, documentoId, criado, nomePart);
     }
@@ -393,15 +408,16 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         return res;
     }
 
-    public async Task<int> ExcluirAsync(long empresaId, IReadOnlyCollection<long> ids, CancellationToken ct)
-    {
-        await using var cmd = ds.CreateCommand("""
-            DELETE FROM fiscal.documento d
-             WHERE d.empresa_id = @e AND d.id = ANY(@ids)
-               AND NOT EXISTS (SELECT 1 FROM contabil.lancamento l WHERE l.id = d.lancamento_id AND l.status = 'EFETIVADO')
-            """).Com("e", empresaId).Com("ids", ids.ToArray());
-        return await cmd.ExecuteNonQueryAsync(ct);
-    }
+    public Task<int> ExcluirAsync(long empresaId, IReadOnlyCollection<long> ids, CancellationToken ct)
+        => Sql.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = ds.CreateCommand("""
+                DELETE FROM fiscal.documento d
+                 WHERE d.empresa_id = @e AND d.id = ANY(@ids)
+                   AND NOT EXISTS (SELECT 1 FROM contabil.lancamento l WHERE l.id = d.lancamento_id AND l.status = 'EFETIVADO')
+                """).Com("e", empresaId).Com("ids", ids.ToArray());
+            return await cmd.ExecuteNonQueryAsync(ct);   // nota com duplicata baixada: o banco recusa (mensagem em português)
+        });
 
     public async Task<byte[]?> ObterXmlAsync(long empresaId, long documentoId, CancellationToken ct)
     {

@@ -89,6 +89,11 @@ livroapuracaoipi=05-fiscal.md#livros-de-apuracao-do-icms-e-do-ipi
 resumocfop=05-fiscal.md#relatorios-fiscais
 relprodutos=05-fiscal.md#relatorios-fiscais
 relitensnotas=05-fiscal.md#relatorios-fiscais
+duplicatas=05-fiscal.md#duplicatas-contas-a-pagar-e-a-receber
+conciliacaoduplicatas=05-fiscal.md#conciliacao-de-duplicatas
+relduplicatasapagar=05-fiscal.md#relatorios-de-duplicatas
+relduplicatasareceber=05-fiscal.md#relatorios-de-duplicatas
+relposicaoduplicatas=05-fiscal.md#relatorios-de-duplicatas
 
 ; ---- Folha
 folha.funcionarios=06-folha.md#cadastro-de-funcionarios

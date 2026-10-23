@@ -126,6 +126,29 @@
         </StackPanel>
       </Expander>
 
+      <!-- Parcelas (duplicatas a pagar ou a receber da nota) -->
+      <Expander Header="Parcelas (duplicatas)" IsExpanded="False">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Sem parcelas, a nota nova gera uma duplicata à vista (Cadastros › Parâmetros). Para parcelar, informe a quantidade, o primeiro vencimento e o intervalo em dias e use Gerar parcelas."
+                     FontSize="11" Foreground="#5A6478" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº de parcelas" /><TextBox Text="{Binding ParcelasQuantidade}" Width="80" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Primeiro vencimento" /><CalendarDatePicker SelectedDate="{Binding ParcelasPrimeiroVencimento}" Width="135" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Intervalo (dias)" /><TextBox Text="{Binding ParcelasIntervalo}" Width="80" /></StackPanel>
+            <Button Classes="mini" Content="Gerar parcelas" Command="{Binding GerarParcelasCommand}" VerticalAlignment="Bottom" Height="26" />
+            <Button Classes="mini" Content="Limpar parcelas" Command="{Binding LimparParcelasCommand}" VerticalAlignment="Bottom" Height="26" />
+          </StackPanel>
+          <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Parcelas}" IsReadOnly="True" AutoGenerateColumns="False" Height="110" HorizontalAlignment="Left" Width="480">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Parcela" Binding="{ReflectionBinding Numero}" Width="100" />
+              <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding VencimentoTexto}" Width="125" />
+              <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding ValorTexto}" Width="115" />
+              <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="110" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Expander>
+
       <!-- Item: campos essenciais; o restante (tributos) fica no painel de detalhe -->
       <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="6,4" CornerRadius="4">
         <StackPanel Spacing="3" IsEnabled="{Binding PodeEditar}">

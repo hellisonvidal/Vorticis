@@ -1,5 +1,6 @@
 using Vorticis.Desktop.Comum.ViewModels;
 using Vorticis.Domain.Seguranca;
+using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Sped;
 using Vorticis.Infra;
 
@@ -48,10 +49,29 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             new("contribNatureza", "Natureza da pessoa jurídica", TipoCampoParametro.Escolha, null, NaturezasPj),
             new("contribAtividade", "Atividade (PIS/COFINS)", TipoCampoParametro.Escolha, null, AtividadesContrib),
         };
-        Observar([.. notas, .. icms, .. contrib]);
+        var duplicatas = new CampoParametro[]
+        {
+            new("dupAVista", "Gerar duplicata à vista nas notas sem cobrança", TipoCampoParametro.SimNao,
+                "Nota sem parcelas (cobrança) no XML, ou digitada sem parcelas, gera uma duplicata única. NFC-e só gera se o XML trouxer cobrança."),
+            new("dupAVistaDias", "Dias até o vencimento da duplicata à vista", TipoCampoParametro.Texto, "0 = vence na data de emissão."),
+            new("contaFornecedores", "Conta de fornecedores", TipoCampoParametro.Texto,
+                "Código da conta analítica. É a contrapartida das notas de entrada com duplicatas e a conta debitada no pagamento."),
+            new("contaClientes", "Conta de clientes", TipoCampoParametro.Texto,
+                "Código da conta analítica. É a contrapartida das notas de saída com duplicatas e a conta creditada no recebimento."),
+            new("contaJurosPagos", "Juros pagos (despesa)", TipoCampoParametro.Texto),
+            new("contaMultaPaga", "Multa paga (despesa)", TipoCampoParametro.Texto),
+            new("contaDescontoObtido", "Descontos obtidos (receita)", TipoCampoParametro.Texto),
+            new("contaJurosRecebidos", "Juros recebidos (receita)", TipoCampoParametro.Texto),
+            new("contaMultaRecebida", "Multa recebida (receita)", TipoCampoParametro.Texto),
+            new("contaDescontoConcedido", "Descontos concedidos (despesa)", TipoCampoParametro.Texto),
+            new("historicoPagamento", "Histórico do pagamento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
+            new("historicoRecebimento", "Histórico do recebimento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
+        };
+        Observar([.. notas, .. duplicatas, .. icms, .. contrib]);
         return
         [
             new("Lançamento das notas", "Opções usadas na digitação de notas de entrada e saída.", notas),
+            new("Duplicatas e baixas (contas a pagar e a receber)", "Contas contábeis e históricos usados na contabilização das notas com duplicatas e nas baixas. Exige a função de manter duplicatas.", duplicatas),
             new("EFD ICMS/IPI (SPED Fiscal)", "Escolhas que se repetem a cada mês; o assistente já abre preenchido. Exige permissão de gerar SPED.", icms),
             new("EFD-Contribuições (PIS/COFINS)", "Escolhas que se repetem a cada mês na EFD-Contribuições. Exige permissão de gerar SPED.", contrib),
             new("Contabilização e tributos", "Tabelas que têm tela própria.", [],
@@ -63,6 +83,23 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
     {
         var f = await app.Fiscal().Digitacao.ObterConfiguracaoAsync(empresa, usuario);
         if (f.Sucesso) Campo("usaCentroCusto").Marcado = f.Valor.UsaCentroCusto;
+        var d = await app.Fiscal().Duplicatas.ObterConfiguracaoAsync(empresa, usuario);
+        if (d.Sucesso)
+        {
+            var x = d.Valor;
+            Campo("dupAVista").Marcado = x.GerarAVista;
+            Campo("dupAVistaDias").Texto = x.AVistaDias.ToString();
+            Campo("contaFornecedores").Texto = x.ContaFornecedores ?? "";
+            Campo("contaClientes").Texto = x.ContaClientes ?? "";
+            Campo("contaJurosPagos").Texto = x.ContaJurosPagos ?? "";
+            Campo("contaMultaPaga").Texto = x.ContaMultaPaga ?? "";
+            Campo("contaDescontoObtido").Texto = x.ContaDescontoObtido ?? "";
+            Campo("contaJurosRecebidos").Texto = x.ContaJurosRecebidos ?? "";
+            Campo("contaMultaRecebida").Texto = x.ContaMultaRecebida ?? "";
+            Campo("contaDescontoConcedido").Texto = x.ContaDescontoConcedido ?? "";
+            Campo("historicoPagamento").Texto = x.HistoricoPagamento;
+            Campo("historicoRecebimento").Texto = x.HistoricoRecebimento;
+        }
         var e = await app.Fiscal().Efd.ConfiguracaoAsync(empresa, usuario);
         var c = e.Sucesso ? e.Valor : new ConfiguracaoEfd();
         Campo("icmsPerfil").DefinirEscolha(c.IcmsPerfil.ToString());
@@ -78,6 +115,15 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
     {
         var f = await app.Fiscal().Digitacao.GravarConfiguracaoAsync(empresa, Campo("usaCentroCusto").Marcado, usuario);
         if (!f.Sucesso) { MostrarResultado(f, ""); return; }
+        if (Contexto.Pode(Permissao.FiscalDuplicatasManter))
+        {
+            if (!int.TryParse(Campo("dupAVistaDias").Texto.Trim(), out var diasAVista)) { Erros.Add("Informe os dias até o vencimento da duplicata à vista em número (0 a 365)."); return; }
+            string? Conta(string chave) => Campo(chave).Texto;
+            var dup = await app.Fiscal().Duplicatas.GravarConfiguracaoAsync(empresa, new ConfiguracaoDuplicatas(Campo("dupAVista").Marcado, diasAVista, Conta("contaFornecedores"),
+                Conta("contaClientes"), Conta("contaJurosPagos"), Conta("contaMultaPaga"), Conta("contaDescontoObtido"), Conta("contaJurosRecebidos"), Conta("contaMultaRecebida"),
+                Conta("contaDescontoConcedido"), Campo("historicoPagamento").Texto, Campo("historicoRecebimento").Texto), usuario);
+            if (!dup.Sucesso) { MostrarResultado(dup, ""); return; }
+        }
         if (!PodeSped) return;
         if (!int.TryParse(Campo("icmsDia").Texto.Trim(), out var dia)) { Erros.Add("Informe o dia de vencimento do ICMS em número (1 a 28)."); return; }
         static string? T(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

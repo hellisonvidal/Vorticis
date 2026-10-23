@@ -13,8 +13,10 @@ namespace Vorticis.Fiscal.Documentos;
 public sealed record DocumentoDigitado(
     long Id, TipoOperacao Operacao, ModeloDocumento Modelo, string Serie, string Numero, string? Chave, DateOnly Emissao, DateOnly DataLivro,
     string? Natureza, long ParticipanteId, long? CentroCustoId, TotaisDocumento Totais, IReadOnlyList<ItemFiscal> Itens,
-    bool Contabilizado = false, string Origem = "DIGITADO", string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null)
+    bool Contabilizado = false, string Origem = "DIGITADO", string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null,
+    IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Parcelas = null)
 {
+    // Parcelas (duplicatas): null = não mexe nas duplicatas da nota; lista = parcelas da cobrança (nota nova sem parcelas gera uma à vista, conforme a configuração).
     /// <summary>Nota importada de XML: valores, chave e itens do XML original não se alteram; só a escrituração.</summary>
     public bool Importado => Origem == "XML";
 }
@@ -240,6 +242,22 @@ public sealed class ServicoDigitacaoFiscal(IRepositorioDigitacao repositorio, IR
         var calculado = CalculadoraNota.Totalizar(itens, doc.Totais);
         var conferencia = CalculadoraNota.Conferir(doc.Totais, calculado);
         if (conferencia.Count > 0) return Resultado<long>.Falha(conferencia);
+
+        if (doc.Parcelas is { Count: > 0 } parcelas)
+        {
+            var errosParcelas = new List<string>();
+            foreach (var p in parcelas)
+            {
+                if (p.Valor <= 0) errosParcelas.Add($"Parcela {p.Numero}: o valor deve ser maior que zero.");
+                if (p.Vencimento == default) errosParcelas.Add($"Parcela {p.Numero}: informe o vencimento.");
+                else if (p.Vencimento < doc.Emissao) errosParcelas.Add($"Parcela {p.Numero}: o vencimento não pode ser anterior à emissão.");
+            }
+            if (parcelas.Select(p => p.Numero.Trim()).Distinct().Count() != parcelas.Count) errosParcelas.Add("Há parcelas com o mesmo número.");
+            var soma = parcelas.Sum(p => p.Valor);
+            if (Math.Abs(soma - calculado.Total) > 0.01m)
+                errosParcelas.Add($"A soma das parcelas ({Formato.Moeda(soma)}) difere do valor da nota ({Formato.Moeda(calculado.Total)}).");
+            if (errosParcelas.Count > 0) return Resultado<long>.Falha(errosParcelas);
+        }
 
         var final = doc with
         {

@@ -172,6 +172,8 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                 await item.ExecuteNonQueryAsync(ct);
             }
 
+            await SincronizarDuplicatasAsync(con, tx, empresaId, id, d, part, entrada, usuarioId, ct);
+
             // O participante passa a constar como fornecedor (entrada) ou cliente (saída).
             await using (var flag = new NpgsqlCommand(entrada
                        ? "UPDATE core.participante SET fornecedor = TRUE WHERE id = @p AND NOT fornecedor"
@@ -180,6 +182,40 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
             await tx.CommitAsync(ct);
             return id;
         });
+
+    /// <summary>
+    /// Parcelas da nota: lista informada substitui as duplicatas (recusa se já houver baixa e a lista mudou); nota nova sem parcelas gera a duplicata à vista da
+    /// configuração; sem lista (null) numa nota existente, nada muda. Participante e número da nota são sempre atualizados nas duplicatas abertas.
+    /// </summary>
+    private static async Task SincronizarDuplicatasAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long id, DocumentoDigitado d, ParticipanteNota part,
+                                                         bool entrada, long usuarioId, CancellationToken ct)
+    {
+        var existentes = new List<(long Id, string Parcela, DateOnly Venc, decimal Valor, bool Baixada, string Situacao)>();
+        if (d.Id != 0)
+            await using (var q = new NpgsqlCommand("""
+                SELECT u.id, u.parcela, u.vencimento, u.valor, EXISTS (SELECT 1 FROM fiscal.duplicata_baixa b WHERE b.duplicata_id = u.id), u.situacao
+                  FROM fiscal.duplicata u WHERE u.documento_id = @d AND u.situacao <> 'CANCELADA' ORDER BY u.parcela
+                """, con, tx).Com("d", id))
+            await using (var r = await q.ExecuteReaderAsync(ct))
+                while (await r.ReadAsync(ct)) existentes.Add((r.GetInt64(0), r.GetString(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetBoolean(4), r.GetString(5)));
+
+        var informadas = d.Parcelas;
+        if (d.Id != 0 && informadas is null) return;
+        var config = await RepositorioDuplicatas.ConfiguracaoAsync(con, tx, empresaId, ct);
+        var novas = d.Id == 0 ? RepositorioDuplicatas.ParcelasOuAVista(informadas, config, d.Totais.Total, d.Emissao) : informadas!;
+
+        if (existentes.Any(e => e.Baixada))
+        {
+            var iguais = existentes.Count == novas.Count && existentes.Zip(novas).All(x => x.First.Parcela == x.Second.Numero.Trim() && x.First.Venc == x.Second.Vencimento && x.First.Valor == x.Second.Valor);
+            if (!iguais) throw new ViolacaoRegraException("A nota tem duplicata baixada: estorne as baixas (Lançamentos › Duplicatas) antes de alterar as parcelas.");
+            return;
+        }
+        if (existentes.Count > 0)
+            await using (var del = new NpgsqlCommand("DELETE FROM fiscal.duplicata WHERE documento_id = @d AND situacao <> 'CANCELADA'", con, tx).Com("d", id))
+                await del.ExecuteNonQueryAsync(ct);
+        if (novas.Count > 0)
+            await RepositorioDuplicatas.InserirDoDocumentoAsync(con, tx, empresaId, id, part.Id, entrada, d.Numero, d.Emissao, novas, usuarioId, ct);
+    }
 
     public async Task<DocumentoDigitado?> ObterAsync(long empresaId, long documentoId, CancellationToken ct)
     {

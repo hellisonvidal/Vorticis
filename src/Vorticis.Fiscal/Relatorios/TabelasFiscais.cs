@@ -1,6 +1,7 @@
 using Vorticis.Application.Relatorios;
 using Vorticis.Domain.Comum;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Guias;
 using Vorticis.Fiscal.Lucro;
 using Vorticis.Fiscal.Produtos;
@@ -17,6 +18,34 @@ namespace Vorticis.Fiscal.Relatorios;
 public static class TabelasFiscais
 {
     private static LinhaRelatorio L(bool destaque, params object?[] valores) => new(valores, destaque);
+
+    /// <summary>Relatório "Duplicatas a pagar" ou "Duplicatas a receber": uma linha por parcela, com o atraso na data-base.</summary>
+    public static TabelaRelatorio Duplicatas(TipoDuplicata tipo, IReadOnlyList<Duplicata> lista, DateOnly dataBase)
+    {
+        var colunas = new List<ColunaRelatorio>
+        {
+            new("Vencimento", TipoColuna.Data), new("Documento", LarguraCm: 2.2), new("Parcela", LarguraCm: 1.5), new(tipo == TipoDuplicata.Pagar ? "Fornecedor" : "Cliente"),
+            new("Emissão", TipoColuna.Data), new("Valor", TipoColuna.Valor), new("Baixado", TipoColuna.Valor), new("Saldo", TipoColuna.Valor), new("Situação", LarguraCm: 2),
+            new("Atraso (dias)", TipoColuna.Inteiro, 1.8),
+        };
+        var rows = lista.Select(d => L(false, d.Vencimento, d.NumeroDocumento, d.Parcela, d.ParticipanteNome ?? "", d.Emissao, d.Valor, d.Valor - d.Saldo, d.Saldo,
+            d.Situacao.Rotulo(), d.Vencida(dataBase) ? d.DiasAtraso(dataBase) : null)).ToList();
+        rows.Add(L(true, null, "TOTAL", "", "", null, lista.Sum(d => d.Valor), lista.Sum(d => d.Valor - d.Saldo), lista.Sum(d => d.Saldo), "", null));
+        return new TabelaRelatorio(tipo == TipoDuplicata.Pagar ? "Duplicatas a pagar" : "Duplicatas a receber", colunas, rows,
+            $"{lista.Count} duplicata(s); {lista.Count(d => d.Vencida(dataBase))} vencida(s) em {dataBase:dd/MM/yyyy}.");
+    }
+
+    /// <summary>Posição por vencimento (aging): saldo em aberto por participante em cada faixa de atraso.</summary>
+    public static TabelaRelatorio PosicaoPorVencimento(TipoDuplicata tipo, IReadOnlyList<LinhaAging> linhas, DateOnly dataBase)
+    {
+        var colunas = new List<ColunaRelatorio> { new(tipo == TipoDuplicata.Pagar ? "Fornecedor" : "Cliente") };
+        colunas.AddRange(Aging.Rotulos.Select(r => new ColunaRelatorio(r, TipoColuna.Valor)));
+        colunas.Add(new ColunaRelatorio("Total", TipoColuna.Valor));
+        var rows = linhas.Select(l => L(false, [l.Participante, .. l.Faixas.Cast<object?>(), l.Total])).ToList();
+        rows.Add(L(true, ["TOTAL", .. Enumerable.Range(0, Aging.Rotulos.Count).Select(i => (object?)linhas.Sum(l => l.Faixas[i])), linhas.Sum(l => l.Total)]));
+        return new TabelaRelatorio($"Posição por vencimento — duplicatas {tipo.Rotulo().ToLowerInvariant()}", colunas, rows,
+            $"Saldo em aberto em {dataBase:dd/MM/yyyy}. Só duplicatas abertas ou com baixa parcial.");
+    }
 
     public static TabelaRelatorio Livro(TipoOperacao operacao, IReadOnlyList<LinhaLivro> linhas)
     {

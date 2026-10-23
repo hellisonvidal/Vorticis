@@ -52,6 +52,8 @@ public enum Permissao
     FiscalRetencoesManter,
     FiscalRelatorios,
     FiscalSpedGerar,
+    FiscalDuplicatasManter,
+    FiscalDuplicatasBaixar,
 
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
@@ -117,6 +119,8 @@ public static class Permissoes
         new(Permissao.FiscalRetencoesManter, "FISCAL_RETENCOES_MANTER", "Fiscal", "Manter retenções, guias de recolhimento e histórico de receita/folha"),
         new(Permissao.FiscalRelatorios, "FISCAL_RELATORIOS", "Fiscal", "Relatórios fiscais: livros de entradas e saídas, resumos, apurações e guias"),
         new(Permissao.FiscalSpedGerar, "FISCAL_SPED_GERAR", "Fiscal", "Gerar e assinar os arquivos do SPED Fiscal (EFD ICMS/IPI) e da EFD-Contribuições"),
+        new(Permissao.FiscalDuplicatasManter, "FISCAL_DUPLICATAS_MANTER", "Fiscal", "Manter duplicatas (contas a pagar e a receber): incluir, alterar, cancelar e excluir parcelas"),
+        new(Permissao.FiscalDuplicatasBaixar, "FISCAL_DUPLICATAS_BAIXAR", "Fiscal", "Baixar duplicatas (pagamento e recebimento), estornar baixas e conciliar com o extrato bancário"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);

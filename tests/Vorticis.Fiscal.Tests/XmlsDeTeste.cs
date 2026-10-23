@@ -22,7 +22,8 @@ public static class XmlsDeTeste
 
     public static string Nfe(string cnpjEmit, string? cnpjDest, int tpNf, int numero, DateOnly emissao, IReadOnlyList<ItemNfe> itens, string? chave = null,
                              string modelo = "55", string cStat = "100", decimal retPis = 0, decimal retCofins = 0, decimal retCsll = 0, decimal irrf = 0,
-                             decimal retPrev = 0, string nomeDest = "Cliente Teste Ltda", string nomeEmit = "Emitente Teste SA", string uf = "SP")
+                             decimal retPrev = 0, string nomeDest = "Cliente Teste Ltda", string nomeEmit = "Emitente Teste SA", string uf = "SP",
+                             IReadOnlyList<(string Numero, DateOnly Vencimento, decimal Valor)>? cobranca = null)
     {
         chave ??= Chave(numero, modelo);
         var det = new StringBuilder();
@@ -50,6 +51,8 @@ public static class XmlsDeTeste
         var ret = retPis + retCofins + retCsll + irrf + retPrev > 0
             ? $"<retTrib><vRetPIS>{N(retPis)}</vRetPIS><vRetCOFINS>{N(retCofins)}</vRetCOFINS><vRetCSLL>{N(retCsll)}</vRetCSLL><vBCIRRF>{N(vProd)}</vBCIRRF><vIRRF>{N(irrf)}</vIRRF><vBCRetPrev>{N(vProd)}</vBCRetPrev><vRetPrev>{N(retPrev)}</vRetPrev></retTrib>"
             : "";
+        var cobr = cobranca is null ? "" : "<cobr><fat><nFat>" + numero + "</nFat></fat>" + string.Concat(cobranca.Select(c =>
+            $"<dup><nDup>{c.Numero}</nDup><dVenc>{c.Vencimento:yyyy-MM-dd}</dVenc><vDup>{N(c.Valor)}</vDup></dup>")) + "</cobr>";
         return $"""
             <?xml version="1.0" encoding="UTF-8"?>
             <nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe{chave}" versao="4.00">
@@ -58,6 +61,7 @@ public static class XmlsDeTeste
             {dest}
             {det}
             <total><ICMSTot><vBC>{N(itens.Sum(i => i.Icms > 0 ? i.Valor : 0))}</vBC><vICMS>{N(itens.Sum(i => i.Icms))}</vICMS><vBCST>0.00</vBCST><vST>{N(vSt)}</vST><vProd>{N(vProd)}</vProd><vFrete>{N(vFrete)}</vFrete><vSeg>0.00</vSeg><vDesc>{N(vDesc)}</vDesc><vII>0.00</vII><vIPI>{N(vIpi)}</vIPI><vPIS>{N(itens.Sum(i => i.Pis))}</vPIS><vCOFINS>{N(itens.Sum(i => i.Cofins))}</vCOFINS><vOutro>0.00</vOutro><vNF>{N(vNf)}</vNF></ICMSTot>{ret}</total>
+            {cobr}
             </infNFe></NFe><protNFe versao="4.00"><infProt><tpAmb>1</tpAmb><chNFe>{chave}</chNFe><cStat>{cStat}</cStat><xMotivo>Autorizado</xMotivo></infProt></protNFe></nfeProc>
             """;
     }

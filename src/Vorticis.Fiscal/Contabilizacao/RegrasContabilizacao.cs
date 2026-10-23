@@ -52,9 +52,11 @@ public static class MotorContabilizacao
     /// (produto - desconto + frete + seguro + outras + IPI + ICMS-ST). Documento = número da nota; histórico pelo modelo da regra.
     /// Com <paramref name="usaCentroCusto"/>, as partidas são separadas por centro de custo (o do item, ou o do documento na falta dele) e o centro
     /// vai na partida de débito nas entradas (despesa/custo) e na de crédito nas saídas (receita).
+    /// Com <paramref name="contaParticipante"/> (conta de fornecedores na entrada, de clientes na saída — nota com duplicatas), ela é a contrapartida da nota
+    /// (crédito na entrada, débito na saída), exceto quando a nota ou uma regra específica do participante já define a conta.
     /// </summary>
     public static PropostaContabilizacao Montar(long empresaId, DocumentoFiscal doc, IReadOnlyList<ItemFiscal> itens, IReadOnlyList<RegraContabilizacao> regras,
-                                                bool usaCentroCusto = false)
+                                                bool usaCentroCusto = false, string? contaParticipante = null)
     {
         var erros = new List<string>();
         if (doc.Situacao != SituacaoDocumento.Autorizada)
@@ -80,6 +82,11 @@ public static class MotorContabilizacao
             {
                 erros.Add($"Documento {doc.Numero}: nenhuma regra de contabilização para o CFOP {grupo.Key.Cfop} ({doc.Operacao.Rotulo().ToLowerInvariant()}).");
                 continue;
+            }
+            if (!string.IsNullOrWhiteSpace(contaParticipante) && regra.ParticipanteId is null)
+            {
+                if (doc.Operacao == TipoOperacao.Entrada && string.IsNullOrWhiteSpace(doc.ContaCredito)) regra = regra with { ContaCredito = contaParticipante.Trim() };
+                else if (doc.Operacao == TipoOperacao.Saida && string.IsNullOrWhiteSpace(doc.ContaDebito)) regra = regra with { ContaDebito = contaParticipante.Trim() };
             }
             var historico = VariaveisHistorico.Aplicar(regra.Historico, new ContextoHistorico(
                 Documento: doc.Numero, Participante: doc.NomeParticipante, Data: doc.DataLivro, Valor: valor)).Texto;

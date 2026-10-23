@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Vorticis.Fiscal.Comum;
 using Vorticis.Fiscal.Contabilizacao;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Guias;
 using Vorticis.Fiscal.Lucro;
 using Vorticis.Fiscal.Produtos;
@@ -32,12 +33,14 @@ public sealed class ServicosFiscais
         var repoSimples = new RepositorioSimples(ds);
         var repoLucro = new RepositorioLucro(ds);
         var repoRetencoes = new RepositorioRetencoes(ds);
+        var repoDuplicatas = new RepositorioDuplicatas(ds);
         Parametros = new ParametrosFiscaisPostgres(ds);
         Documentos = new ServicoDocumentosFiscais(repoDocumentos, autorizador);
         Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
         ParticipantesNota = new ServicoParticipanteNota(app);
         Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
-        Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador);
+        Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador, repoDuplicatas);
+        Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador);
         Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
@@ -52,6 +55,7 @@ public sealed class ServicosFiscais
     public ServicoParticipanteNota ParticipantesNota { get; }
     public ServicoProdutos Produtos { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
+    public ServicoDuplicatas Duplicatas { get; }
     public ServicoSimplesNacional Simples { get; }
     public ServicoLucro Lucro { get; }
     public ServicoRetencoes Retencoes { get; }

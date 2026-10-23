@@ -6,6 +6,7 @@ using Vorticis.Application.Cadastros;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Produtos;
 using Vorticis.Infra;
 
@@ -31,6 +32,13 @@ internal static class Resolvedores
         return r.Valor.FirstOrDefault(x => x.Codigo.ToString() == texto || x.Gtin == texto || string.Equals(x.Descricao, texto, StringComparison.CurrentCultureIgnoreCase))
                ?? (r.Valor.Count == 1 ? r.Valor[0] : null);
     }
+}
+
+/// <summary>Parcela (duplicata) da nota na tela de digitação.</summary>
+public sealed record ParcelaLinha(string Numero, DateOnly Vencimento, decimal Valor, string Situacao = "")
+{
+    public string VencimentoTexto => Vencimento.ToString("dd/MM/yyyy");
+    public string ValorTexto => Numeros.Moeda(Valor);
 }
 
 public sealed record CentroOpcao(long? Id, string Texto, string? Codigo = null)
@@ -177,6 +185,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
 
     public ObservableCollection<DocumentoLinha> Lista { get; } = [];
     public ObservableCollection<ItemNotaLinha> Itens { get; } = [];
+    public ObservableCollection<ParcelaLinha> Parcelas { get; } = [];
     public ObservableCollection<CentroOpcao> Centros { get; } = [new CentroOpcao(null, "(sem centro de custo)")];
     public ItemForm Item { get; } = new();
 
@@ -204,6 +213,9 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [ObservableProperty] private string _contaDebito = "";
     [ObservableProperty] private string _contaCredito = "";
     [ObservableProperty] private string _escProduto = "";
+    [ObservableProperty] private string _parcelasQuantidade = "1";
+    [ObservableProperty] private DateTime? _parcelasPrimeiroVencimento = DateTime.Today.AddDays(30);
+    [ObservableProperty] private string _parcelasIntervalo = "30";
 
     // Fornecedor/cliente: busca automática pelo CPF/CNPJ digitado (cadastrados da empresa e, para CNPJ, a base pública).
     [ObservableProperty] private string _participanteInfo = "";
@@ -309,7 +321,18 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [RelayCommand]
     private Task ConsultarAsync() => ExecutarAsync(ListarAsync, Permissao.FiscalDocumentosConsultar);
 
+    // Selecionar uma nota e clicar em Editar disparam duas cargas quase juntas; em fila, a última a começar é a última a terminar e as mensagens
+    // que o comando coloca depois dela não são apagadas por uma carga atrasada.
+    private readonly SemaphoreSlim _travaCarga = new(1, 1);
+
     private async Task CarregarDocumentoAsync(long id)
+    {
+        await _travaCarga.WaitAsync();
+        try { await CarregarDocumentoInternoAsync(id); }
+        finally { _travaCarga.Release(); }
+    }
+
+    private async Task CarregarDocumentoInternoAsync(long id)
     {
         if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
         var r = await app.Fiscal().Digitacao.ObterAsync(empresa, id, sessao.Id);
@@ -334,6 +357,11 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Itens.Clear();
         foreach (var i in d.Itens) Itens.Add(Linha(i));
         TotalInformado = "";
+        var dups = await app.Fiscal().Duplicatas.ConsultarAsync(empresa, new FiltroDuplicatas(DocumentoId: id), sessao.Id);
+        if (Selecionada?.Id != id) return;
+        Parcelas.Clear();
+        if (dups.Sucesso)
+            foreach (var p in dups.Valor.Where(p => p.Situacao != SituacaoDuplicata.Cancelada)) Parcelas.Add(new ParcelaLinha(p.Parcela, p.Vencimento, p.Valor, p.Situacao.Rotulo()));
         Contabilizado = d.Contabilizado;
         SituacaoDocumento = d.Contabilizado ? "Nota contabilizada: somente consulta (use \"Desfazer contabilização e excluir\" para removê-la, ou desfaça a contabilização para alterar)"
             : d.Importado ? $"Nota importada de XML {d.Numero}: só a escrituração pode ser alterada" : $"Alterando a nota {d.Numero}";
@@ -341,6 +369,24 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Erros.Clear();
         Mensagem = null;
     }
+
+    /// <summary>Gera N parcelas iguais a partir do total da nota, com o intervalo em dias informado (a última absorve a diferença do arredondamento).</summary>
+    [RelayCommand]
+    private void GerarParcelas()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (!int.TryParse(ParcelasQuantidade.Trim(), out var n) || n is < 1 or > 120) { Erros.Add("Informe a quantidade de parcelas (de 1 a 120)."); return; }
+        if (!int.TryParse(ParcelasIntervalo.Trim(), out var dias) || dias is < 0 or > 365) { Erros.Add("Informe o intervalo entre as parcelas em dias (de 0 a 365)."); return; }
+        var total = CalcularTotais().Total;
+        if (total <= 0) { Erros.Add("Inclua os itens da nota antes de gerar as parcelas."); return; }
+        var primeiro = Data(ParcelasPrimeiroVencimento, Data(Emissao, DateOnly.FromDateTime(DateTime.Today)));
+        Parcelas.Clear();
+        foreach (var p in GeradorParcelas.Gerar(total, n, primeiro, dias)) Parcelas.Add(new ParcelaLinha(p.Numero, p.Vencimento, p.Valor));
+    }
+
+    [RelayCommand]
+    private void LimparParcelas() => Parcelas.Clear();
 
     private ItemNotaLinha Linha(ItemFiscal i) => new(i, i.ProdutoId is { } pid && _produtosPorId.TryGetValue(pid, out var nome) ? nome : null);
 
@@ -358,6 +404,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         CentroDocumento = CentroItem = Centros[0];
         Itens.Clear();
         Item.Limpar();
+        Parcelas.Clear();
+        (ParcelasQuantidade, ParcelasPrimeiroVencimento, ParcelasIntervalo) = ("1", DateTime.Today.AddDays(30), "30");
         Contabilizado = false;
         SituacaoDocumento = "Nova nota";
         AtualizarTotais();
@@ -453,7 +501,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (Numeros.LerValor(TotalInformado) is { } informado) totais = totais with { Total = informado };   // total conferido com a soma dos itens
         var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
             Natureza, _participanteId, CentroDocumento?.Id, totais, Itens.Select(i => i.Item).ToList(),
-            Observacoes: Texto(Observacoes), ContaDebito: Texto(ContaDebito), ContaCredito: Texto(ContaCredito));
+            Observacoes: Texto(Observacoes), ContaDebito: Texto(ContaDebito), ContaCredito: Texto(ContaCredito),
+            Parcelas: Parcelas.Select(p => new ParcelaDuplicata(p.Numero, p.Vencimento, p.Valor)).ToList());   // vazio: nota nova gera à vista (Parâmetros); nota existente fica sem duplicatas
         var r = await app.Fiscal().Digitacao.GravarAsync(empresa, doc, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         AmpliarPeriodo([Data(DataLivro, default).ToDateTime(TimeOnly.MinValue)]);   // a nota gravada sempre aparece na lista

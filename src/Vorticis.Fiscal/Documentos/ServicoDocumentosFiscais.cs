@@ -362,7 +362,9 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
     {
         if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
         if (ids.Count == 0) return Resultado<int>.Falha("Selecione ao menos um documento.");
-        var n = await repositorio.ExcluirAsync(empresaId, ids, ct);
+        int n;
+        try { n = await repositorio.ExcluirAsync(empresaId, ids, ct); }
+        catch (ViolacaoRegraException ex) { return Resultado<int>.Falha(ex.Message); }
         return n == 0 ? Resultado<int>.Falha("Nenhum documento excluído: documentos contabilizados precisam ter a contabilização desfeita antes.")
                       : Resultado<int>.Ok(n);
     }

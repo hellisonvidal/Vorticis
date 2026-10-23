@@ -4,6 +4,7 @@ using Vorticis.Domain.Comum;
 using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Duplicatas;
 
 namespace Vorticis.Fiscal.Contabilizacao;
 
@@ -42,7 +43,7 @@ public sealed record ResultadoContabilizacao(int Contabilizados, decimal Valor, 
 /// a de incluir (ou estornar) lançamentos, verificada pelo próprio serviço de lançamento.
 /// </summary>
 public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repositorio, IRepositorioDocumentos documentos, ServicoLancamento lancamentos,
-                                                Autorizador autorizador)
+                                                Autorizador autorizador, IRepositorioDuplicatas? duplicatas = null)
 {
     // ------------------------------------------------------------------ regras
 
@@ -108,7 +109,11 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
         var itens = (await documentos.ListarItensAsync(empresaId, inicio, fim, operacao, ct)).ToLookup(i => i.DocumentoId, i => i.Item);
         var regras = await repositorio.ListarRegrasAsync(empresaId, ct);
         var usaCentro = await repositorio.CentroCustoAtivoAsync(empresaId, ct);
-        return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras, usaCentro)).ToList();
+        // Nota com duplicatas: a contrapartida é a conta de fornecedores (entrada) ou de clientes (saída) dos Parâmetros do Fiscal.
+        var comDuplicata = duplicatas is null || docs.Count == 0 ? new HashSet<long>() : await duplicatas.DocumentosComDuplicataAsync(empresaId, docs.Select(d => d.Id), ct);
+        var config = comDuplicata.Count == 0 ? null : await duplicatas!.ObterConfiguracaoAsync(empresaId, ct);
+        return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras, usaCentro,
+            comDuplicata.Contains(d.Id) ? config?.ContaParticipante(d.Operacao == TipoOperacao.Entrada ? TipoDuplicata.Pagar : TipoDuplicata.Receber) : null)).ToList();
     }
 
     /// <summary>
@@ -176,6 +181,8 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
     {
         if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
         if (ids.Count == 0) return Resultado<int>.Falha("Selecione ao menos um documento.");
+        if (duplicatas is not null && await duplicatas.DocumentosComBaixaAsync(empresaId, ids, ct) is { Count: > 0 })
+            return Resultado<int>.Falha("Há nota(s) com duplicata baixada: estorne as baixas em Lançamentos › Duplicatas antes de excluir.");
         var contabilizados = (await documentos.ListarAsync(empresaId, new FiltroDocumentos(Contabilizado: true, Limite: 100000), ct))
             .Where(d => ids.Contains(d.Id)).Select(d => d.Id).ToList();
         if (contabilizados.Count > 0)
@@ -187,7 +194,9 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
             if (d.Valor.Falhas.Count > 0)
                 return Resultado<int>.Falha(d.Valor.Falhas.SelectMany(f => f.Erros.Select(e => $"Nota {f.Documento}: {e}")).Append("Nenhuma nota foi excluída.").ToList());
         }
-        var n = await documentos.ExcluirAsync(empresaId, ids, ct);
+        int n;
+        try { n = await documentos.ExcluirAsync(empresaId, ids, ct); }
+        catch (ViolacaoRegraException ex) { return Resultado<int>.Falha(ex.Message); }
         return n == 0 ? Resultado<int>.Falha("Nenhum documento excluído.") : Resultado<int>.Ok(n);
     }
 }

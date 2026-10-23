@@ -65,6 +65,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Grupo | O que tem |
 |---|---|
 | Lançamento das notas | Informar centro de custo nos itens das notas (antes na tela Configurações fiscais, que passou a ser só aqui). |
+| Duplicatas e baixas | Gerar duplicata à vista, dias do vencimento à vista, contas de fornecedores, clientes, juros, multa e descontos, e o histórico dos lançamentos de pagamento e recebimento. |
 | EFD ICMS/IPI | Perfil, atividade, códigos de receita e dia de vencimento do ICMS (o assistente já abre preenchido). |
 | EFD-Contribuições | Natureza da pessoa jurídica e atividade. |
 | Contabilização e tributos | Atalhos para *Regras de contabilização* e *Contas dos tributos*. |

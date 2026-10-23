@@ -20,9 +20,10 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 2. **Emissão**: data, modelo, série, número, chave de acesso (opcional) e natureza da operação. Digite o **CNPJ/CPF** do cliente/fornecedor (busca automática, ou **Buscar participante**). Se não existir, informe nome, UF e município para cadastrá-lo na hora.
 3. **Itens**: digite o produto (código, descrição ou GTIN; **Buscar produto**), CFOP, quantidade e valor unitário. Em *Detalhes e tributos do item* confira NCM, CST, bases e alíquotas de ICMS, ICMS-ST, IPI, PIS, COFINS e ISS, desconto, frete, seguro e outras despesas. **Calcular tributos** preenche pelas alíquotas do produto.
 4. **Adicionar item** (ou **Atualizar item selecionado** / **Remover item selecionado**).
-5. Confira o **total informado**: precisa bater com a soma dos itens. **Salvar**.
+5. Se a nota for parcelada, abra **Parcelas (duplicatas)**: informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas**. As parcelas saem iguais (a última recebe a diferença de centavos) e a soma tem de bater com o valor da nota. **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
+6. Confira o **total informado**: precisa bater com a soma dos itens. **Salvar**.
 
-A lista *Notas digitadas* mostra data, número, participante, valor, origem e se já foi contabilizada. Use **Editar** e **Excluir** (notas já contabilizadas devem ter a contabilização desfeita antes).
+A lista *Notas digitadas* mostra data, número, participante, valor, origem e se já foi contabilizada. Use **Editar** e **Excluir** (notas já contabilizadas devem ter a contabilização desfeita antes; nota com duplicata já baixada só pode ser excluída ou ter as parcelas alteradas depois de estornar as baixas).
 
 ## Importação de XML (NF-e, NFC-e, NFS-e)
 
@@ -42,11 +43,12 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - O sentido é identificado pelo **CNPJ da empresa** (e dos estabelecimentos): é entrada se a empresa é o destinatário e saída se é o emitente. Notas de terceiros são recusadas.
 - **Duplicidade:** a mesma chave de acesso não é importada duas vezes. Eventos de cancelamento são aplicados, mesmo que cheguem antes da nota.
 - Clientes e fornecedores são criados ou vinculados automaticamente.
+- **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
 
 ## Consulta de documentos
 
 **Onde fica:** *Documentos fiscais › Consulta de documentos* (atalho **Ctrl+D**).
-Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **Consultar**. Selecione uma nota para ver os itens e tributos. **Excluir selecionado** remove a nota (desfaça antes a contabilização, se houver).
+Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **Consultar**. Selecione uma nota para ver os itens e tributos. **Excluir selecionado** remove a nota e as suas duplicatas (desfaça antes a contabilização, se houver). Se alguma duplicata da nota já foi baixada, o sistema recusa: estorne as baixas em *Lançamentos › Duplicatas* e exclua depois.
 
 ## Regras de contabilização
 
@@ -67,7 +69,61 @@ Vale a regra **mais específica** (participante, CFOP completo, prefixo, geral);
 2. Marque as notas e clique em **Contabilizar marcadas**. São gerados os lançamentos no Contábil (documento = número da nota).
 3. Para desfazer, marque as notas em *Notas contabilizadas no período* e clique em **Desfazer contabilização das marcadas**: o lançamento é estornado e a nota volta a pendente.
 
+Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (entrada) ou de **clientes** (saída) em *Cadastros › Parâmetros*, essa conta passa a ser a contrapartida da nota: o fornecedor é creditado na compra e o cliente debitado na venda, com o código do fornecedor/cliente na partida. Uma regra específica daquele participante, ou as contas digitadas na própria nota, têm preferência.
+
 **Erro comum:** nota sem regra aplicável ou período contábil fechado ficam sem contabilizar, com a mensagem na coluna *Situação*.
+
+## Duplicatas (contas a pagar e a receber)
+
+**Para que serve:** controlar o que a empresa tem a pagar aos fornecedores e a receber dos clientes, parcela por parcela, e gerar a contabilização do pagamento e do recebimento. As duplicatas nascem das notas (importadas ou digitadas) e também podem ser lançadas à mão.
+**Onde fica:** *Lançamentos › Duplicatas (contas a pagar e a receber)*.
+
+**Antes de usar:** em *Cadastros › Parâmetros*, grupo *Duplicatas e baixas*, informe os códigos das contas contábeis analíticas: fornecedores, clientes, juros pagos, multa paga, descontos obtidos, juros recebidos, multa recebida e descontos concedidos. As de juros, multa e desconto só são exigidas quando você usar esses valores numa baixa. Também ali você escolhe se a nota sem cobrança gera duplicata à vista e o texto do histórico dos lançamentos (aceita {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}).
+
+### Consultar
+1. Escolha *A pagar e a receber*, *A pagar* ou *A receber*, o período de **vencimento**, o fornecedor/cliente (nome, código ou CNPJ) e a **situação**. Marque **Somente vencidas** para ver só as que passaram do vencimento.
+2. Clique em **Consultar**. Cada linha mostra vencimento, documento (número da nota/parcela), valor, saldo, situação e dias de atraso. O resumo acima da lista traz o saldo em aberto a pagar e a receber.
+
+Situações: **Aberta** (sem baixa), **Parcial** (parte já paga ou recebida), **Liquidada** (saldo zero) e **Cancelada**.
+
+### Incluir e alterar
+1. Clique em **Nova duplicata**, escolha *A pagar* ou *A receber*, informe o fornecedor/cliente (como cadastrado), o número do documento, a parcela, a emissão, o vencimento e o valor. **Gravar**.
+2. Para alterar, selecione a duplicata, mude os campos e **Gravar**. O valor só muda enquanto não há baixas. O vencimento não pode ser anterior à emissão.
+3. **Cancelar duplicata** vale para a que está aberta e sem baixas. **Excluir** vale para as lançadas à mão e sem baixas; as que vieram de nota são canceladas ou somem junto com a nota.
+
+### Baixar (pagar ou receber)
+1. Selecione a duplicata. Na área *Baixa*, confira a **data**, o **valor principal** (já vem com o saldo; digite menos para baixa parcial), os **juros**, a **multa** e o **desconto** (se houver) e o código da **conta do banco ou caixa**.
+2. Clique em **Baixar selecionada**. O valor pago é principal + juros + multa - desconto.
+3. O sistema gera o lançamento no Contábil. **Pagamento:** débito no fornecedor (principal), nos juros e na multa; crédito no desconto obtido e no banco. **Recebimento:** débito no banco e no desconto concedido; crédito no cliente (principal), nos juros e na multa recebidos. O documento do lançamento é o número da nota/parcela (ex.: 1234/001).
+4. **Baixar várias:** marque as duplicatas na primeira coluna, informe a data e a conta do banco e clique em **Baixar marcadas**. Cada uma é baixada pelo saldo total; as que tiverem problema ficam indicadas e as outras são baixadas.
+
+### Estornar uma baixa
+Selecione a duplicata, escolha a baixa na lista *Baixas da duplicata selecionada* e clique em **Estornar baixa selecionada**. O lançamento contábil é estornado e o valor volta ao saldo. Se o período contábil estiver fechado, o estorno é recusado: reabra o período e tente de novo.
+
+**Dicas e erros comuns:**
+- "Informe a conta de fornecedores em Cadastros › Parâmetros": falta configurar a conta antes da primeira baixa.
+- O valor da baixa não pode passar do saldo; duplicata liquidada ou cancelada não recebe baixa.
+- Perfis: quem tem a função de *manter duplicatas* inclui e altera; só quem tem a de *baixar duplicatas* baixa, estorna e concilia (Administrador e Contador; o Assistente só mantém).
+
+## Conciliação de duplicatas
+
+**Para que serve:** baixar duplicatas a partir do extrato bancário, sem digitar, e deixar a partida do banco marcada como conciliada.
+**Onde fica:** *Lançamentos › Conciliação de duplicatas*.
+
+**Antes:** importe o extrato do banco (arquivo OFX) em *Lançamentos › Importação*, aba *Extratos*.
+
+1. Informe o código da **conta contábil do banco** do extrato, o período e a **tolerância em dias** (quantos dias de diferença entre o vencimento e a data do banco ainda contam como a mesma operação).
+2. Clique em **Sugerir**. A lista mostra pares *duplicata em aberto x movimento do extrato* que têm o mesmo valor do saldo, data próxima do vencimento e/ou o número do documento no histórico, com o motivo da sugestão. Saída do banco só combina com duplicata a pagar; entrada, com a receber.
+3. Desmarque os pares que não quiser e clique em **Baixar marcadas**. A duplicata é baixada pelo saldo total, na data do extrato.
+
+Como fica a contabilidade: se o extrato foi importado contra a própria conta de fornecedores/clientes, a baixa só registra o vínculo com o movimento (o lançamento do extrato já baixa a parcela). Se foi importado contra outra conta (por exemplo, "pagamentos a classificar"), a baixa lança contra essa conta e as duas partidas são conciliadas em *Lançamentos › Conciliações*. Estornar a baixa desfaz a conciliação e o movimento volta a ser sugerido.
+
+## Relatórios de duplicatas
+
+**Onde ficam:** *Relatórios › Duplicatas*. Todos aparecem na tela e exportam em PDF, Excel e CSV.
+
+- **Duplicatas a pagar** e **Duplicatas a receber**: uma linha por parcela, com vencimento, documento, valor, valor baixado, saldo, situação e dias de atraso na **data-base**. Filtre por vencimento, fornecedor/cliente e situação (*Em aberto* ou *Todas*) e clique em **Gerar**.
+- **Posição por vencimento**: saldo em aberto por fornecedor/cliente nas faixas *a vencer*, *vencidas de 1 a 30 dias*, *de 31 a 60*, *de 61 a 90* e *há mais de 90 dias*, na data-base escolhida. Escolha *Contas a pagar* ou *Contas a receber*.
 
 ## Apuração do Simples Nacional (DAS)
 
@@ -144,6 +200,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 - **Livro de Registro de Entradas** e **de Saídas** (*Relatórios › Livros*): uma linha por nota e CFOP; notas canceladas aparecem sem valores. Informe o período e **Gerar**.
 - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
+- **Duplicatas a pagar**, **Duplicatas a receber** e **Posição por vencimento**: veja [Relatórios de duplicatas](#relatorios-de-duplicatas).
 
 ## Livros de apuração do ICMS e do IPI
 
