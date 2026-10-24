@@ -237,12 +237,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     /// <summary>Menus do casco em volta dos do módulo.</summary>
     private IReadOnlyList<ItemMenu> MontarMenus()
     {
-        var cadastros = new List<ItemMenu>
-        {
-            ItemMenu.Tela("Empresas", TelasComuns.Empresas),
-            ItemMenu.Tela("Contadores", TelasComuns.Contabilidade),
-        };
-        if (Modulo.UsaClientesFornecedores)
+        var cadastros = new List<ItemMenu> { ItemMenu.Tela("Empresas", TelasComuns.Empresas) };
+        if (Modulo.UsaCadastrosComuns) cadastros.Add(ItemMenu.Tela("Contadores", TelasComuns.Contabilidade));
+        if (Modulo.UsaCadastrosComuns && Modulo.UsaClientesFornecedores)
             cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
         cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros)]);

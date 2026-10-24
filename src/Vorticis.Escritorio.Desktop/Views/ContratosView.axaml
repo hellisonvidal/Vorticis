@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.ContratosView" x:DataType="vm:ContratosViewModel">
+  <!-- Contratos › Gerador de contratos (clientes e fornecedores) -->
+  <Grid ColumnDefinitions="*,16,520" RowDefinitions="Auto,*" Margin="8">
+    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Gerador de contratos" VerticalAlignment="Center" />
+      <Button Content="Novo contrato" Command="{Binding NovoCommand}" IsEnabled="{Binding PodeEditar}" />
+      <Button Content="Gerar texto" Command="{Binding GerarTextoCommand}" IsEnabled="{Binding PodeEditar}" />
+      <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" IsEnabled="{Binding PodeEditar}" />
+      <Button Content="PDF para assinatura" Command="{Binding PdfCommand}" />
+      <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="55" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="90" />
+        <DataGridTextColumn Header="Cliente / fornecedor" Binding="{ReflectionBinding Parte}" Width="*" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="110" />
+        <DataGridTextColumn Header="Periodicidade" Binding="{ReflectionBinding Periodicidade}" Width="100" />
+        <DataGridTextColumn Header="Vigência" Binding="{ReflectionBinding Vigencia}" Width="170" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="85" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <DockPanel Grid.Row="1" Grid.Column="2">
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Classes="rotulo" Text="Tipo" />
+        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Modelos}" SelectedItem="{Binding Modelo}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Parte" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Partes}" SelectedItem="{Binding Parte}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Objeto" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Objeto}" TextWrapping="Wrap" Height="60" AcceptsReturn="False" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Valor" />
+        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <TextBox Text="{Binding Valor}" Width="110" />
+          <ComboBox ItemsSource="{x:Static vm:ContratosViewModel.Periodicidades}" SelectedItem="{Binding Periodicidade}" Width="140" />
+          <TextBlock Text="dia" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="100" />
+        </StackPanel>
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Vigência" />
+        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="130" />
+          <TextBlock Text="a" VerticalAlignment="Center" />
+          <CalendarDatePicker SelectedDate="{Binding Fim}" Width="130" Watermark="indeterminado" />
+        </StackPanel>
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Reajuste" />
+        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Indices}" SelectedItem="{Binding Indice}" Width="130" />
+        <TextBlock Grid.Row="6" Classes="rotulo" Text="Foro" />
+        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Foro}" Watermark="Comarca (em branco: a do escritório)" />
+        <CheckBox Grid.Row="7" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
+      </Grid>
+      <c:MensagensView DockPanel.Dock="Bottom" />
+      <TextBlock DockPanel.Dock="Top" Text="Texto do contrato (pode ser ajustado antes de gravar)" FontWeight="SemiBold" Margin="0,8,0,4" />
+      <TextBox Text="{Binding Texto}" AcceptsReturn="True" TextWrapping="Wrap" IsEnabled="{Binding PodeEditar}" />
+    </DockPanel>
+  </Grid>
+</UserControl>

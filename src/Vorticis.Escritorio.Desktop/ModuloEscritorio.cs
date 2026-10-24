@@ -5,20 +5,24 @@ using Vorticis.Escritorio.Desktop.ViewModels;
 namespace Vorticis.Escritorio.Desktop;
 
 /// <summary>
-/// Módulo Escritório: gestão do escritório contábil. Os cadastros (empresas, contadores, sócios, clientes e fornecedores) são os do casco,
-/// gravados no banco único e usados por todos os módulos da suíte. Permissões ESCRITORIO_* conferidas nos serviços.
+/// Módulo Escritório: gerenciador do escritório contábil, com cadastros próprios (clientes e fornecedores do escritório) que não são
+/// compartilhados com os demais módulos; a empresa ativa é o próprio escritório. Permissões ESCRITORIO_* conferidas nos serviços.
 /// </summary>
 public sealed class ModuloEscritorio : IModuloDesktop
 {
     public string Nome => "Vorticis Escritório";
     public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio;
     public string NomeCurto => "Escritório";
-    public string Subtitulo => "Gestão do escritório e cadastros empresariais";
+    public string Subtitulo => "Gestão do escritório contábil";
     public string NomeExecutavel => "VorticisEscritorio";
     public string CorDestaque => "#1D4ED8";   // azul
     public string CorBarra => "#1E3A8A";
 
-    public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [ItemMenu.Tela("Sócios", TelasComuns.Socios)];
+    public bool UsaCadastrosComuns => false;
+    public bool UsaClientesFornecedores => false;
+    public bool UsaCalendarioObrigacoes => false;
+
+    public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [ItemMenu.Tela("Clientes e fornecedores do escritório", EscritorioTelas.Pessoas)];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
@@ -26,8 +30,13 @@ public sealed class ModuloEscritorio : IModuloDesktop
             ItemMenu.Tela("Carteira de clientes", EscritorioTelas.Carteira),
             ItemMenu.Tela("Tarefas e prazos", EscritorioTelas.Tarefas),
             ItemMenu.Tela("Protocolo de documentos", EscritorioTelas.Protocolos)),
-        ItemMenu.Submenu("_Honorários",
-            ItemMenu.Tela("Contratos e cobranças", EscritorioTelas.Honorarios)),
+        ItemMenu.Submenu("C_ontratos",
+            ItemMenu.Tela("Gerador de contratos (clientes e fornecedores)", EscritorioTelas.Contratos),
+            ItemMenu.Tela("Honorários e cobranças", EscritorioTelas.Honorarios)),
+        ItemMenu.Submenu("_Relatórios",
+            ItemMenu.Submenu("_Honorários",
+                ItemMenu.Tela("Relatório de contratos", EscritorioTelas.RelContratos),
+                ItemMenu.Tela("Relatório de honorários", EscritorioTelas.RelHonorarios))),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -50,7 +59,18 @@ public sealed class ModuloEscritorio : IModuloDesktop
             .Tela(EscritorioTelas.Protocolos, "Escritório › Protocolo de documentos", m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
         c.Instancia("Honorarios", m => new HonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(EscritorioTelas.Honorarios, "Honorários › Contratos e cobranças", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+            .Tela(EscritorioTelas.Honorarios, "Contratos › Honorários e cobranças", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+        c.Instancia("Pessoas", m => new PessoasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(EscritorioTelas.Pessoas, "Cadastros › Clientes e fornecedores do escritório",
+                  m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+        c.Instancia("Contratos", m => new ContratosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(EscritorioTelas.Contratos, "Contratos › Gerador de contratos", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+        c.Instancia("RelContratos", m => new RelContratosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(EscritorioTelas.RelContratos, "Relatórios › Honorários › Relatório de contratos", m => Pode(m, Permissao.EscritorioRelatorios));
+        c.Instancia("RelHonorarios", m => new RelHonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(EscritorioTelas.RelHonorarios, "Relatórios › Honorários › Relatório de honorários", m => Pode(m, Permissao.EscritorioRelatorios));
         c.Instancia("ParametrosModulo", m => new ParametrosViewModelEscritorio(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
     }

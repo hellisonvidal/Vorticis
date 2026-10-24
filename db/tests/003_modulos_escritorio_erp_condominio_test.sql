@@ -1,7 +1,7 @@
 -- Testes das migrações 056 a 059 (Escritório, ERP e Condomínio). Executar depois das migrações, em banco descartável:
 --   cat db/0*.sql db/tests/*.sql | psql -d vorticis_sql -v ON_ERROR_STOP=1 -q
 -- Cobre: indicadores de módulo, pedido concluído imutável, sinal dos movimentos de estoque, reserva única por área e dia,
--- cobrança única por unidade e competência, honorário único por competência.
+-- cobrança única por unidade e competência, cadastro próprio do escritório e honorário único por cliente e competência.
 
 DO $$
 DECLARE
@@ -11,6 +11,7 @@ DECLARE
     v_ped  BIGINT;
     v_uni  BIGINT;
     v_area BIGINT;
+    v_pes  BIGINT;
 BEGIN
     INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ,
                               modulo_contabil, modulo_fiscal, modulo_folha, modulo_erp)
@@ -41,9 +42,12 @@ BEGIN
     PERFORM pg_temp.espera_erro_dup(format('UPDATE condominio.cobranca SET situacao = ''PAGA'' WHERE unidade_id = %s', v_uni), 'ck_cobranca_paga');
     RAISE NOTICE 'OK: condomínio (reserva única, cobrança única e pagamento completo)';
 
-    INSERT INTO escritorio.honorario_cobranca (empresa_id, competencia, valor, vencimento) VALUES (v_emp, '2026-04-01', 800, '2026-04-10');
-    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO escritorio.honorario_cobranca (empresa_id, competencia, valor, vencimento) VALUES (%s, ''2026-04-01'', 800, ''2026-04-10'')', v_emp), 'uq_honorario_cobranca');
-    RAISE NOTICE 'OK: honorário único por competência';
+    INSERT INTO escritorio.pessoa (empresa_id, codigo, nome, documento) VALUES (v_emp, 1, 'Cliente do escritório', '11222333000181') RETURNING id INTO v_pes;
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO escritorio.pessoa (empresa_id, codigo, nome, documento) VALUES (%s, 2, ''Outro'', ''11222333000181'')', v_emp), 'uq_pessoa_documento');
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO escritorio.pessoa (empresa_id, codigo, nome, cliente, fornecedor) VALUES (%s, 3, ''Nada'', FALSE, FALSE)', v_emp), 'ck_pessoa_papel');
+    INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (v_emp, v_pes, '2026-04-01', 800, '2026-04-10');
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (%s, %s, ''2026-04-01'', 800, ''2026-04-10'')', v_emp, v_pes), 'uq_honorario_cobranca_pessoa');
+    RAISE NOTICE 'OK: cadastro próprio do escritório e honorário único por cliente e competência';
 END $$;
 
 \echo 'TODOS OS TESTES PASSARAM'

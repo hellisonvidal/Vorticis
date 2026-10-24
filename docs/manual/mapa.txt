@@ -131,7 +131,11 @@ folha.prolabore=06-folha.md#pro-labore-dos-socios
 escritorio.carteira=09-escritorio.md#carteira-de-clientes
 escritorio.tarefas=09-escritorio.md#tarefas-e-prazos
 escritorio.protocolos=09-escritorio.md#protocolo-de-documentos
-escritorio.honorarios=09-escritorio.md#honorarios-contratos-e-cobrancas
+escritorio.honorarios=09-escritorio.md#honorarios-e-cobrancas
+escritorio.pessoas=09-escritorio.md#clientes-e-fornecedores-do-escritorio
+escritorio.contratos=09-escritorio.md#gerador-de-contratos
+escritorio.rel.contratos=09-escritorio.md#relatorios-de-honorarios
+escritorio.rel.honorarios=09-escritorio.md#relatorios-de-honorarios
 
 ; ---- ERP
 erp.painel=10-erp.md#painel-do-empresario

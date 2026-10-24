@@ -10,14 +10,14 @@
     <c:MensagensView DockPanel.Dock="Bottom" />
     <DataGrid ItemsSource="{Binding Lista}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="CNPJ" Binding="{ReflectionBinding Cnpj}" Width="150" />
-        <DataGridTextColumn Header="Razão social" Binding="{ReflectionBinding RazaoSocial}" Width="*" />
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+        <DataGridTextColumn Header="CNPJ/CPF" Binding="{ReflectionBinding Documento}" Width="150" />
+        <DataGridTextColumn Header="Cliente" Binding="{ReflectionBinding Nome}" Width="*" />
         <DataGridTextColumn Header="Regime" Binding="{ReflectionBinding Regime}" Width="130" />
         <DataGridTextColumn Header="Tarefas abertas" Binding="{ReflectionBinding Tarefas}" Width="150" />
         <DataGridTextColumn Header="Honorário mensal" Binding="{ReflectionBinding Honorario}" Width="130" />
         <DataGridTextColumn Header="Em aberto" Binding="{ReflectionBinding EmAberto}" Width="110" />
-        <DataGridTextColumn Header="Certificado vence" Binding="{ReflectionBinding Certificado}" Width="130" />
-        <DataGridTextColumn Header="Módulos" Binding="{ReflectionBinding Modulos}" Width="200" />
+        <DataGridTextColumn Header="Contato" Binding="{ReflectionBinding Contato}" Width="240" />
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

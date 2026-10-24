@@ -73,7 +73,7 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
         foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
@@ -253,5 +253,24 @@ public class MenusTests
         linha.Grupo = new Vorticis.Application.Imobilizado.GrupoBem(1, "08", "Computadores", 20m, true, false, "1.2.3.01", "1.2.3.91", "4.1.9.01", null);
         Assert.Equal((60m, "1.2.3.01", "1.2.3.91", "4.1.9.01"), (linha.VidaUtil!.Value, linha.ContaBem, linha.ContaAcumulada, linha.ContaDespesa));
         await Task.CompletedTask;
+    }
+
+    [Fact]
+    public void Escritorio_tem_cadastros_proprios_contratos_e_relatorios_de_honorarios()
+    {
+        var vm = new Vorticis.Escritorio.Desktop.MainViewModel();
+        var cadastros = Folhas(vm.Menus[0].Filhos!).Select(i => i.Chave).ToList();
+        Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Pessoas, cadastros);
+        Assert.Contains(TelasComuns.Empresas, cadastros);                                   // o próprio escritório
+        foreach (var compartilhado in new[] { TelasComuns.Contabilidade, TelasComuns.Clientes, TelasComuns.Fornecedores, TelasComuns.Socios })
+            Assert.DoesNotContain(compartilhado, cadastros);
+        Assert.False(vm.Modulo.UsaCalendarioObrigacoes);
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") is "Honorários" or "Obrigações");
+        var contratos = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Contratos");
+        Assert.Contains(contratos.Filhos!, i => i.Chave == Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Contratos);
+        var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
+        var hon = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Honorários");
+        Assert.Equal(["Relatório de contratos", "Relatório de honorários"], hon.Filhos!.Select(i => i.Titulo));
+        Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
     }
 }

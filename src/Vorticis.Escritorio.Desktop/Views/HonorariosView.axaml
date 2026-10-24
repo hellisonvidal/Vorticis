@@ -4,7 +4,10 @@
   <DockPanel Margin="8">
     <Border DockPanel.Dock="Top" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
       <StackPanel Spacing="6">
-        <TextBlock Classes="titulo" Text="Contrato de honorários da empresa ativa" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="titulo" Text="Honorário do cliente" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" MinWidth="280" />
+        </StackPanel>
         <TextBlock Text="{Binding SituacaoContrato}" FontSize="12" />
         <WrapPanel>
           <TextBlock Text="Valor mensal" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -17,7 +20,7 @@
           <CalendarDatePicker SelectedDate="{Binding Fim}" Width="130" Margin="0,0,12,0" />
           <TextBlock Text="Reajuste" VerticalAlignment="Center" Margin="0,0,6,0" />
           <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Indices}" SelectedItem="{Binding Indice}" Width="110" Margin="0,0,12,0" />
-          <Button Content="Gravar contrato" Classes="accent" Command="{Binding GravarContratoCommand}" />
+          <Button Content="Gravar honorário" Classes="accent" Command="{Binding GravarContratoCommand}" />
         </WrapPanel>
       </StackPanel>
     </Border>
@@ -43,7 +46,7 @@
     </StackPanel>
     <DataGrid ItemsSource="{Binding Cobrancas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Empresa" Binding="{ReflectionBinding Empresa}" Width="*" />
+        <DataGridTextColumn Header="Cliente" Binding="{ReflectionBinding Cliente}" Width="*" />
         <DataGridTextColumn Header="Competência" Binding="{ReflectionBinding Competencia}" Width="100" />
         <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="100" />
         <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="110" />

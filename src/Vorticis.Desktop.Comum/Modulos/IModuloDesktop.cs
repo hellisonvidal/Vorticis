@@ -50,6 +50,12 @@ public interface IModuloDesktop
     bool UsaCalendarioObrigacoes => true;
 
     /// <summary>
+    /// Mostra em Cadastros os cadastros compartilhados da suíte (Contadores, Clientes, Fornecedores). O Escritório não os usa: tem
+    /// cadastros próprios, que não aparecem nos demais módulos; ali Cadastros mostra só Empresas (o próprio escritório).
+    /// </summary>
+    bool UsaCadastrosComuns => true;
+
+    /// <summary>
     /// Recursos ligados nos parâmetros da empresa ativa (ex.: "gerencial" no Contábil): os itens de menu marcados com
     /// <see cref="ItemMenu.SoCom"/> só aparecem quando o recurso está na lista.
     /// </summary>

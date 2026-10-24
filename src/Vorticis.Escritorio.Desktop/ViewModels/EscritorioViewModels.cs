@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Application.Relatorios;
+using Vorticis.Desktop.Comum;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Infra;
+using Vorticis.Infra.Relatorios;
 
 namespace Vorticis.Escritorio.Desktop.ViewModels;
 
@@ -13,6 +16,10 @@ public static class EscritorioTelas
     public const string Tarefas = "escritorio.tarefas";
     public const string Protocolos = "escritorio.protocolos";
     public const string Honorarios = "escritorio.honorarios";
+    public const string Pessoas = "escritorio.pessoas";
+    public const string Contratos = "escritorio.contratos";
+    public const string RelContratos = "escritorio.rel.contratos";
+    public const string RelHonorarios = "escritorio.rel.honorarios";
 }
 
 internal static class Ext
@@ -27,21 +34,163 @@ public sealed record Opcao<T>(T Valor, string Texto)
     public override string ToString() => Texto;
 }
 
+/// <summary>Lista de clientes (e/ou fornecedores) do cadastro próprio do escritório para as caixas de escolha das telas.</summary>
+internal static class ListaPessoas
+{
+    public static async Task Preencher(ObservableCollection<Opcao<long?>> destino, VorticisApp app, long escritorio, long usuario, string vazio,
+                                       Func<PessoaEscritorio, bool>? filtro = null)
+    {
+        var pessoas = await app.Escritorio().ListarPessoasAsync(escritorio, usuario);
+        destino.Clear();
+        destino.Add(new Opcao<long?>(null, vazio));
+        foreach (var p in pessoas.Where(p => p.Ativo && (filtro ?? (x => x.Cliente))(p))) destino.Add(new Opcao<long?>(p.Id, $"{p.Codigo} – {p.Nome}"));
+    }
+}
+
+// ---------------------------------------------------------------------------------------------- clientes e fornecedores do escritório
+
+public sealed record PessoaLinha(PessoaEscritorio P)
+{
+    public int Codigo => P.Codigo;
+    public string Nome => P.Nome;
+    public string Documento => P.DocumentoFormatado;
+    public string Papel => P.Papel;
+    public string Contato => string.Join(" · ", new[] { P.Contato, P.Telefone, P.Email }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    public string Situacao => P.Ativo ? "Ativo" : "Inativo";
+}
+
+/// <summary>
+/// Cadastros › Clientes e fornecedores do escritório: cadastro próprio do módulo Escritório, que não aparece nos demais módulos
+/// (nem usa os clientes, fornecedores e empresas dos cadastros comuns).
+/// </summary>
+public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(contexto)
+{
+    public ObservableCollection<PessoaLinha> Lista { get; } = [];
+    private IReadOnlyList<PessoaEscritorio> _todos = [];
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private PessoaLinha? _selecionado;
+    [ObservableProperty] private string _filtro = "";
+    [ObservableProperty] private string _codigo = "";
+    [ObservableProperty] private string _nome = "";
+    [ObservableProperty] private string _documento = "";
+    [ObservableProperty] private bool _cliente = true;
+    [ObservableProperty] private bool _fornecedor;
+    [ObservableProperty] private string _regime = "";
+    [ObservableProperty] private string _contato = "";
+    [ObservableProperty] private string _email = "";
+    [ObservableProperty] private string _telefone = "";
+    [ObservableProperty] private string _endereco = "";
+    [ObservableProperty] private string _municipio = "";
+    [ObservableProperty] private string _uf = "";
+    [ObservableProperty] private bool _ativo = true;
+    [ObservableProperty] private string _observacao = "";
+
+    public bool TemSelecionado => Selecionado is not null;
+    public override bool PodeManter => Contexto.Pode(Permissao.EscritorioTarefas);
+    protected override string NomeRegistro => "cadastro";
+    protected override string? DescricaoSelecionado => Selecionado is { } s ? $"{s.Codigo} – {s.Nome}" : null;
+
+    public void AtualizarPermissoes() => AtualizarBarra();
+
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.EmpresaId is not { } empresa || Contexto.Sessao is not { } sessao) return;
+        var g = NovaGeracao();
+        var lista = await app.Escritorio().ListarPessoasAsync(empresa, sessao.Id);
+        if (!EhAtual(g)) return;
+        _todos = lista;
+        Filtrar();
+    }
+
+    partial void OnFiltroChanged(string value) => Filtrar();
+
+    private void Filtrar()
+    {
+        var id = Selecionado?.P.Id;
+        var f = Filtro.Trim();
+        Lista.Clear();
+        foreach (var p in _todos.Where(p => f.Length == 0 || p.Nome.Contains(f, StringComparison.CurrentCultureIgnoreCase) || p.Codigo.ToString() == f || (p.Documento ?? "").Contains(f)))
+            Lista.Add(new PessoaLinha(p));
+        Selecionado = Lista.FirstOrDefault(l => l.P.Id == id);
+    }
+
+    partial void OnSelecionadoChanged(PessoaLinha? value)
+    {
+        if (EmConsulta) MostrarSelecionado();
+        AtualizarBarra();
+    }
+
+    protected override void MostrarSelecionado()
+    {
+        var p = Selecionado?.P;
+        (Codigo, Nome, Documento, Cliente, Fornecedor) = (p?.Codigo.ToString() ?? "", p?.Nome ?? "", p?.DocumentoFormatado ?? "", p?.Cliente ?? true, p?.Fornecedor ?? false);
+        (Regime, Contato, Email, Telefone) = (p?.Regime ?? "", p?.Contato ?? "", p?.Email ?? "", p?.Telefone ?? "");
+        (Endereco, Municipio, Uf, Ativo, Observacao) = (p?.Endereco ?? "", p?.Municipio ?? "", p?.Uf ?? "", p?.Ativo ?? true, p?.Observacao ?? "");
+    }
+
+    protected override void PrepararInclusao()
+    {
+        Selecionado = null;
+        MostrarSelecionado();
+        Codigo = Sequencia.MenorLivre(_todos.Select(p => p.Codigo)).ToString();
+    }
+
+    protected override async Task<bool> GravarAsync(bool inclusao)
+    {
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (!int.TryParse(Codigo.Trim(), out var cod)) { Erros.Add("Informe o código (número)."); return; }
+            var p = new PessoaEscritorio(inclusao ? 0 : Selecionado?.P.Id ?? 0, cod, Cliente, Fornecedor, Nome, Documento, Regime, Contato, Email, Telefone, Endereco,
+                                         Municipio, Uf, Ativo, Observacao);
+            var r = await app.Escritorio().GravarPessoaAsync(empresa, p, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Modo = ModoCadastro.Consulta;
+            await CarregarAsync();
+            Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
+            Mensagem = inclusao ? "Cadastro incluído." : "Cadastro alterado.";
+        }, Permissao.EscritorioTarefas);
+        return ok;
+    }
+
+    protected override async Task<bool> ExcluirSelecionadoAsync()
+    {
+        var ok = false;
+        await ExecutarAsync(async (app, empresa, usuario) =>
+        {
+            if (Selecionado is null) return;
+            var r = await app.Escritorio().ExcluirPessoaAsync(empresa, Selecionado.P.Id, usuario);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            ok = true;
+            Selecionado = null;
+            await CarregarAsync();
+            Mensagem = "Cadastro excluído.";
+        }, Permissao.EscritorioTarefas);
+        return ok;
+    }
+}
+
 // ---------------------------------------------------------------------------------------------- carteira
 
 public sealed record ClienteLinha(ClienteEscritorio C)
 {
-    public string Cnpj => Vorticis.Domain.Cadastros.Cnpj.Formatar(C.Cnpj);
-    public string RazaoSocial => C.RazaoSocial;
-    public string Regime => C.Regime switch { "SIMPLES_NACIONAL" => "Simples Nacional", "LUCRO_PRESUMIDO" => "Lucro Presumido", "LUCRO_REAL" => "Lucro Real", "MEI" => "MEI", null => "", var r => r };
+    public int Codigo => C.Codigo;
+    public string Nome => C.Nome;
+    public string Documento => C.Documento switch
+    {
+        { Length: 14 } d => Vorticis.Domain.Cadastros.Cnpj.Formatar(d),
+        { Length: 11 } d => Vorticis.Domain.Cadastros.Cpf.Formatar(d),
+        _ => "",
+    };
+    public string Regime => C.Regime ?? "";
     public string Tarefas => C.TarefasAtrasadas > 0 ? $"{C.TarefasPendentes} ({C.TarefasAtrasadas} atrasada(s))" : C.TarefasPendentes.ToString();
     public string Honorario => C.HonorarioMensal == 0 ? "" : Formato.Moeda(C.HonorarioMensal);
     public string EmAberto => C.HonorariosEmAberto == 0 ? "" : Formato.Moeda(C.HonorariosEmAberto);
-    public string Certificado => C.CertificadoVence is { } v ? v.ToString("dd/MM/yyyy") : "sem certificado";
-    public string Modulos => C.Modulos;
+    public string Contato => C.Contato ?? "";
 }
 
-/// <summary>Escritório › Carteira de clientes: todas as empresas do escritório com tarefas, honorários e certificado.</summary>
+/// <summary>Escritório › Carteira de clientes: clientes do cadastro próprio do escritório, com tarefas e honorários.</summary>
 public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<ClienteLinha> Lista { get; } = [];
@@ -49,9 +198,9 @@ public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(con
 
     public async Task CarregarAsync()
     {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var itens = await app.Escritorio().CarteiraAsync(sessao.Id, DateOnly.FromDateTime(DateTime.Today));
+        var itens = await app.Escritorio().CarteiraAsync(empresa, sessao.Id, DateOnly.FromDateTime(DateTime.Today));
         if (!EhAtual(g)) return;
         Lista.Clear();
         foreach (var c in itens) Lista.Add(new ClienteLinha(c));
@@ -68,7 +217,7 @@ public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(con
 public sealed record TarefaLinha(Tarefa T)
 {
     public string Vencimento => T.Vencimento.ToString("dd/MM/yyyy");
-    public string Empresa => T.EmpresaNome ?? "";
+    public string Cliente => T.PessoaNome ?? "(escritório)";
     public string Titulo => T.Titulo;
     public string Responsavel => T.ResponsavelNome ?? "";
     public string Prioridade => T.Prioridade switch { 1 => "Alta", 3 => "Baixa", _ => "Normal" };
@@ -76,20 +225,23 @@ public sealed record TarefaLinha(Tarefa T)
     public string Repete => T.Recorrencia.Rotulo();
 }
 
-/// <summary>Escritório › Tarefas e prazos: tarefas da empresa ativa (ou de todas), com responsável, prioridade e recorrência.</summary>
+/// <summary>Escritório › Tarefas e prazos: tarefas do escritório (de um cliente ou internas), com responsável, prioridade e recorrência.</summary>
 public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<TarefaLinha> Lista { get; } = [];
     public ObservableCollection<Opcao<long?>> Responsaveis { get; } = [];
+    public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
+    public ObservableCollection<Opcao<long?>> FiltroClientes { get; } = [];
     public static IReadOnlyList<Opcao<int>> Prioridades { get; } = [new(1, "Alta"), new(2, "Normal"), new(3, "Baixa")];
     public static IReadOnlyList<Opcao<SituacaoTarefa>> Situacoes { get; } =
         [.. Enum.GetValues<SituacaoTarefa>().Select(s => new Opcao<SituacaoTarefa>(s, s.Rotulo()))];
     public static IReadOnlyList<Opcao<Recorrencia>> Recorrencias { get; } =
         [.. Enum.GetValues<Recorrencia>().Select(r => new Opcao<Recorrencia>(r, r.Rotulo()))];
 
-    [ObservableProperty] private bool _todasEmpresas;
+    [ObservableProperty] private Opcao<long?>? _filtroCliente;
     [ObservableProperty] private bool _somenteAbertas = true;
     [ObservableProperty] private TarefaLinha? _selecionada;
+    [ObservableProperty] private Opcao<long?>? _cliente;
     [ObservableProperty] private string _titulo = "";
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private DateTime? _vencimento = DateTime.Today;
@@ -97,17 +249,19 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
     [ObservableProperty] private Opcao<int>? _prioridade = Prioridades[1];
     [ObservableProperty] private Opcao<SituacaoTarefa>? _situacao = Situacoes[0];
     [ObservableProperty] private Opcao<Recorrencia>? _recorrencia = Recorrencias[0];
+    private bool _carregando;
 
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioTarefas);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
 
-    partial void OnTodasEmpresasChanged(bool value) => _ = CarregarAsync();
+    partial void OnFiltroClienteChanged(Opcao<long?>? value) { if (!_carregando) _ = CarregarAsync(); }
     partial void OnSomenteAbertasChanged(bool value) => _ = CarregarAsync();
 
     partial void OnSelecionadaChanged(TarefaLinha? value)
     {
         if (value?.T is not { } t) return;
         (Titulo, Descricao, Vencimento) = (t.Titulo, t.Descricao ?? "", Ext.Dt(t.Vencimento));
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == t.PessoaId) ?? Clientes.FirstOrDefault();
         Responsavel = Responsaveis.FirstOrDefault(r => r.Valor == t.ResponsavelId) ?? Responsaveis.FirstOrDefault();
         Prioridade = Prioridades.First(p => p.Valor == t.Prioridade);
         Situacao = Situacoes.First(s => s.Valor == t.Situacao);
@@ -116,11 +270,22 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
 
     public async Task CarregarAsync()
     {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var itens = await app.Escritorio().ListarTarefasAsync(TodasEmpresas ? null : Contexto.EmpresaId, SomenteAbertas, sessao.Id);
+        var filtro = FiltroCliente?.Valor;
+        var itens = await app.Escritorio().ListarTarefasAsync(empresa, filtro, SomenteAbertas, sessao.Id);
         var usuarios = await app.Escritorio().ListarUsuariosAsync();
         if (!EhAtual(g)) return;
+        _carregando = true;
+        try
+        {
+            var clienteAtual = Cliente?.Valor;
+            await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(tarefa interna do escritório)");
+            await ListaPessoas.Preencher(FiltroClientes, app, empresa, sessao.Id, "Todos os clientes");
+            Cliente = Clientes.FirstOrDefault(c => c.Valor == clienteAtual) ?? Clientes[0];
+            FiltroCliente = FiltroClientes.FirstOrDefault(c => c.Valor == filtro) ?? FiltroClientes[0];
+        }
+        finally { _carregando = false; }
         if (Responsaveis.Count != usuarios.Count + 1)
         {
             Responsaveis.Clear();
@@ -138,6 +303,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         Selecionada = null;
         (Titulo, Descricao, Vencimento) = ("", "", DateTime.Today);
         (Prioridade, Situacao, Recorrencia) = (Prioridades[1], Situacoes[0], Recorrencias[0]);
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == FiltroCliente?.Valor) ?? Clientes.FirstOrDefault();
         Responsavel = Responsaveis.FirstOrDefault(r => r.Valor == Contexto.Sessao?.Id) ?? Responsaveis.FirstOrDefault();
         Mensagem = "Preencha a tarefa e clique em Gravar.";
     }
@@ -145,7 +311,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var t = new Tarefa(Selecionada?.T.Id ?? 0, Selecionada?.T.EmpresaId ?? empresa, Titulo, string.IsNullOrWhiteSpace(Descricao) ? null : Descricao,
+        var t = new Tarefa(Selecionada?.T.Id ?? 0, empresa, Cliente?.Valor, Titulo, string.IsNullOrWhiteSpace(Descricao) ? null : Descricao,
                            Ext.Dia(Vencimento), Responsavel?.Valor, Prioridade?.Valor ?? 2, Situacao?.Valor ?? SituacaoTarefa.Pendente, Recorrencia?.Valor ?? Escritorio.Recorrencia.Nenhuma);
         var r = await app.Escritorio().GravarTarefaAsync(t, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
@@ -169,7 +335,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
     {
         if (Selecionada?.T is not { } t) { Erros.Add("Selecione a tarefa na lista."); return; }
         if (!await Contexto.ConfirmarAsync("Excluir tarefa", $"Excluir a tarefa \"{t.Titulo}\"?")) return;
-        var r = await app.Escritorio().ExcluirTarefaAsync(t.EmpresaId, t.Id, usuario);
+        var r = await app.Escritorio().ExcluirTarefaAsync(empresa, t.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Selecionada = null;
         await CarregarAsync();
@@ -183,19 +349,22 @@ public sealed record ProtocoloLinha(Protocolo P)
 {
     public int Numero => P.Numero;
     public string Data => P.Data.ToString("dd/MM/yyyy");
+    public string Cliente => P.ClienteNome ?? "";
     public string Tipo => P.Tipo == TipoProtocolo.Entrega ? "Entrega ao cliente" : "Recebido do cliente";
     public string Documento => P.Documento;
     public string Pessoa => P.Pessoa;
     public string Usuario => P.UsuarioNome ?? "";
 }
 
-/// <summary>Escritório › Protocolo de documentos: entregas e recebimentos de documentos da empresa ativa, numerados.</summary>
+/// <summary>Escritório › Protocolo de documentos: entregas e recebimentos de documentos dos clientes do escritório, numerados.</summary>
 public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<ProtocoloLinha> Lista { get; } = [];
+    public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
     public static IReadOnlyList<Opcao<TipoProtocolo>> Tipos { get; } = [new(TipoProtocolo.Entrega, "Entrega ao cliente"), new(TipoProtocolo.Recebimento, "Recebido do cliente")];
 
     [ObservableProperty] private ProtocoloLinha? _selecionado;
+    [ObservableProperty] private Opcao<long?>? _cliente;
     [ObservableProperty] private DateTime? _data = DateTime.Today;
     [ObservableProperty] private Opcao<TipoProtocolo>? _tipo = Tipos[0];
     [ObservableProperty] private string _documento = "";
@@ -211,6 +380,9 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
         var g = NovaGeracao();
         var itens = await app.Escritorio().ListarProtocolosAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
+        var atual = Cliente?.Valor;
+        await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == atual) ?? Clientes[0];
         Lista.Clear();
         foreach (var p in itens) Lista.Add(new ProtocoloLinha(p));
     }
@@ -218,7 +390,8 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
     [RelayCommand]
     private Task IncluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var r = await app.Escritorio().IncluirProtocoloAsync(new Protocolo(0, empresa, 0, Ext.Dia(Data), Tipo?.Valor ?? TipoProtocolo.Entrega, Documento,
+        if (Cliente?.Valor is not { } pessoa) { Erros.Add("Escolha o cliente."); return; }
+        var r = await app.Escritorio().IncluirProtocoloAsync(new Protocolo(0, empresa, pessoa, 0, Ext.Dia(Data), Tipo?.Valor ?? TipoProtocolo.Entrega, Documento,
                                                                            string.IsNullOrWhiteSpace(Descricao) ? null : Descricao, Pessoa), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         (Documento, Descricao, Pessoa) = ("", "", "");
@@ -242,7 +415,7 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
 
 public sealed record CobrancaLinha(CobrancaHonorario C)
 {
-    public string Empresa => C.EmpresaNome ?? "";
+    public string Cliente => C.PessoaNome ?? "";
     public string Competencia => C.Competencia.ToString("MM/yyyy");
     public string Vencimento => C.Vencimento.ToString("dd/MM/yyyy");
     public string Valor => Formato.Moeda(C.Valor);
@@ -250,12 +423,15 @@ public sealed record CobrancaLinha(CobrancaHonorario C)
     public string Recebido => C.RecebidoEm is { } d ? $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}" : "";
 }
 
-/// <summary>Honorários › Contratos e cobranças: contrato da empresa ativa e as cobranças mensais de todas as empresas.</summary>
+/// <summary>Contratos › Honorários e cobranças: honorário mensal de cada cliente do escritório e as cobranças mensais.</summary>
 public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<CobrancaLinha> Cobrancas { get; } = [];
+    public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
     public static IReadOnlyList<string> Indices { get; } = ["NENHUM", "IPCA", "IGPM", "INPC", "SALARIO"];
+    private IReadOnlyList<ContratoHonorario> _contratos = [];
 
+    [ObservableProperty] private Opcao<long?>? _cliente;
     [ObservableProperty] private string _valor = "";
     [ObservableProperty] private decimal? _dia = 10;
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -276,29 +452,39 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
     partial void OnCompetenciaChanged(DateTime? value) => _ = CarregarCobrancasAsync();
     partial void OnSomenteAbertasChanged(bool value) => _ = CarregarCobrancasAsync();
     partial void OnSelecionadaChanged(CobrancaLinha? value) => ValorRecebido = value is null ? "" : Formato.Num(value.C.Valor);
+    partial void OnClienteChanged(Opcao<long?>? value) => MostrarContrato();
 
-    public async Task CarregarAsync()
+    private void MostrarContrato()
     {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
-        var c = (await app.Escritorio().ListarContratosAsync(sessao.Id)).FirstOrDefault(x => x.EmpresaId == empresa);
+        var c = _contratos.FirstOrDefault(x => x.PessoaId == Cliente?.Valor);
         if (c is null)
         {
             (Valor, Dia, Fim, Indice, Observacao) = ("", 10, null, "NENHUM", "");
-            SituacaoContrato = "A empresa ativa ainda não tem contrato de honorários.";
+            SituacaoContrato = Cliente?.Valor is null ? "Escolha o cliente para ver ou gravar o honorário." : "O cliente ainda não tem honorário cadastrado.";
         }
         else
         {
             (Valor, Dia, Inicio, Fim, Indice, Observacao) = (Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Observacao ?? "");
-            SituacaoContrato = $"Contrato: {Formato.Moeda(c.Valor)} por mês, vencimento dia {c.DiaVencimento}.";
+            SituacaoContrato = $"Honorário: {Formato.Moeda(c.Valor)} por mês, vencimento dia {c.DiaVencimento}.";
         }
+    }
+
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        _contratos = await app.Escritorio().ListarHonorariosAsync(empresa, sessao.Id);
+        var atual = Cliente?.Valor;
+        await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == atual) ?? Clientes[0];
+        MostrarContrato();
         await CarregarCobrancasAsync();
     }
 
     private async Task CarregarCobrancasAsync()
     {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var itens = await app.Escritorio().ListarCobrancasAsync(SomenteAbertas ? null : Ext.Dia(Competencia), SomenteAbertas, sessao.Id);
+        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, SomenteAbertas ? null : Ext.Dia(Competencia), SomenteAbertas, sessao.Id);
         if (!EhAtual(g)) return;
         Cobrancas.Clear();
         foreach (var c in itens) Cobrancas.Add(new CobrancaLinha(c));
@@ -309,28 +495,29 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
     [RelayCommand]
     private Task GravarContratoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var r = await app.Escritorio().GravarContratoAsync(new ContratoHonorario(0, empresa, Formato.LerValor(Valor) ?? 0, (int)(Dia ?? 0), Ext.Dia(Inicio),
-                                                                                 Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, string.IsNullOrWhiteSpace(Observacao) ? null : Observacao), usuario);
+        if (Cliente?.Valor is not { } pessoa) { Erros.Add("Escolha o cliente."); return; }
+        var r = await app.Escritorio().GravarHonorarioAsync(empresa, new ContratoHonorario(0, pessoa, Formato.LerValor(Valor) ?? 0, (int)(Dia ?? 0), Ext.Dia(Inicio),
+                                                                                           Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, string.IsNullOrWhiteSpace(Observacao) ? null : Observacao), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Mensagem = "Contrato gravado.";
+        Mensagem = "Honorário gravado.";
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var r = await app.Escritorio().GerarCobrancasAsync(Ext.Dia(Competencia), usuario);
+        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(Competencia), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         SomenteAbertas = false;
         await CarregarCobrancasAsync();
-        Mensagem = r.Valor == 0 ? "Nenhuma cobrança nova: todas as empresas com contrato já têm a cobrança deste mês." : $"{r.Valor} cobrança(s) gerada(s).";
+        Mensagem = r.Valor == 0 ? "Nenhuma cobrança nova: todos os clientes com honorário já têm a cobrança deste mês." : $"{r.Valor} cobrança(s) gerada(s).";
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
     private Task ReceberAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
-        var r = await app.Escritorio().ReceberAsync(c, Ext.Dia(DataRecebimento), Formato.LerValor(ValorRecebido) ?? 0, usuario);
+        var r = await app.Escritorio().ReceberAsync(empresa, c, Ext.Dia(DataRecebimento), Formato.LerValor(ValorRecebido) ?? 0, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarCobrancasAsync();
         Mensagem = "Recebimento registrado.";
@@ -345,11 +532,233 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
     private Task Alterar(SituacaoCobranca nova, string msg) => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
-        var r = await app.Escritorio().AlterarSituacaoAsync(c, nova, usuario);
+        var r = await app.Escritorio().AlterarSituacaoAsync(empresa, c, nova, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarCobrancasAsync();
         Mensagem = msg;
     }, Permissao.EscritorioHonorarios);
+}
+
+// ---------------------------------------------------------------------------------------------- gerador de contratos
+
+public sealed record ContratoLinha(ContratoEscritorio C)
+{
+    public int Numero => C.Numero;
+    public string Tipo => C.Modelo == ModeloContrato.Cliente ? "Cliente" : "Fornecedor";
+    public string Parte => C.PessoaNome ?? "";
+    public string Valor => Formato.Moeda(C.Valor);
+    public string Periodicidade => C.Periodicidade.Rotulo();
+    public string Vigencia => C.Fim is { } f ? $"{C.Inicio:dd/MM/yyyy} a {f:dd/MM/yyyy}" : $"desde {C.Inicio:dd/MM/yyyy}";
+    public string Situacao => C.Ativo ? "Ativo" : "Encerrado";
+}
+
+/// <summary>
+/// Contratos › Gerador de contratos: monta o contrato de prestação de serviços contábeis (cliente) ou de fornecimento (fornecedor) com os
+/// dados do escritório e do cadastro próprio, permite ajustar o texto, grava numerado e gera o PDF para assinatura.
+/// </summary>
+public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+{
+    public ObservableCollection<ContratoLinha> Lista { get; } = [];
+    public ObservableCollection<Opcao<long?>> Partes { get; } = [];
+    public static IReadOnlyList<Opcao<ModeloContrato>> Modelos { get; } = [new(ModeloContrato.Cliente, "Cliente: prestação de serviços contábeis"), new(ModeloContrato.Fornecedor, "Fornecedor: fornecimento ao escritório")];
+    public static IReadOnlyList<Opcao<Periodicidade>> Periodicidades { get; } = [.. Enum.GetValues<Periodicidade>().Select(p => new Opcao<Periodicidade>(p, p.Rotulo()))];
+    public static IReadOnlyList<string> Indices => HonorariosViewModel.Indices;
+    private IReadOnlyList<PessoaEscritorio> _pessoas = [];
+
+    [ObservableProperty] private ContratoLinha? _selecionado;
+    [ObservableProperty] private Opcao<ModeloContrato>? _modelo = Modelos[0];
+    [ObservableProperty] private Opcao<long?>? _parte;
+    [ObservableProperty] private string _objeto = GeradorContratos.ObjetoPadrao(ModeloContrato.Cliente);
+    [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private Opcao<Periodicidade>? _periodicidade = Periodicidades[0];
+    [ObservableProperty] private decimal? _dia = 10;
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim;
+    [ObservableProperty] private string _indice = "IPCA";
+    [ObservableProperty] private string _foro = "";
+    [ObservableProperty] private string _texto = "";
+    [ObservableProperty] private bool _ativo = true;
+
+    public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
+    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+
+    partial void OnModeloChanged(Opcao<ModeloContrato>? value)
+    {
+        if (value is null) return;
+        if (Selecionado is null) Objeto = GeradorContratos.ObjetoPadrao(value.Valor);
+        PreencherPartes();
+    }
+
+    private void PreencherPartes()
+    {
+        var atual = Parte?.Valor;
+        var cliente = Modelo?.Valor != ModeloContrato.Fornecedor;
+        Partes.Clear();
+        Partes.Add(new Opcao<long?>(null, cliente ? "(escolha o cliente)" : "(escolha o fornecedor)"));
+        foreach (var p in _pessoas.Where(p => p.Ativo && (cliente ? p.Cliente : p.Fornecedor))) Partes.Add(new Opcao<long?>(p.Id, $"{p.Codigo} – {p.Nome}"));
+        Parte = Partes.FirstOrDefault(p => p.Valor == atual) ?? Partes[0];
+    }
+
+    partial void OnSelecionadoChanged(ContratoLinha? value)
+    {
+        if (value?.C is not { } c) return;
+        Modelo = Modelos.First(m => m.Valor == c.Modelo);
+        Parte = Partes.FirstOrDefault(p => p.Valor == c.PessoaId) ?? Partes.FirstOrDefault();
+        (Objeto, Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) =
+            (c.Objeto, Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Foro ?? "", c.Texto, c.Ativo);
+        Periodicidade = Periodicidades.First(p => p.Valor == c.Periodicidade);
+    }
+
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        var g = NovaGeracao();
+        var contratos = await app.Escritorio().ListarContratosAsync(empresa, sessao.Id);
+        var pessoas = await app.Escritorio().ListarPessoasAsync(empresa, sessao.Id);
+        if (!EhAtual(g)) return;
+        _pessoas = pessoas;
+        PreencherPartes();
+        var id = Selecionado?.C.Id;
+        Lista.Clear();
+        foreach (var c in contratos) Lista.Add(new ContratoLinha(c));
+        Selecionado = Lista.FirstOrDefault(l => l.C.Id == id);
+    }
+
+    private ContratoEscritorio Montar(long id = 0, int numero = 0) =>
+        new(id, numero, Parte?.Valor ?? 0, Modelo?.Valor ?? ModeloContrato.Cliente, Objeto, Formato.LerValor(Valor) ?? 0, Periodicidade?.Valor ?? Escritorio.Periodicidade.Mensal,
+            Dia is { } d ? (int)d : null, Ext.Dia(Inicio), Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, Foro, Texto, Ativo);
+
+    [RelayCommand]
+    private void Novo()
+    {
+        Selecionado = null;
+        Modelo = Modelos[0];
+        Objeto = GeradorContratos.ObjetoPadrao(ModeloContrato.Cliente);
+        (Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) = ("", 10, new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), null, "IPCA", "", "", true);
+        Periodicidade = Periodicidades[0];
+        Mensagem = "Escolha o tipo e a parte, preencha as condições e clique em Gerar texto.";
+    }
+
+    [RelayCommand]
+    private Task GerarTextoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (_pessoas.FirstOrDefault(p => p.Id == Parte?.Valor) is not { } pessoa) { Erros.Add(Modelo?.Valor == ModeloContrato.Fornecedor ? "Escolha o fornecedor." : "Escolha o cliente."); return; }
+        var esc = await app.Escritorio().DadosEscritorioAsync(empresa);
+        var c = Montar(Selecionado?.C.Id ?? 0, Selecionado?.C.Numero ?? 0) with { Texto = "-" };
+        var erros = RegrasEscritorio.Validar(c);
+        if (erros.Count > 0) { foreach (var e in erros) Erros.Add(e); return; }
+        Texto = GeradorContratos.Gerar(esc, pessoa, c);
+        Mensagem = "Texto gerado. Ajuste o que precisar e clique em Gravar.";
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Escritorio().GravarContratoAsync(empresa, Montar(Selecionado?.C.Id ?? 0), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Selecionado = null;
+        await CarregarAsync();
+        Selecionado = Lista.FirstOrDefault(l => l.C.Numero == r.Valor);
+        Mensagem = $"Contrato nº {r.Valor} gravado.";
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    private Task PdfAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionado?.C is not { } c) { Erros.Add("Grave o contrato e selecione-o na lista para gerar o PDF."); return; }
+        if (_pessoas.FirstOrDefault(p => p.Id == c.PessoaId) is not { } pessoa) return;
+        var esc = await app.Escritorio().DadosEscritorioAsync(empresa);
+        var pdf = new GeradorPdf().Gerar(GeradorContratos.Documento(esc, pessoa, c));
+        Mensagem = "PDF gerado: " + ArquivosGerados.Salvar($"contrato_{c.Numero}.pdf", pdf.Conteudo);
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionado?.C is not { } c) { Erros.Add("Selecione o contrato na lista."); return; }
+        if (!await Contexto.ConfirmarAsync("Excluir contrato", $"Excluir o contrato nº {c.Numero}? Para guardar o histórico, prefira desmarcar Ativo.")) return;
+        var r = await app.Escritorio().ExcluirContratoAsync(empresa, c.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Selecionado = null;
+        await CarregarAsync();
+        Mensagem = "Contrato excluído.";
+    }, Permissao.EscritorioHonorarios);
+}
+
+// ---------------------------------------------------------------------------------------------- relatórios
+
+/// <summary>Linha de relatório do Escritório na grade (textos já formatados).</summary>
+public sealed record LinhaRelatorioEscritorio(string[] V, bool Destaque)
+{
+    public string V0 => V.ElementAtOrDefault(0) ?? "";
+    public string V1 => V.ElementAtOrDefault(1) ?? "";
+    public string V2 => V.ElementAtOrDefault(2) ?? "";
+    public string V3 => V.ElementAtOrDefault(3) ?? "";
+    public string V4 => V.ElementAtOrDefault(4) ?? "";
+    public string V5 => V.ElementAtOrDefault(5) ?? "";
+    public string V6 => V.ElementAtOrDefault(6) ?? "";
+    public string V7 => V.ElementAtOrDefault(7) ?? "";
+    public string V8 => V.ElementAtOrDefault(8) ?? "";
+}
+
+/// <summary>Base dos relatórios do Escritório: a tabela exportável é mostrada na grade e exportada em PDF, Excel e CSV.</summary>
+public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) : RelatorioViewModel(contexto)
+{
+    private TabelaRelatorio? _tabela;
+    private string _parametros = "";
+
+    public ObservableCollection<LinhaRelatorioEscritorio> Linhas { get; } = [];
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 1);
+    [ObservableProperty] private bool _somenteAtivos = true;
+
+    public abstract string Titulo { get; }
+    protected override string TituloRelatorio => Titulo;
+    protected override string Parametros => _parametros;
+    protected override bool Paisagem => true;
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() => _tabela is null ? [] : [_tabela];
+
+    protected void Exibir(TabelaRelatorio t, string parametros)
+    {
+        (_tabela, _parametros) = (t, parametros);
+        Linhas.Clear();
+        foreach (var l in t.Linhas)
+            Linhas.Add(new LinhaRelatorioEscritorio(l.Valores.Select((v, i) => ExportacaoRelatorio.Texto(v, t.Colunas[i].Tipo)).ToArray(), l.Destaque));
+        TemDados = true;
+        AtualizarPermissoesExportacao();
+    }
+}
+
+/// <summary>Relatórios › Honorários › Relatório de contratos.</summary>
+public sealed partial class RelContratosViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
+{
+    public override string Titulo => TabelasEscritorio.TituloContratos;
+    protected override string NomeArquivo => "relatorio_contratos";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var contratos = await app.Escritorio().ListarContratosAsync(empresa, usuario);
+        Exibir(TabelasEscritorio.Contratos(contratos, SomenteAtivos), SomenteAtivos ? "Somente contratos ativos" : "Todos os contratos");
+        Mensagem = contratos.Count == 0 ? "Nenhum contrato gravado (Contratos › Gerador de contratos)." : null;
+    }, Permissao.EscritorioRelatorios);
+}
+
+/// <summary>Relatórios › Honorários › Relatório de honorários (cobranças das competências do período).</summary>
+public sealed partial class RelHonorariosViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
+{
+    public override string Titulo => TabelasEscritorio.TituloHonorarios;
+    protected override string NomeArquivo => "relatorio_honorarios";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = RegrasEscritorio.Mes(Ext.Dia(Inicio));
+        var fim = RegrasEscritorio.Mes(Ext.Dia(Fim));
+        var cobrancas = await app.Escritorio().ListarCobrancasAsync(empresa, ini, false, usuario, ate: fim);
+        Exibir(TabelasEscritorio.Honorarios(cobrancas, DateOnly.FromDateTime(DateTime.Today)), $"Competências de {ini:MM/yyyy} a {fim:MM/yyyy}");
+        Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança nas competências escolhidas." : null;
+    }, Permissao.EscritorioRelatorios);
 }
 
 // ---------------------------------------------------------------------------------------------- parâmetros
@@ -358,14 +767,15 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
 public sealed class ParametrosViewModelEscritorio(IContexto contexto) : ParametrosViewModel(contexto)
 {
     public override string Titulo => "Parâmetros do Escritório";
-    public override string Descricao => "O Escritório usa os cadastros comuns da suíte. As configurações ficam nas telas abaixo.";
+    public override string Descricao => "O Escritório tem cadastros próprios, que não são compartilhados com os outros módulos. As configurações ficam nas telas abaixo.";
     protected override Permissao PermissaoGravar => Permissao.EscritorioHonorarios;
 
     protected override IReadOnlyList<GrupoParametros> MontarGrupos() =>
     [
-        new("Honorários", "Valor, vencimento e reajuste de cada empresa ficam no contrato.", [], [Atalho("Abrir Contratos e cobranças", EscritorioTelas.Honorarios)]),
+        new("Clientes e fornecedores", "Cadastro próprio do escritório.", [], [Atalho("Abrir Clientes e fornecedores", EscritorioTelas.Pessoas)]),
+        new("Honorários", "Valor, vencimento e reajuste de cada cliente.", [], [Atalho("Abrir Honorários e cobranças", EscritorioTelas.Honorarios)]),
+        new("Contratos", "Contratos com clientes e fornecedores.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
         new("Tarefas", "Prazos, responsáveis e recorrência.", [], [Atalho("Abrir Tarefas e prazos", EscritorioTelas.Tarefas)]),
-        new("Cadastros comuns", "Empresas, sócios, contadores, clientes e fornecedores valem em todos os módulos.", [], [Atalho("Abrir Empresas", TelasComuns.Empresas)]),
     ];
 
     protected override Task CarregarValoresAsync(VorticisApp app, long empresa, long usuario) => Task.CompletedTask;
