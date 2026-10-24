@@ -32,7 +32,7 @@ Em instalação nova não existe nenhum usuário. Por isso:
 
 ## Usuários, perfis e empresas por usuário
 
-**Onde fica:** *Configurações › Usuários*, em quatro abas: *Usuários*, *Perfis de acesso*, *Alterar minha senha* e *Registro de acessos*. Usuários comuns veem apenas a troca de senha.
+**Onde fica:** *Configurações › Usuários* (com o Vorticis Escritório instalado, só nele: *Configurações › Usuários e controle de acesso*), em quatro abas: *Usuários*, *Perfis de acesso*, *Alterar minha senha* e *Registro de acessos*. Usuários comuns veem apenas a troca de senha.
 
 ### Cadastrar um usuário (administrador)
 1. Aba *Usuários* › **Incluir**.

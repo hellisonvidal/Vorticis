@@ -237,6 +237,42 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.Sobre, $"Ajuda › Sobre o {Modulo.Nome}", null, v => { v.Atualizar(); return Task.CompletedTask; });
     }
 
+    /// <summary>
+    /// Instalação com o Vorticis Escritório (o executável na mesma pasta): usuários, acessos e banco de dados ficam só nele.
+    /// Substituível nos testes.
+    /// </summary>
+    public static Func<bool> EscritorioInstalado { get; set; } = () =>
+        File.Exists(Path.Combine(AppContext.BaseDirectory, "VorticisEscritorio.exe")) || File.Exists(Path.Combine(AppContext.BaseDirectory, "VorticisEscritorio"));
+
+    /// <summary>Usuários, acessos e banco de dados são administrados no Escritório, não neste módulo.</summary>
+    public bool SistemaCentralizadoNoEscritorio => !Modulo.GerenciaSistema && EscritorioInstalado();
+
+    private IEnumerable<ItemMenu> MenuConfiguracoes()
+    {
+        var sistema = new[]
+        {
+            ItemMenu.Tela(Modulo.GerenciaSistema ? "Usuários e controle de acesso" : "Usuários", TelasComuns.Usuarios),
+            ItemMenu.Tela("Conexão com o banco de dados", TelasComuns.Conexao),
+            ItemMenu.Tela("Backup e restauração", TelasComuns.Backup),
+            ItemMenu.Tela(Modulo.GerenciaSistema ? "Senha do administrador e limpeza do banco" : "Configurações gerais", TelasComuns.ConfiguracoesGerais),
+        };
+        if (Modulo.GerenciaSistema)
+        {
+            yield return sistema[0];
+            yield return ItemMenu.Submenu("_Banco de dados", sistema[1], sistema[2], sistema[3]);
+            yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
+        }
+        else if (SistemaCentralizadoNoEscritorio) yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
+        else
+        {
+            yield return sistema[3];
+            yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
+            foreach (var i in sistema[..3]) yield return i;
+        }
+        yield return ItemMenu.Separador;
+        yield return ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair);
+    }
+
     /// <summary>Menus do casco em volta dos do módulo.</summary>
     private IReadOnlyList<ItemMenu> MontarMenus()
     {
@@ -268,14 +304,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         [
             ItemMenu.Submenu("_Cadastros", [.. cadastros]),
             .. menusModulo,
-            ItemMenu.Submenu("Con_figurações",
-                ItemMenu.Tela("Configurações gerais", TelasComuns.ConfiguracoesGerais),
-                ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados),
-                ItemMenu.Tela("Usuários", TelasComuns.Usuarios),
-                ItemMenu.Tela("Conexão com o banco de dados", TelasComuns.Conexao),
-                ItemMenu.Tela("Backup e restauração", TelasComuns.Backup),
-                ItemMenu.Separador,
-                ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair)),
+            ItemMenu.Submenu("Con_figurações", [.. MenuConfiguracoes()]),
             ItemMenu.Submenu("_Ajuda",
                 ItemMenu.Tela("Tela inicial", TelasComuns.Inicio),
                 ItemMenu.Tela("Manual do usuário", TelasComuns.Manual, "F1"),
@@ -482,6 +511,17 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             Abrir(TelasComuns.Perfis);
             Status = "Configuração inicial: defina os perfis de acesso dos usuários para liberar o sistema.";
         }
+        else AbrirInicio();
+    }
+
+    /// <summary>Tela inicial; no Escritório sem nenhum escritório cadastrado (primeiro uso), o cadastro do escritório.</summary>
+    private void AbrirInicio()
+    {
+        if (Modulo.GerenciaSistema && EmpresasPermitidas.Count == 0 && Sessao?.Administrador == true)
+        {
+            Abrir(TelasComuns.Empresas);
+            Status = "Primeiro uso: cadastre o escritório contábil (Buscar na Receita) e, depois, os clientes em Cadastros › Clientes.";
+        }
         else Abrir(TelasComuns.Inicio);
     }
 
@@ -491,7 +531,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         CentralUsuarios.AtualizarAcesso();
         AbrirCommand.NotifyCanExecuteChanged();
         FecharTodasAsJanelas();
-        Abrir(TelasComuns.Inicio);
+        AbrirInicio();
         AtualizarStatus();
     }
 

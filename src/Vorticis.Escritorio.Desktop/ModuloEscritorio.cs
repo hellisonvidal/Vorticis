@@ -26,6 +26,9 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public string RotuloEmpresas => "Escritório";
     public string RotuloEmpresaAtiva => "Escritório";
 
+    /// <summary>Usuários, controle de acesso e banco de dados (conexão, backup, restauração, limpeza) da suíte ficam no Escritório.</summary>
+    public bool GerenciaSistema => true;
+
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Clientes", EscritorioTelas.Clientes),

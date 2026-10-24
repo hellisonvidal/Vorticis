@@ -2,6 +2,12 @@
 
 Módulo **Vorticis Escritório** (ícone azul): o gerenciador do escritório contábil. Os clientes e fornecedores do escritório são cadastrados aqui; o cliente pode ser levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Escritório:**, é o **próprio escritório**.
 
+## Primeiro uso
+
+Na instalação, o Escritório é o módulo aberto ao final. Depois de entrar com o administrador, se ainda não houver escritório cadastrado, a tela *Cadastros › Escritório* abre sozinha: cadastre o seu escritório contábil e, em seguida, os clientes em *Cadastros › Clientes*, marcando os módulos de cada um.
+
+O Escritório também administra a suíte: **usuários e controle de acesso** (*Configurações › Usuários e controle de acesso*) e o **banco de dados** (*Configurações › Banco de dados*: conexão, backup e restauração, senha do administrador e limpeza). Com o Escritório instalado, essas funções saem dos outros módulos.
+
 ## Escritório
 
 **Para que serve:** cadastrar o próprio escritório contábil (o contador), que é o escolhido no topo da tela.

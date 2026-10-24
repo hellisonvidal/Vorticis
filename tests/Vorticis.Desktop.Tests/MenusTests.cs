@@ -64,6 +64,35 @@ public class MenusTests
     }
 
     [Fact]
+    public void Usuarios_acessos_e_banco_de_dados_ficam_no_Escritorio_quando_instalado()
+    {
+        static List<string> Config(MainViewModelBase vm) => Folhas(Assert.Single(vm.Menus, m => m.Titulo == "Con_figurações").Filhos!).Where(i => i.Chave is not null).Select(i => i.Chave!).ToList();
+        var anterior = MainViewModelBase.EscritorioInstalado;
+        try
+        {
+            MainViewModelBase.EscritorioInstalado = () => true;
+            var contabil = new MainViewModel();
+            Assert.True(contabil.SistemaCentralizadoNoEscritorio);
+            Assert.Equal([TelasComuns.Certificados, TelasComuns.Sair], Config(contabil));
+            var esc = new Vorticis.Escritorio.Desktop.MainViewModel();
+            Assert.False(esc.SistemaCentralizadoNoEscritorio);
+            var menuEsc = Assert.Single(esc.Menus, m => m.Titulo == "Con_figurações").Filhos!;
+            Assert.Equal("Usuários e controle de acesso", menuEsc[0].Titulo);
+            var banco = Assert.Single(menuEsc, m => m.Titulo == "_Banco de dados");
+            Assert.Equal([TelasComuns.Conexao, TelasComuns.Backup, TelasComuns.ConfiguracoesGerais], banco.Filhos!.Select(i => i.Chave));
+
+            MainViewModelBase.EscritorioInstalado = () => false;   // sem o Escritório, cada módulo administra
+            Assert.Superset(new HashSet<string>([TelasComuns.Usuarios, TelasComuns.Conexao, TelasComuns.Backup, TelasComuns.ConfiguracoesGerais]),
+                            new HashSet<string>(Config(new MainViewModel())));
+        }
+        finally { MainViewModelBase.EscritorioInstalado = anterior; }
+        var raiz = new DirectoryInfo(AppContext.BaseDirectory);
+        while (raiz is not null && !File.Exists(Path.Combine(raiz.FullName, "instalador", "Vorticis.iss"))) raiz = raiz.Parent;
+        var iss = File.ReadAllText(Path.Combine(raiz!.FullName, "instalador", "Vorticis.iss"));
+        Assert.Contains("VorticisEscritorio.exe\"; Description: \"{cm:LaunchProgram,Vorticis Escritório}\"; Flags: nowait postinstall skipifsilent; Components: escritorio", iss);
+    }
+
+    [Fact]
     public void Menu_tem_os_menus_comuns_em_volta_dos_do_modulo()
     {
         var titulos = new MainViewModel().Menus.Select(m => m.Titulo).ToList();

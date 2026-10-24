@@ -113,11 +113,12 @@ Name: "{autodesktop}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe
 Name: "{autodesktop}\Vorticis Condomínio"; Filename: "{app}\VorticisCondominio.exe"; IconFilename: "{app}\VorticisCondominio.ico"; Tasks: desktopicon; Components: condominio
 
 [Run]
-; Ao final, só o primeiro módulo instalado é aberto por padrão; os demais podem ser marcados.
-Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis Contábil}"; Flags: nowait postinstall skipifsilent; Components: contabil
+; Ao final abre o Escritório (cadastro do escritório e dos clientes) quando instalado; senão, o Contábil. Os demais podem ser marcados.
+Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis Contábil}"; Flags: nowait postinstall skipifsilent; Components: contabil; Check: not WizardIsComponentSelected('escritorio')
+Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis Contábil}"; Flags: nowait postinstall skipifsilent unchecked; Components: contabil; Check: WizardIsComponentSelected('escritorio')
 Filename: "{app}\VorticisFiscal.exe"; Description: "{cm:LaunchProgram,Vorticis Fiscal}"; Flags: nowait postinstall skipifsilent unchecked; Components: fiscal
 Filename: "{app}\VorticisFolha.exe"; Description: "{cm:LaunchProgram,Vorticis Folha}"; Flags: nowait postinstall skipifsilent unchecked; Components: folha
-Filename: "{app}\VorticisEscritorio.exe"; Description: "{cm:LaunchProgram,Vorticis Escritório}"; Flags: nowait postinstall skipifsilent unchecked; Components: escritorio
+Filename: "{app}\VorticisEscritorio.exe"; Description: "{cm:LaunchProgram,Vorticis Escritório}"; Flags: nowait postinstall skipifsilent; Components: escritorio
 Filename: "{app}\VorticisGerencial.exe"; Description: "{cm:LaunchProgram,Vorticis Gerencial}"; Flags: nowait postinstall skipifsilent unchecked; Components: erp
 Filename: "{app}\VorticisCondominio.exe"; Description: "{cm:LaunchProgram,Vorticis Condomínio}"; Flags: nowait postinstall skipifsilent unchecked; Components: condominio
 

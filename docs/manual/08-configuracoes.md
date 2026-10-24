@@ -2,10 +2,12 @@
 
 Menu *Configurações*. As telas de backup, configurações gerais e conexão são exclusivas do administrador.
 
+**Com o Vorticis Escritório instalado**, os usuários, os perfis de acesso e as funções do banco de dados (conexão, backup, restauração, senha do administrador e limpeza) ficam **só no Escritório**: *Configurações › Usuários e controle de acesso* e *Configurações › Banco de dados*. Nos outros módulos, o menu Configurações mostra apenas **Certificados digitais** e **Sair**. Sem o Escritório, cada módulo continua com essas funções no menu Configurações, como descrito abaixo.
+
 ## Backup e restauração
 
 **Para que serve:** guardar cópias de segurança de todo o banco de dados e voltar a elas se for preciso.
-**Onde fica:** *Configurações › Backup e restauração*.
+**Onde fica:** *Configurações › Backup e restauração* (no Escritório: *Configurações › Banco de dados › Backup e restauração*).
 
 ### Fazer backup
 1. Veja a **pasta** de destino. O padrão é a pasta *Backups* dentro da instalação (ou *Documentos\Vorticis Contabil\Backups*, se não for possível gravar). **Escolher pasta...** muda o destino dos próximos backups, inclusive os automáticos.
@@ -20,7 +22,7 @@ Menu *Configurações*. As telas de backup, configurações gerais e conexão s�
 
 ## Configurações gerais
 
-**Onde fica:** *Configurações › Configurações gerais*.
+**Onde fica:** *Configurações › Configurações gerais* (no Escritório: *Configurações › Banco de dados › Senha do administrador e limpeza do banco*).
 
 ### Senha de administrador
 Usada para confirmar restauração de backup e limpeza do banco. Informe a senha atual, a nova e a confirmação e clique em **Alterar senha**. Troque a senha padrão (`VORTICIS`) logo no início.
@@ -33,7 +35,7 @@ Apaga **todas** as empresas, cadastros, usuários e perfis personalizados. Gera 
 
 ## Conexão com o banco de dados
 
-**Onde fica:** *Configurações › Conexão com o banco de dados* (abre sozinha se o programa não consegue conectar).
+**Onde fica:** *Configurações › Conexão com o banco de dados* (no Escritório: *Configurações › Banco de dados*; abre sozinha se o programa não consegue conectar).
 
 - **Configuração automática** (recomendado): preenche o usuário e a senha do PostgreSQL só se for usar um servidor local já instalado; clique em **Configurar automaticamente**. O sistema mostra cada passo.
 - **Banco de dados local do Vorticis**: porta, pasta dos dados e troca da senha do banco (deixe em branco para manter). **Recriar o banco local** cria um novo e guarda o antigo como `banco.backup-<data>`.

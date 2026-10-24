@@ -52,6 +52,12 @@ public interface IModuloDesktop
     /// <summary>Nome do cadastro de empresas no menu Cadastros (o Condomínio chama de "Condomínios"; os dados são os mesmos).</summary>
     string RotuloEmpresas => "Empresas";
 
+    /// <summary>
+    /// O módulo administra a suíte: usuários e controle de acesso, conexão, backup, restauração e limpeza do banco (o Escritório).
+    /// Instalado o Escritório, os demais módulos deixam essas funções para ele.
+    /// </summary>
+    bool GerenciaSistema => false;
+
     /// <summary>Rótulo da escolha da empresa ativa na barra superior (o Escritório escolhe o escritório; o Condomínio, o condomínio).</summary>
     string RotuloEmpresaAtiva => "Empresa";
 
