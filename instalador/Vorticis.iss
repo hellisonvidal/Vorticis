@@ -40,7 +40,7 @@ Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 ptbr.FinishedLabel=O Vorticis foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
 
 [Types]
-Name: "completa"; Description: "Instalação completa (Contábil, Fiscal e Folha de Pagamento)"
+Name: "completa"; Description: "Instalação completa (todos os módulos da suíte)"
 Name: "personalizada"; Description: "Instalação personalizada (escolher os módulos)"; Flags: iscustom
 
 [Components]
@@ -49,6 +49,7 @@ Name: "personalizada"; Description: "Instalação personalizada (escolher os mó
 Name: "contabil"; Description: "Vorticis Contábil"; Types: completa personalizada
 Name: "fiscal"; Description: "Vorticis Fiscal"; Types: completa personalizada
 Name: "folha"; Description: "Vorticis Folha de Pagamento"; Types: completa personalizada
+Name: "escritorio"; Description: "Vorticis Escritório"; Types: completa personalizada
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -61,16 +62,18 @@ Type: files; Name: "{autodesktop}\Perseus Contábil.lnk"
 
 [Files]
 ; Comuns a todos os módulos: banco de dados local e ícone
-Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: contabil fiscal folha
-Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; DestName: "Vorticis.ico"; Flags: ignoreversion; Components: contabil fiscal folha
+Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: contabil fiscal folha escritorio
+Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; DestName: "Vorticis.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio
 ; Executáveis (arquivo único, sem exigir .NET instalado)
 Source: "..\publish\VorticisContabil.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "..\publish\VorticisFiscal.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "..\publish\VorticisFolha.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
+Source: "..\publish\VorticisEscritorio.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
 ; Ícone de cada módulo (atalhos): espiral verde (Contábil), laranja (Fiscal) e roxa (Folha)
 Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
+Source: "icone\VorticisEscritorio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
 
 #ifexist "..\publish\vc_redist.x64.exe"
 ; Microsoft Visual C++ Redistributable 2015-2022 (x64), instalado em silêncio só se ainda não existir (ver InstalarVcRuntime)
@@ -85,15 +88,18 @@ Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 Name: "{autoprograms}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Components: contabil
 Name: "{autoprograms}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Components: fiscal
 Name: "{autoprograms}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Components: folha
+Name: "{autoprograms}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Components: escritorio
 Name: "{autodesktop}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Tasks: desktopicon; Components: contabil
 Name: "{autodesktop}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Tasks: desktopicon; Components: fiscal
 Name: "{autodesktop}\Vorticis Folha de Pagamento"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Tasks: desktopicon; Components: folha
+Name: "{autodesktop}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Tasks: desktopicon; Components: escritorio
 
 [Run]
 ; Ao final, só o primeiro módulo instalado é aberto por padrão; os demais podem ser marcados.
 Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis Contábil}"; Flags: nowait postinstall skipifsilent; Components: contabil
 Filename: "{app}\VorticisFiscal.exe"; Description: "{cm:LaunchProgram,Vorticis Fiscal}"; Flags: nowait postinstall skipifsilent unchecked; Components: fiscal
 Filename: "{app}\VorticisFolha.exe"; Description: "{cm:LaunchProgram,Vorticis Folha de Pagamento}"; Flags: nowait postinstall skipifsilent unchecked; Components: folha
+Filename: "{app}\VorticisEscritorio.exe"; Description: "{cm:LaunchProgram,Vorticis Escritório}"; Flags: nowait postinstall skipifsilent unchecked; Components: escritorio
 
 [Code]
 // O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover
@@ -155,6 +161,7 @@ function ModuloParaConfigurar(): String;
 begin
   if WizardIsComponentSelected('contabil') then Result := 'VorticisContabil.exe'
   else if WizardIsComponentSelected('fiscal') then Result := 'VorticisFiscal.exe'
+  else if WizardIsComponentSelected('escritorio') then Result := 'VorticisEscritorio.exe'
   else Result := 'VorticisFolha.exe';
 end;
 

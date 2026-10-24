@@ -63,7 +63,7 @@ jobs:
         shell: pwsh
         run: |
           # Contábil, Fiscal e Folha vão para a mesma pasta (publish), junto com a pasta pgsql: é a entrada do instalador.
-          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop") {
+          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop", "Vorticis.Escritorio.Desktop") {
             dotnet publish "src/$projeto" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -76,7 +76,7 @@ jobs:
           }
           if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
           # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
-          foreach ($modulo in "Contabil", "Fiscal", "Folha") {
+          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio") {
             $pasta = "portatil/Vorticis$modulo"
             New-Item -ItemType Directory -Path $pasta -Force | Out-Null
             Copy-Item "publish/Vorticis$modulo.exe" $pasta
@@ -122,3 +122,7 @@ jobs:
         with:
           name: VorticisSuite-portatil
           path: portatil/VorticisSuite/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisEscritorio-portatil
+          path: portatil/VorticisEscritorio/

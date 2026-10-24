@@ -220,3 +220,11 @@ internal static class AutorizadorEscritorio
         return p.Administrador || Todas.Any(p.Pode);
     }
 }
+
+/// <summary>Uma instância do serviço por conexão (<see cref="Vorticis.Infra.VorticisApp"/>).</summary>
+public static class ServicosEscritorio
+{
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Vorticis.Infra.VorticisApp, ServicoEscritorio> Instancias = new();
+
+    public static ServicoEscritorio De(Vorticis.Infra.VorticisApp app) => Instancias.GetValue(app, a => new ServicoEscritorio(a.DataSource, a.Autorizador));
+}

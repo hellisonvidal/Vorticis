@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.TarefasView" x:DataType="vm:TarefasViewModel">
+  <Grid ColumnDefinitions="*,16,360" RowDefinitions="Auto,*" Margin="8">
+    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Tarefas e prazos" VerticalAlignment="Center" />
+      <CheckBox Content="Todas as empresas" IsChecked="{Binding TodasEmpresas}" />
+      <CheckBox Content="Só as em aberto" IsChecked="{Binding SomenteAbertas}" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="100" />
+        <DataGridTextColumn Header="Empresa" Binding="{ReflectionBinding Empresa}" Width="200" />
+        <DataGridTextColumn Header="Tarefa" Binding="{ReflectionBinding Titulo}" Width="*" />
+        <DataGridTextColumn Header="Responsável" Binding="{ReflectionBinding Responsavel}" Width="130" />
+        <DataGridTextColumn Header="Prioridade" Binding="{ReflectionBinding Prioridade}" Width="90" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="110" />
+        <DataGridTextColumn Header="Repete" Binding="{ReflectionBinding Repete}" Width="90" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
+      <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova tarefa" Command="{Binding NovaCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Content="Concluir" Command="{Binding ConcluirCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" />
+      </StackPanel>
+      <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Classes="rotulo" Text="Tarefa" />
+        <TextBox Grid.Column="1" Text="{Binding Titulo}" MaxLength="150" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Vencimento" />
+        <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Vencimento}" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Responsável" />
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Responsaveis}" SelectedItem="{Binding Responsavel}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Prioridade" />
+        <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Prioridades}" SelectedItem="{Binding Prioridade}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Situação" />
+        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Situacoes}" SelectedItem="{Binding Situacao}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Repetir" />
+        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Recorrencias}" SelectedItem="{Binding Recorrencia}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="6" Classes="rotulo" Text="Detalhes" />
+        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Descricao}" AcceptsReturn="True" Height="90" TextWrapping="Wrap" />
+      </Grid>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="A tarefa nova vai para a empresa ativa. Ao concluir uma tarefa que se repete, a próxima é criada sozinha." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

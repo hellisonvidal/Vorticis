@@ -114,3 +114,9 @@ folha.esocial.transmissao=06-folha.md#esocial-transmissao
 folha.resumo=06-folha.md#relatorios-da-folha
 folha.encargos=06-folha.md#relatorios-da-folha
 folha.prolabore=06-folha.md#pro-labore-dos-socios
+
+; ---- Escritório
+escritorio.carteira=09-escritorio.md#carteira-de-clientes
+escritorio.tarefas=09-escritorio.md#tarefas-e-prazos
+escritorio.protocolos=09-escritorio.md#protocolo-de-documentos
+escritorio.honorarios=09-escritorio.md#honorarios-contratos-e-cobrancas

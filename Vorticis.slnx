@@ -4,6 +4,7 @@
     <Project Path="src/Vorticis.Desktop.Comum/Vorticis.Desktop.Comum.csproj" />
     <Project Path="src/Vorticis.Desktop/Vorticis.Desktop.csproj" />
     <Project Path="src/Vorticis.Domain/Vorticis.Domain.csproj" />
+    <Project Path="src/Vorticis.Escritorio.Desktop/Vorticis.Escritorio.Desktop.csproj" />
     <Project Path="src/Vorticis.Escritorio/Vorticis.Escritorio.csproj" />
     <Project Path="src/Vorticis.Fiscal.Desktop/Vorticis.Fiscal.Desktop.csproj" />
     <Project Path="src/Vorticis.Fiscal/Vorticis.Fiscal.csproj" />
@@ -17,5 +18,6 @@
     <Project Path="tests/Vorticis.Fiscal.Tests/Vorticis.Fiscal.Tests.csproj" />
     <Project Path="tests/Vorticis.Folha.Tests/Vorticis.Folha.Tests.csproj" />
     <Project Path="tests/Vorticis.Infra.Tests/Vorticis.Infra.Tests.csproj" />
+    <Project Path="tests/Vorticis.Modulos.Tests/Vorticis.Modulos.Tests.csproj" />
   </Folder>
 </Solution>

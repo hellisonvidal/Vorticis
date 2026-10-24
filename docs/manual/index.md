@@ -15,6 +15,7 @@ Cada função segue o mesmo roteiro: **para que serve**, **onde fica no menu**, 
 | [Fiscal](05-fiscal.md) | Notas fiscais, apurações de impostos, guias e SPED Fiscal |
 | [Folha de pagamento](06-folha.md) | Funcionários, folha, férias, 13º, rescisão e eSocial |
 | [Obrigações](07-obrigacoes.md) | Calendário de obrigações |
+| [Escritório](09-escritorio.md) | Carteira de clientes, tarefas e prazos, protocolos e honorários |
 | [Configurações](08-configuracoes.md) | Backup, configurações gerais, conexão e solução de problemas |
 
 ## Dicas gerais de uso

@@ -38,9 +38,9 @@ public class MenusTests
     [Fact]
     public void Cada_modulo_tem_cor_e_icone_proprios_para_nao_confundir_os_sistemas()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
-        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9"], modulos.Select(m => m.Modulo.CorDestaque));
-        Assert.Equal(3, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
+        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9", "#1D4ED8"], modulos.Select(m => m.Modulo.CorDestaque));
+        Assert.Equal(modulos.Length, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
         Assert.Equal("#14305A", modulos[0].Modulo.CorBarra);                      // azul-marinho da logo
         // a cor chega ao casco como pincel (faixa sob os menus, login e tela inicial)
         Assert.Equal(Avalonia.Media.Color.Parse("#C2410C"), ((Avalonia.Media.ISolidColorBrush)modulos[1].PincelDestaque).Color);
@@ -53,7 +53,7 @@ public class MenusTests
         Assert.NotNull(pasta);
         var tamanhos = modulos.Select(m => new FileInfo(Path.Combine(pasta.FullName, "instalador", "icone", $"{m.Modulo.NomeExecutavel}.ico")))
                               .Select(f => { Assert.True(f.Exists, f.Name); return File.ReadAllBytes(f.FullName); }).ToList();
-        Assert.Equal(3, tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))).Distinct().Count());   // ícones diferentes
+        Assert.Equal(modulos.Length, tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))).Distinct().Count());   // ícones diferentes
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
         foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
@@ -98,7 +98,7 @@ public class MenusTests
     [Fact]
     public void Todos_os_modulos_tem_Parametros_no_menu_Cadastros()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
         foreach (var vm in modulos)
         {
             var cadastros = vm.Menus[0];

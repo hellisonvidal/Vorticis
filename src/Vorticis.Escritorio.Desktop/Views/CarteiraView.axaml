@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.CarteiraView" x:DataType="vm:CarteiraViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Carteira de clientes" VerticalAlignment="Center" />
+      <Button Content="Atualizar" Command="{Binding AtualizarCommand}" />
+      <TextBlock Text="{Binding Totais}" VerticalAlignment="Center" FontSize="12" />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <DataGrid ItemsSource="{Binding Lista}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="CNPJ" Binding="{ReflectionBinding Cnpj}" Width="150" />
+        <DataGridTextColumn Header="Razão social" Binding="{ReflectionBinding RazaoSocial}" Width="*" />
+        <DataGridTextColumn Header="Regime" Binding="{ReflectionBinding Regime}" Width="130" />
+        <DataGridTextColumn Header="Tarefas abertas" Binding="{ReflectionBinding Tarefas}" Width="150" />
+        <DataGridTextColumn Header="Honorário mensal" Binding="{ReflectionBinding Honorario}" Width="130" />
+        <DataGridTextColumn Header="Em aberto" Binding="{ReflectionBinding EmAberto}" Width="110" />
+        <DataGridTextColumn Header="Certificado vence" Binding="{ReflectionBinding Certificado}" Width="130" />
+        <DataGridTextColumn Header="Módulos" Binding="{ReflectionBinding Modulos}" Width="200" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>
