@@ -23,11 +23,20 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var geracao = NovaGeracao();
+        _contasCarregadas = false;
         var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
         if (!EhAtual(geracao)) return;
+        AplicarContas(cfg);
+        (Previa, Encerrado) = ("", false);
+    }
+
+    private bool _contasCarregadas;
+
+    private void AplicarContas(Vorticis.Application.Cadastros.ConfiguracaoContabil cfg)
+    {
         (ContaApuracao, ContaLucros, ContaPrejuizos) =
             (cfg.ContaApuracao ?? Padrao.Apuracao, cfg.ContaLucros ?? Padrao.LucrosAcumulados, cfg.ContaPrejuizos ?? Padrao.PrejuizosAcumulados);
-        (Previa, Encerrado) = ("", false);
+        _contasCarregadas = true;
     }
 
     private ContasEncerramento Contas => new(ContaApuracao.Trim(), ContaLucros.Trim(), ContaPrejuizos.Trim());
@@ -38,6 +47,8 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     {
         NovaGeracao();   // uma carga da tela ainda em andamento não apaga a prévia
         Previa = "";
+        // a carga interrompida acima não chegou a trazer as contas da empresa: busca-as agora (senão valeriam as do modelo)
+        if (!_contasCarregadas) AplicarContas(await app.PlanoContas.ObterConfiguracaoAsync(empresa, usuario));
         var r = await app.Encerramento.PreverAsync(empresa, AnoInt, Contas, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var p = r.Valor;
