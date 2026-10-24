@@ -6,7 +6,7 @@ Os cadastros da folha (funcionários, cargos, departamentos, rubricas e tabelas 
 
 ## Competência de trabalho (aberta ou fechada)
 
-Na barra de cima, ao lado do seletor de empresas, fica a **Competência** em que você está trabalhando (mês/ano) e a situação dela:
+Na faixa cinza logo abaixo da barra de menus fica a **Competência** em que você está trabalhando (mês/ano) e a situação dela:
 
 - **ABERTA** (verde): pode incluir, alterar e excluir eventos variáveis, cálculos (folha, férias, 13º, rescisões) e o pró-labore da competência.
 - **FECHADA** (vermelho): tudo da competência fica só para consulta. O sistema recusa qualquer inclusão, alteração ou exclusão, mesmo que a tela seja aberta.

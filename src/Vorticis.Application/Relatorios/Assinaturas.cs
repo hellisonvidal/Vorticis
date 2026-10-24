@@ -14,7 +14,8 @@ public sealed record OpcoesAssinatura(bool Responsavel = false, bool Contador = 
 }
 
 /// <summary>
-/// Monta o bloco de assinaturas dos relatórios a partir dos cadastros da empresa (sócios/responsáveis e contadores).
+/// Monta o bloco de assinaturas dos relatórios a partir dos cadastros da empresa (sócios/responsáveis e contadores). No condomínio, o síndico
+/// marcado para assinar os livros toma o lugar do sócio/responsável.
 /// Cada assinatura é um texto de duas linhas (nome; cargo/qualificação e documentos) que o gerador de PDF imprime sob uma linha.
 /// </summary>
 public sealed class ServicoAssinaturas(ServicoResponsaveis responsaveis)
@@ -23,7 +24,9 @@ public sealed class ServicoAssinaturas(ServicoResponsaveis responsaveis)
     {
         var assinaturas = new List<string>();
         var erros = new List<string>();
-        if (opcoes.Responsavel)
+        if (opcoes.Responsavel && await responsaveis.SindicoSignatarioAsync(empresaId, ct) is { } sindico)
+            assinaturas.Add(Formatar(sindico));
+        else if (opcoes.Responsavel)
         {
             var socio = await responsaveis.SocioResponsavelAsync(empresaId, ct);
             if (socio is null) erros.Add("Assinatura do sócio/responsável: não há sócio ativo cadastrado para a empresa (Cadastros › Empresas › Sócios).");
@@ -45,6 +48,10 @@ public sealed class ServicoAssinaturas(ServicoResponsaveis responsaveis)
         if (s.RepresentanteLegal && !cargo.Contains("represent", StringComparison.OrdinalIgnoreCase)) cargo += " (representante legal)";
         return $"{s.Nome.Trim()}\n{cargo}{Documento(s.CpfCnpj)}";
     }
+
+    /// <summary>Nome; "Síndico(a)", CPF e, se marcado no cadastro, a indicação de assinatura digital.</summary>
+    public static string Formatar(Sindico s) =>
+        $"{s.Nome.Trim()}\nSíndico(a){Documento(s.Cpf)}{(s.AssinaturaDigital ? " — assinado digitalmente (certificado ICP-Brasil)" : "")}";
 
     /// <summary>Nome; "Contador — CRC UF-número" e CPF.</summary>
     public static string Formatar(Contador c) =>

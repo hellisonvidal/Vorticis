@@ -80,18 +80,43 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
         foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
             var obrig = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
             Assert.Contains(Folhas(obrig.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
         }
-        // o ERP (rotina da empresa, não do escritório contábil) não tem calendário de obrigações
-        var erp = new Vorticis.Erp.Desktop.MainViewModel();
-        Assert.False(erp.Modulo.UsaCalendarioObrigacoes);
-        Assert.DoesNotContain(Folhas(erp.Menus), i => i.Chave == TelasComuns.Obrigacoes);
-        Assert.DoesNotContain(erp.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+        // o ERP (rotina da empresa, não do escritório contábil) e o Condomínio não têm calendário de obrigações
+        foreach (var sem in new MainViewModelBase[] { new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel() })
+        {
+            Assert.False(sem.Modulo.UsaCalendarioObrigacoes);
+            Assert.DoesNotContain(Folhas(sem.Menus), i => i.Chave == TelasComuns.Obrigacoes);
+            Assert.DoesNotContain(sem.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+        }
+    }
+
+    [Fact]
+    public void Condominio_tem_rateio_no_financeiro_atas_nos_relatorios_e_aba_sindico_so_nele()
+    {
+        var vm = new Vorticis.Condominio.Desktop.MainViewModel();
+        var fin = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Financeiro");
+        Assert.Contains(Folhas(fin.Filhos!), i => i.Chave == Vorticis.Condominio.Desktop.ViewModels.CondominioTelas.Rateio && i.Titulo == "Rateio entre unidades");
+        var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
+        Assert.Contains(Folhas(rel.Filhos!), i => i.Chave == Vorticis.Condominio.Desktop.ViewModels.CondominioTelas.Atas && i.Titulo == "Atas de Assembleia");
+        Assert.True(vm.Empresas.MostraAbaSindico);
+        Assert.False(new MainViewModel().Empresas.MostraAbaSindico);
+        Assert.False(new Vorticis.Fiscal.Desktop.MainViewModel().Empresas.MostraAbaSindico);
+    }
+
+    [Fact]
+    public void Sindico_assinatura_digital_exige_assinar_os_livros()
+    {
+        var s = new Vorticis.Condominio.Desktop.MainViewModel().Sindico;
+        s.AssinaturaDigital = true;
+        Assert.True(s.AssinaLivros);
+        s.AssinaLivros = false;
+        Assert.False(s.AssinaturaDigital);
     }
 
     [Fact]

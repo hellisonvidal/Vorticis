@@ -127,6 +127,10 @@ Estes cadastros não aparecem no módulo Escritório, que trabalha só com os da
 
 **Regra:** a soma da participação dos sócios ativos não pode passar de 100%.
 
+## Síndico (Condomínio)
+
+No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF, mandato e se ele assina os livros contábeis e fiscais (assinatura normal ou digital). Veja o passo a passo no capítulo do Condomínio, em **Síndico**.
+
 ## Contadores
 
 **Para que serve:** vincular à empresa o contador ou escritório responsável.

@@ -155,3 +155,5 @@ condominio.cobrancas=11-condominio.md#cobrancas-e-recebimentos
 condominio.despesas=11-condominio.md#despesas-do-condominio
 condominio.ocorrencias=11-condominio.md#ocorrencias-e-assembleias
 condominio.prestacao=11-condominio.md#prestacao-de-contas-e-inadimplencia
+condominio.rateio=11-condominio.md#rateio-entre-unidades
+condominio.atas=11-condominio.md#atas-de-assembleia

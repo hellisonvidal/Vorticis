@@ -37,12 +37,16 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 
     public MainViewModelBase Main => main;
 
-    /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (da empresa selecionada), 3 = contabilidade.</summary>
+    /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (da empresa selecionada), 3 = contabilidade, 4 = síndico (só no Condomínio).</summary>
     [ObservableProperty] private int _abaSelecionada;
 
     public const int AbaSocios = 1;
     public const int AbaContadores = 2;
     public const int AbaContabilidade = 3;
+    public const int AbaSindico = 4;
+
+    /// <summary>A aba Síndico só aparece no módulo Condomínio.</summary>
+    public bool MostraAbaSindico => main.Modulo.UsaSindico;
 
     /// <summary>A aba Contabilidade vale para a empresa selecionada e também na inclusão (modelo de plano e demais opções da nova empresa).</summary>
     public bool PodeAbaContabilidade => TemEmpresaSelecionada || EmInclusao;

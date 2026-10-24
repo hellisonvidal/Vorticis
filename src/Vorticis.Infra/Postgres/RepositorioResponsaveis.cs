@@ -192,6 +192,33 @@ public sealed class RepositorioResponsaveis(NpgsqlDataSource ds) : IRepositorioR
             return res;
         });
 
+    public async Task<Sindico?> ObterSindicoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT nome, cpf, email, telefone, mandato_inicio, mandato_fim, assina_livros, assinatura_digital
+              FROM core.empresa_sindico WHERE empresa_id = @e
+            """).Com("e", empresaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct)
+            ? new Sindico(r.GetString(0), T(r, 1), T(r, 2), T(r, 3), r.IsDBNull(4) ? null : r.GetFieldValue<DateOnly>(4),
+                          r.IsDBNull(5) ? null : r.GetFieldValue<DateOnly>(5), r.GetBoolean(6), r.GetBoolean(7))
+            : null;
+    }
+
+    public Task SalvarSindicoAsync(long empresaId, Sindico s, long usuarioId, CancellationToken ct)
+        => Executar(usuarioId, """
+            INSERT INTO core.empresa_sindico (empresa_id, nome, cpf, email, telefone, mandato_inicio, mandato_fim, assina_livros, assinatura_digital)
+            VALUES (@e, @n, @cpf, @em, @tel, @mi, @mf, @al, @ad)
+            ON CONFLICT (empresa_id) DO UPDATE SET nome = EXCLUDED.nome, cpf = EXCLUDED.cpf, email = EXCLUDED.email, telefone = EXCLUDED.telefone,
+                   mandato_inicio = EXCLUDED.mandato_inicio, mandato_fim = EXCLUDED.mandato_fim,
+                   assina_livros = EXCLUDED.assina_livros, assinatura_digital = EXCLUDED.assinatura_digital
+            """, c => c.Com("e", empresaId).Com("n", s.Nome).Com("cpf", NpgsqlDbType.Char, s.Cpf).ComTexto("em", s.Email).ComTexto("tel", s.Telefone)
+                       .Com("mi", NpgsqlDbType.Date, s.MandatoInicio).Com("mf", NpgsqlDbType.Date, s.MandatoFim)
+                       .Com("al", s.AssinaLivros).Com("ad", s.AssinaturaDigital), ct);
+
+    public Task ExcluirSindicoAsync(long empresaId, long usuarioId, CancellationToken ct)
+        => Executar(usuarioId, "DELETE FROM core.empresa_sindico WHERE empresa_id = @e", c => c.Com("e", empresaId), ct);
+
     private Task Executar(long usuarioId, string sql, Action<NpgsqlCommand> parametros, CancellationToken ct)
         => ComUsuario(usuarioId, async (con, tx) =>
         {

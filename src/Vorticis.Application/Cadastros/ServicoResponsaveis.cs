@@ -58,6 +58,13 @@ public sealed record Procurador(long Id, string Nome, string Cpf, string? Email,
     public bool Abrange(string obrigacao) => Abrangencia.Contains(obrigacao, StringComparer.OrdinalIgnoreCase);
 }
 
+/// <summary>
+/// Síndico do condomínio (módulo Condomínio, aba Síndico do cadastro da empresa). <paramref name="AssinaLivros"/>: assina os livros
+/// contábeis e fiscais como responsável pelo condomínio; <paramref name="AssinaturaDigital"/>: assina com certificado digital.
+/// </summary>
+public sealed record Sindico(string Nome, string? Cpf, string? Email, string? Telefone, DateOnly? MandatoInicio, DateOnly? MandatoFim,
+                             bool AssinaLivros, bool AssinaturaDigital);
+
 public interface IRepositorioResponsaveis
 {
     Task<IReadOnlyList<Contador>> ListarContadoresAsync(CancellationToken ct);
@@ -80,6 +87,10 @@ public interface IRepositorioResponsaveis
     Task ExcluirSocioAsync(long empresaId, long socioId, long usuarioId, CancellationToken ct);
 
     Task<IReadOnlyList<Procurador>> ListarProcuradoresAsync(long empresaId, CancellationToken ct);
+
+    Task<Sindico?> ObterSindicoAsync(long empresaId, CancellationToken ct);
+    Task SalvarSindicoAsync(long empresaId, Sindico s, long usuarioId, CancellationToken ct);
+    Task ExcluirSindicoAsync(long empresaId, long usuarioId, CancellationToken ct);
 }
 
 /// <summary>
@@ -266,6 +277,48 @@ public sealed class ServicoResponsaveis(IRepositorioResponsaveis repositorio, IR
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
         return await GravarSemValor(() => repositorio.ExcluirSocioAsync(empresaId, socioId, usuarioId, ct));
     }
+
+    // ------------------------------------------------------------------ síndico (condomínio)
+
+    public async Task<Resultado<Sindico?>> ObterSindicoAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
+            ? Resultado<Sindico?>.Ok(await repositorio.ObterSindicoAsync(empresaId, ct))
+            : Resultado<Sindico?>.Falha("Você não tem acesso a esta empresa.");
+
+    /// <summary>Síndico que assina os livros (marcado "assina livros contábeis e fiscais"); nulo se não houver.</summary>
+    public async Task<Sindico?> SindicoSignatarioAsync(long empresaId, CancellationToken ct = default)
+        => await repositorio.ObterSindicoAsync(empresaId, ct) is { AssinaLivros: true } s ? s : null;
+
+    public static IReadOnlyList<string> ValidarSindico(Sindico s)
+    {
+        var erros = new List<string>();
+        if (string.IsNullOrWhiteSpace(s.Nome)) erros.Add("Informe o nome do síndico.");
+        var cpf = Digitos(s.Cpf);
+        if (cpf.Length > 0 && !Cpf.Valido(cpf)) erros.Add("CPF do síndico inválido.");
+        if (s.AssinaLivros && cpf.Length == 0) erros.Add("Informe o CPF do síndico para ele assinar os livros.");
+        if (s.AssinaturaDigital && !s.AssinaLivros) erros.Add("Marque \"Assina os livros contábeis e fiscais\" para usar a assinatura digital.");
+        if (s.MandatoInicio is { } i && s.MandatoFim is { } f && f < i) erros.Add("O fim do mandato não pode ser anterior ao início.");
+        return erros;
+    }
+
+    public async Task<Resultado> SalvarSindicoAsync(long empresaId, Sindico s, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
+        if (ValidarSindico(s) is { Count: > 0 } erros) return Resultado.Falha(erros);
+        var cpf = Digitos(s.Cpf);
+        return await GravarSemValor(() => repositorio.SalvarSindicoAsync(empresaId, s with
+        {
+            Nome = s.Nome.Trim(), Cpf = cpf.Length == 0 ? null : cpf, Email = Limpar(s.Email)?.ToLowerInvariant(), Telefone = Limpar(s.Telefone),
+        }, usuarioId, ct));
+    }
+
+    public async Task<Resultado> ExcluirSindicoAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.EmpresaResponsaveisManter, ct) is { } negado) return Resultado.Falha(negado);
+        return await GravarSemValor(() => repositorio.ExcluirSindicoAsync(empresaId, usuarioId, ct));
+    }
+
+    private static string Digitos(string? s) => new((s ?? "").Where(char.IsDigit).ToArray());
 
     // ------------------------------------------------------------------ procuração eletrônica (contador procurador da empresa)
 

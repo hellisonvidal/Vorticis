@@ -49,6 +49,9 @@ public interface IModuloDesktop
     /// <summary>Mostra o calendário de obrigações (menu e "Próximas obrigações" da tela inicial); o ERP não usa.</summary>
     bool UsaCalendarioObrigacoes => true;
 
+    /// <summary>Mostra a aba Síndico no cadastro de empresas (só o Condomínio: o síndico pode assinar os livros contábeis e fiscais).</summary>
+    bool UsaSindico => false;
+
     /// <summary>
     /// Mostra em Cadastros os cadastros compartilhados da suíte (Contadores, Clientes, Fornecedores). O Escritório não os usa: tem
     /// cadastros próprios, que não aparecem nos demais módulos; ali Cadastros mostra só Empresas (o próprio escritório).

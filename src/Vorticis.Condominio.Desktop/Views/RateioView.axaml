@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.RateioView" x:DataType="vm:RateioViewModel">
+  <!-- Financeiro › Rateio entre unidades -->
+  <DockPanel Margin="8">
+    <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Rateio entre unidades" Margin="0,0,0,8" />
+    <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" IsEnabled="{Binding PodeEditar}">
+      <StackPanel Margin="0,0,10,6" Spacing="2">
+        <TextBlock Text="Descrição (aparece na cobrança)" FontSize="12" />
+        <TextBox Text="{Binding Descricao}" Width="320" Watermark="Ex.: Rateio da pintura da fachada" />
+      </StackPanel>
+      <StackPanel Margin="0,0,10,6" Spacing="2">
+        <TextBlock Text="Valor total" FontSize="12" />
+        <TextBox Text="{Binding Valor}" Width="130" />
+      </StackPanel>
+      <StackPanel Margin="0,0,10,6" Spacing="2">
+        <TextBlock Text="Critério" FontSize="12" />
+        <ComboBox ItemsSource="{x:Static vm:RateioViewModel.Criterios}" SelectedItem="{Binding Criterio}" Width="160" />
+      </StackPanel>
+      <StackPanel Margin="0,0,10,6" Spacing="2">
+        <TextBlock Text="Competência" FontSize="12" />
+        <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+      </StackPanel>
+      <StackPanel Margin="0,0,10,6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
+        <Button Content="Prévia" Command="{Binding VerPreviaCommand}" />
+        <Button Content="Lançar nas cobranças" Classes="accent" Command="{Binding LancarCommand}" />
+      </StackPanel>
+    </WrapPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Totais}" FontWeight="SemiBold" Foreground="#881337" Margin="0,4,0,6" />
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <DataGrid ItemsSource="{Binding Previa}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Unidade" Binding="{ReflectionBinding Unidade}" Width="*" />
+        <DataGridTextColumn Header="Responsável" Binding="{ReflectionBinding Responsavel}" Width="3*" />
+        <DataGridTextColumn Header="Fração ideal" Binding="{ReflectionBinding Fracao}" Width="*" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

@@ -158,6 +158,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public PerfisViewModel Perfis => Instancia<PerfisViewModel>();
     public ContabilidadeEmpresaViewModel Contabilidade => Instancia<ContabilidadeEmpresaViewModel>();
     public SociosViewModel Socios => Instancia<SociosViewModel>();
+    public SindicoViewModel Sindico => Instancia<SindicoViewModel>();
     public AlterarSenhaViewModel AlterarSenha => Instancia<AlterarSenhaViewModel>();
     public SobreViewModel Sobre => Instancia<SobreViewModel>();
     public ManualViewModel Manual => Instancia<ManualViewModel>();
@@ -185,7 +186,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Obrigacoes, "Obrigações › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
 
-        c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade)],
+        c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade), nameof(Sindico)],
                     atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
             .Tela(TelasComuns.Empresas, "Cadastros › Empresas", Admin, v =>
             {
@@ -196,6 +197,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Contabilidade), m => new ContabilidadeEmpresaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa || AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaContadores) ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Contabilidade, "Cadastros › Contadores", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(Sindico), m => new SindicoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaSindico) ? v.CarregarAsync() : Task.CompletedTask);
         c.Instancia(nameof(Socios), m => new SociosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa || AbaDaEmpresaAtiva(CadastroEmpresaViewModel.AbaSocios) ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Socios, "Cadastros › Sócios", ComAcesso, v => v.CarregarAsync());
@@ -628,6 +631,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (_telaAtual != TelasComuns.Empresas || EmpresaSelecionada is null) return;
         if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSocios) _ = Disparar(Socios.CarregarAsync);
         if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaContadores) _ = Disparar(Contabilidade.CarregarAsync);
+        if (Empresas.AbaSelecionada == CadastroEmpresaViewModel.AbaSindico) _ = Disparar(Sindico.CarregarAsync);
     }
 
     private bool AbaDaEmpresaAtiva(int aba) => _telaAtual == TelasComuns.Empresas && Empresas.AbaSelecionada == aba;

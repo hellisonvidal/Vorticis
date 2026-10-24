@@ -39,6 +39,18 @@ Marque **Todas em aberto** para ver todas as cobranças não pagas. As vencidas 
 
 Informe data, vencimento, **categoria** (pessoal, água, energia, manutenção, limpeza, segurança...), descrição, fornecedor e valor. Quando pagar, informe **Pago em** e grave de novo. Só as despesas pagas entram na prestação de contas do mês.
 
+## Rateio entre unidades
+
+**Onde fica:** *Financeiro › Rateio entre unidades*.
+
+Use para dividir um valor avulso entre as unidades: uma obra, uma despesa extra, a recomposição do fundo de reserva.
+
+1. Informe a **Descrição** (é o texto que aparece na cobrança, ex.: "Rateio da pintura da fachada"), o **Valor total**, o **Critério** (fração ideal ou partes iguais) e a **Competência** em que vai ser cobrado.
+2. Clique em **Prévia**: a lista mostra quanto cabe a cada unidade ativa e o total rateado (os centavos de arredondamento vão para uma das unidades, para fechar o total exato).
+3. Conferido, clique em **Lançar nas cobranças**. O valor de cada unidade entra como um item da cobrança da competência: se a unidade já tem cobrança em aberto, o item é somado a ela; se ainda não tem, a cobrança é criada com o vencimento padrão.
+
+**Atenção:** cobranças da competência que já estão pagas ou canceladas não recebem o rateio; o sistema avisa quais unidades ficaram de fora. Confira o resultado em *Financeiro › Cobranças e recebimentos*.
+
 ## Áreas comuns e reservas
 
 **Onde fica:** *Cadastros › Áreas comuns e reservas*.
@@ -51,7 +63,7 @@ Informe data, vencimento, **categoria** (pessoal, água, energia, manutenção, 
 
 **Onde fica:** *Administração › Ocorrências e assembleias*.
 
-Registre reclamações, manutenções, advertências, multas, avisos e assembleias (com a pauta ou a ata na descrição), ligados ou não a uma unidade. Marque **Resolvida / encerrada** quando concluir.
+Registre reclamações, manutenções, advertências, multas, avisos e convocações de assembleia, ligados ou não a uma unidade. Marque **Resolvida / encerrada** quando concluir. A ata da assembleia é feita em *Relatórios › Atas de Assembleia*.
 
 ## Prestação de contas e inadimplência
 
@@ -59,6 +71,31 @@ Registre reclamações, manutenções, advertências, multas, avisos e assemblei
 
 Escolha o **Mês**. O quadro mostra o que foi emitido, o arrecadado (cotas pagas no mês), as multas e juros recebidos, as despesas pagas por categoria, o **saldo do mês** e a inadimplência acumulada. Abaixo, a lista dos inadimplentes de hoje, com multa e juros atualizados.
 
+## Atas de Assembleia
+
+**Onde fica:** *Relatórios › Atas de Assembleia*.
+
+1. Clique em **Nova**. O número da assembleia é dado automaticamente ao gravar (1, 2, 3... em cada condomínio).
+2. Preencha a **data**, o **horário** (ex.: 19:30), o tipo (**Ordinária** ou **Extraordinária**), a convocação (**primeira** ou **segunda**), o **local**, o **presidente** e o **secretário(a)** da mesa e quantas **unidades** estavam presentes.
+3. Escreva a **Ordem do dia** (pauta, um item por linha) e as **Deliberações** (o que foi decidido e o resultado das votações). Clique em **Gravar**.
+4. Com a assembleia selecionada na lista, clique em **Gerar ata (PDF)**. A ata traz a abertura (data, local, convocação, mesa e presença), a ordem do dia, as deliberações, o encerramento e o **campo de assinaturas** do presidente, do secretário(a) e do síndico (o síndico vem de *Cadastros › Empresas*, aba **Síndico**).
+5. Marque **Incluir lista de presença** para sair, numa página à parte, a lista de todas as unidades com o condômino e uma linha para a assinatura de cada um.
+
+O arquivo fica na pasta de arquivos gerados; o caminho aparece na mensagem abaixo do botão. Para corrigir, selecione a assembleia, altere e grave de novo; **Excluir** apaga o registro.
+
+## Síndico
+
+**Onde fica:** *Cadastros › Empresas*, aba **Síndico** (só no módulo Condomínio, com o condomínio selecionado no topo).
+
+Informe o nome, o CPF, o e-mail, o telefone e o período do mandato do síndico. Em **Assinatura dos livros contábeis e fiscais**:
+
+- **Assina os livros contábeis e fiscais (assinatura normal):** o síndico assina os livros e relatórios do condomínio no lugar do sócio/responsável (o CPF passa a ser obrigatório).
+- **Assinatura digital (certificado ICP-Brasil):** além de assinar, ele assina com certificado digital; a linha de assinatura sai com a indicação "assinado digitalmente".
+
+Clique em **Gravar**. **Excluir** apaga o cadastro do síndico.
+
 ## Parâmetros
 
 *Cadastros › Parâmetros*: **dia de vencimento** das cotas (1 a 28), **multa por atraso** (até 2%) e **juros de mora ao mês** (sem previsão na convenção, 1%).
+
+O módulo Condomínio não tem o calendário de obrigações (menu Obrigações): as obrigações fiscais do condomínio ficam no Fiscal e na Folha.

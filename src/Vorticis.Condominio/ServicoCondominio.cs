@@ -196,6 +196,111 @@ public sealed class ServicoCondominio(VorticisApp app)
             """, ct, ("s", cancelar ? "CANCELADA" : "ABERTA"), ("id", c.Id), ("e", empresa)));
     }
 
+    // ------------------------------------------------------------------ rateio entre unidades
+
+    /// <summary>Prévia do rateio de um valor avulso entre as unidades ativas (fração ideal ou partes iguais).</summary>
+    public async Task<Resultado<IReadOnlyList<ParcelaRateio>>> PreviaRateioAsync(long empresa, decimal valor, Rateio criterio, long usuario, CancellationToken ct = default)
+    {
+        if (!await PodeVerAsync(usuario, empresa, ct)) return Resultado<IReadOnlyList<ParcelaRateio>>.Falha("Você não tem acesso a este condomínio.");
+        if (valor <= 0) return Resultado<IReadOnlyList<ParcelaRateio>>.Falha("Informe o valor a ratear.");
+        var unidades = await ListarUnidadesAsync(empresa, ct);
+        if (unidades.Count(u => u.Ativa) == 0) return Resultado<IReadOnlyList<ParcelaRateio>>.Falha("Cadastre as unidades antes de ratear.");
+        return Resultado<IReadOnlyList<ParcelaRateio>>.Ok(RegrasCondominio.RatearValor(valor, criterio, unidades));
+    }
+
+    /// <summary>
+    /// Lança o rateio nas cobranças da competência: entra como item da cobrança em aberto de cada unidade (somando ao valor) ou cria a
+    /// cobrança se a unidade ainda não tem. Cobranças já pagas ou canceladas na competência ficam de fora (devolvidas na lista de avisos).
+    /// </summary>
+    public async Task<Resultado<(int Lancadas, IReadOnlyList<string> Avisos)>> LancarRateioAsync(long empresa, DateOnly competencia, string descricao, decimal valor,
+                                                                                                Rateio criterio, long usuario, CancellationToken ct = default)
+    {
+        if (await Negar(usuario, empresa, P.CondominioFinanceiro, ct) is { } n) return Resultado<(int, IReadOnlyList<string>)>.Falha(n);
+        if (string.IsNullOrWhiteSpace(descricao)) return Resultado<(int, IReadOnlyList<string>)>.Falha("Informe a descrição do rateio (ex.: Rateio da pintura da fachada).");
+        var previa = await PreviaRateioAsync(empresa, valor, criterio, usuario, ct);
+        if (!previa.Sucesso) return Resultado<(int, IReadOnlyList<string>)>.Falha(previa.Erros);
+        competencia = RegrasCondominio.Mes(competencia);
+        var cfg = await ConfiguracaoAsync(empresa, ct);
+        var existentes = (await _db.ListarAsync("SELECT unidade_id, id, situacao FROM condominio.cobranca WHERE empresa_id = @e AND competencia = @c",
+                                                r => (Unidade: r.GetInt64(0), Id: r.GetInt64(1), Situacao: r.GetString(2)), ct, ("e", empresa), ("c", competencia)))
+                         .ToDictionary(x => x.Unidade);
+        var desc = descricao.Trim().Length > 100 ? descricao.Trim()[..100] : descricao.Trim();
+        var avisos = new List<string>();
+        var lancadas = 0;
+        foreach (var p in previa.Valor.Where(p => p.Valor > 0))
+        {
+            long cobranca;
+            if (existentes.TryGetValue(p.UnidadeId, out var c))
+            {
+                if (c.Situacao != "ABERTA") { avisos.Add($"Unidade {p.Unidade}: a cobrança de {competencia:MM/yyyy} já está {c.Situacao.ToLowerInvariant()}; o rateio dela ({Formato.Moeda(p.Valor)}) não foi lançado."); continue; }
+                cobranca = c.Id;
+                await _db.ExecutarAsync("UPDATE condominio.cobranca SET valor = valor + @v WHERE id = @id", ct, ("v", p.Valor), ("id", cobranca));
+            }
+            else
+                cobranca = await _db.EscalarAsync<long>("INSERT INTO condominio.cobranca (empresa_id, unidade_id, competencia, vencimento, valor) VALUES (@e, @u, @c, @v, @val) RETURNING id",
+                    ct, ("e", empresa), ("u", p.UnidadeId), ("c", competencia), ("v", RegrasCondominio.Vencimento(competencia, cfg.DiaVencimento)), ("val", p.Valor));
+            await _db.ExecutarAsync("INSERT INTO condominio.cobranca_item (cobranca_id, taxa_id, descricao, valor) VALUES (@c, NULL, @d, @v)",
+                                    ct, ("c", cobranca), ("d", desc), ("v", p.Valor));
+            lancadas++;
+        }
+        return Resultado<(int, IReadOnlyList<string>)>.Ok((lancadas, avisos));
+    }
+
+    // ------------------------------------------------------------------ assembleias
+
+    public async Task<List<Assembleia>> AssembleiasAsync(long empresa, long usuario, CancellationToken ct = default)
+        => await PodeVerAsync(usuario, empresa, ct)
+            ? await _db.ListarAsync("""
+                SELECT id, numero, data, horario, tipo, convocacao, local, presidente, secretario, unidades_presentes, pauta, deliberacoes
+                  FROM condominio.assembleia WHERE empresa_id = @e ORDER BY numero DESC
+                """, r => new Assembleia(r.GetInt64(0), r.GetInt32(1), r.GetFieldValue<DateOnly>(2), r.GetString(3),
+                                         r.GetString(4) == "EXTRAORDINARIA" ? TipoAssembleia.Extraordinaria : TipoAssembleia.Ordinaria, r.GetInt16(5), r.GetString(6),
+                                         r.GetString(7), r.GetString(8), r.GetInt32(9), r.GetString(10), r.GetString(11)), ct, ("e", empresa))
+            : [];
+
+    /// <summary>Grava a assembleia; na inclusão recebe o próximo número do condomínio. Devolve o número.</summary>
+    public async Task<Resultado<int>> GravarAssembleiaAsync(long empresa, Assembleia a, long usuario, CancellationToken ct = default)
+    {
+        if (await Negar(usuario, empresa, P.CondominioCadastros, ct) is { } n) return Resultado<int>.Falha(n);
+        if (AtaAssembleia.Validar(a) is { Count: > 0 } erros) return Resultado<int>.Falha(erros);
+        (string, object?)[] campos =
+        [
+            ("e", empresa), ("id", a.Id), ("d", a.Data), ("h", a.Horario), ("t", a.Tipo == TipoAssembleia.Extraordinaria ? "EXTRAORDINARIA" : "ORDINARIA"),
+            ("cv", (short)a.Convocacao), ("l", a.Local.Trim()), ("p", a.Presidente.Trim()), ("s", a.Secretario.Trim()), ("up", a.UnidadesPresentes),
+            ("pa", a.Pauta.Trim()), ("de", a.Deliberacoes?.Trim() ?? ""),
+        ];
+        try
+        {
+            var numero = a.Id == 0
+                ? await _db.EscalarAsync<int>("""
+                    INSERT INTO condominio.assembleia (empresa_id, numero, data, horario, tipo, convocacao, local, presidente, secretario, unidades_presentes, pauta, deliberacoes)
+                    VALUES (@e, (SELECT COALESCE(MAX(numero), 0) + 1 FROM condominio.assembleia WHERE empresa_id = @e), @d, @h, @t, @cv, @l, @p, @s, @up, @pa, @de) RETURNING numero
+                    """, ct, campos)
+                : await _db.EscalarAsync<int?>("""
+                    UPDATE condominio.assembleia SET data = @d, horario = @h, tipo = @t, convocacao = @cv, local = @l, presidente = @p, secretario = @s,
+                           unidades_presentes = @up, pauta = @pa, deliberacoes = @de
+                     WHERE id = @id AND empresa_id = @e RETURNING numero
+                    """, ct, campos) ?? throw new ViolacaoRegraException("Assembleia não encontrada.");
+            return Resultado<int>.Ok(numero);
+        }
+        catch (ViolacaoRegraException ex) { return Resultado<int>.Falha(ex.Message); }
+    }
+
+    public async Task<Resultado> ExcluirAssembleiaAsync(long empresa, long id, long usuario, CancellationToken ct = default)
+    {
+        if (await Negar(usuario, empresa, P.CondominioCadastros, ct) is { } n) return Resultado.Falha(n);
+        return await Tentar(() => _db.ExecutarAsync("DELETE FROM condominio.assembleia WHERE id = @id AND empresa_id = @e", ct, ("id", id), ("e", empresa)));
+    }
+
+    /// <summary>Dados do cabeçalho da ata: nome e CNPJ do condomínio, unidades e o síndico cadastrado.</summary>
+    public async Task<(string Nome, string Cnpj, List<Unidade> Unidades, string? Sindico)> DadosAtaAsync(long empresa, CancellationToken ct = default)
+    {
+        var (nome, cnpj) = (await _db.ListarAsync("SELECT razao_social, btrim(cnpj) FROM core.empresa WHERE id = @e", r => (r.GetString(0), r.GetString(1)), ct, ("e", empresa)))
+                           .FirstOrDefault();
+        var sindico = await _db.EscalarAsync<string?>("SELECT nome FROM core.empresa_sindico WHERE empresa_id = @e", ct, ("e", empresa));
+        return (nome ?? "", cnpj is { Length: 14 } c ? Vorticis.Domain.Cadastros.Cnpj.Formatar(c) : cnpj ?? "", await ListarUnidadesAsync(empresa, ct), sindico);
+    }
+
     // ------------------------------------------------------------------ despesas
 
     public async Task<List<Despesa>> DespesasAsync(long empresa, DateOnly inicio, DateOnly fim, long usuario, CancellationToken ct = default)

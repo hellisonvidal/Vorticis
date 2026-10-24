@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Vorticis.Desktop.Comum;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Infra;
+using Vorticis.Infra.Relatorios;
 
 namespace Vorticis.Condominio.Desktop.ViewModels;
 
@@ -16,6 +18,8 @@ public static class CondominioTelas
     public const string Despesas = "condominio.despesas";
     public const string Ocorrencias = "condominio.ocorrencias";
     public const string Prestacao = "condominio.prestacao";
+    public const string Rateio = "condominio.rateio";
+    public const string Atas = "condominio.atas";
 }
 
 internal static class Ext
@@ -557,4 +561,139 @@ public sealed class ParametrosCondominioViewModel(IContexto contexto) : Parametr
         var r = await app.Cond().GravarConfiguracaoAsync(empresa, new ConfiguracaoCondominio(dia, Formato.LerValor(Campo("multa").Texto) ?? 0, Formato.LerValor(Campo("juros").Texto) ?? 0), usuario);
         if (!r.Sucesso) MostrarResultado(r, "");
     }
+}
+
+// ---------------------------------------------------------------------------------------------- rateio entre unidades
+
+public sealed record RateioLinha(ParcelaRateio P)
+{
+    public string Unidade => P.Unidade;
+    public string Responsavel => P.Responsavel ?? "";
+    public string Fracao => P.Fracao.ToString("0.########", Formato.PtBr);
+    public string Valor => Formato.Moeda(P.Valor);
+}
+
+/// <summary>Financeiro › Rateio entre unidades: divide um valor avulso (obra, despesa extra, fundo) pelas unidades e lança nas cobranças da competência.</summary>
+public partial class RateioViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioFinanceiro)
+{
+    public ObservableCollection<RateioLinha> Previa { get; } = [];
+    public static IReadOnlyList<TaxasViewModel.OpcaoRateio> Criterios { get; } = [new(Vorticis.Condominio.Rateio.Fracao), new(Vorticis.Condominio.Rateio.Igual)];
+    [ObservableProperty] private string _descricao = "";
+    [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private TaxasViewModel.OpcaoRateio _criterio = Criterios[0];
+    [ObservableProperty] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private string _totais = "";
+
+    public Task CarregarAsync() { Previa.Clear(); Totais = ""; return Task.CompletedTask; }
+
+    [RelayCommand]
+    private Task VerPreviaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Cond().PreviaRateioAsync(empresa, Formato.LerValor(Valor) ?? 0, Criterio.R, usuario);
+        Previa.Clear();
+        if (!r.Sucesso) { MostrarResultado(r, ""); Totais = ""; return; }
+        foreach (var p in r.Valor) Previa.Add(new RateioLinha(p));
+        Totais = $"{r.Valor.Count} unidade(s) · total rateado {Formato.Moeda(r.Valor.Sum(p => p.Valor))}";
+    });
+
+    [RelayCommand]
+    private Task LancarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Cond().LancarRateioAsync(empresa, Ext.Dia(Competencia), Descricao, Formato.LerValor(Valor) ?? 0, Criterio.R, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        foreach (var a in r.Valor.Avisos) Erros.Add(a);
+        Mensagem = $"Rateio lançado nas cobranças de {Ext.Dia(Competencia):MM/yyyy} de {r.Valor.Lancadas} unidade(s). Confira em Financeiro › Cobranças e recebimentos.";
+    }, Permissao.CondominioFinanceiro);
+}
+
+// ---------------------------------------------------------------------------------------------- atas de assembleia
+
+public sealed record AssembleiaLinha(Assembleia A)
+{
+    public string Numero => A.Numero.ToString();
+    public string Data => A.Data.ToString("dd/MM/yyyy");
+    public string Tipo => A.TipoTexto;
+    public string Local => A.Local;
+    public string Presentes => A.UnidadesPresentes.ToString();
+}
+
+/// <summary>Relatórios › Atas de Assembleia: registra a assembleia (mesa, pauta, deliberações) e gera a ata em PDF com as assinaturas.</summary>
+public partial class AtasAssembleiaViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioCadastros)
+{
+    public ObservableCollection<AssembleiaLinha> Lista { get; } = [];
+    public static IReadOnlyList<string> Tipos { get; } = ["Ordinária", "Extraordinária"];
+    public static IReadOnlyList<string> Convocacoes { get; } = ["Primeira convocação", "Segunda convocação"];
+    [ObservableProperty] private AssembleiaLinha? _selecionada;
+    [ObservableProperty] private string _numero = "";
+    [ObservableProperty] private DateTime? _data = DateTime.Today;
+    [ObservableProperty] private string _horario = "19:00";
+    [ObservableProperty] private string _tipo = "Ordinária";
+    [ObservableProperty] private int _convocacao;
+    [ObservableProperty] private string _local = "";
+    [ObservableProperty] private string _presidente = "";
+    [ObservableProperty] private string _secretario = "";
+    [ObservableProperty] private decimal? _unidadesPresentes = 0;
+    [ObservableProperty] private string _pauta = "";
+    [ObservableProperty] private string _deliberacoes = "";
+    [ObservableProperty] private bool _listaPresenca = true;
+
+    partial void OnSelecionadaChanged(AssembleiaLinha? value)
+    {
+        if (value?.A is not { } a) return;
+        (Numero, Data, Horario, Tipo, Convocacao, Local, Presidente, Secretario, UnidadesPresentes, Pauta, Deliberacoes) =
+            (a.Numero.ToString(), Ext.Dt(a.Data), a.Horario, a.TipoTexto, a.Convocacao - 1, a.Local, a.Presidente, a.Secretario, a.UnidadesPresentes, a.Pauta, a.Deliberacoes);
+    }
+
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        var g = NovaGeracao();
+        var itens = await app.Cond().AssembleiasAsync(empresa, sessao.Id);
+        if (!EhAtual(g)) return;
+        Lista.Clear();
+        foreach (var a in itens) Lista.Add(new AssembleiaLinha(a));
+    }
+
+    [RelayCommand]
+    private void Nova()
+    {
+        Selecionada = null;
+        (Numero, Data, Horario, Tipo, Convocacao, Local, Presidente, Secretario, UnidadesPresentes, Pauta, Deliberacoes) =
+            ("(automático)", DateTime.Today, "19:00", "Ordinária", 0, "", "", "", 0, "", "");
+    }
+
+    private Assembleia Montar() => new(Selecionada?.A.Id ?? 0, Selecionada?.A.Numero ?? 0, Ext.Dia(Data), Horario.Trim(),
+                                       Tipo == "Extraordinária" ? TipoAssembleia.Extraordinaria : TipoAssembleia.Ordinaria, Convocacao + 1, Local, Presidente, Secretario,
+                                       (int)(UnidadesPresentes ?? 0), Pauta, Deliberacoes);
+
+    [RelayCommand]
+    private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Cond().GravarAssembleiaAsync(empresa, Montar(), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Selecionada = null;
+        await CarregarAsync();
+        Selecionada = Lista.FirstOrDefault(l => l.A.Numero == r.Valor);
+        Mensagem = $"Assembleia nº {r.Valor} gravada.";
+    }, Permissao.CondominioCadastros);
+
+    [RelayCommand]
+    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada?.A is not { } a) { Erros.Add("Selecione a assembleia na lista."); return; }
+        var r = await app.Cond().ExcluirAssembleiaAsync(empresa, a.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Nova();
+        await CarregarAsync();
+        Mensagem = $"Assembleia nº {a.Numero} excluída.";
+    }, Permissao.CondominioCadastros);
+
+    [RelayCommand]
+    private Task GerarAtaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada?.A is not { } a) { Erros.Add("Grave a assembleia e selecione-a na lista para gerar a ata."); return; }
+        var (nome, cnpj, unidades, sindico) = await app.Cond().DadosAtaAsync(empresa);
+        var pdf = new GeradorPdf().Gerar(AtaAssembleia.Documento(a, nome, cnpj, unidades, sindico, ListaPresenca));
+        Mensagem = "Ata gerada: " + ArquivosGerados.Salvar($"ata_assembleia_{a.Numero}.pdf", pdf.Conteudo);
+    }, Permissao.CondominioRelatorios);
 }

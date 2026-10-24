@@ -17,6 +17,8 @@ public sealed class ModuloCondominio : IModuloDesktop
     public string NomeExecutavel => "VorticisCondominio";
     public string CorDestaque => "#BE123C";   // vermelho-rubi (ícone e selo do módulo)
     public string CorBarra => "#881337";      // vinho
+    public bool UsaCalendarioObrigacoes => false;
+    public bool UsaSindico => true;
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
@@ -29,11 +31,13 @@ public sealed class ModuloCondominio : IModuloDesktop
         ItemMenu.Submenu("_Financeiro",
             ItemMenu.Tela("Taxas condominiais", CondominioTelas.Taxas),
             ItemMenu.Tela("Cobranças e recebimentos", CondominioTelas.Cobrancas),
-            ItemMenu.Tela("Despesas do condomínio", CondominioTelas.Despesas)),
+            ItemMenu.Tela("Despesas do condomínio", CondominioTelas.Despesas),
+            ItemMenu.Tela("Rateio entre unidades", CondominioTelas.Rateio)),
         ItemMenu.Submenu("_Administração",
             ItemMenu.Tela("Ocorrências e assembleias", CondominioTelas.Ocorrencias)),
         ItemMenu.Submenu("_Relatórios",
-            ItemMenu.Tela("Prestação de contas e inadimplência", CondominioTelas.Prestacao)),
+            ItemMenu.Tela("Prestação de contas e inadimplência", CondominioTelas.Prestacao),
+            ItemMenu.Tela("Atas de Assembleia", CondominioTelas.Atas)),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } = [new("Ctrl+B", CondominioTelas.Cobrancas, "Cobranças e recebimentos")];
@@ -63,6 +67,12 @@ public sealed class ModuloCondominio : IModuloDesktop
             .Tela(CondominioTelas.Ocorrencias, "Administração › Ocorrências e assembleias", m => Pode(m, Todas), v => v.CarregarAsync());
         c.Instancia("Prestacao", m => new PrestacaoViewModel(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(CondominioTelas.Prestacao, "Relatórios › Prestação de contas e inadimplência", m => Pode(m, Permissao.CondominioRelatorios), v => v.CarregarAsync());
+        c.Instancia("Rateio", m => new RateioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(CondominioTelas.Rateio, "Financeiro › Rateio entre unidades", m => Pode(m, Permissao.CondominioFinanceiro), v => v.CarregarAsync());
+        c.Instancia("Atas", m => new AtasAssembleiaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(CondominioTelas.Atas, "Relatórios › Atas de Assembleia", m => Pode(m, Todas), v => v.CarregarAsync());
         c.Instancia("ParametrosModulo", m => new ParametrosCondominioViewModel(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
     }

@@ -271,5 +271,52 @@
         </ScrollViewer>
       </Grid>
     </TabItem>
+    <TabItem Header="Síndico" IsEnabled="{Binding TemEmpresaSelecionada}" IsVisible="{Binding MostraAbaSindico}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="empresa-aba" Text="{Binding EmpresaSelecionadaRotulo}" />
+        <ScrollViewer DataContext="{Binding Main.Sindico}">
+          <StackPanel x:DataType="vm:SindicoViewModel" Margin="8,4" Spacing="6" MaxWidth="640" HorizontalAlignment="Left">
+            <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+              <TextBlock Text="Nome do síndico" FontSize="12" />
+              <TextBox Text="{Binding Nome}" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="CPF" FontSize="12" />
+                  <TextBox Text="{Binding Cpf}" Width="160" v:Mascara.Tipo="Cpf" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="E-mail" FontSize="12" />
+                  <TextBox Text="{Binding Email}" Width="250" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Telefone" FontSize="12" />
+                  <TextBox Text="{Binding Telefone}" Width="150" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Início do mandato" FontSize="12" />
+                  <CalendarDatePicker SelectedDate="{Binding MandatoInicio}" Width="150" />
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Fim do mandato" FontSize="12" />
+                  <CalendarDatePicker SelectedDate="{Binding MandatoFim}" Width="150" />
+                </StackPanel>
+              </StackPanel>
+              <TextBlock Text="Assinatura dos livros contábeis e fiscais" FontWeight="SemiBold" Margin="0,8,0,0" />
+              <CheckBox Content="Assina os livros contábeis e fiscais (assinatura normal)" IsChecked="{Binding AssinaLivros}" />
+              <CheckBox Content="Assinatura digital (certificado ICP-Brasil)" IsChecked="{Binding AssinaturaDigital}" />
+              <TextBlock Text="Marcado para assinar, o síndico entra no lugar do sócio/responsável no bloco de assinaturas dos livros e relatórios."
+                         FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0">
+                <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+                <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding Cadastrado}" />
+              </StackPanel>
+            </StackPanel>
+            <v:MensagensView />
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </TabItem>
   </TabControl>
 </UserControl>

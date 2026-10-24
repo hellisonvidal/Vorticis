@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.AtasAssembleiaView" x:DataType="vm:AtasAssembleiaViewModel">
+  <!-- Relatórios › Atas de Assembleia -->
+  <Grid ColumnDefinitions="*,12,420" RowDefinitions="Auto,*" Margin="8">
+    <TextBlock Grid.ColumnSpan="3" Classes="titulo" Text="Atas de Assembleia" Margin="0,0,0,8" />
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="50" />
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="120" />
+        <DataGridTextColumn Header="Local" Binding="{ReflectionBinding Local}" Width="*" />
+        <DataGridTextColumn Header="Presentes" Binding="{ReflectionBinding Presentes}" Width="90" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <ScrollViewer Grid.Row="1" Grid.Column="2">
+      <StackPanel Spacing="6">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Nº" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Numero}" IsReadOnly="True" Width="110" />
+            <CalendarDatePicker SelectedDate="{Binding Data}" Width="140" />
+            <TextBox Text="{Binding Horario}" Width="70" Watermark="19:30" ToolTip.Tip="Horário (HH:MM)" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <ComboBox ItemsSource="{x:Static vm:AtasAssembleiaViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="150" />
+            <ComboBox ItemsSource="{x:Static vm:AtasAssembleiaViewModel.Convocacoes}" SelectedIndex="{Binding Convocacao}" Width="190" />
+          </StackPanel>
+          <TextBox Text="{Binding Local}" Watermark="Local (ex.: salão de festas do condomínio)" />
+          <TextBox Text="{Binding Presidente}" Watermark="Presidente da mesa" />
+          <TextBox Text="{Binding Secretario}" Watermark="Secretário(a)" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Unidades presentes" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding UnidadesPresentes}" Minimum="0" Increment="1" FormatString="0" Width="130" />
+          </StackPanel>
+          <TextBox Text="{Binding Pauta}" Watermark="Ordem do dia (pauta), um item por linha" AcceptsReturn="True" Height="90" TextWrapping="Wrap" />
+          <TextBox Text="{Binding Deliberacoes}" Watermark="Deliberações (o que foi decidido e as votações)" AcceptsReturn="True" Height="130" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Nova" Command="{Binding NovaCommand}" />
+            <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+            <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+          </StackPanel>
+        </StackPanel>
+        <Rectangle Height="1" Fill="#D0D5DD" Margin="0,4" />
+        <CheckBox Content="Incluir lista de presença (para assinatura dos condôminos)" IsChecked="{Binding ListaPresenca}" />
+        <Button Content="Gerar ata (PDF)" Classes="accent" Command="{Binding GerarAtaCommand}" />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>
