@@ -286,6 +286,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     /// <summary>O módulo trabalha por período (Folha: competência): mostra o seletor e a situação ao lado da empresa.</summary>
     public bool UsaPeriodo => Modulo.RotuloPeriodo is not null;
+
+    /// <summary>A faixa da competência (abaixo da barra de menus) aparece só nos módulos com período, depois do login.</summary>
+    public bool MostraFaixaPeriodo => Logado && UsaPeriodo;
     public string RotuloPeriodo => (Modulo.RotuloPeriodo ?? "") + ":";
 
     [ObservableProperty] private DateTime? _periodoSelecionado = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -377,7 +380,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     [ObservableProperty] private SessaoUsuario? _sessao;
     [ObservableProperty] private EmpresaPermitida? _empresaSelecionada;
     [ObservableProperty] private string _status = "Conectando ao banco de dados...";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private bool _logado;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal), nameof(MostraFaixaPeriodo))] private bool _logado;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private object? _conteudo;
     [ObservableProperty] private FuncaoAberta? _funcaoAtiva;
     [ObservableProperty] private PedidoConfirmacao? _confirmacao;

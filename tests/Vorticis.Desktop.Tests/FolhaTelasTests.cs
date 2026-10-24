@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Vorticis.Folha.Desktop;
 using Vorticis.Folha.Desktop.Views;
 
@@ -48,5 +49,28 @@ public class FolhaTelasTests(SessaoHeadless headless)
             return telas.Length;
         }, TestContext.Current.CancellationToken));
         Assert.Equal(15, total);
+    }
+
+    [Fact]
+    public async Task Linha_de_menus_da_folha_cabe_na_tela_de_1366_pixels()
+    {
+        var sobra = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            var vm = new MainViewModel { Logado = true, Sessao = new Vorticis.Domain.Seguranca.SessaoUsuario(1, "maria", "Maria Aparecida dos Santos", true, false) };
+            var janela = new Vorticis.Desktop.Comum.Views.MainWindow { DataContext = vm, Width = 1366, Height = 740 };
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            var menu = janela.FindControl<Menu>("MenuPrincipal")!;
+            var barra = (Control)menu.Parent!;
+            // fim do último menu x início dos controles da direita (empresa e usuário), na mesma linha
+            var fimMenu = menu.Bounds.Left + menu.DesiredSize.Width;
+            var inicioDireita = barra.GetVisualChildren().OfType<Control>().Where(c => c != menu && Grid.GetColumn(c) >= 3).Min(c => c.Bounds.Left);
+            Assert.True(vm.MostraFaixaPeriodo);                       // a competência fica numa faixa própria, abaixo
+            janela.Hide();                                           // Close pediria confirmação ("Deseja realmente fechar?")
+            await Task.CompletedTask;
+            return inicioDireita - fimMenu;
+        }, TestContext.Current.CancellationToken));
+        // com a linha cheia o Grid espreme a coluna do meio a zero (e corta os menus): exige uma folga de verdade
+        Assert.True(sobra > 40, $"A linha de menus não cabe: sobram só {sobra:N0} px entre os menus e a empresa.");
     }
 }

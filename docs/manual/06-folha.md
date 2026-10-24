@@ -13,7 +13,7 @@ Na barra de cima, ao lado do seletor de empresas, fica a **Competência** em que
 
 Passo a passo:
 
-1. Escolha o mês na lista ao lado de **Competência** (as já fechadas aparecem como *(fechada)*; marque **Só fechadas** para listar apenas essas). As telas *Eventos variáveis*, *Cálculo da folha mensal* e *Pró-labore* passam a usar esse mês.
+1. Escolha o mês na lista de **Competência**, na faixa cinza logo abaixo da barra de menus (as já fechadas aparecem como *(fechada)*; marque **Só fechadas** para listar apenas essas). As telas *Eventos variáveis*, *Cálculo da folha mensal* e *Pró-labore* passam a usar esse mês.
 2. Para fechar, vá em *Cálculos › Folha › Cálculo da folha mensal* e clique em **Fechar competência**. A situação ao lado da empresa muda para **FECHADA**.
 3. Precisou corrigir? **Reabrir** na mesma tela (só se a folha não estiver contabilizada) e a situação volta para **ABERTA**.
 

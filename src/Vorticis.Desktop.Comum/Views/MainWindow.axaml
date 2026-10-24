@@ -48,7 +48,7 @@
         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="Empresa:" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
-                    MinWidth="280" MaxWidth="400" FontSize="12" MinHeight="24" Padding="8,1"
+                    MinWidth="220" MaxWidth="360" FontSize="12" MinHeight="24" Padding="8,1"
                     PlaceholderText="Nenhuma empresa">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="seg:EmpresaPermitida">
@@ -58,28 +58,34 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <!-- Período de trabalho do módulo (Folha: competência) e a situação dele; fechado bloqueia inclusões, alterações e exclusões -->
-          <TextBlock Text="{Binding RotuloPeriodo}" IsVisible="{Binding UsaPeriodo}" Foreground="#C9D6E8" FontSize="12"
-                     VerticalAlignment="Center" Margin="10,0,0,0" />
-          <ComboBox ItemsSource="{Binding ListaPeriodos}" SelectedItem="{Binding PeriodoEscolhido}" IsVisible="{Binding UsaPeriodo}" Width="150"
-                    FontSize="12" MinHeight="24" MaxDropDownHeight="360">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:OpcaoPeriodo">
-                <TextBlock Text="{Binding Texto}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <CheckBox Content="Só fechadas" IsChecked="{Binding SomenteFechados}" IsVisible="{Binding UsaPeriodo}" Foreground="#C9D6E8" FontSize="12"
-                    VerticalAlignment="Center" Margin="6,0,0,0" ToolTip.Tip="Mostra na lista só as competências já fechadas" />
-          <Border IsVisible="{Binding UsaPeriodo}" Background="{Binding PincelSituacaoPeriodo}" CornerRadius="3" Padding="6,1"
-                  VerticalAlignment="Center" ToolTip.Tip="Situação do período: inclusões, alterações e exclusões só com o período aberto">
-            <TextBlock Text="{Binding SituacaoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="#1F2937" />
-          </Border>
         </StackPanel>
         <TextBlock Grid.Column="4" Text="{Binding UsuarioRotulo}" Foreground="#E3E8F2" FontSize="12"
                    VerticalAlignment="Center" Margin="12,0,0,0" />
       </Grid>
     </Border>
+    </Border>
+
+    <!-- Período de trabalho do módulo (Folha: competência) numa faixa própria, para a linha de menus caber inteira na tela -->
+    <Border DockPanel.Dock="Top" Background="#EEF1F5" BorderBrush="#D0D5DD" BorderThickness="0,0,0,1" Padding="10,3" IsVisible="{Binding MostraFaixaPeriodo}">
+      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+        <!-- Período de trabalho do módulo (Folha: competência) e a situação dele; fechado bloqueia inclusões, alterações e exclusões -->
+        <TextBlock Text="{Binding RotuloPeriodo}" IsVisible="{Binding UsaPeriodo}" Foreground="#44506A" FontSize="12"
+                 VerticalAlignment="Center" Margin="10,0,0,0" />
+        <ComboBox ItemsSource="{Binding ListaPeriodos}" SelectedItem="{Binding PeriodoEscolhido}" IsVisible="{Binding UsaPeriodo}" Width="150"
+                FontSize="12" MinHeight="24" MaxDropDownHeight="360">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:OpcaoPeriodo">
+              <TextBlock Text="{Binding Texto}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <CheckBox Content="Só fechadas" IsChecked="{Binding SomenteFechados}" IsVisible="{Binding UsaPeriodo}" Foreground="#44506A" FontSize="12"
+                VerticalAlignment="Center" Margin="6,0,0,0" ToolTip.Tip="Mostra na lista só as competências já fechadas" />
+        <Border IsVisible="{Binding UsaPeriodo}" Background="{Binding PincelSituacaoPeriodo}" CornerRadius="3" Padding="6,1"
+                VerticalAlignment="Center" ToolTip.Tip="Situação do período: inclusões, alterações e exclusões só com o período aberto">
+          <TextBlock Text="{Binding SituacaoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="#1F2937" />
+        </Border>
+      </StackPanel>
     </Border>
 
     <!-- Funções abertas (cada uma em sua janela flutuante): clicar traz para a frente, ✕ fecha -->
