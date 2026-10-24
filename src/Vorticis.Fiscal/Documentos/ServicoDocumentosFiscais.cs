@@ -73,8 +73,9 @@ public enum SituacaoImportacao { Importado, Duplicado, Cancelado, Ignorado, Erro
 
 public sealed record ArquivoXml(string Nome, byte[] Conteudo);
 
+/// <summary>Resultado de um arquivo. <paramref name="ParticipanteNovo"/>: CPF/CNPJ do fornecedor/cliente cadastrado agora a partir do XML.</summary>
 public sealed record ResultadoArquivo(string Arquivo, SituacaoImportacao Situacao, string Mensagem, string? Chave = null, string? Numero = null,
-                                      TipoOperacao? Operacao = null, decimal Valor = 0, DateOnly? DataLivro = null);
+                                      TipoOperacao? Operacao = null, decimal Valor = 0, DateOnly? DataLivro = null, string? ParticipanteNovo = null);
 
 /// <summary>Andamento da importação em lote (<see cref="Total"/> = 0 quando a quantidade não é conhecida de antemão).</summary>
 public sealed record ProgressoImportacao(int Processados, int Total, string Arquivo);
@@ -302,7 +303,8 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
                     var aviso = Math.Abs(doc.DiferencaItens) > 0.05m ? $" Atenção: a soma dos itens difere do total da nota em {Formato.Moeda(doc.DiferencaItens)}." : "";
                     var part = g.ParticipanteCriado ? $" Participante cadastrado: {g.ParticipanteNome}." : "";
                     return new(arquivo.Nome, SituacaoImportacao.Importado,
-                        $"{doc.Modelo.Rotulo()} {doc.Numero} ({ident.Valor.Operacao.Rotulo().ToLowerInvariant()}) importada.{part}{aviso}", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total, doc.DataLivro);
+                        $"{doc.Modelo.Rotulo()} {doc.Numero} ({ident.Valor.Operacao.Rotulo().ToLowerInvariant()}) importada.{part}{aviso}", doc.Chave, doc.Numero, ident.Valor.Operacao, doc.Totais.Total, doc.DataLivro,
+                        g.ParticipanteCriado ? ident.Valor.Contraparte?.Documento : null);
                 }
                 catch (ViolacaoRegraException ex)
                 {

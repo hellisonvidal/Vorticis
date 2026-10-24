@@ -51,6 +51,42 @@ internal sealed class ProgressoSincrono(Action<ProgressoImportacao> acao) : IPro
     public void Report(ProgressoImportacao v) => acao(v);
 }
 
+/// <summary>Fornecedor novo vindo do XML (importação em arquivo ou pela chave) completado pela consulta pública do CNPJ.</summary>
+public class CadastroPeloCnpjTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+{
+    [Fact]
+    public async Task Importacao_de_xml_completa_o_fornecedor_novo_pela_consulta_do_cnpj_sem_trocar_os_dados_do_xml()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var emp = CnpjsDeTeste.Valido(31);
+        var forn = CnpjsDeTeste.Valido(32);
+        var empresa = await db.CriarEmpresaAsync(emp);
+        var adm = await db.AdminAsync();
+        var consulta = new ConsultaCnpjFalsa();
+        await using var app = await VorticisApp.IniciarAsync(db.ConnectionString, consulta, ct, new ConsultaIeFalsa());
+        var pasta = Directory.CreateTempSubdirectory("xml_forn").FullName;
+        try
+        {
+            var arq = Path.Combine(pasta, "compra.xml");
+            await File.WriteAllBytesAsync(arq, XmlsDeTeste.Bytes(XmlsDeTeste.Nfe(forn, emp, 1, 4321, new DateOnly(2026, 3, 10), [new ItemNfe("5102", 100m)],
+                                                                                nomeEmit: "Nome do XML Ltda")), ct);
+            var vm = new ImportacaoXmlViewModel(new ContextoDeTeste(app, adm, empresa));
+            Assert.True(vm.CompletarPeloCnpj);
+            await vm.ImportarArquivosAsync([arq]);
+            Assert.Empty(vm.Erros);
+            Assert.Equal(forn, Assert.Single(vm.Ultimo!.Arquivos).ParticipanteNovo);
+            Assert.Contains("completado pela consulta do CNPJ", vm.Resumo);
+            var p = Assert.Single(await app.Participantes.ListarAsync(empresa, adm, ct), x => x.CpfCnpj == forn);
+            // o nome e a UF vêm do XML; o que faltava vem da consulta (fantasia, endereço, contato)
+            Assert.Equal(("Nome do XML Ltda", "Forn Pub", "Av. Paulista", "Bela Vista", "contato@fornecedor.test"), (p.Nome, p.NomeFantasia, p.Logradouro, p.Bairro, p.Email));
+            Assert.True(p.Fornecedor);
+            Assert.Equal(1, consulta.Chamadas);
+        }
+        finally { Directory.Delete(pasta, true); }
+    }
+}
+
 /// <summary>Importação em lote: pastas recursivas, .zip com subpastas, progresso, cancelamento, resumo exportável.</summary>
 public class ImportacaoEmLoteTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 {
@@ -176,7 +212,7 @@ public class ImportacaoEmLoteTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
         try
         {
             for (var i = 1; i <= 25; i++) await File.WriteAllBytesAsync(Path.Combine(pasta, $"n{i}.xml"), Venda(emp, 4000 + i), ct);
-            var vm = new ImportacaoXmlViewModel(ctx) { Pasta = pasta };
+            var vm = new ImportacaoXmlViewModel(ctx) { Pasta = pasta, CompletarPeloCnpj = false };
             ResultadoImportacao? concluida = null;
             vm.Concluida += r => { concluida = r; return Task.CompletedTask; };
             var estados = new List<bool>();
@@ -234,6 +270,7 @@ public class LancamentosNotasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
 
             var vm = new NotaEntradaViewModel(ctx);
             await vm.CarregarAsync();
+            vm.Importador.CompletarPeloCnpj = false;   // sem consulta pública na internet (coberta em CadastroPeloCnpjTests)
             await vm.Importador.ImportarArquivosAsync([entrada, saida]);   // pelo botão "Importar XML" da tela
             Assert.Empty(vm.Importador.Erros);
             var nota = Assert.Single(vm.Lista);   // a venda (saída) não aparece na tela de entrada
@@ -256,8 +293,7 @@ public class LancamentosNotasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
             Assert.Equal("5102", vm.Itens[0].Cfop);
 
             vm.SalvarCommand.Execute(null);
-            await Task.Delay(100, ct);
-            Assert.Contains(vm.Erros, e => e.Contains("Gravar escrituração"));
+            await Aguardar(() => vm.Erros.Any(e => e.Contains("Gravar escrituração")), ct);
 
             // escrituração: CFOP de entrada, observação e contas
             vm.ItemSelecionado = vm.Itens[0];

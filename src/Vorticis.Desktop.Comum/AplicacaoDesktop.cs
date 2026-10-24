@@ -25,6 +25,7 @@ public abstract class AppBase : Avalonia.Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = CriarPrincipal();
+            ErrosInesperados.Instalar(vm.MostrarErroInesperado);   // erro não previsto não fecha o módulo
             desktop.MainWindow = new MainWindow { DataContext = vm };
             desktop.ShutdownRequested += async (_, _) => await vm.DisposeAsync();
             _ = vm.IniciarAsync();

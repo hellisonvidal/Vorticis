@@ -91,7 +91,7 @@ public class ViewModelsFiscaisTests(BancoDeTeste db) : IClassFixture<BancoDeTest
             File.WriteAllBytes(Path.Combine(pasta, "compra.xml"), XmlsDeTeste.Bytes(XmlsDeTeste.Nfe(XmlsDeTeste.CnpjFornecedor, cnpj, 1, 77, mar, [new ItemNfe("1102", 8_000m, 1_440m)])));
 
             // Importação pela tela
-            var importacao = new ImportacaoXmlViewModel(ctx) { Pasta = pasta, IncluirSubpastas = false };
+            var importacao = new ImportacaoXmlViewModel(ctx) { Pasta = pasta, IncluirSubpastas = false, CompletarPeloCnpj = false };
             await importacao.ImportarPastaCommand.ExecuteAsync(null);
             Assert.Empty(importacao.Erros);
             Assert.Equal(3, importacao.Resultados.Count(r => r.Situacao == "Importado"));

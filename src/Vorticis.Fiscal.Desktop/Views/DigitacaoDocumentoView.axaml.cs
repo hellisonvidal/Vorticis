@@ -1,3 +1,4 @@
+using Vorticis.Desktop.Comum;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Vorticis.Fiscal.Desktop.ViewModels;
@@ -11,14 +12,19 @@ public partial class DigitacaoDocumentoView : UserControl
     private async void ImportarArquivos(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not DigitacaoDocumentoViewModel vm || TopLevel.GetTopLevel(this) is not { } top) return;
-        var caminhos = await SelecaoXml.ArquivosAsync(top);
-        if (caminhos.Count > 0) await vm.Importador.ImportarArquivosAsync(caminhos);
+        try
+        {
+            var caminhos = await SelecaoXml.ArquivosAsync(top);
+            if (caminhos.Count > 0) await vm.Importador.ImportarArquivosAsync(caminhos);
+        }
+        catch (Exception ex) { vm.Importador.Erros.Add(ErrosInesperados.Registrar(ex)); }   // nunca fecha o módulo
     }
 
     private async void ImportarPasta(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not DigitacaoDocumentoViewModel vm || TopLevel.GetTopLevel(this) is not { } top) return;
-        if (await SelecaoXml.PastaAsync(top) is { } pasta) await vm.Importador.ImportarPastaAsync(pasta, true);
+        try { if (await SelecaoXml.PastaAsync(top) is { } pasta) await vm.Importador.ImportarPastaAsync(pasta, true); }
+        catch (Exception ex) { vm.Importador.Erros.Add(ErrosInesperados.Registrar(ex)); }
     }
 
     /// <summary>Ao sair do campo do fornecedor/cliente, busca pelo CPF/CNPJ digitado (CNPJ completo já busca ao digitar).</summary>

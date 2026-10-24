@@ -45,6 +45,8 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
     [ObservableProperty] private bool _indeterminado;
     [ObservableProperty] private string _andamento = "";
     [ObservableProperty] private bool _temResumo;
+    /// <summary>Fornecedor/cliente cadastrado a partir do XML: completar com a consulta pública do CNPJ (como no cadastro de clientes e fornecedores).</summary>
+    [ObservableProperty] private bool _completarPeloCnpj = true;
 
     /// <summary>Resultado da última importação concluída (ou interrompida).</summary>
     public ResultadoImportacao? Ultimo { get; private set; }
@@ -110,6 +112,7 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
                 // Em segundo plano: leitura dos arquivos, XML e gravação não rodam na thread da tela.
                 var r = await Task.Run(() => importar(servico, empresa, usuario, progresso, cancelamento.Token));
                 MostrarResultadoImportacao(r);
+                if (r.Sucesso && CompletarPeloCnpj) await CompletarCadastrosAsync(app, empresa, usuario, r.Valor);
                 if (r.Sucesso && Concluida is { } aviso)
                     foreach (var ouvinte in aviso.GetInvocationList().Cast<Func<ResultadoImportacao, Task>>()) await ouvinte(r.Valor);
             }
@@ -119,6 +122,33 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
                 (Importando, Indeterminado) = (false, false);
             }
         }, Permissao.FiscalDocumentosImportar);
+
+    /// <summary>Completa pela consulta do CNPJ os fornecedores/clientes que a importação acabou de cadastrar com os dados do XML.</summary>
+    public async Task CompletarCadastrosAsync(VorticisApp app, long empresa, long usuario, ResultadoImportacao r)
+    {
+        var novos = r.Arquivos.Select(a => a.ParticipanteNovo).OfType<string>().Distinct().ToList();
+        if (novos.Count == 0) return;
+        var completados = 0;
+        var avisos = new List<string>();
+        foreach (var doc in novos)
+        {
+            Andamento = $"Consultando o CNPJ {Domain.Cadastros.Cnpj.Formatar(Domain.Cadastros.Cnpj.SomenteDigitos(doc))} para completar o cadastro...";
+            try
+            {
+                var c = await app.Fiscal().ParticipantesNota.CompletarPelaConsultaAsync(empresa, doc, usuario);
+                if (c.Sucesso) completados++;
+                else avisos.AddRange(c.Erros.Where(e => !e.StartsWith("CPF", StringComparison.Ordinal)));
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or TimeoutException or InvalidOperationException)
+            {
+                avisos.Add($"consulta do CNPJ indisponível ({ex.Message}).");
+            }
+        }
+        Andamento = r.Interrompida ? "Importação cancelada." : "Importação concluída.";
+        // a nota já está importada: falha na consulta é só aviso (o cadastro fica com os dados do XML e pode ser completado depois)
+        if (completados > 0) Resumo += $" {completados} fornecedor(es)/cliente(s) novo(s) com o cadastro completado pela consulta do CNPJ.";
+        if (avisos.Count > 0) Resumo += $" Cadastro não completado (ficou com os dados do XML): {string.Join(" ", avisos)}";
+    }
 
     private void MostrarResultadoImportacao(Resultado<ResultadoImportacao> r)
     {

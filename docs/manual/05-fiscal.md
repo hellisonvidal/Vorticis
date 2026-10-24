@@ -39,7 +39,7 @@ Para lançar uma nota nova a qualquer momento, clique em **Nova nota**: os campo
 
 1. Em *Lançamentos › Documentos fiscais › Entrada*, cole a chave no campo **Chave de acesso da NF-e** (pode ter espaços ou pontos).
 2. Clique em **Importar pela chave**. Se o certificado for A1, o sistema pede a senha.
-3. Se a SEFAZ devolver o XML completo, a nota é importada e aparece selecionada na lista.
+3. Se a SEFAZ devolver o XML completo, a nota é importada e aparece selecionada na lista. Fornecedor novo é cadastrado e completado pela consulta do CNPJ (opção marcada no painel de importação).
 4. Se a SEFAZ devolver só o **resumo**, aparece o botão **Manifestar ciência**: ele registra a *Ciência da operação* em nome da empresa, o que libera o XML. Aguarde alguns minutos e clique de novo em **Importar pela chave**.
 
 Mensagens da SEFAZ (ex.: *137 – Nenhum documento localizado*, *656 – Consumo indevido*) aparecem como vieram. A SEFAZ limita o número de consultas por hora; se aparecer *656*, espere uma hora.
@@ -63,7 +63,9 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - Aceita NF-e e NFC-e (modelos 55 e 65) e NFS-e no padrão nacional (ADN).
 - O sentido é identificado pelo **CNPJ da empresa** (e dos estabelecimentos): é entrada se a empresa é o destinatário e saída se é o emitente. Notas de terceiros são recusadas.
 - **Duplicidade:** a mesma chave de acesso não é importada duas vezes. Eventos de cancelamento são aplicados, mesmo que cheguem antes da nota.
-- Clientes e fornecedores são criados ou vinculados automaticamente.
+- Clientes e fornecedores são criados ou vinculados automaticamente. Com **Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)** marcado (vem marcado), o cadastro criado a partir do XML é completado como no botão *Buscar dados na Receita* do cadastro de clientes e fornecedores: nome fantasia, endereço completo, e-mail, telefone e inscrição estadual que faltarem. Os dados que vieram no XML são mantidos. Vale também para a nota importada pela chave de acesso.
+- **Nota de outra empresa:** se o XML não for da empresa selecionada (o CNPJ dela não é o do emitente nem o do destinatário), a nota não é importada e aparece na lista como *Outra empresa*, com os CNPJs do emitente e do destinatário. Escolha a empresa certa no topo e importe de novo.
+- Se acontecer um erro inesperado, o programa mostra o aviso, grava os detalhes em `%LOCALAPPDATA%\Vorticis\logs\erros.log` e continua aberto.
 - **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
 
 ## Consulta de documentos

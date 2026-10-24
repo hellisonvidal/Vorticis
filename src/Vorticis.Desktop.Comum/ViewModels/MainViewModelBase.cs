@@ -755,6 +755,13 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (ativou) await RecarregarEmpresasAsync();
     }
 
+    /// <summary>Erro não previsto (ver <see cref="ErrosInesperados"/>): aparece na barra de status e num aviso, sem fechar o módulo.</summary>
+    public void MostrarErroInesperado(string mensagem)
+    {
+        Status = mensagem;
+        if (Confirmacao is null) _ = ConfirmarAsync("Erro inesperado", mensagem, "OK", "Fechar");
+    }
+
     public Task<bool> ConfirmarAsync(string titulo, string mensagem, string textoSim = "Sim", string textoNao = "Não")
     {
         Confirmacao?.Responder(false);

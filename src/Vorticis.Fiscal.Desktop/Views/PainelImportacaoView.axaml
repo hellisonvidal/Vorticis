@@ -6,6 +6,8 @@
              x:DataType="vm:ImportacaoXmlViewModel">
   <!-- Andamento, cancelamento e resumo final da importação de XML (usado na tela de importação e nos lançamentos) -->
   <StackPanel Spacing="4">
+    <CheckBox Content="Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)" IsChecked="{Binding CompletarPeloCnpj}"
+              ToolTip.Tip="Como o botão Buscar dados na Receita do cadastro: preenche endereço, fantasia, contato e inscrição estadual que faltarem no XML" />
     <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Importando}">
       <StackPanel Spacing="2">
         <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percentual}" IsIndeterminate="{Binding Indeterminado}" Height="14" />

@@ -55,6 +55,40 @@ public sealed class ServicoParticipanteNota(VorticisApp app)
         return Resultado<ParticipanteResolvido>.Ok(new ParticipanteResolvido(null, novo, aviso, d.Fonte));
     }
 
+    /// <summary>
+    /// Completa o cadastro do fornecedor/cliente criado a partir do XML com a consulta pública do CNPJ e da inscrição estadual, como o botão
+    /// "Buscar dados na Receita" do cadastro de clientes e fornecedores: preenche só o que está vazio (os dados do XML são mantidos).
+    /// Devolve o nome do participante completado ou o motivo de não ter completado.
+    /// </summary>
+    public async Task<Resultado<string>> CompletarPelaConsultaAsync(long empresaId, string documento, long usuarioId, CancellationToken ct = default)
+    {
+        var doc = Cnpj.SomenteDigitos(documento);
+        if (doc.Length != 14) return Resultado<string>.Falha("CPF: não há consulta pública.");
+        var p = (await app.Participantes.ListarAsync(empresaId, usuarioId, ct)).FirstOrDefault(x => x.CpfCnpj == doc);
+        if (p is null) return Resultado<string>.Falha("Participante não encontrado.");
+        var r = await app.Empresas.ConsultarCnpjAsync(doc, ct);
+        if (!r.Sucesso) return Resultado<string>.Falha($"{p.Nome}: consulta do CNPJ falhou ({string.Join(" ", r.Erros)}).");
+        var d = r.Valor;
+        static string? V(string? atual, string? novo) => string.IsNullOrWhiteSpace(atual) ? (string.IsNullOrWhiteSpace(novo) ? atual : novo.Trim()) : atual;
+        var uf = V(p.Uf, d.Uf);
+        var ie = p.InscricaoEstadual;
+        if (string.IsNullOrWhiteSpace(ie))
+        {
+            var consultaIe = await app.Empresas.ConsultarInscricaoEstadualAsync(doc, uf, V(p.CodMunicipioIbge, d.CodMunicipioIbge), ct);
+            if (consultaIe.Sucesso) ie = consultaIe.Valor.FirstOrDefault(i => i.Ativa)?.Inscricao ?? consultaIe.Valor.FirstOrDefault()?.Inscricao ?? "ISENTO";
+        }
+        var completo = p with
+        {
+            Nome = V(p.Nome, d.RazaoSocial)!, NomeFantasia = V(p.NomeFantasia, d.NomeFantasia), InscricaoEstadual = ie, Uf = uf,
+            CodMunicipioIbge = V(p.CodMunicipioIbge, d.CodMunicipioIbge), Municipio = V(p.Municipio, d.Municipio), Email = V(p.Email, d.Email),
+            Telefone = V(p.Telefone, d.Telefone), Cep = V(p.Cep, d.Cep), Logradouro = V(p.Logradouro, d.Logradouro), Numero = V(p.Numero, d.Numero),
+            Complemento = V(p.Complemento, d.Complemento), Bairro = V(p.Bairro, d.Bairro),
+        };
+        if (completo == p) return Resultado<string>.Ok(p.Nome);
+        var g = await app.Participantes.GravarAsync(empresaId, completo, usuarioId, ct);
+        return g.Sucesso ? Resultado<string>.Ok(p.Nome) : Resultado<string>.Falha($"{p.Nome}: {string.Join(" ", g.Erros)}");
+    }
+
     private static Participante Novo(string doc, string nome, bool cliente, bool fornecedor) =>
         new(0, "", nome, null, doc, null, null, null, null, null, null, cliente, fornecedor, null, true);
 

@@ -1,3 +1,4 @@
+using Vorticis.Desktop.Comum;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Vorticis.Fiscal.Desktop.ViewModels;
@@ -11,13 +12,18 @@ public partial class ImportacaoXmlView : UserControl
     private async void EscolherArquivos(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not ImportacaoXmlViewModel vm || TopLevel.GetTopLevel(this) is not { } top) return;
-        var caminhos = await SelecaoXml.ArquivosAsync(top);
-        if (caminhos.Count > 0) await vm.ImportarArquivosAsync(caminhos);
+        try
+        {
+            var caminhos = await SelecaoXml.ArquivosAsync(top);
+            if (caminhos.Count > 0) await vm.ImportarArquivosAsync(caminhos);
+        }
+        catch (Exception ex) { vm.Erros.Add(ErrosInesperados.Registrar(ex)); }   // nunca fecha o módulo
     }
 
     private async void EscolherPasta(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not ImportacaoXmlViewModel vm || TopLevel.GetTopLevel(this) is not { } top) return;
-        if (await SelecaoXml.PastaAsync(top) is { } caminho) vm.Pasta = caminho;
+        try { if (await SelecaoXml.PastaAsync(top) is { } caminho) vm.Pasta = caminho; }
+        catch (Exception ex) { vm.Erros.Add(ErrosInesperados.Registrar(ex)); }
     }
 }

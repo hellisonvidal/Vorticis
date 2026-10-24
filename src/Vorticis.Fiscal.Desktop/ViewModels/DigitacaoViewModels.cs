@@ -791,6 +791,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         if (r.Valor.Arquivo is { Situacao: SituacaoImportacao.Importado } a)
         {
+            if (Importador.CompletarPeloCnpj) await Importador.CompletarCadastrosAsync(app, empresa, usuario, new ResultadoImportacao([a]));   // fornecedor novo: completa pela Receita
             await AposImportacaoAsync(new ResultadoImportacao([a]));
             ChaveImportacao = "";
         }
