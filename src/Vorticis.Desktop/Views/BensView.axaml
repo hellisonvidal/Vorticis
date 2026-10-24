@@ -65,7 +65,7 @@
         </Grid>
 
         <TextBlock Text="Depreciação contábil (CPC 27) e fiscal" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,6,0,0" />
-        <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+        <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Vida útil (meses)" />
           <TextBox Grid.Column="1" Text="{Binding VidaUtil}" Width="80" HorizontalAlignment="Left" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Método" />
@@ -77,6 +77,8 @@
             <ComboBox ItemsSource="{x:Static vm:BensViewModel.OpcoesTurnos}" SelectedItem="{Binding Turnos}" Width="70" />
             <TextBlock Text="2 turnos: fiscal × 1,5 · 3 turnos: × 2,0" FontSize="11" Foreground="Gray" VerticalAlignment="Center" />
           </StackPanel>
+          <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Depreciar a partir da data de aquisição, proporcional aos dias" IsChecked="{Binding ProRataDia}"
+                    ToolTip.Tip="O primeiro mês deprecia só os dias desde a aquisição (inclusive); a fração que falta é lançada no mês seguinte ao fim da vida útil. Na baixa, deprecia os dias até a véspera." />
           <TextBlock Grid.Row="3" Classes="rotulo" Text="Já depreciado" />
           <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DepreciacaoAnterior}" Width="140" HorizontalAlignment="Left" TextAlignment="Right"
                    ToolTip.Tip="Depreciação acumulada antes de usar o Vorticis (implantação)" />

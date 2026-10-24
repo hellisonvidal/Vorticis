@@ -198,6 +198,7 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 2. Informe plaqueta, local, nota fiscal e fornecedor, datas de aquisição e de início de uso.
 3. Informe **custo**, **valor residual**, **vida útil (meses)** e **método** (linear ou soma dos dígitos), conforme o CPC 27.
 4. **Turnos de uso**: 2 turnos acelera a depreciação fiscal em 1,5; 3 turnos em 2,0.
+   - **Depreciar a partir da data de aquisição, proporcional aos dias** (opcional): a depreciação começa no dia da aquisição, e não no mês do início de uso. No primeiro mês entram só os dias desde a aquisição (inclusive). Exemplo: bem comprado em 21/04, quota de R$ 1.000,00 → em abril deprecia 10 de 30 dias = R$ 333,33. A parte que faltou é lançada no mês seguinte ao fim da vida útil. Na baixa, o mês da baixa deprecia os dias até a véspera. Sem a opção, vale a regra normal: quota cheia a partir do mês do início de uso, e o mês da baixa não deprecia.
 5. Se o bem já vinha depreciado, preencha **Já depreciado** (depreciação acumulada antes do Vorticis).
 6. Confirme as contas do bem, da depreciação acumulada e da despesa. **Salvar**.
 7. Para dar baixa: informe a **data** e o **motivo** (venda, perda, doação...).

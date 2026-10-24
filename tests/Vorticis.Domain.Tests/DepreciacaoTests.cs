@@ -59,4 +59,33 @@ public class DepreciacaoTests
         Assert.Equal(120, RegrasDepreciacao.VidaUtilFiscalMeses(10));
         Assert.Equal(300, RegrasDepreciacao.VidaUtilFiscalMeses(4));
     }
+
+    [Fact]
+    public void Pro_rata_dia_comeca_na_aquisicao_e_leva_a_fracao_para_depois_da_vida_util()
+    {
+        // 12.000 em 12 meses = 1.000/mês; aquisição em 21/04 (abril tem 30 dias): 10 dias = 1/3 da quota
+        var b = new BemParaDepreciar(1, 12_000m, 0, 12, MetodoDepreciacao.Linear, new DateOnly(2026, 5, 2), null, 0, true, 10, 1,
+                                     ProRataDia: true, Aquisicao: new DateOnly(2026, 4, 21));
+        Assert.Null(RegrasDepreciacao.Calcular(b, new DateOnly(2026, 3, 1), 0, 0));
+        var primeiro = RegrasDepreciacao.Calcular(b, new DateOnly(2026, 4, 1), 0, 0)!;
+        Assert.Equal(333.33m, primeiro.Contabil);
+        Assert.Equal(33.33m, primeiro.Fiscal);                        // 12.000 x 10% / 12 x 10/30
+        Assert.Equal(1_000m, RegrasDepreciacao.Calcular(b, new DateOnly(2026, 5, 1), 333.33m, 0)!.Contabil);
+        // 12º mês (março/2027) ainda é quota normal; abril/2027 leva o que falta
+        Assert.Equal(1_000m, RegrasDepreciacao.Calcular(b, new DateOnly(2027, 3, 1), 333.33m + 10_000m, 0)!.Contabil);
+        Assert.Equal(666.67m, RegrasDepreciacao.Calcular(b, new DateOnly(2027, 4, 1), 333.33m + 11_000m, 0)!.Contabil);
+        Assert.Null(RegrasDepreciacao.Calcular(b, new DateOnly(2027, 5, 1), 12_000m, 12_000m));
+    }
+
+    [Fact]
+    public void Pro_rata_dia_deprecia_os_dias_ate_a_vespera_da_baixa()
+    {
+        var b = new BemParaDepreciar(1, 12_000m, 0, 12, MetodoDepreciacao.Linear, new DateOnly(2026, 4, 1), new DateOnly(2026, 6, 16), 0, true, 10, 1,
+                                     ProRataDia: true, Aquisicao: new DateOnly(2026, 4, 1));
+        Assert.Equal(1_000m, RegrasDepreciacao.Calcular(b, new DateOnly(2026, 4, 1), 0, 0)!.Contabil);
+        Assert.Equal(500m, RegrasDepreciacao.Calcular(b, new DateOnly(2026, 6, 1), 2_000m, 0)!.Contabil);   // 15 de 30 dias
+        Assert.Null(RegrasDepreciacao.Calcular(b, new DateOnly(2026, 7, 1), 2_500m, 0));
+        // sem pro rata, o mês da baixa não deprecia (regra anterior mantida)
+        Assert.Null(RegrasDepreciacao.Calcular(b with { ProRataDia = false }, new DateOnly(2026, 6, 1), 2_000m, 0));
+    }
 }

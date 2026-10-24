@@ -19,7 +19,7 @@ public sealed record BemImobilizado(
     long Id, int Codigo, string Descricao, long GrupoId, string? Plaqueta, string? Localizacao, string? NotaFiscal, string? CodigoFornecedor,
     DateOnly DataAquisicao, DateOnly InicioUso, decimal Valor, decimal Residual, int VidaUtilMeses, MetodoDepreciacao Metodo, int Turnos,
     decimal DepreciacaoAnterior, string ContaBem, string? ContaAcumulada, string? ContaDespesa, DateOnly? DataBaixa, string? MotivoBaixa,
-    decimal DepreciacaoLancada = 0, decimal DepreciacaoFiscalLancada = 0, DateOnly? UltimaCompetencia = null)
+    decimal DepreciacaoLancada = 0, decimal DepreciacaoFiscalLancada = 0, DateOnly? UltimaCompetencia = null, bool ProRataDia = false)
 {
     public decimal Acumulada => DepreciacaoAnterior + DepreciacaoLancada;
     public decimal ValorContabil => Valor - Acumulada;
@@ -121,8 +121,9 @@ public sealed class ServicoImobilizado(IRepositorioImobilizado repositorio, IRep
         if (bens.Any(x => x.Id != b.Id && x.Codigo == codigo)) erros.Add($"Já existe o bem de código {codigo}.");
         if (atual is { DepreciacaoLancada: > 0 } && (atual.Valor != b.Valor || atual.Residual != b.Residual || atual.InicioUso != b.InicioUso
                                                     || atual.VidaUtilMeses != b.VidaUtilMeses || atual.Metodo != b.Metodo
-                                                    || atual.DepreciacaoAnterior != b.DepreciacaoAnterior))
-            erros.Add("O bem já tem depreciação lançada: valor, residual, início de uso, vida útil e método não podem mudar (estorne as competências antes).");
+                                                    || atual.DepreciacaoAnterior != b.DepreciacaoAnterior
+                                                    || atual.ProRataDia != b.ProRataDia || (b.ProRataDia && atual.DataAquisicao != b.DataAquisicao)))
+            erros.Add("O bem já tem depreciação lançada: valor, residual, aquisição/início de uso, vida útil, método e pro rata não podem mudar (estorne as competências antes).");
 
         var contas = await plano.ListarAsync(empresaId, ct);
         ContaDetalhe? Conta(string? texto, string nome, bool obrigatoria)
@@ -195,7 +196,7 @@ public sealed class ServicoImobilizado(IRepositorioImobilizado repositorio, IRep
             var situacao = quota is not null ? (quota.Contabil > 0 ? "Calculado" : "Só fiscal (vida útil contábil encerrada)")
                 : !g.Deprecia ? "Não deprecia (" + g.Descricao + ")"
                 : b.DataBaixa is { } bx && competencia >= RegrasDepreciacao.Competencia(bx) ? $"Baixado em {bx:dd/MM/yyyy}"
-                : competencia < RegrasDepreciacao.Competencia(b.InicioUso) ? $"Em uso a partir de {b.InicioUso:MM/yyyy}"
+                : competencia < RegrasDepreciacao.Competencia(b.ProRataDia ? b.DataAquisicao : b.InicioUso) ? $"Deprecia a partir de {(b.ProRataDia ? b.DataAquisicao : b.InicioUso):dd/MM/yyyy}"
                 : "Totalmente depreciado";
             res.Add(new ItemDepreciacao(b, g, quota, situacao));
         }
@@ -204,7 +205,7 @@ public sealed class ServicoImobilizado(IRepositorioImobilizado repositorio, IRep
 
     private static BemParaDepreciar Para(BemImobilizado b, GrupoBem g) =>
         new(b.Id, b.Valor, b.Residual, b.VidaUtilMeses, b.Metodo, b.InicioUso, b.DataBaixa, b.DepreciacaoAnterior, g.Deprecia,
-            g.TaxaAnualFiscal, g.Intangivel ? 1 : b.Turnos);   // aceleração por turnos só vale para bens móveis tangíveis
+            g.TaxaAnualFiscal, g.Intangivel ? 1 : b.Turnos, b.ProRataDia, b.DataAquisicao);   // aceleração por turnos só vale para bens móveis tangíveis
 
     /// <summary>Gera o lançamento da depreciação da competência (último dia do mês) e registra as quotas por bem.</summary>
     public async Task<Resultado<LancamentoEfetivado>> LancarAsync(long empresaId, DateOnly competencia, long usuarioId, CancellationToken ct = default)

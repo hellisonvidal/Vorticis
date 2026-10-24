@@ -21,7 +21,13 @@ public sealed record BemParaDepreciar(
     decimal DepreciacaoAnterior,
     bool Deprecia,
     decimal TaxaAnualFiscal,
-    int Turnos);
+    int Turnos,
+    bool ProRataDia = false,
+    DateOnly? Aquisicao = null)
+{
+    /// <summary>Data em que a depreciação começa: a aquisição (pro rata dia) ou o início de uso.</summary>
+    public DateOnly Inicio => ProRataDia && Aquisicao is { } a ? a : InicioUso;
+}
 
 /// <summary>Quota de uma competência: contábil (CPC 27) e fiscal (RFB), e o acumulado depois dela.</summary>
 public sealed record QuotaDepreciacao(long BemId, DateOnly Competencia, decimal Contabil, decimal Fiscal, decimal AcumuladoAnterior, decimal AcumuladoApos)
@@ -37,6 +43,8 @@ public sealed record QuotaDepreciacao(long BemId, DateOnly Competencia, decimal 
 /// valor depreciável ou o bem é baixado (a competência da baixa não é depreciada).
 /// Fiscal (RIR/2018 arts. 317–330; IN RFB 1.700/2017, Anexo III): taxa anual do grupo sobre o custo, em quotas mensais,
 /// multiplicada por 1,0 / 1,5 / 2,0 para bens móveis usados em 1 / 2 / 3 turnos de 8 horas (art. 323); limitada ao custo.
+/// Pro rata dia (opção do bem): começa na data de aquisição; no primeiro mês e no mês da baixa a quota (contábil e fiscal) é
+/// proporcional aos dias, e a fração não depreciada no primeiro mês fica para o mês seguinte ao fim da vida útil.
 /// </summary>
 public static class RegrasDepreciacao
 {
@@ -44,7 +52,20 @@ public static class RegrasDepreciacao
 
     /// <summary>Meses de uso até a competência, contando a do início (1 = primeiro mês).</summary>
     public static int MesDeUso(BemParaDepreciar b, DateOnly competencia) =>
-        (competencia.Year - b.InicioUso.Year) * 12 + competencia.Month - b.InicioUso.Month + 1;
+        (competencia.Year - b.Inicio.Year) * 12 + competencia.Month - b.Inicio.Month + 1;
+
+    /// <summary>
+    /// Fração do mês depreciada: 1, ou (pro rata dia) os dias desde a aquisição no primeiro mês, inclusive o dia da aquisição,
+    /// e os dias antes da baixa no mês da baixa.
+    /// </summary>
+    public static decimal FracaoDoMes(BemParaDepreciar b, DateOnly competencia)
+    {
+        if (!b.ProRataDia) return 1m;
+        decimal dias = DateTime.DaysInMonth(competencia.Year, competencia.Month);
+        var ini = competencia == Competencia(b.Inicio) ? b.Inicio.Day : 1;
+        var fim = b.Baixa is { } baixa && competencia == Competencia(baixa) ? baixa.Day - 1 : (int)dias;
+        return Math.Max(0, fim - ini + 1) / dias;
+    }
 
     public static decimal FatorTurnos(int turnos) => turnos switch { 2 => 1.5m, 3 => 2.0m, _ => 1.0m };
 
@@ -56,8 +77,12 @@ public static class RegrasDepreciacao
     {
         competencia = Competencia(competencia);
         if (!b.Deprecia || b.VidaUtilMeses <= 0) return null;
-        if (competencia < Competencia(b.InicioUso)) return null;
-        if (b.Baixa is { } baixa && competencia >= Competencia(baixa)) return null;
+        if (competencia < Competencia(b.Inicio)) return null;
+        if (b.Baixa is { } baixa && (b.ProRataDia ? competencia > Competencia(baixa) : competencia >= Competencia(baixa))) return null;
+        var fracao = FracaoDoMes(b, competencia);
+        if (fracao <= 0) return null;
+        // Pro rata: a fração não depreciada no primeiro mês é lançada no mês seguinte ao fim da vida útil.
+        var ultimoMes = b.VidaUtilMeses + (FracaoDoMes(b with { Baixa = null }, Competencia(b.Inicio)) < 1 ? 1 : 0);
 
         var depreciavel = b.ValorAquisicao - b.ValorResidual;
         var restante = depreciavel - b.DepreciacaoAnterior - acumuladoContabil;
@@ -68,16 +93,16 @@ public static class RegrasDepreciacao
             var n = b.VidaUtilMeses;
             contabil = b.Metodo switch
             {
-                MetodoDepreciacao.SomaDigitos when mes <= n => Arredondar(depreciavel * (n - mes + 1) / (n * (n + 1) / 2m)),
+                MetodoDepreciacao.SomaDigitos when mes <= n => Arredondar(depreciavel * (n - mes + 1) / (n * (n + 1) / 2m) * fracao),
                 MetodoDepreciacao.SomaDigitos => restante,
-                _ => Arredondar(depreciavel / n),
+                _ => Arredondar(depreciavel / n * fracao),
             };
-            // Último mês da vida útil (ou resíduo de arredondamento): leva o que falta.
-            if (mes >= n || contabil > restante) contabil = restante;
+            // Último mês da vida útil (ou resíduo de arredondamento): leva o que falta (no mês da baixa, só a fração).
+            if ((mes >= ultimoMes && fracao == 1m) || contabil > restante) contabil = restante;
         }
 
         var restanteFiscal = b.ValorAquisicao - b.DepreciacaoAnterior - acumuladoFiscal;
-        var fiscal = restanteFiscal <= 0 ? 0 : Math.Min(restanteFiscal, Arredondar(b.ValorAquisicao * b.TaxaAnualFiscal / 100m * FatorTurnos(b.Turnos) / 12m));
+        var fiscal = restanteFiscal <= 0 ? 0 : Math.Min(restanteFiscal, Arredondar(b.ValorAquisicao * b.TaxaAnualFiscal / 100m * FatorTurnos(b.Turnos) / 12m * fracao));
 
         if (contabil <= 0 && fiscal <= 0) return null;
         return new QuotaDepreciacao(b.Id, competencia, contabil, fiscal, b.DepreciacaoAnterior + acumuladoContabil,

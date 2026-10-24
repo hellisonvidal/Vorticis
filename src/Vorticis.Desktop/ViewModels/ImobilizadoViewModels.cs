@@ -51,6 +51,7 @@ public partial class BensViewModel(IContexto contexto) : CadastroViewModel(conte
     [ObservableProperty] private string _vidaUtil = "";
     [ObservableProperty] private OpcaoMetodo _metodo = OpcaoMetodo.Todos[0];
     [ObservableProperty] private int _turnos = 1;
+    [ObservableProperty] private bool _proRataDia;
     [ObservableProperty] private string _depreciacaoAnterior = "0,00";
     [ObservableProperty] private string _contaBem = "";
     [ObservableProperty] private string _contaAcumulada = "";
@@ -132,7 +133,7 @@ public partial class BensViewModel(IContexto contexto) : CadastroViewModel(conte
         InicioUso = b is null ? DateTime.Today : b.InicioUso.ToDateTime(TimeOnly.MinValue);
         (Valor, Residual, VidaUtil) = (b is null ? "" : Formato.Moeda(b.Valor), Formato.Moeda(b?.Residual ?? 0), b?.VidaUtilMeses.ToString() ?? "");
         Metodo = OpcaoMetodo.Todos.First(m => m.Metodo == (b?.Metodo ?? MetodoDepreciacao.Linear));
-        (Turnos, DepreciacaoAnterior) = (b?.Turnos ?? 1, Formato.Moeda(b?.DepreciacaoAnterior ?? 0));
+        (Turnos, DepreciacaoAnterior, ProRataDia) = (b?.Turnos ?? 1, Formato.Moeda(b?.DepreciacaoAnterior ?? 0), b?.ProRataDia ?? false);
         (ContaBem, ContaAcumulada, ContaDespesa) = (b?.ContaBem ?? "", b?.ContaAcumulada ?? "", b?.ContaDespesa ?? "");
         DataBaixa = b?.DataBaixa?.ToDateTime(TimeOnly.MinValue);
         MotivoBaixa = b?.MotivoBaixa ?? "";
@@ -161,7 +162,7 @@ public partial class BensViewModel(IContexto contexto) : CadastroViewModel(conte
             var r = await app.Imobilizado.GravarBemAsync(empresa, new BemImobilizado(id, codigo, Descricao, Grupo.Id, Plaqueta, Localizacao, NotaFiscal,
                 Fornecedor, Data(DataAquisicao, DateOnly.FromDateTime(DateTime.Today)), Data(InicioUso, DateOnly.FromDateTime(DateTime.Today)),
                 valor, residual, vida, Metodo.Metodo, Turnos, anterior, ContaBem, ContaAcumulada, ContaDespesa,
-                DataBaixa is { } bx ? DateOnly.FromDateTime(bx) : null, MotivoBaixa), usuario);
+                DataBaixa is { } bx ? DateOnly.FromDateTime(bx) : null, MotivoBaixa, ProRataDia: ProRataDia), usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
             Modo = ModoCadastro.Consulta;

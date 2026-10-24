@@ -55,7 +55,7 @@ public sealed class RepositorioImobilizado(NpgsqlDataSource ds) : IRepositorioIm
             SELECT b.id, b.codigo, b.descricao, b.grupo_id, b.plaqueta, b.localizacao, b.nota_fiscal, f.codigo,
                    b.data_aquisicao, b.data_inicio_uso, b.valor_aquisicao, b.valor_residual, b.vida_util_meses, b.metodo, b.turnos,
                    b.depreciacao_anterior, cb.codigo, ca.codigo, cd.codigo, b.data_baixa, b.motivo_baixa,
-                   COALESCE(d.valor, 0), COALESCE(d.fiscal, 0), d.ultima
+                   COALESCE(d.valor, 0), COALESCE(d.fiscal, 0), d.ultima, b.pro_rata_dia
               FROM imobilizado.bem b
               JOIN contabil.plano_contas cb ON cb.id = b.conta_bem_id
               LEFT JOIN contabil.plano_contas ca ON ca.id = b.conta_acumulada_id
@@ -75,7 +75,7 @@ public sealed class RepositorioImobilizado(NpgsqlDataSource ds) : IRepositorioIm
             res.Add(new BemImobilizado(r.GetInt64(0), r.GetInt32(1), r.GetString(2), r.GetInt64(3), T(4), T(5), T(6), T(7),
                 r.GetFieldValue<DateOnly>(8), r.GetFieldValue<DateOnly>(9), r.GetDecimal(10), r.GetDecimal(11), r.GetInt32(12),
                 r.GetString(13) == "SOMA_DIGITOS" ? MetodoDepreciacao.SomaDigitos : MetodoDepreciacao.Linear, r.GetInt16(14), r.GetDecimal(15),
-                r.GetString(16), T(17), T(18), D(19), T(20), r.GetDecimal(21), r.GetDecimal(22), D(23)));
+                r.GetString(16), T(17), T(18), D(19), T(20), r.GetDecimal(21), r.GetDecimal(22), D(23), r.GetBoolean(24)));
         return res;
     }
 
@@ -87,14 +87,14 @@ public sealed class RepositorioImobilizado(NpgsqlDataSource ds) : IRepositorioIm
                 ? ds.CreateCommand("""
                     INSERT INTO imobilizado.bem (empresa_id, codigo, descricao, grupo_id, plaqueta, localizacao, nota_fiscal, fornecedor_id, data_aquisicao,
                                                  data_inicio_uso, valor_aquisicao, valor_residual, vida_util_meses, metodo, turnos, depreciacao_anterior,
-                                                 conta_bem_id, conta_acumulada_id, conta_despesa_id, data_baixa, motivo_baixa)
-                    VALUES (@e, @cod, @d, @g, @pl, @loc, @nf, @f, @aq, @uso, @v, @res, @vida, @met, @tur, @ant, @cb, @ca, @cd, @bx, @mbx) RETURNING id
+                                                 conta_bem_id, conta_acumulada_id, conta_despesa_id, data_baixa, motivo_baixa, pro_rata_dia)
+                    VALUES (@e, @cod, @d, @g, @pl, @loc, @nf, @f, @aq, @uso, @v, @res, @vida, @met, @tur, @ant, @cb, @ca, @cd, @bx, @mbx, @prd) RETURNING id
                     """)
                 : ds.CreateCommand("""
                     UPDATE imobilizado.bem SET codigo = @cod, descricao = @d, grupo_id = @g, plaqueta = @pl, localizacao = @loc, nota_fiscal = @nf,
                            fornecedor_id = @f, data_aquisicao = @aq, data_inicio_uso = @uso, valor_aquisicao = @v, valor_residual = @res,
                            vida_util_meses = @vida, metodo = @met, turnos = @tur, depreciacao_anterior = @ant, conta_bem_id = @cb,
-                           conta_acumulada_id = @ca, conta_despesa_id = @cd, data_baixa = @bx, motivo_baixa = @mbx
+                           conta_acumulada_id = @ca, conta_despesa_id = @cd, data_baixa = @bx, motivo_baixa = @mbx, pro_rata_dia = @prd
                      WHERE id = @id AND empresa_id = @e RETURNING id
                     """);
             cmd.Com("e", empresaId).Com("cod", b.Codigo).Com("d", b.Descricao).Com("g", b.GrupoId).ComTexto("pl", b.Plaqueta)
@@ -103,7 +103,7 @@ public sealed class RepositorioImobilizado(NpgsqlDataSource ds) : IRepositorioIm
                .Com("met", b.Metodo == MetodoDepreciacao.SomaDigitos ? "SOMA_DIGITOS" : "LINEAR").Com("tur", (short)b.Turnos)
                .Com("ant", b.DepreciacaoAnterior).Com("cb", contaBemId).Com("ca", NpgsqlTypes.NpgsqlDbType.Bigint, contaAcumuladaId)
                .Com("cd", NpgsqlTypes.NpgsqlDbType.Bigint, contaDespesaId).Com("bx", NpgsqlTypes.NpgsqlDbType.Date, b.DataBaixa)
-               .ComTexto("mbx", b.MotivoBaixa);
+               .ComTexto("mbx", b.MotivoBaixa).Com("prd", b.ProRataDia);
             if (b.Id != 0) cmd.Com("id", b.Id);
             return (long)(await cmd.ExecuteScalarAsync(ct))!;
         });
