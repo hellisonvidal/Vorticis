@@ -220,6 +220,11 @@ public class DuplicatasIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.NotEmpty((f with { Prazos = "60/30" }).Validar());
         Assert.NotEmpty((f with { Descricao = " " }).Validar());
         Assert.Equal("30/60", FormaPagamento.NormalizarPrazos("30;60"));
+        // parcelas, 1º vencimento e intervalo montam os prazos
+        Assert.Equal("30/60/90", FormaPagamento.MontarPrazos(3, 30, 30));
+        Assert.Equal("0", FormaPagamento.MontarPrazos(1, 0, 30));
+        Assert.Equal(30, f.Intervalo);
+        Assert.Null((f with { Prazos = "0/30/45" }).Intervalo);
     }
 
     [Fact]

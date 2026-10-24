@@ -44,6 +44,13 @@ public sealed partial record FormaPagamento(long Id, int Codigo, string Descrica
 
     public bool AVista => Dias is [0];
 
+    /// <summary>Prazos de N parcelas: a primeira vence em <paramref name="primeiro"/> dias e as demais a cada <paramref name="intervalo"/> dias.</summary>
+    public static string MontarPrazos(int parcelas, int primeiro, int intervalo) =>
+        string.Join("/", Enumerable.Range(0, Math.Clamp(parcelas, 1, 120)).Select(i => Math.Max(0, primeiro) + i * Math.Max(0, intervalo)));
+
+    /// <summary>Intervalo em dias entre as parcelas (null se só há uma parcela ou os intervalos não são iguais).</summary>
+    public int? Intervalo => Dias.Count < 2 ? null : Dias.Zip(Dias.Skip(1), (a, b) => b - a).Distinct().ToList() is [var unico] ? unico : null;
+
     public string CondicaoTexto => AVista ? "À vista" : $"{Dias.Count}x ({string.Join("/", Dias)} dias)";
 
     /// <summary>Divide o total em parcelas iguais (a última absorve a diferença do arredondamento), vencendo nos prazos a partir da data-base.</summary>

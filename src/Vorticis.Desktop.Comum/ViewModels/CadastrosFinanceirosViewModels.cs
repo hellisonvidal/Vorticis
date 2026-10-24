@@ -99,6 +99,9 @@ public sealed record FormaPagamentoLinha(FormaPagamento Forma, string Conta)
     public string Descricao => Forma.Descricao;
     public string Meio => Forma.MeioTexto;
     public string Condicao => Forma.CondicaoTexto;
+    public int Parcelas => Forma.Dias.Count;
+    public string Intervalo => Forma.Intervalo is { } i ? $"{i} dias" : Forma.Dias.Count < 2 ? "—" : "variável";
+    public string Prazos => Forma.Prazos;
     public string Situacao => Forma.Ativa ? "Ativa" : "Inativa";
 }
 
@@ -117,6 +120,33 @@ public partial class FormasPagamentoViewModel(IContexto contexto) : CadastroView
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private OpcaoMeio? _meio;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(Exemplo))] private string _prazos = "0";
+    [ObservableProperty] private decimal? _parcelas = 1;
+    [ObservableProperty] private decimal? _primeiroVencimento = 0;
+    [ObservableProperty] private decimal? _intervalo = 30;
+    private bool _sincronizando;
+
+    // Parcelas, primeiro vencimento e intervalo montam os prazos ("30/60/90"); digitar os prazos à mão atualiza os três campos.
+    partial void OnParcelasChanged(decimal? value) => MontarPrazos();
+    partial void OnPrimeiroVencimentoChanged(decimal? value) => MontarPrazos();
+    partial void OnIntervaloChanged(decimal? value) => MontarPrazos();
+
+    private void MontarPrazos()
+    {
+        if (_sincronizando) return;
+        _sincronizando = true;
+        Prazos = FormaPagamento.MontarPrazos((int)(Parcelas ?? 1), (int)(PrimeiroVencimento ?? 0), (int)(Intervalo ?? 0));
+        _sincronizando = false;
+    }
+
+    partial void OnPrazosChanged(string value)
+    {
+        if (_sincronizando || FormaPagamento.NormalizarPrazos(value) is null) return;
+        var f = new FormaPagamento(0, 1, "x", MeioPagamento.Outros, value, null);
+        _sincronizando = true;
+        (Parcelas, PrimeiroVencimento) = (f.Dias.Count, f.Dias[0]);
+        if (f.Intervalo is { } i) Intervalo = i;
+        _sincronizando = false;
+    }
     [ObservableProperty] private OpcaoContaBancaria? _conta;
     [ObservableProperty] private bool _ativa = true;
 

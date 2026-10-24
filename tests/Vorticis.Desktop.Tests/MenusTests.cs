@@ -226,6 +226,7 @@ public class MenusTests
     {
         static List<string?> Cadastros(MainViewModelBase vm) => Folhas(vm.Menus[0].Filhos!).Select(i => i.Chave).ToList();
         Assert.Contains(TelasComuns.ContasBancarias, Cadastros(new MainViewModel()));
+        Assert.Contains(Folhas(new MainViewModel().Menus[0].Filhos!), i => i.Titulo == "Bancos" && i.Chave == TelasComuns.ContasBancarias);
         Assert.DoesNotContain(TelasComuns.FormasPagamento, Cadastros(new MainViewModel()));
         foreach (MainViewModelBase vm in new MainViewModelBase[] { new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel() })
         {
@@ -238,6 +239,11 @@ public class MenusTests
         // a tela de cadastro mostra a simulação dos prazos digitados
         var formas = new FormasPagamentoViewModel(new MainViewModel()) { Prazos = "30/60" };
         Assert.Contains("1/2 em", formas.Exemplo);
+        Assert.Equal((2m, 30m, 30m), (formas.Parcelas!.Value, formas.PrimeiroVencimento!.Value, formas.Intervalo!.Value));   // prazos → campos
+        formas.Parcelas = 4;
+        Assert.Equal("30/60/90/120", formas.Prazos);                                                                        // campos → prazos
+        formas.IncluirCommand.Execute(null);
+        Assert.Equal("1", formas.Codigo);                                                                                   // código automático ao incluir
         formas.Prazos = "x";
         Assert.StartsWith("Prazos inválidos", formas.Exemplo);
         Assert.True(new Vorticis.Desktop.Comum.Views.TemplatesComuns().Match(formas));
