@@ -42,8 +42,8 @@ public static class ValidadorEfd
 
         ValidarDocumentos(l, docs, e);
 
-        if (ap.Recolher > 0 && string.IsNullOrWhiteSpace(o.CodigoReceitaIcms))
-            Add(l, true, "SEM_COD_REC_ICMS", $"Há ICMS a recolher ({ap.Recolher:N2}): informe o código de receita da UF (E116.COD_REC).");
+        if (ap.TotalObrigacoes > 0 && string.IsNullOrWhiteSpace(o.CodigoReceitaIcms))
+            Add(l, true, "SEM_COD_REC_ICMS", $"Há ICMS a recolher ({ap.TotalObrigacoes:N2}): informe o código de receita da UF (E116.COD_REC).");
         if (ap.St.Any(s => s.Recolher > 0) && string.IsNullOrWhiteSpace(o.CodigoReceitaIcmsSt))
             Add(l, true, "SEM_COD_REC_ST", "Há ICMS-ST retido a recolher: informe o código de receita do ICMS-ST (E250.COD_REC).");
         if (ap.St.Count > 0)
@@ -53,6 +53,19 @@ public static class ValidadorEfd
         if (docs.Where(x => x.Autorizada).Any(x => x.Itens.Any(i => string.IsNullOrWhiteSpace(CamposEfd.Digitos(i.Ncm)))))
             Add(l, false, "ITEM_SEM_NCM", "Há itens sem NCM: o cadastro de produtos (0200) sairá sem NCM e o PVA pode exigir.");
         if (ap.SaldoCredorAnterior < 0) Add(l, true, "SALDO_NEGATIVO", "O saldo credor do período anterior não pode ser negativo.");
+
+        // outros lançamentos (Lançamentos › SPED Fiscal)
+        var deducoesInformadas = (d.Ajustes ?? []).Where(a => a.Tipo == TipoAjusteIcms.Deducoes).Sum(a => a.Valor);
+        if (deducoesInformadas > ap.Deducoes)
+            Add(l, false, "DEDUCAO_MAIOR", $"As deduções informadas ({deducoesInformadas:N2}) passam do saldo devedor apurado: só {ap.Deducoes:N2} foram usados no E110.");
+        if ((d.Ajustes ?? []).Any(a => a.Codigo[..2] != e.Uf))
+            Add(l, true, "AJUSTE_UF", "Há ajuste da apuração com código de outra UF: os códigos do E111 começam pela UF da empresa.");
+        if (d.Inventario is { } inv)
+        {
+            if (inv.Itens.Count == 0) Add(l, true, "INVENTARIO_VAZIO", $"O inventário de {inv.Data:dd/MM/yyyy} não tem itens.");
+            if (string.IsNullOrWhiteSpace(inv.ContaContabil)) Add(l, true, "INVENTARIO_SEM_CONTA", "Informe a conta contábil do estoque no inventário (H010.COD_CTA).");
+            if (o.InventarioZerado) Add(l, false, "INVENTARIO_CADASTRADO", "Há inventário cadastrado para esta EFD: ele é usado no bloco H no lugar do inventário zerado.");
+        }
         return l;
     }
 

@@ -383,4 +383,73 @@ public class EfdTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.False(contrib.PodeAvancarValidacao);
         Assert.Contains(contrib.Pendencias, p => p.Bloqueante && p.Mensagem.Contains("apuração"));
     }
+
+    [Fact]
+    public async Task Outros_lancamentos_do_sped_fiscal_entram_na_efd_ajustes_contas_de_consumo_e_inventario()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await EmpresaCompletaAsync(573);
+        var cnpj = await db.EscalarAsync<string>("SELECT cnpj FROM core.empresa WHERE id = @e", ("e", empresa));
+        var adm = await db.AdminAsync();
+        var fiscal = db.App.Fiscal();
+        var outros = fiscal.OutrosLancamentosEfd;
+        var forn = XmlsDeTeste.CnpjFornecedor;
+        Assert.True((await fiscal.Documentos.ImportarAsync(empresa,
+        [
+            Arq("v.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 1, Mar, [new ItemNfe("5102", 10_000m, 1_800m)], chave: Chave(cnpj, 1))),
+            Arq("c.xml", XmlsDeTeste.Nfe(forn, cnpj, 0, 77, Mar, [new ItemNfe("1102", 6_000m, 1_080m)], chave: Chave(forn, 77))),
+        ], adm, ct: ct)).Sucesso);
+
+        // ajustes da apuração (E111): código com a UF da empresa (SP), tipo na 4ª posição
+        Assert.Contains("UF da empresa", (await outros.GravarAjusteAsync(empresa, new AjusteIcmsEfd(0, Mar, "RJ020001", "x", 1m), adm, ct)).Erros[0]);
+        Assert.Contains("8 posições", (await outros.GravarAjusteAsync(empresa, new AjusteIcmsEfd(0, Mar, "SP090001", "x", 1m), adm, ct)).Erros[0]);
+        foreach (var (cod, valor) in new[] { ("SP000001", 50m), ("SP020001", 100m), ("SP040001", 30m), ("SP050001", 20m) })
+            Assert.True((await outros.GravarAjusteAsync(empresa, new AjusteIcmsEfd(0, Mar, cod, "Ajuste de teste " + cod, valor), adm, ct)).Sucesso);
+        Assert.Equal(4, (await outros.AjustesAsync(empresa, Mar, adm, ct)).Valor.Count);
+
+        // contas de consumo: energia (C500) e telecomunicação (D500), com crédito de ICMS
+        var concess = await db.EscalarAsync<long>("INSERT INTO core.participante (empresa_id, codigo, nome, cpf_cnpj, fornecedor) VALUES (@e, 'EN1', 'Concessionária de Energia', @d, TRUE) RETURNING id",
+            ("e", empresa), ("d", CnpjsDeTeste.Valido(574)));
+        Assert.Contains("ICMS não confere", (await outros.GravarContaAsync(empresa, new ContaConsumo(0, "06", concess, "", "123", "1", Mar, Mar, "01", 1_000m, "1253", "000", 1_000m, 18m, 50m, 0, 0), adm, ct)).Erros[0]);
+        Assert.True((await outros.GravarContaAsync(empresa, new ContaConsumo(0, "06", concess, "", "123", "1", Mar, Mar, "01", 1_000m, "1253", "000", 1_000m, 18m, 180m, 6.5m, 30m), adm, ct)).Sucesso);
+        Assert.True((await outros.GravarContaAsync(empresa, new ContaConsumo(0, "22", concess, "", "456", "U", Mar, Mar, "01", 200m, "1303", "000", 200m, 25m, 50m, 0, 0), adm, ct)).Sucesso);
+        Assert.False((await outros.GravarContaAsync(empresa, new ContaConsumo(0, "22", concess, "", "456", "U", Mar, Mar, "01", 200m, "1303", "000", 200m, 25m, 50m, 0, 0), adm, ct)).Sucesso);   // repetida
+
+        // inventário de fevereiro informado na EFD de março
+        var prod = await db.EscalarAsync<long>("INSERT INTO fiscal.produto (empresa_id, codigo, descricao, unidade, ncm) VALUES (@e, 900, 'Mercadoria A', 'UN', '84714900') RETURNING id", ("e", empresa));
+        Assert.Equal(new DateOnly(2027, 2, 1), OutrosLancamentosEfd.CompetenciaSugerida(new DateOnly(2026, 12, 31)));
+        var inv = new Inventario(0, new DateOnly(2026, 2, 28), "01", new DateOnly(2026, 3, 1), "1.1.04.001", [new ItemInventario(prod, 900, "Mercadoria A", "UN", 10m, 12.5m, 0)]);
+        Assert.False((await outros.GravarInventarioAsync(empresa, inv with { ContaContabil = "" }, adm, ct)).Sucesso);
+        Assert.True((await outros.GravarInventarioAsync(empresa, inv, adm, ct)).Sucesso);
+        Assert.Equal(125m, Assert.Single((await outros.InventariosAsync(empresa, adm, ct)).Valor).Total);
+
+        var opcoes = new OpcoesEfdIcms('A', '1', CodigoReceitaIcms: "046-2", DiaVencimento: 12);
+        var gerado = await fiscal.Efd.GerarIcmsAsync(empresa, Mar, opcoes, adm, null, ct);
+        Assert.True(gerado.Sucesso, string.Join(";", gerado.Erros));
+        var arq = gerado.Valor.Conteudo;
+
+        var campos = new Dictionary<string, int> { ["C500"] = 39, ["C590"] = 10, ["D500"] = 23, ["D590"] = 10, ["E110"] = 14, ["E111"] = 3, ["H005"] = 3, ["H010"] = 10 };
+        foreach (var (reg, n) in campos) Assert.All(Regs(arq, reg), f => Assert.Equal(n, f.Length));
+        var c500 = Reg(arq, "C500");
+        Assert.Equal(("0", "1", "EN1", "06", "1000,00", "180,00"), (c500[0], c500[1], c500[2], c500[3], c500[11], c500[18]));
+        Assert.Equal(["000", "1253", "18,00", "1000,00", "1000,00", "180,00"], Reg(arq, "C590")[..6]);
+        Assert.Equal(("22", "200,00", "50,00"), (Reg(arq, "D500")[3], Reg(arq, "D500")[10], Reg(arq, "D500")[17]));
+        Assert.Single(Regs(arq, "0150"), f => f[0] == "EN1");
+
+        // E110: débitos 1.800 + ajuste 50; créditos 1.080 + 180 + 50 + ajuste 100; saldo 440; dedução 30; a recolher 410; débito especial 20
+        var e110 = Reg(arq, "E110");
+        Assert.Equal(("1800,00", "50,00", "1310,00", "100,00", "440,00", "30,00", "410,00", "20,00"), (e110[0], e110[2], e110[4], e110[6], e110[9], e110[10], e110[11], e110[13]));
+        Assert.Equal(4, Regs(arq, "E111").Count);
+        Assert.Equal("430,00", Reg(arq, "E116")[1]);
+
+        // bloco H com o inventário cadastrado
+        Assert.Equal(["28022026", "125,00", "01"], Reg(arq, "H005"));
+        Assert.Equal(["900", "UN", "10", "12,50", "125,00", "0", "", "", "1.1.04.001", ""], Reg(arq, "H010"));
+        Assert.Single(Regs(arq, "0200"), f => f[0] == "900");
+
+        // contagem do bloco 9 inclui os registros novos
+        Assert.Contains(Regs(arq, "9900"), f => f[0] == "D500" && f[1] == "1");
+        Assert.Contains(Regs(arq, "9900"), f => f[0] == "E111" && f[1] == "4");
+    }
 }

@@ -19,7 +19,13 @@ public sealed record LinhaApuracaoCfop(string Cfop, decimal Operacao, decimal Ba
 /// <summary>Apuração do ICMS (E110) e, quando houver, do ICMS-ST (E210) e do IPI (E520), calculada dos registros analíticos C190.</summary>
 public sealed record ApuracaoEfdIcms(decimal Debitos, decimal Creditos, decimal SaldoCredorAnterior, decimal SaldoApurado, decimal Deducoes, decimal Recolher,
                                      decimal SaldoCredorTransportar, IReadOnlyList<ApuracaoStUf> St, ApuracaoIpiEfd? Ipi,
-                                     IReadOnlyList<LinhaApuracaoCfop>? DebitosCfop = null, IReadOnlyList<LinhaApuracaoCfop>? CreditosCfop = null);
+                                     IReadOnlyList<LinhaApuracaoCfop>? DebitosCfop = null, IReadOnlyList<LinhaApuracaoCfop>? CreditosCfop = null,
+                                     decimal AjustesDebitos = 0, decimal EstornosCreditos = 0, decimal AjustesCreditos = 0, decimal EstornosDebitos = 0,
+                                     decimal DebitosEspeciais = 0)
+{
+    /// <summary>Total do E116 (obrigações do ICMS a recolher): o ICMS a recolher mais os débitos especiais.</summary>
+    public decimal TotalObrigacoes => Recolher + DebitosEspeciais;
+}
 
 /// <summary>Cálculo da EFD ICMS/IPI: registros analíticos por documento e apuração do período. Puro e determinístico.</summary>
 public static class CalculoEfdIcms
@@ -64,16 +70,30 @@ public static class CalculoEfdIcms
                 }
                 else if (CamposEfd.CfopEntrada(a.Cfop)) { creditos += a.Icms; Somar(cred, a); }
             }
+        // contas de energia, gás, água e comunicação recebidas (C590/D590): crédito do ICMS destacado
+        foreach (var c in d.Consumo ?? [])
+        {
+            creditos += c.Icms;
+            Somar(cred, new AnaliticoC190(c.CstIcms, c.Cfop, c.AliqIcms, c.Valor, c.BaseIcms, c.Icms, 0, 0, 0, 0));
+        }
+        // ajustes da apuração (E111), pelo tipo do código
+        decimal Aj(TipoAjusteIcms t) => (d.Ajustes ?? []).Where(a => a.Tipo == t).Sum(a => a.Valor);
+        var ajDeb = Aj(TipoAjusteIcms.OutrosDebitos);
+        var estCred = Aj(TipoAjusteIcms.EstornoCreditos);
+        var ajCred = Aj(TipoAjusteIcms.OutrosCreditos);
+        var estDeb = Aj(TipoAjusteIcms.EstornoDebitos);
+        var debEsp = Aj(TipoAjusteIcms.DebitosEspeciais);
 
         var saldoAnterior = d.Opcoes.SaldoCredorAnterior;
-        var apurado = debitos - creditos - saldoAnterior;
-        decimal deducoes = 0;
+        var apurado = debitos + ajDeb + estCred - creditos - ajCred - estDeb - saldoAnterior;
+        // as deduções só abatem o saldo devedor apurado (o ICMS a recolher não fica negativo)
+        var deducoes = Math.Min(Aj(TipoAjusteIcms.Deducoes), Math.Max(0, apurado));
         var recolher = Math.Max(0, apurado - deducoes);
         var transportar = Math.Max(0, -apurado);
 
         var stUf = st.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k => new ApuracaoStUf(k.Key, k.Value, k.Value, 0)).ToList();
         return new ApuracaoEfdIcms(debitos, creditos, saldoAnterior, apurado, deducoes, recolher, transportar, stUf, ApurarIpi(d, docs),
-            [.. deb.Values], [.. cred.Values]);
+            [.. deb.Values], [.. cred.Values], ajDeb, estCred, ajCred, estDeb, debEsp);
     }
 
     private static ApuracaoIpiEfd? ApurarIpi(DadosEfdIcms d, List<DocumentoEfd> docs)

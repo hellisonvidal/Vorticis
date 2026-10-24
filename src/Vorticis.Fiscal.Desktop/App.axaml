@@ -28,6 +28,9 @@
     <DataTemplate DataType="vm:RegrasContabilizacaoViewModel"><v:RegrasContabilizacaoView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilizarNotasViewModel"><v:ContabilizarNotasView /></DataTemplate>
     <DataTemplate DataType="vm:FechamentoFiscalViewModel"><v:FechamentoFiscalView /></DataTemplate>
+    <DataTemplate DataType="vm:AjustesIcmsViewModel"><v:AjustesIcmsView /></DataTemplate>
+    <DataTemplate DataType="vm:ContasConsumoViewModel"><v:ContasConsumoView /></DataTemplate>
+    <DataTemplate DataType="vm:InventarioViewModel"><v:InventarioView /></DataTemplate>
     <DataTemplate DataType="vm:ApuracaoSimplesViewModel"><v:ApuracaoSimplesView /></DataTemplate>
     <DataTemplate DataType="vm:BaseMensalViewModel"><v:BaseMensalView /></DataTemplate>
     <DataTemplate DataType="vm:ApuracaoPresumidoViewModel"><v:ApuracaoPresumidoView /></DataTemplate>

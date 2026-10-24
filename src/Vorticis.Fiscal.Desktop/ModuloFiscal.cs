@@ -43,7 +43,14 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Entrada", Telas.NotaEntrada),
                 ItemMenu.Tela("Saída", Telas.NotaSaida)),
             ItemMenu.Tela("Duplicatas (contas a pagar e a receber)", Telas.Duplicatas),
-            ItemMenu.Tela("Conciliação de duplicatas", Telas.ConciliacaoDuplicatas)),
+            ItemMenu.Tela("Conciliação de duplicatas", Telas.ConciliacaoDuplicatas),
+            ItemMenu.Separador,
+            ItemMenu.Submenu("_SPED Fiscal",
+                ItemMenu.Tela("Contas de energia, gás, água e comunicação", Telas.ContasConsumo),
+                ItemMenu.Tela("Ajustes da apuração do ICMS", Telas.AjustesIcms),
+                ItemMenu.Tela("Inventário de estoque (bloco H)", Telas.Inventario),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Gerar EFD ICMS/IPI (SPED Fiscal)", Telas.EfdIcms))),
         ItemMenu.Submenu("_Documentos fiscais",
             ItemMenu.Tela("Importação de XML (NF-e, NFC-e, NFS-e)", Telas.ImportacaoXml),
             ItemMenu.Tela("Consulta de documentos", Telas.Documentos),
@@ -139,6 +146,15 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("BaseMensal", m => new BaseMensalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.BaseMensal, "Apuração › Histórico de receita e folha", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRetencoesManter), v => v.CarregarAsync());
+        c.Instancia("AjustesIcms", m => new AjustesIcmsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.AjustesIcms, "Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
+        c.Instancia("ContasConsumo", m => new ContasConsumoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.ContasConsumo, "Lançamentos › SPED Fiscal › Contas de consumo", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
+        c.Instancia("Inventario", m => new InventarioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.Inventario, "Lançamentos › SPED Fiscal › Inventário de estoque", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia("FechamentoFiscal", m => new FechamentoFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.FechamentoFiscal, "Apuração › Fechamento do período fiscal", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());

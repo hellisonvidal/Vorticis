@@ -77,7 +77,9 @@ public sealed class ServicoEfd(IRepositorioEfd repositorio, Autorizador autoriza
         var (ini, fim) = Mes(competencia);
         var empresa = await repositorio.EmpresaAsync(empresaId, ini, fim, ct);
         if (empresa is null) return Resultado<(DadosEfdIcms, ApuracaoEfdIcms, List<PendenciaEcd>)>.Falha("Empresa não encontrada.");
-        var dados = new DadosEfdIcms(empresa, await repositorio.ContadorAsync(empresaId, ini, fim, ct), ini, fim, await repositorio.DocumentosAsync(empresaId, ini, fim, ct), opcoes);
+        var dados = new DadosEfdIcms(empresa, await repositorio.ContadorAsync(empresaId, ini, fim, ct), ini, fim, await repositorio.DocumentosAsync(empresaId, ini, fim, ct), opcoes,
+                                     await repositorio.AjustesIcmsAsync(empresaId, ini, ct), await repositorio.ContasConsumoAsync(empresaId, ini, fim, ct),
+                                     await repositorio.InventarioAsync(empresaId, ini, ct));
         var ap = CalculoEfdIcms.Apurar(dados);
         return Resultado<(DadosEfdIcms, ApuracaoEfdIcms, List<PendenciaEcd>)>.Ok((dados, ap, ValidadorEfd.ValidarIcms(dados, ap).ToList()));
     }
@@ -89,6 +91,10 @@ public sealed class ServicoEfd(IRepositorioEfd repositorio, Autorizador autoriza
             new("Débitos do ICMS (saídas)", ap.Debitos), new("Créditos do ICMS (entradas)", ap.Creditos), new("Saldo credor do período anterior", ap.SaldoCredorAnterior),
             new("ICMS a recolher", ap.Recolher), new("Saldo credor a transportar", ap.SaldoCredorTransportar),
         };
+        if (ap.AjustesDebitos + ap.EstornosCreditos > 0) r.Add(new("Ajustes a débito e estornos de créditos (E111)", ap.AjustesDebitos + ap.EstornosCreditos));
+        if (ap.AjustesCreditos + ap.EstornosDebitos > 0) r.Add(new("Ajustes a crédito e estornos de débitos (E111)", ap.AjustesCreditos + ap.EstornosDebitos));
+        if (ap.Deducoes > 0) r.Add(new("Deduções (E111)", ap.Deducoes));
+        if (ap.DebitosEspeciais > 0) r.Add(new("Débitos especiais (E111)", ap.DebitosEspeciais));
         if (ap.St.Count > 0) r.Add(new("ICMS-ST a recolher", ap.St.Sum(s => s.Recolher)));
         if (ap.Ipi is { } ipi) { r.Add(new("IPI — débitos", ipi.Debitos)); r.Add(new("IPI — créditos", ipi.Creditos)); }
         return r;

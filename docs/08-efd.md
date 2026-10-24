@@ -30,7 +30,7 @@ Os documentos vêm de `fiscal.documento`/`documento_item` pela **data de entrada
 **Decisões**
 - **Perfil A/B/C**: no A, C170 sai em todas as notas autorizadas; no B e no C, só nas entradas. C190 sai sempre (por CST+origem, CFOP e alíquota).
 - **E110**: débitos = ICMS dos C190 com CFOP 5/6/7; créditos = ICMS dos C190 com CFOP 1/2/3; saldo credor anterior informado no assistente.
-  Sem ajustes (E111), estornos nem deduções. `VL_ICMS_RECOLHER` > 0 gera o **E116** (`COD_OR` 000, vencimento no dia escolhido do mês seguinte, `COD_REC` informado).
+  Ajustes da apuração (E111, em Lançamentos › SPED Fiscal): o 4º caractere do código (tabela 5.1.1) leva o valor ao campo do E110 — 0 `VL_TOT_AJ_DEBITOS`, 1 `VL_ESTORNOS_CRED`, 2 `VL_TOT_AJ_CREDITOS`, 3 `VL_ESTORNOS_DEB`, 4 `VL_TOT_DED` (limitado ao saldo devedor), 5 `DEB_ESP`. Créditos das contas de consumo (C590/D590) somam em `VL_TOT_CREDITOS`. `VL_ICMS_RECOLHER` + `DEB_ESP` > 0 gera o **E116** (`COD_OR` 000, vencimento no dia escolhido do mês seguinte, `COD_REC` informado).
 - **ICMS-ST**: o retido nas saídas (C190 com `VL_ICMS_ST`) é agrupado pela UF do destinatário (E200/E210, `COD_OR` 002 no E250).
 - **IPI** (E500/E510/E520): só quando a atividade é industrial/equiparado; E510 por CFOP e CST reduzido a 00/49/50/99.
 - **Participantes sem cadastro**: o 0150 é montado com os dados da nota (aviso, sem código de município).
@@ -63,7 +63,8 @@ código de receita quando há ICMS/ICMS-ST a recolher. Avisos: Simples Nacional,
 
 ## Limitações conhecidas
 
-- Sem ajustes e deduções do ICMS (E111/E113/E115), DIFAL/FCP (E300), controle de crédito do CIAP (G), inventário detalhado (H010), produção (K) e transporte (D).
+- Contas de energia, gás e água (C500/C590, 40 campos no leiaute 020) e de comunicação (D500/D590) recebidas; inventário cadastrado (H005/H010, com o 0200 dos produtos) na competência escolhida.
+- Sem E112/E113/E115, DIFAL/FCP (E300), controle de crédito do CIAP (G), produção (K) e conhecimentos de transporte (D100).
 - Sem C180/C190/C175 consolidados, devoluções (M220/M620), receitas não tributadas (M400/M800), controle de créditos de períodos anteriores (M110/1100),
   créditos de energia/aluguel/depreciação (F100/F120) e CPRB (P). Devoluções de venda e saldo credor geram aviso.
 - Operações mistas (parte cumulativa, parte não cumulativa, COD_INC_TRIB 3) não são geradas.

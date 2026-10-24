@@ -76,6 +76,9 @@ internal static class CamposEfd
 
     public static string Aliq(decimal v) => FormatoSped.Percentual(v);
 
+    /// <summary>Valor unitário com até 6 casas (H010.VL_UNIT).</summary>
+    public static string ValorUnitario(decimal v) => Math.Round(v, 6).ToString("0.00####", CultureInfo.InvariantCulture).Replace('.', ',');
+
     /// <summary>Quantidade com até 5 casas e vírgula decimal.</summary>
     public static string Qtd(decimal v) => v.ToString("0.#####", CultureInfo.InvariantCulture).Replace('.', ',');
 

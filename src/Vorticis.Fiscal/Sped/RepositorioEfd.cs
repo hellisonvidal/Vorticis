@@ -19,6 +19,12 @@ public interface IRepositorioEfd
     Task<ContadorEfd?> ContadorAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     Task<IReadOnlyList<DocumentoEfd>> DocumentosAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     Task<ApuracaoPisCofinsEfd?> ApuracaoPisCofinsAsync(long empresaId, DateOnly competencia, CancellationToken ct);
+    /// <summary>Ajustes da apuração do ICMS (E111) da competência.</summary>
+    Task<IReadOnlyList<AjusteIcmsEfd>> AjustesIcmsAsync(long empresaId, DateOnly competencia, CancellationToken ct);
+    /// <summary>Contas de energia, gás, água e comunicação com entrada no período (C500/D500).</summary>
+    Task<IReadOnlyList<ContaConsumoEfd>> ContasConsumoAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+    /// <summary>Inventário marcado para ser informado na EFD da competência (bloco H), se houver.</summary>
+    Task<InventarioEfd?> InventarioAsync(long empresaId, DateOnly competencia, CancellationToken ct);
     Task<ConfiguracaoEfd> ConfiguracaoAsync(long empresaId, CancellationToken ct);
     Task SalvarConfiguracaoAsync(long empresaId, ConfiguracaoEfd c, CancellationToken ct);
     Task<long> RegistrarAsync(long empresaId, TipoEfd tipo, DateOnly inicio, DateOnly fim, string? perfil, string finalidade, string hashSha1, int linhas, int assinaturas,
@@ -117,6 +123,64 @@ public sealed class RepositorioEfd(NpgsqlDataSource ds) : IRepositorioEfd
                 lista.Add(item);
             }
         return cabecalhos.Select(c => c.Doc with { Itens = itens.GetValueOrDefault(c.Id) ?? [] }).ToList();
+    }
+
+    public async Task<IReadOnlyList<AjusteIcmsEfd>> AjustesIcmsAsync(long empresaId, DateOnly competencia, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT id, competencia, codigo, descricao, valor FROM fiscal.efd_ajuste_icms WHERE empresa_id = @e AND competencia = @c ORDER BY codigo, id
+            """).Com("e", empresaId).Com("c", new DateOnly(competencia.Year, competencia.Month, 1));
+        var res = new List<AjusteIcmsEfd>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) res.Add(new AjusteIcmsEfd(r.GetInt64(0), r.GetFieldValue<DateOnly>(1), r.GetString(2), r.GetString(3), r.GetDecimal(4)));
+        return res;
+    }
+
+    public async Task<IReadOnlyList<ContaConsumoEfd>> ContasConsumoAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT c.id, c.modelo, c.numero, c.serie, c.data_emissao, c.data_entrada, c.classe_consumo, c.valor, c.cfop, c.cst_icms, c.base_icms, c.aliq_icms,
+                   c.valor_icms, c.valor_pis, c.valor_cofins,
+                   p.codigo, p.nome, p.cpf_cnpj, p.inscricao_estadual, p.cod_municipio_ibge, p.uf, p.logradouro, p.numero, p.complemento, p.bairro, p.cod_pais
+              FROM fiscal.conta_consumo c JOIN core.participante p ON p.id = c.participante_id
+             WHERE c.empresa_id = @e AND c.data_entrada BETWEEN @ini AND @fim
+             ORDER BY c.data_entrada, c.id
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<ContaConsumoEfd>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            var part = new ParticipanteEfd(r.GetString(15), r.GetString(16), r.Texto(17), r.Texto(18), r.Texto(19), r.Texto(20), r.Texto(21), r.Texto(22), r.Texto(23),
+                                           r.Texto(24), r.GetString(25).Trim(), true);
+            res.Add(new ContaConsumoEfd(r.GetInt64(0), r.GetString(1), part, r.GetString(2), r.GetString(3), r.GetFieldValue<DateOnly>(4), r.GetFieldValue<DateOnly>(5),
+                r.GetString(6), r.GetDecimal(7), r.GetString(8), r.GetString(9), r.GetDecimal(10), r.GetDecimal(11), r.GetDecimal(12), r.GetDecimal(13), r.GetDecimal(14)));
+        }
+        return res;
+    }
+
+    public async Task<InventarioEfd?> InventarioAsync(long empresaId, DateOnly competencia, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT i.id, i.data, i.motivo, i.conta_contabil, p.codigo, p.descricao, it.unidade, p.ncm, p.tipo_item, it.quantidade, it.valor_unitario, it.valor
+              FROM fiscal.inventario i
+              LEFT JOIN fiscal.inventario_item it ON it.inventario_id = i.id
+              LEFT JOIN fiscal.produto p ON p.id = it.produto_id
+             WHERE i.empresa_id = @e AND i.competencia_efd = @c
+             ORDER BY i.data DESC, p.codigo
+            """).Com("e", empresaId).Com("c", new DateOnly(competencia.Year, competencia.Month, 1));
+        InventarioEfd? inv = null;
+        long? primeiro = null;
+        var itens = new List<ItemInventarioEfd>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            primeiro ??= r.GetInt64(0);
+            if (r.GetInt64(0) != primeiro) break;   // um inventário por EFD: o de data mais recente
+            inv ??= new InventarioEfd(r.GetFieldValue<DateOnly>(1), r.GetString(2), r.GetString(3), itens);
+            if (!r.IsDBNull(4))
+                itens.Add(new ItemInventarioEfd(r.GetInt32(4), r.GetString(5), r.GetString(6), r.Texto(7), r.GetString(8).Trim(), r.GetDecimal(9), r.GetDecimal(10), r.GetDecimal(11)));
+        }
+        return inv;
     }
 
     /// <summary>Participante montado com os dados da própria nota (a outra parte da operação), quando a nota não tem cadastro vinculado.</summary>

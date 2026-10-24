@@ -88,7 +88,11 @@ public sealed record ApuracaoPisCofinsEfd(DateOnly Competencia, string Regime, d
 }
 
 /// <summary>Tudo o que os geradores da EFD ICMS/IPI precisam.</summary>
-public sealed record DadosEfdIcms(EmpresaEfd Empresa, ContadorEfd? Contador, DateOnly Inicio, DateOnly Fim, IReadOnlyList<DocumentoEfd> Documentos, OpcoesEfdIcms Opcoes);
+/// <param name="Ajustes">Ajustes da apuração do ICMS (E111) da competência.</param>
+/// <param name="Consumo">Contas de energia, gás, água e comunicação recebidas no período (C500/D500).</param>
+/// <param name="Inventario">Inventário (bloco H) a informar nesta EFD.</param>
+public sealed record DadosEfdIcms(EmpresaEfd Empresa, ContadorEfd? Contador, DateOnly Inicio, DateOnly Fim, IReadOnlyList<DocumentoEfd> Documentos, OpcoesEfdIcms Opcoes,
+                                  IReadOnlyList<AjusteIcmsEfd>? Ajustes = null, IReadOnlyList<ContaConsumoEfd>? Consumo = null, InventarioEfd? Inventario = null);
 
 /// <summary>Tudo o que os geradores da EFD-Contribuições precisam.</summary>
 public sealed record DadosEfdContribuicoes(EmpresaEfd Empresa, ContadorEfd? Contador, DateOnly Inicio, DateOnly Fim, IReadOnlyList<DocumentoEfd> Documentos,

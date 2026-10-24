@@ -31,4 +31,22 @@ BEGIN
     RAISE NOTICE 'OK: período fiscal fechado bloqueia notas e itens do mês e deixa contabilizar e excluir a empresa';
 END $$;
 
+DO $$
+DECLARE
+    v_emp  BIGINT;
+    v_part BIGINT;
+BEGIN
+    INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ)
+    VALUES ('45723174000110', 'Empresa SPED LTDA', '2062', '6920601', 'SP', '3550308', '2020-01-01') RETURNING id INTO v_emp;
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO fiscal.efd_ajuste_icms (empresa_id, competencia, codigo, valor) VALUES (%s, ''2026-03-01'', ''SP090001'', 10)', v_emp), 'efd_ajuste_icms_codigo_check');
+    INSERT INTO fiscal.efd_ajuste_icms (empresa_id, competencia, codigo, valor) VALUES (v_emp, '2026-03-01', 'SP020001', 10);
+    INSERT INTO core.participante (empresa_id, codigo, nome, fornecedor) VALUES (v_emp, 'EN', 'Energia', TRUE) RETURNING id INTO v_part;
+    INSERT INTO fiscal.conta_consumo (empresa_id, modelo, participante_id, numero, data_emissao, data_entrada, valor, cfop) VALUES (v_emp, '06', v_part, '1', '2026-03-01', '2026-03-02', 100, '1253');
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO fiscal.conta_consumo (empresa_id, modelo, participante_id, numero, data_emissao, data_entrada, valor, cfop) VALUES (%s, ''06'', %s, ''1'', ''2026-03-01'', ''2026-03-02'', 100, ''1253'')', v_emp, v_part), 'uq_conta_consumo');
+    PERFORM pg_temp.espera_erro_dup(format('INSERT INTO fiscal.conta_consumo (empresa_id, modelo, participante_id, numero, data_emissao, data_entrada, valor, cfop) VALUES (%s, ''55'', %s, ''2'', ''2026-03-01'', ''2026-03-02'', 100, ''1253'')', v_emp, v_part), 'conta_consumo_modelo_check');
+    -- a empresa com contas de consumo pode ser excluída (as contas saem antes dos participantes)
+    PERFORM core.fn_excluir_empresa(v_emp);
+    RAISE NOTICE 'OK: outros lançamentos do SPED Fiscal (ajuste com código válido, conta de consumo única) e exclusão da empresa';
+END $$;
+
 \echo 'TODOS OS TESTES PASSARAM'

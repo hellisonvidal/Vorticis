@@ -32,6 +32,9 @@ public class FiscalViewsTests(SessaoHeadless headless)
             {
                 (new ImportacaoXmlViewModel(ctx), new ImportacaoXmlView()),
                 (new FechamentoFiscalViewModel(ctx), new FechamentoFiscalView()),
+                (new AjustesIcmsViewModel(ctx), new AjustesIcmsView()),
+                (new ContasConsumoViewModel(ctx), new ContasConsumoView()),
+                (new InventarioViewModel(ctx), new InventarioView()),
                 (new DocumentosViewModel(ctx), new DocumentosView()),
                 (new LivroEntradasViewModel(ctx), new LivroFiscalView()),
                 (new LivroSaidasViewModel(ctx), new LivroFiscalView()),

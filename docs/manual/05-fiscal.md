@@ -271,12 +271,14 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 2. Clique em **Gerar**: aparecem os débitos pelas saídas e os créditos pelas entradas, separados por CFOP, e o resultado do mês (imposto a recolher ou saldo credor a transportar).
 3. Use **Exportar** para PDF, Excel ou CSV. O PDF sai com o cabeçalho da empresa, como os demais livros.
 
-Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os itens com situação tributária do IPI preenchida. Outros débitos, outros créditos e estornos aparecem zerados, como na EFD.
+Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os itens com situação tributária do IPI preenchida. Os outros débitos, outros créditos e estornos lançados em *Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS* entram como na EFD.
 
 ## SPED EFD ICMS/IPI
 
 **Para que serve:** gerar o arquivo da EFD ICMS/IPI (SPED Fiscal) do mês.
-**Onde fica:** *Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*.
+**Onde fica:** *Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*, ou *Lançamentos › SPED Fiscal › Gerar EFD ICMS/IPI (SPED Fiscal)*.
+
+**Antes de gerar (configuração):** deixe o padrão da empresa em *Cadastros › Parâmetros*, grupo *EFD ICMS/IPI* (perfil, atividade, códigos de receita e dia de vencimento do ICMS): o assistente já abre preenchido. Lance também, se houver, os [outros lançamentos do SPED Fiscal](#outros-lancamentos-do-sped-fiscal).
 
 1. **Passo 1**: empresa, mês/ano e, se for o caso, **escrituração retificadora**. Informe as opções: **perfil** (IND_PERFIL), **atividade**, **código de receita do ICMS** (ex.: 046-2 para o estado), do ICMS-ST (se houver), **dia de vencimento** e **saldo credor do mês anterior**. **Salvar estas opções como padrão da empresa** evita redigitar a cada mês.
 2. **Passo 2**: pré-requisitos (cadastros incompletos, produtos sem NCM etc.).
@@ -285,7 +287,34 @@ Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os i
 5. **Passo 5**: **Gerar arquivo**, escolha a pasta e **Salvar arquivo** (`EFD_ICMS_IPI_<CNPJ>_<AAAAMM>.txt`).
 
 No PVA: *Escrituração › Importar* e *Validar*; confira o resumo e então assine e transmita.
-**Limitações:** sem ajustes do ICMS (E111), DIFAL, CIAP, inventário detalhado, produção e transporte.
+O arquivo traz as notas (bloco C), as contas de consumo (C500 e D500), os ajustes da apuração (E111) e o inventário cadastrado (bloco H) da competência.
+**Limitações:** sem DIFAL, CIAP (bloco G), produção (bloco K) e conhecimentos de transporte (D100).
+
+## Outros lançamentos do SPED Fiscal
+
+**Para que serve:** lançar o que a EFD ICMS/IPI pede além das notas de mercadoria.
+**Onde fica:** *Lançamentos › SPED Fiscal*.
+
+### Contas de energia, gás, água e comunicação
+**Onde fica:** *Lançamentos › SPED Fiscal › Contas de energia, gás, água e comunicação*.
+Para as contas recebidas de energia elétrica (modelo 06), gás canalizado (28), água (29) e de comunicação/telecomunicação (21 e 22), que não vêm em XML de NF-e:
+1. Cadastre a concessionária ou operadora em *Cadastros › Fornecedores*.
+2. Clique em **Nova**, escolha o **Modelo**, o **Fornecedor** e informe número, série, emissão, entrada e o **valor da nota**. O CFOP vem sugerido (energia 1253, comunicação 1303, água e gás 1556; altere se a atividade for outra).
+3. Para aproveitar o crédito, informe o **CST** (ex.: 000), a **base** e a **alíquota** do ICMS: o valor do ICMS é calculado. Informe PIS e COFINS, se destacados. **Gravar**.
+A nota sai no C500/C590 (energia, gás, água) ou no D500/D590 (comunicação) da EFD do mês da entrada, e o ICMS entra nos créditos da apuração (E110).
+
+### Ajustes da apuração do ICMS
+**Onde fica:** *Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS*.
+1. Escolha a **Competência**.
+2. Informe o **código do ajuste** da tabela 5.1.1 da sua UF (8 posições, ex.: SP020099). A 4ª posição diz o tipo, mostrado ao lado: 0 outros débitos, 1 estorno de créditos, 2 outros créditos, 3 estorno de débitos, 4 deduções, 5 débitos especiais.
+3. Informe a **descrição** e o **valor** e clique em **Gravar**.
+Cada ajuste vira um E111 e soma no campo certo do E110; o ICMS a recolher (E116) já sai ajustado. As deduções só abatem até o saldo devedor do mês.
+
+### Inventário de estoque (bloco H)
+**Onde fica:** *Lançamentos › SPED Fiscal › Inventário de estoque (bloco H)*.
+1. Clique em **Novo**, informe a **data do inventário** (ex.: 31/12) e a **conta contábil do estoque**. O campo **Informar na EFD de** vem sugerido: o inventário de 31/12 vai na EFD de **fevereiro** do ano seguinte.
+2. Escolha cada **produto** (do cadastro de produtos), clique em **Adicionar item** e informe na grade a **quantidade** e o **valor unitário** (o valor do item é calculado).
+3. **Gravar inventário**. Na EFD da competência escolhida, o bloco H sai com o H005 (data e total) e um H010 por produto; o cadastro do produto entra no 0200.
 
 ## SPED EFD-Contribuições
 

@@ -4,8 +4,9 @@ namespace Vorticis.Fiscal.Sped;
 
 /// <summary>
 /// Gerador da EFD ICMS/IPI (SPED Fiscal), Guia Prático 3.2.x, leiaute 020 (2026): bloco 0 (0000, 0001, 0005, 0100, 0150, 0190, 0200),
-/// C (C100, C170, C190), D e G e K sem dados, E (E110, E116, E210/E250 do ICMS-ST e E500/E510/E520 do IPI), H (inventário zerado
-/// opcional), 1 (1010) e 9. Ver docs/08-efd.md.
+/// C (C100, C170, C190 e C500/C590 das contas de energia, gás e água), D (D500/D590 de comunicação), G e K sem dados,
+/// E (E110, E111 dos ajustes, E116, E210/E250 do ICMS-ST e E500/E510/E520 do IPI), H (inventário H005/H010, ou zerado opcional),
+/// 1 (1010) e 9. Ver docs/08-efd.md.
 /// </summary>
 public static class GeradorEfdIcms
 {
@@ -31,14 +32,18 @@ public static class GeradorEfdIcms
         if (d.Contador is { } c)
             w.Reg("0100", CamposEfd.T(c.Nome, 100), CamposEfd.Digitos(c.Cpf), CamposEfd.T(c.Crc, 15), CamposEfd.Digitos(c.CnpjEscritorio), "", "", "", "", "",
                   CamposEfd.Fone(c.Telefone), "", CamposEfd.T(c.Email, 255), e.CodMunicipio);
-        EscreverCadastros(w, ativos.Select(x => x.Participante), ativos.SelectMany(x => x.Itens));
+        var consumo = (d.Consumo ?? []).OrderBy(c => c.Entrada).ThenBy(c => c.Modelo).ThenBy(c => c.Numero).ToList();
+        EscreverCadastros(w, ativos.Select(x => x.Participante).Concat(consumo.Select(c => c.Participante)),
+                          ativos.SelectMany(x => x.Itens).Concat((d.Inventario?.Itens ?? []).Select(ItemDoInventario)));
         w.Fechar();
 
         // ------------------------------------------------------------------ bloco B (apenas DF) — ISS do Distrito Federal, sem dados
         if (e.Uf == "DF") { w.Abrir('B', false); w.Fechar(); }
 
         // ------------------------------------------------------------------ bloco C
-        w.Abrir('C', docs.Count > 0);
+        var energia = consumo.Where(c => !c.Comunicacao).ToList();
+        var comunicacao = consumo.Where(c => c.Comunicacao).ToList();
+        w.Abrir('C', docs.Count > 0 || energia.Count > 0);
         foreach (var doc in docs)
         {
             EscreverC100(w, d.Empresa.Cnpj, doc);
@@ -49,18 +54,41 @@ public static class GeradorEfdIcms
                 w.Reg("C190", a.Cst, a.Cfop, CamposEfd.Aliq(a.Aliquota), CamposEfd.V(a.Operacao), CamposEfd.V(a.BaseIcms), CamposEfd.V(a.Icms), CamposEfd.V(a.BaseSt),
                       CamposEfd.V(a.IcmsSt), CamposEfd.V(a.Reducao), CamposEfd.V(a.Ipi), "");
         }
+        foreach (var cc in energia)
+        {
+            // C500 (40 campos): entrada (0), emissão de terceiros (1), documento regular (00)
+            w.Reg("C500", "0", "1", cc.Participante.Codigo, cc.Modelo, "00", CamposEfd.T(cc.Serie, 4), "", cc.ClasseConsumo, CamposEfd.Digitos(cc.Numero),
+                  CamposEfd.D(cc.Emissao), CamposEfd.D(cc.Entrada), CamposEfd.V(cc.Valor), "0,00", CamposEfd.V(cc.Valor), "0,00", "0,00", "0,00",
+                  CamposEfd.V(cc.BaseIcms), CamposEfd.V(cc.Icms), "0,00", "0,00", "", CamposEfd.V(cc.Pis), CamposEfd.V(cc.Cofins), "", "",
+                  "", "", "", "", "", "", "", "", "", "", "", "", "");
+            w.Reg("C590", cc.CstIcms, cc.Cfop, CamposEfd.Aliq(cc.AliqIcms), CamposEfd.V(cc.Valor), CamposEfd.V(cc.BaseIcms), CamposEfd.V(cc.Icms), "0,00", "0,00",
+                  CamposEfd.V(Math.Max(0, cc.Valor - cc.BaseIcms)), "");
+        }
         w.Fechar();
 
-        w.Abrir('D', false); w.Fechar();
+        // ------------------------------------------------------------------ bloco D: notas de comunicação e telecomunicação recebidas
+        w.Abrir('D', comunicacao.Count > 0);
+        foreach (var cc in comunicacao)
+        {
+            w.Reg("D500", "0", "1", cc.Participante.Codigo, cc.Modelo, "00", CamposEfd.T(cc.Serie, 4), "", CamposEfd.Digitos(cc.Numero), CamposEfd.D(cc.Emissao),
+                  CamposEfd.D(cc.Entrada), CamposEfd.V(cc.Valor), "0,00", CamposEfd.V(cc.Valor), "0,00", "0,00", "0,00", CamposEfd.V(cc.BaseIcms), CamposEfd.V(cc.Icms),
+                  "", CamposEfd.V(cc.Pis), CamposEfd.V(cc.Cofins), "", "");
+            w.Reg("D590", cc.CstIcms, cc.Cfop, CamposEfd.Aliq(cc.AliqIcms), CamposEfd.V(cc.Valor), CamposEfd.V(cc.BaseIcms), CamposEfd.V(cc.Icms), "0,00", "0,00",
+                  CamposEfd.V(Math.Max(0, cc.Valor - cc.BaseIcms)), "");
+        }
+        w.Fechar();
 
         // ------------------------------------------------------------------ bloco E
         w.Abrir('E', true);
         w.Reg("E100", CamposEfd.D(d.Inicio), CamposEfd.D(d.Fim));
-        w.Reg("E110", CamposEfd.V(apuracao.Debitos), "0,00", "0,00", "0,00", CamposEfd.V(apuracao.Creditos), "0,00", "0,00", "0,00",
-              CamposEfd.V(apuracao.SaldoCredorAnterior), CamposEfd.V(Math.Max(0, apuracao.SaldoApurado)), CamposEfd.V(apuracao.Deducoes), CamposEfd.V(apuracao.Recolher),
-              CamposEfd.V(apuracao.SaldoCredorTransportar), "0,00");
-        if (apuracao.Recolher > 0)
-            w.Reg("E116", "000", CamposEfd.V(apuracao.Recolher), CamposEfd.D(CamposEfd.Vencimento(d.Fim, o.DiaVencimento)), CamposEfd.T(o.CodigoReceitaIcms, 20), "", "", "", "",
+        w.Reg("E110", CamposEfd.V(apuracao.Debitos), "0,00", CamposEfd.V(apuracao.AjustesDebitos), CamposEfd.V(apuracao.EstornosCreditos), CamposEfd.V(apuracao.Creditos),
+              "0,00", CamposEfd.V(apuracao.AjustesCreditos), CamposEfd.V(apuracao.EstornosDebitos), CamposEfd.V(apuracao.SaldoCredorAnterior),
+              CamposEfd.V(Math.Max(0, apuracao.SaldoApurado)), CamposEfd.V(apuracao.Deducoes), CamposEfd.V(apuracao.Recolher),
+              CamposEfd.V(apuracao.SaldoCredorTransportar), CamposEfd.V(apuracao.DebitosEspeciais));
+        foreach (var a in (d.Ajustes ?? []).OrderBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id))
+            w.Reg("E111", a.Codigo, CamposEfd.T(a.Descricao, 255), CamposEfd.V(a.Valor));
+        if (apuracao.TotalObrigacoes > 0)
+            w.Reg("E116", "000", CamposEfd.V(apuracao.TotalObrigacoes), CamposEfd.D(CamposEfd.Vencimento(d.Fim, o.DiaVencimento)), CamposEfd.T(o.CodigoReceitaIcms, 20), "", "", "", "",
                   $"{d.Fim.Month:00}{d.Fim.Year}");
         foreach (var st in apuracao.St)
         {
@@ -81,9 +109,20 @@ public static class GeradorEfdIcms
 
         w.Abrir('G', false); w.Fechar();
 
-        // ------------------------------------------------------------------ bloco H: inventário zerado opcional (H005 com valor zero, motivo 01 = final do período)
-        w.Abrir('H', o.InventarioZerado);
-        if (o.InventarioZerado) w.Reg("H005", CamposEfd.D(d.Fim), "0,00", "01");
+        // ------------------------------------------------------------------ bloco H: inventário cadastrado (H005/H010) ou zerado opcional
+        if (d.Inventario is { } inv)
+        {
+            w.Abrir('H', true);
+            w.Reg("H005", CamposEfd.D(inv.Data), CamposEfd.V(inv.Total), inv.Motivo);
+            foreach (var i in inv.Itens.OrderBy(i => i.ProdutoCodigo))
+                w.Reg("H010", i.ProdutoCodigo.ToString(), CamposEfd.Unidade(i.Unidade), CamposEfd.Qtd(i.Quantidade), CamposEfd.ValorUnitario(i.ValorUnitario),
+                      CamposEfd.V(i.Valor), "0", "", "", CamposEfd.T(inv.ContaContabil, 60), "");
+        }
+        else
+        {
+            w.Abrir('H', o.InventarioZerado);
+            if (o.InventarioZerado) w.Reg("H005", CamposEfd.D(d.Fim), "0,00", "01");
+        }
         w.Fechar();
 
         w.Abrir('K', false); w.Fechar();
@@ -118,6 +157,11 @@ public static class GeradorEfdIcms
             w.Reg("0200", [.. campos]);
         }
     }
+
+    /// <summary>Item do inventário como item do 0200 (código sequencial do produto).</summary>
+    private static ItemEfd ItemDoInventario(ItemInventarioEfd i) =>
+        new(0, null, i.ProdutoCodigo, null, i.Descricao, i.Ncm, null, null, i.TipoItem, null, "", i.Unidade, i.Quantidade, i.Valor, 0, 0, 0, 0, i.Valor,
+            null, null, 0, 0, 0, 0, 0, null, 0, 0, 0, null, 0, 0, 0, null, 0, 0, 0, 0, 0, 0);
 
     internal static string IndEmit(string cnpjEmpresa, DocumentoEfd doc) =>
         doc.EmitenteDocumento is { Length: > 0 } em ? (em == cnpjEmpresa ? "0" : "1") : doc.Entrada ? "1" : "0";
