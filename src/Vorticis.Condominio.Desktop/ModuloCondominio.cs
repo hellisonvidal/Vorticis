@@ -20,6 +20,7 @@ public sealed class ModuloCondominio : IModuloDesktop
     public bool UsaCalendarioObrigacoes => false;
     public bool UsaSindico => true;
     public string RotuloEmpresas => "Condomínios";
+    public string RotuloEmpresaAtiva => "Condomínio";
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [

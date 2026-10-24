@@ -1,3 +1,4 @@
+using Vorticis.Application.Cadastros;
 using Vorticis.Escritorio;
 using Vorticis.Infra.Tests;
 
@@ -55,6 +56,49 @@ public class RegrasEscritorioTests
 
 public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 {
+    [Fact]
+    public async Task Cliente_com_modulos_marcados_vira_empresa_nesses_modulos()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = await db.AdminAsync();
+        var escritorio = await db.CriarEmpresaAsync("52938461000103");
+        var svc = ServicosEscritorio.De(db.App);
+        const string cnpj = "41827365000171";
+        var basico = new PessoaEscritorio(0, 50, true, false, "Mercado Bom Preço Ltda", cnpj, "Simples Nacional", Modulos: ModulosEmpresa.Contabil | ModulosEmpresa.Fiscal);
+
+        // sem os dados de empresa, não cadastra nos módulos (nem grava o cliente)
+        var falta = await svc.GravarPessoaAsync(escritorio, basico, adm, ct);
+        Assert.False(falta.Sucesso);
+        Assert.Contains(falta.Erros, e => e.Contains("CNAE"));
+
+        var completo = basico with
+        {
+            NaturezaJuridica = "2062", Cnae = "4711302", Uf = "SP", CodMunicipioIbge = "3550308", Municipio = "São Paulo", InicioAtividades = new DateOnly(2020, 5, 4),
+            Logradouro = "Rua das Flores", Numero = "10", Bairro = "Centro", Cep = "01001000",
+        };
+        var r = await svc.GravarPessoaAsync(escritorio, completo, adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var p = Assert.Single(await svc.ListarPessoasAsync(escritorio, adm, ct), x => x.Id == r.Valor);
+        Assert.NotNull(p.EmpresaVinculadaId);
+        Assert.Equal(ModulosEmpresa.Contabil | ModulosEmpresa.Fiscal, p.Modulos);
+        Assert.Equal("Rua das Flores, 10, Centro", p.Endereco);
+        var empresa = await db.App.Empresas.ObterAsync(p.EmpresaVinculadaId!.Value, ct);
+        Assert.NotNull(empresa);
+        Assert.Equal(("Mercado Bom Preço Ltda", "4711302"), (empresa.RazaoSocial, empresa.CnaePrincipal));
+        Assert.True(await db.EscalarAsync<bool>("SELECT modulo_contabil AND modulo_fiscal AND NOT modulo_folha AND NOT modulo_escritorio FROM core.empresa WHERE id = @e",
+                                                ("e", p.EmpresaVinculadaId)));
+        Assert.True(await db.EscalarAsync<long>("SELECT COUNT(*) FROM contabil.plano_contas WHERE empresa_id = @e", ("e", p.EmpresaVinculadaId)) > 0);   // plano modelo
+
+        // incluir a Folha no contrato atualiza a mesma empresa (não cria outra)
+        Assert.True((await svc.GravarPessoaAsync(escritorio, p with { Modulos = p.Modulos | ModulosEmpresa.Folha }, adm, ct)).Sucesso);
+        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM core.empresa WHERE cnpj = @c", ("c", cnpj)));
+        Assert.True(await db.EscalarAsync<bool>("SELECT modulo_folha FROM core.empresa WHERE id = @e", ("e", p.EmpresaVinculadaId)));
+
+        // só clientes vão para os módulos
+        Assert.False((await svc.GravarPessoaAsync(escritorio, completo with { Codigo = 51, Cliente = false, Fornecedor = true, Documento = null }, adm, ct)).Sucesso);
+    }
+
     [Fact]
     public async Task Cadastro_proprio_tarefas_honorarios_protocolo_e_contratos()
     {

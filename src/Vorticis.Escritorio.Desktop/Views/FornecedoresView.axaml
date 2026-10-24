@@ -1,12 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
-             x:Class="Vorticis.Escritorio.Desktop.Views.PessoasView" x:DataType="vm:PessoasViewModel">
-  <!-- Cadastros › Clientes e fornecedores do escritório (cadastro próprio, não compartilhado) -->
+             x:Class="Vorticis.Escritorio.Desktop.Views.FornecedoresView" x:DataType="vm:PessoasViewModel">
+  <!-- Cadastros › Fornecedores (cadastro próprio do escritório, não compartilhado) -->
   <Grid ColumnDefinitions="*,16,420" RowDefinitions="Auto,*" Margin="8">
     <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-        <TextBlock Classes="titulo" Text="Clientes e fornecedores do escritório" VerticalAlignment="Center" />
+        <TextBlock Classes="titulo" Text="{Binding Titulo}" VerticalAlignment="Center" />
         <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código, nome ou documento" Width="260" />
       </StackPanel>
       <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
@@ -22,36 +22,30 @@
     </DockPanel>
     <ScrollViewer Grid.Row="1" Grid.Column="2">
       <StackPanel Spacing="6">
-        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Código" />
           <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Nome" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Nome}" MaxLength="150" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="CNPJ/CPF" />
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Documento}" Width="190" HorizontalAlignment="Left" />
-          <TextBlock Grid.Row="3" Classes="rotulo" Text="É" />
-          <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="12">
-            <CheckBox Content="Cliente" IsChecked="{Binding Cliente}" />
-            <CheckBox Content="Fornecedor" IsChecked="{Binding Fornecedor}" />
-          </StackPanel>
-          <TextBlock Grid.Row="4" Classes="rotulo" Text="Regime" />
-          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Regime}" Watermark="Ex.: Simples Nacional" />
-          <TextBlock Grid.Row="5" Classes="rotulo" Text="Contato" />
-          <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Contato}" Watermark="Pessoa de contato" />
-          <TextBlock Grid.Row="6" Classes="rotulo" Text="E-mail" />
-          <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Email}" />
-          <TextBlock Grid.Row="7" Classes="rotulo" Text="Telefone" />
-          <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Telefone}" />
-          <TextBlock Grid.Row="8" Classes="rotulo" Text="Endereço" />
-          <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Endereco}" />
-          <TextBlock Grid.Row="9" Classes="rotulo" Text="Município/UF" />
-          <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <CheckBox Grid.Row="3" Grid.Column="1" Content="{Binding TextoOutroPapel}" IsChecked="{Binding OutroPapel}" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Contato" />
+          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Contato}" Watermark="Pessoa de contato" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="E-mail" />
+          <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Email}" />
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="Telefone" />
+          <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Telefone}" />
+          <TextBlock Grid.Row="7" Classes="rotulo" Text="Endereço" />
+          <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Endereco}" />
+          <TextBlock Grid.Row="8" Classes="rotulo" Text="Município/UF" />
+          <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
             <TextBox Text="{Binding Municipio}" Width="220" />
             <TextBox Text="{Binding Uf}" Width="50" MaxLength="2" />
           </StackPanel>
-          <TextBlock Grid.Row="10" Classes="rotulo" Text="Observação" />
-          <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding Observacao}" />
-          <CheckBox Grid.Row="11" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
+          <TextBlock Grid.Row="9" Classes="rotulo" Text="Observação" />
+          <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding Observacao}" />
+          <CheckBox Grid.Row="10" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
         </Grid>
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                    Text="Cadastro exclusivo do escritório: não aparece nos módulos Contábil, Fiscal, Folha, Gerencial e Condomínio." />

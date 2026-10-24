@@ -15,8 +15,10 @@ public sealed class ServicoEscritorio
 {
     private readonly BancoModulo _db;
     private readonly Autorizador _autorizador;
+    private readonly Vorticis.Application.Cadastros.ServicoEmpresa? _empresas;
 
-    public ServicoEscritorio(Npgsql.NpgsqlDataSource ds, Autorizador autorizador) => (_db, _autorizador) = (new BancoModulo(ds), autorizador);
+    public ServicoEscritorio(Npgsql.NpgsqlDataSource ds, Autorizador autorizador, Vorticis.Application.Cadastros.ServicoEmpresa? empresas = null)
+        => (_db, _autorizador, _empresas) = (new BancoModulo(ds), autorizador, empresas);
 
     private Task<string?> NegarAsync(long usuario, long escritorio, Permissao p, CancellationToken ct) => _autorizador.VerificarAsync(usuario, escritorio, p, ct);
 
@@ -33,10 +35,18 @@ public sealed class ServicoEscritorio
     public async Task<List<PessoaEscritorio>> ListarPessoasAsync(long escritorio, long usuarioId, CancellationToken ct = default)
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
-                SELECT id, codigo, cliente, fornecedor, nome, documento, regime, contato, email, telefone, endereco, municipio, uf, ativo, observacao
-                  FROM escritorio.pessoa WHERE empresa_id = @e ORDER BY nome
+                SELECT p.id, p.codigo, p.cliente, p.fornecedor, p.nome, p.documento, p.regime, p.contato, p.email, p.telefone, p.endereco, p.municipio, p.uf, p.ativo,
+                       p.observacao, p.nome_fantasia, p.natureza_juridica, p.cnae, p.inscricao_estadual, p.data_inicio_atividades, p.cep, p.logradouro, p.numero,
+                       p.complemento, p.bairro, p.cod_municipio_ibge, p.empresa_vinculada_id,
+                       (CASE WHEN e.modulo_contabil THEN 1 ELSE 0 END) | (CASE WHEN e.modulo_fiscal THEN 2 ELSE 0 END) | (CASE WHEN e.modulo_folha THEN 4 ELSE 0 END)
+                     | (CASE WHEN e.modulo_erp THEN 16 ELSE 0 END) | (CASE WHEN e.modulo_condominio THEN 32 ELSE 0 END)
+                  FROM escritorio.pessoa p LEFT JOIN core.empresa e ON e.id = p.empresa_vinculada_id
+                 WHERE p.empresa_id = @e ORDER BY p.nome
                 """, r => new PessoaEscritorio(r.GetInt64(0), r.GetInt32(1), r.GetBoolean(2), r.GetBoolean(3), r.GetString(4), r.Texto(5), r.Texto(6), r.Texto(7),
-                                               r.Texto(8), r.Texto(9), r.Texto(10), r.Texto(11), r.Texto(12)?.Trim(), r.GetBoolean(13), r.Texto(14)),
+                                               r.Texto(8), r.Texto(9), r.Texto(10), r.Texto(11), r.Texto(12)?.Trim(), r.GetBoolean(13), r.Texto(14),
+                                               r.Texto(15), r.Texto(16)?.Trim(), r.Texto(17)?.Trim(), r.Texto(18), r.Data(19), r.Texto(20)?.Trim(), r.Texto(21), r.Texto(22),
+                                               r.Texto(23), r.Texto(24), r.Texto(25)?.Trim(), r.IsDBNull(26) ? null : r.GetInt64(26),
+                                               (Vorticis.Application.Cadastros.ModulosEmpresa)(r.IsDBNull(27) ? 0 : r.GetInt32(27))),
                 ct, ("e", escritorio))
             : [];
 
@@ -44,27 +54,80 @@ public sealed class ServicoEscritorio
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioTarefas, ct) is { } negado) return Resultado<long>.Falha(negado);
         static string? N(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        static string? D(string? s) => N(new string((s ?? "").Where(char.IsAsciiDigit).ToArray()));
         p = p with
         {
-            Nome = p.Nome?.Trim() ?? "", Documento = N(new string((p.Documento ?? "").Where(char.IsAsciiDigit).ToArray())), Regime = N(p.Regime), Contato = N(p.Contato),
+            Nome = p.Nome?.Trim() ?? "", Documento = D(p.Documento), Regime = N(p.Regime), Contato = N(p.Contato),
             Email = N(p.Email), Telefone = N(p.Telefone), Endereco = N(p.Endereco), Municipio = N(p.Municipio), Uf = N(p.Uf)?.ToUpperInvariant(), Observacao = N(p.Observacao),
+            NomeFantasia = N(p.NomeFantasia), NaturezaJuridica = D(p.NaturezaJuridica), Cnae = D(p.Cnae), InscricaoEstadual = N(p.InscricaoEstadual)?.ToUpperInvariant(),
+            Cep = D(p.Cep), Logradouro = N(p.Logradouro), Numero = N(p.Numero), Complemento = N(p.Complemento), Bairro = N(p.Bairro), CodMunicipioIbge = D(p.CodMunicipioIbge),
         };
-        if (RegrasEscritorio.Validar(p) is { Count: > 0 } erros) return Resultado<long>.Falha(erros);
+        // endereço de uma linha (relatórios e contratos) montado do endereço completo, quando informado
+        if (p.Logradouro is not null)
+            p = p with { Endereco = string.Join(", ", new[] { p.Logradouro, p.Numero, p.Complemento, p.Bairro }.Where(x => !string.IsNullOrWhiteSpace(x))) };
+        var erros = RegrasEscritorio.Validar(p).Concat(RegrasEscritorio.ValidarParaModulos(p)).ToList();
+        if (p.Modulos != Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum && !p.Cliente) erros.Add("Só clientes são cadastrados nos módulos.");
+        if (erros.Count > 0) return Resultado<long>.Falha(erros);
         (string, object?)[] campos =
         [
             ("e", escritorio), ("id", p.Id), ("cod", p.Codigo), ("cli", p.Cliente), ("for", p.Fornecedor), ("nome", p.Nome), ("doc", p.Documento), ("reg", p.Regime),
             ("con", p.Contato), ("email", p.Email), ("tel", p.Telefone), ("end", p.Endereco), ("mun", p.Municipio), ("uf", p.Uf), ("at", p.Ativo), ("obs", p.Observacao),
+            ("fan", p.NomeFantasia), ("nat", p.NaturezaJuridica), ("cnae", p.Cnae), ("ie", p.InscricaoEstadual), ("ini", p.InicioAtividades), ("cep", p.Cep),
+            ("lgr", p.Logradouro), ("num", p.Numero), ("cpl", p.Complemento), ("bai", p.Bairro), ("ibge", p.CodMunicipioIbge),
         ];
-        return await Tentar(async () => p.Id == 0
+        var gravado = await Tentar(async () => p.Id == 0
             ? await _db.EscalarAsync<long>("""
-                INSERT INTO escritorio.pessoa (empresa_id, codigo, cliente, fornecedor, nome, documento, regime, contato, email, telefone, endereco, municipio, uf, ativo, observacao)
-                VALUES (@e, @cod, @cli, @for, @nome, @doc, @reg, @con, @email, @tel, @end, @mun, @uf, @at, @obs) RETURNING id
+                INSERT INTO escritorio.pessoa (empresa_id, codigo, cliente, fornecedor, nome, documento, regime, contato, email, telefone, endereco, municipio, uf, ativo, observacao,
+                                               nome_fantasia, natureza_juridica, cnae, inscricao_estadual, data_inicio_atividades, cep, logradouro, numero, complemento, bairro,
+                                               cod_municipio_ibge)
+                VALUES (@e, @cod, @cli, @for, @nome, @doc, @reg, @con, @email, @tel, @end, @mun, @uf, @at, @obs, @fan, @nat, @cnae, @ie, @ini, @cep, @lgr, @num, @cpl, @bai, @ibge)
+                RETURNING id
                 """, ct, campos)
             : await _db.EscalarAsync<long?>("""
                 UPDATE escritorio.pessoa SET cliente = @cli, fornecedor = @for, nome = @nome, documento = @doc, regime = @reg, contato = @con, email = @email,
-                       telefone = @tel, endereco = @end, municipio = @mun, uf = @uf, ativo = @at, observacao = @obs
+                       telefone = @tel, endereco = @end, municipio = @mun, uf = @uf, ativo = @at, observacao = @obs, nome_fantasia = @fan, natureza_juridica = @nat,
+                       cnae = @cnae, inscricao_estadual = @ie, data_inicio_atividades = @ini, cep = @cep, logradouro = @lgr, numero = @num, complemento = @cpl,
+                       bairro = @bai, cod_municipio_ibge = @ibge
                  WHERE id = @id AND empresa_id = @e RETURNING id
                 """, ct, campos) ?? throw new ViolacaoRegraException("Cadastro não encontrado."));
+        if (!gravado.Sucesso || p.Modulos == Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum) return gravado;
+        var sinc = await SincronizarEmpresaAsync(escritorio, p with { Id = gravado.Valor }, usuarioId, ct);
+        return sinc.Sucesso ? gravado
+             : Resultado<long>.Falha(sinc.Erros.Prepend("O cliente foi gravado no Escritório, mas não foi cadastrado nos módulos:").ToList());
+    }
+
+    /// <summary>
+    /// Cadastra (ou atualiza) o cliente como empresa nos módulos do contrato: cria a empresa com os dados do cliente ou, se já existe uma
+    /// com o mesmo CNPJ (ou já vinculada), atualiza os dados e os módulos. Só o administrador cria empresas, como no cadastro de empresas.
+    /// </summary>
+    private async Task<Resultado> SincronizarEmpresaAsync(long escritorio, PessoaEscritorio p, long usuarioId, CancellationToken ct)
+    {
+        if (_empresas is null) return Resultado.Falha("Cadastro de empresas indisponível.");
+        if (!(await _autorizador.ObterAsync(usuarioId, escritorio, ct)).Administrador)
+            return Resultado.Falha("Só o administrador cadastra empresas nos módulos (Contábil, Fiscal, Folha, Condomínio, Gerencial).");
+        var regime = RegrasEscritorio.RegimeDe(p.Regime)!.Value;
+        var complemento = new Vorticis.Application.Cadastros.ComplementoEmpresa(p.Cep, p.Logradouro, p.Numero, p.Complemento, p.Bairro, p.Municipio, p.Email, p.Telefone,
+                                                                              FonteDados: "Cadastro de clientes do Escritório");
+        var vinculada = p.EmpresaVinculadaId
+            ?? await _db.EscalarAsync<long?>("SELECT id FROM core.empresa WHERE cnpj = @c", ct, ("c", p.Documento));
+        if (vinculada is { } id && await _empresas.ObterAsync(id, ct) is { } atual)
+        {
+            var r = await _empresas.AlterarAsync(new Vorticis.Application.Cadastros.AlteracaoEmpresa(id, p.Nome, p.NomeFantasia, p.NaturezaJuridica!, p.Cnae!, p.Uf!,
+                p.CodMunicipioIbge!, p.InicioAtividades!.Value, p.InscricaoEstadual, complemento, atual.Nire, p.Modulos), ct);
+            if (!r.Sucesso) return r;
+        }
+        else
+        {
+            var r = await _empresas.CadastrarAsync(new Vorticis.Application.Cadastros.NovaEmpresa(p.Documento!, p.Nome, p.NomeFantasia, p.NaturezaJuridica!, p.Cnae!, p.Uf!,
+                p.CodMunicipioIbge!, p.InicioAtividades!.Value, regime, Math.Max(p.InicioAtividades.Value.Year, DateTime.Today.Year),
+                ImportarPlanoModelo: p.Modulos.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Contabil), Complemento: complemento,
+                InscricaoEstadual: p.InscricaoEstadual, Modulos: p.Modulos), ct);
+            if (!r.Sucesso) return Resultado.Falha(r.Erros);
+            vinculada = r.Valor;
+        }
+        await _db.ExecutarAsync("UPDATE escritorio.pessoa SET empresa_vinculada_id = @v WHERE id = @id AND empresa_id = @e", ct,
+                                ("v", vinculada), ("id", p.Id), ("e", escritorio));
+        return Resultado.Ok();
     }
 
     public async Task<Resultado> ExcluirPessoaAsync(long escritorio, long id, long usuarioId, CancellationToken ct = default)
@@ -352,5 +415,5 @@ public static class ServicosEscritorio
 {
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Vorticis.Infra.VorticisApp, ServicoEscritorio> Instancias = new();
 
-    public static ServicoEscritorio De(Vorticis.Infra.VorticisApp app) => Instancias.GetValue(app, a => new ServicoEscritorio(a.DataSource, a.Autorizador));
+    public static ServicoEscritorio De(Vorticis.Infra.VorticisApp app) => Instancias.GetValue(app, a => new ServicoEscritorio(a.DataSource, a.Autorizador, a.Empresas));
 }

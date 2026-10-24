@@ -15,8 +15,8 @@ public static class EscritorioTelas
     public const string Carteira = "escritorio.carteira";
     public const string Tarefas = "escritorio.tarefas";
     public const string Protocolos = "escritorio.protocolos";
-    public const string Honorarios = "escritorio.honorarios";
-    public const string Pessoas = "escritorio.pessoas";
+    public const string Clientes = "escritorio.clientes";
+    public const string Fornecedores = "escritorio.fornecedores";
     public const string Contratos = "escritorio.contratos";
     public const string RelContratos = "escritorio.rel.contratos";
     public const string RelHonorarios = "escritorio.rel.honorarios";
@@ -60,21 +60,26 @@ public sealed record PessoaLinha(PessoaEscritorio P)
 }
 
 /// <summary>
-/// Cadastros › Clientes e fornecedores do escritório: cadastro próprio do módulo Escritório, que não aparece nos demais módulos
-/// (nem usa os clientes, fornecedores e empresas dos cadastros comuns).
+/// Cadastro próprio do Escritório, separado em Cadastros › Clientes e Cadastros › Fornecedores (a mesma pessoa pode ser os dois).
+/// O cliente tem os dados do cadastro de empresas (importados pela consulta do CNPJ), os módulos do contrato (com algum marcado, a
+/// empresa é cadastrada nos demais módulos) e a aba Honorários e cobranças.
 /// </summary>
-public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(contexto)
+public abstract partial class PessoasViewModel(IContexto contexto, bool clientes) : CadastroViewModel(contexto)
 {
     public ObservableCollection<PessoaLinha> Lista { get; } = [];
     private IReadOnlyList<PessoaEscritorio> _todos = [];
+
+    public bool ModoClientes => clientes;
+    public string Titulo => clientes ? "Clientes do escritório" : "Fornecedores do escritório";
+    public string TextoOutroPapel => clientes ? "Também é fornecedor do escritório" : "Também é cliente do escritório";
+    public static IReadOnlyList<string> Regimes { get; } = RegrasEscritorio.Regimes.Select(r => r.Rotulo).ToList();
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private PessoaLinha? _selecionado;
     [ObservableProperty] private string _filtro = "";
     [ObservableProperty] private string _codigo = "";
     [ObservableProperty] private string _nome = "";
     [ObservableProperty] private string _documento = "";
-    [ObservableProperty] private bool _cliente = true;
-    [ObservableProperty] private bool _fornecedor;
+    [ObservableProperty] private bool _outroPapel;
     [ObservableProperty] private string _regime = "";
     [ObservableProperty] private string _contato = "";
     [ObservableProperty] private string _email = "";
@@ -84,13 +89,33 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
     [ObservableProperty] private string _uf = "";
     [ObservableProperty] private bool _ativo = true;
     [ObservableProperty] private string _observacao = "";
+    // dados de empresa do cliente (como no cadastro de empresas)
+    [ObservableProperty] private string _nomeFantasia = "";
+    [ObservableProperty] private string _naturezaJuridica = "";
+    [ObservableProperty] private string _cnae = "";
+    [ObservableProperty] private string _inscricaoEstadual = "";
+    [ObservableProperty] private DateTime? _inicioAtividades;
+    [ObservableProperty] private string _cep = "";
+    [ObservableProperty] private string _logradouro = "";
+    [ObservableProperty] private string _numero = "";
+    [ObservableProperty] private string _complemento = "";
+    [ObservableProperty] private string _bairro = "";
+    [ObservableProperty] private string _codMunicipioIbge = "";
+    [ObservableProperty] private string _origemDados = "";
+    // módulos do contrato
+    [ObservableProperty] private bool _modContabil;
+    [ObservableProperty] private bool _modFiscal;
+    [ObservableProperty] private bool _modFolha;
+    [ObservableProperty] private bool _modCondominio;
+    [ObservableProperty] private bool _modGerencial;
+    [ObservableProperty] private string _situacaoModulos = "";
 
     public bool TemSelecionado => Selecionado is not null;
     public override bool PodeManter => Contexto.Pode(Permissao.EscritorioTarefas);
-    protected override string NomeRegistro => "cadastro";
+    protected override string NomeRegistro => clientes ? "cliente" : "fornecedor";
     protected override string? DescricaoSelecionado => Selecionado is { } s ? $"{s.Codigo} – {s.Nome}" : null;
 
-    public void AtualizarPermissoes() => AtualizarBarra();
+    public virtual void AtualizarPermissoes() => AtualizarBarra();
 
     public async Task CarregarAsync()
     {
@@ -102,6 +127,8 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
         Filtrar();
     }
 
+    private bool DoPapel(PessoaEscritorio p) => clientes ? p.Cliente : p.Fornecedor;
+
     partial void OnFiltroChanged(string value) => Filtrar();
 
     private void Filtrar()
@@ -109,7 +136,8 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
         var id = Selecionado?.P.Id;
         var f = Filtro.Trim();
         Lista.Clear();
-        foreach (var p in _todos.Where(p => f.Length == 0 || p.Nome.Contains(f, StringComparison.CurrentCultureIgnoreCase) || p.Codigo.ToString() == f || (p.Documento ?? "").Contains(f)))
+        foreach (var p in _todos.Where(p => DoPapel(p) && (f.Length == 0 || p.Nome.Contains(f, StringComparison.CurrentCultureIgnoreCase) || p.Codigo.ToString() == f
+                                                         || (p.Documento ?? "").Contains(f))))
             Lista.Add(new PessoaLinha(p));
         Selecionado = Lista.FirstOrDefault(l => l.P.Id == id);
     }
@@ -118,14 +146,41 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
     {
         if (EmConsulta) MostrarSelecionado();
         AtualizarBarra();
+        _ = AoSelecionarAsync(value?.P);
     }
+
+    protected virtual Task AoSelecionarAsync(PessoaEscritorio? p) => Task.CompletedTask;
 
     protected override void MostrarSelecionado()
     {
         var p = Selecionado?.P;
-        (Codigo, Nome, Documento, Cliente, Fornecedor) = (p?.Codigo.ToString() ?? "", p?.Nome ?? "", p?.DocumentoFormatado ?? "", p?.Cliente ?? true, p?.Fornecedor ?? false);
+        (Codigo, Nome, Documento) = (p?.Codigo.ToString() ?? "", p?.Nome ?? "", p?.DocumentoFormatado ?? "");
+        OutroPapel = p is not null && (clientes ? p.Fornecedor : p.Cliente);
         (Regime, Contato, Email, Telefone) = (p?.Regime ?? "", p?.Contato ?? "", p?.Email ?? "", p?.Telefone ?? "");
         (Endereco, Municipio, Uf, Ativo, Observacao) = (p?.Endereco ?? "", p?.Municipio ?? "", p?.Uf ?? "", p?.Ativo ?? true, p?.Observacao ?? "");
+        (NomeFantasia, NaturezaJuridica, Cnae, InscricaoEstadual) = (p?.NomeFantasia ?? "", p?.NaturezaJuridica ?? "", p?.Cnae ?? "", p?.InscricaoEstadual ?? "");
+        InicioAtividades = p?.InicioAtividades is { } d ? Ext.Dt(d) : null;
+        (Cep, Logradouro, Numero, Complemento, Bairro, CodMunicipioIbge) =
+            (p?.Cep ?? "", p?.Logradouro ?? "", p?.Numero ?? "", p?.Complemento ?? "", p?.Bairro ?? "", p?.CodMunicipioIbge ?? "");
+        var m = p?.Modulos ?? Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum;
+        (ModContabil, ModFiscal, ModFolha) = (m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Contabil), m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Fiscal),
+                                              m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Folha));
+        (ModCondominio, ModGerencial) = (m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Condominio), m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Erp));
+        SituacaoModulos = p?.EmpresaVinculadaId is null
+            ? "Marque os módulos do contrato: ao gravar, o cliente é cadastrado como empresa nesses módulos (só o administrador)."
+            : "Cliente já cadastrado como empresa nos módulos marcados. Marque outros para incluí-lo neles também.";
+        OrigemDados = "";
+    }
+
+    private Vorticis.Application.Cadastros.ModulosEmpresa ModulosMarcados()
+    {
+        var m = Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum;
+        if (ModContabil) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Contabil;
+        if (ModFiscal) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Fiscal;
+        if (ModFolha) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Folha;
+        if (ModCondominio) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Condominio;
+        if (ModGerencial) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Erp;
+        return m;
     }
 
     protected override void PrepararInclusao()
@@ -135,21 +190,54 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
         Codigo = Sequencia.MenorLivre(_todos.Select(p => p.Codigo)).ToString();
     }
 
+    /// <summary>Preenche o cliente com os dados da Receita Federal (base pública), como em Cadastros › Empresas.</summary>
+    [RelayCommand]
+    private Task BuscarCnpjAsync() => ExecutarAsync(async (app, _, _) =>
+    {
+        var r = await app.Empresas.ConsultarCnpjAsync(Documento);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        AplicarConsulta(r.Valor);
+        Mensagem = $"Dados importados de {r.Valor.Fonte}. Confira antes de gravar.";
+    });
+
+    public void AplicarConsulta(Vorticis.Application.Cadastros.DadosCnpj d)
+    {
+        Nome = d.RazaoSocial;
+        static string Ou(string? novo, string atual) => string.IsNullOrWhiteSpace(novo) ? atual : novo;
+        NomeFantasia = Ou(d.NomeFantasia, NomeFantasia);
+        NaturezaJuridica = Ou(d.NaturezaJuridica, NaturezaJuridica);
+        Cnae = Ou(d.CnaePrincipal, Cnae);
+        Uf = Ou(d.Uf, Uf);
+        CodMunicipioIbge = Ou(d.CodMunicipioIbge, CodMunicipioIbge);
+        Municipio = Ou(d.Municipio, Municipio);
+        if (d.DataInicioAtividades is { } ini) InicioAtividades = Ext.Dt(ini);
+        (Cep, Logradouro, Numero, Complemento, Bairro) = (Ou(d.Cep, Cep), Ou(d.Logradouro, Logradouro), Ou(d.Numero, Numero), Ou(d.Complemento, Complemento), Ou(d.Bairro, Bairro));
+        (Email, Telefone) = (Ou(d.Email, Email), Ou(d.Telefone, Telefone));
+        if (d.RegimeSugerido is { } reg) Regime = RegrasEscritorio.Regimes.First(x => x.Regime == reg).Rotulo;
+        OrigemDados = $"Dados de {d.Fonte} em {d.ConsultadoEm.LocalDateTime:dd/MM/yyyy HH:mm}" + (d.Ativa ? "" : $" — situação cadastral: {d.SituacaoCadastral}");
+    }
+
     protected override async Task<bool> GravarAsync(bool inclusao)
     {
         var ok = false;
         await ExecutarAsync(async (app, empresa, usuario) =>
         {
             if (!int.TryParse(Codigo.Trim(), out var cod)) { Erros.Add("Informe o código (número)."); return; }
-            var p = new PessoaEscritorio(inclusao ? 0 : Selecionado?.P.Id ?? 0, cod, Cliente, Fornecedor, Nome, Documento, Regime, Contato, Email, Telefone, Endereco,
-                                         Municipio, Uf, Ativo, Observacao);
+            var anterior = inclusao ? null : Selecionado?.P;
+            var p = new PessoaEscritorio(anterior?.Id ?? 0, cod, clientes || OutroPapel, !clientes || OutroPapel, Nome, Documento, Regime, Contato, Email, Telefone, Endereco,
+                                         Municipio, Uf, Ativo, Observacao, NomeFantasia, NaturezaJuridica, Cnae, InscricaoEstadual,
+                                         InicioAtividades is { } ini ? DateOnly.FromDateTime(ini) : null, Cep, Logradouro, Numero, Complemento, Bairro, CodMunicipioIbge,
+                                         anterior?.EmpresaVinculadaId,
+                                         // os módulos só são marcados no cadastro de clientes; o de fornecedores não mexe na empresa vinculada
+                                         clientes ? ModulosMarcados() : Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum);
             var r = await app.Escritorio().GravarPessoaAsync(empresa, p, usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
             Modo = ModoCadastro.Consulta;
             await CarregarAsync();
             Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
-            Mensagem = inclusao ? "Cadastro incluído." : "Cadastro alterado.";
+            Mensagem = (inclusao ? "Cadastro incluído." : "Cadastro alterado.")
+                       + (p.Modulos != Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum ? " Empresa cadastrada/atualizada nos módulos marcados." : "");
         }, Permissao.EscritorioTarefas);
         return ok;
     }
@@ -170,6 +258,25 @@ public partial class PessoasViewModel(IContexto contexto) : CadastroViewModel(co
         return ok;
     }
 }
+
+/// <summary>Cadastros › Clientes: dados cadastrais (como o cadastro de empresas), módulos do contrato e honorários e cobranças.</summary>
+public sealed partial class ClientesEscritorioViewModel : PessoasViewModel
+{
+    public ClientesEscritorioViewModel(IContexto contexto) : base(contexto, true) => Honorarios = new HonorariosViewModel(contexto) { EmbutidoNoCliente = true };
+
+    public HonorariosViewModel Honorarios { get; }
+
+    public override void AtualizarPermissoes()
+    {
+        base.AtualizarPermissoes();
+        Honorarios.AtualizarPermissoes();
+    }
+
+    protected override Task AoSelecionarAsync(PessoaEscritorio? p) => Honorarios.MostrarClienteAsync(p?.Id);
+}
+
+/// <summary>Cadastros › Fornecedores: fornecedores do escritório (cadastro próprio).</summary>
+public sealed class FornecedoresEscritorioViewModel(IContexto contexto) : PessoasViewModel(contexto, false);
 
 // ---------------------------------------------------------------------------------------------- carteira
 
@@ -423,7 +530,7 @@ public sealed record CobrancaLinha(CobrancaHonorario C)
     public string Recebido => C.RecebidoEm is { } d ? $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}" : "";
 }
 
-/// <summary>Contratos › Honorários e cobranças: honorário mensal de cada cliente do escritório e as cobranças mensais.</summary>
+/// <summary>Aba Honorários e cobranças do cadastro de clientes: honorário mensal do cliente e as cobranças dele.</summary>
 public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<CobrancaLinha> Cobrancas { get; } = [];
@@ -448,6 +555,21 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
 
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+
+    /// <summary>Na aba Honorários e cobranças do cadastro do cliente: o cliente é o selecionado no cadastro e a lista mostra só as cobranças dele.</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EscolheCliente))] private long? _clienteFixo;
+    public bool EmbutidoNoCliente { get; init; }
+    public bool EscolheCliente => !EmbutidoNoCliente;
+
+    /// <summary>Mostra o honorário e as cobranças do cliente escolhido no cadastro de clientes.</summary>
+    public async Task MostrarClienteAsync(long? pessoa)
+    {
+        ClienteFixo = pessoa;
+        if (!Clientes.Any(c => c.Valor == pessoa)) { await CarregarAsync(); return; }
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == pessoa) ?? Clientes.FirstOrDefault();
+        MostrarContrato();
+        await CarregarCobrancasAsync();
+    }
 
     partial void OnCompetenciaChanged(DateTime? value) => _ = CarregarCobrancasAsync();
     partial void OnSomenteAbertasChanged(bool value) => _ = CarregarCobrancasAsync();
@@ -475,7 +597,7 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
         _contratos = await app.Escritorio().ListarHonorariosAsync(empresa, sessao.Id);
         var atual = Cliente?.Valor;
         await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
-        Cliente = Clientes.FirstOrDefault(c => c.Valor == atual) ?? Clientes[0];
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == (EmbutidoNoCliente ? ClienteFixo : atual)) ?? Clientes[0];
         MostrarContrato();
         await CarregarCobrancasAsync();
     }
@@ -484,8 +606,10 @@ public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(c
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, SomenteAbertas ? null : Ext.Dia(Competencia), SomenteAbertas, sessao.Id);
+        var todas = EmbutidoNoCliente || SomenteAbertas;
+        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, todas ? null : Ext.Dia(Competencia), SomenteAbertas, sessao.Id);
         if (!EhAtual(g)) return;
+        if (EmbutidoNoCliente) itens = itens.Where(c => c.PessoaId == ClienteFixo).OrderByDescending(c => c.Competencia).ToList();
         Cobrancas.Clear();
         foreach (var c in itens) Cobrancas.Add(new CobrancaLinha(c));
         Totais = $"{itens.Count} cobrança(s) · total {Formato.Moeda(itens.Where(c => c.Situacao != SituacaoCobranca.Cancelada).Sum(c => c.Valor))} · "
@@ -772,8 +896,9 @@ public sealed class ParametrosViewModelEscritorio(IContexto contexto) : Parametr
 
     protected override IReadOnlyList<GrupoParametros> MontarGrupos() =>
     [
-        new("Clientes e fornecedores", "Cadastro próprio do escritório.", [], [Atalho("Abrir Clientes e fornecedores", EscritorioTelas.Pessoas)]),
-        new("Honorários", "Valor, vencimento e reajuste de cada cliente.", [], [Atalho("Abrir Honorários e cobranças", EscritorioTelas.Honorarios)]),
+        new("Clientes", "Cadastro dos clientes, módulos do contrato e honorários.", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
+        new("Fornecedores", "Fornecedores do escritório.", [], [Atalho("Abrir Fornecedores", EscritorioTelas.Fornecedores)]),
+        new("Honorários", "Valor, vencimento e reajuste de cada cliente (aba Honorários e cobranças do cliente).", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
         new("Contratos", "Contratos com clientes e fornecedores.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
         new("Tarefas", "Prazos, responsáveis e recorrência.", [], [Atalho("Abrir Tarefas e prazos", EscritorioTelas.Tarefas)]),
     ];

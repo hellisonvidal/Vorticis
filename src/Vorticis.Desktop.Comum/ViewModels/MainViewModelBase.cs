@@ -725,6 +725,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     }
 
     public ModulosEmpresa ModuloAtual => Modulo.ModuloEmpresa;
+    public string RotuloEmpresaAtiva => Modulo.RotuloEmpresaAtiva + ":";
 
     public async Task<ModulosEmpresa?> EscolherModulosAsync(ModulosEmpresa inicial)
     {

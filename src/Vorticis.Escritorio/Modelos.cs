@@ -5,10 +5,18 @@ public enum Recorrencia { Nenhuma, Mensal, Anual }
 public enum SituacaoCobranca { Aberta, Recebida, Cancelada }
 public enum TipoProtocolo { Entrega, Recebimento }
 
-/// <summary>Cliente e/ou fornecedor do escritório: cadastro próprio do módulo, não compartilhado com os demais módulos.</summary>
+/// <summary>
+/// Cliente e/ou fornecedor do escritório (cadastro próprio do módulo). O cliente tem os dados do cadastro de empresas (preenchidos pela
+/// consulta do CNPJ) e os <see cref="Modulos"/> do contrato: com algum módulo marcado, a empresa é cadastrada (ou atualizada) nos demais
+/// módulos e fica vinculada em <see cref="EmpresaVinculadaId"/>.
+/// </summary>
 public sealed record PessoaEscritorio(long Id, int Codigo, bool Cliente, bool Fornecedor, string Nome, string? Documento, string? Regime = null,
                                       string? Contato = null, string? Email = null, string? Telefone = null, string? Endereco = null, string? Municipio = null,
-                                      string? Uf = null, bool Ativo = true, string? Observacao = null)
+                                      string? Uf = null, bool Ativo = true, string? Observacao = null, string? NomeFantasia = null, string? NaturezaJuridica = null,
+                                      string? Cnae = null, string? InscricaoEstadual = null, DateOnly? InicioAtividades = null, string? Cep = null,
+                                      string? Logradouro = null, string? Numero = null, string? Complemento = null, string? Bairro = null,
+                                      string? CodMunicipioIbge = null, long? EmpresaVinculadaId = null,
+                                      Vorticis.Application.Cadastros.ModulosEmpresa Modulos = Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum)
 {
     public string Papel => (Cliente, Fornecedor) switch { (true, true) => "Cliente e fornecedor", (true, _) => "Cliente", _ => "Fornecedor" };
     public string DocumentoFormatado => Documento switch
@@ -177,6 +185,37 @@ public static class RegrasEscritorio
         if (p.Documento is { Length: > 0 } d && !(d.Length == 14 && Vorticis.Domain.Cadastros.Cnpj.Valido(d) || d.Length == 11 && Vorticis.Domain.Cadastros.Cpf.Valido(d)))
             erros.Add("CPF ou CNPJ inválido.");
         if (p.Uf is { Length: > 0 } uf && uf.Length != 2) erros.Add("UF com 2 letras.");
+        return erros;
+    }
+
+    /// <summary>Regimes do cadastro do cliente (mesmos rótulos do cadastro de empresas).</summary>
+    public static IReadOnlyList<(Vorticis.Application.Cadastros.RegimeTributario Regime, string Rotulo)> Regimes { get; } =
+    [
+        (Vorticis.Application.Cadastros.RegimeTributario.SimplesNacional, "Simples Nacional"), (Vorticis.Application.Cadastros.RegimeTributario.LucroPresumido, "Lucro Presumido"),
+        (Vorticis.Application.Cadastros.RegimeTributario.LucroReal, "Lucro Real"), (Vorticis.Application.Cadastros.RegimeTributario.MEI, "MEI"),
+        (Vorticis.Application.Cadastros.RegimeTributario.LucroArbitrado, "Lucro Arbitrado"), (Vorticis.Application.Cadastros.RegimeTributario.ImuneIsenta, "Imune/isenta"),
+    ];
+
+    public static Vorticis.Application.Cadastros.RegimeTributario? RegimeDe(string? texto)
+    {
+        var t = (texto ?? "").Trim();
+        return Regimes.Where(r => string.Equals(r.Rotulo, t, StringComparison.CurrentCultureIgnoreCase)).Select(r => (Vorticis.Application.Cadastros.RegimeTributario?)r.Regime)
+                      .FirstOrDefault();
+    }
+
+    /// <summary>O que falta no cliente para cadastrá-lo como empresa nos módulos marcados (mesmas exigências do cadastro de empresas).</summary>
+    public static IReadOnlyList<string> ValidarParaModulos(PessoaEscritorio p)
+    {
+        var erros = new List<string>();
+        if (p.Modulos == Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum) return erros;
+        const string prefixo = "Para cadastrar o cliente nos módulos marcados, ";
+        if (p.Documento is not { Length: 14 }) erros.Add(prefixo + "informe o CNPJ (empresa).");
+        if (p.Cnae is not { Length: 7 }) erros.Add(prefixo + "informe o CNAE principal (7 dígitos).");
+        if (p.NaturezaJuridica is not { Length: 4 }) erros.Add(prefixo + "informe a natureza jurídica (4 dígitos).");
+        if (p.CodMunicipioIbge is not { Length: 7 }) erros.Add(prefixo + "informe o município IBGE (7 dígitos).");
+        if (p.Uf is not { Length: 2 }) erros.Add(prefixo + "informe a UF.");
+        if (RegimeDe(p.Regime) is null) erros.Add(prefixo + "escolha o regime tributário.");
+        if (p.InicioAtividades is null) erros.Add(prefixo + "informe o início das atividades.");
         return erros;
     }
 

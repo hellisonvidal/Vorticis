@@ -5,8 +5,8 @@ using Vorticis.Escritorio.Desktop.ViewModels;
 namespace Vorticis.Escritorio.Desktop;
 
 /// <summary>
-/// Módulo Escritório: gerenciador do escritório contábil, com cadastros próprios (clientes e fornecedores do escritório) que não são
-/// compartilhados com os demais módulos; a empresa ativa é o próprio escritório. Permissões ESCRITORIO_* conferidas nos serviços.
+/// Módulo Escritório: gerenciador do escritório contábil, com cadastros próprios (clientes e fornecedores do escritório); o cliente
+/// pode ser cadastrado como empresa nos módulos do contrato. A empresa ativa é o próprio escritório. Permissões ESCRITORIO_* conferidas nos serviços.
 /// </summary>
 public sealed class ModuloEscritorio : IModuloDesktop
 {
@@ -22,7 +22,15 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public bool UsaClientesFornecedores => false;
     public bool UsaCalendarioObrigacoes => false;
 
-    public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [ItemMenu.Tela("Clientes e fornecedores do escritório", EscritorioTelas.Pessoas)];
+    /// <summary>Cadastros: Escritório (o cadastro de empresas, aqui só os escritórios), Clientes e Fornecedores.</summary>
+    public string RotuloEmpresas => "Escritório";
+    public string RotuloEmpresaAtiva => "Escritório";
+
+    public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
+    [
+        ItemMenu.Tela("Clientes", EscritorioTelas.Clientes),
+        ItemMenu.Tela("Fornecedores", EscritorioTelas.Fornecedores),
+    ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
@@ -31,8 +39,7 @@ public sealed class ModuloEscritorio : IModuloDesktop
             ItemMenu.Tela("Tarefas e prazos", EscritorioTelas.Tarefas),
             ItemMenu.Tela("Protocolo de documentos", EscritorioTelas.Protocolos)),
         ItemMenu.Submenu("C_ontratos",
-            ItemMenu.Tela("Gerador de contratos (clientes e fornecedores)", EscritorioTelas.Contratos),
-            ItemMenu.Tela("Honorários e cobranças", EscritorioTelas.Honorarios)),
+            ItemMenu.Tela("Gerador de contratos (clientes e fornecedores)", EscritorioTelas.Contratos)),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Submenu("_Honorários",
                 ItemMenu.Tela("Relatório de contratos", EscritorioTelas.RelContratos),
@@ -57,12 +64,13 @@ public sealed class ModuloEscritorio : IModuloDesktop
         c.Instancia("Protocolos", m => new ProtocolosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(EscritorioTelas.Protocolos, "Escritório › Protocolo de documentos", m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
-        c.Instancia("Honorarios", m => new HonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+        c.Instancia("ClientesEscritorio", m => new ClientesEscritorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(EscritorioTelas.Honorarios, "Contratos › Honorários e cobranças", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
-        c.Instancia("Pessoas", m => new PessoasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+            .Tela(EscritorioTelas.Clientes, "Cadastros › Clientes",
+                  m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+        c.Instancia("FornecedoresEscritorio", m => new FornecedoresEscritorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(EscritorioTelas.Pessoas, "Cadastros › Clientes e fornecedores do escritório",
+            .Tela(EscritorioTelas.Fornecedores, "Cadastros › Fornecedores",
                   m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
         c.Instancia("Contratos", m => new ContratosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)

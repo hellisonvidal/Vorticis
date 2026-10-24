@@ -299,12 +299,39 @@ public class MenusTests
     }
 
     [Fact]
+    public void Cliente_do_escritorio_importa_dados_da_receita_e_tem_aba_de_honorarios()
+    {
+        var main = new Vorticis.Escritorio.Desktop.MainViewModel();
+        var cli = new Vorticis.Escritorio.Desktop.ViewModels.ClientesEscritorioViewModel(main);
+        var forn = new Vorticis.Escritorio.Desktop.ViewModels.FornecedoresEscritorioViewModel(main);
+        Assert.True(cli.ModoClientes);
+        Assert.False(forn.ModoClientes);
+        Assert.Equal("Também é fornecedor do escritório", cli.TextoOutroPapel);
+        Assert.True(cli.Honorarios.EmbutidoNoCliente);
+        Assert.False(cli.Honorarios.EscolheCliente);                 // o cliente é o do cadastro, sem caixa de escolha
+        Assert.Equal(["Simples Nacional", "Lucro Presumido", "Lucro Real", "MEI", "Lucro Arbitrado", "Imune/isenta"],
+                     Vorticis.Escritorio.Desktop.ViewModels.PessoasViewModel.Regimes);
+        cli.AplicarConsulta(new Vorticis.Application.Cadastros.DadosCnpj("41827365000171", "MERCADO BOM PRECO LTDA", "BOM PRECO", "2062", "4711302", "SP", "3550308",
+            "São Paulo", new DateOnly(2020, 5, 4), "ATIVA", true, false, "01001000", "Rua das Flores", "10", null, "Centro", "a@b.com", null, "BrasilAPI",
+            DateTimeOffset.Now));
+        Assert.Equal(("MERCADO BOM PRECO LTDA", "BOM PRECO", "2062", "4711302"), (cli.Nome, cli.NomeFantasia, cli.NaturezaJuridica, cli.Cnae));
+        Assert.Equal(("3550308", "SP", "Simples Nacional", "Rua das Flores"), (cli.CodMunicipioIbge, cli.Uf, cli.Regime, cli.Logradouro));
+        Assert.Equal(new DateTime(2020, 5, 4), cli.InicioAtividades);
+        Assert.Contains("BrasilAPI", cli.OrigemDados);
+    }
+
+    [Fact]
     public void Escritorio_tem_cadastros_proprios_contratos_e_relatorios_de_honorarios()
     {
         var vm = new Vorticis.Escritorio.Desktop.MainViewModel();
         var cadastros = Folhas(vm.Menus[0].Filhos!).Select(i => i.Chave).ToList();
-        Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Pessoas, cadastros);
-        Assert.Contains(TelasComuns.Empresas, cadastros);                                   // o próprio escritório
+        // Cadastros: Escritório (primeiro: o cadastro de empresas, aqui só os escritórios), Clientes e Fornecedores separados
+        Assert.Equal(TelasComuns.Empresas, cadastros[0]);
+        Assert.Equal("Escritório", vm.Menus[0].Filhos![0].Titulo);
+        Assert.Equal("Escritório:", vm.RotuloEmpresaAtiva);
+        Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Clientes, cadastros);
+        Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Fornecedores, cadastros);
+        Assert.Equal("Empresa:", new Vorticis.Fiscal.Desktop.MainViewModel().RotuloEmpresaAtiva);
         foreach (var compartilhado in new[] { TelasComuns.Contabilidade, TelasComuns.Clientes, TelasComuns.Fornecedores, TelasComuns.Socios })
             Assert.DoesNotContain(compartilhado, cadastros);
         Assert.False(vm.Modulo.UsaCalendarioObrigacoes);

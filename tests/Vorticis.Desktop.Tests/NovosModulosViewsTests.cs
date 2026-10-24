@@ -23,7 +23,8 @@ public class NovosModulosViewsTests(SessaoHeadless headless)
         yield return (new E.ViewModels.CarteiraViewModel(esc), new E.Views.CarteiraView());
         yield return (new E.ViewModels.TarefasViewModel(esc), new E.Views.TarefasView());
         yield return (new E.ViewModels.ProtocolosViewModel(esc), new E.Views.ProtocolosView());
-        yield return (new E.ViewModels.PessoasViewModel(esc), new E.Views.PessoasView());
+        yield return (new E.ViewModels.ClientesEscritorioViewModel(esc), new E.Views.ClientesView());
+        yield return (new E.ViewModels.FornecedoresEscritorioViewModel(esc), new E.Views.FornecedoresView());
         yield return (new E.ViewModels.ContratosViewModel(esc), new E.Views.ContratosView());
         yield return (new E.ViewModels.RelHonorariosViewModel(esc), new E.Views.RelatorioEscritorioView());
         yield return (new E.ViewModels.RelContratosViewModel(esc), new E.Views.RelatorioEscritorioView());

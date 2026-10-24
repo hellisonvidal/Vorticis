@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Escritorio.Desktop.Views"
+             x:Class="Vorticis.Escritorio.Desktop.Views.ClientesView" x:DataType="vm:ClientesEscritorioViewModel">
+  <!-- Cadastros › Clientes: lista à esquerda; à direita as abas Dados cadastrais, Módulos e Honorários e cobranças -->
+  <Grid ColumnDefinitions="*,12,600" RowDefinitions="Auto,*" Margin="8">
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+        <TextBlock Classes="titulo" Text="{Binding Titulo}" VerticalAlignment="Center" />
+        <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código, nome ou documento" Width="240" />
+      </StackPanel>
+      <DataGrid Name="ListaClientes" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+          <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" />
+          <DataGridTextColumn Header="CNPJ/CPF" Binding="{ReflectionBinding Documento}" Width="150" />
+          <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="80" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <TabControl Grid.Row="1" Grid.Column="2" Name="AbasCliente">
+      <TabItem Header="Dados cadastrais">
+        <ScrollViewer>
+          <StackPanel Spacing="6" Margin="0,6,4,0">
+            <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                  RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+              <TextBlock Classes="rotulo" Text="Código" />
+              <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="CNPJ/CPF" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <TextBox Text="{Binding Documento}" Width="190" />
+                <Button Content="Buscar na Receita" Command="{Binding BuscarCnpjCommand}" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Classes="rotulo" Text="Razão social / nome" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Nome}" MaxLength="150" />
+              <TextBlock Grid.Row="3" Classes="rotulo" Text="Nome fantasia" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NomeFantasia}" MaxLength="150" />
+              <TextBlock Grid.Row="4" Classes="rotulo" Text="Regime tributário" />
+              <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{x:Static vm:PessoasViewModel.Regimes}" SelectedItem="{Binding Regime}" Width="200" />
+              <TextBlock Grid.Row="5" Classes="rotulo" Text="Natureza jurídica" />
+              <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <TextBox Text="{Binding NaturezaJuridica}" Width="70" MaxLength="4" />
+                <TextBlock Classes="rotulo" Text="CNAE" />
+                <TextBox Text="{Binding Cnae}" Width="90" MaxLength="7" />
+                <TextBlock Classes="rotulo" Text="IE" />
+                <TextBox Text="{Binding InscricaoEstadual}" Width="130" />
+              </StackPanel>
+              <TextBlock Grid.Row="6" Classes="rotulo" Text="Início das atividades" />
+              <CalendarDatePicker Grid.Row="6" Grid.Column="1" SelectedDate="{Binding InicioAtividades}" Width="140" />
+              <TextBlock Grid.Row="7" Classes="rotulo" Text="CEP" />
+              <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Cep}" Width="110" HorizontalAlignment="Left" />
+              <TextBlock Grid.Row="8" Classes="rotulo" Text="Logradouro / nº" />
+              <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <TextBox Text="{Binding Logradouro}" Width="300" />
+                <TextBox Text="{Binding Numero}" Width="70" />
+              </StackPanel>
+              <TextBlock Grid.Row="9" Classes="rotulo" Text="Complemento" />
+              <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding Complemento}" />
+              <TextBlock Grid.Row="10" Classes="rotulo" Text="Bairro" />
+              <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding Bairro}" />
+              <TextBlock Grid.Row="11" Classes="rotulo" Text="Município / UF" />
+              <StackPanel Grid.Row="11" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <TextBox Text="{Binding Municipio}" Width="220" />
+                <TextBox Text="{Binding Uf}" Width="50" MaxLength="2" />
+                <TextBlock Classes="rotulo" Text="IBGE" />
+                <TextBox Text="{Binding CodMunicipioIbge}" Width="90" MaxLength="7" />
+              </StackPanel>
+              <TextBlock Grid.Row="12" Classes="rotulo" Text="Contato" />
+              <TextBox Grid.Row="12" Grid.Column="1" Text="{Binding Contato}" Watermark="Pessoa de contato" />
+              <TextBlock Grid.Row="13" Classes="rotulo" Text="E-mail" />
+              <TextBox Grid.Row="13" Grid.Column="1" Text="{Binding Email}" />
+              <TextBlock Grid.Row="14" Classes="rotulo" Text="Telefone" />
+              <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Telefone}" />
+              <TextBlock Grid.Row="15" Classes="rotulo" Text="Observação" />
+              <TextBox Grid.Row="15" Grid.Column="1" Text="{Binding Observacao}" />
+              <CheckBox Grid.Row="16" Grid.Column="1" Content="{Binding TextoOutroPapel}" IsChecked="{Binding OutroPapel}" />
+              <CheckBox Grid.Row="17" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
+            </Grid>
+            <TextBlock Text="{Binding OrigemDados}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+            <c:MensagensView />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="Módulos do contrato">
+        <StackPanel Spacing="8" Margin="0,8,0,0">
+          <TextBlock TextWrapping="Wrap" Text="{Binding SituacaoModulos}" />
+          <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
+            <CheckBox Content="Contabilidade" IsChecked="{Binding ModContabil}" />
+            <CheckBox Content="Fiscal" IsChecked="{Binding ModFiscal}" />
+            <CheckBox Content="Folha de pagamento" IsChecked="{Binding ModFolha}" />
+            <CheckBox Content="Condomínio" IsChecked="{Binding ModCondominio}" />
+            <CheckBox Content="Gerencial" IsChecked="{Binding ModGerencial}" />
+          </StackPanel>
+          <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                     Text="Para cadastrar nos módulos, preencha na aba Dados cadastrais o CNPJ, o regime, a natureza jurídica, o CNAE, o município IBGE, a UF e o início das atividades (o botão Buscar na Receita traz quase tudo). Com Contabilidade marcada, o plano de contas modelo é importado. Desmarcar um módulo aqui não apaga nada no módulo." />
+        </StackPanel>
+      </TabItem>
+      <TabItem Header="Honorários e cobranças">
+        <ContentControl Content="{Binding Honorarios}">
+          <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="vm:HonorariosViewModel"><v:HonorariosView /></DataTemplate>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

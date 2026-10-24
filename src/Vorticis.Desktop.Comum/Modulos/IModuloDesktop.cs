@@ -52,6 +52,9 @@ public interface IModuloDesktop
     /// <summary>Nome do cadastro de empresas no menu Cadastros (o Condomínio chama de "Condomínios"; os dados são os mesmos).</summary>
     string RotuloEmpresas => "Empresas";
 
+    /// <summary>Rótulo da escolha da empresa ativa na barra superior (o Escritório escolhe o escritório; o Condomínio, o condomínio).</summary>
+    string RotuloEmpresaAtiva => "Empresa";
+
     /// <summary>Mostra a aba Síndico no cadastro de empresas (só o Condomínio: o síndico pode assinar os livros contábeis e fiscais).</summary>
     bool UsaSindico => false;
 
