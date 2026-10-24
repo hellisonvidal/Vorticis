@@ -54,7 +54,7 @@
           <CheckBox Grid.Row="11" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
         </Grid>
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
-                   Text="Cadastro exclusivo do escritório: não aparece nos módulos Contábil, Fiscal, Folha, ERP e Condomínio." />
+                   Text="Cadastro exclusivo do escritório: não aparece nos módulos Contábil, Fiscal, Folha, Gerencial e Condomínio." />
         <c:MensagensView />
       </StackPanel>
     </ScrollViewer>

@@ -137,15 +137,15 @@ escritorio.contratos=09-escritorio.md#gerador-de-contratos
 escritorio.rel.contratos=09-escritorio.md#relatorios-de-honorarios
 escritorio.rel.honorarios=09-escritorio.md#relatorios-de-honorarios
 
-; ---- ERP
-erp.painel=10-erp.md#painel-do-empresario
-erp.pedidos.venda=10-erp.md#pedidos-de-venda-e-de-compra
-erp.pedidos.compra=10-erp.md#pedidos-de-venda-e-de-compra
-erp.estoque=10-erp.md#estoque
-erp.monitor.notas=10-erp.md#monitor-de-notas-fiscais
-erp.monitor.cobrancas=10-erp.md#monitor-de-cobrancas
-contaspagar=10-erp.md#financeiro
-contasreceber=10-erp.md#financeiro
+; ---- Gerencial
+erp.painel=10-gerencial.md#painel-do-empresario
+erp.pedidos.venda=10-gerencial.md#pedidos-de-venda-e-de-compra
+erp.pedidos.compra=10-gerencial.md#pedidos-de-venda-e-de-compra
+erp.estoque=10-gerencial.md#estoque
+erp.monitor.notas=10-gerencial.md#monitor-de-notas-fiscais
+erp.monitor.cobrancas=10-gerencial.md#monitor-de-cobrancas
+contaspagar=10-gerencial.md#financeiro
+contasreceber=10-gerencial.md#financeiro
 
 ; ---- Condomínio
 condominio.unidades=11-condominio.md#unidades-e-condominos

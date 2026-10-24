@@ -1,6 +1,6 @@
-# ERP
+# Gerencial
 
-Módulo **Vorticis ERP** (ícone verde-petróleo): as rotinas do dia a dia da empresa. Ele usa os mesmos dados do Fiscal: produtos, notas fiscais, contas a pagar e a receber (duplicatas) e conciliação são as mesmas telas e os mesmos registros. Clientes e fornecedores vêm de *Cadastros* (comuns a todos os módulos).
+Módulo **Vorticis Gerencial** (antigo ERP; ícone verde-petróleo, selo "G"): as rotinas do dia a dia da empresa. Ele usa os mesmos dados do Fiscal: produtos, notas fiscais, contas a pagar e a receber (duplicatas) e conciliação são as mesmas telas e os mesmos registros. Clientes e fornecedores vêm de *Cadastros* (comuns a todos os módulos).
 
 ## Painel do empresário
 
@@ -11,7 +11,7 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 
 ## Pedidos de venda e de compra
 
-**Onde fica:** *Vendas › Pedidos de venda* (atalho **Ctrl+V**) e *Compras › Pedidos de compra*.
+**Onde fica:** *Faturamento › Pedidos de venda* (atalho **Ctrl+V**) e *Compras › Pedidos de compra*.
 
 1. **Novo pedido**. Escolha o **Cliente** (venda) ou o **Fornecedor** (compra), a **Data** e as **Parcelas** (quantidade, intervalo em dias e, se quiser, o **1º vencimento**).
 2. Em **Itens**, escolha o **Produto** (o saldo em estoque aparece ao lado do nome), informe **Qtde**, **Unitário** (na venda, vem o preço de venda; na compra, o custo médio) e **Desconto**, e clique em **Incluir item**. **Remover** tira o item selecionado.
@@ -21,7 +21,7 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
    - Compra: **Receber mercadorias** grava a nota de entrada do fornecedor, gera as contas a pagar e dá entrada no estoque pelo custo do pedido.
 5. Depois de faturado ou recebido, o pedido não muda mais. Para corrigir a nota, use *Notas fiscais de saída/entrada*.
 
-**Importante:** o ERP ainda não transmite a NF-e para a SEFAZ (*Emissão de NF-e na SEFAZ — em breve*). Emita a nota no seu emissor e use o mesmo número aqui. Para notas de compra com XML, prefira *Compras › Importação de XML*.
+**Importante:** o Gerencial ainda não transmite a NF-e para a SEFAZ (*Emissão de NF-e na SEFAZ — em breve*). Emita a nota no seu emissor e use o mesmo número aqui. Para notas de compra com XML, prefira *Compras › Importação de XML*.
 
 ## Estoque
 
@@ -59,7 +59,7 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 - **Contas a pagar** e **Contas a receber** são telas separadas: cada uma mostra só as duplicatas do seu tipo, com inclusão, alteração, baixa e estorno de baixa (os mesmos passos da tela de Duplicatas do [Fiscal](05-fiscal.md#duplicatas-contas-a-pagar-e-a-receber)).
 - **Conciliação bancária**: casa o extrato do banco com as baixas.
 
-O ERP não mostra o calendário de obrigações (é rotina do escritório contábil, nos módulos Contábil, Fiscal e Folha).
+O Gerencial não mostra o calendário de obrigações (é rotina do escritório contábil, nos módulos Contábil, Fiscal e Folha).
 
 ## Relatórios
 
@@ -69,6 +69,6 @@ O ERP não mostra o calendário de obrigações (é rotina do escritório contá
 - **Relatório de recebimentos**: os recebimentos (baixas das contas a receber) do período, com juros, multa, descontos e a conta usada.
 - **Financeiro**: *Relatório de contas a pagar*, *Relatório de contas a receber*, *Posição por vencimento* e *Relatório de pagamentos*.
 
-## Telas do Fiscal no ERP
+## Telas do Fiscal no Gerencial
 
 *Produtos*, *Notas fiscais de saída e de entrada*, *Importação de XML*, *Contas a pagar*, *Contas a receber*, *Conciliação bancária* e os relatórios de vendas, compras, recebimentos e do *Financeiro* são as telas do módulo Fiscal; veja o [manual do Fiscal](05-fiscal.md).

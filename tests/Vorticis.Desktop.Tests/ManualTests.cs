@@ -22,7 +22,7 @@ public class ManualTests(SessaoHeadless headless)
         var arquivos = ManualUsuario.Arquivos;
         Assert.Equal("index.md", arquivos[0].Nome);
         string[] esperados = ["index.md", "01-primeiros-passos.md", "02-cadastros-comuns.md", "03-contabil.md", "04-auditoria.md",
-                              "05-fiscal.md", "06-folha.md", "07-obrigacoes.md", "08-configuracoes.md", "09-escritorio.md", "10-erp.md", "11-condominio.md"];
+                              "05-fiscal.md", "06-folha.md", "07-obrigacoes.md", "08-configuracoes.md", "09-escritorio.md", "10-gerencial.md", "11-condominio.md"];
         Assert.Equal(esperados.Order(), arquivos.Select(a => a.Nome).Order());
         Assert.All(arquivos, a =>
         {

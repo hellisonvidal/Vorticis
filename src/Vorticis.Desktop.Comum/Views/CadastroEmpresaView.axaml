@@ -112,7 +112,7 @@
           <CheckBox Margin="0,0,16,4" Name="ModuloFiscalCheck" Content="Fiscal" IsChecked="{Binding ModuloFiscal}" IsEnabled="{Binding FiscalEditavel}" />
           <CheckBox Margin="0,0,16,4" Name="ModuloFolhaCheck" Content="Folha de Pagamento" IsChecked="{Binding ModuloFolha}" IsEnabled="{Binding FolhaEditavel}" />
           <CheckBox Margin="0,0,16,4" Content="Escritório" IsChecked="{Binding ModuloEscritorio}" IsEnabled="{Binding EscritorioEditavel}" />
-          <CheckBox Margin="0,0,16,4" Content="ERP" IsChecked="{Binding ModuloErp}" IsEnabled="{Binding ErpEditavel}" />
+          <CheckBox Margin="0,0,16,4" Content="Gerencial" IsChecked="{Binding ModuloErp}" IsEnabled="{Binding ErpEditavel}" />
           <CheckBox Margin="0,0,16,4" Content="Condomínio" IsChecked="{Binding ModuloCondominio}" IsEnabled="{Binding CondominioEditavel}" />
         </WrapPanel>
 

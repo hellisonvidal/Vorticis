@@ -18,7 +18,7 @@ public static class ModulosEmpresaExtensoes
     public static string Nome(this ModulosEmpresa m) => m switch
     {
         ModulosEmpresa.Contabil => "Contábil", ModulosEmpresa.Fiscal => "Fiscal", ModulosEmpresa.Folha => "Folha de Pagamento",
-        ModulosEmpresa.Escritorio => "Escritório", ModulosEmpresa.Erp => "ERP", ModulosEmpresa.Condominio => "Condomínio",
+        ModulosEmpresa.Escritorio => "Escritório", ModulosEmpresa.Erp => "Gerencial", ModulosEmpresa.Condominio => "Condomínio",
         _ => string.Join(", ", Individuais.Where(x => m.HasFlag(x)).Select(Nome)),
     };
 

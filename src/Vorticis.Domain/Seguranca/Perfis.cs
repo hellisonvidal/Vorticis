@@ -60,7 +60,7 @@ public enum Permissao
     EscritorioHonorarios,
     EscritorioRelatorios,
 
-    // Módulo ERP
+    // Módulo Gerencial (antigo ERP)
     ErpVendas,
     ErpCompras,
     ErpEstoque,
@@ -141,11 +141,11 @@ public static class Permissoes
         new(Permissao.EscritorioTarefas, "ESCRITORIO_TAREFAS", "Escritório", "Tarefas, prazos e protocolos de documentos do escritório"),
         new(Permissao.EscritorioHonorarios, "ESCRITORIO_HONORARIOS", "Escritório", "Contratos de honorários, geração e recebimento das cobranças"),
         new(Permissao.EscritorioRelatorios, "ESCRITORIO_RELATORIOS", "Escritório", "Relatórios do escritório: carteira de clientes, honorários e tarefas"),
-        new(Permissao.ErpVendas, "ERP_VENDAS", "ERP", "Pedidos de venda e faturamento (nota fiscal de saída e contas a receber)"),
-        new(Permissao.ErpCompras, "ERP_COMPRAS", "ERP", "Pedidos de compra e recebimento de mercadorias (nota de entrada e contas a pagar)"),
-        new(Permissao.ErpEstoque, "ERP_ESTOQUE", "ERP", "Estoque: posição, movimentos e ajustes"),
-        new(Permissao.ErpTransporte, "ERP_TRANSPORTE", "ERP", "Transporte: veículos, motoristas, conhecimentos (CT-e) e manifestos (MDF-e)"),
-        new(Permissao.ErpRelatorios, "ERP_RELATORIOS", "ERP", "Painel do empresário e relatórios gerenciais"),
+        new(Permissao.ErpVendas, "ERP_VENDAS", "Gerencial", "Pedidos de venda e faturamento (nota fiscal de saída e contas a receber)"),
+        new(Permissao.ErpCompras, "ERP_COMPRAS", "Gerencial", "Pedidos de compra e recebimento de mercadorias (nota de entrada e contas a pagar)"),
+        new(Permissao.ErpEstoque, "ERP_ESTOQUE", "Gerencial", "Estoque: posição, movimentos e ajustes"),
+        new(Permissao.ErpTransporte, "ERP_TRANSPORTE", "Gerencial", "Transporte: veículos, motoristas, conhecimentos (CT-e) e manifestos (MDF-e)"),
+        new(Permissao.ErpRelatorios, "ERP_RELATORIOS", "Gerencial", "Painel do empresário e relatórios gerenciais"),
         new(Permissao.CondominioCadastros, "CONDOMINIO_CADASTROS", "Condomínio", "Unidades, condôminos, áreas comuns, reservas e ocorrências"),
         new(Permissao.CondominioFinanceiro, "CONDOMINIO_FINANCEIRO", "Condomínio", "Taxas condominiais, cobranças, recebimentos e despesas do condomínio"),
         new(Permissao.CondominioRelatorios, "CONDOMINIO_RELATORIOS", "Condomínio", "Prestação de contas e inadimplência"),

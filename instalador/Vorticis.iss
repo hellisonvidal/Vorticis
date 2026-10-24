@@ -50,7 +50,7 @@ Name: "contabil"; Description: "Vorticis Contábil"; Types: completa personaliza
 Name: "fiscal"; Description: "Vorticis Fiscal"; Types: completa personalizada
 Name: "folha"; Description: "Vorticis Folha"; Types: completa personalizada
 Name: "escritorio"; Description: "Vorticis Escritório"; Types: completa personalizada
-Name: "erp"; Description: "Vorticis ERP"; Types: completa personalizada
+Name: "erp"; Description: "Vorticis Gerencial"; Types: completa personalizada
 Name: "condominio"; Description: "Vorticis Condomínio"; Types: completa personalizada
 
 [Tasks]
@@ -64,6 +64,11 @@ Type: files; Name: "{autodesktop}\Perseus Contábil.lnk"
 ; Atalhos da Folha com o nome antigo (agora "Vorticis Folha")
 Type: files; Name: "{autoprograms}\Vorticis Folha de Pagamento.lnk"
 Type: files; Name: "{autodesktop}\Vorticis Folha de Pagamento.lnk"
+; Módulo ERP renomeado para Vorticis Gerencial
+Type: files; Name: "{app}\VorticisErp.exe"
+Type: files; Name: "{app}\VorticisErp.ico"
+Type: files; Name: "{autoprograms}\Vorticis ERP.lnk"
+Type: files; Name: "{autodesktop}\Vorticis ERP.lnk"
 
 [Files]
 ; Comuns a todos os módulos: banco de dados local e ícone
@@ -74,14 +79,14 @@ Source: "..\publish\VorticisContabil.exe"; DestDir: "{app}"; Flags: ignoreversio
 Source: "..\publish\VorticisFiscal.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "..\publish\VorticisFolha.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
 Source: "..\publish\VorticisEscritorio.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
-Source: "..\publish\VorticisErp.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
+Source: "..\publish\VorticisGerencial.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
 Source: "..\publish\VorticisCondominio.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: condominio
 ; Ícone de cada módulo (atalhos): espiral verde (Contábil), laranja (Fiscal) e roxa (Folha)
 Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
 Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
 Source: "icone\VorticisEscritorio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
-Source: "icone\VorticisErp.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
+Source: "icone\VorticisGerencial.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
 Source: "icone\VorticisCondominio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: condominio
 
 #ifexist "..\publish\vc_redist.x64.exe"
@@ -98,13 +103,13 @@ Name: "{autoprograms}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe
 Name: "{autoprograms}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Components: fiscal
 Name: "{autoprograms}\Vorticis Folha"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Components: folha
 Name: "{autoprograms}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Components: escritorio
-Name: "{autoprograms}\Vorticis ERP"; Filename: "{app}\VorticisErp.exe"; IconFilename: "{app}\VorticisErp.ico"; Components: erp
+Name: "{autoprograms}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe"; IconFilename: "{app}\VorticisGerencial.ico"; Components: erp
 Name: "{autoprograms}\Vorticis Condomínio"; Filename: "{app}\VorticisCondominio.exe"; IconFilename: "{app}\VorticisCondominio.ico"; Components: condominio
 Name: "{autodesktop}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Tasks: desktopicon; Components: contabil
 Name: "{autodesktop}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Tasks: desktopicon; Components: fiscal
 Name: "{autodesktop}\Vorticis Folha"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Tasks: desktopicon; Components: folha
 Name: "{autodesktop}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Tasks: desktopicon; Components: escritorio
-Name: "{autodesktop}\Vorticis ERP"; Filename: "{app}\VorticisErp.exe"; IconFilename: "{app}\VorticisErp.ico"; Tasks: desktopicon; Components: erp
+Name: "{autodesktop}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe"; IconFilename: "{app}\VorticisGerencial.ico"; Tasks: desktopicon; Components: erp
 Name: "{autodesktop}\Vorticis Condomínio"; Filename: "{app}\VorticisCondominio.exe"; IconFilename: "{app}\VorticisCondominio.ico"; Tasks: desktopicon; Components: condominio
 
 [Run]
@@ -113,7 +118,7 @@ Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis
 Filename: "{app}\VorticisFiscal.exe"; Description: "{cm:LaunchProgram,Vorticis Fiscal}"; Flags: nowait postinstall skipifsilent unchecked; Components: fiscal
 Filename: "{app}\VorticisFolha.exe"; Description: "{cm:LaunchProgram,Vorticis Folha}"; Flags: nowait postinstall skipifsilent unchecked; Components: folha
 Filename: "{app}\VorticisEscritorio.exe"; Description: "{cm:LaunchProgram,Vorticis Escritório}"; Flags: nowait postinstall skipifsilent unchecked; Components: escritorio
-Filename: "{app}\VorticisErp.exe"; Description: "{cm:LaunchProgram,Vorticis ERP}"; Flags: nowait postinstall skipifsilent unchecked; Components: erp
+Filename: "{app}\VorticisGerencial.exe"; Description: "{cm:LaunchProgram,Vorticis Gerencial}"; Flags: nowait postinstall skipifsilent unchecked; Components: erp
 Filename: "{app}\VorticisCondominio.exe"; Description: "{cm:LaunchProgram,Vorticis Condomínio}"; Flags: nowait postinstall skipifsilent unchecked; Components: condominio
 
 [Code]
@@ -177,7 +182,7 @@ begin
   if WizardIsComponentSelected('contabil') then Result := 'VorticisContabil.exe'
   else if WizardIsComponentSelected('fiscal') then Result := 'VorticisFiscal.exe'
   else if WizardIsComponentSelected('escritorio') then Result := 'VorticisEscritorio.exe'
-  else if WizardIsComponentSelected('erp') then Result := 'VorticisErp.exe'
+  else if WizardIsComponentSelected('erp') then Result := 'VorticisGerencial.exe'
   else if WizardIsComponentSelected('condominio') then Result := 'VorticisCondominio.exe'
   else Result := 'VorticisFolha.exe';
 end;

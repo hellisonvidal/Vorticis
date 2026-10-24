@@ -1,6 +1,6 @@
 # Escritório
 
-Módulo **Vorticis Escritório** (ícone azul): o gerenciador do escritório contábil. Ele tem **cadastros próprios**: os clientes e fornecedores do escritório ficam só aqui e **não aparecem** no Contábil, no Fiscal, na Folha, no ERP nem no Condomínio (e os cadastros desses módulos não aparecem aqui). A empresa escolhida no topo é o **próprio escritório**: cadastre-o em *Cadastros › Empresas* marcando o módulo **Escritório**.
+Módulo **Vorticis Escritório** (ícone azul): o gerenciador do escritório contábil. Ele tem **cadastros próprios**: os clientes e fornecedores do escritório ficam só aqui e **não aparecem** no Contábil, no Fiscal, na Folha, no Gerencial nem no Condomínio (e os cadastros desses módulos não aparecem aqui). A empresa escolhida no topo é o **próprio escritório**: cadastre-o em *Cadastros › Empresas* marcando o módulo **Escritório**.
 
 ## Clientes e fornecedores do escritório
 

@@ -94,7 +94,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 ## Contas bancárias
 
 **Para que serve:** cadastrar as contas da empresa nos bancos, para indicar onde cai o dinheiro de cada forma de pagamento e qual conta contábil representa o banco.
-**Onde fica:** *Cadastros › Bancos* no Contábil; *Cadastros › Contas bancárias* no Fiscal e no ERP. O formulário fica em cima e a lista embaixo.
+**Onde fica:** *Cadastros › Bancos* no Contábil; *Cadastros › Contas bancárias* no Fiscal e no Gerencial. O formulário fica em cima e a lista embaixo.
 
 1. Clique em **Incluir**; o código é sugerido.
 2. Informe a **descrição** (ex.: *Banco do Brasil – movimento*), o **banco** (código de compensação com 3 dígitos: 001, 104, 237, 341...), a **agência** e a **conta** (com o dígito depois do traço, se houver).
@@ -104,7 +104,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 ## Formas de pagamento
 
 **Para que serve:** padronizar como as notas são pagas ou recebidas. Na digitação da nota fiscal, ao escolher a forma, as duplicatas (parcelas) são geradas sozinhas.
-**Onde fica:** *Cadastros › Formas de pagamento* (Fiscal e ERP).
+**Onde fica:** *Cadastros › Formas de pagamento* (Fiscal e Gerencial).
 
 1. Clique em **Incluir**: o próximo código já aparece preenchido.
 2. Informe a **descrição** (ex.: *Boleto 30/60/90*) e o **meio** (dinheiro, boleto, PIX, cartão, cheque, transferência...).

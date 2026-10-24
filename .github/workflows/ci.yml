@@ -76,7 +76,7 @@ jobs:
           }
           if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
           # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
-          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio", "Erp", "Condominio") {
+          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio", "Gerencial", "Condominio") {
             $pasta = "portatil/Vorticis$modulo"
             New-Item -ItemType Directory -Path $pasta -Force | Out-Null
             Copy-Item "publish/Vorticis$modulo.exe" $pasta
@@ -128,8 +128,8 @@ jobs:
           path: portatil/VorticisEscritorio/
       - uses: actions/upload-artifact@v4
         with:
-          name: VorticisErp-portatil
-          path: portatil/VorticisErp/
+          name: VorticisGerencial-portatil
+          path: portatil/VorticisGerencial/
       - uses: actions/upload-artifact@v4
         with:
           name: VorticisCondominio-portatil

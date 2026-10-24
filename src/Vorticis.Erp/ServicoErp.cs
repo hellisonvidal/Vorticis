@@ -175,7 +175,7 @@ public sealed class ServicoErp(VorticisApp app)
         var doc = new DocumentoDigitado(0, venda ? TipoOperacao.Saida : TipoOperacao.Entrada, ModeloDocumento.NFe55, serie.Trim(), numeroNota.Trim(),
                                         string.IsNullOrWhiteSpace(chave) ? null : chave.Trim(), data, data, venda ? "Venda de mercadoria" : "Compra de mercadoria",
                                         p.ParticipanteId, null, totais, itens.Select(CalculadoraNota.Completar).ToList(),
-                                        Observacoes: $"Pedido de {(venda ? "venda" : "compra")} nº {p.Numero} (ERP)", Parcelas: parcelas);
+                                        Observacoes: $"Pedido de {(venda ? "venda" : "compra")} nº {p.Numero} (Gerencial)", Parcelas: parcelas);
         var gravada = await Fiscal.Digitacao.GravarAsync(empresa, doc, usuario, ct);
         if (!gravada.Sucesso) return gravada;
         foreach (var i in p.Itens)

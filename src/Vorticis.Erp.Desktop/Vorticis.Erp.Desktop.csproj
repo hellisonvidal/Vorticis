@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Executável do módulo ERP: usa o casco comum (login, empresas, usuários, backup...) e acrescenta as telas do módulo. -->
+  <!-- Executável do módulo Gerencial (antigo ERP): usa o casco comum (login, empresas, usuários, backup...) e acrescenta as telas do módulo. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>VorticisErp</AssemblyName>
-    <Product>Vorticis ERP</Product>
-    <Title>Vorticis ERP</Title>
+    <AssemblyName>VorticisGerencial</AssemblyName>
+    <Product>Vorticis Gerencial</Product>
+    <Title>Vorticis Gerencial</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <!-- Ícone do módulo (gerado por instalador/icone/gerar_icone.py) -->
-    <ApplicationIcon>..\..\instalador\icone\VorticisErp.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\instalador\icone\VorticisGerencial.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorticis.Desktop.Comum\Vorticis.Desktop.Comum.csproj" />

@@ -1,9 +1,9 @@
 """Gera os ícones da suíte Vorticis a partir da logo (logo-vorticis.jpg):
 
-  Um ícone por módulo (VorticisContabil, VorticisFiscal, VorticisFolha, VorticisEscritorio, VorticisErp,
+  Um ícone por módulo (VorticisContabil, VorticisFiscal, VorticisFolha, VorticisEscritorio, VorticisGerencial,
   VorticisCondominio — .ico, -256.png e -512.png): a espiral da logo inteira na cor do módulo (o verde vira a
   cor de destaque e o azul-marinho, a cor da barra) com um selo redondo na mesma cor e a sigla do módulo
-  (C, F, FP, E, ERP, CD), para não confundir os sistemas na barra de tarefas.
+  (C, F, FP, E, G, CD), para não confundir os sistemas na barra de tarefas.
   VorticisInstalador.ico — o ícone do instalador, diferente de todos: a espiral branca sobre um quadrado
   azul-marinho arredondado, com uma faixa nas cores de todos os módulos e uma seta de instalação.
 
@@ -33,7 +33,7 @@ MODULOS = {
     "VorticisFiscal": ("#D97706", "#78350F", "F"),
     "VorticisFolha": ("#7E22CE", "#3B0764", "FP"),
     "VorticisEscritorio": ("#1D4ED8", "#1E3A8A", "E"),
-    "VorticisErp": ("#0891B2", "#164E63", "ERP"),
+    "VorticisGerencial": ("#0891B2", "#164E63", "G"),
     "VorticisCondominio": ("#BE123C", "#881337", "CD"),
 }
 

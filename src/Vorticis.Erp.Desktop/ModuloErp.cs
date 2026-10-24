@@ -6,16 +6,16 @@ using F = Vorticis.Fiscal.Desktop.ViewModels;
 namespace Vorticis.Erp.Desktop;
 
 /// <summary>
-/// Módulo ERP: rotinas da empresa. Produtos, notas fiscais, duplicatas e conciliação são as telas do Fiscal (mesmos dados); o ERP acrescenta
+/// Módulo Gerencial (antigo ERP): rotinas da empresa. Produtos, notas fiscais, duplicatas e conciliação são as telas do Fiscal (mesmos dados); o Gerencial acrescenta
 /// pedidos de venda e compra, estoque e o painel do empresário. Permissões ERP_* (e FISCAL_* nas telas do Fiscal) nos serviços.
 /// </summary>
 public sealed class ModuloErp : IModuloDesktop
 {
-    public string Nome => "Vorticis ERP";
+    public string Nome => "Vorticis Gerencial";
     public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Erp;
-    public string NomeCurto => "ERP";
+    public string NomeCurto => "Gerencial";
     public string Subtitulo => "Gestão empresarial: vendas, compras, estoque e financeiro";
-    public string NomeExecutavel => "VorticisErp";
+    public string NomeExecutavel => "VorticisGerencial";
     public string CorDestaque => "#0891B2";   // ciano (ícone e selo do módulo)
     public string CorBarra => "#164E63";      // petróleo
     public bool UsaCalendarioObrigacoes => false;
@@ -29,7 +29,7 @@ public sealed class ModuloErp : IModuloDesktop
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
-        ItemMenu.Submenu("_Vendas",
+        ItemMenu.Submenu("_Faturamento",
             ItemMenu.Tela("Pedidos de venda", ErpTelas.PedidosVenda),
             ItemMenu.Tela("Notas fiscais de saída", F.Telas.NotaSaida),
             ItemMenu.EmBreve("Emissão de NF-e na SEFAZ")),
@@ -75,7 +75,7 @@ public sealed class ModuloErp : IModuloDesktop
             .Tela(ErpTelas.Painel, "Relatórios › Painel do empresário", m => Pode(m, Permissao.ErpRelatorios), v => v.CarregarAsync());
         c.Instancia("PedidosVenda", m => new PedidosVendaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(ErpTelas.PedidosVenda, "Vendas › Pedidos de venda", m => Pode(m, Permissao.ErpVendas, Permissao.ErpRelatorios), v => v.CarregarAsync());
+            .Tela(ErpTelas.PedidosVenda, "Faturamento › Pedidos de venda", m => Pode(m, Permissao.ErpVendas, Permissao.ErpRelatorios), v => v.CarregarAsync());
         c.Instancia("PedidosCompra", m => new PedidosCompraViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(ErpTelas.PedidosCompra, "Compras › Pedidos de compra", m => Pode(m, Permissao.ErpCompras, Permissao.ErpRelatorios), v => v.CarregarAsync());
