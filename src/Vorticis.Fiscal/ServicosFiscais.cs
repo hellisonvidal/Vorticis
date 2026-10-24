@@ -45,6 +45,7 @@ public sealed class ServicosFiscais
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
         Guias = new ServicoGuias(new RepositorioGuias(ds), repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
+        ImportacaoChave = new Sefaz.ServicoImportacaoChave(ds, Documentos, autorizador);
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
@@ -62,6 +63,7 @@ public sealed class ServicosFiscais
     public ServicoGuias Guias { get; }
     public ServicoProvisoes Provisoes { get; }
     public ServicoEfd Efd { get; }
+    public Sefaz.ServicoImportacaoChave ImportacaoChave { get; }
 }
 
 public static class VorticisAppFiscalExtensions

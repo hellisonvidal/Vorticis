@@ -46,6 +46,14 @@
               </Button.Flyout>
             </Button>
           </StackPanel>
+          <!-- Importação individual pela chave de acesso (SEFAZ / Ambiente Nacional, com o certificado da empresa) -->
+          <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeManter}">
+            <TextBox Text="{Binding ChaveImportacao}" Width="380" Watermark="Chave de acesso da NF-e (44 dígitos)" MaxLength="60" />
+            <Button Classes="mini accent" Content="Importar pela chave" Command="{Binding ImportarChaveCommand}"
+                    ToolTip.Tip="Baixa o XML da NF-e na SEFAZ (Ambiente Nacional, como no Portal da NF-e) com o certificado digital da empresa e importa a nota" />
+            <Button Classes="mini" Content="Manifestar ciência" Command="{Binding ManifestarCienciaCommand}" IsVisible="{Binding PodeManifestar}"
+                    ToolTip.Tip="Registra a Ciência da operação (manifestação do destinatário), que libera o XML completo" />
+          </StackPanel>
           <g:PainelImportacaoView DataContext="{Binding Importador}" />
           <c:MensagensView DataContext="{Binding Importador}" />
           <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False" Height="130">
@@ -62,6 +70,10 @@
           </DataGrid>
         </StackPanel>
       </Expander>
+
+      <Border IsVisible="{Binding MostraMotivoSomenteLeitura}" Background="#FDECEC" BorderBrush="#E0A0A0" BorderThickness="1" Padding="8,5" CornerRadius="4">
+        <TextBlock Text="{Binding MotivoSomenteLeitura}" TextWrapping="Wrap" FontSize="12" Foreground="#7F1D1D" />
+      </Border>
 
       <Border IsVisible="{Binding Importada}" Background="#FFF7E0" BorderBrush="#E0C060" BorderThickness="1" Padding="8,5" CornerRadius="4">
         <TextBlock Text="{Binding AvisoImportada}" TextWrapping="Wrap" FontSize="12" Foreground="#6B4E00" />
