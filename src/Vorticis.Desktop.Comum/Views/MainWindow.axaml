@@ -104,11 +104,7 @@
     </Border>
 
     <Border DockPanel.Dock="Bottom" Background="#EEF1F5" Padding="12,3">
-      <StackPanel>
-        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding AvisoLicenca}" FontSize="11" FontWeight="SemiBold" Foreground="#B45309" TextWrapping="Wrap"
-                   IsVisible="{Binding AvisoLicenca, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-      </StackPanel>
+      <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
     </Border>
 
     <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />

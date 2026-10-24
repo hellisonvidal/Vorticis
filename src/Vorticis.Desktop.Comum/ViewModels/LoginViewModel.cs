@@ -89,8 +89,6 @@ public partial class LoginViewModel(MainViewModelBase main) : ModuloViewModel(ma
             return;
         }
 
-        if (!ConferirLicenca()) return;
-
         if (r.Valor.DeveTrocarSenha)
         {
             (_pendente, _senhaDigitada) = (r.Valor, Senha);
@@ -109,35 +107,6 @@ public partial class LoginViewModel(MainViewModelBase main) : ModuloViewModel(ma
         var r = await app.Usuarios.AlterarPropriaSenhaAsync(_pendente, _senhaDigitada, Senha, Confirmacao);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await Concluir(_pendente with { DeveTrocarSenha = false });
-    }
-
-    /// <summary>Licença recusada: mostra o botão "Instalar arquivo de licença".</summary>
-    [ObservableProperty] private bool _precisaLicenca;
-
-    /// <summary>Confere a licença do módulo antes de entrar; avisa quando faltam 30 dias ou menos para vencer.</summary>
-    private bool ConferirLicenca()
-    {
-        var hoje = DateOnly.FromDateTime(DateTime.Today);
-        var l = LicencaInstalada.ConferirModulo(main.Modulo.NomeExecutavel, hoje);
-        PrecisaLicenca = !l.Sucesso;
-        if (!l.Sucesso)
-        {
-            foreach (var e in l.Erros) Erros.Add(e);
-            return false;
-        }
-        main.AvisoLicenca = l.Valor.DiasRestantes(hoje) <= 30 ? $"A licença vence em {l.Valor.ValidaAte:dd/MM/yyyy}: solicite a renovação ao fornecedor." : null;
-        return true;
-    }
-
-    /// <summary>Instala o arquivo de licença escolhido (a view abre o diálogo de arquivo) e tenta entrar de novo.</summary>
-    public async Task InstalarLicencaAsync(string arquivo)
-    {
-        Erros.Clear();
-        var r = LicencaInstalada.Instalar(arquivo);
-        if (!r.Sucesso) { foreach (var e in r.Erros) Erros.Add(e); return; }
-        PrecisaLicenca = false;
-        Mensagem = $"Licença instalada: {r.Valor.Cliente} — {r.Valor.ModulosTexto}, válida até {r.Valor.ValidaAte:dd/MM/yyyy}.";
-        if (!string.IsNullOrEmpty(Usuario) && !string.IsNullOrEmpty(Senha)) await EntrarAsync();
     }
 
     private bool Preparar(out Infra.VorticisApp app)

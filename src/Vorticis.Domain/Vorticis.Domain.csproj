@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <EmbeddedResource Include="Obrigacoes\obrigacoes_federais.json" LogicalName="Vorticis.Domain.Obrigacoes.obrigacoes_federais.json" />
-    <!-- Chave pública do fornecedor: confere a assinatura das licenças (a privada fica só com o Gerenciador de licenças) -->
-    <EmbeddedResource Include="Licencas\chave-publica.pem" LogicalName="Vorticis.Domain.Licencas.chave-publica.pem" />
   </ItemGroup>
 </Project>

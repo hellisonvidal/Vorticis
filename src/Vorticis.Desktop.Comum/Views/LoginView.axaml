@@ -40,8 +40,6 @@
                   Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,8,0,0" />
         </StackPanel>
 
-        <Button Content="Instalar arquivo de licença..." IsVisible="{Binding PrecisaLicenca}" Click="AoInstalarLicenca"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
         <v:MensagensView />
       </StackPanel>
     </Border>

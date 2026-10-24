@@ -11,7 +11,6 @@
         <StackPanel Spacing="4">
           <TextBlock Text="{Binding Versao}" FontSize="12" Foreground="#44506A" />
           <TextBlock Text="{Binding Situacao}" FontSize="16" FontWeight="SemiBold" Foreground="#1F3A5F" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding LicencaUso}" FontSize="12" Foreground="#44506A" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Detalhe}" FontSize="12" Foreground="#44506A"
                      IsVisible="{Binding Detalhe, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>

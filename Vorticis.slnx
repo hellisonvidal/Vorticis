@@ -15,7 +15,6 @@
     <Project Path="src/Vorticis.Folha.Desktop/Vorticis.Folha.Desktop.csproj" />
     <Project Path="src/Vorticis.Folha/Vorticis.Folha.csproj" />
     <Project Path="src/Vorticis.Infra/Vorticis.Infra.csproj" />
-    <Project Path="src/Vorticis.Licencas.Desktop/Vorticis.Licencas.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vorticis.Desktop.Tests/Vorticis.Desktop.Tests.csproj" />
