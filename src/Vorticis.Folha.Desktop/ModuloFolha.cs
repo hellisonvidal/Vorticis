@@ -16,8 +16,8 @@ public sealed class ModuloFolha : IModuloDesktop
     public string NomeCurto => "Folha";
     public string Subtitulo => "Folha de pagamento e eSocial";
     public string NomeExecutavel => "VorticisFolha";
-    public string CorDestaque => "#6D28D9";   // roxo
-    public string CorBarra => "#4C1D95";
+    public string CorDestaque => "#7E22CE";   // roxo (ícone e selo do módulo)
+    public string CorBarra => "#3B0764";      // roxo-escuro
 
     // Clientes e fornecedores não têm uso na folha; a competência de trabalho fica ao lado do seletor de empresas.
     public bool UsaClientesFornecedores => false;

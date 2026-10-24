@@ -15,8 +15,8 @@ public sealed class ModuloCondominio : IModuloDesktop
     public string NomeCurto => "Condomínio";
     public string Subtitulo => "Administração de condomínios";
     public string NomeExecutavel => "VorticisCondominio";
-    public string CorDestaque => "#BE123C";   // vermelho-rubi
-    public string CorBarra => "#881337";
+    public string CorDestaque => "#BE123C";   // vermelho-rubi (ícone e selo do módulo)
+    public string CorBarra => "#881337";      // vinho
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [

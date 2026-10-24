@@ -16,8 +16,8 @@ public sealed class ModuloErp : IModuloDesktop
     public string NomeCurto => "ERP";
     public string Subtitulo => "Gestão empresarial: vendas, compras, estoque e financeiro";
     public string NomeExecutavel => "VorticisErp";
-    public string CorDestaque => "#0F766E";   // verde-petróleo
-    public string CorBarra => "#134E4A";
+    public string CorDestaque => "#0891B2";   // ciano (ícone e selo do módulo)
+    public string CorBarra => "#164E63";      // petróleo
     public bool UsaCalendarioObrigacoes => false;
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =

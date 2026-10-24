@@ -39,12 +39,12 @@ public class MenusTests
     public void Cada_modulo_tem_cor_e_icone_proprios_para_nao_confundir_os_sistemas()
     {
         MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
-        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9", "#1D4ED8", "#0F766E", "#BE123C"], modulos.Select(m => m.Modulo.CorDestaque));
+        Assert.Equal(["#1B7F5A", "#D97706", "#7E22CE", "#1D4ED8", "#0891B2", "#BE123C"], modulos.Select(m => m.Modulo.CorDestaque));
         Assert.Equal(modulos.Length, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
-        Assert.Equal("#14305A", modulos[0].Modulo.CorBarra);                      // azul-marinho da logo
+        Assert.Equal("#14532D", modulos[0].Modulo.CorBarra);                      // verde-escuro: não confunde com o azul do Escritório
         // a cor chega ao casco como pincel (faixa sob os menus, login e tela inicial)
-        Assert.Equal(Avalonia.Media.Color.Parse("#C2410C"), ((Avalonia.Media.ISolidColorBrush)modulos[1].PincelDestaque).Color);
-        Assert.Equal(Avalonia.Media.Color.Parse("#4C1D95"), ((Avalonia.Media.ISolidColorBrush)modulos[2].PincelBarra).Color);
+        Assert.Equal(Avalonia.Media.Color.Parse("#D97706"), ((Avalonia.Media.ISolidColorBrush)modulos[1].PincelDestaque).Color);
+        Assert.Equal(Avalonia.Media.Color.Parse("#3B0764"), ((Avalonia.Media.ISolidColorBrush)modulos[2].PincelBarra).Color);
         Assert.Same(modulos[1].PincelDestaque, modulos[1].Login.PincelDestaque);
         Assert.Same(modulos[2].PincelDestaque, modulos[2].Inicio.PincelDestaque);
         // um ícone por executável (fonte em instalador/icone, embutido no casco e usado pelo exe e pelo instalador)
@@ -54,6 +54,13 @@ public class MenusTests
         var tamanhos = modulos.Select(m => new FileInfo(Path.Combine(pasta.FullName, "instalador", "icone", $"{m.Modulo.NomeExecutavel}.ico")))
                               .Select(f => { Assert.True(f.Exists, f.Name); return File.ReadAllBytes(f.FullName); }).ToList();
         Assert.Equal(modulos.Length, tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))).Distinct().Count());   // ícones diferentes
+        // o instalador tem ícone próprio, diferente dos módulos, e as cores do gerador de ícones são as dos módulos
+        var instalador = File.ReadAllBytes(Path.Combine(pasta.FullName, "instalador", "icone", "VorticisInstalador.ico"));
+        Assert.DoesNotContain(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(instalador)),
+                              tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))));
+        Assert.Contains(@"SetupIconFile=icone\VorticisInstalador.ico", File.ReadAllText(Path.Combine(pasta.FullName, "instalador", "Vorticis.iss")));
+        var gerador = File.ReadAllText(Path.Combine(pasta.FullName, "instalador", "icone", "gerar_icone.py"));
+        Assert.All(modulos, m => Assert.Contains($"\"{m.Modulo.NomeExecutavel}\": (\"{m.Modulo.CorDestaque}\", \"{m.Modulo.CorBarra}\"", gerador));
     }
 
     [Fact]

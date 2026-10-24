@@ -15,8 +15,8 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public string NomeCurto => "Escritório";
     public string Subtitulo => "Gestão do escritório contábil";
     public string NomeExecutavel => "VorticisEscritorio";
-    public string CorDestaque => "#1D4ED8";   // azul
-    public string CorBarra => "#1E3A8A";
+    public string CorDestaque => "#1D4ED8";   // azul (ícone e selo do módulo)
+    public string CorBarra => "#1E3A8A";      // azul-marinho
 
     public bool UsaCadastrosComuns => false;
     public bool UsaClientesFornecedores => false;

@@ -12,8 +12,8 @@ public sealed class ModuloContabil : IModuloDesktop
     public string NomeCurto => "Contábil";
     public string Subtitulo => "Escrituração Fiscal Contábil";
     public string NomeExecutavel => "VorticisContabil";
-    public string CorDestaque => "#1B7F5A";   // verde da logo
-    public string CorBarra => "#14305A";      // azul-marinho da logo
+    public string CorDestaque => "#1B7F5A";   // verde da logo (ícone e selo do módulo)
+    public string CorBarra => "#14532D";      // verde-escuro
 
     /// <summary>Recurso ligado pelo parâmetro "Contabilidade gerencial": mostra o menu Relatórios › Gerenciais.</summary>
     public const string RecursoGerencial = "gerencial";

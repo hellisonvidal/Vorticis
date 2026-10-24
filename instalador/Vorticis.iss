@@ -27,7 +27,7 @@ OutputBaseFilename=Setup-Vorticis-{#Versao}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=icone\VorticisContabil.ico
+SetupIconFile=icone\VorticisInstalador.ico
 ; O ícone é copiado para a pasta do programa (não depende de qual módulo foi instalado)
 UninstallDisplayIcon={app}\Vorticis.ico
 UninstallDisplayName=Vorticis

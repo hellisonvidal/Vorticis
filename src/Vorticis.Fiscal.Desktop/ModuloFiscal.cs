@@ -15,8 +15,8 @@ public sealed class ModuloFiscal : IModuloDesktop
     public string NomeCurto => "Fiscal";
     public string Subtitulo => "Escrituração e obrigações fiscais";
     public string NomeExecutavel => "VorticisFiscal";
-    public string CorDestaque => "#C2410C";   // laranja
-    public string CorBarra => "#7C2D12";
+    public string CorDestaque => "#D97706";   // âmbar (ícone e selo do módulo)
+    public string CorBarra => "#78350F";      // marrom-âmbar
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
