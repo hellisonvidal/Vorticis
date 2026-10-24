@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Regras e serviços do módulo Escritório (tarefas, honorários, protocolos e carteira de clientes); a interface fica em Vorticis.Escritorio.Desktop. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Vorticis.Domain\Vorticis.Domain.csproj" />
+    <ProjectReference Include="..\Vorticis.Application\Vorticis.Application.csproj" />
+    <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
+  </ItemGroup>
+</Project>

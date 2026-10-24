@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main, "claude/**", "ccr-**"]
   pull_request:
 
 concurrency:
@@ -83,6 +83,10 @@ jobs:
             Copy-Item publish/pgsql "$pasta/pgsql" -Recurse
             Copy-Item publish/vc_redist.x64.exe $pasta
           }
+          # Portátil da suíte: todos os executáveis numa pasta, com um único pgsql
+          New-Item -ItemType Directory -Path portatil/VorticisSuite -Force | Out-Null
+          Copy-Item publish/*.exe portatil/VorticisSuite
+          Copy-Item publish/pgsql portatil/VorticisSuite/pgsql -Recurse
       - name: Gerar instalador (Inno Setup)
         shell: pwsh
         run: |
@@ -114,3 +118,7 @@ jobs:
         with:
           name: VorticisFolha-portatil
           path: portatil/VorticisFolha/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisSuite-portatil
+          path: portatil/VorticisSuite/
