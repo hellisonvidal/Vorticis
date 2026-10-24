@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.OcorrenciasView" x:DataType="vm:OcorrenciasViewModel">
+  <Grid ColumnDefinitions="*,12,360" RowDefinitions="Auto,*" Margin="8">
+    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Ocorrências e assembleias" VerticalAlignment="Center" />
+      <CheckBox Content="Só as abertas" IsChecked="{Binding SomenteAbertas}" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="110" />
+        <DataGridTextColumn Header="Unidade" Binding="{ReflectionBinding Unidade}" Width="80" />
+        <DataGridTextColumn Header="Título" Binding="{ReflectionBinding Titulo}" Width="*" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="150" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <CalendarDatePicker SelectedDate="{Binding Data}" Width="150" />
+        <ComboBox ItemsSource="{x:Static vm:OcorrenciasViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="160" />
+      </StackPanel>
+      <ComboBox ItemsSource="{Binding UnidadesOpcoes}" SelectedItem="{Binding Unidade}" HorizontalAlignment="Stretch" PlaceholderText="Unidade (opcional)" />
+      <TextBox Text="{Binding Titulo}" Watermark="Título" />
+      <TextBox Text="{Binding Descricao}" Watermark="Descrição, providências, pauta ou ata" AcceptsReturn="True" Height="120" TextWrapping="Wrap" />
+      <CheckBox Content="Resolvida / encerrada" IsChecked="{Binding Resolvida}" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova" Command="{Binding NovaCommand}" />
+        <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+      </StackPanel>
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

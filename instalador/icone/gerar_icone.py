@@ -3,6 +3,7 @@
   VorticisContabil.ico / -256.png / -512.png  — espiral verde da logo (como é)
   VorticisFiscal.ico   / -256.png / -512.png  — espiral recolorida para o âmbar/laranja do módulo Fiscal
   VorticisFolha.ico    / -256.png / -512.png  — espiral recolorida para o roxo do módulo Folha de Pagamento
+  VorticisEscritorio, VorticisErp, VorticisCondominio — azul, verde-petróleo e vermelho-rubi
 
 Usa só o símbolo (a espiral à esquerda da logo): o nome VORTICIS fica ilegível nos tamanhos de ícone.
 O fundo branco da logo vira transparente. Nos módulos Fiscal e Folha só o verde da espiral é recolorido
@@ -28,6 +29,9 @@ MODULOS = {
     "VorticisContabil": None,
     "VorticisFiscal": "#C2410C",
     "VorticisFolha": "#6D28D9",
+    "VorticisEscritorio": "#1D4ED8",
+    "VorticisErp": "#0F766E",
+    "VorticisCondominio": "#BE123C",
 }
 
 

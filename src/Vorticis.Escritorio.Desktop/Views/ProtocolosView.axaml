@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.ProtocolosView" x:DataType="vm:ProtocolosViewModel">
+  <Grid ColumnDefinitions="*,16,340" RowDefinitions="Auto,*" Margin="8">
+    <TextBlock Grid.ColumnSpan="3" Classes="titulo" Text="Protocolo de documentos (empresa ativa)" Margin="0,0,0,8" />
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="60" />
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="150" />
+        <DataGridTextColumn Header="Documento" Binding="{ReflectionBinding Documento}" Width="*" />
+        <DataGridTextColumn Header="Pessoa" Binding="{ReflectionBinding Pessoa}" Width="160" />
+        <DataGridTextColumn Header="Registrado por" Binding="{ReflectionBinding Usuario}" Width="130" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Data" />
+        <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Data}" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Tipo" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:ProtocolosViewModel.Tipos}" SelectedItem="{Binding Tipo}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Documento" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Documento}" Watermark="Ex.: Guia DAS 03/2026" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Pessoa" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Pessoa}" Watermark="Quem recebeu ou entregou" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Observação" />
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Descricao}" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Registrar protocolo" Classes="accent" Command="{Binding IncluirCommand}" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+      </StackPanel>
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

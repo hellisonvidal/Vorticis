@@ -1,9 +1,15 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Vorticis.Application/Vorticis.Application.csproj" />
+    <Project Path="src/Vorticis.Condominio.Desktop/Vorticis.Condominio.Desktop.csproj" />
+    <Project Path="src/Vorticis.Condominio/Vorticis.Condominio.csproj" />
     <Project Path="src/Vorticis.Desktop.Comum/Vorticis.Desktop.Comum.csproj" />
     <Project Path="src/Vorticis.Desktop/Vorticis.Desktop.csproj" />
     <Project Path="src/Vorticis.Domain/Vorticis.Domain.csproj" />
+    <Project Path="src/Vorticis.Erp.Desktop/Vorticis.Erp.Desktop.csproj" />
+    <Project Path="src/Vorticis.Erp/Vorticis.Erp.csproj" />
+    <Project Path="src/Vorticis.Escritorio.Desktop/Vorticis.Escritorio.Desktop.csproj" />
+    <Project Path="src/Vorticis.Escritorio/Vorticis.Escritorio.csproj" />
     <Project Path="src/Vorticis.Fiscal.Desktop/Vorticis.Fiscal.Desktop.csproj" />
     <Project Path="src/Vorticis.Fiscal/Vorticis.Fiscal.csproj" />
     <Project Path="src/Vorticis.Folha.Desktop/Vorticis.Folha.Desktop.csproj" />
@@ -16,5 +22,6 @@
     <Project Path="tests/Vorticis.Fiscal.Tests/Vorticis.Fiscal.Tests.csproj" />
     <Project Path="tests/Vorticis.Folha.Tests/Vorticis.Folha.Tests.csproj" />
     <Project Path="tests/Vorticis.Infra.Tests/Vorticis.Infra.Tests.csproj" />
+    <Project Path="tests/Vorticis.Modulos.Tests/Vorticis.Modulos.Tests.csproj" />
   </Folder>
 </Solution>

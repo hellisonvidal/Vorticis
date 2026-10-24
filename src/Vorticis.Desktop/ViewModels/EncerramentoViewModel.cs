@@ -36,6 +36,7 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     [RelayCommand]
     private Task PreverAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
+        NovaGeracao();   // uma carga da tela ainda em andamento não apaga a prévia
         Previa = "";
         var r = await app.Encerramento.PreverAsync(empresa, AnoInt, Contas, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }

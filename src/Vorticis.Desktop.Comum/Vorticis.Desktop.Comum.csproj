@@ -9,6 +9,9 @@
     <AvaloniaResource Include="..\..\instalador\icone\VorticisContabil.ico" Link="Assets\VorticisContabil.ico" />
     <AvaloniaResource Include="..\..\instalador\icone\VorticisFiscal.ico" Link="Assets\VorticisFiscal.ico" />
     <AvaloniaResource Include="..\..\instalador\icone\VorticisFolha.ico" Link="Assets\VorticisFolha.ico" />
+    <AvaloniaResource Include="..\..\instalador\icone\VorticisEscritorio.ico" Link="Assets\VorticisEscritorio.ico" />
+    <AvaloniaResource Include="..\..\instalador\icone\VorticisErp.ico" Link="Assets\VorticisErp.ico" />
+    <AvaloniaResource Include="..\..\instalador\icone\VorticisCondominio.ico" Link="Assets\VorticisCondominio.ico" />
   </ItemGroup>
   <ItemGroup>
     <!-- Manual do usuário (Ajuda › Manual do usuário): os .md e o mapa tela → tópico (F1) vão como recurso embutido -->
