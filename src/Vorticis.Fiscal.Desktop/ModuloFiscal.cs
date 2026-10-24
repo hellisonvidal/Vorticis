@@ -18,9 +18,20 @@ public sealed class ModuloFiscal : IModuloDesktop
     public string CorDestaque => "#D97706";   // âmbar (ícone e selo do módulo)
     public string CorBarra => "#78350F";      // marrom-âmbar
 
+    /// <summary>Recurso ligado com a contabilização em lote (padrão): mostra Documentos fiscais › Contabilizar notas fiscais.</summary>
+    public const string RecursoContabilizacaoLote = "contabilizacao_lote";
+
+    public async Task<IReadOnlySet<string>> RecursosAtivosAsync(Vorticis.Desktop.Comum.ViewModels.MainViewModelBase main)
+    {
+        if (main.App is not { } app || main.EmpresaId is not { } empresa || main.Sessao is not { } sessao) return new HashSet<string>();
+        var online = await app.Fiscal().Contabilizacao.ContabilizacaoOnlineAsync(empresa, sessao.Id);
+        return online is { Sucesso: true, Valor: true } ? new HashSet<string>() : new HashSet<string> { RecursoContabilizacaoLote };
+    }
+
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Produtos", Telas.Produtos),
+        ItemMenu.Tela("Regras de contabilização", Telas.RegrasContabilizacao),
         ItemMenu.Tela("Formas de pagamento", Vorticis.Desktop.Comum.ViewModels.TelasComuns.FormasPagamento),
         ItemMenu.Tela("Contas bancárias", Vorticis.Desktop.Comum.ViewModels.TelasComuns.ContasBancarias),
     ];
@@ -36,9 +47,7 @@ public sealed class ModuloFiscal : IModuloDesktop
         ItemMenu.Submenu("_Documentos fiscais",
             ItemMenu.Tela("Importação de XML (NF-e, NFC-e, NFS-e)", Telas.ImportacaoXml),
             ItemMenu.Tela("Consulta de documentos", Telas.Documentos),
-            ItemMenu.Separador,
-            ItemMenu.Tela("Regras de contabilização", Telas.RegrasContabilizacao),
-            ItemMenu.Tela("Contabilizar notas fiscais", Telas.ContabilizarNotas),
+            ItemMenu.Tela("Contabilizar notas fiscais", Telas.ContabilizarNotas).SoCom(RecursoContabilizacaoLote),
             ItemMenu.Separador,
             ItemMenu.EmBreve("Conhecimentos de transporte (CT-e)")),
         ItemMenu.Submenu("_Apuração",
@@ -49,7 +58,9 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.EmBreve("ICMS e IPI"),
             ItemMenu.Separador,
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
-            ItemMenu.Tela("Contas dos tributos (provisões)", Telas.ContasTributos)),
+            ItemMenu.Tela("Contas dos tributos (provisões)", Telas.ContasTributos),
+            ItemMenu.Separador,
+            ItemMenu.Tela("Fechamento do período fiscal", Telas.FechamentoFiscal)),
         ItemMenu.Submenu("_Obrigações",
             ItemMenu.Tela("Retenções (IRRF, CSRF, INSS, ISS)", Telas.Retencoes),
             ItemMenu.Tela("Guias de recolhimento", Telas.Guias),
@@ -94,7 +105,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.Documentos, "Documentos fiscais › Consulta de documentos", m => m.Pode(Permissao.FiscalDocumentosConsultar));
         c.Instancia("RegrasContabilizacao", m => new RegrasContabilizacaoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.RegrasContabilizacao, "Documentos fiscais › Regras de contabilização", m => m.Pode(Permissao.FiscalContabilizar), v => v.CarregarAsync());
+            .Tela(Telas.RegrasContabilizacao, "Cadastros › Regras de contabilização", m => m.Pode(Permissao.FiscalContabilizar), v => v.CarregarAsync());
         c.Instancia("ContabilizarNotas", m => new ContabilizarNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ContabilizarNotas, "Documentos fiscais › Contabilizar notas fiscais", m => m.Pode(Permissao.FiscalContabilizar));
 
@@ -128,6 +139,9 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("BaseMensal", m => new BaseMensalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.BaseMensal, "Apuração › Histórico de receita e folha", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRetencoesManter), v => v.CarregarAsync());
+        c.Instancia("FechamentoFiscal", m => new FechamentoFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.FechamentoFiscal, "Apuração › Fechamento do período fiscal", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia("ContasTributos", m => new ContasTributosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.ContasTributos, "Apuração › Contas dos tributos", m => m.Pode(Permissao.FiscalApurar), v => v.CarregarAsync());

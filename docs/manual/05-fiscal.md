@@ -76,7 +76,7 @@ Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **C
 ## Regras de contabilização
 
 **Para que serve:** ensinar o sistema em quais contas lançar cada tipo de nota.
-**Onde fica:** *Documentos fiscais › Regras de contabilização*.
+**Onde fica:** *Cadastros › Regras de contabilização*.
 
 1. **Nova**. Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos) e o **sentido** (entrada ou saída).
 2. Informe a **conta de débito** e a **de crédito** e, se quiser, o **participante** e o histórico (aceita as variáveis dos históricos padrão).
@@ -86,7 +86,12 @@ Vale a regra **mais específica** (participante, CFOP completo, prefixo, geral);
 
 ## Contabilizar notas fiscais
 
-**Onde fica:** *Documentos fiscais › Contabilizar notas fiscais*.
+**Onde fica:** *Documentos fiscais › Contabilizar notas fiscais* (só aparece com a contabilização **em lote**).
+
+### On-line ou em lote
+Em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, escolha como as notas vão para o Contábil:
+- **Em lote** (*Contabilizar as notas on-line* desmarcado, o padrão): as notas ficam pendentes e você contabiliza depois, por período, nesta tela.
+- **On-line** (marcado): cada nota é contabilizada assim que é gravada (digitação) ou importada (XML ou chave de acesso), pelas regras de contabilização. O menu *Contabilizar notas fiscais* fica escondido. Nota sem regra ou com período contábil fechado continua pendente, e o motivo aparece na mensagem da gravação ou no resumo da importação; corrija a regra e grave a nota de novo, ou volte para **em lote** para contabilizar as pendentes.
 
 1. Escolha o período e clique em **Pré-visualizar**: aparecem as notas pendentes, com o lançamento previsto.
 2. Marque as notas e clique em **Contabilizar marcadas**. São gerados os lançamentos no Contábil (documento = número da nota).
@@ -107,6 +112,18 @@ Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (e
 4. Clique em **Cadastrar no imobilizado**. A coluna **Situação** mostra *Cadastrado* ou o que falta corrigir.
 
 O cadastro exige a permissão de lançamentos do Contábil. Os bens aparecem no Contábil e entram na depreciação mensal.
+
+## Fechamento do período fiscal
+
+**Para que serve:** travar o mês depois de escriturar as notas e apurar os impostos, para que nada mude depois de entregue a apuração (empresas do **regime normal**: Lucro Presumido ou Real).
+**Onde fica:** *Apuração › Fechamento do período fiscal*.
+
+1. Escolha o **Ano**. A lista mostra os 12 meses: situação (aberto/fechado), quantas notas há, quantas ainda **não foram contabilizadas** e quando e por quem o mês foi fechado.
+2. Selecione o mês e clique em **Fechar mês**. Se houver notas não contabilizadas, o aviso aparece antes de confirmar.
+3. Com o mês fechado, as notas com data de entrada/saída no mês **não podem ser incluídas, alteradas nem excluídas** (digitação, importação de XML ou pela chave). A contabilização das notas continua permitida.
+4. Para corrigir algo, selecione o mês e clique em **Reabrir mês**.
+
+**Atenção:** empresa do Simples Nacional não usa este fechamento (o período é encerrado pela apuração do DAS). O regime vem do cadastro da empresa.
 
 ## Duplicatas (contas a pagar e a receber)
 

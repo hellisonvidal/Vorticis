@@ -192,4 +192,79 @@ public class ContabilizacaoFiscalTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal(0, r.Contabilizados);
         Assert.Contains("fechado", r.Falhas.Single().Erros[0]);
     }
+
+    [Fact]
+    public async Task Fechamento_do_periodo_fiscal_trava_as_notas_do_mes_e_so_vale_no_regime_normal()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var cnpj = CnpjsDeTeste.Valido(41);
+        var empresa = await db.CriarEmpresaAsync(cnpj);   // Lucro Presumido
+        var adm = await db.AdminAsync();
+        var fech = db.App.Fiscal().Fechamento;
+        var docs = db.App.Fiscal().Documentos;
+        await docs.ImportarAsync(empresa, [Arq("a.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 11, Mar, [new ItemNfe("5102", 100m)]))], adm, ct: ct);
+
+        Assert.Equal(1, (await fech.FecharAsync(empresa, Mar, adm, ct)).Valor);   // 1 nota ainda não contabilizada (aviso)
+        var mar = (await fech.ListarAsync(empresa, 2026, adm, ct)).Valor.Single(m => m.Competencia.Month == 3);
+        Assert.Equal((true, 1, 1), (mar.Fechado, mar.Notas, mar.NaoContabilizadas));
+        // nota nova no mês fechado é recusada (com o motivo); a do mês seguinte entra
+        var r = (await docs.ImportarAsync(empresa, [Arq("b.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 12, Mar, [new ItemNfe("5102", 50m)]))], adm, ct: ct)).Valor;
+        Assert.Contains("está fechado", Assert.Single(r.Arquivos).Mensagem);
+        var abr = new DateOnly(2026, 4, 2);
+        Assert.Equal(1, (await docs.ImportarAsync(empresa, [Arq("c.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 13, abr, [new ItemNfe("5102", 50m)]))], adm, ct: ct)).Valor.Importados);
+        var nota = (await docs.ConsultarAsync(empresa, new FiltroDocumentos(Mar, Mar), adm, ct)).Valor.Single();
+        Assert.Contains("está fechado", (await db.App.Fiscal().Contabilizacao.ExcluirDocumentosAsync(empresa, [nota.Id], false, adm, ct)).Erros[0]);
+        // contabilizar continua permitido no mês fechado
+        Assert.True((await db.App.Fiscal().Contabilizacao.GravarRegraAsync(empresa, new RegraContabilizacao(0, 100, null, "5102", null, null, "1.1.02.001", "3.1.01.001", "h"), adm, ct)).Sucesso);
+        Assert.Equal(1, (await db.App.Fiscal().Contabilizacao.ContabilizarAsync(empresa, Mar, Mar, null, null, adm, ct)).Valor.Contabilizados);
+
+        Assert.True((await fech.ReabrirAsync(empresa, Mar, adm, ct)).Sucesso);
+        Assert.False((await fech.ReabrirAsync(empresa, Mar, adm, ct)).Sucesso);
+        Assert.Equal(1, (await docs.ImportarAsync(empresa, [Arq("b.xml", XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 12, Mar, [new ItemNfe("5102", 50m)]))], adm, ct: ct)).Valor.Importados);
+
+        // Simples Nacional: o fechamento não se aplica
+        await db.EscalarAsync<int>("WITH x AS (UPDATE core.empresa_regime SET regime = 'SIMPLES_NACIONAL' WHERE empresa_id = @e RETURNING 1) SELECT count(*)::int FROM x", ("e", empresa));
+        Assert.Contains("regime normal", (await fech.FecharAsync(empresa, Mar, adm, ct)).Erros[0]);
+    }
+
+    [Fact]
+    public async Task Contabilizacao_on_line_contabiliza_ao_importar_e_some_quando_desligada()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var cnpj = CnpjsDeTeste.Valido(42);
+        var empresa = await db.CriarEmpresaAsync(cnpj);
+        var adm = await db.AdminAsync();
+        var cont = db.App.Fiscal().Contabilizacao;
+        Assert.False((await cont.ContabilizacaoOnlineAsync(empresa, adm, ct)).Valor);
+        Assert.Null(await cont.ContabilizarSeOnlineAsync(empresa, Mar, Mar, null, adm, ct));   // em lote: não faz nada
+        Assert.True((await cont.GravarRegraAsync(empresa, new RegraContabilizacao(0, 100, null, "5102", null, null, "1.1.02.001", "3.1.01.001", "h"), adm, ct)).Sucesso);
+        Assert.True((await cont.GravarContabilizacaoOnlineAsync(empresa, true, adm, ct)).Sucesso);
+
+        var pasta = Directory.CreateTempSubdirectory("online").FullName;
+        try
+        {
+            var venda = Path.Combine(pasta, "venda.xml");
+            var semRegra = Path.Combine(pasta, "outra.xml");
+            await File.WriteAllBytesAsync(venda, XmlsDeTeste.Bytes(XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 21, Mar, [new ItemNfe("5102", 300m)])), ct);
+            await File.WriteAllBytesAsync(semRegra, XmlsDeTeste.Bytes(XmlsDeTeste.Nfe(cnpj, XmlsDeTeste.CnpjCliente, 1, 22, Mar, [new ItemNfe("5949", 10m)])), ct);
+            var vm = new Vorticis.Fiscal.Desktop.ViewModels.ImportacaoXmlViewModel(new ContextoDeTeste(db.App, adm, empresa)) { CompletarPeloCnpj = false };
+            await vm.ImportarArquivosAsync([venda, semRegra]);
+            Assert.Empty(vm.Erros);
+            Assert.Contains("Contabilização on-line: 1 nota(s) contabilizada(s)", vm.Resumo);
+            Assert.Contains("1 nota(s) ficaram pendentes", vm.Resumo);
+            var lista = (await db.App.Fiscal().Documentos.ConsultarAsync(empresa, new FiltroDocumentos(Mar, Mar), adm, ct)).Valor;
+            Assert.NotNull(lista.Single(d => d.Numero == "21").LancamentoId);
+            Assert.Null(lista.Single(d => d.Numero == "22").LancamentoId);
+        }
+        finally { Directory.Delete(pasta, true); }
+
+        // menu: com on-line ligado, "Contabilizar notas fiscais" some
+        var modulo = new Vorticis.Fiscal.Desktop.ModuloFiscal();
+        Assert.Contains(Folhas(modulo.Menus), i => i.Recurso == Vorticis.Fiscal.Desktop.ModuloFiscal.RecursoContabilizacaoLote);
+    }
+
+    private static IEnumerable<Vorticis.Desktop.Comum.Modulos.ItemMenu> Folhas(IEnumerable<Vorticis.Desktop.Comum.Modulos.ItemMenu> itens) =>
+        itens.SelectMany(i => i.Filhos is null ? [i] : Folhas(i.Filhos));
 }

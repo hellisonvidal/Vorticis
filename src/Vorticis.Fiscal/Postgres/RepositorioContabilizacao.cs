@@ -92,6 +92,21 @@ public sealed class RepositorioContabilizacao(NpgsqlDataSource ds) : IRepositori
         return await cmd.ExecuteScalarAsync(ct) is DateOnly d ? d : null;
     }
 
+    public async Task<bool> ContabilizacaoOnlineAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT contabilizacao_online FROM fiscal.configuracao WHERE empresa_id = @e").Com("e", empresaId);
+        return await cmd.ExecuteScalarAsync(ct) is true;
+    }
+
+    public async Task GravarContabilizacaoOnlineAsync(long empresaId, bool online, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            INSERT INTO fiscal.configuracao (empresa_id, contabilizacao_online) VALUES (@e, @o)
+            ON CONFLICT (empresa_id) DO UPDATE SET contabilizacao_online = @o, atualizado_em = now()
+            """).Com("e", empresaId).Com("o", online);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     public async Task<bool> CentroCustoAtivoAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

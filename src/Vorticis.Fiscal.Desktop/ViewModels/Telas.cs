@@ -13,6 +13,7 @@ public static class Telas
     public const string PisCofins = "apuracaopiscofins";
     public const string BaseMensal = "historicoreceitafolha";
     public const string ContasTributos = "contastributos";
+    public const string FechamentoFiscal = "fiscal.fechamento";
     public const string Retencoes = "retencoes";
     public const string Guias = "guias";
     public const string EfdIcms = "efdicmsipi";

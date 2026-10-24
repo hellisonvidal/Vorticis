@@ -113,6 +113,7 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
                 var r = await Task.Run(() => importar(servico, empresa, usuario, progresso, cancelamento.Token));
                 MostrarResultadoImportacao(r);
                 if (r.Sucesso && CompletarPeloCnpj) await CompletarCadastrosAsync(app, empresa, usuario, r.Valor);
+                if (r.Sucesso) await ContabilizarOnlineAsync(app, empresa, usuario, r.Valor);
                 if (r.Sucesso && Concluida is { } aviso)
                     foreach (var ouvinte in aviso.GetInvocationList().Cast<Func<ResultadoImportacao, Task>>()) await ouvinte(r.Valor);
             }
@@ -149,6 +150,25 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
         if (completados > 0) Resumo += $" {completados} fornecedor(es)/cliente(s) novo(s) com o cadastro completado pela consulta do CNPJ.";
         if (avisos.Count > 0) Resumo += $" Cadastro não completado (ficou com os dados do XML): {string.Join(" ", avisos)}";
     }
+
+    /// <summary>Com a contabilização on-line ligada nos Parâmetros, contabiliza as notas importadas (período das notas) e resume no painel.</summary>
+    public async Task ContabilizarOnlineAsync(VorticisApp app, long empresa, long usuario, ResultadoImportacao r)
+    {
+        var datas = r.Arquivos.Where(a => a.Situacao == SituacaoImportacao.Importado && a.DataLivro is not null).Select(a => a.DataLivro!.Value).ToList();
+        if (datas.Count == 0) return;
+        var online = await app.Fiscal().Contabilizacao.ContabilizarSeOnlineAsync(empresa, datas.Min(), datas.Max(), null, usuario);
+        if (online is not null) Resumo += TextoContabilizacaoOnline(online);
+    }
+
+    /// <summary>Texto do resultado da contabilização on-line (vazio quando ela está desligada).</summary>
+    public static string TextoContabilizacaoOnline(Resultado<Contabilizacao.ResultadoContabilizacao>? r) => r switch
+    {
+        null => "",
+        { Sucesso: false } => $" Contabilização on-line não feita: {string.Join(" ", r.Erros)}",
+        _ => (r.Valor.Contabilizados > 0 ? $" Contabilização on-line: {r.Valor.Contabilizados} nota(s) contabilizada(s)." : "") +
+             (r.Valor.Falhas.Count > 0 ? $" {r.Valor.Falhas.Count} nota(s) ficaram pendentes de contabilização (sem regra ou conta válida): " +
+                                         string.Join("; ", r.Valor.Falhas.Take(5).Select(f => $"nota {f.Documento}: {string.Join(" ", f.Erros)}")) : ""),
+    };
 
     private void MostrarResultadoImportacao(Resultado<ResultadoImportacao> r)
     {

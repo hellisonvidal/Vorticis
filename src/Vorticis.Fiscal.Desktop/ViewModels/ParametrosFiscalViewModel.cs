@@ -35,6 +35,9 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         {
             new("usaCentroCusto", "Informar centro de custo nos itens das notas", TipoCampoParametro.SimNao,
                 "As notas aceitam centro de custo no documento e nos itens, e a contabilização leva o centro de custo às partidas. Só pode ser ligado se a empresa usa centros de custo (Cadastros › Empresas, aba Contabilidade)."),
+            new("contabilizacaoOnline", "Contabilizar as notas on-line (ao gravar ou importar)", TipoCampoParametro.SimNao,
+                "Ligado: cada nota é contabilizada assim que é gravada ou importada, pelas Regras de contabilização, e o menu Contabilizar notas fiscais some. " +
+                "Desligado (em lote): as notas são contabilizadas depois, pela função Documentos fiscais › Contabilizar notas fiscais. Exige a permissão de contabilizar."),
         };
         var icms = new CampoParametro[]
         {
@@ -75,7 +78,8 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             new("EFD ICMS/IPI (SPED Fiscal)", "Escolhas que se repetem a cada mês; o assistente já abre preenchido. Exige permissão de gerar SPED.", icms),
             new("EFD-Contribuições (PIS/COFINS)", "Escolhas que se repetem a cada mês na EFD-Contribuições. Exige permissão de gerar SPED.", contrib),
             new("Contabilização e tributos", "Tabelas que têm tela própria.", [],
-                [Atalho("Abrir Regras de contabilização", Telas.RegrasContabilizacao), Atalho("Abrir Contas dos tributos", Telas.ContasTributos)]),
+                [Atalho("Abrir Regras de contabilização", Telas.RegrasContabilizacao), Atalho("Abrir Contas dos tributos", Telas.ContasTributos),
+                 Atalho("Abrir Fechamento do período fiscal", Telas.FechamentoFiscal)]),
         ];
     }
 
@@ -83,6 +87,8 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
     {
         var f = await app.Fiscal().Digitacao.ObterConfiguracaoAsync(empresa, usuario);
         if (f.Sucesso) Campo("usaCentroCusto").Marcado = f.Valor.UsaCentroCusto;
+        var online = await app.Fiscal().Contabilizacao.ContabilizacaoOnlineAsync(empresa, usuario);
+        if (online.Sucesso) Campo("contabilizacaoOnline").Marcado = online.Valor;
         var d = await app.Fiscal().Duplicatas.ObterConfiguracaoAsync(empresa, usuario);
         if (d.Sucesso)
         {
@@ -115,6 +121,12 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
     {
         var f = await app.Fiscal().Digitacao.GravarConfiguracaoAsync(empresa, Campo("usaCentroCusto").Marcado, usuario);
         if (!f.Sucesso) { MostrarResultado(f, ""); return; }
+        if (Contexto.Pode(Permissao.FiscalContabilizar))
+        {
+            var o = await app.Fiscal().Contabilizacao.GravarContabilizacaoOnlineAsync(empresa, Campo("contabilizacaoOnline").Marcado, usuario);
+            if (!o.Sucesso) { MostrarResultado(o, ""); return; }
+            await Contexto.AtualizarRecursosAsync();   // mostra ou esconde o menu Contabilizar notas fiscais
+        }
         if (Contexto.Pode(Permissao.FiscalDuplicatasManter))
         {
             if (!int.TryParse(Campo("dupAVistaDias").Texto.Trim(), out var diasAVista)) { Erros.Add("Informe os dias até o vencimento da duplicata à vista em número (0 a 365)."); return; }

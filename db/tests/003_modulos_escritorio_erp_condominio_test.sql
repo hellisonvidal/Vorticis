@@ -56,4 +56,3 @@ BEGIN
     RAISE NOTICE 'OK: layout de extrato com nome único por tipo (planilha e extrato podem ter o mesmo nome)';
 END $$;
 
-\echo 'TODOS OS TESTES PASSARAM'

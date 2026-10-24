@@ -47,6 +47,7 @@ public sealed class ServicosFiscais
         Guias = new ServicoGuias(new RepositorioGuias(ds), repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
         ImportacaoChave = new Sefaz.ServicoImportacaoChave(ds, Documentos, autorizador);
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
+        Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
 
@@ -62,6 +63,7 @@ public sealed class ServicosFiscais
     public ServicoRetencoes Retencoes { get; }
     public ServicoGuias Guias { get; }
     public ServicoProvisoes Provisoes { get; }
+    public Fechamento.ServicoFechamentoFiscal Fechamento { get; }
     public ServicoEfd Efd { get; }
     public Sefaz.ServicoImportacaoChave ImportacaoChave { get; }
 }

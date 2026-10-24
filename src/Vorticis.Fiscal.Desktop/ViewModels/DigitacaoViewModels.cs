@@ -579,8 +579,12 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         AmpliarPeriodo([Data(DataLivro, default).ToDateTime(TimeOnly.MinValue)]);   // a nota gravada sempre aparece na lista
         await ListarAsync(app, empresa, usuario);
         _documentoId = r.Valor;
+        // contabilização on-line (Cadastros › Parâmetros): a nota já sai contabilizada, se houver regra para ela
+        var dia = Data(DataLivro, default);
+        var online = await app.Fiscal().Contabilizacao.ContabilizarSeOnlineAsync(empresa, dia, dia, new HashSet<long> { r.Valor }, usuario);
+        if (online is { Sucesso: true, Valor.Contabilizados: > 0 }) await ListarAsync(app, empresa, usuario);
         Selecionada = Lista.FirstOrDefault(d => d.Id == r.Valor);
-        Mensagem = "Nota gravada.";
+        Mensagem = "Nota gravada." + ImportacaoXmlViewModel.TextoContabilizacaoOnline(online);
         if (notaNova && CfopImobilizado.Itens(Operacao, doc.Itens).Count > 0
             && await Contexto.ConfirmarAsync("Ativo imobilizado",
                    "A nota tem itens com CFOP de ativo imobilizado. Cadastrar agora os bens no imobilizado do Contábil (já preenchidos com a nota, o fornecedor, a data e o valor)?",
@@ -792,6 +796,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (r.Valor.Arquivo is { Situacao: SituacaoImportacao.Importado } a)
         {
             if (Importador.CompletarPeloCnpj) await Importador.CompletarCadastrosAsync(app, empresa, usuario, new ResultadoImportacao([a]));   // fornecedor novo: completa pela Receita
+            await Importador.ContabilizarOnlineAsync(app, empresa, usuario, new ResultadoImportacao([a]));
             await AposImportacaoAsync(new ResultadoImportacao([a]));
             ChaveImportacao = "";
         }

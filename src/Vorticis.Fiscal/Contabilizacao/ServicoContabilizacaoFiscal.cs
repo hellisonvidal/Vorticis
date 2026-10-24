@@ -27,6 +27,9 @@ public interface IRepositorioContabilizacao
 
     /// <summary>"Usar centros de custo no fiscal" ligado e empresa com centros de custo habilitados.</summary>
     Task<bool> CentroCustoAtivoAsync(long empresaId, CancellationToken ct);
+    /// <summary>Parâmetro do Fiscal: contabilizar as notas ao gravar/importar (on-line) em vez de pela função em lote.</summary>
+    Task<bool> ContabilizacaoOnlineAsync(long empresaId, CancellationToken ct);
+    Task GravarContabilizacaoOnlineAsync(long empresaId, bool online, CancellationToken ct);
 }
 
 public sealed record FalhaContabilizacao(string Documento, IReadOnlyList<string> Erros);
@@ -147,6 +150,34 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
         await repositorio.MarcarContabilizadosAsync(prontas.Select((p, i) => (p.Documento.Id, gravados.Valor[i].Id)).ToList(), usuarioId, ct);
         var valor = prontas.Sum(p => p.Lancamento!.Partidas.Where(x => x.DC == IndicadorDC.D).Sum(x => x.Valor));
         return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(prontas.Count, valor, falhas));
+    }
+
+    public async Task<Resultado<bool>> ContabilizacaoOnlineAsync(long empresaId, long usuarioId, CancellationToken ct = default)
+        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
+            ? Resultado<bool>.Ok(await repositorio.ContabilizacaoOnlineAsync(empresaId, ct))
+            : Resultado<bool>.Falha("Você não tem acesso a esta empresa.");
+
+    public async Task<Resultado> GravarContabilizacaoOnlineAsync(long empresaId, bool online, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return Resultado.Falha(negado);
+        await repositorio.GravarContabilizacaoOnlineAsync(empresaId, online, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>
+    /// Contabilização on-line: com o parâmetro ligado, contabiliza as notas pendentes do período logo depois de gravadas ou importadas
+    /// (as que não têm regra ou conta válida continuam pendentes e voltam em <see cref="ResultadoContabilizacao.Falhas"/>).
+    /// Devolve null quando o parâmetro está desligado (contabilização em lote, pela função Contabilizar notas fiscais).
+    /// </summary>
+    public async Task<Resultado<ResultadoContabilizacao>?> ContabilizarSeOnlineAsync(long empresaId, DateOnly inicio, DateOnly fim, IReadOnlySet<long>? ids,
+                                                                                     long usuarioId, CancellationToken ct = default)
+    {
+        if (!await repositorio.ContabilizacaoOnlineAsync(empresaId, ct)) return null;
+        var r = await ContabilizarAsync(empresaId, inicio, fim, null, ids, usuarioId, ct);
+        // nada pendente não é erro na contabilização automática
+        return !r.Sucesso && r.Erros.All(e => e.StartsWith("Nenhuma nota pendente", StringComparison.Ordinal))
+            ? Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(0, 0, []))
+            : r;
     }
 
     /// <summary>Estorna o lançamento de cada nota (na data dele, ou em <paramref name="dataEstorno"/>) e a devolve à situação de não contabilizada.</summary>
