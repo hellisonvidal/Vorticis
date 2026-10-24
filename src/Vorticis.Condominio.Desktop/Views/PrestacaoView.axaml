@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.PrestacaoView" x:DataType="vm:PrestacaoViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Prestação de contas" VerticalAlignment="Center" />
+      <TextBlock Text="Mês" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Mes}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <Grid RowDefinitions="*,Auto,*">
+      <DataGrid ItemsSource="{Binding Resumo}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="180" />
+        </DataGrid.Columns>
+      </DataGrid>
+      <TextBlock Grid.Row="1" Text="{Binding Situacao}" FontWeight="SemiBold" Foreground="#881337" Margin="0,8,0,4" />
+      <DataGrid Grid.Row="2" ItemsSource="{Binding Inadimplentes}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+        <DataGridTextColumn Header="Inadimplência (unidade – responsável – competência)" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Valor atualizado hoje" Binding="{ReflectionBinding Valor}" Width="360" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Grid>
+  </DockPanel>
+</UserControl>

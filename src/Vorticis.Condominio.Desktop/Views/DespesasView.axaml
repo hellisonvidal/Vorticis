@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.DespesasView" x:DataType="vm:DespesasViewModel">
+  <Grid ColumnDefinitions="*,12,360" RowDefinitions="Auto,*" Margin="8">
+    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Despesas do condomínio" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="130" />
+      <TextBlock Text="a" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Fim}" Width="130" />
+      <TextBlock Text="{Binding Totais}" VerticalAlignment="Center" FontSize="12" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="95" />
+        <DataGridTextColumn Header="Categoria" Binding="{ReflectionBinding Categoria}" Width="120" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Fornecedor" Binding="{ReflectionBinding Fornecedor}" Width="160" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="100" />
+        <DataGridTextColumn Header="Pago" Binding="{ReflectionBinding Pago}" Width="95" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <CalendarDatePicker SelectedDate="{Binding Data}" Watermark="Data" Width="150" />
+        <CalendarDatePicker SelectedDate="{Binding Vencimento}" Watermark="Vencimento" Width="150" />
+      </StackPanel>
+      <ComboBox ItemsSource="{x:Static vm:DespesasViewModel.Categorias}" SelectedItem="{Binding Categoria}" HorizontalAlignment="Stretch" />
+      <TextBox Text="{Binding Descricao}" Watermark="Descrição" />
+      <ComboBox ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Fornecedor}" HorizontalAlignment="Stretch" PlaceholderText="Fornecedor" />
+      <TextBox Text="{Binding Valor}" Watermark="Valor" />
+      <CalendarDatePicker SelectedDate="{Binding PagoEm}" Watermark="Pago em (vazio = em aberto)" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova despesa" Command="{Binding NovaCommand}" />
+        <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+      </StackPanel>
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.CobrancasView" x:DataType="vm:CobrancasViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Cobranças e recebimentos" VerticalAlignment="Center" />
+      <TextBlock Text="Competência" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+      <CheckBox Content="Todas em aberto" IsChecked="{Binding SomenteAbertas}" />
+      <Button Content="Gerar cobranças do mês" Classes="accent" Command="{Binding GerarCommand}" IsEnabled="{Binding PodeEditar}" />
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Text="Pago em" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding DataPagamento}" Width="130" />
+        <TextBox Text="{Binding Multa}" Watermark="Multa" Width="90" />
+        <TextBox Text="{Binding Juros}" Watermark="Juros" Width="90" />
+        <TextBox Text="{Binding Desconto}" Watermark="Desconto" Width="90" />
+        <Button Content="Receber" Classes="accent" Command="{Binding ReceberCommand}" />
+        <Button Content="Estornar recebimento" Command="{Binding EstornarCommand}" />
+        <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" />
+      </StackPanel>
+      <TextBlock Text="{Binding Totais}" FontSize="12" />
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Unidade" Binding="{ReflectionBinding Unidade}" Width="80" />
+        <DataGridTextColumn Header="Responsável" Binding="{ReflectionBinding Responsavel}" Width="180" />
+        <DataGridTextColumn Header="Competência" Binding="{ReflectionBinding Competencia}" Width="90" />
+        <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="95" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="100" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
+        <DataGridTextColumn Header="Pagamento" Binding="{ReflectionBinding Pago}" Width="170" />
+        <DataGridTextColumn Header="Composição" Binding="{ReflectionBinding Composicao}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

@@ -59,11 +59,11 @@ jobs:
           dotnet build tests/Vorticis.Infra.Tests -c Release
           tests/Vorticis.Infra.Tests/bin/Release/net10.0/Vorticis.Infra.Tests.exe -class Vorticis.Infra.Tests.ServidorEmbutidoTests -failSkips
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Publicar os três executáveis (arquivo único) com o PostgreSQL
+      - name: Publicar os executáveis da suíte (arquivo único) com o PostgreSQL
         shell: pwsh
         run: |
-          # Contábil, Fiscal e Folha vão para a mesma pasta (publish), junto com a pasta pgsql: é a entrada do instalador.
-          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop", "Vorticis.Escritorio.Desktop", "Vorticis.Erp.Desktop") {
+          # Todos os módulos vão para a mesma pasta (publish), junto com a pasta pgsql: é a entrada do instalador.
+          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop", "Vorticis.Escritorio.Desktop", "Vorticis.Erp.Desktop", "Vorticis.Condominio.Desktop") {
             dotnet publish "src/$projeto" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -76,7 +76,7 @@ jobs:
           }
           if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
           # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
-          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio", "Erp") {
+          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio", "Erp", "Condominio") {
             $pasta = "portatil/Vorticis$modulo"
             New-Item -ItemType Directory -Path $pasta -Force | Out-Null
             Copy-Item "publish/Vorticis$modulo.exe" $pasta
@@ -130,3 +130,7 @@ jobs:
         with:
           name: VorticisErp-portatil
           path: portatil/VorticisErp/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisCondominio-portatil
+          path: portatil/VorticisCondominio/

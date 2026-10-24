@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.UnidadesView" x:DataType="vm:UnidadesViewModel">
+  <Grid ColumnDefinitions="*,12,380" RowDefinitions="Auto,*" Margin="8">
+    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Unidades e condôminos" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding Totais}" VerticalAlignment="Center" FontSize="12" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Unidade" Binding="{ReflectionBinding Unidade}" Width="90" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="110" />
+        <DataGridTextColumn Header="Fração ideal" Binding="{ReflectionBinding Fracao}" Width="110" />
+        <DataGridTextColumn Header="Proprietário" Binding="{ReflectionBinding Proprietario}" Width="*" />
+        <DataGridTextColumn Header="Inquilino" Binding="{ReflectionBinding Inquilino}" Width="160" />
+        <DataGridTextColumn Header="Cobrar de" Binding="{ReflectionBinding Cobranca}" Width="100" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="80" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Bloco / número" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <TextBox Text="{Binding Bloco}" Width="80" Watermark="Bloco" />
+          <TextBox Text="{Binding Numero}" Width="100" Watermark="Número" />
+        </StackPanel>
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Tipo" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:UnidadesViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="160" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Fração ideal" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Fracao}" Watermark="Ex.: 0,0125 ou 1,25" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Área (m²)" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Area}" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Proprietário" />
+        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Proprietario}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Inquilino" />
+        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Inquilino}" HorizontalAlignment="Stretch" />
+        <StackPanel Grid.Row="6" Grid.Column="1" Spacing="2">
+          <CheckBox Content="Cobrar do inquilino" IsChecked="{Binding CobrarInquilino}" />
+          <CheckBox Content="Unidade ativa" IsChecked="{Binding Ativa}" />
+        </StackPanel>
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova unidade" Command="{Binding NovaCommand}" />
+        <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+      </StackPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Proprietários e inquilinos são cadastrados em Cadastros › Clientes (cadastro comum a todos os módulos)." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

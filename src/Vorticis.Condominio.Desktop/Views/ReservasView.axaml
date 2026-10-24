@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.ReservasView" x:DataType="vm:ReservasViewModel">
+  <Grid ColumnDefinitions="300,12,*" Margin="8">
+    <StackPanel Spacing="6">
+      <TextBlock Classes="titulo" Text="Áreas comuns" />
+      <ListBox ItemsSource="{Binding Areas}" SelectedItem="{Binding AreaSelecionada}" Height="200">
+        <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Nome}" /></DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+      <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+        <TextBox Text="{Binding NomeArea}" Watermark="Nome (ex.: Salão de festas)" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <NumericUpDown Value="{Binding Capacidade}" Minimum="0" FormatString="0" Width="130" Watermark="Capacidade" />
+          <TextBox Text="{Binding TaxaReserva}" Watermark="Taxa da reserva" Width="130" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Content="Nova área" Command="{Binding NovaAreaCommand}" />
+          <Button Content="Gravar área" Command="{Binding GravarAreaCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+    <DockPanel Grid.Column="2">
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Reservas (área selecionada à esquerda)" Margin="0,0,0,6" />
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" IsEnabled="{Binding PodeEditar}">
+        <ComboBox ItemsSource="{Binding UnidadesOpcoes}" SelectedItem="{Binding Unidade}" Width="140" PlaceholderText="Unidade" />
+        <CalendarDatePicker SelectedDate="{Binding DataReserva}" Width="140" />
+        <TextBox Text="{Binding Observacao}" Watermark="Observação" Width="200" />
+        <Button Content="Reservar" Classes="accent" Command="{Binding ReservarCommand}" />
+        <Button Content="Cancelar reserva" Command="{Binding CancelarReservaCommand}" />
+      </StackPanel>
+      <c:MensagensView DockPanel.Dock="Bottom" />
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding ReservaSelecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="140" />
+        <DataGridTextColumn Header="Área" Binding="{ReflectionBinding Area}" Width="*" />
+        <DataGridTextColumn Header="Unidade" Binding="{ReflectionBinding Unidade}" Width="90" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
+        <DataGridTextColumn Header="Observação" Binding="{ReflectionBinding Observacao}" Width="200" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+  </Grid>
+</UserControl>

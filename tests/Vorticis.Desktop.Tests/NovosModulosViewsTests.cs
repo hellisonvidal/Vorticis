@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.Threading;
 using E = Vorticis.Escritorio.Desktop;
 using R = Vorticis.Erp.Desktop;
+using K = Vorticis.Condominio.Desktop;
 
 namespace Vorticis.Desktop.Tests;
 
@@ -30,6 +31,14 @@ public class NovosModulosViewsTests(SessaoHeadless headless)
         yield return (new R.ViewModels.EstoqueViewModel(erp), new R.Views.EstoqueView());
         yield return (new R.ViewModels.VeiculosViewModel(erp), new R.Views.VeiculosView());
         yield return (new R.ViewModels.TransporteViewModel(erp), new R.Views.TransporteView());
+        var cond = new K.MainViewModel();
+        yield return (new K.ViewModels.UnidadesViewModel(cond), new K.Views.UnidadesView());
+        yield return (new K.ViewModels.TaxasViewModel(cond), new K.Views.TaxasView());
+        yield return (new K.ViewModels.CobrancasViewModel(cond), new K.Views.CobrancasView());
+        yield return (new K.ViewModels.DespesasViewModel(cond), new K.Views.DespesasView());
+        yield return (new K.ViewModels.ReservasViewModel(cond), new K.Views.ReservasView());
+        yield return (new K.ViewModels.OcorrenciasViewModel(cond), new K.Views.OcorrenciasView());
+        yield return (new K.ViewModels.PrestacaoViewModel(cond), new K.Views.PrestacaoView());
     }
 
     [Fact]

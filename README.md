@@ -11,6 +11,7 @@ Aplicativo desktop para Windows com PostgreSQL na própria máquina; arquitetura
 | 0. Fundação | Solução .NET 10, migrações versionadas, multiempresa, auditoria com hash encadeado, CI, login, **perfis de acesso configuráveis pelo administrador**, menu (Cadastros / Lançamentos / Imobilizado / Consultas / Integrações / Relatórios / Configurações / Ajuda), cadastro de empresa com consulta à base pública do CNPJ, **backup e restauração**, **instalador único com banco de dados embutido (sem configurar PostgreSQL)** ✔ |
 | 1. MVP contábil | Plano de contas (modelo + manutenção), centros de custo, saldos iniciais, lançamento com validação de partidas dobradas, estorno, fechamento/reabertura de período, Diário, Razão, Balancete, **relatórios em tela com exportação para PDF, Excel (.xlsx) e CSV**, **Consultas rápidas de saldos e lançamentos**, **importação de lançamentos (planilhas com layouts personalizados, extratos OFX, layout padrão)**, **importação do plano de contas de planilha com conversão de máscara**, **livros em PDF (Diário com termos de abertura e encerramento, Razão, Balancete)** ✔ |
 | 3. Demonstrações e ECD | Encerramento do exercício (IND_LCTO = E) e desfazer; Balanço Patrimonial e DRE (tela e PDF); **plano referencial da RFB: importação da tabela oficial e vínculo das contas (sugestões automáticas, cópia do ano anterior, pendências para a ECD)**. **gerador do arquivo da ECD (Livro G, leiaute 9) com pendências e assinatura digital no formato do PVA** ([docs/05-ecd.md](docs/05-ecd.md); tela pendente). **Pendente:** DFC |
+| Novos módulos | **Escritório** (carteira de clientes, tarefas e prazos, protocolos, honorários), **ERP** (painel do empresário, pedidos de venda e compra que geram nota, duplicatas e estoque, transporte CT-e/MDF-e) e **Condomínio** (unidades, taxas, cobranças com encargos, despesas, reservas, ocorrências, prestação de contas) ✔ |
 | 5. Folha de pagamento e eSocial | Cadastros, folha mensal, férias, 13º, rescisão, provisões, contabilização automática e XMLs do eSocial S-1.3 conferidos com os XSDs oficiais, assinatura XMLDSig e transmissão direta (produção restrita/produção, inclusive por procurador) ✔ |
 
 Ver o [roadmap](docs/04-roadmap.md).
@@ -25,6 +26,7 @@ src/Vorticis.Infra           PostgreSQL (Npgsql), migrador, plano de contas mode
 src/Vorticis.Desktop.Comum   Casco comum dos executáveis (Avalonia/MVVM): bootstrap, janela principal com menu do módulo, login, banco, empresas, usuários, perfis, certificados, backup, configurações
 src/Vorticis.Desktop         Executável do módulo Contábil (VorticisContabil.exe)
 src/Vorticis.Fiscal(.Desktop)  Regras, serviços, repositórios e executável do módulo Fiscal (VorticisFiscal.exe): XML de NF-e/NFS-e, livros, contabilização, Simples, Lucro Presumido/Real, retenções e guias
+src/Vorticis.Escritorio, Vorticis.Erp, Vorticis.Condominio (+ .Desktop)  Módulos Escritório, ERP e Condomínio (VorticisEscritorio.exe, VorticisErp.exe, VorticisCondominio.exe)
 src/Vorticis.Folha(.Desktop)   Regras puras, serviços, repositórios e telas do módulo Folha de Pagamento + eSocial (VorticisFolha.exe) — ver "Módulo Folha de Pagamento"
 tests/                      Unitários, integração com PostgreSQL e testes de interface headless
 docs/                       Arquitetura, regras, desafios fiscais, roadmap
@@ -32,9 +34,9 @@ docs/                       Arquitetura, regras, desafios fiscais, roadmap
 
 ## Instalar (usuário final, Windows 10/11 64 bits)
 
-1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub).
+1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub). Sem instalar: use os artefatos **Vorticis<Módulo>-portatil** ou **VorticisSuite-portatil** (todos os módulos numa pasta, com o banco embutido).
 2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
-3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha de Pagamento** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
+3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal**, **Vorticis Folha de Pagamento**, **Vorticis Escritório**, **Vorticis ERP** e **Vorticis Condomínio** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
 4. Ao final da instalação, o instalador instala o *Visual C++ Redistributable* (se faltar) e **configura o banco automaticamente** (página de progresso; roda `VorticisContabil.exe --configurar-banco`, sem janela). Se falhar, a instalação termina assim mesmo e avisa onde está o log.
 5. Abra o módulo desejado. Na primeira abertura (se o banco ainda não estiver pronto) ele **cria sozinho o banco de dados** e vai direto à criação do administrador. Os módulos compartilham o mesmo banco, login, empresas e configurações; o banco sobe com o primeiro módulo aberto e só para quando o último fecha.
 

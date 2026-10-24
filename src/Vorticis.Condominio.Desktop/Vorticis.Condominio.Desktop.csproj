@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Executável do módulo Condomínio: usa o casco comum (login, empresas, usuários, backup...) e acrescenta as telas do módulo. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>VorticisCondominio</AssemblyName>
+    <Product>Vorticis Condomínio</Product>
+    <Title>Vorticis Condomínio</Title>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Ícone do módulo (gerado por instalador/icone/gerar_icone.py) -->
+    <ApplicationIcon>..\..\instalador\icone\VorticisCondominio.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Vorticis.Desktop.Comum\Vorticis.Desktop.Comum.csproj" />
+    <ProjectReference Include="..\Vorticis.Condominio\Vorticis.Condominio.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Vorticis.Desktop.Comum" />
+    <Using Include="Vorticis.Desktop.Comum.ViewModels" />
+    <Using Include="Vorticis.Desktop.Comum.Views" />
+  </ItemGroup>
+</Project>

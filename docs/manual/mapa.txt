@@ -128,3 +128,12 @@ erp.pedidos.compra=10-erp.md#pedidos-de-venda-e-de-compra
 erp.estoque=10-erp.md#estoque
 erp.veiculos=10-erp.md#veiculos-e-motoristas
 erp.transporte=10-erp.md#conhecimentos-e-manifestos-ct-e-e-mdf-e
+
+; ---- Condomínio
+condominio.unidades=11-condominio.md#unidades-e-condominos
+condominio.reservas=11-condominio.md#areas-comuns-e-reservas
+condominio.taxas=11-condominio.md#taxas-condominiais
+condominio.cobrancas=11-condominio.md#cobrancas-e-recebimentos
+condominio.despesas=11-condominio.md#despesas-do-condominio
+condominio.ocorrencias=11-condominio.md#ocorrencias-e-assembleias
+condominio.prestacao=11-condominio.md#prestacao-de-contas-e-inadimplencia

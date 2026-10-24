@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Vorticis.Application/Vorticis.Application.csproj" />
+    <Project Path="src/Vorticis.Condominio.Desktop/Vorticis.Condominio.Desktop.csproj" />
     <Project Path="src/Vorticis.Condominio/Vorticis.Condominio.csproj" />
     <Project Path="src/Vorticis.Desktop.Comum/Vorticis.Desktop.Comum.csproj" />
     <Project Path="src/Vorticis.Desktop/Vorticis.Desktop.csproj" />

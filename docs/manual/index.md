@@ -17,6 +17,7 @@ Cada função segue o mesmo roteiro: **para que serve**, **onde fica no menu**, 
 | [Obrigações](07-obrigacoes.md) | Calendário de obrigações |
 | [Escritório](09-escritorio.md) | Carteira de clientes, tarefas e prazos, protocolos e honorários |
 | [ERP](10-erp.md) | Painel do empresário, pedidos de venda e compra, estoque e transporte |
+| [Condomínio](11-condominio.md) | Unidades, taxas, cobranças, despesas, reservas, ocorrências e prestação de contas |
 | [Configurações](08-configuracoes.md) | Backup, configurações gerais, conexão e solução de problemas |
 
 ## Dicas gerais de uso

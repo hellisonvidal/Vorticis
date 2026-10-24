@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.TaxasView" x:DataType="vm:TaxasViewModel">
+  <Grid ColumnDefinitions="*,12,360" RowDefinitions="Auto,*" Margin="8">
+    <TextBlock Grid.ColumnSpan="3" Classes="titulo" Text="Taxas condominiais" Margin="0,0,0,8" />
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Taxa" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Rateio" Binding="{ReflectionBinding Rateio}" Width="170" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="120" />
+        <DataGridTextColumn Header="Vigência" Binding="{ReflectionBinding Vigencia}" Width="160" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="80" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <TextBox Text="{Binding Descricao}" Watermark="Descrição (ex.: Taxa ordinária)" />
+      <ComboBox ItemsSource="{x:Static vm:TaxasViewModel.Rateios}" SelectedItem="{Binding Rateio}" HorizontalAlignment="Stretch" />
+      <TextBox Text="{Binding Valor}" Watermark="Valor (total a ratear ou por unidade)" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Watermark="Início" Width="150" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Watermark="Fim (opcional)" Width="150" />
+      </StackPanel>
+      <CheckBox Content="Taxa ativa" IsChecked="{Binding Ativa}" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova taxa" Command="{Binding NovaCommand}" />
+        <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+      </StackPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Fração ideal: o valor total é dividido pela fração de cada unidade. Partes iguais: dividido igualmente. Valor fixo: o mesmo valor para cada unidade." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>
