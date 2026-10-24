@@ -160,5 +160,37 @@ public class MenusTests
         Assert.True(vm.UsaPeriodo);
         Assert.Equal(["FGTS (GFD) (em breve)", "DCTFWeb e INSS (em breve)", "RAIS e DIRF (em breve)"], proprios.Where(i => !i.Habilitado).Select(i => i.Titulo));
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
+        // Folha e Pró-labore são submenus de Cálculos
+        var calculos = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Cálculos");
+        Assert.Equal(["Folha", "Pró-labore"], calculos.Filhos!.Select(m => m.Titulo.Replace("_", "")));
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") is "Folha" or "Pró-labore");
+    }
+
+    [Fact]
+    public async Task Competencia_da_folha_e_escolhida_por_mes_e_ano_e_a_lista_filtra_as_fechadas()
+    {
+        var vm = new Vorticis.Folha.Desktop.MainViewModel();
+        var folha = vm.FolhaMensal;
+        folha.Competencia = new DateTime(2026, 3, 1);
+        folha.MesCompetencia = 6;
+        Assert.Equal(new DateTime(2026, 7, 1), folha.Competencia);
+        folha.AnoCampo = 2025;
+        Assert.Equal(new DateTime(2025, 7, 1), folha.Competencia);
+        folha.AnoCampo = 1500;                                   // ano inválido é ignorado
+        Assert.Equal(2025, folha.AnoCompetencia);
+        Assert.Equal(12, Vorticis.Folha.Desktop.ViewModels.FolhaMensalViewModel.Meses.Count);
+
+        // sem banco nenhuma competência está fechada: a lista tem os meses recentes, e "Só fechadas" a esvazia
+        await vm.RecarregarPeriodosAsync();
+        Assert.Contains(vm.ListaPeriodos, p => p.Periodo == vm.PeriodoTrabalho);
+        Assert.Equal(vm.PeriodoTrabalho, vm.PeriodoEscolhido!.Periodo);
+        var outro = vm.ListaPeriodos.First(p => p.Periodo != vm.PeriodoTrabalho);
+        vm.PeriodoEscolhido = outro;
+        Assert.Equal(outro.Periodo, vm.PeriodoTrabalho);
+        vm.SomenteFechados = true;
+        await vm.RecarregarPeriodosAsync();
+        Assert.Empty(vm.ListaPeriodos);
+        Assert.Equal(outro.Periodo, vm.PeriodoTrabalho);         // o filtro não troca a competência em uso
+        Assert.Equal("03/2026 (fechada)", new OpcaoPeriodo(new DateOnly(2026, 3, 1), true).Texto);
     }
 }

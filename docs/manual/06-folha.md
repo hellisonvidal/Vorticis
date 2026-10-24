@@ -13,8 +13,8 @@ Na barra de cima, ao lado do seletor de empresas, fica a **Competência** em que
 
 Passo a passo:
 
-1. Clique na data ao lado de **Competência** e escolha o mês. As telas *Eventos variáveis*, *Cálculo da folha mensal* e *Pró-labore* passam a usar esse mês.
-2. Para fechar, vá em *Folha › Cálculo da folha mensal* e clique em **Fechar competência**. A situação ao lado da empresa muda para **FECHADA**.
+1. Escolha o mês na lista ao lado de **Competência** (as já fechadas aparecem como *(fechada)*; marque **Só fechadas** para listar apenas essas). As telas *Eventos variáveis*, *Cálculo da folha mensal* e *Pró-labore* passam a usar esse mês.
+2. Para fechar, vá em *Cálculos › Folha › Cálculo da folha mensal* e clique em **Fechar competência**. A situação ao lado da empresa muda para **FECHADA**.
 3. Precisou corrigir? **Reabrir** na mesma tela (só se a folha não estiver contabilizada) e a situação volta para **ABERTA**.
 
 ## Parâmetros e tabelas legais
@@ -62,7 +62,7 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 ## Eventos variáveis
 
 **Para que serve:** lançar o que muda todo mês antes de calcular a folha (horas extras, faltas, comissões, adiantamentos, vale-transporte, pensão alimentícia etc.).
-**Onde fica:** *Folha › Eventos variáveis* (**Ctrl+E**).
+**Onde fica:** *Cálculos › Folha › Eventos variáveis* (**Ctrl+E**).
 
 1. Escolha a **competência** e o **funcionário**.
 2. Escolha a **rubrica**, informe a **quantidade** (horas, dias) ou o **valor** e uma observação.
@@ -70,9 +70,9 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 
 ## Cálculo da folha mensal
 
-**Onde fica:** *Folha › Cálculo da folha mensal* (**Ctrl+F**).
+**Onde fica:** *Cálculos › Folha › Cálculo da folha mensal* (**Ctrl+F**).
 
-1. Escolha a **competência**.
+1. Escolha a **competência**: o **mês** na lista e o **ano** no campo ao lado (não há dia a escolher).
 2. **Calcular folha**. A lista mostra proventos, descontos, líquido, INSS, IRRF e FGTS de cada funcionário.
 3. Selecione um funcionário para ver a **memória de cálculo** rubrica a rubrica.
 4. **Recibo do selecionado (PDF)** ou **Holerites da competência (PDF)**.
@@ -82,7 +82,7 @@ O cálculo cobre horas extras, DSR, adicional noturno, insalubridade/periculosid
 
 ## Férias
 
-**Onde fica:** *Folha › Férias*.
+**Onde fica:** *Cálculos › Folha › Férias*.
 
 1. Escolha o **funcionário**: aparecem os **períodos aquisitivos** e concessivos.
 2. Selecione o período e informe o **início do gozo**, os **dias de gozo**, o **abono pecuniário** (dias vendidos) e as **faltas injustificadas** (reduzem os dias de direito), e a data de pagamento.
@@ -93,7 +93,7 @@ Fracionamento é aceito (calcule cada período de gozo).
 
 ## 13º salário
 
-**Onde fica:** *Folha › 13º salário*.
+**Onde fica:** *Cálculos › Folha › 13º salário*.
 
 1. Escolha o **ano** e a parcela: **1ª parcela (novembro)** ou **2ª parcela (dezembro)**. A 2ª calcula INSS e IRRF sobre o valor integral.
 2. **Calcular**; confira a memória (avos).
@@ -101,7 +101,7 @@ Fracionamento é aceito (calcule cada período de gozo).
 
 ## Rescisões
 
-**Onde fica:** *Folha › Rescisões*.
+**Onde fica:** *Cálculos › Folha › Rescisões*.
 
 1. Escolha o **funcionário** e o **motivo** (sem justa causa, pedido de demissão, justa causa, acordo do art. 484-A ou término de contrato).
 2. Informe o tipo do **aviso prévio**, a data de **desligamento** e a de **pagamento**. O aviso proporcional segue a Lei 12.506.
@@ -111,12 +111,12 @@ Fracionamento é aceito (calcule cada período de gozo).
 
 ## Provisões de férias e 13º
 
-**Onde fica:** *Folha › Provisões de férias e 13º* (e *Relatórios › Provisões*).
+**Onde fica:** *Cálculos › Folha › Provisões de férias e 13º* (e *Relatórios › Provisões*).
 Escolha a competência e **Calcular provisões**: 1/12 de férias (mais 1/3) e 1/12 de 13º, com encargos. *Mostrar* alterna entre as visões.
 
 ## Contabilização da folha
 
-**Onde fica:** *Folha › Contabilização*.
+**Onde fica:** *Cálculos › Folha › Contabilização*.
 
 1. **Regras**: cada regra liga uma rubrica (ou `ENC_*` para encargos, `PROV_*` para provisões) a uma conta de débito e uma de crédito. **Gerar regras sugeridas** cria as regras com base no plano modelo; ajuste e **Gravar regra** (ou **Excluir**). Marque *Abrir por centro de custo do funcionário* se for o caso.
 2. Escolha a **competência** e veja a **Prévia da folha**; **Contabilizar folha** gera o lançamento no último dia do mês (a competência precisa estar **fechada**).
@@ -156,9 +156,9 @@ O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de p
 
 ## Pró-labore dos sócios
 
-**Onde fica:** *Pró-labore › Sócios e cálculo do pró-labore*.
+**Onde fica:** *Cálculos › Pró-labore › Sócios e cálculo do pró-labore*.
 
-Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*, ou *Pró-labore › Sócios (cadastro da empresa)*). Só aparecem sócios pessoa física.
+Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*, ou *Cálculos › Pró-labore › Sócios (cadastro da empresa)*). Só aparecem sócios pessoa física.
 
 1. Selecione o sócio na lista.
 2. Marque **Retira pró-labore** se ele recebe pró-labore (desmarque se não recebe).

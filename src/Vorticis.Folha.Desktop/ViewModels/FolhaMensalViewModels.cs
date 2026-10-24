@@ -180,8 +180,32 @@ public partial class FolhaMensalViewModel(IContexto contexto) : CalculosBaseView
     public bool PodeFechar => Contexto.Pode(Permissao.FolhaFechar) && !Fechada;
     public bool PodeReabrir => Contexto.Pode(Permissao.FolhaReabrir) && Fechada;
 
+    public static IReadOnlyList<string> Meses { get; } =
+        ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+    /// <summary>Mês da competência (0 = janeiro): a folha mensal é informada só com mês e ano.</summary>
+    public int MesCompetencia
+    {
+        get => (Competencia ?? DateTime.Today).Month - 1;
+        set { if (value is >= 0 and < 12 && value != MesCompetencia) Competencia = new DateTime(AnoCompetencia, value + 1, 1); }
+    }
+
+    public int AnoCompetencia => (Competencia ?? DateTime.Today).Year;
+
+    /// <summary>Ano da competência no campo numérico (aceita de 1990 a 2100).</summary>
+    public decimal? AnoCampo
+    {
+        get => AnoCompetencia;
+        set { if (value is { } a && a is >= 1990 and <= 2100 && (int)a != AnoCompetencia) Competencia = new DateTime((int)a, MesCompetencia + 1, 1); }
+    }
+
     partial void OnFechadaChanged(bool value) => AtualizarPermissoes();
-    partial void OnCompetenciaChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnCompetenciaChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(MesCompetencia));
+        OnPropertyChanged(nameof(AnoCampo));
+        _ = CarregarAsync();
+    }
 
     public void AtualizarPermissoes()
     {

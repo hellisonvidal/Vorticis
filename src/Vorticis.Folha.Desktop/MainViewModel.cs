@@ -32,6 +32,17 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloFolha())
         return (!s.Fechada, s.Fechada ? "FECHADA" : "ABERTA");
     }
 
+    /// <summary>Competências fechadas do ano em uso e dos dois anteriores (lista ao lado da empresa).</summary>
+    protected override async Task<IReadOnlyCollection<DateOnly>> ListarPeriodosFechadosAsync()
+    {
+        if (App is not { } app || EmpresaId is not { } empresa || Sessao is not { } sessao) return [];
+        var fechadas = new HashSet<DateOnly>();
+        foreach (var ano in new[] { DateTime.Today.Year - 2, DateTime.Today.Year - 1, DateTime.Today.Year, PeriodoTrabalho.Year }.Distinct())
+            foreach (var c in await ServicosFolha.De(app).Folha.ListarCompetenciasAsync(empresa, ano, sessao.Id))
+                if (c.Fechada) fechadas.Add(c.Competencia);
+        return fechadas;
+    }
+
     /// <summary>Leva a nova competência às telas que trabalham por competência.</summary>
     protected override async Task AoAlterarPeriodoAsync(DateOnly periodo)
     {

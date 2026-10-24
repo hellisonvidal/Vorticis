@@ -61,8 +61,16 @@
           <!-- Período de trabalho do módulo (Folha: competência) e a situação dele; fechado bloqueia inclusões, alterações e exclusões -->
           <TextBlock Text="{Binding RotuloPeriodo}" IsVisible="{Binding UsaPeriodo}" Foreground="#C9D6E8" FontSize="12"
                      VerticalAlignment="Center" Margin="10,0,0,0" />
-          <CalendarDatePicker SelectedDate="{Binding PeriodoSelecionado}" IsVisible="{Binding UsaPeriodo}" Width="130"
-                              FontSize="12" MinHeight="24" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" />
+          <ComboBox ItemsSource="{Binding ListaPeriodos}" SelectedItem="{Binding PeriodoEscolhido}" IsVisible="{Binding UsaPeriodo}" Width="150"
+                    FontSize="12" MinHeight="24" MaxDropDownHeight="360">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:OpcaoPeriodo">
+                <TextBlock Text="{Binding Texto}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <CheckBox Content="Só fechadas" IsChecked="{Binding SomenteFechados}" IsVisible="{Binding UsaPeriodo}" Foreground="#C9D6E8" FontSize="12"
+                    VerticalAlignment="Center" Margin="6,0,0,0" ToolTip.Tip="Mostra na lista só as competências já fechadas" />
           <Border IsVisible="{Binding UsaPeriodo}" Background="{Binding PincelSituacaoPeriodo}" CornerRadius="3" Padding="6,1"
                   VerticalAlignment="Center" ToolTip.Tip="Situação do período: inclusões, alterações e exclusões só com o período aberto">
             <TextBlock Text="{Binding SituacaoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="#1F2937" />

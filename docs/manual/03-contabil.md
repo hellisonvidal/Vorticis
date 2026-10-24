@@ -90,7 +90,7 @@ O sistema **não exclui** (e explica o motivo na tela) quando:
 - o período do lançamento está **fechado** (reabra-o em *Fechamento de períodos*) ou o exercício está **encerrado**;
 - já existe **ECD gerada** para o ano;
 - a data está antes da data de bloqueio da empresa, ou a partida está **conciliada** (desfaça a conciliação antes);
-- o lançamento veio de outro módulo (**Fiscal**, **Folha**, **Imobilizado** ou **Encerramento do exercício**): desfaça a operação no módulo de origem, por exemplo em *Folha › Contabilização* ou *Documentos fiscais › Contabilizar notas fiscais*.
+- o lançamento veio de outro módulo (**Fiscal**, **Folha**, **Imobilizado** ou **Encerramento do exercício**): desfaça a operação no módulo de origem, por exemplo em *Cálculos › Folha › Contabilização* ou *Documentos fiscais › Contabilizar notas fiscais*.
 
 ### Estornar
 Disponível quando a empresa usa estorno de lançamentos (configuração acima).

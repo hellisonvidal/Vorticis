@@ -36,18 +36,19 @@ public sealed class ModuloFolha : IModuloDesktop
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
-        ItemMenu.Submenu("_Folha",
-            ItemMenu.Tela("Eventos variáveis", FolhaTelas.Eventos),
-            ItemMenu.Tela("Cálculo da folha mensal", FolhaTelas.FolhaMensal),
-            ItemMenu.Tela("Férias", FolhaTelas.Ferias),
-            ItemMenu.Tela("13º salário", FolhaTelas.Decimo),
-            ItemMenu.Tela("Rescisões", FolhaTelas.Rescisoes),
-            ItemMenu.Separador,
-            ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
-            ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao)),
-        ItemMenu.Submenu("_Pró-labore",
-            ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore),
-            ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios)),
+        ItemMenu.Submenu("C_álculos",
+            ItemMenu.Submenu("_Folha",
+                ItemMenu.Tela("Eventos variáveis", FolhaTelas.Eventos),
+                ItemMenu.Tela("Cálculo da folha mensal", FolhaTelas.FolhaMensal),
+                ItemMenu.Tela("Férias", FolhaTelas.Ferias),
+                ItemMenu.Tela("13º salário", FolhaTelas.Decimo),
+                ItemMenu.Tela("Rescisões", FolhaTelas.Rescisoes),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
+                ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao)),
+            ItemMenu.Submenu("_Pró-labore",
+                ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore),
+                ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios))),
         ItemMenu.Submenu("_Obrigações",
             ItemMenu.Submenu("eSocial",
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
@@ -98,28 +99,28 @@ public sealed class ModuloFolha : IModuloDesktop
 
         c.Instancia(nameof(MainViewModel.Eventos), m => new EventosVariaveisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Eventos, "Folha › Eventos variáveis", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Eventos, "Cálculos › Folha › Eventos variáveis", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.FolhaMensal), m => new FolhaMensalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Calculos.Clear(); v.Itens.Clear(); },
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.FolhaMensal, "Folha › Cálculo da folha mensal", Ver, v => v.CarregarAsync())
+            .Tela(FolhaTelas.FolhaMensal, "Cálculos › Folha › Cálculo da folha mensal", Ver, v => v.CarregarAsync())
             .Tela(FolhaTelas.Holerites, "Relatórios › Holerites e recibos", m => Pode(m, Permissao.FolhaRelatorios, Permissao.FolhaConsultar, Permissao.FolhaCalcular), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Ferias), m => new FeriasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Ferias, "Folha › Férias", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Ferias, "Cálculos › Folha › Férias", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Decimo), m => new DecimoTerceiroViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Calculos.Clear(); v.Itens.Clear(); },
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Decimo, "Folha › 13º salário", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Decimo, "Cálculos › Folha › 13º salário", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Rescisoes), m => new RescisoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Rescisoes, "Folha › Rescisões", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Rescisoes, "Cálculos › Folha › Rescisões", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.ProLabore), m => new ProLaboreViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.ProLabore, "Pró-labore › Sócios e cálculo do pró-labore", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.ProLabore, "Cálculos › Pró-labore › Sócios e cálculo do pró-labore", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Contabilizacao), m => new ContabilizacaoFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Contabilizacao, "Folha › Contabilização", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
+            .Tela(FolhaTelas.Contabilizacao, "Cálculos › Folha › Contabilização", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.ESocial), m => new ESocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Eventos.Clear(); v.Xml = ""; },

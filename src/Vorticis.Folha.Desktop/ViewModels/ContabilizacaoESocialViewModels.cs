@@ -27,7 +27,7 @@ public sealed record ContabilizacaoLinha(ContabilizacaoRegistro C)
 }
 
 /// <summary>
-/// Folha › Folha › Contabilização: regras rubrica → conta de débito/crédito (centro de custo opcional), prévia, lançamento
+/// Cálculos › Folha › Contabilização: regras rubrica → conta de débito/crédito (centro de custo opcional), prévia, lançamento
 /// automático da folha (competência fechada) e das provisões no módulo contábil, e desfazer (estorno).
 /// </summary>
 public partial class ContabilizacaoFolhaViewModel(IContexto contexto) : ModuloViewModel(contexto)

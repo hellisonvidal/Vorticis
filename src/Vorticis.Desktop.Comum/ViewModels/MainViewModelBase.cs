@@ -11,6 +11,12 @@ using Vorticis.Infra;
 
 namespace Vorticis.Desktop.Comum.ViewModels;
 
+/// <summary>Período (competência) da lista ao lado da empresa.</summary>
+public sealed record OpcaoPeriodo(DateOnly Periodo, bool Fechado)
+{
+    public string Texto => Fechado ? $"{Periodo:MM/yyyy} (fechada)" : $"{Periodo:MM/yyyy}";
+}
+
 /// <summary>Contexto compartilhado pelos módulos: aplicação conectada, usuário logado e empresa ativa.</summary>
 public interface IContexto
 {
@@ -301,6 +307,44 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (!UsaPeriodo) return;
         var r = App is not null && Sessao is not null && EmpresaSelecionada is not null ? await ConsultarPeriodoAsync(PeriodoTrabalho) : null;
         (PeriodoAberto, SituacaoPeriodo) = r is { } v ? (v.Aberto, v.Aberto ? "ABERTA" : "FECHADA") : (true, "");
+        await RecarregarPeriodosAsync();
+    }
+
+    /// <summary>Períodos da lista ao lado da empresa (do mais recente ao mais antigo); com <see cref="SomenteFechados"/>, só os fechados.</summary>
+    public ObservableCollection<OpcaoPeriodo> ListaPeriodos { get; } = [];
+
+    [ObservableProperty] private OpcaoPeriodo? _periodoEscolhido;
+    [ObservableProperty] private bool _somenteFechados;
+    private bool _montandoPeriodos;
+
+    partial void OnPeriodoEscolhidoChanged(OpcaoPeriodo? value)
+    {
+        if (_montandoPeriodos || value is null || value.Periodo == PeriodoTrabalho) return;
+        PeriodoSelecionado = value.Periodo.ToDateTime(TimeOnly.MinValue);
+    }
+
+    partial void OnSomenteFechadosChanged(bool value) => _ = Disparar(RecarregarPeriodosAsync);
+
+    /// <summary>Períodos fechados da empresa ativa; o módulo que tem <see cref="IModuloDesktop.RotuloPeriodo"/> sobrescreve.</summary>
+    protected virtual Task<IReadOnlyCollection<DateOnly>> ListarPeriodosFechadosAsync() => Task.FromResult<IReadOnlyCollection<DateOnly>>([]);
+
+    /// <summary>Monta a lista: os meses de dois anos atrás até o próximo mês (e o período em uso), marcando os fechados.</summary>
+    public async Task RecarregarPeriodosAsync()
+    {
+        if (!UsaPeriodo) return;
+        var fechados = App is not null && Sessao is not null && EmpresaSelecionada is not null ? await ListarPeriodosFechadosAsync() : [];
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        var meses = new SortedSet<DateOnly>(fechados) { PeriodoTrabalho };
+        for (var m = new DateOnly(hoje.Year - 2, 1, 1); m <= new DateOnly(hoje.Year, hoje.Month, 1).AddMonths(1); m = m.AddMonths(1)) meses.Add(m);
+        _montandoPeriodos = true;
+        try
+        {
+            ListaPeriodos.Clear();
+            foreach (var m in meses.Reverse().Where(m => !SomenteFechados || fechados.Contains(m)))
+                ListaPeriodos.Add(new OpcaoPeriodo(m, fechados.Contains(m)));
+            PeriodoEscolhido = ListaPeriodos.FirstOrDefault(p => p.Periodo == PeriodoTrabalho);
+        }
+        finally { _montandoPeriodos = false; }
     }
 
     // ------------------------------------------------------------------ estado

@@ -145,7 +145,7 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
                 OrigemLancamento.NFe or OrigemLancamento.NFSe or OrigemLancamento.CTe =>
                     "pelo módulo Fiscal; desfaça a contabilização em Documentos fiscais › Contabilizar notas fiscais",
                 OrigemLancamento.ApuracaoTributo => "pelo módulo Fiscal; desfaça a provisão na tela de Apuração correspondente",
-                OrigemLancamento.Folha => "pelo módulo Folha; desfaça a contabilização em Folha › Contabilização",
+                OrigemLancamento.Folha => "pelo módulo Folha; desfaça a contabilização em Cálculos › Folha › Contabilização",
                 OrigemLancamento.Depreciacao => "pelo módulo Imobilizado; desfaça o lançamento em Imobilizado › Cálculo e lançamento da depreciação",
                 OrigemLancamento.Encerramento => "pelo encerramento do exercício; desfaça-o em Lançamentos › Encerramento do exercício",
                 _ => null,

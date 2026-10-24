@@ -152,7 +152,7 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
         var faltando = acc.Valores.Keys.Select(k => k.Chave).Distinct().Where(c => !porChave.ContainsKey(c)).ToList();
         if (faltando.Count > 0)
             return Resultado<PreviaContabilizacao>.Falha(faltando.Select(c =>
-                $"Sem regra de contabilização para {c} – {acc.Descricoes[c]} ({Formato.Moeda(acc.Valores.Where(v => v.Key.Chave == c).Sum(v => v.Value))}). Cadastre-a em Folha › Contabilização."));
+                $"Sem regra de contabilização para {c} – {acc.Descricoes[c]} ({Formato.Moeda(acc.Valores.Where(v => v.Key.Chave == c).Sum(v => v.Value))}). Cadastre-a em Cálculos › Folha › Contabilização."));
 
         var partidas = new List<PartidaProposta>();
         var linhas = new List<string>();
