@@ -90,4 +90,3 @@ BEGIN
     RAISE NOTICE 'OK: exclusão da nota protegida pela baixa';
 END $$;
 
-\echo 'TODOS OS TESTES PASSARAM'

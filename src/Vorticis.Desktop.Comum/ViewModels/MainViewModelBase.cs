@@ -657,7 +657,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         Confirmacao?.Responder(false);
         var atual = ModuloAtual;
-        var opcoes = new[] { ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha }
+        var opcoes = ModulosEmpresaExtensoes.Individuais
             .Select(m => (Modulo: m, Opcao: new OpcaoConfirmacao(m.Nome(), inicial.HasFlag(m), obrigatoria: m == atual))).ToList();
         var pedido = new PedidoConfirmacao("Cadastrar esta empresa em quais módulos?",
                                            "Os cadastros (empresa, participantes, sócios, contadores etc.) são únicos e compartilhados; escolha em quais módulos a empresa ficará ativa.",

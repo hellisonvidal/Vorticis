@@ -25,10 +25,10 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                                           municipio, email, telefone, situacao_cadastral, fonte_dados, dados_consultados_em, inscricao_estadual,
                                           nire, plano_modelo, mascara_plano, inicio_escrituracao, usa_centro_custo, grande_porte,
                                           conta_apuracao, conta_lucros, conta_prejuizos, mascara_centro_custo, exige_documento, data_bloqueio, usa_estorno,
-                                          modulo_contabil, modulo_fiscal, modulo_folha)
+                                          modulo_contabil, modulo_fiscal, modulo_folha, modulo_escritorio, modulo_erp, modulo_condominio)
                 VALUES (@cnpj, @rs, @nf, @nj, @cnae, @uf, @mun, @ini, @cep, @log, @num, @compl, @bairro,
                         @municipio, @email, @tel, @sit, @fonte, @consultado, @ie,
-                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej, @mcc, @exdoc, @bloq, @estorno, @mc, @mf, @mp) RETURNING id
+                        @nire, @modelo, @mascara, @inicioesc, @cc, @porte, @capur, @cluc, @cprej, @mcc, @exdoc, @bloq, @estorno, @mc, @mf, @mp, @me, @mr, @md) RETURNING id
                 """, con, tx)
                 .Com("cnpj", e.Cnpj).Com("rs", e.RazaoSocial).Com("nf", e.NomeFantasia).Com("nj", e.NaturezaJuridica)
                 .Com("cnae", e.CnaePrincipal).Com("uf", e.Uf).Com("mun", e.CodMunicipioIbge).Com("ini", e.DataInicioAtividades)
@@ -47,7 +47,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .Com("bloq", NpgsqlTypes.NpgsqlDbType.Date, e.Contabil?.DataBloqueio)
                 .Com("estorno", e.Contabil?.UsaEstorno ?? true)
                 .Com("mc", e.Modulos.HasFlag(ModulosEmpresa.Contabil)).Com("mf", e.Modulos.HasFlag(ModulosEmpresa.Fiscal))
-                .Com("mp", e.Modulos.HasFlag(ModulosEmpresa.Folha)))
+                .Com("mp", e.Modulos.HasFlag(ModulosEmpresa.Folha)).Com("me", e.Modulos.HasFlag(ModulosEmpresa.Escritorio))
+                .Com("mr", e.Modulos.HasFlag(ModulosEmpresa.Erp)).Com("md", e.Modulos.HasFlag(ModulosEmpresa.Condominio)))
                 id = (long)(await cmd.ExecuteScalarAsync(ct))!;
 
             await using (var cmd = new NpgsqlCommand("""
@@ -131,7 +132,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
             SELECT id, cnpj, razao_social, nire, uf, cod_municipio_ibge, municipio, cep, logradouro, numero, complemento, bairro,
                    nome_fantasia, natureza_juridica, cnae_principal, data_inicio_ativ, inscricao_estadual, email, telefone,
                    (SELECT regime::text FROM core.empresa_regime r WHERE r.empresa_id = e.id ORDER BY vigencia_inicio DESC LIMIT 1),
-                   situacao_cadastral, fonte_dados, modulo_contabil, modulo_fiscal, modulo_folha
+                   situacao_cadastral, fonte_dados, modulo_contabil, modulo_fiscal, modulo_folha,
+                   modulo_escritorio, modulo_erp, modulo_condominio
               FROM core.empresa e WHERE id = @id AND ativa
             """).Com("id", id);
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -141,7 +143,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                                   T(12), r.GetString(13), r.GetString(14), r.GetFieldValue<DateOnly>(15), T(16), T(17), T(18),
                                   T(19) is { } reg ? Mapeamentos.RegimeDeSql(reg) : null, T(20), T(21),
                                   (r.GetBoolean(22) ? ModulosEmpresa.Contabil : 0) | (r.GetBoolean(23) ? ModulosEmpresa.Fiscal : 0)
-                                  | (r.GetBoolean(24) ? ModulosEmpresa.Folha : 0));
+                                  | (r.GetBoolean(24) ? ModulosEmpresa.Folha : 0) | (r.GetBoolean(25) ? ModulosEmpresa.Escritorio : 0)
+                                  | (r.GetBoolean(26) ? ModulosEmpresa.Erp : 0) | (r.GetBoolean(27) ? ModulosEmpresa.Condominio : 0));
     }
 
     public Task AtualizarAsync(AlteracaoEmpresa e, CancellationToken ct)
@@ -157,7 +160,8 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                        numero = @num, complemento = @compl, bairro = @bairro, municipio = @municipio, email = @email, telefone = @tel,
                        nire = @nire,
                        modulo_contabil = COALESCE(@mc, modulo_contabil), modulo_fiscal = COALESCE(@mf, modulo_fiscal),
-                       modulo_folha = COALESCE(@mp, modulo_folha)
+                       modulo_folha = COALESCE(@mp, modulo_folha), modulo_escritorio = COALESCE(@me, modulo_escritorio),
+                       modulo_erp = COALESCE(@mr, modulo_erp), modulo_condominio = COALESCE(@md, modulo_condominio)
                  WHERE id = @id AND ativa;
                 UPDATE core.estabelecimento SET uf = @uf, cod_municipio_ibge = @mun, inscricao_estadual = @ie WHERE empresa_id = @id AND matriz;
                 """, con, tx)
@@ -169,7 +173,10 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
                 .ComTexto("nire", e.Nire)
                 .Com("mc", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Contabil))
                 .Com("mf", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Fiscal))
-                .Com("mp", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Folha)))
+                .Com("mp", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Folha))
+                .Com("me", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Escritorio))
+                .Com("mr", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Erp))
+                .Com("md", NpgsqlTypes.NpgsqlDbType.Boolean, e.Modulos?.HasFlag(ModulosEmpresa.Condominio)))
                 await cmd.ExecuteNonQueryAsync(ct);
             await tx.CommitAsync(ct);
             return 0;
@@ -180,10 +187,12 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
         {
             await using var cmd = ds.CreateCommand("""
                 UPDATE core.empresa
-                   SET modulo_contabil = modulo_contabil OR @mc, modulo_fiscal = modulo_fiscal OR @mf, modulo_folha = modulo_folha OR @mp
+                   SET modulo_contabil = modulo_contabil OR @mc, modulo_fiscal = modulo_fiscal OR @mf, modulo_folha = modulo_folha OR @mp,
+                       modulo_escritorio = modulo_escritorio OR @me, modulo_erp = modulo_erp OR @mr, modulo_condominio = modulo_condominio OR @md
                  WHERE id = @id
                 """).Com("id", id).Com("mc", modulos.HasFlag(ModulosEmpresa.Contabil)).Com("mf", modulos.HasFlag(ModulosEmpresa.Fiscal))
-                .Com("mp", modulos.HasFlag(ModulosEmpresa.Folha));
+                .Com("mp", modulos.HasFlag(ModulosEmpresa.Folha)).Com("me", modulos.HasFlag(ModulosEmpresa.Escritorio))
+                .Com("mr", modulos.HasFlag(ModulosEmpresa.Erp)).Com("md", modulos.HasFlag(ModulosEmpresa.Condominio));
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 

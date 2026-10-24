@@ -107,11 +107,14 @@
         </Grid>
 
         <TextBlock Classes="secao" Text="Módulos" />
-        <StackPanel Orientation="Horizontal" Spacing="16" IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Módulos em que a empresa está ativa. O módulo em uso não pode ser desmarcado.">
-          <CheckBox Name="ModuloContabilCheck" Content="Contábil" IsChecked="{Binding ModuloContabil}" IsEnabled="{Binding ContabilEditavel}" />
-          <CheckBox Name="ModuloFiscalCheck" Content="Fiscal" IsChecked="{Binding ModuloFiscal}" IsEnabled="{Binding FiscalEditavel}" />
-          <CheckBox Name="ModuloFolhaCheck" Content="Folha de Pagamento" IsChecked="{Binding ModuloFolha}" IsEnabled="{Binding FolhaEditavel}" />
-        </StackPanel>
+        <WrapPanel IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Módulos em que a empresa está ativa. O módulo em uso não pode ser desmarcado.">
+          <CheckBox Margin="0,0,16,4" Name="ModuloContabilCheck" Content="Contábil" IsChecked="{Binding ModuloContabil}" IsEnabled="{Binding ContabilEditavel}" />
+          <CheckBox Margin="0,0,16,4" Name="ModuloFiscalCheck" Content="Fiscal" IsChecked="{Binding ModuloFiscal}" IsEnabled="{Binding FiscalEditavel}" />
+          <CheckBox Margin="0,0,16,4" Name="ModuloFolhaCheck" Content="Folha de Pagamento" IsChecked="{Binding ModuloFolha}" IsEnabled="{Binding FolhaEditavel}" />
+          <CheckBox Margin="0,0,16,4" Content="Escritório" IsChecked="{Binding ModuloEscritorio}" IsEnabled="{Binding EscritorioEditavel}" />
+          <CheckBox Margin="0,0,16,4" Content="ERP" IsChecked="{Binding ModuloErp}" IsEnabled="{Binding ErpEditavel}" />
+          <CheckBox Margin="0,0,16,4" Content="Condomínio" IsChecked="{Binding ModuloCondominio}" IsEnabled="{Binding CondominioEditavel}" />
+        </WrapPanel>
 
         <TextBlock Classes="secao" Text="Escrituração" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">

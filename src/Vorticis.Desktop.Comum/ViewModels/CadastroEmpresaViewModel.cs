@@ -87,15 +87,26 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private bool _moduloContabil = true;
     [ObservableProperty] private bool _moduloFiscal = true;
     [ObservableProperty] private bool _moduloFolha = true;
+    [ObservableProperty] private bool _moduloEscritorio = true;
+    [ObservableProperty] private bool _moduloErp = true;
+    [ObservableProperty] private bool _moduloCondominio;
 
     public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
     public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
     public bool FolhaEditavel => main.ModuloAtual != ModulosEmpresa.Folha;
+    public bool EscritorioEditavel => main.ModuloAtual != ModulosEmpresa.Escritorio;
+    public bool ErpEditavel => main.ModuloAtual != ModulosEmpresa.Erp;
+    public bool CondominioEditavel => main.ModuloAtual != ModulosEmpresa.Condominio;
 
     public ModulosEmpresa Modulos
     {
-        get => (ModuloContabil ? ModulosEmpresa.Contabil : 0) | (ModuloFiscal ? ModulosEmpresa.Fiscal : 0) | (ModuloFolha ? ModulosEmpresa.Folha : 0);
-        set => (ModuloContabil, ModuloFiscal, ModuloFolha) = (value.HasFlag(ModulosEmpresa.Contabil), value.HasFlag(ModulosEmpresa.Fiscal), value.HasFlag(ModulosEmpresa.Folha));
+        get => (ModuloContabil ? ModulosEmpresa.Contabil : 0) | (ModuloFiscal ? ModulosEmpresa.Fiscal : 0) | (ModuloFolha ? ModulosEmpresa.Folha : 0)
+               | (ModuloEscritorio ? ModulosEmpresa.Escritorio : 0) | (ModuloErp ? ModulosEmpresa.Erp : 0) | (ModuloCondominio ? ModulosEmpresa.Condominio : 0);
+        set
+        {
+            (ModuloContabil, ModuloFiscal, ModuloFolha) = (value.HasFlag(ModulosEmpresa.Contabil), value.HasFlag(ModulosEmpresa.Fiscal), value.HasFlag(ModulosEmpresa.Folha));
+            (ModuloEscritorio, ModuloErp, ModuloCondominio) = (value.HasFlag(ModulosEmpresa.Escritorio), value.HasFlag(ModulosEmpresa.Erp), value.HasFlag(ModulosEmpresa.Condominio));
+        }
     }
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(EhLucroReal), nameof(PermiteRegimeCaixa))]
@@ -217,7 +228,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         LimparFormulario();
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
-        Modulos = ModulosEmpresa.Todos;
+        // Condomínio é outro tipo de cadastro: só vem marcado quando a empresa é incluída pelo próprio módulo Condomínio.
+        Modulos = (ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio) | main.ModuloAtual;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;

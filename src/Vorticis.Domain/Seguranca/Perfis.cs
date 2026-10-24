@@ -55,6 +55,23 @@ public enum Permissao
     FiscalDuplicatasManter,
     FiscalDuplicatasBaixar,
 
+    // Módulo Escritório
+    EscritorioTarefas,
+    EscritorioHonorarios,
+    EscritorioRelatorios,
+
+    // Módulo ERP
+    ErpVendas,
+    ErpCompras,
+    ErpEstoque,
+    ErpTransporte,
+    ErpRelatorios,
+
+    // Módulo Condomínio
+    CondominioCadastros,
+    CondominioFinanceiro,
+    CondominioRelatorios,
+
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
 }
@@ -121,6 +138,17 @@ public static class Permissoes
         new(Permissao.FiscalSpedGerar, "FISCAL_SPED_GERAR", "Fiscal", "Gerar e assinar os arquivos do SPED Fiscal (EFD ICMS/IPI) e da EFD-Contribuições"),
         new(Permissao.FiscalDuplicatasManter, "FISCAL_DUPLICATAS_MANTER", "Fiscal", "Manter duplicatas (contas a pagar e a receber): incluir, alterar, cancelar e excluir parcelas"),
         new(Permissao.FiscalDuplicatasBaixar, "FISCAL_DUPLICATAS_BAIXAR", "Fiscal", "Baixar duplicatas (pagamento e recebimento), estornar baixas e conciliar com o extrato bancário"),
+        new(Permissao.EscritorioTarefas, "ESCRITORIO_TAREFAS", "Escritório", "Tarefas, prazos e protocolos de documentos do escritório"),
+        new(Permissao.EscritorioHonorarios, "ESCRITORIO_HONORARIOS", "Escritório", "Contratos de honorários, geração e recebimento das cobranças"),
+        new(Permissao.EscritorioRelatorios, "ESCRITORIO_RELATORIOS", "Escritório", "Relatórios do escritório: carteira de clientes, honorários e tarefas"),
+        new(Permissao.ErpVendas, "ERP_VENDAS", "ERP", "Pedidos de venda e faturamento (nota fiscal de saída e contas a receber)"),
+        new(Permissao.ErpCompras, "ERP_COMPRAS", "ERP", "Pedidos de compra e recebimento de mercadorias (nota de entrada e contas a pagar)"),
+        new(Permissao.ErpEstoque, "ERP_ESTOQUE", "ERP", "Estoque: posição, movimentos e ajustes"),
+        new(Permissao.ErpTransporte, "ERP_TRANSPORTE", "ERP", "Transporte: veículos, motoristas, conhecimentos (CT-e) e manifestos (MDF-e)"),
+        new(Permissao.ErpRelatorios, "ERP_RELATORIOS", "ERP", "Painel do empresário e relatórios gerenciais"),
+        new(Permissao.CondominioCadastros, "CONDOMINIO_CADASTROS", "Condomínio", "Unidades, condôminos, áreas comuns, reservas e ocorrências"),
+        new(Permissao.CondominioFinanceiro, "CONDOMINIO_FINANCEIRO", "Condomínio", "Taxas condominiais, cobranças, recebimentos e despesas do condomínio"),
+        new(Permissao.CondominioRelatorios, "CONDOMINIO_RELATORIOS", "Condomínio", "Prestação de contas e inadimplência"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);
