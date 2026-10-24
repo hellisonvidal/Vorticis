@@ -19,6 +19,7 @@ public sealed class ModuloCondominio : IModuloDesktop
     public string CorBarra => "#881337";      // vinho
     public bool UsaCalendarioObrigacoes => false;
     public bool UsaSindico => true;
+    public string RotuloEmpresas => "Condomínios";
 
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [

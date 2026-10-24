@@ -188,7 +188,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
         c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade), nameof(Sindico)],
                     atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
-            .Tela(TelasComuns.Empresas, "Cadastros › Empresas", Admin, v =>
+            .Tela(TelasComuns.Empresas, $"Cadastros › {Modulo.RotuloEmpresas}", Admin, v =>
             {
                 if (v.EmConsulta) _ = Disparar(v.CarregarSelecionadaAsync);
                 CarregarAbaEmpresa();
@@ -240,7 +240,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     /// <summary>Menus do casco em volta dos do módulo.</summary>
     private IReadOnlyList<ItemMenu> MontarMenus()
     {
-        var cadastros = new List<ItemMenu> { ItemMenu.Tela("Empresas", TelasComuns.Empresas) };
+        var cadastros = new List<ItemMenu> { ItemMenu.Tela(Modulo.RotuloEmpresas, TelasComuns.Empresas) };
         if (Modulo.UsaCadastrosComuns) cadastros.Add(ItemMenu.Tela("Contadores", TelasComuns.Contabilidade));
         if (Modulo.UsaCadastrosComuns && Modulo.UsaClientesFornecedores)
             cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);

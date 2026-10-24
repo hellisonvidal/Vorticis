@@ -3,7 +3,9 @@
              x:Class="Vorticis.Condominio.Desktop.Views.RateioView" x:DataType="vm:RateioViewModel">
   <!-- Financeiro › Rateio entre unidades -->
   <DockPanel Margin="8">
-    <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Rateio entre unidades" Margin="0,0,0,8" />
+    <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Rateio entre unidades" Margin="0,0,0,4" />
+    <TextBlock DockPanel.Dock="Top" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" Margin="0,0,0,8"
+               Text="Antes: cadastre as unidades com a fração ideal (Cadastros › Unidades e condôminos) e, para o vencimento, o dia em Cadastros › Parâmetros. O rateio entra na cobrança do mês de cada unidade (Financeiro › Cobranças e recebimentos)." />
     <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" IsEnabled="{Binding PodeEditar}">
       <StackPanel Margin="0,0,10,6" Spacing="2">
         <TextBlock Text="Descrição (aparece na cobrança)" FontSize="12" />

@@ -105,6 +105,11 @@ public class MenusTests
         var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
         Assert.Contains(Folhas(rel.Filhos!), i => i.Chave == Vorticis.Condominio.Desktop.ViewModels.CondominioTelas.Atas && i.Titulo == "Atas de Assembleia");
         Assert.True(vm.Empresas.MostraAbaSindico);
+        // no Condomínio o cadastro de empresas aparece como "Condomínios" (mesmos dados)
+        var cad = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Cadastros");
+        Assert.Equal("Condomínios", Assert.Single(Folhas(cad.Filhos!), i => i.Chave == TelasComuns.Empresas).Titulo);
+        Assert.Equal("Empresas", Assert.Single(Folhas(Assert.Single(new MainViewModel().Menus, m => m.Titulo.Replace("_", "") == "Cadastros").Filhos!),
+                                               i => i.Chave == TelasComuns.Empresas).Titulo);
         Assert.False(new MainViewModel().Empresas.MostraAbaSindico);
         Assert.False(new Vorticis.Fiscal.Desktop.MainViewModel().Empresas.MostraAbaSindico);
     }

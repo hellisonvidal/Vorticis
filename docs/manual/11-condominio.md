@@ -1,6 +1,17 @@
 # Condomínio
 
-Módulo **Vorticis Condomínio** (ícone vermelho-rubi): administração de condomínios. A empresa escolhida no topo é o **condomínio** (cadastre-o em *Cadastros › Empresas* com o CNPJ do condomínio e marque o módulo **Condomínio**). Proprietários, inquilinos e fornecedores são cadastrados em *Cadastros › Clientes* e *Fornecedores* (cadastro comum a todos os módulos).
+Módulo **Vorticis Condomínio** (ícone vermelho-rubi): administração de condomínios. A empresa escolhida no topo é o **condomínio** (cadastre-o em *Cadastros › Condomínios* com o CNPJ do condomínio e marque o módulo **Condomínio**). Proprietários, inquilinos e fornecedores são cadastrados em *Cadastros › Clientes* e *Fornecedores* (cadastro comum a todos os módulos).
+
+## Ordem dos cadastros
+
+Para as cobranças e os rateios funcionarem, cadastre nesta ordem:
+
+1. **O condomínio:** *Cadastros › Condomínios* (é o cadastro de empresas, com o CNPJ do condomínio e o módulo **Condomínio** marcado). Escolha-o no topo da tela.
+2. **Condôminos:** proprietários e inquilinos em *Cadastros › Clientes* (opcional, mas sem eles a cobrança sai sem responsável).
+3. **Unidades:** *Cadastros › Unidades e condôminos*, com a **fração ideal** de cada uma (obrigatória e maior que zero) e o proprietário/inquilino.
+4. **Parâmetros:** *Cadastros › Parâmetros*, com o dia de vencimento, a multa e os juros.
+5. **Taxas:** *Financeiro › Taxas condominiais* (taxa ordinária, fundo de reserva...).
+6. Depois: **Cobranças** do mês (*Financeiro › Cobranças e recebimentos*) e, quando houver um valor extra a dividir, o **Rateio entre unidades**.
 
 ## Unidades e condôminos
 
@@ -78,14 +89,14 @@ Escolha o **Mês**. O quadro mostra o que foi emitido, o arrecadado (cotas pagas
 1. Clique em **Nova**. O número da assembleia é dado automaticamente ao gravar (1, 2, 3... em cada condomínio).
 2. Preencha a **data**, o **horário** (ex.: 19:30), o tipo (**Ordinária** ou **Extraordinária**), a convocação (**primeira** ou **segunda**), o **local**, o **presidente** e o **secretário(a)** da mesa e quantas **unidades** estavam presentes.
 3. Escreva a **Ordem do dia** (pauta, um item por linha) e as **Deliberações** (o que foi decidido e o resultado das votações). Clique em **Gravar**.
-4. Com a assembleia selecionada na lista, clique em **Gerar ata (PDF)**. A ata traz a abertura (data, local, convocação, mesa e presença), a ordem do dia, as deliberações, o encerramento e o **campo de assinaturas** do presidente, do secretário(a) e do síndico (o síndico vem de *Cadastros › Empresas*, aba **Síndico**).
+4. Com a assembleia selecionada na lista, clique em **Gerar ata (PDF)**. A ata traz a abertura (data, local, convocação, mesa e presença), a ordem do dia, as deliberações, o encerramento e o **campo de assinaturas** do presidente, do secretário(a) e do síndico (o síndico vem de *Cadastros › Condomínios*, aba **Síndico**).
 5. Marque **Incluir lista de presença** para sair, numa página à parte, a lista de todas as unidades com o condômino e uma linha para a assinatura de cada um.
 
 O arquivo fica na pasta de arquivos gerados; o caminho aparece na mensagem abaixo do botão. Para corrigir, selecione a assembleia, altere e grave de novo; **Excluir** apaga o registro.
 
 ## Síndico
 
-**Onde fica:** *Cadastros › Empresas*, aba **Síndico** (só no módulo Condomínio, com o condomínio selecionado no topo).
+**Onde fica:** *Cadastros › Condomínios*, aba **Síndico** (só no módulo Condomínio, com o condomínio selecionado no topo).
 
 Informe o nome, o CPF, o e-mail, o telefone e o período do mandato do síndico. Em **Assinatura dos livros contábeis e fiscais**:
 

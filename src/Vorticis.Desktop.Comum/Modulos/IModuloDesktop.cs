@@ -49,6 +49,9 @@ public interface IModuloDesktop
     /// <summary>Mostra o calendário de obrigações (menu e "Próximas obrigações" da tela inicial); o ERP não usa.</summary>
     bool UsaCalendarioObrigacoes => true;
 
+    /// <summary>Nome do cadastro de empresas no menu Cadastros (o Condomínio chama de "Condomínios"; os dados são os mesmos).</summary>
+    string RotuloEmpresas => "Empresas";
+
     /// <summary>Mostra a aba Síndico no cadastro de empresas (só o Condomínio: o síndico pode assinar os livros contábeis e fiscais).</summary>
     bool UsaSindico => false;
 
