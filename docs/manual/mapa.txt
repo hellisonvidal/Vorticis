@@ -102,6 +102,7 @@ relduplicatasapagar=05-fiscal.md#relatorios-de-duplicatas
 relduplicatasareceber=05-fiscal.md#relatorios-de-duplicatas
 relposicaoduplicatas=05-fiscal.md#relatorios-de-duplicatas
 relrecebimentos=05-fiscal.md#relatorios-de-duplicatas
+bensdanota=05-fiscal.md#bens-do-imobilizado-da-nota
 relpagamentos=05-fiscal.md#relatorios-de-duplicatas
 resumovendas=05-fiscal.md#relatorios-fiscais
 resumocompras=05-fiscal.md#relatorios-fiscais

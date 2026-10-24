@@ -22,6 +22,7 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 4. **Adicionar item** (ou **Atualizar item selecionado** / **Remover item selecionado**).
 5. Em **Duplicatas (forma de pagamento e parcelas)**, escolha a **Forma de pagamento** ([cadastro](02-cadastros-comuns.md#formas-de-pagamento)): as parcelas são geradas pelos prazos dela, contados da emissão, sobre o total da nota. Se mudar os itens depois, clique em **Gerar pela forma** para refazer. A forma escolhida fica gravada na nota. Para parcelar à mão, informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas**. As parcelas saem iguais (a última recebe a diferença de centavos) e a soma tem de bater com o valor da nota. **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
 6. Confira o **total informado**: precisa bater com a soma dos itens. **Salvar**.
+7. Nota de entrada com itens de **ativo imobilizado** (CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406): ao gravar a nota nova, o sistema pergunta se quer cadastrar os bens. Respondendo **Cadastrar os bens**, abre a tela [Bens do imobilizado da nota](#bens-do-imobilizado-da-nota). Depois, o botão **Cadastrar bens do imobilizado** (ao lado de *Gravar nota*) abre a mesma tela.
 
 **Campos bloqueados?** Uma faixa vermelha no topo explica o motivo:
 - *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
@@ -92,6 +93,18 @@ Vale a regra **mais específica** (participante, CFOP completo, prefixo, geral);
 Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (entrada) ou de **clientes** (saída) em *Cadastros › Parâmetros*, essa conta passa a ser a contrapartida da nota: o fornecedor é creditado na compra e o cliente debitado na venda, com o código do fornecedor/cliente na partida. Uma regra específica daquele participante, ou as contas digitadas na própria nota, têm preferência.
 
 **Erro comum:** nota sem regra aplicável ou período contábil fechado ficam sem contabilizar, com a mensagem na coluna *Situação*.
+
+## Bens do imobilizado da nota
+
+**Para que serve:** levar as compras de ativo imobilizado da nota de entrada direto para o cadastro de bens do Contábil (*Imobilizado › Cadastro de bens*), sem digitar de novo.
+**Onde fica:** abre sozinha ao gravar a nota de entrada com CFOP de imobilizado (ou pelo botão **Cadastrar bens do imobilizado** na digitação).
+
+1. Cada item da nota vira uma linha, com a **descrição** e o **valor** do item. A nota, o fornecedor, a **data de aquisição** (emissão) e o **início do uso** (data de entrada) já vêm preenchidos.
+2. Escolha o **grupo** de cada bem (regra de depreciação). A **vida útil** fiscal e as **contas** (do bem, da depreciação acumulada e da despesa) vêm do grupo e podem ser trocadas.
+3. Informe, se quiser, a **plaqueta** e a **localização**. Desmarque **Cadastrar** nos itens que não são bens.
+4. Clique em **Cadastrar no imobilizado**. A coluna **Situação** mostra *Cadastrado* ou o que falta corrigir.
+
+O cadastro exige a permissão de lançamentos do Contábil. Os bens aparecem no Contábil e entram na depreciação mensal.
 
 ## Duplicatas (contas a pagar e a receber)
 

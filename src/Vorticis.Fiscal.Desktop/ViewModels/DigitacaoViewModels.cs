@@ -486,6 +486,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
 
     private void AtualizarTotais()
     {
+        OnPropertyChanged(nameof(TemItensImobilizado));
         var t = CalcularTotais();
         Totais = $"Produtos {Numeros.Moeda(t.Produtos)} · Desconto {Numeros.Moeda(t.Desconto)} · Frete {Numeros.Moeda(t.Frete)} · IPI {Numeros.Moeda(t.Ipi)} · ICMS {Numeros.Moeda(t.Icms)} · " +
                  $"ICMS-ST {Numeros.Moeda(t.IcmsSt)} · PIS {Numeros.Moeda(t.Pis)} · COFINS {Numeros.Moeda(t.Cofins)} · ISS {Numeros.Moeda(t.Iss)} · TOTAL DA NOTA {Numeros.Moeda(t.Total)}";
@@ -566,6 +567,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         var part = await ResolverParticipanteAsync(app, empresa, usuario);
         if (part is null) return;
         _participanteId = part.Value.Id;
+        var notaNova = _documentoId == 0;
         var totais = CalcularTotais();
         if (Numeros.LerValor(TotalInformado) is { } informado) totais = totais with { Total = informado };   // total conferido com a soma dos itens
         var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
@@ -579,7 +581,34 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         _documentoId = r.Valor;
         Selecionada = Lista.FirstOrDefault(d => d.Id == r.Valor);
         Mensagem = "Nota gravada.";
+        if (notaNova && CfopImobilizado.Itens(Operacao, doc.Itens).Count > 0
+            && await Contexto.ConfirmarAsync("Ativo imobilizado",
+                   "A nota tem itens com CFOP de ativo imobilizado. Cadastrar agora os bens no imobilizado do Contábil (já preenchidos com a nota, o fornecedor, a data e o valor)?",
+                   "Cadastrar os bens", "Agora não"))
+            AbrirBensDoImobilizado(doc, part.Value.Codigo, part.Value.Nome);
     }, Permissao.FiscalDocumentosImportar);
+
+    /// <summary>Há itens de imobilizado na nota de entrada em edição (habilita "Cadastrar bens do imobilizado").</summary>
+    public bool TemItensImobilizado => CfopImobilizado.Itens(Operacao, Itens.Select(i => i.Item)).Count > 0;
+
+    private void AbrirBensDoImobilizado(DocumentoDigitado doc, string? codigoFornecedor, string fornecedor)
+    {
+        if (Contexto is not Vorticis.Desktop.Comum.ViewModels.MainViewModelBase m || !m.ConheceTela(Telas.BensDaNota)) return;
+        PendenciaImobilizado.Entregar(Contexto, new PendenciaImobilizado($"{doc.Numero}", codigoFornecedor, fornecedor, doc.Emissao, doc.DataLivro,
+            CfopImobilizado.Itens(doc.Operacao, doc.Itens)));
+        Contexto.AbrirTela(Telas.BensDaNota);
+    }
+
+    [RelayCommand]
+    private Task CadastrarBensImobilizadoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var itens = CfopImobilizado.Itens(Operacao, Itens.Select(i => i.Item));
+        if (itens.Count == 0) { Erros.Add("A nota não tem itens com CFOP de ativo imobilizado (1.551, 2.551, 3.551, 1.406 ou 2.406)."); return; }
+        var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
+            Natureza, _participanteId, null, CalcularTotais(), itens);
+        var fornecedor = _participanteId == 0 ? null : (await app.Participantes.ListarAsync(empresa, usuario)).FirstOrDefault(p => p.Id == _participanteId);
+        AbrirBensDoImobilizado(doc, fornecedor?.Codigo, fornecedor?.Nome ?? Participante);
+    });
 
     private static string? Texto(string? t) => string.IsNullOrWhiteSpace(t) ? null : t.Trim();
 

@@ -269,6 +269,8 @@
       <TextBlock Text="{Binding Totais}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Classes="mini accent" Content="Gravar nota" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeEditar}" IsVisible="{Binding MostraGravarNota}" />
+        <Button Classes="mini" Content="Cadastrar bens do imobilizado" Command="{Binding CadastrarBensImobilizadoCommand}" IsVisible="{Binding TemItensImobilizado}"
+                ToolTip.Tip="Itens com CFOP de ativo imobilizado: cadastra os bens no imobilizado do Contábil" />
         <Button Classes="mini accent" Content="Gravar escrituração" Command="{Binding SalvarEscrituracaoCommand}" IsEnabled="{Binding PodeEditarEscrituracao}" IsVisible="{Binding Importada}" />
         <Button Classes="mini" Content="Nova nota" Command="{Binding NovoCommand}" />
       </StackPanel>

@@ -235,4 +235,23 @@ public class MenusTests
         Assert.StartsWith("Prazos inválidos", formas.Exemplo);
         Assert.True(new Vorticis.Desktop.Comum.Views.TemplatesComuns().Match(formas));
     }
+
+    [Fact]
+    public async Task Nota_com_imobilizado_entrega_os_itens_para_a_tela_de_bens()
+    {
+        var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
+        Assert.True(vm.ConheceTela(Vorticis.Fiscal.Desktop.ViewModels.Telas.BensDaNota));
+        var item = new Vorticis.Fiscal.Documentos.ItemFiscal(1, null, "Notebook", null, null, "1551", "UN", 1, 4500m, 4500m, 0, 0, 0, 0, 4500m,
+            null, null, 0, 0, 0, 0, 0, null, 0, 0, 0, null, 0, 0, 0, null, 0, 0, 0, 0, 0, 0);
+        var p = new Vorticis.Fiscal.Desktop.ViewModels.PendenciaImobilizado("123", "7", "Fornecedor", new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 2), [item]);
+        Vorticis.Fiscal.Desktop.ViewModels.PendenciaImobilizado.Entregar(vm, p);
+        Assert.Same(p, Vorticis.Fiscal.Desktop.ViewModels.PendenciaImobilizado.Retirar(vm));
+        Assert.Null(Vorticis.Fiscal.Desktop.ViewModels.PendenciaImobilizado.Retirar(vm));       // entregue uma vez só
+        // a linha traz descrição e valor do item; o grupo traz vida útil e contas sugeridas
+        var linha = new Vorticis.Fiscal.Desktop.ViewModels.BemDaNotaLinha(item, null);
+        Assert.Equal(("Notebook", 4500m), (linha.Descricao, linha.Valor));
+        linha.Grupo = new Vorticis.Application.Imobilizado.GrupoBem(1, "08", "Computadores", 20m, true, false, "1.2.3.01", "1.2.3.91", "4.1.9.01", null);
+        Assert.Equal((60m, "1.2.3.01", "1.2.3.91", "4.1.9.01"), (linha.VidaUtil!.Value, linha.ContaBem, linha.ContaAcumulada, linha.ContaDespesa));
+        await Task.CompletedTask;
+    }
 }

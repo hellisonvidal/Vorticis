@@ -192,6 +192,17 @@ public class DuplicatasIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
     }
 
     [Fact]
+    public void Cfop_de_imobilizado_so_vale_para_nota_de_entrada()
+    {
+        Assert.True(CfopImobilizado.Eh("1.551"));
+        Assert.True(CfopImobilizado.Eh("2406"));
+        Assert.False(CfopImobilizado.Eh("1102"));
+        ItemFiscal[] itens = [Item("1551", 5000m), Item("1102", 100m), Item("1102", 50m) with { CfopOriginal = "2551" }];
+        Assert.Equal(2, CfopImobilizado.Itens(TipoOperacao.Entrada, itens).Count);
+        Assert.Empty(CfopImobilizado.Itens(TipoOperacao.Saida, itens));
+    }
+
+    [Fact]
     public void Forma_de_pagamento_divide_o_total_nos_prazos_e_confere_o_formato()
     {
         var f = new FormaPagamento(0, 1, "Boleto 30/60/90", MeioPagamento.Boleto, " 30 / 60 / 90 ", null);
