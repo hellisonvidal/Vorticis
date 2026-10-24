@@ -107,8 +107,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     protected MainViewModelBase(IModuloDesktop modulo)
     {
         Modulo = modulo;
-        PincelDestaque = new SolidColorBrush(Color.Parse(modulo.CorDestaque));
-        PincelBarra = new SolidColorBrush(Color.Parse(modulo.CorBarra));
+        PincelDestaque = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse(modulo.CorDestaque));   // imutável: sem vínculo com a thread de interface
+        PincelBarra = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse(modulo.CorBarra));
         Login = new LoginViewModel(this);
         RegistrarTelasComuns(_catalogo);
         modulo.RegistrarTelas(_catalogo);
