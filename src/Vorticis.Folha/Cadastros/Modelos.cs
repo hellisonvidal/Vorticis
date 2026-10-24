@@ -76,3 +76,11 @@ public sealed record Afastamento(long Id, long FuncionarioId, string Funcionario
 
 public sealed record AlteracaoContratual(long Id, long FuncionarioId, DateOnly Data, string Descricao, decimal? SalarioAnterior, decimal? SalarioNovo,
                                          string? CargoAnterior, string? CargoNovo);
+
+/// <summary>Sócio (core.socio) com a configuração de pró-labore; <see cref="Id"/> nulo = ainda não configurado.</summary>
+public sealed record ProLaboreSocio(long SocioId, string Nome, string? Cpf, string Qualificacao, long? Id, bool Retira, decimal Valor,
+                                    DateOnly? Inicio, DateOnly? Fim, int DependentesIrrf, decimal InssOutrasFontes, string? Observacao);
+
+/// <summary>Pró-labore calculado de um sócio em uma competência.</summary>
+public sealed record ProLaboreCalculo(long Id, long SocioId, string Nome, DateOnly Competencia, decimal Bruto, decimal Inss, decimal Irrf,
+                                      decimal Liquido, decimal InssPatronal, string Memoria);

@@ -182,5 +182,15 @@
    "multaAcordo": 20.0
   },
   "fundamento": "Lei 8.036/1990, arts. 15 e 18 (depósito de 8%; multa de 40%); CLT art. 484-A (acordo: 20%); Lei 10.097/2000 (aprendiz: 2%)"
+ },
+ {
+  "chave": "FOLHA_PRO_LABORE",
+  "vigenciaInicio": "1999-11-29",
+  "vigenciaFim": null,
+  "valor": {
+   "aliquotaInss": 11.0,
+   "aliquotaPatronal": 20.0
+  },
+  "fundamento": "Lei nº 8.212/1991, art. 21, § 2º (11% do contribuinte individual) e art. 22, III (20% patronal sobre a remuneração do contribuinte individual)"
  }
 ]

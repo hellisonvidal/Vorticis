@@ -59,7 +59,8 @@ public sealed class ServicoFolha(IRepositorioCadastrosFolha cadastros, IReposito
         competencia = Mes(competencia);
         if ((await movimento.ObterCompetenciaAsync(empresaId, competencia, ct)).Fechada) return Resultado.Falha($"A competência {competencia:MM/yyyy} já está fechada.");
         var calculos = await movimento.ListarCalculosAsync(empresaId, competencia, null, false, ct);
-        if (calculos.Count == 0) return Resultado.Falha($"Não há folha calculada em {competencia:MM/yyyy}.");
+        if (calculos.Count == 0 && await movimento.ContarProLaboreAsync(empresaId, competencia, ct) == 0)
+            return Resultado.Falha($"Não há folha nem pró-labore calculados em {competencia:MM/yyyy}.");
         var anterior = competencia.AddMonths(-1);
         if (!(await movimento.ObterCompetenciaAsync(empresaId, anterior, ct)).Fechada && (await movimento.ListarCalculosAsync(empresaId, anterior, null, false, ct)).Count > 0)
             return Resultado.Falha($"Feche antes a competência {anterior:MM/yyyy}.");

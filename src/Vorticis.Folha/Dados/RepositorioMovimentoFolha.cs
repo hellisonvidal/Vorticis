@@ -17,6 +17,13 @@ public sealed class RepositorioMovimentoFolha(NpgsqlDataSource ds) : IRepositori
         return new StatusCompetencia(competencia, r.GetString(0) == "FECHADA", r.IsDBNull(1) ? null : r.GetFieldValue<DateTimeOffset>(1));
     }
 
+    public async Task<int> ContarProLaboreAsync(long empresaId, DateOnly competencia, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT COUNT(*)::int FROM folha.pro_labore_calculo WHERE empresa_id = @e AND competencia = @c")
+                                .Com("e", empresaId).ComData("c", competencia);
+        return (int)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
     public async Task<IReadOnlyList<StatusCompetencia>> ListarCompetenciasAsync(long empresaId, int ano, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

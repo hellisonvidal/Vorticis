@@ -1,3 +1,4 @@
+using Vorticis.Folha;
 using Vorticis.Folha.Desktop.ViewModels;
 
 namespace Vorticis.Folha.Desktop;
@@ -21,4 +22,20 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloFolha())
     public ResumoFolhaViewModel Resumo => Instancia<ResumoFolhaViewModel>();
     public EncargosFolhaViewModel Encargos => Instancia<EncargosFolhaViewModel>();
     public ProvisoesFolhaViewModel Provisoes => Instancia<ProvisoesFolhaViewModel>();
+    public ProLaboreViewModel ProLabore => Instancia<ProLaboreViewModel>();
+
+    /// <summary>Situação da competência escolhida ao lado da empresa (folha.competencia).</summary>
+    protected override async Task<(bool Aberto, string Situacao)?> ConsultarPeriodoAsync(DateOnly periodo)
+    {
+        if (App is not { } app || EmpresaId is not { } empresa || Sessao is not { } sessao) return null;
+        var s = await ServicosFolha.De(app).Folha.ObterCompetenciaAsync(empresa, periodo, sessao.Id);
+        return (!s.Fechada, s.Fechada ? "FECHADA" : "ABERTA");
+    }
+
+    /// <summary>Leva a nova competência às telas que trabalham por competência.</summary>
+    protected override async Task AoAlterarPeriodoAsync(DateOnly periodo)
+    {
+        Eventos.Competencia = FolhaMensal.Competencia = periodo.ToDateTime(TimeOnly.MinValue);
+        await ProLabore.CarregarAsync();
+    }
 }

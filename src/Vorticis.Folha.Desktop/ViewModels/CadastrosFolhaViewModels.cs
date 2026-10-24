@@ -33,6 +33,7 @@ public static class FolhaTelas
     public const string Transmissao = "folha.esocial.transmissao";
     public const string Resumo = "folha.resumo";
     public const string Encargos = "folha.encargos";
+    public const string ProLabore = "folha.prolabore";
 }
 
 internal static class FolhaExtensoes

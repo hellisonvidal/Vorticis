@@ -113,3 +113,4 @@ folha.esocial=06-folha.md#esocial-geracao-dos-eventos
 folha.esocial.transmissao=06-folha.md#esocial-transmissao
 folha.resumo=06-folha.md#relatorios-da-folha
 folha.encargos=06-folha.md#relatorios-da-folha
+folha.prolabore=06-folha.md#pro-labore-dos-socios
