@@ -41,7 +41,7 @@ public partial class LancamentoView : UserControl
         var popup = new Window
         {
             Title = _vm.EmEdicao ? "Lançamento contábil — alteração" : "Lançamento contábil",
-            Width = 1120, Height = 440, MinWidth = 900,
+            Width = 1100, Height = 660, MinWidth = 900, MinHeight = 560,
             CanResize = true,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,

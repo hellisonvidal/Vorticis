@@ -788,6 +788,16 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             pop.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.Shift, Avalonia.Input.PhysicalKey.Enter, null); Dispatcher.UIThread.RunJobs();
             Assert.Same(Campo("data"), pop.FocusManager!.GetFocusedElement());
             Assert.NotNull(dig.FindControl<ItemsControl>("LinhasLancamento"));
+            // preenchimento na vertical: cada campo abaixo do anterior
+            var alturas = new[] { "data", "reduzido", "reduzidocredito", "valor", "documento", "codhistorico", "historico" }
+                .Select(t => Campo(t)!.TranslatePoint(new Point(0, 0), pop)!.Value.Y).ToList();
+            Assert.Equal(alturas.Order(), alturas);
+            Assert.Equal(alturas.Count, alturas.Distinct().Count());
+            // seta para baixo na última partida cria outra, e o formulário passa a mostrá-la
+            pop.KeyPress(Avalonia.Input.Key.Down, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.ArrowDown, null); Dispatcher.UIThread.RunJobs();
+            Assert.Equal(2, la.Linhas.Count);
+            Assert.Same(la.Linhas[1], la.LinhaSelecionada);
+            Assert.Same(la.Linhas[1], Campo("data")!.DataContext);
             la.CancelarDigitacao();
             Assert.False(la.DigitacaoAberta);
             // Botões da grade: Excluir (com confirmação), Consultar (somente leitura + Estornar) e Editar (pop-up para alteração)

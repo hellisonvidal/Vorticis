@@ -6,138 +6,126 @@
              x:Class="Vorticis.Desktop.Views.LancamentoDigitacaoView"
              x:DataType="vm:LancamentoViewModel">
   <UserControl.Styles>
-    <Style Selector="Border.linha">
-      <Setter Property="Padding" Value="0,1" />
-      <Setter Property="BorderBrush" Value="#E3E8EF" />
-      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Style Selector="TextBlock.rot">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#44506A" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style Selector="Border.linha:focus-within">
-      <Setter Property="Background" Value="#E8F0FB" />
-    </Style>
-    <!-- Linhas com aparência de planilha: campos sem moldura, separados por uma linha fina -->
-    <Style Selector="Border.linha TextBox">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="Padding" Value="6,3" />
-      <Setter Property="BorderThickness" Value="0,0,1,0" />
-      <Setter Property="BorderBrush" Value="#E3E8EF" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="CornerRadius" Value="0" />
-    </Style>
-    <Style Selector="Border.linha TextBox:focus /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="BorderBrush" Value="#3A6EA5" />
-      <Setter Property="BorderThickness" Value="1" />
-    </Style>
-    <Style Selector="Border.linha TextBox:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#F5F8FC" />
-    </Style>
-    <Style Selector="Border.linha AutoCompleteBox">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Background" Value="Transparent" />
+    <Style Selector="TextBlock.nome">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="10,0,0,0" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style Selector="TextBox.valor">
       <Setter Property="TextAlignment" Value="Right" />
     </Style>
-    <Style Selector="TextBlock.cab">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="#5A6478" />
-      <Setter Property="Margin" Value="6,0,0,2" />
+    <Style Selector="Border#Detalhes TextBox, Border#Detalhes AutoCompleteBox">
+      <Setter Property="MinHeight" Value="28" />
     </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="*,240" RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="8,4,8,6">
-    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,2">
+  <!-- Digitação na vertical: os campos da partida atual um embaixo do outro (com o nome da conta ao lado), as partidas do
+       lançamento numa lista logo abaixo e as contas analíticas à direita. Tudo cabe na janela; nada fica escondido à direita. -->
+  <Grid ColumnDefinitions="*,250" RowDefinitions="Auto,*,Auto,Auto" Margin="8,4,8,6">
+    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
       <TextBlock Classes="titulo" Text="{Binding TituloDigitacao}" VerticalAlignment="Center" />
       <Border Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="3" Padding="8,1" IsVisible="{Binding EmEdicao}">
         <TextBlock Text="{Binding TextoEdicao}" FontSize="11" Foreground="#5A4500" VerticalAlignment="Center" />
       </Border>
     </StackPanel>
 
-    <!-- Detalhes do lançamento: cabeçalho e partida atual (contas com nome, centro de custo e participante) -->
-    <Border Grid.Row="1" Name="Detalhes" Background="#F3F6FA" BorderBrush="#D5DDE8" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,2,0,4">
-      <StackPanel Spacing="2" DataContext="{Binding LinhaSelecionada}" x:DataType="vm:LinhaLancamentoViewModel">
-        <StackPanel Orientation="Horizontal" Spacing="16">
-          <TextBlock Text="{Binding Data, StringFormat='Data: {0}'}" />
-          <TextBlock Text="{Binding Documento, StringFormat='Documento: {0}'}" />
-          <TextBlock Text="{Binding CodigoHistorico, StringFormat='Histórico padrão: {0}'}" />
-          <TextBlock Text="{Binding Historico, StringFormat='Complemento: {0}'}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="16">
-          <TextBlock Text="{Binding NomeConta, StringFormat='Débito (D): {0}'}" />
-          <TextBlock Text="{Binding NomeContaCredito, StringFormat='Crédito (C): {0}'}" />
-          <TextBlock Text="{Binding Valor, StringFormat='Valor: {0}'}" />
-          <TextBlock Text="{Binding CentroCusto, StringFormat='Centro de custo: {0}'}" />
-          <TextBlock Text="{Binding NomeParticipante, StringFormat='Participante: {0}'}" />
-        </StackPanel>
-      </StackPanel>
-    </Border>
+    <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*">
+      <!-- Formulário da partida selecionada (Enter avança de campo; seta para baixo vai à próxima partida) -->
+      <Border Name="Detalhes" Background="#F7F9FC" BorderBrush="#D5DDE8" BorderThickness="1" CornerRadius="3" Padding="10,6" IsEnabled="{Binding PodeDigitar}">
+        <Grid DataContext="{Binding LinhaSelecionada}" x:DataType="vm:LinhaLancamentoViewModel" ColumnDefinitions="130,Auto,*" RowSpacing="4"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Classes="rot" Text="Data" />
+          <TextBox Grid.Column="1" Tag="data" Text="{Binding Data}" c:Mascara.Tipo="Data" Width="120" HorizontalAlignment="Left" />
 
-    <!-- Cabeçalhos (mesmas larguras das linhas) -->
-    <Grid Grid.Row="2" ColumnDefinitions="84,46,130,46,130,92,76,40,*,58,Auto">
-      <TextBlock Classes="cab" Text="Data" />
-      <TextBlock Classes="cab" Grid.Column="1" Text="Red. D" />
-      <TextBlock Classes="cab" Grid.Column="2" Text="Conta débito" />
-      <TextBlock Classes="cab" Grid.Column="3" Text="Red. C" />
-      <TextBlock Classes="cab" Grid.Column="4" Text="Conta crédito" />
-      <TextBlock Classes="cab" Grid.Column="5" Text="Valor" HorizontalAlignment="Right" Margin="0,0,8,2" />
-      <TextBlock Classes="cab" Grid.Column="6" Text="Documento" />
-      <TextBlock Classes="cab" Grid.Column="7" Text="Hist." />
-      <TextBlock Classes="cab" Grid.Column="8" Text="Histórico" />
-      <TextBlock Classes="cab" Grid.Column="9" Text="C. custo" />
-      <TextBlock Classes="cab" Grid.Column="10" Text="Part." Width="56" IsVisible="{Binding UsaParticipantes}"
-                 ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
+          <TextBlock Classes="rot" Grid.Row="1" Text="Conta a débito (D)" />
+          <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <TextBox Tag="reduzido" Text="{Binding Reduzido}" Width="70" Watermark="Red." ToolTip.Tip="Código reduzido da conta" />
+            <AutoCompleteBox Tag="conta" Text="{Binding Conta}" Width="190" Watermark="Código ou nome"
+                             ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
+                             FilterMode="Custom" ItemFilter="{x:Static v:LancamentoDigitacaoView.FiltroConta}"
+                             ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
+              <AutoCompleteBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
+              </AutoCompleteBox.ItemTemplate>
+            </AutoCompleteBox>
+          </StackPanel>
+          <TextBlock Classes="nome" Grid.Row="1" Grid.Column="2" Text="{Binding NomeConta}" />
+
+          <TextBlock Classes="rot" Grid.Row="2" Text="Conta a crédito (C)" />
+          <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <TextBox Tag="reduzidocredito" Text="{Binding ReduzidoCredito}" Width="70" Watermark="Red." ToolTip.Tip="Código reduzido da conta" />
+            <AutoCompleteBox Tag="contacredito" Text="{Binding ContaCredito}" Width="190" Watermark="Código ou nome"
+                             ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
+                             FilterMode="Custom" ItemFilter="{x:Static v:LancamentoDigitacaoView.FiltroConta}"
+                             ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
+              <AutoCompleteBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
+              </AutoCompleteBox.ItemTemplate>
+            </AutoCompleteBox>
+          </StackPanel>
+          <TextBlock Classes="nome" Grid.Row="2" Grid.Column="2" Text="{Binding NomeContaCredito}" />
+
+          <TextBlock Classes="rot" Grid.Row="3" Text="Valor" />
+          <TextBox Grid.Row="3" Grid.Column="1" Tag="valor" Classes="valor" Text="{Binding Valor}" Width="150" HorizontalAlignment="Left" />
+
+          <TextBlock Classes="rot" Grid.Row="4" Text="Documento" />
+          <TextBox Grid.Row="4" Grid.Column="1" Tag="documento" Text="{Binding Documento}" Width="150" HorizontalAlignment="Left" />
+
+          <TextBlock Classes="rot" Grid.Row="5" Text="Histórico padrão" />
+          <TextBox Grid.Row="5" Grid.Column="1" Tag="codhistorico" Text="{Binding CodigoHistorico}" Width="70" HorizontalAlignment="Left"
+                   ToolTip.Tip="Código do histórico padrão (Cadastros › Históricos)" />
+
+          <TextBlock Classes="rot" Grid.Row="6" Text="Histórico" />
+          <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Tag="historico" Text="{Binding Historico}" />
+
+          <TextBlock Classes="rot" Grid.Row="7" Text="Centro de custo" />
+          <TextBox Grid.Row="7" Grid.Column="1" Tag="centrocusto" Text="{Binding CentroCusto}" Width="100" HorizontalAlignment="Left" />
+
+          <TextBlock Classes="rot" Grid.Row="8" Text="Participante" IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
+          <TextBox Grid.Row="8" Grid.Column="1" Tag="participante" Text="{Binding Participante}" Width="100" HorizontalAlignment="Left"
+                   IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}"
+                   ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
+          <TextBlock Classes="nome" Grid.Row="8" Grid.Column="2" Text="{Binding NomeParticipante}"
+                     IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
+        </Grid>
+      </Border>
+
+      <!-- Partidas deste lançamento: uma linha com débito e crédito é um lançamento; linhas com uma conta só somam um lançamento único -->
+      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,6,0,2">
+        <TextBlock Text="Partidas deste lançamento" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center"
+                   ToolTip.Tip="Clique numa partida para editá-la no formulário acima" />
+        <Button Content="Nova partida (↓)" Command="{Binding NovaPartidaCommand}" IsVisible="{Binding PodeDigitar}" Padding="8,2" />
+        <Button Content="Excluir partida (Ctrl+Del)" Command="{Binding ExcluirLinhaCommand}" IsVisible="{Binding PodeDigitar}" Padding="8,2" />
+      </StackPanel>
+      <ListBox Grid.Row="2" Name="LinhasLancamento" ItemsSource="{Binding Linhas}" SelectedItem="{Binding LinhaSelecionada}" MinHeight="70">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
+            <Grid ColumnDefinitions="90,*,*,110,*">
+              <TextBlock Text="{Binding Data}" FontSize="12" />
+              <TextBlock Grid.Column="1" Text="{Binding Conta, StringFormat='D {0}'}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding NomeConta}" />
+              <TextBlock Grid.Column="2" Text="{Binding ContaCredito, StringFormat='C {0}'}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding NomeContaCredito}" />
+              <TextBlock Grid.Column="3" Text="{Binding Valor}" FontSize="12" HorizontalAlignment="Right" Margin="0,0,10,0" />
+              <TextBlock Grid.Column="4" Text="{Binding Historico}" FontSize="12" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </Grid>
 
-    <!-- Uma linha com débito e crédito é um lançamento; linhas com uma conta só somam um lançamento único -->
-    <ScrollViewer Grid.Row="3" Name="Rolagem" IsEnabled="{Binding PodeDigitar}">
-      <ItemsControl Name="LinhasLancamento" ItemsSource="{Binding Linhas}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:LinhaLancamentoViewModel">
-            <Border Classes="linha">
-              <Grid ColumnDefinitions="84,46,130,46,130,92,76,40,*,58,Auto">
-                <TextBox Tag="data" Text="{Binding Data}" c:Mascara.Tipo="Data" />
-                <TextBox Grid.Column="1" Tag="reduzido" Text="{Binding Reduzido}" />
-                  <AutoCompleteBox Grid.Column="2" Tag="conta" Text="{Binding Conta}" ToolTip.Tip="{Binding NomeConta}"
-                                   ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
-                                   FilterMode="Custom" ItemFilter="{x:Static v:LancamentoDigitacaoView.FiltroConta}"
-                                   ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
-                    <AutoCompleteBox.ItemTemplate>
-                      <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                  </AutoCompleteBox>
-                <TextBox Grid.Column="3" Tag="reduzidocredito" Text="{Binding ReduzidoCredito}" />
-                  <AutoCompleteBox Grid.Column="4" Tag="contacredito" Text="{Binding ContaCredito}" ToolTip.Tip="{Binding NomeContaCredito}"
-                                   ItemsSource="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).TodasContas}"
-                                   FilterMode="Custom" ItemFilter="{x:Static v:LancamentoDigitacaoView.FiltroConta}"
-                                   ValueMemberBinding="{ReflectionBinding Codigo}" MinimumPrefixLength="2" MaxDropDownHeight="260">
-                    <AutoCompleteBox.ItemTemplate>
-                      <DataTemplate x:DataType="vm:ContaSelecionavel"><TextBlock Text="{Binding Rotulo}" FontFamily="Consolas, Menlo, monospace" /></DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                  </AutoCompleteBox>
-                <TextBox Grid.Column="5" Tag="valor" Classes="valor" Text="{Binding Valor}" />
-                <TextBox Grid.Column="6" Tag="documento" Text="{Binding Documento}" />
-                <TextBox Grid.Column="7" Tag="codhistorico" Text="{Binding CodigoHistorico}" />
-                <TextBox Grid.Column="8" Tag="historico" Text="{Binding Historico}" />
-                <TextBox Grid.Column="9" Tag="centrocusto" Text="{Binding CentroCusto}" />
-                <TextBox Grid.Column="10" Tag="participante" Text="{Binding Participante}" Width="56"
-                         IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-
-    <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" Margin="0,4">
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,2">
       <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
         <TextBlock Text="{Binding TotalDebito, StringFormat='Débitos: {0}'}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding TotalCredito, StringFormat='Créditos: {0}'}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding Diferenca, StringFormat='Diferença: {0}'}" FontWeight="SemiBold" VerticalAlignment="Center"
                    Foreground="{Binding Balanceado, Converter={x:Static c:Conversores.OkOuErro}}" />
       </StackPanel>
-      <TextBlock Grid.Column="1" Margin="16,0" FontSize="12" Foreground="#1F3A5F" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                 Text="{Binding LinhaSelecionada.ResumoContas}" />
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <TextBox Text="{Binding MotivoEstorno}" Watermark="Motivo do estorno" Width="200" IsVisible="{Binding SomenteLeitura}" />
         <Button Name="BotaoEstornar" Content="Estornar" Command="{Binding EstornarCommand}" IsVisible="{Binding SomenteLeitura}" />
@@ -147,11 +135,11 @@
       </StackPanel>
     </Grid>
 
-    <c:MensagensView Grid.Row="5" />
+    <c:MensagensView Grid.Row="3" />
 
-    <DockPanel Grid.Column="1" Grid.RowSpan="6" Margin="10,0,0,0" IsEnabled="{Binding PodeDigitar}">
+    <DockPanel Grid.Column="1" Grid.RowSpan="4" Margin="10,0,0,0" IsEnabled="{Binding PodeDigitar}">
       <TextBlock DockPanel.Dock="Top" Text="Contas analíticas" FontWeight="SemiBold"
-                 ToolTip.Tip="Clique numa conta para preenchê-la na linha atual" />
+                 ToolTip.Tip="Clique numa conta para preenchê-la na partida atual" />
       <TextBox DockPanel.Dock="Top" Text="{Binding FiltroConta}" Watermark="Filtrar: reduzido, código ou nome" Margin="0,4" />
       <ListBox ItemsSource="{Binding Contas}" SelectedItem="{Binding ContaSelecionada}" Focusable="False">
         <ListBox.ItemTemplate>

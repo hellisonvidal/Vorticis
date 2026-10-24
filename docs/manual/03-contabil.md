@@ -63,25 +63,27 @@ A mesma data aparece na aba Contabilidade de *Cadastros › Empresas*. Para trav
 A tela mostra os **lançamentos efetuados** do período, com os botões **Novo (Ctrl+N), Editar, Consultar, Excluir, Estornar** e Atualizar. Os estornados continuam na lista, marcados.
 
 ### Incluir um lançamento (pop-up)
-1. Clique em **Novo (Ctrl+N)**. Abre o pop-up de digitação.
+1. Clique em **Novo (Ctrl+N)**. Abre o pop-up de digitação, com os campos **um embaixo do outro** (preenchimento na vertical), a lista *Partidas deste lançamento* logo abaixo e a lista *Contas analíticas* à direita. Tudo cabe na janela: nenhum campo fica escondido.
 2. Informe a **data**.
-3. Na linha, digite a **conta débito** e a **conta crédito**. Antes de cada conta há o campo do **código reduzido**. A conta também pode ser digitada pelo nome (surge uma lista de sugestões) ou clicada na lista *Contas analíticas* ao lado.
-4. Informe o **valor** (formata como 1.500,00), o **documento** (NF, recibo, boleto), o **histórico** (pelo código do histórico padrão ou digitando), o centro de custo e o participante, quando exigidos.
-5. **Salvar (Ctrl+S)**.
+3. Em **Conta a débito (D)** e **Conta a crédito (C)**, digite o **código reduzido** (no primeiro campo) ou o código/nome da conta (no segundo, com lista de sugestões), ou clique na conta em *Contas analíticas*. O **nome da conta** aparece ao lado, para conferir.
+4. Informe o **valor** (formata como 1.500,00), o **documento** (NF, recibo, boleto), o **histórico padrão** (código) e/ou o **histórico**, o **centro de custo** e o **participante**, quando exigidos.
+5. Para mais de uma partida, clique em **Nova partida (↓)** (ou seta para baixo): o formulário passa a mostrar a nova partida. Clique numa partida da lista para voltar a ela.
+6. **Salvar (Ctrl+S)**.
 
 ### Teclado
 | Tecla | Efeito |
 |---|---|
-| Enter / Tab | Vai ao próximo campo |
-| **Enter no último campo** | Salva, se o lançamento já fecha; senão segue para a próxima linha |
+| Enter / Tab | Vai ao próximo campo (de cima para baixo) |
+| Shift+Enter | Volta ao campo anterior |
+| **Enter no último campo** | Salva, se o lançamento já fecha; senão segue para a próxima partida |
 | Ctrl+Enter | Salva |
-| Ctrl+N / ↓ na última linha | Nova linha |
-| ↑ em linha nova e vazia | Cancela a linha |
-| Ctrl+Delete | Exclui a linha |
+| Ctrl+N / ↓ na última partida | Nova partida |
+| ↑ em partida nova e vazia | Cancela a partida |
+| Ctrl+Delete | Exclui a partida |
 
-### Uma linha ou várias
-- Uma linha com conta débito **e** conta crédito é um lançamento completo.
-- Linhas com **uma conta só** somam um único lançamento que precisa fechar (débitos = créditos). Se faltar a contrapartida, o sistema pergunta e oferece incluir a linha.
+### Uma partida ou várias
+- Uma partida com conta débito **e** conta crédito é um lançamento completo.
+- Partidas com **uma conta só** somam um único lançamento que precisa fechar (débitos = créditos). Se faltar a contrapartida, o sistema pergunta e oferece incluir a linha.
 
 ### Editar um lançamento
 Dê **duplo clique** (ou Enter) no lançamento da lista, ou clique em **Editar**. O que acontece ao salvar depende da configuração **Usar estorno de lançamentos** da empresa (aba Contabilidade do cadastro da empresa):

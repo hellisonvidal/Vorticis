@@ -11,7 +11,8 @@ using Vorticis.Domain.Contabil;
 namespace Vorticis.Desktop.Views;
 
 /// <summary>
-/// Digitação pelo teclado: Enter avança de campo (pula a conta quando o reduzido já a identificou), seta para baixo
+/// Digitação na vertical: um formulário mostra a partida selecionada (os campos um embaixo do outro) e a lista abaixo mostra
+/// todas as partidas do lançamento. Pelo teclado: Enter avança de campo (pula a conta quando o reduzido já a identificou), seta para baixo
 /// desce de linha e, na última, cria outra; seta para cima sobe e cancela a linha recém-criada ainda vazia;
 /// Ctrl+Delete exclui a linha; Enter no último campo salva quando o lançamento fecha. Valor formatado ao sair do campo;
 /// nome da conta resolvido ao sair do campo da conta.
@@ -47,7 +48,6 @@ public partial class LancamentoDigitacaoView : UserControl
 
     /// <summary>Ordem dos campos no Enter; o participante só existe no plano com participantes.</summary>
     private string[] Campos => _vm?.UsaParticipantes == true ? CamposLinha : CamposLinha[..^1];
-    private ItemsControl Linhas => LinhasLancamento;
 
     /// <summary>Linhas recomeçadas (abrir, Limpar, Salvar): foco no primeiro campo.</summary>
     private void AoMudarLinhas(object? sender, NotifyCollectionChangedEventArgs e)
@@ -76,6 +76,7 @@ public partial class LancamentoDigitacaoView : UserControl
         {
             case Key.Enter when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
+                ConcluirCampo(linha, tag, campo);
                 Avancar(linha, i, tag);
                 break;
             case Key.Enter when e.KeyModifiers == KeyModifiers.Shift && !listaAberta:      // Shift+Enter volta ao campo anterior
@@ -86,6 +87,7 @@ public partial class LancamentoDigitacaoView : UserControl
                 break;
             case Key.Down when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
+                ConcluirCampo(linha, tag, campo);
                 if (i == _vm.Linhas.Count - 1)
                 {
                     _vm.AdicionarLinha();
@@ -96,6 +98,7 @@ public partial class LancamentoDigitacaoView : UserControl
             case Key.Up when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
                 if (i == 0) break;
+                ConcluirCampo(linha, tag, campo);
                 _vm.CancelarLinhaNova(linha);
                 Focar(i - 1, tag);
                 break;
@@ -125,15 +128,37 @@ public partial class LancamentoDigitacaoView : UserControl
         Focar(i + 1, campos[0]);
     }
 
-    /// <summary>Foca o campo depois que a linha existir na tela.</summary>
-    private void Focar(int linha, string tag) => Dispatcher.UIThread.Post(() =>
+    /// <summary>Seleciona a partida (o formulário passa a mostrá-la) e foca o campo.</summary>
+    private void Focar(int linha, string tag)
     {
-        if (Linhas.ContainerFromIndex(linha) is not { } container) return;
-        var alvo = container.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag && (c is TextBox || c is AutoCompleteBox));
+        if (_vm is null || linha < 0 || linha >= _vm.Linhas.Count) return;
+        _vm.LinhaSelecionada = _vm.Linhas[linha];
+        Dispatcher.UIThread.Post(() => FocarCampo(tag), DispatcherPriority.Loaded);
+    }
+
+    private void FocarCampo(string tag)
+    {
+        var alvo = Detalhes.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag && (c is TextBox || c is AutoCompleteBox));
         if (alvo is AutoCompleteBox acb) alvo = acb.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? alvo;
         alvo?.Focus(NavigationMethod.Tab);
         if (alvo is TextBox tb && tag != "historico") tb.SelectAll();
-    }, DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// O que acontece ao sair de um campo (formatar o valor, resolver a conta, completar a data), feito já ao trocar de partida pelo
+    /// teclado: no formulário único, o campo perde o foco quando ele já mostra a próxima partida.
+    /// </summary>
+    private void ConcluirCampo(LinhaLancamentoViewModel linha, string tag, Control campo)
+    {
+        if (_vm is null) return;
+        switch (tag)
+        {
+            case "valor": linha.FormatarValor(); break;
+            case "conta" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: false); break;
+            case "contacredito" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: true); break;
+            case "data" when linha.Data.Trim().Length > 0: linha.Data = _vm.DataCompleta(linha.Data); break;
+        }
+    }
 
     private void AoEntrarNoCampo(object? sender, GotFocusEventArgs e)
     {
@@ -152,13 +177,6 @@ public partial class LancamentoDigitacaoView : UserControl
     private void AoSairDoCampo(object? sender, RoutedEventArgs e)
     {
         var (campo, tag) = CampoDe(e.Source);
-        if (_vm is null || campo?.DataContext is not LinhaLancamentoViewModel linha) return;
-        switch (tag)
-        {
-            case "valor": linha.FormatarValor(); break;
-            case "conta" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: false); break;
-            case "contacredito" when campo is AutoCompleteBox { IsDropDownOpen: false }: _vm.ConfirmarConta(linha, credito: true); break;
-            case "data" when linha.Data.Trim().Length > 0: linha.Data = _vm.DataCompleta(linha.Data); break;
-        }
+        if (campo?.DataContext is LinhaLancamentoViewModel linha && tag is not null) ConcluirCampo(linha, tag, campo);
     }
 }

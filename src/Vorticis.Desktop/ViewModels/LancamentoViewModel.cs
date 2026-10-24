@@ -462,6 +462,14 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         LinhaSelecionada = Linhas[0];
     }
 
+    /// <summary>Botão "Nova partida" (o mesmo que a seta para baixo na última partida): acrescenta uma partida e põe o foco na data.</summary>
+    [RelayCommand]
+    private void NovaPartida()
+    {
+        var nova = AdicionarLinha();
+        FocoSolicitado?.Invoke(Linhas.IndexOf(nova), "data");
+    }
+
     /// <summary>Exclui a linha atual (Ctrl+Delete); a última linha é apenas esvaziada.</summary>
     [RelayCommand]
     private void ExcluirLinha()
