@@ -233,7 +233,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         var menusModulo = Modulo.Menus.ToList();
         var posObrig = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Obrigações");
         var posConsultas = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Consultas");
-        if (posObrig >= 0)
+        if (!Modulo.UsaCalendarioObrigacoes) { }
+        else if (posObrig >= 0)
         {
             var o = menusModulo[posObrig];
             menusModulo[posObrig] = o with { Filhos = [calendario, ItemMenu.Separador, .. o.Filhos ?? []] };

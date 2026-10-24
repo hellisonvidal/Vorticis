@@ -130,8 +130,8 @@ erp.painel=10-erp.md#painel-do-empresario
 erp.pedidos.venda=10-erp.md#pedidos-de-venda-e-de-compra
 erp.pedidos.compra=10-erp.md#pedidos-de-venda-e-de-compra
 erp.estoque=10-erp.md#estoque
-erp.veiculos=10-erp.md#veiculos-e-motoristas
-erp.transporte=10-erp.md#conhecimentos-e-manifestos-ct-e-e-mdf-e
+contaspagar=10-erp.md#financeiro
+contasreceber=10-erp.md#financeiro
 
 ; ---- Condomínio
 condominio.unidades=11-condominio.md#unidades-e-condominos

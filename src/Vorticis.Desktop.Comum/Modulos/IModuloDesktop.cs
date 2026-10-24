@@ -46,6 +46,9 @@ public interface IModuloDesktop
     /// <summary>Mostra Clientes e Fornecedores no menu Cadastros (a Folha não usa esses cadastros).</summary>
     bool UsaClientesFornecedores => true;
 
+    /// <summary>Mostra o calendário de obrigações (menu e "Próximas obrigações" da tela inicial); o ERP não usa.</summary>
+    bool UsaCalendarioObrigacoes => true;
+
     /// <summary>
     /// Rótulo do período de trabalho mostrado ao lado do seletor de empresas ("Competência"), com a situação (aberto/fechado);
     /// null se o módulo não trabalha por período. A situação vem de <see cref="ViewModels.MainViewModelBase.ConsultarPeriodoAsync"/>.

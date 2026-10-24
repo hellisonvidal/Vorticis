@@ -32,18 +32,23 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 - **Preço e estoque mínimo:** informe e clique em **Gravar**.
 - **Ajuste de estoque (inventário):** informe a data, a quantidade (positiva para entrada, negativa para saída), o custo unitário e o motivo, e clique em **Registrar ajuste**.
 
-## Veículos e motoristas
+## Financeiro
 
-**Onde fica:** *Cadastros › Veículos e motoristas*.
+**Onde fica:** *Financeiro*.
 
-Veículos: **Placa** (ABC1234 ou ABC1D23), RENAVAM, tipo, UF, tara e capacidade em kg; **Gravar veículo**. Motoristas: nome, **CPF** (conferido), CNH e validade; **Gravar motorista**. Selecione na lista para alterar.
+- **Contas a pagar** e **Contas a receber** são telas separadas: cada uma mostra só as duplicatas do seu tipo, com inclusão, alteração, baixa e estorno de baixa (os mesmos passos da tela de Duplicatas do [Fiscal](05-fiscal.md#duplicatas-contas-a-pagar-e-a-receber)).
+- **Conciliação bancária**: casa o extrato do banco com as baixas.
 
-## Conhecimentos e manifestos (CT-e e MDF-e)
+O ERP não mostra o calendário de obrigações (é rotina do escritório contábil, nos módulos Contábil, Fiscal e Folha).
 
-**Onde fica:** *Transporte › Conhecimentos e manifestos*.
+## Relatórios
 
-Registre os CT-e e MDF-e emitidos para controlar fretes e viagens: **Tipo**, número e série, emissão, chave, **Remetente** e **Destinatário** (CT-e), UFs de início e fim, **Veículo** (obrigatório no MDF-e), **Motorista**, valores do frete e da carga, peso, as chaves das NF-e transportadas (uma por linha) e a **Situação** (digitado, autorizado, encerrado, cancelado). **Gravar**. A transmissão à SEFAZ ainda não é feita pelo Vorticis (*em breve*).
+**Onde fica:** *Relatórios*. Todos aparecem na tela e exportam em PDF, Excel e CSV.
+
+- **Relatório de vendas** e **Relatório de compras**: as notas autorizadas de saída ou de entrada do período, agrupadas por nota, por cliente/fornecedor ou por mês, com valor total e tributos.
+- **Relatório de recebimentos**: os recebimentos (baixas das contas a receber) do período, com juros, multa, descontos e a conta usada.
+- **Financeiro**: *Relatório de contas a pagar*, *Relatório de contas a receber*, *Posição por vencimento* e *Relatório de pagamentos*.
 
 ## Telas do Fiscal no ERP
 
-*Produtos*, *Notas fiscais de saída e de entrada*, *Importação de XML*, *Contas a pagar e a receber*, *Conciliação bancária* e os relatórios do *Financeiro* são as telas do módulo Fiscal; veja o [manual do Fiscal](05-fiscal.md).
+*Produtos*, *Notas fiscais de saída e de entrada*, *Importação de XML*, *Contas a pagar*, *Contas a receber*, *Conciliação bancária* e os relatórios de vendas, compras, recebimentos e do *Financeiro* são as telas do módulo Fiscal; veja o [manual do Fiscal](05-fiscal.md).

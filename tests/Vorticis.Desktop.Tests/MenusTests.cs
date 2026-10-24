@@ -73,13 +73,48 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
         foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
             var obrig = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
             Assert.Contains(Folhas(obrig.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
         }
+        // o ERP (rotina da empresa, não do escritório contábil) não tem calendário de obrigações
+        var erp = new Vorticis.Erp.Desktop.MainViewModel();
+        Assert.False(erp.Modulo.UsaCalendarioObrigacoes);
+        Assert.DoesNotContain(Folhas(erp.Menus), i => i.Chave == TelasComuns.Obrigacoes);
+        Assert.DoesNotContain(erp.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+    }
+
+    [Fact]
+    public void Erp_separa_contas_a_pagar_e_a_receber_e_agrupa_os_relatorios_financeiros_sem_transporte()
+    {
+        var vm = new Vorticis.Erp.Desktop.MainViewModel();
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") == "Transporte");
+        Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
+        var fin = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Financeiro");
+        Assert.Equal(["Contas a pagar", "Contas a receber", "Conciliação bancária"], fin.Filhos!.Where(i => !i.EhSeparador).Select(i => i.Titulo));
+        var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
+        var folhasRel = Folhas(rel.Filhos!).Select(i => i.Chave).ToList();
+        Assert.Contains(Vorticis.Fiscal.Desktop.ViewModels.Telas.ResumoVendas, folhasRel);
+        Assert.Contains(Vorticis.Fiscal.Desktop.ViewModels.Telas.ResumoCompras, folhasRel);
+        Assert.Contains(Vorticis.Fiscal.Desktop.ViewModels.Telas.RelRecebimentos, folhasRel);
+        var subFin = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Financeiro");
+        Assert.Contains(subFin.Filhos!, i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.RelDuplicatasPagar);
+        // cada tela de contas mostra um tipo só
+        var pagar = new Vorticis.Fiscal.Desktop.ViewModels.ContasPagarViewModel(vm);
+        Assert.False(pagar.EscolheTipo);
+        Assert.Equal("Contas a pagar", pagar.TituloTela);
+    }
+
+    [Fact]
+    public void Fiscal_agrupa_os_resumos_em_Relatorios()
+    {
+        var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
+        var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
+        var resumos = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Resumos");
+        Assert.Equal(["Resumo de vendas", "Resumo de compras", "Resumo por CFOP"], resumos.Filhos!.Select(i => i.Titulo));
     }
 
     [Fact]

@@ -41,7 +41,7 @@ public partial class InicioViewModel(MainViewModelBase main) : ModuloViewModel(m
     public async Task AtualizarProximasAsync()
     {
         var g = Interlocked.Increment(ref _geracaoProximas);
-        if (!main.Logado || main.App is not { } app || main.Sessao is not { Implantacao: false } sessao || main.EmpresaId is not { } empresa)
+        if (!main.Modulo.UsaCalendarioObrigacoes || !main.Logado || main.App is not { } app || main.Sessao is not { Implantacao: false } sessao || main.EmpresaId is not { } empresa)
         {
             Proximas.Clear();
             TemProximas = false;
