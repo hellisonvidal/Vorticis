@@ -91,6 +91,30 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 
 **Participante na conta:** com a opção "plano com participantes" ligada na empresa, informe a conta (ex.: Clientes) e marque **Participante**. A conta passa a exigir o participante em cada lançamento, a tela de lançamento ganha a coluna *Part.* e o balancete pode **detalhar participantes**.
 
+## Contas bancárias
+
+**Para que serve:** cadastrar as contas da empresa nos bancos, para indicar onde cai o dinheiro de cada forma de pagamento e qual conta contábil representa o banco.
+**Onde fica:** *Cadastros › Contas bancárias* (Contábil, Fiscal e ERP).
+
+1. Clique em **Incluir**; o código é sugerido.
+2. Informe a **descrição** (ex.: *Banco do Brasil – movimento*), o **banco** (código de compensação com 3 dígitos: 001, 104, 237, 341...), a **agência** e a **conta** (com o dígito depois do traço, se houver).
+3. Se quiser, informe a **conta contábil** do banco (precisa existir no plano de contas da empresa).
+4. **Gravar**. Desmarque **Ativa** para tirar a conta das listas sem apagá-la. Conta usada numa forma de pagamento pode ser excluída: a forma fica sem conta.
+
+## Formas de pagamento
+
+**Para que serve:** padronizar como as notas são pagas ou recebidas. Na digitação da nota fiscal, ao escolher a forma, as duplicatas (parcelas) são geradas sozinhas.
+**Onde fica:** *Cadastros › Formas de pagamento* (Fiscal e ERP).
+
+1. Clique em **Incluir**; o código é sugerido.
+2. Informe a **descrição** (ex.: *Boleto 30/60/90*) e o **meio** (dinheiro, boleto, PIX, cartão, cheque, transferência...).
+3. Em **Prazos (dias)**, digite os dias de cada parcela, separados por barra, contados da emissão da nota: `0` é à vista; `30` é uma parcela para 30 dias; `30/60/90` são três parcelas. O exemplo abaixo do campo mostra como fica uma venda de R$ 1.000,00 hoje.
+4. Escolha, se quiser, a **conta bancária** onde o dinheiro entra ou sai. **Gravar**.
+
+As parcelas saem com valores iguais; a última recebe a diferença dos centavos. Os prazos precisam estar em ordem crescente.
+
+Estes cadastros não aparecem no módulo Escritório, que trabalha só com os dados do próprio escritório.
+
 ## Sócios
 
 **Onde fica:** *Cadastros › Empresas*, aba **Sócios** (empresa selecionada no topo).

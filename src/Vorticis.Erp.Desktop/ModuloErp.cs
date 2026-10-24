@@ -23,6 +23,8 @@ public sealed class ModuloErp : IModuloDesktop
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Produtos", F.Telas.Produtos),
+        ItemMenu.Tela("Formas de pagamento", TelasComuns.FormasPagamento),
+        ItemMenu.Tela("Contas bancárias", TelasComuns.ContasBancarias),
     ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =

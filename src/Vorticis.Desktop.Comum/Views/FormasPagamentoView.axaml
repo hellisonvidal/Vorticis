@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.FormasPagamentoView"
+             x:DataType="vm:FormasPagamentoViewModel">
+  <!-- Cadastros › Formas de pagamento -->
+  <Grid ColumnDefinitions="*,16,400" RowDefinitions="Auto,*" Margin="8">
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Formas de pagamento" Margin="0,0,0,8" />
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+          <DataGridTextColumn Header="Meio" Binding="{ReflectionBinding Meio}" Width="150" />
+          <DataGridTextColumn Header="Condição" Binding="{ReflectionBinding Condicao}" Width="170" />
+          <DataGridTextColumn Header="Conta bancária" Binding="{ReflectionBinding Conta}" Width="170" />
+          <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="80" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
+      <TextBlock Text="Forma de pagamento" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" Watermark="ex.: Boleto 30/60/90" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Meio" />
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Meios}" SelectedItem="{Binding Meio}" DisplayMemberBinding="{ReflectionBinding Texto}"
+                  MinWidth="200" IsEnabled="{Binding EmEdicao}" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Prazos (dias)" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Prazos}" IsEnabled="{Binding EmEdicao}" Watermark="0 = à vista; 30/60/90 = três parcelas" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Conta bancária" />
+        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Contas}" SelectedItem="{Binding Conta}" DisplayMemberBinding="{ReflectionBinding Texto}"
+                  MinWidth="200" IsEnabled="{Binding EmEdicao}" />
+        <CheckBox Grid.Row="5" Grid.Column="1" Content="Ativa" IsChecked="{Binding Ativa}" IsEnabled="{Binding EmEdicao}" />
+      </Grid>
+      <TextBlock Text="{Binding Exemplo}" FontSize="11.5" Foreground="#44506A" TextWrapping="Wrap" />
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Os prazos contam a partir da emissão da nota. Na digitação da nota fiscal, escolha a forma de pagamento para gerar as duplicatas (parcelas)." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

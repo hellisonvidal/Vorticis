@@ -4,6 +4,7 @@ using Vorticis.Fiscal.Contabilizacao;
 using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Relatorios;
+using Vorticis.Infra.Financeiro;
 
 namespace Vorticis.Fiscal.Tests;
 
@@ -188,6 +189,72 @@ public class DuplicatasIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         var ruim = await dup.GravarConfiguracaoAsync(empresa, Contas() with { ContaFornecedores = "9.9.9", HistoricoPagamento = "x {XYZ}" }, adm, ct);
         Assert.Contains(ruim.Erros, e => e.Contains("não encontrada"));
         Assert.Contains(ruim.Erros, e => e.Contains("Variável desconhecida"));
+    }
+
+    [Fact]
+    public void Forma_de_pagamento_divide_o_total_nos_prazos_e_confere_o_formato()
+    {
+        var f = new FormaPagamento(0, 1, "Boleto 30/60/90", MeioPagamento.Boleto, " 30 / 60 / 90 ", null);
+        Assert.Empty(f.Validar());
+        Assert.Equal([30, 60, 90], f.Dias);
+        Assert.Equal("3x (30/60/90 dias)", f.CondicaoTexto);
+        var p = f.GerarParcelas(100m, Mar);
+        Assert.Equal(["1/3", "2/3", "3/3"], p.Select(x => x.Numero));
+        Assert.Equal([33.33m, 33.33m, 33.34m], p.Select(x => x.Valor));
+        Assert.Equal([Mar.AddDays(30), Mar.AddDays(60), Mar.AddDays(90)], p.Select(x => x.Vencimento));
+        var vista = new FormaPagamento(0, 2, "Dinheiro", MeioPagamento.Dinheiro, "0", null);
+        Assert.True(vista.AVista);
+        Assert.Equal(("1", Mar, 250m), (vista.GerarParcelas(250m, Mar)[0].Numero, vista.GerarParcelas(250m, Mar)[0].Vencimento, vista.GerarParcelas(250m, Mar)[0].Valor));
+        Assert.NotEmpty((f with { Prazos = "30/abc" }).Validar());
+        Assert.NotEmpty((f with { Prazos = "60/30" }).Validar());
+        Assert.NotEmpty((f with { Descricao = " " }).Validar());
+        Assert.Equal("30/60", FormaPagamento.NormalizarPrazos("30;60"));
+    }
+
+    [Fact]
+    public async Task Cadastros_financeiros_e_forma_de_pagamento_na_nota_digitada()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await db.CriarEmpresaAsync(CnpjsDeTeste.Valido(791));
+        var adm = await db.AdminAsync();
+        var svc = db.App.CadastrosFinanceiros();
+
+        // conta bancária: formato e conta contábil conferidos
+        Assert.Contains(ServicoCadastrosFinanceiros.Validar(new ContaBancaria(0, 1, "BB", "1", "12a", "x", null)), e => e.StartsWith("Banco"));
+        Assert.Contains("não existe no plano", (await svc.GravarContaAsync(empresa, new ContaBancaria(0, 1, "BB", "001", "1234-5", "12345-6", "9.9.99"), adm, ct)).Erros[0]);
+        var conta = await svc.GravarContaAsync(empresa, new ContaBancaria(0, 1, "Banco do Brasil", "001", "1234-5", "12345-6", null), adm, ct);
+        Assert.True(conta.Sucesso, string.Join("; ", conta.Erros));
+        Assert.False((await svc.GravarContaAsync(empresa, new ContaBancaria(0, 2, "Repetida", "001", "1234-5", "12345-6", null), adm, ct)).Sucesso);
+
+        // forma de pagamento ligada à conta
+        var forma = await svc.GravarFormaAsync(empresa, new FormaPagamento(0, 1, "Boleto 30/60", MeioPagamento.Boleto, "30/60", conta.Valor), adm, ct);
+        Assert.True(forma.Sucesso, string.Join("; ", forma.Erros));
+        var lida = Assert.Single(await svc.FormasAsync(empresa, adm, ct));
+        Assert.Equal((MeioPagamento.Boleto, "30/60", (long?)conta.Valor), (lida.Meio, lida.Prazos, lida.ContaBancariaId));
+        Assert.True((await svc.GravarFormaAsync(empresa, lida with { Meio = MeioPagamento.CartaoCredito }, adm, ct)).Sucesso);
+        Assert.Equal(MeioPagamento.CartaoCredito, (await svc.FormasAsync(empresa, adm, ct))[0].Meio);
+
+        // nota digitada com a forma: as parcelas vêm dos prazos e a forma fica gravada
+        var part = await db.EscalarAsync<long>("INSERT INTO core.participante (empresa_id, codigo, nome, cpf_cnpj, uf) VALUES (@e, '10', 'Fornecedor Gama', @d, 'SP') RETURNING id",
+            ("e", empresa), ("d", XmlsDeTeste.CnpjFornecedor));
+        var itens = new[] { Item("1102", 300m) };
+        var t = CalculadoraNota.Totalizar(itens, new TotaisDocumento(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0));
+        var parcelas = lida.GerarParcelas(t.Total, Mar).Select(p => new ParcelaDuplicata(p.Numero, p.Vencimento, p.Valor)).ToList();
+        var fiscal = db.App.Fiscal();
+        var id = await fiscal.Digitacao.GravarAsync(empresa, new DocumentoDigitado(0, TipoOperacao.Entrada, ModeloDocumento.NFe55, "1", "880", null, Mar, Mar, "Compra", part, null, t,
+            itens, Parcelas: parcelas, FormaPagamentoId: lida.Id), adm, ct);
+        Assert.True(id.Sucesso, string.Join("; ", id.Erros));
+        Assert.Equal(lida.Id, (await fiscal.Digitacao.ObterAsync(empresa, id.Valor, adm, ct)).Valor.FormaPagamentoId);
+        var dups = (await fiscal.Duplicatas.ConsultarAsync(empresa, new FiltroDuplicatas(DocumentoId: id.Valor), adm, ct)).Valor;
+        Assert.Equal([Mar.AddDays(30), Mar.AddDays(60)], dups.Select(d => d.Vencimento));
+        Assert.Equal(300m, dups.Sum(d => d.Valor));
+
+        // excluir a conta deixa a forma sem conta; excluir a forma deixa a nota sem forma
+        Assert.True((await svc.ExcluirContaAsync(empresa, conta.Valor, adm, ct)).Sucesso);
+        Assert.Null((await svc.FormasAsync(empresa, adm, ct))[0].ContaBancariaId);
+        Assert.True((await svc.ExcluirFormaAsync(empresa, lida.Id, adm, ct)).Sucesso);
+        Assert.Null((await fiscal.Digitacao.ObterAsync(empresa, id.Valor, adm, ct)).Valor.FormaPagamentoId);
     }
 
     [Fact]

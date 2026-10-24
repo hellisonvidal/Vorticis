@@ -30,6 +30,7 @@ public sealed class ModuloContabil : IModuloDesktop
         ItemMenu.Tela("Plano de contas", Telas.PlanoContas),
         ItemMenu.Tela("Centros de custo", Telas.CentrosCusto),
         ItemMenu.Tela("Históricos", Telas.Historicos),
+        ItemMenu.Tela("Contas bancárias", Comum.ViewModels.TelasComuns.ContasBancarias),
         ItemMenu.Tela("Bloqueio de lançamentos", Telas.BloqueioLancamentos),
     ];
 

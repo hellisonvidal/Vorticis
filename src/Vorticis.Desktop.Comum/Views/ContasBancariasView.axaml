@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.ContasBancariasView"
+             x:DataType="vm:ContasBancariasViewModel">
+  <!-- Cadastros › Contas bancárias -->
+  <Grid ColumnDefinitions="*,16,380" RowDefinitions="Auto,*" Margin="8">
+    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Contas bancárias" Margin="0,0,0,8" />
+      <DataGrid ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+          <DataGridTextColumn Header="Banco" Binding="{ReflectionBinding Banco}" Width="70" />
+          <DataGridTextColumn Header="Agência" Binding="{ReflectionBinding Agencia}" Width="90" />
+          <DataGridTextColumn Header="Conta" Binding="{ReflectionBinding Conta}" Width="120" />
+          <DataGridTextColumn Header="Conta contábil" Binding="{ReflectionBinding ContaContabil}" Width="120" />
+          <DataGridCheckBoxColumn Header="Ativa" Binding="{ReflectionBinding Ativa}" Width="60" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
+      <TextBlock Text="Conta bancária" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" Watermark="ex.: Banco do Brasil – movimento" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Banco" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Banco}" Width="70" HorizontalAlignment="Left" IsEnabled="{Binding EmEdicao}" Watermark="001" MaxLength="3" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Agência" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Agencia}" Width="110" HorizontalAlignment="Left" IsEnabled="{Binding EmEdicao}" Watermark="1234-5" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Conta" />
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Conta}" Width="160" HorizontalAlignment="Left" IsEnabled="{Binding EmEdicao}" Watermark="12345-6" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Conta contábil" />
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ContaContabil}" Width="160" HorizontalAlignment="Left" IsEnabled="{Binding EmEdicao}" Watermark="1.1.02.001 (opcional)" />
+        <CheckBox Grid.Row="6" Grid.Column="1" Content="Ativa" IsChecked="{Binding Ativa}" IsEnabled="{Binding EmEdicao}" />
+      </Grid>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Banco é o código de compensação (001 Banco do Brasil, 104 Caixa, 237 Bradesco, 341 Itaú...). A conta contábil, se informada, precisa existir no plano de contas da empresa." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

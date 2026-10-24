@@ -21,6 +21,8 @@ public sealed class ModuloFiscal : IModuloDesktop
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Produtos", Telas.Produtos),
+        ItemMenu.Tela("Formas de pagamento", Vorticis.Desktop.Comum.ViewModels.TelasComuns.FormasPagamento),
+        ItemMenu.Tela("Contas bancárias", Vorticis.Desktop.Comum.ViewModels.TelasComuns.ContasBancarias),
     ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =

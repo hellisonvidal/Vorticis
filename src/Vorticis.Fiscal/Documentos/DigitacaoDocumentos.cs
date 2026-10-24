@@ -14,7 +14,7 @@ public sealed record DocumentoDigitado(
     long Id, TipoOperacao Operacao, ModeloDocumento Modelo, string Serie, string Numero, string? Chave, DateOnly Emissao, DateOnly DataLivro,
     string? Natureza, long ParticipanteId, long? CentroCustoId, TotaisDocumento Totais, IReadOnlyList<ItemFiscal> Itens,
     bool Contabilizado = false, string Origem = "DIGITADO", string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null,
-    IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Parcelas = null)
+    IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Parcelas = null, long? FormaPagamentoId = null)
 {
     // Parcelas (duplicatas): null = não mexe nas duplicatas da nota; lista = parcelas da cobrança (nota nova sem parcelas gera uma à vista, conforme a configuração).
     /// <summary>Nota importada de XML: valores, chave e itens do XML original não se alteram; só a escrituração.</summary>

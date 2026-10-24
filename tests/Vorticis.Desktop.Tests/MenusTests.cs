@@ -213,4 +213,26 @@ public class MenusTests
         Assert.Equal(["usaParticipantes"], p.Grupos.Single(g => g.Titulo == "Participantes").Campos.Select(c => c.Chave));
         Assert.Equal(["dataBloqueio"], new BloqueioLancamentosViewModel(vm).Grupos.SelectMany(g => g.Campos).Select(c => c.Chave));
     }
+
+    [Fact]
+    public void Contas_bancarias_e_formas_de_pagamento_ficam_em_Cadastros_menos_no_Escritorio()
+    {
+        static List<string?> Cadastros(MainViewModelBase vm) => Folhas(vm.Menus[0].Filhos!).Select(i => i.Chave).ToList();
+        Assert.Contains(TelasComuns.ContasBancarias, Cadastros(new MainViewModel()));
+        Assert.DoesNotContain(TelasComuns.FormasPagamento, Cadastros(new MainViewModel()));
+        foreach (MainViewModelBase vm in new MainViewModelBase[] { new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel() })
+        {
+            Assert.Contains(TelasComuns.ContasBancarias, Cadastros(vm));
+            Assert.Contains(TelasComuns.FormasPagamento, Cadastros(vm));
+        }
+        var esc = Cadastros(new Vorticis.Escritorio.Desktop.MainViewModel());
+        Assert.DoesNotContain(TelasComuns.ContasBancarias, esc);
+        Assert.DoesNotContain(TelasComuns.FormasPagamento, esc);
+        // a tela de cadastro mostra a simulação dos prazos digitados
+        var formas = new FormasPagamentoViewModel(new MainViewModel()) { Prazos = "30/60" };
+        Assert.Contains("1/2 em", formas.Exemplo);
+        formas.Prazos = "x";
+        Assert.StartsWith("Prazos inválidos", formas.Exemplo);
+        Assert.True(new Vorticis.Desktop.Comum.Views.TemplatesComuns().Match(formas));
+    }
 }

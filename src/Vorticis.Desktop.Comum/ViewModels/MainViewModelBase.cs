@@ -63,6 +63,9 @@ public static class TelasComuns
     public const string Socios = "socios";
     public const string Clientes = "clientes";
     public const string Fornecedores = "fornecedores";
+    /// <summary>Cadastros financeiros do casco: cada módulo que os usa (Contábil, Fiscal, ERP) põe o item no seu menu Cadastros.</summary>
+    public const string ContasBancarias = "contasbancarias";
+    public const string FormasPagamento = "formaspagamento";
     public const string Usuarios = "usuarios";
     public const string Perfis = "perfis";
     public const string AlterarSenha = "senha";
@@ -146,6 +149,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     protected T Instancia<T>([CallerMemberName] string nome = "") where T : class => (T)_instancias[nome];
 
     public LoginViewModel Login { get; }
+    public ContasBancariasViewModel ContasBancarias => Instancia<ContasBancariasViewModel>();
+    public FormasPagamentoViewModel FormasPagamento => Instancia<FormasPagamentoViewModel>();
     public ConexaoViewModel Conexao => Instancia<ConexaoViewModel>();
     public InicioViewModel Inicio => Instancia<InicioViewModel>();
     public CadastroEmpresaViewModel Empresas => Instancia<CadastroEmpresaViewModel>();
@@ -198,6 +203,12 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.Clientes, "Cadastros › Clientes", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(Fornecedores), m => new FornecedoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(TelasComuns.Fornecedores, "Cadastros › Fornecedores", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(ContasBancarias), m => new ContasBancariasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.ContasBancarias, "Cadastros › Contas bancárias", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(FormasPagamento), m => new FormasPagamentoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.FormasPagamento, "Cadastros › Formas de pagamento", ComAcesso, v => v.CarregarAsync());
 
         c.Instancia(nameof(Usuarios), m => new UsuariosViewModel(m));
         c.Instancia(nameof(Perfis), m => new PerfisViewModel(m));

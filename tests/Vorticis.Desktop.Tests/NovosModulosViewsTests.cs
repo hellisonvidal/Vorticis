@@ -39,6 +39,14 @@ public class NovosModulosViewsTests(SessaoHeadless headless)
         yield return (new K.ViewModels.ReservasViewModel(cond), new K.Views.ReservasView());
         yield return (new K.ViewModels.OcorrenciasViewModel(cond), new K.Views.OcorrenciasView());
         yield return (new K.ViewModels.PrestacaoViewModel(cond), new K.Views.PrestacaoView());
+        // telas novas do lote: cadastros financeiros (casco), resumos e baixas (Fiscal) e depreciação (Contábil)
+        var contabil = new Vorticis.Desktop.ViewModels.MainViewModel();
+        var fiscal = new Vorticis.Fiscal.Desktop.MainViewModel();
+        yield return (new Vorticis.Desktop.Comum.ViewModels.ContasBancariasViewModel(contabil), new Vorticis.Desktop.Comum.Views.ContasBancariasView());
+        yield return (new Vorticis.Desktop.Comum.ViewModels.FormasPagamentoViewModel(fiscal), new Vorticis.Desktop.Comum.Views.FormasPagamentoView());
+        yield return (new Vorticis.Fiscal.Desktop.ViewModels.ResumoVendasViewModel(fiscal), new Vorticis.Fiscal.Desktop.Views.ResumoNotasView());
+        yield return (new Vorticis.Fiscal.Desktop.ViewModels.RelRecebimentosViewModel(fiscal), new Vorticis.Fiscal.Desktop.Views.RelatorioBaixasView());
+        yield return (new Vorticis.Desktop.ViewModels.ValorDepreciadoViewModel(contabil), new Vorticis.Desktop.Views.RelatorioDepreciacaoView());
     }
 
     [Fact]

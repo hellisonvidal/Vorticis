@@ -112,10 +112,12 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                   INSERT INTO fiscal.documento (empresa_id, modelo, chave_acesso, tipo_operacao, numero, serie, data_emissao, data_entrada_saida, natureza_operacao,
                       situacao, emitente_documento, emitente_nome, emitente_uf, destinatario_documento, destinatario_nome, destinatario_uf, participante_id,
                       valor_produtos, valor_desconto, valor_frete, valor_seguro, valor_outras, valor_total, vl_bc_icms, vl_icms, vl_bc_icms_st, vl_icms_st,
-                      vl_ipi, vl_pis, vl_cofins, vl_iss, iss_retido, vl_ret_pis, vl_ret_cofins, vl_ret_csll, vl_irrf, vl_ret_prev, origem, centro_custo_id, importado_por, observacoes, conta_debito, conta_credito)
+                      vl_ipi, vl_pis, vl_cofins, vl_iss, iss_retido, vl_ret_pis, vl_ret_cofins, vl_ret_csll, vl_irrf, vl_ret_prev, origem, centro_custo_id, importado_por, observacoes, conta_debito, conta_credito,
+                      forma_pagamento_id)
                   VALUES (@e, @mod, @chave, @op, @num, @serie, @emi, @es, @nat, 'AUTORIZADA', @ed, @en, @eu, @dd, @dn, @du, @part,
                       @vprod, @vdesc, @vfrete, @vseg, @voutras, @vtotal, @bcicms, @icms, @bcst, @st, @ipi, @pis, @cofins, @iss, @issret,
-                      @rpis, @rcofins, @rcsll, @irrf, @rprev, 'DIGITADO', @cc, @usu, @obs, @cdeb, @ccre)
+                      @rpis, @rcofins, @rcsll, @irrf, @rprev, 'DIGITADO', @cc, @usu, @obs, @cdeb, @ccre,
+                      (SELECT id FROM core.forma_pagamento WHERE id = @fp AND empresa_id = @e))
                   RETURNING id
                   """
                 : """
@@ -125,7 +127,8 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                       valor_produtos = @vprod, valor_desconto = @vdesc, valor_frete = @vfrete, valor_seguro = @vseg, valor_outras = @voutras, valor_total = @vtotal,
                       vl_bc_icms = @bcicms, vl_icms = @icms, vl_bc_icms_st = @bcst, vl_icms_st = @st, vl_ipi = @ipi, vl_pis = @pis, vl_cofins = @cofins,
                       vl_iss = @iss, iss_retido = @issret, vl_ret_pis = @rpis, vl_ret_cofins = @rcofins, vl_ret_csll = @rcsll, vl_irrf = @irrf, vl_ret_prev = @rprev,
-                      centro_custo_id = @cc, observacoes = @obs, conta_debito = @cdeb, conta_credito = @ccre, atualizado_em = now()
+                      centro_custo_id = @cc, observacoes = @obs, conta_debito = @cdeb, conta_credito = @ccre,
+                      forma_pagamento_id = (SELECT id FROM core.forma_pagamento WHERE id = @fp AND empresa_id = @e), atualizado_em = now()
                    WHERE id = @id AND empresa_id = @e
                   RETURNING id
                   """;
@@ -140,7 +143,8 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                    .Com("cofins", t.Cofins).Com("iss", t.Iss).Com("issret", t.IssRetido)
                    .Com("rpis", t.RetPis).Com("rcofins", t.RetCofins).Com("rcsll", t.RetCsll).Com("irrf", t.Irrf).Com("rprev", t.RetPrev)
                    .Com("cc", NpgsqlDbType.Bigint, d.CentroCustoId)
-                   .ComTexto("obs", d.Observacoes).ComTexto("cdeb", d.ContaDebito).ComTexto("ccre", d.ContaCredito);
+                   .ComTexto("obs", d.Observacoes).ComTexto("cdeb", d.ContaDebito).ComTexto("ccre", d.ContaCredito)
+                   .Com("fp", NpgsqlDbType.Bigint, d.FormaPagamentoId);
                 if (d.Id == 0) cmd.Com("usu", NpgsqlDbType.Bigint, usuarioId); else cmd.Com("id", d.Id);
                 id = await cmd.ExecuteScalarAsync(ct) as long? ?? throw new ViolacaoRegraException("Documento não encontrado.");
             }
@@ -223,7 +227,7 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
             SELECT d.id, d.tipo_operacao, d.modelo, d.serie, d.numero, d.chave_acesso, d.data_emissao, d.data_entrada_saida, d.natureza_operacao, d.participante_id,
                    d.centro_custo_id, d.valor_produtos, d.valor_desconto, d.valor_frete, d.valor_seguro, d.valor_outras, d.valor_total, d.vl_bc_icms, d.vl_icms,
                    d.vl_bc_icms_st, d.vl_icms_st, d.vl_ipi, d.vl_pis, d.vl_cofins, d.vl_iss, d.iss_retido, d.vl_ret_pis, d.vl_ret_cofins, d.vl_ret_csll, d.vl_irrf,
-                   d.vl_ret_prev, d.origem, COALESCE(l.status = 'EFETIVADO', FALSE), d.observacoes, d.conta_debito, d.conta_credito
+                   d.vl_ret_prev, d.origem, COALESCE(l.status = 'EFETIVADO', FALSE), d.observacoes, d.conta_debito, d.conta_credito, d.forma_pagamento_id
               FROM fiscal.documento d LEFT JOIN contabil.lancamento l ON l.id = d.lancamento_id
              WHERE d.id = @d AND d.empresa_id = @e
             """).Com("d", documentoId).Com("e", empresaId);
@@ -234,7 +238,7 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
             r.GetDecimal(26), r.GetDecimal(27), r.GetDecimal(28), r.GetDecimal(29), r.GetDecimal(30));
         var doc = new DocumentoDigitado(r.GetInt64(0), ModelosExtensions.OperacaoDe(r.GetString(1)), ModelosExtensions.ModeloDe(r.GetString(2)), r.GetString(3), r.GetString(4),
             r.Texto(5), r.GetFieldValue<DateOnly>(6), r.GetFieldValue<DateOnly>(7), r.Texto(8), r.LongOuNulo(9) ?? 0, r.LongOuNulo(10), totais, [],
-            r.GetBoolean(32), r.GetString(31), r.Texto(33), r.Texto(34), r.Texto(35));
+            r.GetBoolean(32), r.GetString(31), r.Texto(33), r.Texto(34), r.Texto(35), FormaPagamentoId: r.LongOuNulo(36));
         await r.CloseAsync();
         await using var cmdItens = ds.CreateCommand($"""
             SELECT {RepositorioDocumentos.ColunasItemSql} FROM fiscal.documento_item i LEFT JOIN contabil.centro_custo cci ON cci.id = i.centro_custo_id

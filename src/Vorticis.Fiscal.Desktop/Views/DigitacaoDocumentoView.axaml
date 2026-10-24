@@ -139,10 +139,15 @@
       </Expander>
 
       <!-- Parcelas (duplicatas a pagar ou a receber da nota) -->
-      <Expander Header="Parcelas (duplicatas)" IsExpanded="False">
+      <Expander Header="Duplicatas (forma de pagamento e parcelas)" IsExpanded="True">
         <StackPanel Spacing="4">
-          <TextBlock Text="Sem parcelas, a nota nova gera uma duplicata à vista (Cadastros › Parâmetros). Para parcelar, informe a quantidade, o primeiro vencimento e o intervalo em dias e use Gerar parcelas."
+          <TextBlock Text="Escolha a forma de pagamento (Cadastros › Formas de pagamento) e as duplicatas são geradas pelos prazos dela, a partir da emissão. Sem forma e sem parcelas, a nota nova gera uma duplicata à vista (Cadastros › Parâmetros). Para parcelar à mão, informe a quantidade, o primeiro vencimento e o intervalo e use Gerar parcelas."
                      FontSize="11" Foreground="#5A6478" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Forma de pagamento" />
+              <ComboBox ItemsSource="{Binding FormasPagamento}" SelectedItem="{Binding FormaPagamento}" DisplayMemberBinding="{ReflectionBinding Texto}" MinWidth="280" /></StackPanel>
+            <Button Classes="mini" Content="Gerar pela forma" Command="{Binding GerarPelaFormaCommand}" VerticalAlignment="Bottom" Height="26" />
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº de parcelas" /><TextBox Text="{Binding ParcelasQuantidade}" Width="80" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Primeiro vencimento" /><CalendarDatePicker SelectedDate="{Binding ParcelasPrimeiroVencimento}" Width="135" /></StackPanel>

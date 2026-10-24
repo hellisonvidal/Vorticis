@@ -9,6 +9,7 @@ using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Produtos;
 using Vorticis.Infra;
+using Vorticis.Infra.Financeiro;
 
 namespace Vorticis.Fiscal.Desktop.ViewModels;
 
@@ -33,6 +34,9 @@ internal static class Resolvedores
                ?? (r.Valor.Count == 1 ? r.Valor[0] : null);
     }
 }
+
+/// <summary>Forma de pagamento oferecida na digitação da nota (null = sem forma: parcelas manuais ou à vista pelos Parâmetros).</summary>
+public sealed record OpcaoFormaPagamento(FormaPagamento? Forma, string Texto);
 
 /// <summary>Parcela (duplicata) da nota na tela de digitação.</summary>
 public sealed record ParcelaLinha(string Numero, DateOnly Vencimento, decimal Valor, string Situacao = "")
@@ -217,6 +221,42 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [ObservableProperty] private DateTime? _parcelasPrimeiroVencimento = DateTime.Today.AddDays(30);
     [ObservableProperty] private string _parcelasIntervalo = "30";
 
+    /// <summary>Formas de pagamento ativas (Cadastros › Formas de pagamento): escolher uma gera as duplicatas pelos prazos dela.</summary>
+    public ObservableCollection<OpcaoFormaPagamento> FormasPagamento { get; } = [new(null, "(sem forma de pagamento)")];
+    [ObservableProperty] private OpcaoFormaPagamento? _formaPagamento;
+    private bool _suprimirForma;
+
+    partial void OnFormaPagamentoChanged(OpcaoFormaPagamento? value)
+    {
+        if (_suprimirForma || value?.Forma is not { } f || !PodeEditar) return;
+        AplicarForma(f);
+    }
+
+    /// <summary>Gera as parcelas pela forma de pagamento: total da nota dividido nos prazos, contados da emissão.</summary>
+    private void AplicarForma(FormaPagamento f)
+    {
+        Erros.Clear();
+        var total = CalcularTotais().Total;
+        if (total <= 0) { Mensagem = $"Forma \"{f.Descricao}\" escolhida: as parcelas serão geradas ao incluir os itens (use Gerar pela forma)."; return; }
+        Parcelas.Clear();
+        foreach (var p in f.GerarParcelas(total, Data(Emissao, DateOnly.FromDateTime(DateTime.Today)))) Parcelas.Add(new ParcelaLinha(p.Numero, p.Vencimento, p.Valor));
+        Mensagem = $"{Parcelas.Count} parcela(s) gerada(s) pela forma \"{f.Descricao}\" ({f.CondicaoTexto}).";
+    }
+
+    [RelayCommand]
+    private void GerarPelaForma()
+    {
+        if (FormaPagamento?.Forma is { } f) AplicarForma(f);
+        else Erros.Add("Escolha a forma de pagamento.");
+    }
+
+    private void SelecionarForma(long? id)
+    {
+        _suprimirForma = true;
+        FormaPagamento = FormasPagamento.FirstOrDefault(o => o.Forma?.Id == id && id is not null) ?? FormasPagamento[0];
+        _suprimirForma = false;
+    }
+
     // Fornecedor/cliente: busca automática pelo CPF/CNPJ digitado (cadastrados da empresa e, para CNPJ, a base pública).
     [ObservableProperty] private string _participanteInfo = "";
     [ObservableProperty] private bool _temNovoParticipante;
@@ -323,6 +363,14 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
             foreach (var c in (await app.PlanoContas.ListarCentrosAsync(empresa, usuario)).Where(c => c.Ativo && c.Analitico))
                 Centros.Add(new CentroOpcao(c.Id, $"{c.Codigo} - {c.Descricao}", c.Codigo));
         CentroDocumento = CentroItem = Centros[0];
+        var formas = await app.CadastrosFinanceiros().FormasAsync(empresa, usuario);
+        var formaAtual = FormaPagamento?.Forma?.Id;
+        _suprimirForma = true;
+        FormasPagamento.Clear();
+        FormasPagamento.Add(new OpcaoFormaPagamento(null, "(sem forma de pagamento)"));
+        foreach (var f in formas.Where(f => f.Ativa)) FormasPagamento.Add(new OpcaoFormaPagamento(f, $"{f.Codigo} – {f.Descricao} ({f.CondicaoTexto})"));
+        _suprimirForma = false;
+        SelecionarForma(formaAtual);
         var produtos = await app.Fiscal().Produtos.ListarAsync(empresa, false, null, usuario);
         _produtosPorId = produtos.Sucesso ? produtos.Valor.ToDictionary(p => p.Id, p => $"{p.Codigo} - {p.Descricao}") : new Dictionary<long, string>();
         await ListarAsync(app, empresa, usuario);
@@ -381,6 +429,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Parcelas.Clear();
         if (dups.Sucesso)
             foreach (var p in dups.Valor.Where(p => p.Situacao != SituacaoDuplicata.Cancelada)) Parcelas.Add(new ParcelaLinha(p.Parcela, p.Vencimento, p.Valor, p.Situacao.Rotulo()));
+        SelecionarForma(d.FormaPagamentoId);
         Contabilizado = d.Contabilizado;
         SituacaoDocumento = d.Contabilizado ? "Nota contabilizada: somente consulta (use \"Desfazer contabilização e excluir\" para removê-la, ou desfaça a contabilização para alterar)"
             : d.Importado ? $"Nota importada de XML {d.Numero}: só a escrituração pode ser alterada" : $"Alterando a nota {d.Numero}";
@@ -425,6 +474,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Item.Limpar();
         Parcelas.Clear();
         (ParcelasQuantidade, ParcelasPrimeiroVencimento, ParcelasIntervalo) = ("1", DateTime.Today.AddDays(30), "30");
+        SelecionarForma(null);
         Contabilizado = false;
         SituacaoDocumento = "Nova nota";
         AtualizarTotais();
@@ -521,7 +571,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
             Natureza, _participanteId, CentroDocumento?.Id, totais, Itens.Select(i => i.Item).ToList(),
             Observacoes: Texto(Observacoes), ContaDebito: Texto(ContaDebito), ContaCredito: Texto(ContaCredito),
-            Parcelas: Parcelas.Select(p => new ParcelaDuplicata(p.Numero, p.Vencimento, p.Valor)).ToList());   // vazio: nota nova gera à vista (Parâmetros); nota existente fica sem duplicatas
+            Parcelas: Parcelas.Select(p => new ParcelaDuplicata(p.Numero, p.Vencimento, p.Valor)).ToList(), FormaPagamentoId: FormaPagamento?.Forma?.Id);   // vazio: nota nova gera à vista (Parâmetros); nota existente fica sem duplicatas
         var r = await app.Fiscal().Digitacao.GravarAsync(empresa, doc, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         AmpliarPeriodo([Data(DataLivro, default).ToDateTime(TimeOnly.MinValue)]);   // a nota gravada sempre aparece na lista

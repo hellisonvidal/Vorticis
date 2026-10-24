@@ -20,6 +20,8 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(SociosViewModel)] = () => new SociosView(),
         [typeof(ClientesViewModel)] = () => new ParticipantesView(),
         [typeof(FornecedoresViewModel)] = () => new ParticipantesView(),
+        [typeof(ContasBancariasViewModel)] = () => new ContasBancariasView(),
+        [typeof(FormasPagamentoViewModel)] = () => new FormasPagamentoView(),
         [typeof(UsuariosViewModel)] = () => new UsuariosView(),
         [typeof(PerfisViewModel)] = () => new PerfisView(),
         [typeof(AlterarSenhaViewModel)] = () => new AlterarSenhaView(),
