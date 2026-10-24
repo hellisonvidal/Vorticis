@@ -14,6 +14,8 @@
     <DataTemplate DataType="vm:PedidosCompraViewModel"><v:PedidosView /></DataTemplate>
     <DataTemplate DataType="vm:EstoqueViewModel"><v:EstoqueView /></DataTemplate>
     <!-- Telas do Fiscal usadas pelo ERP -->
+    <DataTemplate DataType="vm:MonitorNotasViewModel"><v:MonitorNotasView /></DataTemplate>
+    <DataTemplate DataType="vm:MonitorCobrancasViewModel"><v:MonitorCobrancasView /></DataTemplate>
     <DataTemplate DataType="fvm:TabelaExibida"><fv:TabelaExibidaView /></DataTemplate>
     <DataTemplate DataType="fvm:ImportacaoXmlViewModel"><fv:ImportacaoXmlView /></DataTemplate>
     <DataTemplate DataType="fvm:NotaEntradaViewModel"><fv:DigitacaoDocumentoView /></DataTemplate>

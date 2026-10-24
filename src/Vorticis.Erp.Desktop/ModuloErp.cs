@@ -44,6 +44,9 @@ public sealed class ModuloErp : IModuloDesktop
             ItemMenu.Tela("Contas a receber", F.Telas.ContasReceber),
             ItemMenu.Separador,
             ItemMenu.Tela("Conciliação bancária", F.Telas.ConciliacaoDuplicatas)),
+        ItemMenu.Submenu("_Monitores",
+            ItemMenu.Tela("Monitor de notas fiscais", ErpTelas.MonitorNotas),
+            ItemMenu.Tela("Monitor de cobranças", ErpTelas.MonitorCobrancas)),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Tela("Painel do empresário", ErpTelas.Painel),
             ItemMenu.Separador,
@@ -79,6 +82,11 @@ public sealed class ModuloErp : IModuloDesktop
         c.Instancia("Estoque", m => new EstoqueViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(ErpTelas.Estoque, "Estoque › Posição e movimentos", m => Pode(m, Permissao.ErpEstoque, Permissao.ErpRelatorios), v => v.CarregarAsync());
+
+        c.Instancia("MonitorNotas", m => new MonitorNotasViewModel(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.AtualizarAsync() : Task.CompletedTask)
+            .Tela(ErpTelas.MonitorNotas, "Monitores › Monitor de notas fiscais", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.AtualizarAsync());
+        c.Instancia("MonitorCobrancas", m => new MonitorCobrancasViewModel(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.AtualizarAsync() : Task.CompletedTask)
+            .Tela(ErpTelas.MonitorCobrancas, "Monitores › Monitor de cobranças", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.AtualizarAsync());
 
         // Telas do Fiscal usadas pelo ERP (mesmas chaves, mesmo manual)
         c.Instancia("ImportacaoXml", m => new F.ImportacaoXmlViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

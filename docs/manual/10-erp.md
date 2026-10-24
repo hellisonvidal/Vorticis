@@ -32,6 +32,26 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 - **Preço e estoque mínimo:** informe e clique em **Gravar**.
 - **Ajuste de estoque (inventário):** informe a data, a quantidade (positiva para entrada, negativa para saída), o custo unitário e o motivo, e clique em **Registrar ajuste**.
 
+## Monitor de notas fiscais
+
+**Para que serve:** acompanhar, numa tela só, as notas de entrada e de saída do período e o que pede atenção.
+**Onde fica:** *Monitores › Monitor de notas fiscais*.
+
+1. Escolha o período e se quer *entradas e saídas*, *somente entradas* ou *somente saídas*; clique em **Atualizar**.
+2. À esquerda ficam os indicadores: quantidade de notas, vendas e compras autorizadas, canceladas, **não contabilizadas**, **sem duplicatas** e **com cobrança vencida**.
+3. A lista mostra cada nota com a situação, se já foi contabilizada, as parcelas e o saldo em aberto. A coluna **Atenção** aponta o problema: *Nota cancelada*, *Cobrança vencida*, *Não contabilizada* ou *Sem duplicatas*.
+4. Marque **Só o que pede atenção** para ver apenas as notas com algum aviso.
+
+## Monitor de cobranças
+
+**Para que serve:** ver o que os clientes devem e o que já venceu.
+**Onde fica:** *Monitores › Monitor de cobranças*.
+
+1. Clique em **Atualizar**. Os indicadores mostram o total a receber em aberto, o **vencido**, o que **vence hoje**, o que vence **nos próximos 7 dias** e o que vence depois.
+2. A lista traz cada parcela em aberto, do vencimento mais antigo ao mais novo, com o saldo, o prazo (*dias de atraso* ou *em quantos dias vence*) e a faixa (vencida até 30 dias, de 31 a 90, há mais de 90, vence hoje, em até 7 dias, a vencer).
+3. **Maiores atrasos por cliente** mostra os cinco clientes com mais valor vencido.
+4. Filtre por cliente ou marque **Só vencidas**. Para registrar o recebimento, use *Financeiro › Contas a receber*.
+
 ## Financeiro
 
 **Onde fica:** *Financeiro*.

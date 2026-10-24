@@ -15,6 +15,8 @@ public static class ErpTelas
     public const string Estoque = "erp.estoque";
     public const string Veiculos = "erp.veiculos";
     public const string Transporte = "erp.transporte";
+    public const string MonitorNotas = "erp.monitor.notas";
+    public const string MonitorCobrancas = "erp.monitor.cobrancas";
 }
 
 internal static class Ext

@@ -48,6 +48,8 @@ public class NovosModulosViewsTests(SessaoHeadless headless)
         yield return (new Vorticis.Fiscal.Desktop.ViewModels.RelRecebimentosViewModel(fiscal), new Vorticis.Fiscal.Desktop.Views.RelatorioBaixasView());
         yield return (new Vorticis.Desktop.ViewModels.ValorDepreciadoViewModel(contabil), new Vorticis.Desktop.Views.RelatorioDepreciacaoView());
         yield return (new Vorticis.Fiscal.Desktop.ViewModels.BensDaNotaViewModel(fiscal), new Vorticis.Fiscal.Desktop.Views.BensDaNotaView());
+        yield return (new R.ViewModels.MonitorNotasViewModel(erp), new R.Views.MonitorNotasView());
+        yield return (new R.ViewModels.MonitorCobrancasViewModel(erp), new R.Views.MonitorCobrancasView());
     }
 
     [Fact]

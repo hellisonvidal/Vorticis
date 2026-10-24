@@ -1,5 +1,6 @@
 using Vorticis.Erp;
 using Vorticis.Fiscal;
+using Vorticis.Fiscal.Documentos;
 using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Produtos;
 using Vorticis.Infra.Tests;
@@ -8,6 +9,54 @@ namespace Vorticis.Modulos.Tests;
 
 public class RegrasErpTests
 {
+    private static readonly DateOnly Hoje = new(2026, 5, 20);
+
+    private static Duplicata Dup(long id, long? doc, DateOnly venc, decimal saldo, string cliente, SituacaoDuplicata sit = SituacaoDuplicata.Aberta, TipoDuplicata tipo = TipoDuplicata.Receber) =>
+        new(id, doc, null, cliente[0], null, cliente, tipo, "1", "NF" + id, venc.AddDays(-30), venc, saldo, 0, 0, 0, saldo, sit, null, "MANUAL");
+
+    [Fact]
+    public void Monitor_de_cobrancas_separa_por_faixa_de_vencimento()
+    {
+        Duplicata[] dups =
+        [
+            Dup(1, null, Hoje.AddDays(-100), 100m, "Ana"), Dup(2, null, Hoje.AddDays(-10), 50m, "Bia"), Dup(3, null, Hoje, 30m, "Ana"),
+            Dup(4, null, Hoje.AddDays(5), 20m, "Caio"), Dup(5, null, Hoje.AddDays(40), 10m, "Caio"),
+            Dup(6, null, Hoje.AddDays(-5), 999m, "Paga", SituacaoDuplicata.Liquidada), Dup(7, null, Hoje.AddDays(-5), 999m, "Fornecedor", tipo: TipoDuplicata.Pagar),
+        ];
+        var (lista, r) = Monitores.Cobrancas(dups, Hoje);
+        Assert.Equal(5, lista.Count);
+        Assert.Equal((210m, 150m, 30m, 20m, 10m), (r.Aberto, r.Vencido, r.VenceHoje, r.Proximos7Dias, r.Depois));
+        Assert.Equal(["Vencida há mais de 90 dias", "Vencida até 30 dias", "Vence hoje", "Vence em até 7 dias", "A vencer"], lista.Select(c => c.Faixa));
+        Assert.Equal(("Ana", 100m), r.MaioresAtrasos[0]);
+        Assert.Equal(3, r.Clientes);
+    }
+
+    [Fact]
+    public void Monitor_de_notas_aponta_o_que_pede_atencao()
+    {
+        var zero = new TotaisDocumento(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0);
+        var baseDoc = new DocumentoFiscal(1, ModeloDocumento.NFe55, new string('1', 44), TipoOperacao.Saida, "1", "1", Hoje, Hoje, null, SituacaoDocumento.Autorizada,
+            new ParteDocumento("11222333000181", "Eu", "SP"), new ParteDocumento("12345678909", "Cliente", "SP"), 5, "7", zero with { Total = 100m }, null, true);
+        DocumentoFiscal[] docs =
+        [
+            baseDoc,                                                                         // em ordem (contabilizada, com duplicata em dia)
+            baseDoc with { Id = 2, Numero = "2", Contabilizado = false },                    // não contabilizada
+            baseDoc with { Id = 3, Numero = "3", Situacao = SituacaoDocumento.Cancelada },   // cancelada
+            baseDoc with { Id = 4, Numero = "4" },                                           // cobrança vencida
+            baseDoc with { Id = 5, Numero = "5", Operacao = TipoOperacao.Entrada },          // sem duplicatas
+        ];
+        Duplicata[] dups = [Dup(1, 1, Hoje.AddDays(10), 100m, "Cliente"), Dup(2, 2, Hoje.AddDays(10), 100m, "Cliente"), Dup(4, 4, Hoje.AddDays(-3), 100m, "Cliente")];
+        var (notas, r) = Monitores.Notas(docs, dups, Hoje);
+        var alertas = notas.ToDictionary(n => n.Documento.Id, n => n.Alerta);
+        Assert.Equal("", alertas[1]);
+        Assert.Equal("Não contabilizada", alertas[2]);
+        Assert.Equal("Nota cancelada", alertas[3]);
+        Assert.Equal("Cobrança vencida", alertas[4]);
+        Assert.Equal("Sem duplicatas", alertas[5]);
+        Assert.Equal((5, 1, 4, 1, 1, 1, 1), (r.Total, r.Entradas, r.Saidas, r.Canceladas, r.NaoContabilizadas, r.SemCobranca, r.ComCobrancaVencida));
+        Assert.Equal((300m, 100m), (r.ValorSaidas, r.ValorEntradas));
+    }
+
     [Fact]
     public void Custo_medio_placa_e_validacao_do_pedido()
     {
