@@ -144,6 +144,7 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
 
 - **Duplicatas a pagar** e **Duplicatas a receber**: uma linha por parcela, com vencimento, documento, valor, valor baixado, saldo, situação e dias de atraso na **data-base**. Filtre por vencimento, fornecedor/cliente e situação (*Em aberto* ou *Todas*) e clique em **Gerar**.
 - **Posição por vencimento**: saldo em aberto por fornecedor/cliente nas faixas *a vencer*, *vencidas de 1 a 30 dias*, *de 31 a 60*, *de 61 a 90* e *há mais de 90 dias*, na data-base escolhida. Escolha *Contas a pagar* ou *Contas a receber*.
+- **Relatório de recebimentos** e **Relatório de pagamentos**: cada baixa feita no período (data, cliente/fornecedor, documento e parcela, principal, juros e multa, desconto, valor líquido e conta usada), com o total no fim. Informe o período das baixas e clique em **Gerar**.
 
 ## Apuração do Simples Nacional (DAS)
 
@@ -223,7 +224,9 @@ Guias com vencimento próximo aparecem no calendário de obrigações e na tela 
 Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 
 - **Livro de Registro de Entradas** e **de Saídas** (*Relatórios › Livros*): uma linha por nota e CFOP; notas canceladas aparecem sem valores. Informe o período e **Gerar**.
-- **Resumo por CFOP**: totais por CFOP e sentido.
+- **Resumos** (*Relatórios › Resumos*):
+  - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
+  - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
 - **Duplicatas a pagar**, **Duplicatas a receber** e **Posição por vencimento**: veja [Relatórios de duplicatas](#relatorios-de-duplicatas).
 

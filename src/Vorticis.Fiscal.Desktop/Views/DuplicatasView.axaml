@@ -18,9 +18,9 @@
   <!-- Lançamentos › Duplicatas (contas a pagar e a receber) -->
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="8,4" Spacing="5">
-      <TextBlock Classes="titulo" Text="Duplicatas: contas a pagar e a receber" />
+      <TextBlock Classes="titulo" Text="{Binding TituloTela}" />
       <WrapPanel>
-        <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Mostrar" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.Tipos}" SelectedIndex="{Binding TipoFiltro}" Width="170" /></StackPanel>
+        <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Mostrar" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.Tipos}" SelectedIndex="{Binding TipoFiltro}" Width="170" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Vencimento de" /><CalendarDatePicker SelectedDate="{Binding VencimentoInicio}" Width="135" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="até" /><CalendarDatePicker SelectedDate="{Binding VencimentoFim}" Width="135" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente" /><TextBox Text="{Binding ParticipanteFiltro}" Width="180" /></StackPanel>
@@ -51,7 +51,7 @@
         <StackPanel Spacing="4">
           <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="#7C2D12" />
           <WrapPanel IsEnabled="{Binding PodeManter}">
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
+            <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox Text="{Binding FormParticipante}" Width="260" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº do documento" /><TextBox Text="{Binding FormDocumento}" Width="120" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Parcela" /><TextBox Text="{Binding FormParcela}" Width="70" /></StackPanel>

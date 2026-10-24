@@ -61,12 +61,18 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Livro de Registro de Saídas", Telas.LivroSaidas),
                 ItemMenu.Tela("Livro de Apuração do ICMS", Telas.LivroApuracaoIcms),
                 ItemMenu.Tela("Livro de Apuração do IPI", Telas.LivroApuracaoIpi)),
-            ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
+            ItemMenu.Submenu("_Resumos",
+                ItemMenu.Tela("Resumo de vendas", Telas.ResumoVendas),
+                ItemMenu.Tela("Resumo de compras", Telas.ResumoCompras),
+                ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop)),
             ItemMenu.Separador,
             ItemMenu.Submenu("_Duplicatas",
                 ItemMenu.Tela("Duplicatas a pagar", Telas.RelDuplicatasPagar),
                 ItemMenu.Tela("Duplicatas a receber", Telas.RelDuplicatasReceber),
-                ItemMenu.Tela("Posição por vencimento", Telas.RelPosicaoDuplicatas)),
+                ItemMenu.Tela("Posição por vencimento", Telas.RelPosicaoDuplicatas),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Relatório de recebimentos", Telas.RelRecebimentos),
+                ItemMenu.Tela("Relatório de pagamentos", Telas.RelPagamentos)),
             ItemMenu.Separador,
             ItemMenu.Tela("Produtos cadastrados", Telas.RelProdutos),
             ItemMenu.Tela("Itens das notas fiscais", Telas.RelItensNotas)),
@@ -147,7 +153,15 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("RelItensNotas", m => new RelatorioItensNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.RelItensNotas, "Relatórios › Itens das notas fiscais", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ResumoCfop", m => new ResumoCfopViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.ResumoCfop, "Relatórios › Resumo por CFOP", m => m.Pode(Permissao.FiscalRelatorios));
+            .Tela(Telas.ResumoCfop, "Relatórios › Resumos › Resumo por CFOP", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("ResumoVendas", m => new ResumoVendasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ResumoVendas, "Relatórios › Resumos › Resumo de vendas", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("ResumoCompras", m => new ResumoComprasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ResumoCompras, "Relatórios › Resumos › Resumo de compras", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelRecebimentos", m => new RelRecebimentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelRecebimentos, "Relatórios › Duplicatas › Relatório de recebimentos", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("RelPagamentos", m => new RelPagamentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.RelPagamentos, "Relatórios › Duplicatas › Relatório de pagamentos", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelDuplicatasPagar", m => new RelDuplicatasPagarViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.RelDuplicatasPagar, "Relatórios › Duplicatas › Duplicatas a pagar", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelDuplicatasReceber", m => new RelDuplicatasReceberViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

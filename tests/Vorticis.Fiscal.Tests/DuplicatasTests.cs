@@ -80,6 +80,30 @@ public class DuplicatasRegrasTests
     }
 
     [Fact]
+    public void Resumo_de_vendas_soma_so_as_notas_autorizadas_por_nota_cliente_ou_mes()
+    {
+        var baseDoc = new DocumentoFiscal(1, ModeloDocumento.NFe55, new string('1', 44), TipoOperacao.Saida, "1", "1", new DateOnly(2026, 3, 9), new DateOnly(2026, 3, 9), null,
+            SituacaoDocumento.Autorizada, new ParteDocumento("11222333000181", "Eu", "SP"), new ParteDocumento("12345678909", "Cliente A", "RJ"), 5, "7",
+            new TotaisDocumento(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0), null, false);
+        DocumentoFiscal[] docs =
+        [
+            baseDoc with { Totais = baseDoc.Totais with { Total = 100m, Icms = 18m } },
+            baseDoc with { Id = 2, Numero = "2", Emissao = new DateOnly(2026, 4, 2), DataLivro = new DateOnly(2026, 4, 2), Totais = baseDoc.Totais with { Total = 50m } },
+            baseDoc with { Id = 3, Numero = "3", Situacao = SituacaoDocumento.Cancelada, Totais = baseDoc.Totais with { Total = 999m } },
+            baseDoc with { Id = 4, Numero = "4", Operacao = TipoOperacao.Entrada, Totais = baseDoc.Totais with { Total = 70m } },
+        ];
+        var porNota = TabelasFiscais.ResumoNotas(docs, TipoOperacao.Saida, 0);
+        Assert.Equal("Resumo de vendas", porNota.Titulo);
+        Assert.Equal(3, porNota.Linhas.Count);                       // 2 notas + total (cancelada e entrada ficam de fora)
+        Assert.Equal(150m, porNota.Linhas[^1].Valores[4]);
+        Assert.Equal(18m, porNota.Linhas[^1].Valores[5]);
+        Assert.Equal(2, TabelasFiscais.ResumoNotas(docs, TipoOperacao.Saida, 1).Linhas.Count);   // um cliente + total
+        Assert.Equal(3, TabelasFiscais.ResumoNotas(docs, TipoOperacao.Saida, 2).Linhas.Count);   // março, abril + total
+        Assert.Equal(70m, TabelasFiscais.ResumoNotas(docs, TipoOperacao.Entrada, 0).Linhas[^1].Valores[4]);
+        Assert.All(porNota.Linhas, l => Assert.Equal(porNota.Colunas.Count, l.Valores.Count));
+    }
+
+    [Fact]
     public void Motor_usa_a_conta_do_participante_como_contrapartida_da_nota_com_duplicatas()
     {
         var doc = new DocumentoFiscal(10, ModeloDocumento.NFe55, new string('1', 44), TipoOperacao.Entrada, "321", "1", new DateOnly(2026, 3, 9), new DateOnly(2026, 3, 10), null,
@@ -387,6 +411,14 @@ public class DuplicatasIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal("Duplicatas a pagar", tabela.Titulo);
         Assert.Equal(pagarLista.Sum(d => d.Saldo), tabela.Linhas[^1].Valores[7]);
         Assert.Equal("Duplicatas a receber", TabelasFiscais.Duplicatas(TipoDuplicata.Receber, [], hoje).Titulo);
+
+        // relatório de pagamentos: uma linha por baixa e o total do valor pago
+        var baixas = (await dup.BaixasAsync(empresa, pagarLista.Select(d => d.Id).ToList(), adm, ct)).Valor;
+        var porId = (await dup.ConsultarAsync(empresa, new FiltroDuplicatas(TipoDuplicata.Pagar), adm, ct)).Valor.ToDictionary(d => d.Id);
+        var pagos = TabelasFiscais.Baixas(baixas.Where(b => porId.ContainsKey(b.DuplicataId)).Select(b => (porId[b.DuplicataId], b)).ToList(), TipoDuplicata.Pagar);
+        Assert.Equal("Relatório de pagamentos", pagos.Titulo);
+        Assert.Equal(baixas.Where(b => porId.ContainsKey(b.DuplicataId)).Sum(b => b.Liquido), pagos.Linhas[^1].Valores[7]);
+        Assert.All(pagos.Linhas, l => Assert.Equal(pagos.Colunas.Count, l.Valores.Count));
     }
 
     [Fact]

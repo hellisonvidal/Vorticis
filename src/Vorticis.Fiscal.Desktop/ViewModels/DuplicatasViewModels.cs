@@ -42,8 +42,30 @@ public sealed record BaixaLinha(BaixaDuplicata Baixa)
 /// Lançamentos › Duplicatas: contas a pagar (notas de entrada) e a receber (notas de saída), originadas das notas ou lançadas à mão. Filtra, inclui e altera,
 /// baixa (total, parcial ou em lote) gerando o lançamento contábil e estorna baixas.
 /// </summary>
-public partial class DuplicatasViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>ERP › Financeiro › Contas a pagar: a tela de duplicatas só com as a pagar.</summary>
+public sealed class ContasPagarViewModel(IContexto contexto) : DuplicatasViewModel(contexto, TipoDuplicata.Pagar);
+
+/// <summary>ERP › Financeiro › Contas a receber: a tela de duplicatas só com as a receber.</summary>
+public sealed class ContasReceberViewModel(IContexto contexto) : DuplicatasViewModel(contexto, TipoDuplicata.Receber);
+
+public partial class DuplicatasViewModel : ModuloViewModel
 {
+    public DuplicatasViewModel(IContexto contexto, TipoDuplicata? tipoFixo = null) : base(contexto)
+    {
+        TipoFixo = tipoFixo;
+        if (tipoFixo is { } t) (_tipoFiltro, _formTipo) = (t == TipoDuplicata.Pagar ? 1 : 2, t == TipoDuplicata.Pagar ? 0 : 1);
+    }
+
+    /// <summary>Tela de um tipo só (Contas a pagar ou Contas a receber): o tipo não aparece para escolher.</summary>
+    public TipoDuplicata? TipoFixo { get; }
+    public bool EscolheTipo => TipoFixo is null;
+    public string TituloTela => TipoFixo switch
+    {
+        TipoDuplicata.Pagar => "Contas a pagar",
+        TipoDuplicata.Receber => "Contas a receber",
+        _ => "Duplicatas: contas a pagar e a receber",
+    };
+
     public static IReadOnlyList<string> Tipos { get; } = ["A pagar e a receber", "A pagar", "A receber"];
     public static IReadOnlyList<string> TiposNova { get; } = ["A pagar (fornecedor)", "A receber (cliente)"];
     public static IReadOnlyList<string> Situacoes { get; } = ["Em aberto (abertas e parciais)", "Todas", "Abertas", "Parciais", "Liquidadas", "Canceladas"];
@@ -150,7 +172,7 @@ public partial class DuplicatasViewModel(IContexto contexto) : ModuloViewModel(c
         _formId = 0;
         Titulo = "Nova duplicata";
         (FormTipo, FormParticipante, FormDocumento, FormParcela, FormEmissao, FormVencimento, FormValor, FormObservacao) =
-            (0, "", "", "001", DateTime.Today, DateTime.Today.AddDays(30), "", "");
+            (TipoFixo == TipoDuplicata.Receber ? 1 : 0, "", "", "001", DateTime.Today, DateTime.Today.AddDays(30), "", "");
         Baixas.Clear();
         Erros.Clear();
         Mensagem = null;

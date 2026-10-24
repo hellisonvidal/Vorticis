@@ -248,4 +248,70 @@ public static class TabelasFiscais
              new("Alíq. %", TipoColuna.Valor, 1.6), new("Valor", TipoColuna.Valor), new("Cód. receita", LarguraCm: 2), new("Origem", LarguraCm: 1.6), new("Descrição")], rows,
             "Sofrida: retida por clientes (crédito a compensar). Efetuada: retida de fornecedores (a recolher).");
     }
+
+    /// <summary>Agrupamento dos resumos de vendas e de compras.</summary>
+    public static IReadOnlyList<string> AgrupamentosResumo { get; } = ["Por nota", "Por cliente/fornecedor", "Por mês"];
+
+    /// <summary>
+    /// Resumo de vendas (notas de saída) ou de compras (notas de entrada) do período, por nota, por cliente/fornecedor ou
+    /// por mês. Notas canceladas e denegadas ficam de fora.
+    /// </summary>
+    public static TabelaRelatorio ResumoNotas(IReadOnlyList<DocumentoFiscal> documentos, TipoOperacao operacao, int agrupamento)
+    {
+        var validas = documentos.Where(d => d.Operacao == operacao && d.Situacao == SituacaoDocumento.Autorizada).OrderBy(d => d.DataLivro).ThenBy(d => d.Numero).ToList();
+        var quem = operacao == TipoOperacao.Saida ? "Cliente" : "Fornecedor";
+        var titulo = operacao == TipoOperacao.Saida ? "Resumo de vendas" : "Resumo de compras";
+        LinhaRelatorio Total(IEnumerable<DocumentoFiscal> ds) => L(true, "TOTAL", "", "", ds.Count(), ds.Sum(d => d.Totais.Total), ds.Sum(d => d.Totais.Icms),
+            ds.Sum(d => d.Totais.Ipi), ds.Sum(d => d.Totais.Pis + d.Totais.Cofins), ds.Sum(d => d.Totais.Iss));
+        ColunaRelatorio[] valores = [new("Notas", TipoColuna.Inteiro), new("Valor total", TipoColuna.Valor), new("ICMS", TipoColuna.Valor), new("IPI", TipoColuna.Valor),
+                                     new("PIS+COFINS", TipoColuna.Valor), new("ISS", TipoColuna.Valor)];
+        LinhaRelatorio Grupo(string a, string b, string c, IReadOnlyCollection<DocumentoFiscal> ds) => L(false, a, b, c, ds.Count, ds.Sum(d => d.Totais.Total),
+            ds.Sum(d => d.Totais.Icms), ds.Sum(d => d.Totais.Ipi), ds.Sum(d => d.Totais.Pis + d.Totais.Cofins), ds.Sum(d => d.Totais.Iss));
+        List<LinhaRelatorio> linhas;
+        ColunaRelatorio[] chaves;
+        switch (agrupamento)
+        {
+            case 1:
+                chaves = [new(quem), new("CNPJ/CPF", LarguraCm: 3.4), new("", LarguraCm: 0.5)];
+                linhas = validas.GroupBy(d => (Nome: d.NomeParticipante ?? "(sem identificação)", Doc: d.DocumentoParticipante ?? ""))
+                                .OrderByDescending(g => g.Sum(d => d.Totais.Total))
+                                .Select(g => Grupo(g.Key.Nome, Formatar(g.Key.Doc), "", g.ToList())).ToList();
+                break;
+            case 2:
+                chaves = [new("Mês", LarguraCm: 2), new("", LarguraCm: 0.5), new("", LarguraCm: 0.5)];
+                linhas = validas.GroupBy(d => new DateOnly(d.DataLivro.Year, d.DataLivro.Month, 1)).OrderBy(g => g.Key)
+                                .Select(g => Grupo(g.Key.ToString("MM/yyyy"), "", "", g.ToList())).ToList();
+                break;
+            default:
+                chaves = [new("Data", TipoColuna.Data), new("Nota", LarguraCm: 2.4), new(quem)];
+                linhas = validas.Select(d => Grupo(d.DataLivro.ToString("dd/MM/yyyy"), $"{d.Modelo.Codigo()} {d.Numero}", d.NomeParticipante ?? "", [d])).ToList();
+                break;
+        }
+        linhas.Add(Total(validas));
+        return new TabelaRelatorio(titulo, [.. chaves, .. valores], linhas);
+    }
+
+    /// <summary>Recebimentos (ou pagamentos) do período: as baixas das duplicatas, com acréscimos, descontos e a conta movimentada.</summary>
+    public static TabelaRelatorio Baixas(IReadOnlyList<(Duplicata Duplicata, BaixaDuplicata Baixa)> baixas, TipoDuplicata tipo)
+    {
+        var rows = baixas.OrderBy(b => b.Baixa.Data).ThenBy(b => b.Duplicata.ParticipanteNome)
+            .Select(b => L(false, b.Baixa.Data, b.Duplicata.ParticipanteNome ?? "", $"{b.Duplicata.NumeroDocumento}/{b.Duplicata.Parcela}", b.Duplicata.Vencimento,
+                           b.Baixa.Principal, b.Baixa.Juros + b.Baixa.Multa, b.Baixa.Desconto, b.Baixa.Liquido, b.Baixa.ContaDisponivel ?? "")).ToList();
+        rows.Add(L(true, null, "TOTAL", $"{baixas.Count} baixa(s)", null, baixas.Sum(b => b.Baixa.Principal), baixas.Sum(b => b.Baixa.Juros + b.Baixa.Multa),
+                   baixas.Sum(b => b.Baixa.Desconto), baixas.Sum(b => b.Baixa.Liquido), ""));
+        var recebe = tipo == TipoDuplicata.Receber;
+        return new TabelaRelatorio(recebe ? "Relatório de recebimentos" : "Relatório de pagamentos",
+        [
+            new("Data", TipoColuna.Data), new(recebe ? "Cliente" : "Fornecedor"), new("Documento/parcela", LarguraCm: 3), new("Vencimento", TipoColuna.Data),
+            new("Principal", TipoColuna.Valor), new("Juros e multa", TipoColuna.Valor), new("Desconto", TipoColuna.Valor),
+            new(recebe ? "Recebido" : "Pago", TipoColuna.Valor), new("Conta", LarguraCm: 2.6),
+        ], rows);
+    }
+
+    private static string Formatar(string doc) => doc.Length switch
+    {
+        14 => Domain.Cadastros.Cnpj.Formatar(doc),
+        11 => Domain.Cadastros.Cpf.Formatar(doc),
+        _ => doc,
+    };
 }

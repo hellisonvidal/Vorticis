@@ -94,6 +94,10 @@ conciliacaoduplicatas=05-fiscal.md#conciliacao-de-duplicatas
 relduplicatasapagar=05-fiscal.md#relatorios-de-duplicatas
 relduplicatasareceber=05-fiscal.md#relatorios-de-duplicatas
 relposicaoduplicatas=05-fiscal.md#relatorios-de-duplicatas
+relrecebimentos=05-fiscal.md#relatorios-de-duplicatas
+relpagamentos=05-fiscal.md#relatorios-de-duplicatas
+resumovendas=05-fiscal.md#relatorios-fiscais
+resumocompras=05-fiscal.md#relatorios-fiscais
 
 ; ---- Folha
 folha.funcionarios=06-folha.md#cadastro-de-funcionarios
