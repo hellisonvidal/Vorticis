@@ -37,8 +37,21 @@ public partial class LicencaViewModel(MainViewModelBase main) : ModuloViewModel(
         ? $"Registro em {quando.ToLocalTime():dd/MM/yyyy}" + (string.IsNullOrEmpty(r.Email) ? "" : $" · {r.Email}")
         : "";
 
+    /// <summary>Licença de uso instalada (arquivo licenca.vlic emitido pelo Gerenciador de licenças): cliente, módulos e validade.</summary>
+    [ObservableProperty] private string _licencaUso = "";
+
+    public void AtualizarLicencaUso()
+    {
+        var r = LicencaInstalada.Carregar();
+        LicencaUso = r.Sucesso
+            ? $"Licença de uso: {r.Valor.Cliente}" + (r.Valor.Documento is { } d ? $" ({d})" : "") +
+              $" — módulos {r.Valor.ModulosTexto}; até {r.Valor.Usuarios} usuário(s); válida até {r.Valor.ValidaAte:dd/MM/yyyy}."
+            : r.Erros[0];
+    }
+
     public async Task CarregarAsync()
     {
+        AtualizarLicencaUso();
         OnPropertyChanged(nameof(EhAdministrador));
         if (main.App is not { } app) return;
         Registro = await app.Licenca.ObterAsync();

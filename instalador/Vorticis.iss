@@ -132,10 +132,90 @@ begin
   end;
 end;
 
-// Pelo menos um módulo precisa ficar marcado.
+// ---------------------------------------------------------------- licença de uso
+// Página opcional para escolher o arquivo de licença (licenca.vlic, emitido pelo Gerenciador de licenças do fornecedor).
+// Com licença, só os módulos da linha MODULOS= ficam disponíveis; o arquivo é copiado para a pasta do programa, onde os módulos
+// conferem a assinatura ao entrar. Sem licença, a instalação segue e o arquivo pode ser instalado depois na tela de entrada.
+var
+  PaginaLicenca: TInputFileWizardPage;
+  ModulosDaLicenca: String;   // ',contabil,fiscal,' (vazio = nenhuma licença escolhida)
+
+procedure InitializeWizard();
+begin
+  PaginaLicenca := CreateInputFilePage(wpSelectDir, 'Licença de uso',
+    'Escolha o arquivo de licença (licenca.vlic) recebido do fornecedor do Vorticis.',
+    'Somente os módulos da licença ficam disponíveis para instalar. Se ainda não tiver o arquivo, deixe em branco: ' +
+    'ele poderá ser instalado depois, na tela de entrada do Vorticis.');
+  PaginaLicenca.Add('Arquivo de licença:', 'Licença do Vorticis (*.vlic)|*.vlic|Todos os arquivos|*.*', '.vlic');
+  ModulosDaLicenca := '';
+end;
+
+function LerModulosDaLicenca(Arquivo: String): String;
+var
+  Linhas: TArrayOfString;
+  I: Integer;
+begin
+  Result := '';
+  if not LoadStringsFromFile(Arquivo, Linhas) then Exit;
+  if (GetArrayLength(Linhas) = 0) or (Trim(Linhas[0]) <> 'VORTICIS-LICENCA 1') then Exit;
+  for I := 0 to GetArrayLength(Linhas) - 1 do
+    if Pos('MODULOS=', Linhas[I]) = 1 then
+      Result := ',' + Lowercase(Trim(Copy(Linhas[I], 9, Length(Linhas[I])))) + ',';
+end;
+
+// Mesma ordem da seção [Components]
+function NomeDoComponente(Indice: Integer): String;
+begin
+  case Indice of
+    0: Result := 'contabil';
+    1: Result := 'fiscal';
+    2: Result := 'folha';
+    3: Result := 'escritorio';
+    4: Result := 'erp';
+  else
+    Result := 'condominio';
+  end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+var
+  I: Integer;
+  Liberado: Boolean;
+begin
+  if (CurPageID <> wpSelectComponents) or (ModulosDaLicenca = '') then Exit;
+  for I := 0 to WizardForm.ComponentsList.Items.Count - 1 do
+  begin
+    Liberado := Pos(',' + NomeDoComponente(I) + ',', ModulosDaLicenca) > 0;
+    WizardForm.ComponentsList.Checked[I] := Liberado;
+    WizardForm.ComponentsList.ItemEnabled[I] := Liberado;
+  end;
+end;
+
+procedure CopiarLicenca();
+begin
+  if (PaginaLicenca <> nil) and (Trim(PaginaLicenca.Values[0]) <> '') then
+    FileCopy(PaginaLicenca.Values[0], ExpandConstant('{app}\licenca.vlic'), False);
+end;
+
+// Pelo menos um módulo precisa ficar marcado; a licença escolhida precisa ser um arquivo de licença do Vorticis.
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
+  if (PaginaLicenca <> nil) and (CurPageID = PaginaLicenca.ID) then
+  begin
+    ModulosDaLicenca := '';
+    if Trim(PaginaLicenca.Values[0]) <> '' then
+    begin
+      ModulosDaLicenca := LerModulosDaLicenca(PaginaLicenca.Values[0]);
+      if (ModulosDaLicenca = '') or (ModulosDaLicenca = ',,') then
+      begin
+        MsgBox('O arquivo escolhido não é uma licença do Vorticis (ou não tem módulos). Escolha o arquivo licenca.vlic recebido do fornecedor ' +
+               'ou deixe o campo em branco.', mbError, MB_OK);
+        ModulosDaLicenca := '';
+        Result := False;
+      end;
+    end;
+  end;
   if (CurPageID = wpSelectComponents) and (WizardSelectedComponents(False) = '') then
   begin
     MsgBox('Escolha pelo menos um módulo do Vorticis para instalar.', mbError, MB_OK);
@@ -209,6 +289,7 @@ begin
   Progresso := CreateOutputProgressPage('Configurando o Vorticis', 'Preparando o runtime e o banco de dados');
   Progresso.Show;
   try
+    CopiarLicenca();
     InstalarVcRuntime();
     ConfigurarBanco();
   finally

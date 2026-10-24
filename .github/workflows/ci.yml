@@ -87,6 +87,9 @@ jobs:
           New-Item -ItemType Directory -Path portatil/VorticisSuite -Force | Out-Null
           Copy-Item publish/*.exe portatil/VorticisSuite
           Copy-Item publish/pgsql portatil/VorticisSuite/pgsql -Recurse
+          # Gerenciador de licenças: programa do fornecedor, fora do instalador e dos portáteis do cliente
+          dotnet publish src/Vorticis.Licencas.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o gerenciador
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Gerar instalador (Inno Setup)
         shell: pwsh
         run: |
@@ -134,3 +137,7 @@ jobs:
         with:
           name: VorticisCondominio-portatil
           path: portatil/VorticisCondominio/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VorticisGerenciadorLicencas
+          path: gerenciador/VorticisLicencas.exe

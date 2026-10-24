@@ -377,6 +377,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     [ObservableProperty] private SessaoUsuario? _sessao;
     [ObservableProperty] private EmpresaPermitida? _empresaSelecionada;
     [ObservableProperty] private string _status = "Conectando ao banco de dados...";
+    /// <summary>Aviso de licença perto do vencimento (mostrado na barra de situação após o login).</summary>
+    [ObservableProperty] private string? _avisoLicenca;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private bool _logado;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ConteudoPrincipal))] private object? _conteudo;
     [ObservableProperty] private FuncaoAberta? _funcaoAtiva;

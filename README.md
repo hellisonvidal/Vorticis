@@ -35,7 +35,7 @@ docs/                       Arquitetura, regras, desafios fiscais, roadmap
 ## Instalar (usuário final, Windows 10/11 64 bits)
 
 1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub). Sem instalar: use os artefatos **Vorticis<Módulo>-portatil** ou **VorticisSuite-portatil** (todos os módulos numa pasta, com o banco embutido).
-2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
+2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários"). Na página **Licença de uso**, escolha o `licenca.vlic` do cliente: só os módulos licenciados ficam disponíveis (sem arquivo, todos aparecem e a licença é pedida na tela de entrada).
 3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal**, **Vorticis Folha de Pagamento**, **Vorticis Escritório**, **Vorticis ERP** e **Vorticis Condomínio** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
 4. Ao final da instalação, o instalador instala o *Visual C++ Redistributable* (se faltar) e **configura o banco automaticamente** (página de progresso; roda `VorticisContabil.exe --configurar-banco`, sem janela). Se falhar, a instalação termina assim mesmo e avisa onde está o log.
 5. Abra o módulo desejado. Na primeira abertura (se o banco ainda não estiver pronto) ele **cria sozinho o banco de dados** e vai direto à criação do administrador. Os módulos compartilham o mesmo banco, login, empresas e configurações; o banco sobe com o primeiro módulo aberto e só para quando o último fecha.
@@ -64,6 +64,10 @@ Se o programa abrir na tela **Conexão com o banco de dados**, clique em **Confi
 - *Faltam DLLs do Visual C++*: instale `vc_redist.x64.exe` (vai no instalador e nos portáteis).
 - Sem `pgsql` ao lado do programa, a configuração tenta um PostgreSQL em `localhost:5432` e pede só usuário e senha. Servidor externo é opção avançada na mesma tela.
 - Os módulos podem abrir juntos: uma trava entre processos (`%LOCALAPPDATA%\Vorticis\banco.lock`) evita disputa pela criação do banco.
+
+### Licenças (fornecedor)
+
+Cada módulo só entra com uma licença válida (`licenca.vlic`: cliente, módulos, validade e usuários, assinada com ECDSA P-256). Quem emite é o **Gerenciador de licenças** (`VorticisLicencas.exe`, artefato **VorticisGerenciadorLicencas** do CI — não vai no instalador do cliente). Detalhes em [docs/09-licencas.md](docs/09-licencas.md).
 
 ## Executar (desenvolvimento)
 

@@ -5,12 +5,23 @@
 **Para que serve:** instalar o Vorticis no Windows 10 ou 11 (64 bits).
 
 1. Execute o arquivo `Setup-Vorticis-<versão>.exe`. Não precisa de senha de administrador do Windows.
-2. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha de Pagamento** (pelo menos um). Cada módulo vira um programa e um atalho próprios, com cor e ícone diferentes: a espiral da Vorticis na cor do módulo e um selo com a sigla — Contábil verde (**C**), Fiscal âmbar (**F**), Folha roxo (**FP**), Escritório azul (**E**), ERP ciano (**ERP**) e Condomínio vermelho (**CD**). O próprio instalador tem um ícone diferente (quadrado azul-marinho com a seta de instalação e as cores de todos os módulos).
-3. Ao final, o instalador prepara o banco de dados sozinho. Abra o módulo pelo atalho.
+2. Na página **Licença de uso**, escolha o arquivo de licença (`licenca.vlic`) recebido do fornecedor: só os módulos da sua licença ficam disponíveis. Se ainda não tiver o arquivo, deixe em branco e instale-o depois (veja [Licença de uso](#licenca-de-uso)).
+3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha de Pagamento** (pelo menos um). Cada módulo vira um programa e um atalho próprios, com cor e ícone diferentes: a espiral da Vorticis na cor do módulo e um selo com a sigla — Contábil verde (**C**), Fiscal âmbar (**F**), Folha roxo (**FP**), Escritório azul (**E**), ERP ciano (**ERP**) e Condomínio vermelho (**CD**). O próprio instalador tem um ícone diferente (quadrado azul-marinho com a seta de instalação e as cores de todos os módulos).
+4. Ao final, o instalador prepara o banco de dados sozinho. Abra o módulo pelo atalho.
 
 Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as mesmas configurações. Você pode abri-los ao mesmo tempo.
 
 **Dicas:** para atualizar, basta rodar o instalador novo: os dados são preservados. Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
+
+## Licença de uso
+
+**Para que serve:** cada módulo só abre se estiver na licença do cliente e dentro da validade. A licença é um arquivo (`licenca.vlic`) emitido e assinado pelo fornecedor do Vorticis; se o arquivo for alterado, ele deixa de valer.
+
+**Como instalar:**
+- No **instalador**, na página *Licença de uso* (o arquivo é copiado para a pasta do programa); ou
+- Na **tela de entrada**: se faltar a licença, se ela estiver vencida ou se o módulo não estiver nela, aparece o motivo e o botão **Instalar arquivo de licença...**. Escolha o arquivo: ele é conferido e guardado em `%LOCALAPPDATA%\Vorticis`, e a entrada continua.
+
+**Onde ver:** *Ajuda › Licença e registro* mostra o cliente, os módulos liberados, o número de usuários e a validade. Quando faltarem 30 dias ou menos para vencer, a barra inferior da janela avisa; peça a renovação ao fornecedor e instale o arquivo novo do mesmo jeito.
 
 ## Configuração automática do banco de dados
 
