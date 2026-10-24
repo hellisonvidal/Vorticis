@@ -1,10 +1,10 @@
 using Npgsql;
 using Vorticis.Domain.Comum;
 
-namespace Vorticis.Escritorio;
+namespace Vorticis.Infra.Postgres;
 
 /// <summary>Acesso enxuto ao PostgreSQL: parâmetros nomeados e erros das regras do banco traduzidos para <see cref="ViolacaoRegraException"/>.</summary>
-internal sealed class Banco(NpgsqlDataSource ds)
+public sealed class BancoModulo(NpgsqlDataSource ds)
 {
     public NpgsqlDataSource Fonte => ds;
 
@@ -64,7 +64,7 @@ internal sealed class Banco(NpgsqlDataSource ds)
         """;
 }
 
-internal static class LeitorExtensoes
+public static class LeitorModuloExtensoes
 {
     public static string? Texto(this NpgsqlDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
     public static DateOnly? Data(this NpgsqlDataReader r, int i) => r.IsDBNull(i) ? null : r.GetFieldValue<DateOnly>(i);

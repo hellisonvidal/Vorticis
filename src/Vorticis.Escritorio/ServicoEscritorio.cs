@@ -1,6 +1,7 @@
 using Vorticis.Application.Seguranca;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
+using Vorticis.Infra.Postgres;
 
 namespace Vorticis.Escritorio;
 
@@ -10,10 +11,10 @@ namespace Vorticis.Escritorio;
 /// </summary>
 public sealed class ServicoEscritorio
 {
-    private readonly Banco _db;
+    private readonly BancoModulo _db;
     private readonly Autorizador _autorizador;
 
-    public ServicoEscritorio(Npgsql.NpgsqlDataSource ds, Autorizador autorizador) => (_db, _autorizador) = (new Banco(ds), autorizador);
+    public ServicoEscritorio(Npgsql.NpgsqlDataSource ds, Autorizador autorizador) => (_db, _autorizador) = (new BancoModulo(ds), autorizador);
 
     private Task<string?> NegarAsync(long usuario, long empresa, Permissao p, CancellationToken ct) => _autorizador.VerificarAsync(usuario, empresa, p, ct);
 
@@ -26,7 +27,7 @@ public sealed class ServicoEscritorio
                    e.razao_social, u.nome, t.concluida_em
               FROM escritorio.tarefa t JOIN core.empresa e ON e.id = t.empresa_id LEFT JOIN core.usuario u ON u.id = t.responsavel_id
              WHERE (@e::bigint IS NULL OR t.empresa_id = @e) AND (NOT @a OR t.situacao IN ('PENDENTE', 'ANDAMENTO'))
-               AND {Banco.Permitida("t.empresa_id")}
+               AND {BancoModulo.Permitida("t.empresa_id")}
              ORDER BY t.situacao IN ('CONCLUIDA', 'CANCELADA'), t.vencimento, t.prioridade, e.razao_social
             """, r => new Tarefa(r.GetInt64(0), r.GetInt64(1), r.GetString(2), r.Texto(3), r.GetFieldValue<DateOnly>(4), r.Id(5), r.GetInt16(6),
                                  RegrasEscritorio.SituacaoTarefaDe(r.GetString(7)), RegrasEscritorio.RecorrenciaDe(r.GetString(8)), r.GetString(9), r.Texto(10),
@@ -83,7 +84,7 @@ public sealed class ServicoEscritorio
         => _db.ListarAsync($"""
             SELECT c.id, c.empresa_id, c.valor, c.dia_vencimento, c.inicio, c.fim, c.indice_reajuste, c.observacao, e.razao_social
               FROM escritorio.honorario_contrato c JOIN core.empresa e ON e.id = c.empresa_id
-             WHERE {Banco.Permitida("c.empresa_id")} ORDER BY e.razao_social
+             WHERE {BancoModulo.Permitida("c.empresa_id")} ORDER BY e.razao_social
             """, r => new ContratoHonorario(r.GetInt64(0), r.GetInt64(1), r.GetDecimal(2), r.GetInt16(3), r.GetFieldValue<DateOnly>(4), r.Data(5),
                                             r.GetString(6), r.Texto(7), r.GetString(8)),
             ct, ("u", usuarioId), ("perm", Permissao.EscritorioHonorarios.Codigo()));
@@ -113,7 +114,7 @@ public sealed class ServicoEscritorio
         => _db.ListarAsync($"""
             SELECT c.id, c.empresa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, e.razao_social
               FROM escritorio.honorario_cobranca c JOIN core.empresa e ON e.id = c.empresa_id
-             WHERE (@c::date IS NULL OR c.competencia = @c) AND (NOT @a OR c.situacao = 'ABERTA') AND {Banco.Permitida("c.empresa_id")}
+             WHERE (@c::date IS NULL OR c.competencia = @c) AND (NOT @a OR c.situacao = 'ABERTA') AND {BancoModulo.Permitida("c.empresa_id")}
              ORDER BY c.vencimento, e.razao_social
             """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
                                             RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8)),
@@ -203,7 +204,7 @@ public sealed class ServicoEscritorio
                    concat_ws(', ', CASE WHEN e.modulo_contabil THEN 'Contábil' END, CASE WHEN e.modulo_fiscal THEN 'Fiscal' END,
                              CASE WHEN e.modulo_folha THEN 'Folha' END, CASE WHEN e.modulo_erp THEN 'ERP' END, CASE WHEN e.modulo_condominio THEN 'Condomínio' END)
               FROM core.empresa e
-             WHERE e.ativa AND e.modulo_escritorio AND {Banco.Permitida("e.id")}
+             WHERE e.ativa AND e.modulo_escritorio AND {BancoModulo.Permitida("e.id")}
              ORDER BY e.razao_social
             """, r => new ClienteEscritorio(r.GetInt64(0), r.GetString(1).Trim(), r.GetString(2), r.Texto(3), r.GetInt32(4), r.GetInt32(5), r.GetDecimal(6),
                                             r.GetDecimal(7), r.IsDBNull(8) ? null : r.GetFieldValue<DateTimeOffset>(8), r.GetString(9)),
