@@ -34,23 +34,30 @@
     </StackPanel>
     <Grid ColumnDefinitions="520,12,*">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
-          <TextBlock Text="Nova receita" FontWeight="SemiBold" Foreground="#1F3A5F" />
-          <ComboBox ItemsSource="{x:Static vm:ApuracaoSimplesViewModel.RotulosAtividades}" SelectedIndex="{Binding NovaAtividade}" HorizontalAlignment="Stretch" />
-          <WrapPanel>
-            <CheckBox Content="ICMS-ST" IsChecked="{Binding NovaST}" />
-            <CheckBox Content="Monofásico" IsChecked="{Binding NovoMonofasico}" />
-            <CheckBox Content="ISS retido" IsChecked="{Binding NovoIssRetido}" />
-            <CheckBox Content="Exportação" IsChecked="{Binding NovaExportacao}" />
-          </WrapPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBox Text="{Binding NovoValor}" Watermark="Valor" Width="140" />
-            <Button Content="Adicionar" Command="{Binding AdicionarReceitaCommand}" />
-            <Button Content="Remover selecionada" Command="{Binding RemoverReceitaCommand}" />
+        <!-- Inclusão manual da receita (sem notas no sistema, ou para completar o que veio das notas) -->
+        <Border DockPanel.Dock="Top" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Incluir receita manualmente" FontWeight="SemiBold" Foreground="#1F3A5F" />
+            <Grid ColumnDefinitions="*,8,130" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+              <ComboBox ItemsSource="{x:Static vm:ApuracaoSimplesViewModel.RotulosAtividades}" SelectedIndex="{Binding NovaAtividade}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="Atividade (anexo) da receita" />
+              <TextBox Grid.Column="2" Text="{Binding NovoValor}" Watermark="Valor (R$)" />
+              <WrapPanel Grid.Row="1" Grid.ColumnSpan="3">
+                <CheckBox Content="ICMS-ST" IsChecked="{Binding NovaST}" Margin="0,0,10,0" />
+                <CheckBox Content="Monofásico" IsChecked="{Binding NovoMonofasico}" Margin="0,0,10,0" />
+                <CheckBox Content="ISS retido" IsChecked="{Binding NovoIssRetido}" Margin="0,0,10,0" />
+                <CheckBox Content="Exportação" IsChecked="{Binding NovaExportacao}" />
+              </WrapPanel>
+              <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                <Button Content="Incluir receita" Command="{Binding AdicionarReceitaCommand}" Classes="accent" IsEnabled="{Binding PodeApurar}" />
+                <Button Content="Remover selecionada" Command="{Binding RemoverReceitaCommand}" IsEnabled="{Binding PodeApurar}" />
+                <Button Content="Limpar receitas" Command="{Binding LimparReceitasCommand}" IsEnabled="{Binding PodeApurar}" />
+              </StackPanel>
+            </Grid>
           </StackPanel>
-        </StackPanel>
+        </Border>
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="Receitas do mês por atividade (edite o valor)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock DockPanel.Dock="Top" Text="Receitas do mês por atividade (clique no valor para alterar)" FontWeight="SemiBold" Foreground="#1F3A5F" />
           <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Receitas}" SelectedItem="{Binding ReceitaSelecionada}" AutoGenerateColumns="False" CanUserSortColumns="False">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Atividade" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />

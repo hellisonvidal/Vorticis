@@ -30,8 +30,8 @@ internal sealed class ContextoTeste(VorticisApp app, long usuario, long empresa)
     public Task ConcluirImplantacaoAsync(string loginAdministrador) => Task.CompletedTask;
 }
 
-/// <summary>Lançamentos › Documentos fiscais › Entrada: numa nota nova, os campos do cabeçalho e do item ficam editáveis.</summary>
-public class DigitacaoNotaTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixture<BancoDeTeste>
+/// <summary>Telas fiscais de digitação: nota nova com campos editáveis e receita manual no Simples Nacional.</summary>
+public class TelasFiscaisEdicaoTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixture<BancoDeTeste>
 {
     private static async Task<T> ForaDaSessao<T>(Task<T> tarefa)
     {
@@ -68,5 +68,26 @@ public class DigitacaoNotaTests(BancoDeTeste db, SessaoHeadless headless) : ICla
             return bloqueados;
         }, TestContext.Current.CancellationToken));
         Assert.Equal(["PodeEditar=True"], r);
+    }
+
+    [Fact]
+    public async Task Simples_aceita_receita_incluida_manualmente()
+    {
+        BancoDeTeste.ExigirBanco();
+        var adm = await db.AdminAsync();
+        var empresa = await db.CriarEmpresaAsync("26637142000158");
+        var r = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            var vm = new ApuracaoSimplesViewModel(new ContextoTeste(db.App, adm, empresa));
+            var janela = new Window { Content = new ApuracaoSimplesView { DataContext = vm }, Width = 1200, Height = 650 };
+            janela.Show();
+            vm.NovoValor = "10.000,00";
+            vm.AdicionarReceitaCommand.Execute(null);
+            await vm.CalcularCommand.ExecuteAsync(null);
+            janela.Close();
+            return (vm.Receitas.Count, vm.Mensagem ?? string.Join("; ", vm.Erros));
+        }, TestContext.Current.CancellationToken));
+        Assert.Equal(1, r.Count);
+        Assert.StartsWith("DAS calculado", r.Item2);
     }
 }

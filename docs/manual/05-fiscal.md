@@ -150,10 +150,15 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
 **Onde fica:** *Apuração › Simples Nacional (DAS)*.
 
 1. Escolha a **competência**.
-2. **Sugerir pelas notas** preenche a receita do mês por atividade (ou digite em *Receitas do mês por atividade*). Use as opções de ICMS-ST, monofásico, ISS retido e exportação, quando houver.
+2. Informe a receita do mês por atividade, de um destes jeitos:
+   - **Sugerir pelas notas**: preenche pelas notas de saída lançadas no sistema.
+   - **Incluir receita manualmente** (quadro acima da lista): escolha a atividade (anexo), digite o **Valor**, marque ICMS-ST, monofásico, ISS retido ou exportação quando houver e clique em **Incluir receita**. Repita para cada atividade. Serve para empresas sem notas no sistema ou para completar o que veio das notas.
+   - Para corrigir, clique no valor na lista e digite o novo; **Remover selecionada** tira uma linha e **Limpar receitas** apaga todas.
 3. O **RBT12** (receita dos 12 meses anteriores) vem do histórico; informe também a *folha 12 meses* para o Fator R (anexo III ou V). Se a empresa é nova, o sistema proporcionaliza.
 4. **Calcular**: mostra alíquota efetiva, valor do DAS e a repartição por tributo, com memória de cálculo.
 5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas dos tributos](#contas-dos-tributos-provisoes)); **Desfazer provisão** estorna.
+
+**PGDAS-D:** o Vorticis calcula o DAS, mas a transmissão da declaração continua no portal do Simples Nacional (PGDAS-D). A integração direta exige o contrato do *Integra Contador* do SERPRO (chaves de acesso pagas) e procuração eletrônica; ela ainda não está disponível.
 
 **Dica:** preencha antes o [Histórico de receita e folha](#historico-de-receita-e-folha) com os meses anteriores ao uso do sistema. Confira as tabelas de alíquotas com a legislação vigente.
 
