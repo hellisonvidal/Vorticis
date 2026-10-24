@@ -1,16 +1,19 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.ContratosView" x:DataType="vm:ContratosViewModel">
-  <!-- Contratos › Gerador de contratos (clientes e fornecedores) -->
+  <!-- Relatórios › Gerador de contratos (clientes e fornecedores): PDF (com assinatura digital opcional) e Word -->
   <Grid ColumnDefinitions="*,16,520" RowDefinitions="Auto,*" Margin="8">
-    <StackPanel Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+    <WrapPanel Grid.ColumnSpan="3" ItemSpacing="8" LineSpacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Gerador de contratos" VerticalAlignment="Center" />
       <Button Content="Novo contrato" Command="{Binding NovoCommand}" IsEnabled="{Binding PodeEditar}" />
       <Button Content="Gerar texto" Command="{Binding GerarTextoCommand}" IsEnabled="{Binding PodeEditar}" />
       <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" IsEnabled="{Binding PodeEditar}" />
-      <Button Content="PDF para assinatura" Command="{Binding PdfCommand}" />
+      <Button Content="Exportar PDF" Command="{Binding PdfCommand}" />
+      <CheckBox Content="Assinar digitalmente" IsChecked="{Binding AssinarDigitalmente}"
+                ToolTip.Tip="Assina o PDF com o certificado digital padrão do contador (Configurações › Certificados digitais)." />
+      <Button Content="Exportar Word" Command="{Binding WordCommand}" />
       <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" />
-    </StackPanel>
+    </WrapPanel>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="55" />

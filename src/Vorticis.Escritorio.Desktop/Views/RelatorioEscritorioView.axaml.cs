@@ -1,10 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Data;
-using Vorticis.Escritorio.Desktop.ViewModels;
 
 namespace Vorticis.Escritorio.Desktop.Views;
 
-/// <summary>Relatórios do Escritório: as colunas da grade seguem o relatório (contratos ou honorários); o período só vale para honorários.</summary>
+/// <summary>Relatório de honorários do Escritório: colunas da grade montadas aqui.</summary>
 public partial class RelatorioEscritorioView : UserControl
 {
     public RelatorioEscritorioView()
@@ -15,12 +14,7 @@ public partial class RelatorioEscritorioView : UserControl
 
     private void Montar()
     {
-        var contratos = DataContext is RelContratosViewModel;
-        foreach (var n in new[] { "RotuloPeriodo", "Inicio", "RotuloA", "Fim" }) this.FindControl<Control>(n)!.IsVisible = !contratos;
-        this.FindControl<Control>("Ativos")!.IsVisible = contratos;
-        string[] titulos = contratos
-            ? ["Nº", "Tipo", "Cliente / fornecedor", "Objeto", "Valor", "Periodicidade", "Início", "Fim", "Situação"]
-            : ["Competência", "Cliente", "Vencimento", "Valor", "Situação", "Recebido em", "Valor recebido"];
+        string[] titulos = ["Competência", "Cliente", "Vencimento", "Valor", "Situação", "Recebido em", "Valor recebido"];
         Grade.Columns.Clear();
         for (var i = 0; i < titulos.Length; i++)
             Grade.Columns.Add(new DataGridTextColumn

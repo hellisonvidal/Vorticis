@@ -145,7 +145,6 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal(2, (await svc.GravarContratoAsync(escritorio, novo with { PessoaId = forn, Modelo = ModeloContrato.Fornecedor }, adm, ct)).Valor);
         var contratos = await svc.ListarContratosAsync(escritorio, adm, ct);
         Assert.Equal([2, 1], contratos.Select(c => c.Numero));
-        Assert.Equal(3, TabelasEscritorio.Contratos(contratos, true).Linhas.Count);
 
         // cliente com movimento não é excluído
         Assert.Contains("desmarque Ativo", (await svc.ExcluirPessoaAsync(escritorio, cli.Valor, adm, ct)).Erros[0]);

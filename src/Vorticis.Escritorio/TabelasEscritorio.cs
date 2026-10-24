@@ -2,28 +2,12 @@ using Vorticis.Application.Relatorios;
 
 namespace Vorticis.Escritorio;
 
-/// <summary>Relatórios › Honorários do Escritório: relação de contratos e relatório de honorários (cobranças do período).</summary>
+/// <summary>Relatórios › Relatório de honorários do Escritório (cobranças do período).</summary>
 public static class TabelasEscritorio
 {
-    public const string TituloContratos = "Relatório de contratos";
     public const string TituloHonorarios = "Relatório de honorários";
 
     private static LinhaRelatorio L(bool destaque, params object?[] v) => new(v, destaque);
-
-    public static TabelaRelatorio Contratos(IReadOnlyList<ContratoEscritorio> contratos, bool somenteAtivos)
-    {
-        var lista = contratos.Where(c => !somenteAtivos || c.Ativo).OrderBy(c => c.Numero).ToList();
-        var linhas = lista.Select(c => L(false, c.Numero, c.Modelo == ModeloContrato.Cliente ? "Cliente" : "Fornecedor", c.PessoaNome ?? "", c.Objeto,
-                                         c.Valor, c.Periodicidade.Rotulo(), c.Inicio, c.Fim, c.Ativo ? "Ativo" : "Encerrado")).ToList();
-        decimal Mensal(ModeloContrato m) => lista.Where(c => c.Ativo && c.Modelo == m && c.Periodicidade == Periodicidade.Mensal).Sum(c => c.Valor);
-        linhas.Add(L(true, null, "TOTAL", $"{lista.Count} contrato(s)", $"Mensal ativo: clientes {Vorticis.Domain.Comum.Formato.Moeda(Mensal(ModeloContrato.Cliente))}; fornecedores {Vorticis.Domain.Comum.Formato.Moeda(Mensal(ModeloContrato.Fornecedor))}",
-                     lista.Sum(c => c.Valor), "", null, null, ""));
-        return new TabelaRelatorio(TituloContratos,
-        [
-            new("Nº", TipoColuna.Inteiro, 1.1), new("Tipo", LarguraCm: 2), new("Cliente / fornecedor"), new("Objeto"), new("Valor", TipoColuna.Valor),
-            new("Periodicidade", LarguraCm: 2.2), new("Início", TipoColuna.Data), new("Fim", TipoColuna.Data), new("Situação", LarguraCm: 2),
-        ], linhas);
-    }
 
     public static TabelaRelatorio Honorarios(IReadOnlyList<CobrancaHonorario> cobrancas, DateOnly hoje)
     {

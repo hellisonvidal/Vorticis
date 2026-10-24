@@ -18,7 +18,6 @@ public static class EscritorioTelas
     public const string Clientes = "escritorio.clientes";
     public const string Fornecedores = "escritorio.fornecedores";
     public const string Contratos = "escritorio.contratos";
-    public const string RelContratos = "escritorio.rel.contratos";
     public const string RelHonorarios = "escritorio.rel.honorarios";
 }
 
@@ -786,14 +785,37 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(co
         Mensagem = $"Contrato nº {r.Valor} gravado.";
     }, Permissao.EscritorioHonorarios);
 
+    /// <summary>Assina o PDF digitalmente com o certificado padrão do contador (ou do responsável), em Configurações › Certificados digitais.</summary>
+    [ObservableProperty] private bool _assinarDigitalmente;
+
+    private async Task<(ContratoEscritorio C, Vorticis.Application.Relatorios.DocumentoRelatorio Doc)?> DocumentoAsync(VorticisApp app, long empresa)
+    {
+        if (Selecionado?.C is not { } c) { Erros.Add("Grave o contrato e selecione-o na lista para exportar."); return null; }
+        if (_pessoas.FirstOrDefault(p => p.Id == c.PessoaId) is not { } pessoa) return null;
+        var esc = await app.Escritorio().DadosEscritorioAsync(empresa);
+        return (c, GeradorContratos.Documento(esc, pessoa, c));
+    }
+
     [RelayCommand]
     private Task PdfAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (Selecionado?.C is not { } c) { Erros.Add("Grave o contrato e selecione-o na lista para gerar o PDF."); return; }
-        if (_pessoas.FirstOrDefault(p => p.Id == c.PessoaId) is not { } pessoa) return;
-        var esc = await app.Escritorio().DadosEscritorioAsync(empresa);
-        var pdf = new GeradorPdf().Gerar(GeradorContratos.Documento(esc, pessoa, c));
-        Mensagem = "PDF gerado: " + ArquivosGerados.Salvar($"contrato_{c.Numero}.pdf", pdf.Conteudo);
+        if (await DocumentoAsync(app, empresa) is not var (c, doc)) return;
+        Vorticis.Application.Relatorios.AssinaturaDigitalPdf? digital = null;
+        if (AssinarDigitalmente)
+        {
+            var a = await CertificadosPadrao.ParaPdfAsync(Contexto, $"Contrato nº {c.Numero}");
+            if (!a.Sucesso) { foreach (var e in a.Erros) Erros.Add(e); return; }
+            digital = a.Valor;
+        }
+        var pdf = new GeradorPdf().Gerar(doc with { AssinaturaDigital = digital });
+        Mensagem = (digital is null ? "PDF gerado: " : "PDF assinado digitalmente: ") + ArquivosGerados.Salvar($"contrato_{c.Numero}.pdf", pdf.Conteudo);
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    private Task WordAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (await DocumentoAsync(app, empresa) is not var (c, doc)) return;
+        Mensagem = "Word gerado: " + ArquivosGerados.Salvar($"contrato_{c.Numero}.docx", GeradorDocx.Gerar(doc));
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
@@ -834,7 +856,6 @@ public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) :
     public ObservableCollection<LinhaRelatorioEscritorio> Linhas { get; } = [];
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
     [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 1);
-    [ObservableProperty] private bool _somenteAtivos = true;
 
     public abstract string Titulo { get; }
     protected override string TituloRelatorio => Titulo;
@@ -851,21 +872,6 @@ public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) :
         TemDados = true;
         AtualizarPermissoesExportacao();
     }
-}
-
-/// <summary>Relatórios › Honorários › Relatório de contratos.</summary>
-public sealed partial class RelContratosViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
-{
-    public override string Titulo => TabelasEscritorio.TituloContratos;
-    protected override string NomeArquivo => "relatorio_contratos";
-
-    [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var contratos = await app.Escritorio().ListarContratosAsync(empresa, usuario);
-        Exibir(TabelasEscritorio.Contratos(contratos, SomenteAtivos), SomenteAtivos ? "Somente contratos ativos" : "Todos os contratos");
-        Mensagem = contratos.Count == 0 ? "Nenhum contrato gravado (Contratos › Gerador de contratos)." : null;
-    }, Permissao.EscritorioRelatorios);
 }
 
 /// <summary>Relatórios › Honorários › Relatório de honorários (cobranças das competências do período).</summary>

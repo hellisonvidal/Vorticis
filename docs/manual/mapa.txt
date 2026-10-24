@@ -134,12 +134,11 @@ folha.prolabore=06-folha.md#pro-labore-dos-socios
 ; ---- Escritório
 escritorio.carteira=09-escritorio.md#carteira-de-clientes
 escritorio.tarefas=09-escritorio.md#tarefas-e-prazos
-escritorio.protocolos=09-escritorio.md#protocolo-de-documentos
+escritorio.protocolos=09-escritorio.md#protocolos-de-documentos
 escritorio.clientes=09-escritorio.md#clientes
 escritorio.fornecedores=09-escritorio.md#fornecedores
 escritorio.contratos=09-escritorio.md#gerador-de-contratos
-escritorio.rel.contratos=09-escritorio.md#relatorios-de-honorarios
-escritorio.rel.honorarios=09-escritorio.md#relatorios-de-honorarios
+escritorio.rel.honorarios=09-escritorio.md#relatorio-de-honorarios
 
 ; ---- Gerencial
 erp.painel=10-gerencial.md#painel-do-empresario

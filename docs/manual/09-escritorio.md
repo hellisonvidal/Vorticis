@@ -42,14 +42,14 @@ Aba **Honorários e cobranças** do cliente selecionado (veja [Honorários e cob
 ## Carteira de clientes
 
 **Para que serve:** ver todos os clientes do escritório numa só lista.
-**Onde fica:** *Escritório › Carteira de clientes*.
+**Onde fica:** *Relatórios › Carteira de clientes*.
 
 A lista mostra código, CNPJ/CPF, nome, regime, tarefas em aberto (e quantas estão atrasadas), honorário mensal, honorários em aberto e o contato. **Atualizar** relê os dados. Só aparecem os clientes ativos.
 
 ## Tarefas e prazos
 
 **Para que serve:** controlar o que precisa ser feito para cada cliente, com prazo e responsável.
-**Onde fica:** *Escritório › Tarefas e prazos* (atalho **Ctrl+T**).
+**Onde fica:** *Organização › Tarefas e prazos* (atalho **Ctrl+T**).
 
 1. **Nova tarefa**, escolha o **Cliente** (ou deixe *tarefa interna do escritório*), preencha **Tarefa**, **Vencimento**, **Responsável**, **Prioridade**, **Situação** e, se for o caso, **Repetir** (*Todo mês* ou *Todo ano*) e os **Detalhes**.
 2. **Gravar**.
@@ -58,24 +58,28 @@ A lista mostra código, CNPJ/CPF, nome, regime, tarefas em aberto (e quantas est
 
 Use a lista no topo para ver as tarefas de um cliente ou de todos, e **Só as em aberto** para esconder as concluídas e canceladas. Tarefas vencidas e não concluídas aparecem como **ATRASADA**.
 
-## Protocolo de documentos
+## Protocolos de documentos
 
 **Para que serve:** registrar a entrega de documentos ao cliente (guias, livros, relatórios) e o recebimento de documentos dele, com número sequencial.
-**Onde fica:** *Escritório › Protocolo de documentos*.
+**Onde fica:** *Organização › Protocolos de documentos*.
 
 1. Informe **Data**, **Tipo** (*Entrega ao cliente* ou *Recebido do cliente*), **Documento**, **Pessoa** (quem recebeu ou entregou), o **Cliente** e, se quiser, uma **Observação**.
 2. **Registrar protocolo**: o sistema dá o próximo número do escritório e grava quem registrou.
 
 ## Gerador de contratos
 
-**Para que serve:** montar o contrato de prestação de serviços contábeis com o cliente, ou o contrato de fornecimento com o fornecedor, já com os dados das partes, e imprimir para assinatura.
-**Onde fica:** *Contratos › Gerador de contratos (clientes e fornecedores)*.
+**Para que serve:** montar o contrato de prestação de serviços contábeis com o cliente, ou o contrato de fornecimento com o fornecedor, já com os dados das partes, e exportar em PDF (com assinatura digital, se quiser) ou em Word.
+**Onde fica:** *Relatórios › Gerador de contratos*.
 
 1. **Novo contrato** e escolha o **Tipo**: *Cliente* (o cliente é o contratante e o escritório, o contratado) ou *Fornecedor* (o escritório é o contratante).
 2. Escolha a **Parte** (do cadastro próprio do escritório), confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*), o **dia** do vencimento, a **vigência** (sem fim = prazo indeterminado), o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
 3. **Gerar texto**: o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
 4. **Gravar**: o contrato recebe o próximo número do escritório.
-5. Selecione-o na lista e clique em **PDF para assinatura**: o arquivo traz o texto e as linhas de assinatura das duas partes.
+5. Selecione-o na lista e exporte:
+   - **Exportar PDF**: o texto e as linhas de assinatura das duas partes. Marque antes **Assinar digitalmente** para assinar o PDF com o certificado digital padrão do contador (ou do responsável), definido em *Configurações › Certificados digitais*; com certificado A3, o leitor pede o PIN.
+   - **Exportar Word**: o mesmo contrato em arquivo .docx, para editar no Word ou no LibreOffice.
+
+A lista de contratos gravados fica nesta tela (não há mais o Relatório de contratos).
 
 Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. O valor dos honorários cobrados mês a mês fica em [Honorários e cobranças](#honorarios-e-cobrancas).
 
@@ -98,11 +102,10 @@ Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. 
 
 A lista mostra as cobranças do cliente de todos os meses; marque **Só em aberto** para ver só as não recebidas. **Gerar cobranças do mês** gera a cobrança da competência para todos os clientes com honorário, não só para o selecionado. Cobranças vencidas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido e o que está em aberto.
 
-## Relatórios de honorários
+## Relatório de honorários
 
-**Onde fica:** *Relatórios › Honorários*. Os dois aparecem na tela e exportam em PDF, Excel e CSV.
+**Onde fica:** *Relatórios › Relatório de honorários*. Aparece na tela e exporta em PDF, Excel e CSV.
 
-- **Relatório de contratos**: os contratos gravados no gerador, com número, tipo, cliente ou fornecedor, objeto, valor, periodicidade, vigência e situação; no fim, o total mensal dos contratos ativos de clientes e de fornecedores. Marque **Só os ativos** para esconder os encerrados.
 - **Relatório de honorários**: as cobranças das competências escolhidas (mês/ano inicial e final), com cliente, vencimento, valor, situação e recebimento; no fim, o total, o que está em aberto e o recebido.
 
 ## Parâmetros

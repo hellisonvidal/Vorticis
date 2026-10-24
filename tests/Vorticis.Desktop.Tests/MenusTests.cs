@@ -336,11 +336,12 @@ public class MenusTests
             Assert.DoesNotContain(compartilhado, cadastros);
         Assert.False(vm.Modulo.UsaCalendarioObrigacoes);
         Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") is "Honorários" or "Obrigações");
-        var contratos = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Contratos");
-        Assert.Contains(contratos.Filhos!, i => i.Chave == Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Contratos);
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") is "Contratos" or "Escritório");
+        var org = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Organização");
+        Assert.Equal(["Tarefas e prazos", "Protocolos de documentos"], org.Filhos!.Select(i => i.Titulo));
         var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
-        var hon = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Honorários");
-        Assert.Equal(["Relatório de contratos", "Relatório de honorários"], hon.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Gerador de contratos", "Carteira de clientes", "Relatório de honorários"], rel.Filhos!.Select(i => i.Titulo));
+        Assert.DoesNotContain(Folhas(vm.Menus), i => i.Titulo == "Relatório de contratos");
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
     }
 }

@@ -9,7 +9,6 @@
       <CalendarDatePicker SelectedDate="{Binding Inicio}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Name="Inicio" />
       <TextBlock Text="a" VerticalAlignment="Center" Name="RotuloA" />
       <CalendarDatePicker SelectedDate="{Binding Fim}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Name="Fim" />
-      <CheckBox Content="Só os ativos" IsChecked="{Binding SomenteAtivos}" Name="Ativos" />
       <Button Content="Gerar" Command="{ReflectionBinding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
       <c:BarraExportacaoView />
