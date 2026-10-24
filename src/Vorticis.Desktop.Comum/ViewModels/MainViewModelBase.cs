@@ -51,6 +51,8 @@ public interface IContexto
     DateOnly PeriodoTrabalho => new(DateTime.Today.Year, DateTime.Today.Month, 1);
     /// <summary>Relê a situação (aberto/fechado) do período de trabalho, após fechar ou reabrir.</summary>
     Task AtualizarSituacaoPeriodoAsync() => Task.CompletedTask;
+    /// <summary>Relê os recursos ligados nos parâmetros (mostra ou esconde os menus que dependem deles), após gravar os parâmetros.</summary>
+    Task AtualizarRecursosAsync() => Task.CompletedTask;
 }
 
 /// <summary>Telas comuns a todos os módulos. A chave é o CommandParameter do item de menu.</summary>
@@ -301,6 +303,17 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     /// <summary>O usuário trocou o período: o módulo leva o novo período às telas abertas.</summary>
     protected virtual Task AoAlterarPeriodoAsync(DateOnly periodo) => Task.CompletedTask;
+
+    /// <summary>Recursos ligados nos parâmetros da empresa ativa (ver <see cref="IModuloDesktop.RecursosAtivosAsync"/>).</summary>
+    [ObservableProperty] private IReadOnlySet<string> _recursosAtivos = new HashSet<string>();
+
+    public bool RecursoAtivo(string? recurso) => recurso is null || RecursosAtivos.Contains(recurso);
+
+    public async Task AtualizarRecursosAsync()
+    {
+        try { RecursosAtivos = App is not null && Sessao is not null && EmpresaSelecionada is not null ? await Modulo.RecursosAtivosAsync(this) : new HashSet<string>(); }
+        catch (Exception) { RecursosAtivos = new HashSet<string>(); }
+    }
 
     public async Task AtualizarSituacaoPeriodoAsync()
     {
@@ -767,6 +780,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _ = Disparar(async () =>
         {
             await AtualizarPermissoesAsync();
+            await AtualizarRecursosAsync();
             await AtualizarSituacaoPeriodoAsync();
             foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null))
                 await def.AoTrocarEmpresa!(_instancias[def.Nome], InstanciaAtiva(def.Nome));

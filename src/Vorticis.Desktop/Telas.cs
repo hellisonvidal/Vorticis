@@ -27,6 +27,11 @@ public static class Telas
     public const string ConsultaLancamentos = "consultalancamentos";
     public const string ImportarPlano = "importarplano";
     public const string Historicos = "historicos";
+    public const string BloqueioLancamentos = "bloqueiolancamentos";
+    public const string RelacaoBens = "relacaobens";
+    public const string ValorDepreciado = "valordepreciado";
+    public const string ValorResidual = "valorresidual";
+    public const string DepreciacaoPorGrupo = "depreciacaoporgrupo";
     public const string ExportarLancamentos = "exportarlancamentos";
     public const string Dmpl = "dmpl";
     public const string Dlpa = "dlpa";

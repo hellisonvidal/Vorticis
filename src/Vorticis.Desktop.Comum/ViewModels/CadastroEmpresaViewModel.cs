@@ -179,7 +179,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         ModeloSelecionado?.Id, Mascara, InicioEscrituracao is { } d ? DateOnly.FromDateTime(d) : null, UsaCentroCusto, GrandePorte,
         ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa,
         UsaCentroCusto ? MascaraCentroCusto : _configuracao.MascaraCentroCusto, ExigeDocumento,
-        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null, UsaEstorno);
+        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null, UsaEstorno, _configuracao.UsaGerencial);
 
     private void MostrarConfiguracao(ConfiguracaoContabil c)
     {

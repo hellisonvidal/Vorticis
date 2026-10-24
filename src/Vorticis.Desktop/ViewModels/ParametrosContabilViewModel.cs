@@ -5,7 +5,7 @@ using Vorticis.Infra;
 namespace Vorticis.Desktop.ViewModels;
 
 /// <summary>
-/// Cadastros › Parâmetros (Contábil): regras de lançamento, centros de custo, participantes e contas de encerramento da empresa ativa.
+/// Cadastros › Parâmetros (Contábil): regras de lançamento, centros de custo, contabilidade gerencial, participantes e contas de encerramento da empresa ativa.
 /// Reaproveita a configuração contábil da empresa (a mesma da aba Contabilidade de Cadastros › Empresas); nada é guardado em duplicidade.
 /// </summary>
 public sealed class ParametrosContabilViewModel(IContexto contexto) : ParametrosViewModel(contexto)
@@ -25,13 +25,16 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
                 "Ligado: lançamentos gravados são corrigidos por estorno. Desligado: Editar altera o próprio lançamento e Excluir o remove (sempre com registro na Auditoria)."),
             new("exigeDocumento", "Exigir número do documento nas partidas", TipoCampoParametro.SimNao,
                 "Cada partida do lançamento precisa do número do documento (saldos iniciais, encerramento e estornos ficam isentos)."),
-            new("dataBloqueio", "Bloquear lançamentos até", TipoCampoParametro.Data,
-                "Lançamentos com data até o dia informado são recusados. Deixe em branco para não bloquear."),
         };
         var cc = new CampoParametro[]
         {
             new("usaCentroCusto", "Usar centros de custo", TipoCampoParametro.SimNao,
                 "Liga o uso de centros de custo nos lançamentos e nas telas que os mostram."),
+            new("usaGerencial", "Contabilidade gerencial", TipoCampoParametro.SimNao,
+                "Ligado: o menu Relatórios › Gerenciais (centro de custo, orçamento, orçado x realizado, custos e receitas por centro) aparece. Desligado: fica escondido."),
+        };
+        var part = new CampoParametro[]
+        {
             new("usaParticipantes", "Plano de contas com participantes", TipoCampoParametro.SimNao,
                 "Clientes e fornecedores ficam dentro das contas contábeis; essas contas exigem o código do participante."),
         };
@@ -45,12 +48,14 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         {
             new("grandePorte", "Empresa de grande porte", TipoCampoParametro.SimNao, "Informação usada na ECD e nas apurações."),
         };
-        Observar([.. lanc, .. cc, .. enc, .. sped]);
+        Observar([.. lanc, .. cc, .. part, .. enc, .. sped]);
         return
         [
-            new("Lançamentos", "Como os lançamentos são digitados, corrigidos e protegidos.", lanc),
-            new("Centros de custo e participantes", "Recursos opcionais do plano de contas. A máscara dos centros fica na tela Centros de custo.", cc,
+            new("Lançamentos", "Como os lançamentos são digitados e corrigidos. O bloqueio por data fica em Cadastros › Bloqueio de lançamentos.", lanc,
+                [Atalho("Abrir Bloqueio de lançamentos", Telas.BloqueioLancamentos)]),
+            new("Centros de custo e contabilidade gerencial", "Recursos opcionais de gestão. A máscara dos centros fica na tela Centros de custo.", cc,
                 [Atalho("Abrir Centros de custo", Telas.CentrosCusto)]),
+            new("Participantes", "Clientes e fornecedores como contas do plano (controle por participante).", part),
             new("Encerramento do exercício", "Contas padrão usadas pela tela Encerramento do exercício.", enc,
                 [Atalho("Abrir Encerramento do exercício", Telas.Encerramento)]),
             new("SPED Contábil (ECD) e ECF", "Dados da empresa usados na geração dos arquivos. O restante (responsáveis, contador e procuração eletrônica) fica nos cadastros.", sped,
@@ -64,8 +69,8 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         var usaPart = await app.Participantes.UsaParticipantesAsync(empresa);
         Campo("usaEstorno").Marcado = c.UsaEstorno;
         Campo("exigeDocumento").Marcado = c.ExigeDocumento;
-        Campo("dataBloqueio").Data = c.DataBloqueio?.ToDateTime(TimeOnly.MinValue);
         Campo("usaCentroCusto").Marcado = c.UsaCentroCusto;
+        Campo("usaGerencial").Marcado = c.UsaGerencial;
         Campo("usaParticipantes").Marcado = usaPart;
         Campo("contaApuracao").Texto = c.ContaApuracao ?? "";
         Campo("contaLucros").Texto = c.ContaLucros ?? "";
@@ -80,8 +85,8 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         {
             UsaEstorno = Campo("usaEstorno").Marcado,
             ExigeDocumento = Campo("exigeDocumento").Marcado,
-            DataBloqueio = Campo("dataBloqueio").Data is { } d ? DateOnly.FromDateTime(d) : null,
             UsaCentroCusto = Campo("usaCentroCusto").Marcado,
+            UsaGerencial = Campo("usaGerencial").Marcado,
             ContaApuracao = Campo("contaApuracao").Texto,
             ContaLucros = Campo("contaLucros").Texto,
             ContaPrejuizos = Campo("contaPrejuizos").Texto,
@@ -91,6 +96,7 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         try { inicio = (await app.Empresas.ObterAsync(empresa))?.DataInicioAtividades; } catch (Exception) { /* a conferência da data fica de fora */ }
         var r = await app.PlanoContas.SalvarConfiguracaoAsync(empresa, novo, inicio, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await Contexto.AtualizarRecursosAsync();
         var usa = Campo("usaParticipantes").Marcado;
         if (usa != await app.Participantes.UsaParticipantesAsync(empresa))
         {

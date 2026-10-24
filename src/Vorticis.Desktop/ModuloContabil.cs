@@ -15,11 +15,22 @@ public sealed class ModuloContabil : IModuloDesktop
     public string CorDestaque => "#1B7F5A";   // verde da logo
     public string CorBarra => "#14305A";      // azul-marinho da logo
 
+    /// <summary>Recurso ligado pelo parâmetro "Contabilidade gerencial": mostra o menu Relatórios › Gerenciais.</summary>
+    public const string RecursoGerencial = "gerencial";
+
+    public async Task<IReadOnlySet<string>> RecursosAtivosAsync(Comum.ViewModels.MainViewModelBase main)
+    {
+        if (main.App is not { } app || main.EmpresaId is not { } empresa || main.Sessao is not { } sessao) return new HashSet<string>();
+        var c = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
+        return c.UsaGerencial ? new HashSet<string> { RecursoGerencial } : new HashSet<string>();
+    }
+
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Plano de contas", Telas.PlanoContas),
         ItemMenu.Tela("Centros de custo", Telas.CentrosCusto),
         ItemMenu.Tela("Históricos", Telas.Historicos),
+        ItemMenu.Tela("Bloqueio de lançamentos", Telas.BloqueioLancamentos),
     ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
@@ -78,7 +89,12 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Orçado x Realizado", Telas.OrcadoRealizado),
                 ItemMenu.Tela("Orçamento", Telas.Orcamento),
                 ItemMenu.Tela("Relação de custos", Telas.RelacaoCustos),
-                ItemMenu.Tela("Receita por centro de custo", Telas.ReceitaCentro))),
+                ItemMenu.Tela("Receita por centro de custo", Telas.ReceitaCentro)).SoCom(RecursoGerencial),
+            ItemMenu.Submenu("_Depreciação",
+                ItemMenu.Tela("Relação de bens", Telas.RelacaoBens),
+                ItemMenu.Tela("Valor depreciado", Telas.ValorDepreciado),
+                ItemMenu.Tela("Valor residual", Telas.ValorResidual),
+                ItemMenu.Tela("Resumo por grupo", Telas.DepreciacaoPorGrupo))),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -93,6 +109,17 @@ public sealed class ModuloContabil : IModuloDesktop
     {
         static bool ComAcesso(Comum.ViewModels.MainViewModelBase m) => m.TemAcessoNaEmpresa;
 
+        c.Instancia("RelacaoBens", m => new RelacaoBensViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.RelacaoBens, "Relatórios › Depreciação › Relação de bens", ComAcesso, v => v.CarregarGruposAsync());
+        c.Instancia("ValorDepreciado", m => new ValorDepreciadoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.ValorDepreciado, "Relatórios › Depreciação › Valor depreciado", ComAcesso, v => v.CarregarGruposAsync());
+        c.Instancia("ValorResidual", m => new ValorResidualViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.ValorResidual, "Relatórios › Depreciação › Valor residual", ComAcesso, v => v.CarregarGruposAsync());
+        c.Instancia("DepreciacaoPorGrupo", m => new DepreciacaoPorGrupoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.DepreciacaoPorGrupo, "Relatórios › Depreciação › Resumo por grupo", ComAcesso);
+        c.Instancia("BloqueioLancamentos", m => new BloqueioLancamentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.BloqueioLancamentos, "Cadastros › Bloqueio de lançamentos", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia("ParametrosModulo", m => new ParametrosContabilViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", ComAcesso, v => v.CarregarAsync());

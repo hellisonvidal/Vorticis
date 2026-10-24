@@ -56,6 +56,20 @@ public class ExclusaoLancamentosTests(BancoDeTeste db) : IClassFixture<BancoDeTe
     }
 
     [Fact]
+    public async Task Contabilidade_gerencial_vem_desligada_e_e_gravada_sem_mexer_no_bloqueio()
+    {
+        BancoDeTeste.ExigirBanco();
+        var adm = await db.AdminAsync();
+        var empresa = await db.CriarEmpresaAsync("73910456000162");
+        var cfg = await db.App.PlanoContas.ObterConfiguracaoAsync(empresa, adm, Ct);
+        Assert.False(cfg.UsaGerencial);
+        var r = await db.App.PlanoContas.SalvarConfiguracaoAsync(empresa, cfg with { UsaGerencial = true, DataBloqueio = new DateOnly(2026, 1, 31) }, null, adm, Ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var lido = await db.App.PlanoContas.ObterConfiguracaoAsync(empresa, adm, Ct);
+        Assert.Equal((true, new DateOnly(2026, 1, 31)), (lido.UsaGerencial, lido.DataBloqueio));
+    }
+
+    [Fact]
     public async Task Excluir_remove_partidas_desfaz_saldo_audita_e_reaproveita_o_numero()
     {
         BancoDeTeste.ExigirBanco();

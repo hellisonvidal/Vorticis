@@ -50,6 +50,12 @@ public interface IModuloDesktop
     bool UsaCalendarioObrigacoes => true;
 
     /// <summary>
+    /// Recursos ligados nos parâmetros da empresa ativa (ex.: "gerencial" no Contábil): os itens de menu marcados com
+    /// <see cref="ItemMenu.SoCom"/> só aparecem quando o recurso está na lista.
+    /// </summary>
+    Task<IReadOnlySet<string>> RecursosAtivosAsync(ViewModels.MainViewModelBase main) => Task.FromResult<IReadOnlySet<string>>(new HashSet<string>());
+
+    /// <summary>
     /// Rótulo do período de trabalho mostrado ao lado do seletor de empresas ("Competência"), com a situação (aberto/fechado);
     /// null se o módulo não trabalha por período. A situação vem de <see cref="ViewModels.MainViewModelBase.ConsultarPeriodoAsync"/>.
     /// </summary>

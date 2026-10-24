@@ -56,8 +56,9 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 ### Contábil
 | Grupo | O que tem |
 |---|---|
-| Lançamentos | Usar estorno de lançamentos, exigir número do documento nas partidas, bloquear lançamentos até uma data. |
-| Centros de custo e participantes | Usar centros de custo; plano de contas com participantes. |
+| Lançamentos | Usar estorno de lançamentos e exigir número do documento nas partidas. O bloqueio por data fica em *Cadastros › Bloqueio de lançamentos*. |
+| Centros de custo e contabilidade gerencial | Usar centros de custo; **Contabilidade gerencial**: ligado, aparece o menu *Relatórios › Gerenciais*; desligado, ele fica escondido. |
+| Participantes | Plano de contas com participantes. |
 | Encerramento do exercício | Contas de apuração do resultado, de lucros e de prejuízos acumulados. |
 | SPED Contábil (ECD) e ECF | Empresa de grande porte. |
 

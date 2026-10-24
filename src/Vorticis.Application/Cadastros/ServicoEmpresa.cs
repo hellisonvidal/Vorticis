@@ -125,7 +125,8 @@ public sealed partial record ConfiguracaoContabil(
     string? MascaraCentroCusto = null,
     bool ExigeDocumento = false,
     DateOnly? DataBloqueio = null,
-    bool UsaEstorno = true)
+    bool UsaEstorno = true,
+    bool UsaGerencial = false)
 {
     public const string Trimestral = "TRIMESTRAL";
     public const string AnualEstimativa = "ANUAL_ESTIMATIVA";

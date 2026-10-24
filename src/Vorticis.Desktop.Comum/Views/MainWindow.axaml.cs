@@ -259,20 +259,35 @@ public partial class MainWindow : Window
         if (e.PropertyName == nameof(MainViewModelBase.Logado)) WindowState = WindowState.Maximized;
         if (e.PropertyName == nameof(MainViewModelBase.FuncaoAtiva)) TrazerParaFrente(_vm?.FuncaoAtiva);
         if (e.PropertyName == nameof(MainViewModelBase.Confirmacao)) MostrarConfirmacao(_vm?.Confirmacao);
+        if (e.PropertyName == nameof(MainViewModelBase.RecursosAtivos) && _vm is { } vm) AtualizarItensComRecurso(vm);
     }
 
     // ------------------------------------------------------------------ menu e atalhos fornecidos pelo módulo
 
+    /// <summary>Itens que dependem de um recurso dos parâmetros: aparecem ou somem quando a empresa ou os parâmetros mudam.</summary>
+    private readonly List<(MenuItem Item, string Recurso)> _itensComRecurso = [];
+
     private void MontarMenu(MainViewModelBase vm)
     {
         MenuPrincipal.Items.Clear();
+        _itensComRecurso.Clear();
         foreach (var item in vm.Menus) MenuPrincipal.Items.Add(CriarItem(vm, item));
     }
 
-    private static Control CriarItem(MainViewModelBase vm, ItemMenu item)
+    private void AtualizarItensComRecurso(MainViewModelBase vm)
+    {
+        foreach (var (item, recurso) in _itensComRecurso) item.IsVisible = vm.RecursoAtivo(recurso);
+    }
+
+    private Control CriarItem(MainViewModelBase vm, ItemMenu item)
     {
         if (item.EhSeparador) return new Separator();
         var menu = new MenuItem { Header = item.Titulo, IsEnabled = item.Habilitado };
+        if (item.Recurso is { } recurso)
+        {
+            _itensComRecurso.Add((menu, recurso));
+            menu.IsVisible = vm.RecursoAtivo(recurso);
+        }
         if (item.Atalho is { } atalho) menu.InputGesture = KeyGesture.Parse(atalho);   // só indicativo no Avalonia
         if (item.Filhos is { } filhos)
             foreach (var filho in filhos) menu.Items.Add(CriarItem(vm, filho));

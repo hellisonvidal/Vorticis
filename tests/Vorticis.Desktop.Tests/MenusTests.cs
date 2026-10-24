@@ -193,4 +193,24 @@ public class MenusTests
         Assert.Equal(outro.Periodo, vm.PeriodoTrabalho);         // o filtro não troca a competência em uso
         Assert.Equal("03/2026 (fechada)", new OpcaoPeriodo(new DateOnly(2026, 3, 1), true).Texto);
     }
+
+    [Fact]
+    public void Contabil_esconde_Gerenciais_sem_o_parametro_e_tem_Depreciacao_e_Bloqueio_de_lancamentos()
+    {
+        var vm = new MainViewModel();
+        var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
+        var gerenciais = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Gerenciais");
+        Assert.Equal(ModuloContabil.RecursoGerencial, gerenciais.Recurso);
+        Assert.False(vm.RecursoAtivo(gerenciais.Recurso));                     // sem empresa (e com o parâmetro desligado) o menu fica escondido
+        Assert.True(vm.RecursoAtivo(null));
+        var deprec = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Depreciação");
+        Assert.Equal([Telas.RelacaoBens, Telas.ValorDepreciado, Telas.ValorResidual, Telas.DepreciacaoPorGrupo], deprec.Filhos!.Select(i => i.Chave));
+        Assert.Contains(vm.Menus[0].Filhos!, i => i.Chave == Telas.BloqueioLancamentos);
+        // "Bloquear lançamentos até" saiu dos parâmetros; participantes ganhou grupo próprio e a contabilidade gerencial ficou no lugar
+        var p = new ParametrosContabilViewModel(vm);
+        Assert.DoesNotContain(p.Grupos.SelectMany(g => g.Campos), c => c.Chave == "dataBloqueio");
+        Assert.Equal(["usaCentroCusto", "usaGerencial"], p.Grupos.Single(g => g.Titulo.StartsWith("Centros de custo")).Campos.Select(c => c.Chave));
+        Assert.Equal(["usaParticipantes"], p.Grupos.Single(g => g.Titulo == "Participantes").Campos.Select(c => c.Chave));
+        Assert.Equal(["dataBloqueio"], new BloqueioLancamentosViewModel(vm).Grupos.SelectMany(g => g.Campos).Select(c => c.Chave));
+    }
 }

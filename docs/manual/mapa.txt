@@ -25,6 +25,11 @@ parametros=02-cadastros-comuns.md#parametros
 ; ---- Contábil
 planocontas=03-contabil.md#plano-de-contas
 centroscusto=03-contabil.md#centros-de-custo
+bloqueiolancamentos=03-contabil.md#bloqueio-de-lancamentos
+relacaobens=03-contabil.md#relatorios-de-depreciacao
+valordepreciado=03-contabil.md#relatorios-de-depreciacao
+valorresidual=03-contabil.md#relatorios-de-depreciacao
+depreciacaoporgrupo=03-contabil.md#relatorios-de-depreciacao
 historicos=03-contabil.md#historicos-padrao
 lancamento=03-contabil.md#lancamentos
 estorno=03-contabil.md#lancamentos

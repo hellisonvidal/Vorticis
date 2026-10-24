@@ -45,6 +45,16 @@ Menus do módulo Vorticis Contábil. Permissões: cada função depende do seu p
 
 **Variáveis disponíveis:** `{DOCUMENTO}`, `{PARTICIPANTE}`, `{DATA}`, `{MES}`, `{ANO}`, `{MES_ANTERIOR}`, `{COMPETENCIA}`, `{CONTA}`, `{VALOR}` e `{COMPLEMENTO}`. As que o sistema não consegue resolver ficam para você completar.
 
+## Bloqueio de lançamentos
+
+**Para que serve:** proteger os meses já conferidos ou entregues (ECD, balanço): nenhum lançamento com data até o dia informado pode ser incluído, alterado ou excluído.
+**Onde fica:** *Cadastros › Bloqueio de lançamentos*.
+
+1. Informe a data em **Bloquear lançamentos até** e clique em **Salvar**.
+2. Para liberar, apague a data e salve.
+
+A mesma data aparece na aba Contabilidade de *Cadastros › Empresas*. Para travar um mês inteiro com fechamento, use também o [Fechamento de períodos](#fechamento-de-periodos).
+
 ## Lançamentos
 
 **Para que serve:** registrar os fatos contábeis (partidas dobradas: débitos = créditos).
@@ -100,7 +110,7 @@ Disponível quando a empresa usa estorno de lançamentos (configuração acima).
 
 ### Regras e erros comuns
 - "Período fechado": reabra a competência em *Fechamento de períodos*.
-- "Data bloqueada": a empresa tem *Bloquear lançamentos até* na aba Contabilidade.
+- "Data bloqueada": a empresa tem uma data em *Cadastros › Bloqueio de lançamentos*.
 - Débitos diferentes de créditos: o lançamento não é salvo.
 - Conta sintética não recebe lançamento; use a analítica.
 - Para remover um lançamento já gravado use **Excluir** (veja acima); com estorno ligado, também é possível estornar.
@@ -249,6 +259,8 @@ Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**. E
 
 ## Relatórios gerenciais
 
+O menu só aparece quando o parâmetro **Contabilidade gerencial** está ligado em *Cadastros › Parâmetros* (grupo *Centros de custo e contabilidade gerencial*). Ao ligar ou desligar e salvar, o menu muda na hora.
+
 *Relatórios › Gerenciais* reúne relatórios para acompanhar custos, receitas e metas por centro de custo. Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**, com as mesmas opções de assinatura dos relatórios contábeis (veja [Assinaturas](#assinaturas) e [PDF assinado](#pdf-assinado)). Os lançamentos de encerramento do exercício não entram. Os centros de custo vêm do cadastro [Centros de custo](#centros-de-custo): cada centro sintético mostra a soma dos centros analíticos abaixo dele.
 
 ### Contabilização por centro de custo
@@ -284,6 +296,17 @@ Digite os valores como positivos, na natureza da conta: a receita e a despesa or
 
 ### Receita por centro de custo
 *Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**.
+
+## Relatórios de depreciação
+
+**Onde fica:** *Relatórios › Depreciação*. Todos aparecem na tela e exportam em PDF, Excel e CSV. Os valores são os da última depreciação lançada de cada bem (*Imobilizado › Cálculo e lançamento da depreciação*); a depreciação anterior à implantação entra no acumulado.
+
+- **Relação de bens**: código, descrição, grupo, plaqueta, localização, nota fiscal, datas de aquisição e de início do uso, valor e situação (em uso ou baixado).
+- **Valor depreciado**: para cada bem, o valor, a depreciação anterior à implantação, a lançada no sistema, a acumulada, o **% depreciado** e o último mês lançado.
+- **Valor residual**: valor do bem, depreciação acumulada, **valor contábil líquido**, valor residual, **saldo a depreciar** e vida útil.
+- **Resumo por grupo**: quantidade de bens, valor, depreciação acumulada e valor contábil líquido de cada grupo (regra de depreciação), com a taxa anual.
+
+Escolha o grupo (ou *Todos os grupos*), marque **Incluir bens baixados** se quiser vê-los e clique em **Gerar**.
 
 ## Livro Contábil Completo
 

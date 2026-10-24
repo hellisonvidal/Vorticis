@@ -5,7 +5,7 @@ namespace Vorticis.Desktop.Comum.Modulos;
 /// <see cref="Filhos"/>. Use "_" antes da letra de acesso rápido, como no restante do menu ("_Cadastros").
 /// </summary>
 public sealed record ItemMenu(string Titulo, string? Chave = null, string? Atalho = null, bool Habilitado = true,
-                              IReadOnlyList<ItemMenu>? Filhos = null)
+                              IReadOnlyList<ItemMenu>? Filhos = null, string? Recurso = null)
 {
     public const string TituloSeparador = "-";
 
@@ -20,6 +20,9 @@ public sealed record ItemMenu(string Titulo, string? Chave = null, string? Atalh
 
     /// <summary>Item desabilitado de função ainda não implementada.</summary>
     public static ItemMenu EmBreve(string titulo) => new($"{titulo} (em breve)", Habilitado: false);
+
+    /// <summary>O item só aparece quando o recurso está ligado nos parâmetros da empresa ativa (<see cref="IModuloDesktop.RecursosAtivosAsync"/>).</summary>
+    public ItemMenu SoCom(string recurso) => this with { Recurso = recurso };
 }
 
 /// <summary>

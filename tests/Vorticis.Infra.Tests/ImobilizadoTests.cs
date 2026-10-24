@@ -51,6 +51,22 @@ public class ImobilizadoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal((50m, new DateOnly(2026, 2, 1)), (bem.DepreciacaoLancada, bem.UltimaCompetencia));
         Assert.True((await svc.LancarAsync(empresa, new DateOnly(2026, 3, 1), adm, ct)).Sucesso);   // relançar depois do estorno
 
+        // Relatórios › Depreciação: posição da última depreciação lançada (fev e mar = 100 da mesa)
+        var bens = await svc.ListarBensAsync(empresa, adm, ct);
+        var relacao = TabelasImobilizado.RelacaoBens(bens, grupos);
+        Assert.Equal(3, relacao.Linhas.Count);
+        Assert.Equal(206_000m, relacao.Linhas[^1].Valores[8]);
+        var depreciado = TabelasImobilizado.ValorDepreciado(bens, grupos, moveis.Id);
+        Assert.Equal(2, depreciado.Linhas.Count);
+        Assert.Equal((100m, 1.67m, "03/2026"), ((decimal)depreciado.Linhas[0].Valores[6]!, (decimal)depreciado.Linhas[0].Valores[7]!, (string)depreciado.Linhas[0].Valores[8]!));
+        var residual = TabelasImobilizado.ValorResidual(bens, grupos);
+        Assert.Equal(5_900m, residual.Linhas.Single(l => Equals(l.Valores[0], 1)).Valores[6]);              // saldo a depreciar
+        Assert.Equal(0m, residual.Linhas.Single(l => Equals(l.Valores[0], 2)).Valores[3]);                 // terreno não deprecia
+        var porGrupo = TabelasImobilizado.PorGrupo(bens, grupos);
+        Assert.Equal(3, porGrupo.Linhas.Count);                                                             // móveis, terrenos e total
+        Assert.Equal(205_900m, porGrupo.Linhas[^1].Valores[6]);
+        foreach (var t in new[] { relacao, depreciado, residual, porGrupo }) Assert.All(t.Linhas, l => Assert.Equal(t.Colunas.Count, l.Valores.Count));
+
         // Grupo em uso não é excluído; empresa excluída leva o imobilizado junto
         Assert.Contains("tem bens", (await svc.ExcluirGrupoAsync(empresa, moveis.Id, adm, ct)).Erros[0]);
         Assert.True((await db.App.Empresas.ExcluirAsync(empresa, ct)).Sucesso);

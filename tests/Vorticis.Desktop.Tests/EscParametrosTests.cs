@@ -145,8 +145,8 @@ public class EscParametrosTests(BancoDeTeste db, SessaoHeadless headless) : ICla
 
         Campo(vm, "usaEstorno").Marcado = false;
         Campo(vm, "exigeDocumento").Marcado = true;
-        Campo(vm, "dataBloqueio").Data = new DateTime(2026, 1, 31);
         Campo(vm, "usaCentroCusto").Marcado = true;
+        Campo(vm, "usaGerencial").Marcado = true;
         Assert.True(vm.Alterado);
         Assert.True(vm.TemAlteracoesPendentes);
         await vm.SalvarCommand.ExecuteAsync(null);
@@ -157,11 +157,21 @@ public class EscParametrosTests(BancoDeTeste db, SessaoHeadless headless) : ICla
         await outro.CarregarAsync();
         Assert.False(Campo(outro, "usaEstorno").Marcado);
         Assert.True(Campo(outro, "exigeDocumento").Marcado);
-        Assert.Equal(new DateTime(2026, 1, 31), Campo(outro, "dataBloqueio").Data);
         Assert.True(Campo(outro, "usaCentroCusto").Marcado);
+        Assert.True(Campo(outro, "usaGerencial").Marcado);
         Assert.False(await db.App.Lancamentos.UsaEstornoAsync(empresa, ctx.Sessao!.Id, TestContext.Current.CancellationToken));   // mesmo armazenamento da configuração da empresa
         var cfg = await db.App.PlanoContas.ObterConfiguracaoAsync(empresa, ctx.Sessao.Id, TestContext.Current.CancellationToken);
         Assert.True(cfg.ExigeDocumento);
+        Assert.True(cfg.UsaGerencial);
+
+        // o bloqueio por data saiu dos parâmetros: fica em Cadastros › Bloqueio de lançamentos, gravando na mesma configuração
+        var bloqueio = new BloqueioLancamentosViewModel(ctx);
+        await bloqueio.CarregarAsync();
+        bloqueio.Grupos[0].Campos[0].Data = new DateTime(2026, 1, 31);
+        await bloqueio.SalvarCommand.ExecuteAsync(null);
+        Assert.Empty(bloqueio.Erros);
+        cfg = await db.App.PlanoContas.ObterConfiguracaoAsync(empresa, ctx.Sessao.Id, TestContext.Current.CancellationToken);
+        Assert.Equal((new DateOnly(2026, 1, 31), true, true), (cfg.DataBloqueio!.Value, cfg.ExigeDocumento, cfg.UsaGerencial));
     }
 
     [Fact]
