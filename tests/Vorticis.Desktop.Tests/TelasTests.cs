@@ -618,6 +618,25 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             await ext.PreVisualizarCommand.ExecuteAsync(null);
             Assert.Equal("Já importado", Assert.Single(ext.Previa).Situacao);
             Assert.False(ext.ImportarCommand.CanExecute(null));
+            Assert.False(ext.UsaLayout);
+
+            // Extrato em CSV/TXT/PDF: carrega primeiro o arquivo, o layout é sugerido pelo documento e pode ser salvo
+            var txt = Path.Combine(Path.GetTempPath(), $"extrato_{Guid.NewGuid():N}.txt");
+            File.WriteAllText(txt, "Data        Histórico            Valor        Saldo\n21/03/2026  PIX FORNECEDOR XYZ   -150,00      250,00\n" +
+                                   "22/03/2026  SALDO DO DIA                      250,00\n");
+            ext.Arquivo = txt;
+            Assert.True(ext.UsaLayout);
+            Assert.Equal(3, ext.LinhasDocumento.Count);
+            var mov = Assert.Single(ext.Transacoes);
+            Assert.Equal(("150,00", "PIX FORNECEDOR XYZ"), (mov.Saida.Replace("R$", "").Trim(), mov.Descricao));
+            ext.ColunaValor = 4;                                    // aponta o saldo: o movimento muda na hora
+            Assert.Equal("250,00", Assert.Single(ext.Transacoes).Entrada.Replace("R$", "").Trim());
+            ext.ColunaValor = 0;
+            ext.NomeLayout = $"Banco TXT {Guid.NewGuid():N}"[..18];
+            await ext.SalvarLayoutCommand.ExecuteAsync(null);
+            Assert.Empty(ext.Erros);
+            Assert.Equal(ext.NomeLayout, ext.LayoutSelecionado?.Nome);
+            Foto(janela, "06e_importar_extrato_pdf");
 
             // Estorno na própria tela de lançamento: o lançamento estornado continua na lista, marcado
             vm.AbrirCommand.Execute(Telas.Lancamento);

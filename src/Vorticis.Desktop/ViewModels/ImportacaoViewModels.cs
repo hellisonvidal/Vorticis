@@ -319,26 +319,80 @@ public partial class TransacaoExtratoLinha(TransacaoExtrato transacao, string co
     [ObservableProperty] private string _situacao = "";
 }
 
-/// <summary>Aba Extratos: OFX do banco → um lançamento por movimento, contra a conta contábil do banco.</summary>
+/// <summary>Linha do documento carregado (PDF/TXT/CSV) como o layout separa: as colunas numeradas e se virou movimento.</summary>
+public sealed record LinhaDocumentoLinha(LinhaDocumentoExtrato L)
+{
+    public string Numero => L.Numero.ToString();
+    public string Movimento => L.Transacao is { } t ? $"{t.Data:dd/MM/yyyy} {Numeros.Moeda(t.Valor)}" : "";
+    public string C1 => Col(1);
+    public string C2 => Col(2);
+    public string C3 => Col(3);
+    public string C4 => Col(4);
+    public string C5 => Col(5);
+    public string C6 => Col(6);
+    public string Demais => L.Colunas.Count > 6 ? string.Join("  |  ", L.Colunas.Skip(6)) : "";
+    private string Col(int n) => n <= L.Colunas.Count ? L.Colunas[n - 1] : "";
+}
+
+/// <summary>
+/// Integrações › Importar › Extratos bancários: primeiro o usuário carrega o arquivo (OFX, PDF, TXT ou CSV). O OFX é lido direto;
+/// PDF, TXT e CSV mostram o documento carregado e o layout (sugerido pelo próprio documento ou um layout salvo), que o usuário ajusta
+/// vendo o resultado e pode salvar com um nome. Cada movimento vira um lançamento contra a conta contábil do banco.
+/// </summary>
 public partial class ImportacaoExtratoViewModel(IContexto contexto) : ImportacaoLancamentosBase(contexto)
 {
     private ExtratoBancario? _extrato;
+    private IReadOnlyList<string>? _linhasDocumento;
+    private bool _aplicandoLayout;
 
     protected override OrigemLancamento Origem => OrigemLancamento.Extrato;
 
     public ObservableCollection<TransacaoExtratoLinha> Transacoes { get; } = [];
+    public ObservableCollection<LinhaDocumentoLinha> LinhasDocumento { get; } = [];
+    public ObservableCollection<LayoutExtratoSalvo> Layouts { get; } = [];
+    public static IReadOnlyList<string> Separadores { get; } = ["Espaços (PDF ou TXT)", "Ponto e vírgula (CSV)", "Tabulação"];
+    public static IReadOnlyList<string> FormatosData => LeitorExtratoTexto.FormatosData;
+
     [ObservableProperty] private string _arquivo = "";
     [ObservableProperty] private string _contaBanco = "";
     [ObservableProperty] private string _contrapartidaEntradas = "";
     [ObservableProperty] private string _contrapartidaSaidas = "";
     [ObservableProperty] private string _prefixoHistorico = "";
     [ObservableProperty] private string _dadosExtrato = "";
+    /// <summary>O arquivo carregado é PDF, TXT ou CSV (precisa de layout); no OFX o painel de layout fica escondido.</summary>
+    [ObservableProperty] private bool _usaLayout;
+    [ObservableProperty] private LayoutExtratoSalvo? _layoutSelecionado;
+    [ObservableProperty] private string _nomeLayout = "";
+    [ObservableProperty] private int _separador;
+    [ObservableProperty] private decimal? _colunaData = 1;
+    [ObservableProperty] private decimal? _colunaDescricao = 0;
+    [ObservableProperty] private decimal? _colunaValor = 0;
+    [ObservableProperty] private decimal? _colunaDocumento = 0;
+    [ObservableProperty] private string _formatoData = "dd/MM/yyyy";
+    [ObservableProperty] private decimal? _ano = DateTime.Today.Year;
+    [ObservableProperty] private string _ignorar = "SALDO";
+    [ObservableProperty] private bool _inverterSinal;
+
+    public async Task CarregarAsync()
+    {
+        if (Contexto.App is not { } app) return;
+        var g = NovaGeracao();
+        var lista = await app.Importacao.ListarLayoutsExtratoAsync();
+        if (!EhAtual(g)) return;
+        var id = LayoutSelecionado?.Id;
+        Layouts.Clear();
+        foreach (var l in lista) Layouts.Add(l);
+        _aplicandoLayout = true;
+        LayoutSelecionado = Layouts.FirstOrDefault(l => l.Id == id);
+        _aplicandoLayout = false;
+    }
 
     partial void OnArquivoChanged(string value)
     {
         if (File.Exists(value)) LerExtrato();
     }
 
+    /// <summary>Carrega o arquivo escolhido: OFX vira movimentos na hora; PDF, TXT e CSV mostram o documento e aplicam o layout.</summary>
     [RelayCommand]
     private void LerExtrato()
     {
@@ -346,20 +400,125 @@ public partial class ImportacaoExtratoViewModel(IContexto contexto) : Importacao
         Mensagem = null;
         LimparPrevia();
         Transacoes.Clear();
+        LinhasDocumento.Clear();
         _extrato = null;
+        _linhasDocumento = null;
         DadosExtrato = "";
-        if (!File.Exists(Arquivo)) { Erros.Add("Selecione o arquivo OFX."); return; }
-        var r = LeitorOfx.Ler(LeitorPlanoReferencial.Decodificar(File.ReadAllBytes(Arquivo)));
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        _extrato = r.Valor;
-        foreach (var t in _extrato.Transacoes) Transacoes.Add(new TransacaoExtratoLinha(t, Padrao(t)));
-        var e = _extrato;
-        DadosExtrato = $"Banco {e.Banco} · agência {e.Agencia} · conta {e.Conta}" +
-                       (e.Inicio is { } i && e.Fim is { } f ? $" · {i:dd/MM/yyyy} a {f:dd/MM/yyyy}" : "") +
-                       $" · {e.Transacoes.Count} movimento(s): entradas {Numeros.Moeda(e.Transacoes.Where(t => t.Valor > 0).Sum(t => t.Valor))}," +
+        if (!File.Exists(Arquivo)) { Erros.Add("Selecione o arquivo do extrato (OFX, PDF, TXT ou CSV)."); return; }
+        var bytes = File.ReadAllBytes(Arquivo);
+        var texto = LeitorDocumentoExtrato.EhPdf(Arquivo) ? "" : LeitorPlanoReferencial.Decodificar(bytes);
+        UsaLayout = !texto.Contains("<OFX>", StringComparison.OrdinalIgnoreCase);
+        if (!UsaLayout)
+        {
+            var r = LeitorOfx.Ler(texto);
+            if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            MostrarExtrato(r.Valor);
+            return;
+        }
+        var linhas = LeitorDocumentoExtrato.Ler(Arquivo);
+        if (!linhas.Sucesso) { MostrarResultado(linhas, ""); return; }
+        _linhasDocumento = linhas.Valor;
+        if (LayoutSelecionado is null && NomeLayout.Length == 0) SugerirLayout();
+        else AplicarLayout();
+    }
+
+    /// <summary>Monta o layout olhando o documento carregado (separador, coluna e formato da data; valor = último da linha).</summary>
+    [RelayCommand]
+    private void SugerirLayout()
+    {
+        if (_linhasDocumento is null) { Erros.Add("Carregue primeiro o arquivo do extrato."); return; }
+        PreencherLayout(LeitorExtratoTexto.Sugerir(_linhasDocumento, (int)(Ano ?? DateTime.Today.Year)) with { Ignorar = Ignorar, InverterSinal = InverterSinal });
+        AplicarLayout();
+    }
+
+    private void PreencherLayout(LayoutExtrato l)
+    {
+        _aplicandoLayout = true;
+        (Separador, ColunaData, ColunaDescricao, ColunaValor, ColunaDocumento) = ((int)l.Separador, l.ColunaData, l.ColunaDescricao, l.ColunaValor, l.ColunaDocumento);
+        (FormatoData, Ignorar, InverterSinal) = (l.FormatoData, l.Ignorar, l.InverterSinal);
+        _aplicandoLayout = false;
+    }
+
+    public LayoutExtrato LayoutAtual() => new(NomeLayout.Trim(), (SeparadorExtrato)Math.Clamp(Separador, 0, 2), (int)(ColunaData ?? 1), (int)(ColunaDescricao ?? 0),
+                                              (int)(ColunaValor ?? 0), (int)(ColunaDocumento ?? 0), FormatoData, Ignorar ?? "", InverterSinal);
+
+    partial void OnLayoutSelecionadoChanged(LayoutExtratoSalvo? value)
+    {
+        if (value is null || _aplicandoLayout) return;
+        NomeLayout = value.Nome;
+        PreencherLayout(value.Layout);
+        AplicarLayout();
+    }
+
+    partial void OnSeparadorChanged(int value) => AoMudarLayout();
+    partial void OnColunaDataChanged(decimal? value) => AoMudarLayout();
+    partial void OnColunaDescricaoChanged(decimal? value) => AoMudarLayout();
+    partial void OnColunaValorChanged(decimal? value) => AoMudarLayout();
+    partial void OnColunaDocumentoChanged(decimal? value) => AoMudarLayout();
+    partial void OnFormatoDataChanged(string value) => AoMudarLayout();
+    partial void OnAnoChanged(decimal? value) => AoMudarLayout();
+    partial void OnIgnorarChanged(string value) => AoMudarLayout();
+    partial void OnInverterSinalChanged(bool value) => AoMudarLayout();
+    private void AoMudarLayout() { if (!_aplicandoLayout) AplicarLayout(); }
+
+    /// <summary>Aplica o layout ao documento carregado: mostra as linhas separadas em colunas e os movimentos reconhecidos.</summary>
+    [RelayCommand]
+    private void AplicarLayout()
+    {
+        if (_linhasDocumento is null) return;
+        LimparPrevia();
+        var linhas = LeitorExtratoTexto.Aplicar(_linhasDocumento, LayoutAtual(), (int)(Ano ?? DateTime.Today.Year));
+        LinhasDocumento.Clear();
+        foreach (var l in linhas) LinhasDocumento.Add(new LinhaDocumentoLinha(l));
+        MostrarExtrato(LeitorExtratoTexto.Extrato(linhas, "EXTRATO"), $"{linhas.Count} linha(s) no documento · ");
+    }
+
+    private void MostrarExtrato(ExtratoBancario e, string prefixo = "")
+    {
+        _extrato = e;
+        Transacoes.Clear();
+        foreach (var t in e.Transacoes) Transacoes.Add(new TransacaoExtratoLinha(t, Padrao(t)));
+        DadosExtrato = prefixo + (UsaLayout ? "" : $"Banco {e.Banco} · agência {e.Agencia} · conta {e.Conta}") +
+                       (e.Inicio is { } i && e.Fim is { } f ? $"{(UsaLayout ? "" : " · ")}{i:dd/MM/yyyy} a {f:dd/MM/yyyy} · " : UsaLayout ? "" : " · ") +
+                       $"{e.Transacoes.Count} movimento(s): entradas {Numeros.Moeda(e.Transacoes.Where(t => t.Valor > 0).Sum(t => t.Valor))}," +
                        $" saídas {Numeros.Moeda(-e.Transacoes.Where(t => t.Valor < 0).Sum(t => t.Valor))}" +
                        (e.SaldoFinal is { } s ? $" · saldo final no banco {Numeros.Moeda(s)}" : "");
     }
+
+    [RelayCommand]
+    private void NovoLayout()
+    {
+        _aplicandoLayout = true;
+        LayoutSelecionado = null;
+        _aplicandoLayout = false;
+        NomeLayout = "";
+        if (_linhasDocumento is not null) SugerirLayout();
+    }
+
+    [RelayCommand]
+    private Task SalvarLayoutAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Importacao.SalvarLayoutExtratoAsync(empresa, LayoutSelecionado?.Id, LayoutAtual(), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var nome = NomeLayout.Trim();
+        await CarregarAsync();
+        _aplicandoLayout = true;
+        LayoutSelecionado = Layouts.FirstOrDefault(l => l.Id == r.Valor);
+        _aplicandoLayout = false;
+        Mensagem = $"Layout \"{nome}\" salvo. Da próxima vez, escolha-o em Layout salvo depois de carregar o extrato desse banco.";
+    }, Permissao.LancamentoIncluir);
+
+    [RelayCommand]
+    private Task ExcluirLayoutAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (LayoutSelecionado is not { } l) { Erros.Add("Escolha o layout a excluir."); return; }
+        if (!await Contexto.ConfirmarAsync("Excluir layout", $"Excluir o layout de extrato \"{l.Nome}\"?", "Excluir", "Cancelar")) return;
+        var r = await app.Importacao.ExcluirLayoutAsync(empresa, l.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        NovoLayout();
+        await CarregarAsync();
+        Mensagem = $"Layout \"{l.Nome}\" excluído.";
+    }, Permissao.LancamentoIncluir);
 
     private string Padrao(TransacaoExtrato t) => (t.Valor > 0 ? ContrapartidaEntradas : ContrapartidaSaidas).Trim();
 
@@ -373,14 +532,16 @@ public partial class ImportacaoExtratoViewModel(IContexto contexto) : Importacao
 
     protected override IReadOnlyList<LancamentoLido>? Ler()
     {
-        if (_extrato is null) { Erros.Add("Leia um extrato OFX primeiro."); return null; }
+        if (_extrato is null) { Erros.Add("Carregue o extrato primeiro."); return null; }
         if (string.IsNullOrWhiteSpace(ContaBanco)) { Erros.Add("Informe a conta contábil do banco (ex.: 1.1.01.002)."); return null; }
         var linhas = Transacoes.Where(l => l.Importar).ToList();
-        if (linhas.Count == 0) { Erros.Add("Marque ao menos um movimento para importar."); return null; }
+        if (linhas.Count == 0) { Erros.Add(UsaLayout ? "Nenhum movimento reconhecido: ajuste o layout até os movimentos aparecerem na lista." : "Marque ao menos um movimento para importar."); return null; }
         var semContra = linhas.Where(l => string.IsNullOrWhiteSpace(l.Contrapartida)).ToList();
         foreach (var l in semContra) Erros.Add($"{l.Data} {l.Descricao}: informe a contrapartida.");
         if (semContra.Count > 0) return null;
-        return ServicoImportacao.LancamentosDoExtrato(_extrato, linhas.Select(l => l.Transacao).ToList(), ContaBanco.Trim(),
+        // no extrato sem identificação do banco (PDF/TXT/CSV), a conta contábil do banco separa os movimentos de bancos diferentes
+        var extrato = UsaLayout ? _extrato with { Conta = ContaBanco.Trim() } : _extrato;
+        return ServicoImportacao.LancamentosDoExtrato(extrato, linhas.Select(l => l.Transacao).ToList(), ContaBanco.Trim(),
                                                       linhas.Select(l => l.Contrapartida.Trim()).ToList(), PrefixoHistorico);
     }
 }

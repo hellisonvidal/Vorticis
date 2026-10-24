@@ -135,10 +135,21 @@ Todas ficam em *Integrações › Importar*. Em todas, **Pré-visualizar** valid
 3. **3. Colunas**: indique qual coluna é data, conta débito/crédito (ou conta fixa), valor, histórico, documento e centro de custo. Informe a máscara das contas se quiser converter códigos (11010001 vira 1.1.01.0001).
 4. **Salvar layout** (vale para todas as empresas), **Pré-visualizar** e **Importar**.
 
-### Extratos bancários (OFX)
-1. Escolha o arquivo OFX do internet banking e clique em **Ler**.
-2. Informe a **conta do banco** e as contrapartidas padrão de **entradas** e **saídas**; use *Preencher vazias* e ajuste linha a linha.
-3. **Pré-visualizar** e **Importar**. Movimentos já importados (banco/agência/conta/FITID) não são duplicados; se o lançamento for estornado, pode ser importado de novo.
+### Extratos bancários (OFX e PDF)
+**Onde fica:** *Integrações › Importar › Extratos bancários (OFX e PDF)*.
+
+1. **Carregue o arquivo primeiro:** clique em **Procurar...** e escolha o extrato. Pode ser o **OFX** do internet banking ou o extrato em **PDF**, **TXT** ou **CSV**. O arquivo é lido na hora (o botão **Carregar** lê de novo).
+2. **OFX:** os movimentos aparecem direto na aba **Movimentos**; siga para o passo 4.
+3. **PDF, TXT ou CSV — layout personalizado conforme o documento:** aparece o quadro **2. Layout do extrato**, já com um layout **sugerido pelo próprio documento**. Abra a aba **Documento carregado** para ver cada linha do arquivo separada em colunas (Coluna 1, Coluna 2...) e, na coluna *Movimento*, as linhas que viraram movimento.
+   - Ajuste, olhando o documento: **colunas separadas por** (espaços para PDF/TXT, ponto e vírgula para CSV), **coluna da data** e o **formato da data** (para datas sem ano, informe o **Ano**), **coluna do valor** (0 = automático: com valor e saldo na mesma linha, fica o valor), **da descrição** (0 = junta o texto das outras colunas) e **do documento** (0 = sem documento).
+   - **Ignorar linhas com**: palavras que descartam a linha, separadas por vírgula (ex.: SALDO, TOTAL).
+   - **Inverter sinal**: para extratos que mostram as saídas como positivas (ex.: fatura de cartão).
+   - Cada ajuste é aplicado na hora: confira a aba **Movimentos**. Valores com **D** ou sinal de menos são saídas; com **C** ou sem sinal, entradas.
+   - Dê um **Nome** (ex.: o nome do banco) e clique em **Salvar layout**. Da próxima vez, carregue o extrato desse banco e escolha o layout em **Layout salvo**. **Novo** volta à sugestão pelo documento; **Excluir layout** apaga o layout escolhido. Os layouts valem para todas as empresas.
+4. Informe a **conta do banco** e as contrapartidas padrão de **entradas** e **saídas**; use *Preencher vazias* e ajuste linha a linha.
+5. **Pré-visualizar** e **Importar**. Movimentos já importados não são duplicados (no OFX, pela identificação do banco; no PDF/TXT/CSV, pela data, valor, descrição e conta do banco); se o lançamento for estornado, pode ser importado de novo.
+
+**Atenção:** PDF escaneado (imagem) não tem texto para ler; peça ao banco o OFX ou o PDF gerado pelo internet banking.
 
 ### Lançamentos contábeis (layout padrão)
 Use **Gerar planilha modelo (.xlsx)**, preencha (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), escolha o arquivo, **Pré-visualizar** e **Importar**.

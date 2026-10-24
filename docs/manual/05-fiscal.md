@@ -143,7 +143,7 @@ Selecione a duplicata, escolha a baixa na lista *Baixas da duplicata selecionada
 **Para que serve:** baixar duplicatas a partir do extrato bancário, sem digitar, e deixar a partida do banco marcada como conciliada.
 **Onde fica:** *Lançamentos › Conciliação de duplicatas*.
 
-**Antes:** importe o extrato do banco (arquivo OFX) em *Lançamentos › Importação*, aba *Extratos*.
+**Antes:** importe o extrato do banco (OFX ou PDF) no Contábil, em *Integrações › Importar › Extratos bancários (OFX e PDF)*.
 
 1. Informe o código da **conta contábil do banco** do extrato, o período e a **tolerância em dias** (quantos dias de diferença entre o vencimento e a data do banco ainda contam como a mesma operação).
 2. Clique em **Sugerir**. A lista mostra pares *duplicata em aberto x movimento do extrato* que têm o mesmo valor do saldo, data próxima do vencimento e/ou o número do documento no histórico, com o motivo da sugestão. Saída do banco só combina com duplicata a pagar; entrada, com a receber.

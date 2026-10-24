@@ -7,6 +7,12 @@ namespace Vorticis.Application.Contabil;
 
 public sealed record LayoutSalvo(long Id, string Nome, LayoutImportacao Layout);
 
+/// <summary>Layout de extrato em PDF/TXT/CSV salvo (compartilhado entre as empresas, como os de planilha).</summary>
+public sealed record LayoutExtratoSalvo(long Id, string Nome, LayoutExtrato Layout)
+{
+    public override string ToString() => Nome;
+}
+
 /// <summary>Lançamento lido + o que impede a importação (vazio = pode importar) e se já foi importado antes.</summary>
 public sealed record ItemImportacao(LancamentoLido Lancamento, IReadOnlyList<string> Erros, bool JaImportado)
 {
@@ -19,6 +25,9 @@ public interface IRepositorioImportacao
     /// <summary>Inclui (id nulo) ou altera o layout. Retorna o id.</summary>
     Task<long> SalvarLayoutAsync(long? id, LayoutImportacao layout, CancellationToken ct);
     Task ExcluirLayoutAsync(long id, CancellationToken ct);
+    Task<IReadOnlyList<LayoutExtratoSalvo>> ListarLayoutsExtratoAsync(CancellationToken ct);
+    /// <summary>Inclui (id nulo) ou altera o layout de extrato. Retorna o id.</summary>
+    Task<long> SalvarLayoutExtratoAsync(long? id, LayoutExtrato layout, CancellationToken ct);
     /// <summary>Das chaves informadas, as que já geraram lançamento ativo (não estornado) na empresa.</summary>
     Task<IReadOnlySet<string>> ChavesImportadasAsync(long empresaId, IReadOnlyCollection<string> chaves, CancellationToken ct);
 }
@@ -61,6 +70,36 @@ public sealed class ServicoImportacao(IRepositorioImportacao repositorio, Servic
         try
         {
             return Resultado<long>.Ok(await repositorio.SalvarLayoutAsync(id, layout with { Nome = nome }, ct));
+        }
+        catch (ViolacaoRegraException ex)
+        {
+            return Resultado<long>.Falha(ex.Message);
+        }
+    }
+
+    public Task<IReadOnlyList<LayoutExtratoSalvo>> ListarLayoutsExtratoAsync(CancellationToken ct = default) => repositorio.ListarLayoutsExtratoAsync(ct);
+
+    public static IReadOnlyList<string> ValidarLayoutExtrato(LayoutExtrato layout)
+    {
+        var erros = new List<string>();
+        if (layout.Nome.Trim().Length is 0 or > 80) erros.Add("Dê um nome ao layout (até 80 caracteres), ex.: o nome do banco.");
+        if (layout.ColunaData < 1) erros.Add("Informe a coluna da data (1 = primeira coluna).");
+        if (layout.ColunaDescricao < 0 || layout.ColunaValor < 0 || layout.ColunaDocumento < 0) erros.Add("As colunas são números a partir de 1 (0 = automático/nenhuma).");
+        if (layout.ColunaValor > 0 && layout.ColunaValor == layout.ColunaData) erros.Add("A coluna do valor não pode ser a mesma da data.");
+        if (!LeitorExtratoTexto.FormatosData.Contains(layout.FormatoData)) erros.Add("Formato de data inválido.");
+        return erros;
+    }
+
+    public async Task<Resultado<long>> SalvarLayoutExtratoAsync(long empresaId, long? id, LayoutExtrato layout, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return negado;
+        if (ValidarLayoutExtrato(layout) is { Count: > 0 } erros) return Resultado<long>.Falha(erros);
+        var nome = layout.Nome.Trim();
+        if ((await repositorio.ListarLayoutsExtratoAsync(ct)).Any(l => l.Id != id && string.Equals(l.Nome, nome, StringComparison.CurrentCultureIgnoreCase)))
+            return Resultado<long>.Falha($"Já existe um layout de extrato chamado \"{nome}\".");
+        try
+        {
+            return Resultado<long>.Ok(await repositorio.SalvarLayoutExtratoAsync(id, layout with { Nome = nome, Ignorar = layout.Ignorar?.Trim() ?? "" }, ct));
         }
         catch (ViolacaoRegraException ex)
         {

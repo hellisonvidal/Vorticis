@@ -48,6 +48,12 @@ BEGIN
     INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (v_emp, v_pes, '2026-04-01', 800, '2026-04-10');
     PERFORM pg_temp.espera_erro_dup(format('INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (%s, %s, ''2026-04-01'', 800, ''2026-04-10'')', v_emp, v_pes), 'uq_honorario_cobranca_pessoa');
     RAISE NOTICE 'OK: cadastro próprio do escritório e honorário único por cliente e competência';
+
+    INSERT INTO contabil.layout_importacao (nome, configuracao) VALUES ('Banco X', '{}');
+    INSERT INTO contabil.layout_importacao (nome, configuracao, tipo) VALUES ('Banco X', '{}', 'EXTRATO');
+    PERFORM pg_temp.espera_erro_dup('INSERT INTO contabil.layout_importacao (nome, configuracao, tipo) VALUES (''banco x'', ''{}'', ''EXTRATO'')', 'uq_layout_importacao_nome');
+    DELETE FROM contabil.layout_importacao WHERE nome = 'Banco X';
+    RAISE NOTICE 'OK: layout de extrato com nome único por tipo (planilha e extrato podem ter o mesmo nome)';
 END $$;
 
 \echo 'TODOS OS TESTES PASSARAM'

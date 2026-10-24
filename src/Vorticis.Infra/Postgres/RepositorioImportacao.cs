@@ -17,7 +17,7 @@ public sealed class RepositorioImportacao(NpgsqlDataSource ds) : IRepositorioImp
 
     public async Task<IReadOnlyList<LayoutSalvo>> ListarLayoutsAsync(CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT id, nome, configuracao::text FROM contabil.layout_importacao ORDER BY lower(nome)");
+        await using var cmd = ds.CreateCommand("SELECT id, nome, configuracao::text FROM contabil.layout_importacao WHERE tipo = 'PLANILHA' ORDER BY lower(nome)");
         var res = new List<LayoutSalvo>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
@@ -35,6 +35,32 @@ public sealed class RepositorioImportacao(NpgsqlDataSource ds) : IRepositorioImp
             await using var cmd = id is null
                 ? ds.CreateCommand("INSERT INTO contabil.layout_importacao (nome, configuracao) VALUES (@n, @c) RETURNING id")
                 : ds.CreateCommand("UPDATE contabil.layout_importacao SET nome = @n, configuracao = @c, alterado_em = now() WHERE id = @id RETURNING id");
+            cmd.Com("n", layout.Nome).Com("c", NpgsqlDbType.Jsonb, json);
+            if (id is not null) cmd.Com("id", id.Value);
+            return (long)(await cmd.ExecuteScalarAsync(ct)
+                          ?? throw new Domain.Comum.ViolacaoRegraException("Layout não encontrado."));
+        });
+
+    public async Task<IReadOnlyList<LayoutExtratoSalvo>> ListarLayoutsExtratoAsync(CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id, nome, configuracao::text FROM contabil.layout_importacao WHERE tipo = 'EXTRATO' ORDER BY lower(nome)");
+        var res = new List<LayoutExtratoSalvo>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            var layout = JsonSerializer.Deserialize<LayoutExtrato>(r.GetString(2), Json) ?? new LayoutExtrato();
+            res.Add(new LayoutExtratoSalvo(r.GetInt64(0), r.GetString(1), layout with { Nome = r.GetString(1) }));
+        }
+        return res;
+    }
+
+    public Task<long> SalvarLayoutExtratoAsync(long? id, LayoutExtrato layout, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            var json = JsonSerializer.Serialize(layout, Json);
+            await using var cmd = id is null
+                ? ds.CreateCommand("INSERT INTO contabil.layout_importacao (nome, configuracao, tipo) VALUES (@n, @c, 'EXTRATO') RETURNING id")
+                : ds.CreateCommand("UPDATE contabil.layout_importacao SET nome = @n, configuracao = @c, alterado_em = now() WHERE id = @id AND tipo = 'EXTRATO' RETURNING id");
             cmd.Com("n", layout.Nome).Com("c", NpgsqlDbType.Jsonb, json);
             if (id is not null) cmd.Com("id", id.Value);
             return (long)(await cmd.ExecuteScalarAsync(ct)

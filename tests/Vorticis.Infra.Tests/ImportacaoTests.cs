@@ -73,4 +73,46 @@ public class ImportacaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.True(de_novo.Sucesso, string.Join("; ", de_novo.Erros));
         Assert.Single(de_novo.Valor);
     }
+
+    [Fact]
+    public void Extrato_em_pdf_vira_linhas_com_colunas_e_o_layout_sugerido_reconhece_os_movimentos()
+    {
+        var tabela = new Vorticis.Application.Relatorios.Bloco(Titulo: "Movimentação",
+            Colunas: [new("Data", 2.5), new("Histórico", 7), new("Documento", 3), new("Valor", 3), new("Saldo", 3)],
+            Linhas:
+            [
+                new(["02/03/2026", "PIX RECEBIDO CLIENTE ABC", "123456", "1.500,00", "2.500,00"]),
+                new(["05/03/2026", "TARIFA PACOTE", "000001", "-45,90", "2.454,10"]),
+                new(["06/03/2026", "SALDO DO DIA", "", "", "2.454,10"]),
+            ]);
+        var pdf = new Vorticis.Infra.Relatorios.GeradorPdf().Gerar(new Vorticis.Application.Relatorios.DocumentoRelatorio("Extrato de conta corrente", ["Banco Exemplo"], [tabela]));
+        var linhas = Vorticis.Infra.Importacao.LeitorDocumentoExtrato.LerPdf(pdf.Conteudo);
+        Assert.Contains(linhas, l => l.Contains("PIX RECEBIDO CLIENTE ABC"));
+        var layout = LeitorExtratoTexto.Sugerir(linhas, 2026);
+        Assert.Equal("dd/MM/yyyy", layout.FormatoData);
+        var ts = LeitorExtratoTexto.Extrato(LeitorExtratoTexto.Aplicar(linhas, layout, 2026), "EXTRATO").Transacoes;
+        Assert.Equal([1500m, -45.90m], ts.Select(t => t.Valor));
+        Assert.StartsWith("PIX RECEBIDO CLIENTE ABC", ts[0].Descricao);
+    }
+
+    [Fact]
+    public async Task Layout_de_extrato_e_salvo_separado_dos_layouts_de_planilha()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = db.App.Importacao;
+        var empresa = await db.CriarEmpresaAsync("19131243000197");
+        var adm = await db.AdminAsync();
+        var nome = $"Banco PDF {Guid.NewGuid():N}"[..20];
+        Assert.False((await svc.SalvarLayoutExtratoAsync(empresa, null, new LayoutExtrato(""), adm, ct)).Sucesso);
+        Assert.False((await svc.SalvarLayoutExtratoAsync(empresa, null, new LayoutExtrato(nome, ColunaData: 0), adm, ct)).Sucesso);
+        var r = await svc.SalvarLayoutExtratoAsync(empresa, null, new LayoutExtrato(nome, SeparadorExtrato.PontoVirgula, 2, 3, 4, 0, "dd/MM", "SALDO, TOTAL", true), adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var salvo = Assert.Single(await svc.ListarLayoutsExtratoAsync(ct), l => l.Id == r.Valor);
+        Assert.Equal((SeparadorExtrato.PontoVirgula, 2, 4, "dd/MM", true), (salvo.Layout.Separador, salvo.Layout.ColunaData, salvo.Layout.ColunaValor, salvo.Layout.FormatoData, salvo.Layout.InverterSinal));
+        Assert.DoesNotContain(await svc.ListarLayoutsAsync(ct), l => l.Id == r.Valor);
+        Assert.Contains("Já existe", (await svc.SalvarLayoutExtratoAsync(empresa, null, new LayoutExtrato(nome.ToUpperInvariant()), adm, ct)).Erros[0]);
+        Assert.True((await svc.ExcluirLayoutAsync(empresa, r.Valor, adm, ct)).Sucesso);
+        Assert.DoesNotContain(await svc.ListarLayoutsExtratoAsync(ct), l => l.Id == r.Valor);
+    }
 }

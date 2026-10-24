@@ -61,7 +61,7 @@ public sealed class ModuloContabil : IModuloDesktop
         ItemMenu.Submenu("_Integrações",
             ItemMenu.Submenu("_Importar",
                 ItemMenu.Tela("Planilhas (layouts personalizados)", Telas.ImportarPlanilhas),
-                ItemMenu.Tela("Extratos bancários (OFX)", Telas.ImportarExtratos),
+                ItemMenu.Tela("Extratos bancários (OFX e PDF)", Telas.ImportarExtratos),
                 ItemMenu.Tela("Lançamentos contábeis (layout padrão)", Telas.ImportarLancamentos),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Plano de contas (planilha Excel/CSV)", Telas.ImportarPlano),
@@ -196,7 +196,7 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia(nameof(MainViewModel.ImportacaoPlanilhas), m => new ImportacaoPlanilhaViewModel(m))
             .Tela(Telas.ImportarPlanilhas, "Integrações › Importar › Planilhas", m => m.Pode(Permissao.LancamentoIncluir), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.ImportacaoExtratos), m => new ImportacaoExtratoViewModel(m))
-            .Tela(Telas.ImportarExtratos, "Integrações › Importar › Extratos bancários (OFX)", m => m.Pode(Permissao.LancamentoIncluir));
+            .Tela(Telas.ImportarExtratos, "Integrações › Importar › Extratos bancários (OFX e PDF)", m => m.Pode(Permissao.LancamentoIncluir), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.ImportacaoLancamentos), m => new ImportacaoLancamentosPadraoViewModel(m))
             .Tela(Telas.ImportarLancamentos, "Integrações › Importar › Lançamentos contábeis", m => m.Pode(Permissao.LancamentoIncluir));
         c.Instancia(nameof(MainViewModel.ImportacaoReferencial), m => new ImportacaoReferencialViewModel(m))

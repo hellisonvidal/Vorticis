@@ -8,6 +8,7 @@ public static class EscolhaArquivo
 {
     public static readonly FilePickerFileType Planilha = new("Planilha (Excel ou CSV)") { Patterns = ["*.xlsx", "*.xlsm", "*.csv", "*.txt"] };
     public static readonly FilePickerFileType Ofx = new("Extrato OFX") { Patterns = ["*.ofx", "*.OFX"] };
+    public static readonly FilePickerFileType Extrato = new("Extrato bancário (OFX, PDF, TXT ou CSV)") { Patterns = ["*.ofx", "*.OFX", "*.pdf", "*.PDF", "*.txt", "*.csv"] };
 
     public static async Task<string?> AbrirAsync(Control origem, string titulo, FilePickerFileType tipo)
     {
