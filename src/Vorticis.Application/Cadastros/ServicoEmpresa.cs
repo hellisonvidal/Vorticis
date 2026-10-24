@@ -10,7 +10,7 @@ namespace Vorticis.Application.Cadastros;
 [Flags]
 public enum ModulosEmpresa : byte
 {
-    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Todos = 7,
+    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Escritorio = 8, Erp = 16, Condominio = 32, Todos = 63,
 }
 
 public static class ModulosEmpresaExtensoes
@@ -18,7 +18,20 @@ public static class ModulosEmpresaExtensoes
     public static string Nome(this ModulosEmpresa m) => m switch
     {
         ModulosEmpresa.Contabil => "Contábil", ModulosEmpresa.Fiscal => "Fiscal", ModulosEmpresa.Folha => "Folha de Pagamento",
-        _ => string.Join(", ", new[] { ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha }.Where(x => m.HasFlag(x)).Select(Nome)),
+        ModulosEmpresa.Escritorio => "Escritório", ModulosEmpresa.Erp => "ERP", ModulosEmpresa.Condominio => "Condomínio",
+        _ => string.Join(", ", Individuais.Where(x => m.HasFlag(x)).Select(Nome)),
+    };
+
+    /// <summary>Cada módulo da suíte, na ordem do menu de escolha.</summary>
+    public static readonly ModulosEmpresa[] Individuais =
+        [ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha, ModulosEmpresa.Escritorio, ModulosEmpresa.Erp, ModulosEmpresa.Condominio];
+
+    /// <summary>Coluna de core.empresa que indica o módulo.</summary>
+    public static string Coluna(this ModulosEmpresa m) => m switch
+    {
+        ModulosEmpresa.Contabil => "modulo_contabil", ModulosEmpresa.Fiscal => "modulo_fiscal", ModulosEmpresa.Folha => "modulo_folha",
+        ModulosEmpresa.Escritorio => "modulo_escritorio", ModulosEmpresa.Erp => "modulo_erp", ModulosEmpresa.Condominio => "modulo_condominio",
+        _ => throw new ArgumentException("Informe um único módulo.", nameof(m)),
     };
 }
 

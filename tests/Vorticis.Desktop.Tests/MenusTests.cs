@@ -116,8 +116,13 @@ public class MenusTests
         var proprios = Folhas(vm.Menus.Skip(1).SkipLast(2)).Where(i => !i.EhSeparador).ToList();
         var habilitados = proprios.Where(i => i.Habilitado).ToList();
         Assert.All(habilitados, i => Assert.True(vm.ConheceTela(i.Chave!), i.Titulo));
-        Assert.Contains(habilitados, i => i.Chave == "folha.funcionarios");
         Assert.Contains(habilitados, i => i.Chave == "folha.esocial");
+        Assert.Contains(habilitados, i => i.Chave == "folha.prolabore");
+        // Funcionários é submenu de Cadastros; a folha não tem Clientes nem Fornecedores
+        var cadastros = Folhas(vm.Menus.Take(1)).Where(i => !i.EhSeparador).ToList();
+        Assert.Contains(cadastros, i => i.Chave == "folha.funcionarios");
+        Assert.DoesNotContain(cadastros, i => i.Chave is TelasComuns.Clientes or TelasComuns.Fornecedores);
+        Assert.True(vm.UsaPeriodo);
         Assert.Equal(["FGTS (GFD) (em breve)", "DCTFWeb e INSS (em breve)", "RAIS e DIRF (em breve)"], proprios.Where(i => !i.Habilitado).Select(i => i.Titulo));
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
     }

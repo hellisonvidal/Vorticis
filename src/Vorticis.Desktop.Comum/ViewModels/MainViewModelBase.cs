@@ -41,6 +41,10 @@ public interface IContexto
     /// volta à tela de login para o novo administrador entrar.
     /// </summary>
     Task ConcluirImplantacaoAsync(string loginAdministrador);
+    /// <summary>Período de trabalho escolhido ao lado da empresa (dia 1 do mês); módulos sem período usam o mês atual.</summary>
+    DateOnly PeriodoTrabalho => new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    /// <summary>Relê a situação (aberto/fechado) do período de trabalho, após fechar ou reabrir.</summary>
+    Task AtualizarSituacaoPeriodoAsync() => Task.CompletedTask;
 }
 
 /// <summary>Telas comuns a todos os módulos. A chave é o CommandParameter do item de menu.</summary>
@@ -218,9 +222,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         {
             ItemMenu.Tela("Empresas", TelasComuns.Empresas),
             ItemMenu.Tela("Contadores", TelasComuns.Contabilidade),
-            ItemMenu.Tela("Clientes", TelasComuns.Clientes),
-            ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores),
         };
+        if (Modulo.UsaClientesFornecedores)
+            cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
         cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros)]);
         // O calendário de obrigações fica em "Obrigações", se o módulo tem esse menu; senão, em "Consultas";
@@ -259,6 +263,43 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                 ItemMenu.Tela("Licença e registro", TelasComuns.Licenca),
                 ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre)),
         ];
+    }
+
+    // ------------------------------------------------------------------ período de trabalho
+
+    /// <summary>O módulo trabalha por período (Folha: competência): mostra o seletor e a situação ao lado da empresa.</summary>
+    public bool UsaPeriodo => Modulo.RotuloPeriodo is not null;
+    public string RotuloPeriodo => (Modulo.RotuloPeriodo ?? "") + ":";
+
+    [ObservableProperty] private DateTime? _periodoSelecionado = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private string _situacaoPeriodo = "";
+    [ObservableProperty] private bool _periodoAberto = true;
+
+    public DateOnly PeriodoTrabalho => PeriodoSelecionado is { } d ? new DateOnly(d.Year, d.Month, 1) : new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    /// <summary>Cor da situação: verde se aberto, vermelho se fechado.</summary>
+    public IBrush PincelSituacaoPeriodo => new SolidColorBrush(Color.Parse(PeriodoAberto ? "#86EFAC" : "#FCA5A5"));
+
+    partial void OnPeriodoAbertoChanged(bool value) => OnPropertyChanged(nameof(PincelSituacaoPeriodo));
+
+    partial void OnPeriodoSelecionadoChanged(DateTime? value)
+    {
+        if (value is { } d && d.Day != 1) { PeriodoSelecionado = new DateTime(d.Year, d.Month, 1); return; }
+        _ = Disparar(async () => { await AtualizarSituacaoPeriodoAsync(); await AoAlterarPeriodoAsync(PeriodoTrabalho); });
+    }
+
+    /// <summary>Situação do período no banco (aberto?, texto); o módulo que tem <see cref="IModuloDesktop.RotuloPeriodo"/> sobrescreve.</summary>
+    protected virtual Task<(bool Aberto, string Situacao)?> ConsultarPeriodoAsync(DateOnly periodo)
+        => Task.FromResult<(bool, string)?>(null);
+
+    /// <summary>O usuário trocou o período: o módulo leva o novo período às telas abertas.</summary>
+    protected virtual Task AoAlterarPeriodoAsync(DateOnly periodo) => Task.CompletedTask;
+
+    public async Task AtualizarSituacaoPeriodoAsync()
+    {
+        if (!UsaPeriodo) return;
+        var r = App is not null && Sessao is not null && EmpresaSelecionada is not null ? await ConsultarPeriodoAsync(PeriodoTrabalho) : null;
+        (PeriodoAberto, SituacaoPeriodo) = r is { } v ? (v.Aberto, v.Aberto ? "ABERTA" : "FECHADA") : (true, "");
     }
 
     // ------------------------------------------------------------------ estado
@@ -616,7 +657,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         Confirmacao?.Responder(false);
         var atual = ModuloAtual;
-        var opcoes = new[] { ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha }
+        var opcoes = ModulosEmpresaExtensoes.Individuais
             .Select(m => (Modulo: m, Opcao: new OpcaoConfirmacao(m.Nome(), inicial.HasFlag(m), obrigatoria: m == atual))).ToList();
         var pedido = new PedidoConfirmacao("Cadastrar esta empresa em quais módulos?",
                                            "Os cadastros (empresa, participantes, sócios, contadores etc.) são únicos e compartilhados; escolha em quais módulos a empresa ficará ativa.",
@@ -681,6 +722,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _ = Disparar(async () =>
         {
             await AtualizarPermissoesAsync();
+            await AtualizarSituacaoPeriodoAsync();
             foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null))
                 await def.AoTrocarEmpresa!(_instancias[def.Nome], InstanciaAtiva(def.Nome));
         });

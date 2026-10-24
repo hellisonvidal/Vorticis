@@ -15,3 +15,11 @@ O manual é embutido no casco; `ManualTests` falha se existir tela registrada se
 - **Permissões nos serviços**, não só no menu; regras legais (alíquotas, tabelas) em `core.parametro_legal`, nunca no código.
 - **Casco comum:** telas e cadastros usados por mais de um módulo ficam em `Vorticis.Desktop.Comum`; cada tela nova se registra em `RegistrarTelas` com chave única.
 - **Economia de uso:** leia o mínimo necessário (README, `docs/`, definições de menu e views), use busca (`grep`) em vez de abrir arquivos grandes e evite reescrever o que já funciona.
+
+## Modelos e consumo (Claude Code)
+
+`.claude/settings.json` fixa `opusplan`: **Opus só no modo de planejamento** (Shift+Tab até "plan mode") e **Sonnet na execução**; subagentes (Explore, busca) rodam em **Haiku**. Raciocínio limitado a 8 mil tokens.
+- Tarefa grande ou de arquitetura (módulo novo, migração complexa): planeje em plan mode e execute fora dele.
+- Correção pontual, texto do manual, testes: fique no Sonnet; `/model haiku` para tarefas mecânicas (renomear, ajustar textos).
+- Não releia arquivos já lidos na sessão; filtre saídas longas (`| tail -20`, `grep`); rode só o projeto de testes afetado durante o desenvolvimento e a suíte completa antes do commit.
+- Use `/compact` ao trocar de assunto e `/clear` ao terminar uma tarefa.

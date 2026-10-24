@@ -53,6 +53,8 @@ public sealed record EmpresaFolha(long Id, string Cnpj, string RazaoSocial, stri
 public interface IRepositorioMovimentoFolha
 {
     Task<StatusCompetencia> ObterCompetenciaAsync(long empresaId, DateOnly competencia, CancellationToken ct);
+    /// <summary>Quantos sócios têm pró-labore calculado na competência (empresa só com sócios também fecha a competência).</summary>
+    Task<int> ContarProLaboreAsync(long empresaId, DateOnly competencia, CancellationToken ct);
     Task<IReadOnlyList<StatusCompetencia>> ListarCompetenciasAsync(long empresaId, int ano, CancellationToken ct);
     Task AlterarCompetenciaAsync(long empresaId, DateOnly competencia, bool fechar, long usuarioId, CancellationToken ct);
 

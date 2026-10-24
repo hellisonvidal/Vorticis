@@ -138,6 +138,7 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
                 | (NovoIssRetido ? TratamentoSimples.IssRetido : 0) | (NovaExportacao ? TratamentoSimples.Exportacao : 0);
         Receitas.Add(new ReceitaSimplesLinha(new ReceitaSimples(Atividades[Math.Max(0, NovaAtividade)], valor.Value, t)));
         NovoValor = "";
+        Mensagem = "Receita incluída. Clique em Calcular e depois em Salvar apuração.";
     }
 
     [ObservableProperty] private ReceitaSimplesLinha? _receitaSelecionada;
@@ -147,6 +148,9 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
     {
         if (ReceitaSelecionada is { } linha) Receitas.Remove(linha);
     }
+
+    [RelayCommand]
+    private void LimparReceitas() => Receitas.Clear();
 
     private (decimal? Rbt, decimal? Folha) Acumulados() =>
         (string.IsNullOrWhiteSpace(Rbt12Texto) ? null : Numeros.LerValor(Rbt12Texto), string.IsNullOrWhiteSpace(Folha12Texto) ? null : Numeros.LerValor(Folha12Texto));

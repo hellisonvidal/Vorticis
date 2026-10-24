@@ -2,10 +2,25 @@
 
 Menus do módulo Vorticis Folha. Os dados dos trabalhadores só aparecem a quem tem alguma permissão da folha (LGPD). Atalhos: **Ctrl+F** abre o cálculo da folha e **Ctrl+E** abre os eventos variáveis.
 
+Os cadastros da folha (funcionários, cargos, departamentos, rubricas e tabelas legais) ficam em *Cadastros › Funcionários*. O menu *Cadastros* da Folha não mostra Clientes e Fornecedores, que não são usados na folha (eles continuam nos módulos Contábil e Fiscal).
+
+## Competência de trabalho (aberta ou fechada)
+
+Na barra de cima, ao lado do seletor de empresas, fica a **Competência** em que você está trabalhando (mês/ano) e a situação dela:
+
+- **ABERTA** (verde): pode incluir, alterar e excluir eventos variáveis, cálculos (folha, férias, 13º, rescisões) e o pró-labore da competência.
+- **FECHADA** (vermelho): tudo da competência fica só para consulta. O sistema recusa qualquer inclusão, alteração ou exclusão, mesmo que a tela seja aberta.
+
+Passo a passo:
+
+1. Clique na data ao lado de **Competência** e escolha o mês. As telas *Eventos variáveis*, *Cálculo da folha mensal* e *Pró-labore* passam a usar esse mês.
+2. Para fechar, vá em *Folha › Cálculo da folha mensal* e clique em **Fechar competência**. A situação ao lado da empresa muda para **FECHADA**.
+3. Precisou corrigir? **Reabrir** na mesma tela (só se a folha não estiver contabilizada) e a situação volta para **ABERTA**.
+
 ## Parâmetros e tabelas legais
 
 **Para que serve:** informar os encargos da empresa e consultar as tabelas de INSS, IRRF, salário mínimo etc.
-**Onde fica:** *Funcionários › Parâmetros e tabelas legais*.
+**Onde fica:** *Cadastros › Funcionários › Parâmetros e tabelas legais*.
 
 1. Preencha **RAT**, **FAP**, **terceiros (%)**, **FPAS**, a opção pelo Simples Nacional e a **classificação tributária** (tabela 8 do eSocial; 99 = pessoas jurídicas em geral).
 2. Informe o **responsável pelo fechamento (S-1299)**: CPF, e-mail e telefone.
@@ -15,16 +30,16 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 
 ## Cargos
 
-*Funcionários › Cargos*: **Incluir**, código, nome do cargo, **CBO** (6 dígitos, ex.: 252105) e situação.
+*Cadastros › Funcionários › Cargos*: **Incluir**, código, nome do cargo, **CBO** (6 dígitos, ex.: 252105) e situação.
 
 ## Departamentos (lotações)
 
-*Funcionários › Departamentos*: **Incluir**, código e nome. Viram as lotações do eSocial.
+*Cadastros › Funcionários › Departamentos*: **Incluir**, código e nome. Viram as lotações do eSocial.
 
 ## Rubricas (eventos)
 
 **Para que serve:** os códigos de proventos, descontos e informativas que compõem o holerite.
-**Onde fica:** *Funcionários › Rubricas (eventos)*.
+**Onde fica:** *Cadastros › Funcionários › Rubricas (eventos)*.
 
 1. **Incluir** código, descrição, tipo (provento, desconto ou informativa) e a **natureza** da tabela 3 do eSocial (ex.: 1000).
 2. Marque as **incidências**: INSS, IRRF e FGTS.
@@ -32,7 +47,7 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 
 ## Cadastro de funcionários
 
-**Onde fica:** *Funcionários › Cadastro de funcionários*.
+**Onde fica:** *Cadastros › Funcionários › Cadastro de funcionários*.
 
 1. **Incluir**. A matrícula vazia assume a próxima.
 2. **Pessoal**: nome, CPF e PIS/NIS (validados), nascimento, sexo, raça/cor, estado civil, contatos e endereço completo (o **tipo de logradouro** é exigido pelo eSocial: R, AV, TV...).
@@ -138,6 +153,23 @@ A tela traz um painel **Passo a passo** com o roteiro.
 ## Procuração e procurador
 
 O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de procurações do eSocial) para o CPF/CNPJ do certificado, com os perfis dos eventos e prazo vigente. No sistema, marque o contador como procurador em *Cadastros › Contadores* (seção **Procuração eletrônica**, abrangência **eSocial**, com a vigência) e escolha **procurador** em *Transmitir com*.
+
+## Pró-labore dos sócios
+
+**Onde fica:** *Pró-labore › Sócios e cálculo do pró-labore*.
+
+Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*, ou *Pró-labore › Sócios (cadastro da empresa)*). Só aparecem sócios pessoa física.
+
+1. Selecione o sócio na lista.
+2. Marque **Retira pró-labore** se ele recebe pró-labore (desmarque se não recebe).
+3. Informe o **Valor mensal**, o **Início** e, se houver, o **Fim**.
+4. Se o sócio tem dependentes para o imposto de renda, informe em **Dependentes (IRRF)**.
+5. Se ele já tem INSS descontado em outro emprego ou empresa no mês, informe em **INSS em outras fontes**: o desconto fica limitado ao teto.
+6. **Gravar**.
+7. Com a competência **ABERTA**, clique em **Calcular pró-labore**. Para cada sócio que retira aparecem bruto, **INSS (11%)**, **IRRF**, **líquido** e **CPP patronal** (20%; no Simples Nacional, exceto anexo IV, a CPP já está no DAS e aparece zero), com a memória de cálculo.
+8. **Excluir cálculo** apaga o cálculo da competência (só com a competência aberta).
+
+As alíquotas vêm das tabelas legais (*Cadastros › Funcionários › Parâmetros e tabelas legais*, chave FOLHA_PRO_LABORE). Pró-labore não tem FGTS.
 
 ## Relatórios da folha
 

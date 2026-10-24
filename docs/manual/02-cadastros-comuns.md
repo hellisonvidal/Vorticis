@@ -73,7 +73,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 ### Folha
 | Grupo | O que tem |
 |---|---|
-| Encargos patronais | RAT, FAP e alíquota de terceiros (FPAS, Simples e responsável continuam em *Funcionários › Parâmetros e tabelas legais*). |
+| Encargos patronais | RAT, FAP e alíquota de terceiros (FPAS, Simples e responsável continuam em *Cadastros › Funcionários › Parâmetros e tabelas legais*). |
 | Pagamento | Dia de pagamento dos salários. |
 | eSocial | Ambiente e transmissor padrão; a tela *Transmissão* já abre com eles escolhidos. |
 | Contabilização | Atalho para a tela *Contabilização*. |

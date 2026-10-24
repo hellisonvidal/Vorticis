@@ -250,6 +250,18 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     /// <summary>Escrituração (CFOP de entrada, centro de custo, produto vinculado, contas, observações): também nas importadas, se não contabilizadas.</summary>
     public bool PodeEditarEscrituracao => PodeManter && !Contabilizado;
     public bool PodeEditarDigitada => PodeEditar;
+
+    /// <summary>Por que os campos estão bloqueados (aviso no topo); vazio quando a nota pode ser digitada.</summary>
+    public string MotivoSomenteLeitura => !PodeManter
+        ? "Seu perfil nesta empresa só permite consultar notas. Para digitar ou importar, o administrador precisa liberar a permissão " +
+          "\"Importar XML e digitar notas fiscais\" no seu perfil (Configurações › Usuários › Perfis)."
+        : Contabilizado ? "Esta nota está contabilizada: para alterar, desfaça a contabilização. Para lançar outra nota, clique em \"Nova nota\"."
+        : "";
+    public bool MostraMotivoSomenteLeitura => MotivoSomenteLeitura.Length > 0 && !Importada;
+
+    // Importação individual pela chave de acesso (SEFAZ, Ambiente Nacional, com o certificado da empresa)
+    [ObservableProperty] private string _chaveImportacao = "";
+    [ObservableProperty] private bool _podeManifestar;
     public bool MostraGravarNota => !Importada;
     public string AvisoImportada => "Nota importada de XML: os dados do XML original (valores, chave de acesso, participante e itens) não podem ser alterados. " +
                                     "Você pode editar a escrituração: CFOP de entrada, centro de custo, produto vinculado, contas e observações.";
@@ -257,8 +269,15 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
 
     partial void OnUsaCentroCustoChanged(bool value) => OnPropertyChanged(nameof(MostraCentro));
 
+    private void AvisarSomenteLeitura()
+    {
+        OnPropertyChanged(nameof(MotivoSomenteLeitura));
+        OnPropertyChanged(nameof(MostraMotivoSomenteLeitura));
+    }
+
     public void AtualizarPermissoes()
     {
+        AvisarSomenteLeitura();
         OnPropertyChanged(nameof(PodeManter));
         OnPropertyChanged(nameof(PodeEditar));
         OnPropertyChanged(nameof(PodeEditarEscrituracao));
@@ -266,9 +285,9 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Importador.AtualizarPermissoes();
     }
 
-    partial void OnImportadaChanged(bool value) => OnPropertyChanged(nameof(MostraGravarNota));
+    partial void OnImportadaChanged(bool value) { OnPropertyChanged(nameof(MostraGravarNota)); AvisarSomenteLeitura(); }
 
-    partial void OnContabilizadoChanged(bool value) => OnPropertyChanged(nameof(PodeEditarEscrituracao));
+    partial void OnContabilizadoChanged(bool value) { OnPropertyChanged(nameof(PodeEditarEscrituracao)); AvisarSomenteLeitura(); }
 
     partial void OnSelecionadaChanged(DocumentoLinha? value)
     {
@@ -680,6 +699,38 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     }, Permissao.FiscalDocumentosImportar);
 
     private bool TemSelecionada() => Selecionada is not null;
+
+    /// <summary>Busca a NF-e na SEFAZ pela chave de acesso (como no Portal da NF-e) e importa o XML completo.</summary>
+    [RelayCommand]
+    private Task ImportarChaveAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        PodeManifestar = false;
+        if (Sefaz.ServicoImportacaoChave.Validar(ChaveImportacao) is { } erro) { Erros.Add(erro); return; }
+        var cert = await CertificadosPadrao.AbrirParaEsocialAsync(Contexto, Vorticis.Application.Sistema.PapelAssinatura.Responsavel);
+        if (!cert.Sucesso) { MostrarResultado(cert, ""); return; }
+        var r = await app.Fiscal().ImportacaoChave.ImportarAsync(empresa, ChaveImportacao, Sefaz.ClienteNfe.Criar(cert.Valor), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        if (r.Valor.Arquivo is { Situacao: SituacaoImportacao.Importado } a)
+        {
+            await AposImportacaoAsync(new ResultadoImportacao([a]));
+            ChaveImportacao = "";
+        }
+        PodeManifestar = r.Valor.Situacao == Sefaz.SituacaoChave.SomenteResumo;
+        if (r.Valor.Situacao == Sefaz.SituacaoChave.Importada) Mensagem = r.Valor.Mensagem;
+        else Erros.Add(r.Valor.Mensagem);
+    }, Permissao.FiscalDocumentosImportar);
+
+    /// <summary>Registra a "Ciência da operação" (manifestação do destinatário), que libera o XML completo na SEFAZ.</summary>
+    [RelayCommand]
+    private Task ManifestarCienciaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var cert = await CertificadosPadrao.AbrirParaEsocialAsync(Contexto, Vorticis.Application.Sistema.PapelAssinatura.Responsavel);
+        if (!cert.Sucesso) { MostrarResultado(cert, ""); return; }
+        var r = await app.Fiscal().ImportacaoChave.ManifestarCienciaAsync(empresa, ChaveImportacao, Sefaz.ClienteNfe.Criar(cert.Valor), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        PodeManifestar = false;
+        Mensagem = "Ciência da operação registrada. Aguarde alguns minutos e clique de novo em \"Importar pela chave\".";
+    }, Permissao.FiscalDocumentosImportar);
 }
 
 public sealed class NotaEntradaViewModel(IContexto contexto) : DigitacaoDocumentoViewModel(contexto)

@@ -249,13 +249,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
     public async Task<IReadOnlyList<EmpresaPermitida>> ListarEmpresasPermitidasNoModuloAsync(
         long usuarioId, bool administrador, Application.Cadastros.ModulosEmpresa modulo, bool ativas, CancellationToken ct)
     {
-        var coluna = modulo switch
-        {
-            Application.Cadastros.ModulosEmpresa.Contabil => "modulo_contabil",
-            Application.Cadastros.ModulosEmpresa.Fiscal => "modulo_fiscal",
-            Application.Cadastros.ModulosEmpresa.Folha => "modulo_folha",
-            _ => throw new ArgumentException("Informe um único módulo.", nameof(modulo)),
-        };
+        var coluna = Application.Cadastros.ModulosEmpresaExtensoes.Coluna(modulo);
         await using var cmd = ds.CreateCommand($"""
             SELECT e.id, e.cnpj, e.razao_social, p.nome
               FROM core.empresa e

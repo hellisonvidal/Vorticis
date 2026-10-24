@@ -43,6 +43,15 @@ public interface IModuloDesktop
     /// </summary>
     IReadOnlyList<ItemMenu> ItensCadastros { get; }
 
+    /// <summary>Mostra Clientes e Fornecedores no menu Cadastros (a Folha não usa esses cadastros).</summary>
+    bool UsaClientesFornecedores => true;
+
+    /// <summary>
+    /// Rótulo do período de trabalho mostrado ao lado do seletor de empresas ("Competência"), com a situação (aberto/fechado);
+    /// null se o módulo não trabalha por período. A situação vem de <see cref="ViewModels.MainViewModelBase.ConsultarPeriodoAsync"/>.
+    /// </summary>
+    string? RotuloPeriodo => null;
+
     /// <summary>Menus do módulo, entre Cadastros e Configurações (que, como Ajuda, pertencem ao casco).</summary>
     IReadOnlyList<ItemMenu> Menus { get; }
 

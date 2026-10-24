@@ -6,6 +6,9 @@
     <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Xml" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Tabelas legais por vigência (semente de core.parametro_legal): Simples Nacional, Lucro Presumido/Real... -->
     <EmbeddedResource Include="Parametros\*.json" />
   </ItemGroup>

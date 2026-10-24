@@ -23,6 +23,26 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 5. Se a nota for parcelada, abra **Parcelas (duplicatas)**: informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas**. As parcelas saem iguais (a última recebe a diferença de centavos) e a soma tem de bater com o valor da nota. **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
 6. Confira o **total informado**: precisa bater com a soma dos itens. **Salvar**.
 
+**Campos bloqueados?** Uma faixa vermelha no topo explica o motivo:
+- *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
+- *Nota contabilizada*: desfaça a contabilização para alterar, ou clique em **Nova nota** para lançar outra.
+- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, centro de custo, produto, contas, observações).
+
+Para lançar uma nota nova a qualquer momento, clique em **Nova nota**: os campos são limpos e liberados.
+
+### Importar uma NF-e pela chave de acesso
+
+**Para que serve:** trazer uma NF-e recebida (em que a empresa é a destinatária) sem ter o arquivo XML, só com a chave de 44 dígitos (a mesma consulta do Portal da NF-e).
+
+**Antes:** cadastre o certificado digital da empresa (e-CNPJ A1 ou A3) em *Configurações › Certificados digitais* e marque-o como padrão do responsável. O CNPJ do certificado precisa ser o da empresa.
+
+1. Em *Lançamentos › Documentos fiscais › Entrada*, cole a chave no campo **Chave de acesso da NF-e** (pode ter espaços ou pontos).
+2. Clique em **Importar pela chave**. Se o certificado for A1, o sistema pede a senha.
+3. Se a SEFAZ devolver o XML completo, a nota é importada e aparece selecionada na lista.
+4. Se a SEFAZ devolver só o **resumo**, aparece o botão **Manifestar ciência**: ele registra a *Ciência da operação* em nome da empresa, o que libera o XML. Aguarde alguns minutos e clique de novo em **Importar pela chave**.
+
+Mensagens da SEFAZ (ex.: *137 – Nenhum documento localizado*, *656 – Consumo indevido*) aparecem como vieram. A SEFAZ limita o número de consultas por hora; se aparecer *656*, espere uma hora.
+
 A lista *Notas digitadas* mostra data, número, participante, valor, origem e se já foi contabilizada. Use **Editar** e **Excluir** (notas já contabilizadas devem ter a contabilização desfeita antes; nota com duplicata já baixada só pode ser excluída ou ter as parcelas alteradas depois de estornar as baixas).
 
 ## Importação de XML (NF-e, NFC-e, NFS-e)
@@ -130,10 +150,15 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
 **Onde fica:** *Apuração › Simples Nacional (DAS)*.
 
 1. Escolha a **competência**.
-2. **Sugerir pelas notas** preenche a receita do mês por atividade (ou digite em *Receitas do mês por atividade*). Use as opções de ICMS-ST, monofásico, ISS retido e exportação, quando houver.
+2. Informe a receita do mês por atividade, de um destes jeitos:
+   - **Sugerir pelas notas**: preenche pelas notas de saída lançadas no sistema.
+   - **Incluir receita manualmente** (quadro acima da lista): escolha a atividade (anexo), digite o **Valor**, marque ICMS-ST, monofásico, ISS retido ou exportação quando houver e clique em **Incluir receita**. Repita para cada atividade. Serve para empresas sem notas no sistema ou para completar o que veio das notas.
+   - Para corrigir, clique no valor na lista e digite o novo; **Remover selecionada** tira uma linha e **Limpar receitas** apaga todas.
 3. O **RBT12** (receita dos 12 meses anteriores) vem do histórico; informe também a *folha 12 meses* para o Fator R (anexo III ou V). Se a empresa é nova, o sistema proporcionaliza.
 4. **Calcular**: mostra alíquota efetiva, valor do DAS e a repartição por tributo, com memória de cálculo.
 5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas dos tributos](#contas-dos-tributos-provisoes)); **Desfazer provisão** estorna.
+
+**PGDAS-D:** o Vorticis calcula o DAS, mas a transmissão da declaração continua no portal do Simples Nacional (PGDAS-D). A integração direta exige o contrato do *Integra Contador* do SERPRO (chaves de acesso pagas) e procuração eletrônica; ela ainda não está disponível.
 
 **Dica:** preencha antes o [Histórico de receita e folha](#historico-de-receita-e-folha) com os meses anteriores ao uso do sistema. Confira as tabelas de alíquotas com a legislação vigente.
 

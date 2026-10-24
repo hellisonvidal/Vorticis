@@ -9,17 +9,21 @@ public sealed class RepositorioPerfis(NpgsqlDataSource ds) : IRepositorioPerfis,
     public async Task<PermissoesEfetivas> ObterAsync(long usuarioId, long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT u.administrador, p.nome, COALESCE(array_agg(pp.permissao) FILTER (WHERE pp.permissao IS NOT NULL), '{}')
+            SELECT u.administrador, p.nome, COALESCE(array_agg(pp.permissao) FILTER (WHERE pp.permissao IS NOT NULL), '{}'), COALESCE(p.administrador, FALSE)
               FROM core.usuario u
               LEFT JOIN core.usuario_empresa ue ON ue.usuario_id = u.id AND ue.empresa_id = @e
               LEFT JOIN core.perfil p ON p.id = ue.perfil_id
               LEFT JOIN core.perfil_permissao pp ON pp.perfil_id = p.id
              WHERE u.id = @u AND u.ativo
-             GROUP BY u.administrador, p.nome
+             GROUP BY u.administrador, p.nome, p.administrador
             """).Com("u", usuarioId).Com("e", empresaId);
         await using var r = await cmd.ExecuteReaderAsync(ct);
         if (!await r.ReadAsync(ct)) return PermissoesEfetivas.Nenhuma;
-        return new PermissoesEfetivas(r.GetBoolean(0), Permissoes.DeCodigos(r.GetFieldValue<string[]>(2)), r.IsDBNull(1) ? null : r.GetString(1));
+        // Perfil Administrador: todas as funções, inclusive as criadas por versões posteriores ao cadastro do perfil.
+        var liberadas = r.GetBoolean(3)
+            ? Permissoes.Catalogo.Select(d => d.Permissao).Where(p => p != Permissao.AdministrarSistema).ToHashSet()
+            : Permissoes.DeCodigos(r.GetFieldValue<string[]>(2));
+        return new PermissoesEfetivas(r.GetBoolean(0), liberadas, r.IsDBNull(1) ? null : r.GetString(1));
     }
 
     public async Task<IReadOnlyList<PerfilAcesso>> ListarAsync(CancellationToken ct)

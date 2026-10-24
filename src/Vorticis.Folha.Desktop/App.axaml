@@ -12,6 +12,7 @@
     <DataTemplate DataType="vm:FuncionariosViewModel"><v:FuncionariosView /></DataTemplate>
     <DataTemplate DataType="vm:CargosViewModel"><v:CargosView /></DataTemplate>
     <DataTemplate DataType="vm:DepartamentosViewModel"><v:DepartamentosView /></DataTemplate>
+    <DataTemplate DataType="vm:ProLaboreViewModel"><v:ProLaboreView /></DataTemplate>
     <DataTemplate DataType="vm:RubricasViewModel"><v:RubricasView /></DataTemplate>
     <DataTemplate DataType="vm:ParametrosFolhaViewModel"><v:ParametrosFolhaView /></DataTemplate>
     <DataTemplate DataType="vm:EventosVariaveisViewModel"><v:EventosVariaveisView /></DataTemplate>

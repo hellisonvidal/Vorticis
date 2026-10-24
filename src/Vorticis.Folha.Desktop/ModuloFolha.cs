@@ -19,17 +19,23 @@ public sealed class ModuloFolha : IModuloDesktop
     public string CorDestaque => "#6D28D9";   // roxo
     public string CorBarra => "#4C1D95";
 
-    public IReadOnlyList<ItemMenu> ItensCadastros { get; } = [];
+    // Clientes e fornecedores não têm uso na folha; a competência de trabalho fica ao lado do seletor de empresas.
+    public bool UsaClientesFornecedores => false;
+    public string? RotuloPeriodo => "Competência";
 
-    public IReadOnlyList<ItemMenu> Menus { get; } =
+    public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
-        ItemMenu.Submenu("_Funcionários",
+        ItemMenu.Submenu("Funcionários",
             ItemMenu.Tela("Cadastro de funcionários", FolhaTelas.Funcionarios),
             ItemMenu.Tela("Cargos", FolhaTelas.Cargos),
             ItemMenu.Tela("Departamentos", FolhaTelas.Departamentos),
             ItemMenu.Tela("Rubricas (eventos)", FolhaTelas.Rubricas),
             ItemMenu.Separador,
             ItemMenu.Tela("Parâmetros e tabelas legais", FolhaTelas.Parametros)),
+    ];
+
+    public IReadOnlyList<ItemMenu> Menus { get; } =
+    [
         ItemMenu.Submenu("_Folha",
             ItemMenu.Tela("Eventos variáveis", FolhaTelas.Eventos),
             ItemMenu.Tela("Cálculo da folha mensal", FolhaTelas.FolhaMensal),
@@ -39,6 +45,9 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Separador,
             ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
             ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao)),
+        ItemMenu.Submenu("_Pró-labore",
+            ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore),
+            ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios)),
         ItemMenu.Submenu("_Obrigações",
             ItemMenu.Submenu("eSocial",
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
@@ -70,22 +79,22 @@ public sealed class ModuloFolha : IModuloDesktop
     {
         c.Instancia(nameof(MainViewModel.Funcionarios), m => new FuncionariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Funcionarios, "Folha › Funcionários › Cadastro de funcionários", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Funcionarios, "Cadastros › Funcionários › Cadastro de funcionários", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Cargos), m => new CargosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Cargos, "Folha › Funcionários › Cargos", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Cargos, "Cadastros › Funcionários › Cargos", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Departamentos), m => new DepartamentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Departamentos, "Folha › Funcionários › Departamentos", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Departamentos, "Cadastros › Funcionários › Departamentos", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Rubricas), m => new RubricasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Rubricas, "Folha › Funcionários › Rubricas (eventos)", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Rubricas, "Cadastros › Funcionários › Rubricas (eventos)", Ver, v => v.CarregarAsync());
         c.Instancia("ParametrosModulo", m => new ParametrosModuloFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Parametros), m => new ParametrosFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Parametros, "Folha › Parâmetros e tabelas legais", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Parametros, "Cadastros › Funcionários › Parâmetros e tabelas legais", Ver, v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Eventos), m => new EventosVariaveisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
@@ -105,6 +114,9 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia(nameof(MainViewModel.Rescisoes), m => new RescisoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Rescisoes, "Folha › Rescisões", Ver, v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.ProLabore), m => new ProLaboreViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.ProLabore, "Pró-labore › Sócios e cálculo do pró-labore", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Contabilizacao), m => new ContabilizacaoFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Contabilizacao, "Folha › Contabilização", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());

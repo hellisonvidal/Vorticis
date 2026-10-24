@@ -25,7 +25,7 @@ public partial class EventosVariaveisViewModel(IContexto contexto) : ModuloViewM
     public ObservableCollection<Funcionario> Funcionarios { get; } = [];
     public ObservableCollection<Rubrica> Rubricas { get; } = [];
 
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private Funcionario? _funcionario;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(PorReferencia), nameof(RotuloQuantidade))] private Rubrica? _rubrica;
     [ObservableProperty] private string _referencia = "";
@@ -169,7 +169,7 @@ public abstract partial class CalculosBaseViewModel(IContexto contexto) : Modulo
 /// <summary>Folha › Folha › Cálculo da folha mensal: calcula, mostra a memória por rubrica, fecha/reabre a competência e emite holerites.</summary>
 public partial class FolhaMensalViewModel(IContexto contexto) : CalculosBaseViewModel(contexto)
 {
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private string _situacao = "";
     [ObservableProperty] private bool _fechada;
 
@@ -216,6 +216,7 @@ public partial class FolhaMensalViewModel(IContexto contexto) : CalculosBaseView
         var r = await app.Folha().Folha.FecharAsync(empresa, CompetenciaConsulta, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
+        await Contexto.AtualizarSituacaoPeriodoAsync();
         Mensagem = $"Competência {CompetenciaConsulta:MM/yyyy} fechada.";
     }, Permissao.FolhaFechar);
 
@@ -225,6 +226,7 @@ public partial class FolhaMensalViewModel(IContexto contexto) : CalculosBaseView
         var r = await app.Folha().Folha.ReabrirAsync(empresa, CompetenciaConsulta, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
+        await Contexto.AtualizarSituacaoPeriodoAsync();
         Mensagem = $"Competência {CompetenciaConsulta:MM/yyyy} reaberta.";
     }, Permissao.FolhaReabrir);
 }
