@@ -4,6 +4,7 @@
     <Project Path="src/Vorticis.Desktop.Comum/Vorticis.Desktop.Comum.csproj" />
     <Project Path="src/Vorticis.Desktop/Vorticis.Desktop.csproj" />
     <Project Path="src/Vorticis.Domain/Vorticis.Domain.csproj" />
+    <Project Path="src/Vorticis.Erp.Desktop/Vorticis.Erp.Desktop.csproj" />
     <Project Path="src/Vorticis.Erp/Vorticis.Erp.csproj" />
     <Project Path="src/Vorticis.Escritorio.Desktop/Vorticis.Escritorio.Desktop.csproj" />
     <Project Path="src/Vorticis.Escritorio/Vorticis.Escritorio.csproj" />

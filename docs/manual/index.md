@@ -16,6 +16,7 @@ Cada função segue o mesmo roteiro: **para que serve**, **onde fica no menu**, 
 | [Folha de pagamento](06-folha.md) | Funcionários, folha, férias, 13º, rescisão e eSocial |
 | [Obrigações](07-obrigacoes.md) | Calendário de obrigações |
 | [Escritório](09-escritorio.md) | Carteira de clientes, tarefas e prazos, protocolos e honorários |
+| [ERP](10-erp.md) | Painel do empresário, pedidos de venda e compra, estoque e transporte |
 | [Configurações](08-configuracoes.md) | Backup, configurações gerais, conexão e solução de problemas |
 
 ## Dicas gerais de uso

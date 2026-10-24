@@ -38,8 +38,8 @@ public class MenusTests
     [Fact]
     public void Cada_modulo_tem_cor_e_icone_proprios_para_nao_confundir_os_sistemas()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
-        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9", "#1D4ED8"], modulos.Select(m => m.Modulo.CorDestaque));
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel()];
+        Assert.Equal(["#1B7F5A", "#C2410C", "#6D28D9", "#1D4ED8", "#0F766E"], modulos.Select(m => m.Modulo.CorDestaque));
         Assert.Equal(modulos.Length, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
         Assert.Equal("#14305A", modulos[0].Modulo.CorBarra);                      // azul-marinho da logo
         // a cor chega ao casco como pincel (faixa sob os menus, login e tela inicial)
@@ -73,7 +73,7 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
+        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel()];
         foreach (var vm in outros)
         {
             Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
@@ -98,7 +98,7 @@ public class MenusTests
     [Fact]
     public void Todos_os_modulos_tem_Parametros_no_menu_Cadastros()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel()];
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel()];
         foreach (var vm in modulos)
         {
             var cadastros = vm.Menus[0];

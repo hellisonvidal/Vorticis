@@ -120,3 +120,11 @@ escritorio.carteira=09-escritorio.md#carteira-de-clientes
 escritorio.tarefas=09-escritorio.md#tarefas-e-prazos
 escritorio.protocolos=09-escritorio.md#protocolo-de-documentos
 escritorio.honorarios=09-escritorio.md#honorarios-contratos-e-cobrancas
+
+; ---- ERP
+erp.painel=10-erp.md#painel-do-empresario
+erp.pedidos.venda=10-erp.md#pedidos-de-venda-e-de-compra
+erp.pedidos.compra=10-erp.md#pedidos-de-venda-e-de-compra
+erp.estoque=10-erp.md#estoque
+erp.veiculos=10-erp.md#veiculos-e-motoristas
+erp.transporte=10-erp.md#conhecimentos-e-manifestos-ct-e-e-mdf-e
