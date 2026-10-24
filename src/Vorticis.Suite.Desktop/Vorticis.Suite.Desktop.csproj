@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Vorticis Suite: os módulos instalados numa única janela (troca de módulo por abas, barra lateral, árvore ou painel) -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>VorticisSuite</AssemblyName>
+    <Product>Vorticis Suite</Product>
+    <Title>Vorticis Suite</Title>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>..\..\instalador\icone\VorticisInstalador.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Vorticis.Desktop\Vorticis.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Fiscal.Desktop\Vorticis.Fiscal.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Folha.Desktop\Vorticis.Folha.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Escritorio.Desktop\Vorticis.Escritorio.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Erp.Desktop\Vorticis.Erp.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Condominio.Desktop\Vorticis.Condominio.Desktop.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Vorticis.Desktop.Comum" />
+    <Using Include="Vorticis.Desktop.Comum.ViewModels" />
+    <Using Include="Vorticis.Desktop.Comum.Views" />
+  </ItemGroup>
+</Project>

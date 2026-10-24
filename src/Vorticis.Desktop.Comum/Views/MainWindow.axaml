@@ -38,6 +38,9 @@
   </Window.Styles>
 
   <DockPanel>
+    <!-- Suite (vários módulos na mesma janela): navegação à esquerda (B, C) e no topo (A, D); vazias nos executáveis de um módulo -->
+    <ContentControl Name="SuiteLado" DockPanel.Dock="Left" IsVisible="False" />
+    <ContentControl Name="SuiteTopo" DockPanel.Dock="Top" IsVisible="False" />
     <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
     <!-- A cor da barra e a faixa de destaque identificam o módulo (IModuloDesktop.CorBarra / CorDestaque); o nome dele fica só no título -->
     <Border DockPanel.Dock="Top" BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
@@ -113,6 +116,10 @@
       <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
     </Border>
 
-    <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />
+    <Panel>
+      <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />
+      <!-- Suite, layout D: painel inicial com os cartões dos módulos (cobre a área de trabalho) -->
+      <ContentControl Name="SuitePainel" IsVisible="False" />
+    </Panel>
   </DockPanel>
 </Window>

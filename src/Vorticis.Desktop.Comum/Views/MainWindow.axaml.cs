@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Vorticis.Desktop.Comum.Modulos;
 using Vorticis.Desktop.Comum.ViewModels;
 
@@ -35,19 +36,83 @@ public partial class MainWindow : Window
             if (_vm is not null)
             {
                 _vm.PropertyChanged -= AoMudarVm;
-                _vm.JanelasAbertas.CollectionChanged -= AoMudarJanelas;
+                if (Suite is null) _vm.JanelasAbertas.CollectionChanged -= AoMudarJanelas;
+                else EsconderJanelasDe(_vm);
+                if (_dialogo is { } aberto) { _dialogo = null; _fechandoPorCodigo.Add(aberto); aberto.Close(); }
             }
             _vm = DataContext as MainViewModelBase;
             if (_vm is not null)
             {
-                Title = _vm.Modulo.Nome;
+                Title = Suite is null ? _vm.Modulo.Nome : $"Vorticis Suite — {_vm.Modulo.NomeCurto}";
                 AplicarIdentidadeVisual(_vm);
                 MontarMenu(_vm);
                 MontarAtalhos(_vm);
                 _vm.PropertyChanged += AoMudarVm;
-                _vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
+                if (Suite is null) _vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
+                Sincronizar(_vm);
+                MostrarJanelasDe(_vm);
+                if (_vm.Confirmacao is { } pendente) MostrarConfirmacao(pendente);
             }
         };
+    }
+
+    // ------------------------------------------------------------------ Suite: vários módulos na mesma janela
+
+    /// <summary>Suite em uso (null nos executáveis de um módulo só).</summary>
+    public SuiteViewModel? Suite { get; private set; }
+
+    /// <summary>
+    /// Hospeda todos os módulos da Suite: a navegação (abas, barra lateral, árvore ou painel, conforme o layout) troca o
+    /// módulo ativo, que vira o DataContext da janela; as janelas das funções de cada módulo ficam escondidas enquanto
+    /// outro módulo está à frente.
+    /// </summary>
+    public void UsarSuite(SuiteViewModel suite)
+    {
+        Suite = suite;
+        SuiteLado.Content = new SuiteLadoView { DataContext = suite };
+        SuiteTopo.Content = new SuiteTopoView { DataContext = suite };
+        SuitePainel.Content = new SuitePainelView { DataContext = suite };
+        (SuiteLado.IsVisible, SuiteTopo.IsVisible) = (true, true);
+        foreach (var m in suite.Modulos) m.Vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
+        suite.AoTrocar += (_, m) => DataContext = m.Vm;
+        suite.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
+            if (e.PropertyName == nameof(SuiteViewModel.Layout) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
+        };
+        DataContext = suite.Ativo.Vm;
+        AtualizarPainel();
+    }
+
+    /// <summary>Painel do layout D: à mostra, esconde as janelas das funções; ao sair dele, elas voltam.</summary>
+    private void AtualizarPainel()
+    {
+        var painel = Suite?.MostraPainel == true;
+        SuitePainel.IsVisible = painel;
+        if (_vm is null) return;
+        if (painel) EsconderJanelasDe(_vm);
+        else MostrarJanelasDe(_vm);
+    }
+
+    private void EsconderJanelasDe(MainViewModelBase vm)
+    {
+        foreach (var (f, w) in _janelas.Where(kv => ReferenceEquals(_donos[kv.Key], vm)).ToList())
+            if (w.IsVisible) w.Hide();
+    }
+
+    private void MostrarJanelasDe(MainViewModelBase vm)
+    {
+        if (Suite?.MostraPainel == true) return;
+        foreach (var f in vm.JanelasAbertas)
+            if (_janelas.TryGetValue(f, out var w) && !w.IsVisible) Mostrar(w);
+        TrazerParaFrente(vm.FuncaoAtiva);
+    }
+
+    private void Mostrar(Window w)
+    {
+        Posicionar(w);
+        if (w.Owner is null) w.Show(this);
+        else w.Show();
     }
 
     /// <summary>Ícone e cor do módulo (Contábil verde, Fiscal laranja, Folha roxo) na janela e nas janelas das funções.</summary>
@@ -68,6 +133,7 @@ public partial class MainWindow : Window
     // ------------------------------------------------------------------ janelas flutuantes das funções
 
     private readonly Dictionary<FuncaoAberta, Window> _janelas = [];
+    private readonly Dictionary<FuncaoAberta, MainViewModelBase> _donos = [];
     private readonly HashSet<Window> _fechandoPorCodigo = [];
     private Window? _dialogo;
 
@@ -80,7 +146,7 @@ public partial class MainWindow : Window
         if (_fechamentoConfirmado || _vm is null) return;
         e.Cancel = true;
         if (_vm.Confirmacao is not null) return;                          // já há uma pergunta aberta
-        if (await _vm.ConfirmarAsync($"Fechar o {_vm.Modulo.Nome}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
+        if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : "Vorticis Suite")}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
         {
             _fechamentoConfirmado = true;
             Close();
@@ -96,18 +162,24 @@ public partial class MainWindow : Window
 
     private void AoMudarJanelas(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (_vm is null) return;
-        // Sincroniza: abre janelas das funções novas e fecha as que saíram da lista.
-        foreach (var f in _vm.JanelasAbertas.Where(f => !_janelas.ContainsKey(f)).ToList()) AbrirJanela(f);
-        foreach (var (f, w) in _janelas.Where(kv => !_vm.JanelasAbertas.Contains(kv.Key)).ToList())
+        var vm = Suite?.Modulos.Select(m => m.Vm).FirstOrDefault(m => ReferenceEquals(m.JanelasAbertas, sender)) ?? _vm;
+        if (vm is not null) Sincronizar(vm);
+    }
+
+    /// <summary>Abre janelas das funções novas do módulo e fecha as que saíram da lista (na Suite, só as do módulo à frente aparecem).</summary>
+    private void Sincronizar(MainViewModelBase vm)
+    {
+        foreach (var f in vm.JanelasAbertas.Where(f => !_janelas.ContainsKey(f)).ToList()) AbrirJanela(f, vm);
+        foreach (var (f, w) in _janelas.Where(kv => ReferenceEquals(_donos[kv.Key], vm) && !vm.JanelasAbertas.Contains(kv.Key)).ToList())
         {
             _janelas.Remove(f);
+            _donos.Remove(f);
             _fechandoPorCodigo.Add(w);
             w.Close();
         }
     }
 
-    private void AbrirJanela(FuncaoAberta f)
+    private void AbrirJanela(FuncaoAberta f, MainViewModelBase dono)
     {
         var titulo = new TextBlock
         {
@@ -122,14 +194,14 @@ public partial class MainWindow : Window
         };
         var cabecalho = new Border
         {
-            Background = _vm?.PincelDestaque ?? new SolidColorBrush(Color.Parse("#3A5F8F")), Height = 30,
+            Background = dono.PincelDestaque ?? new SolidColorBrush(Color.Parse("#3A5F8F")), Height = 30,
             Child = new DockPanel { Children = { fechar, titulo } },
         };
         DockPanel.SetDock(cabecalho, Dock.Top);
         DockPanel.SetDock(fechar, Dock.Right);
         var w = new Window
         {
-            Title = $"{f.Titulo} — {_vm?.Modulo.Nome}",
+            Title = $"{f.Titulo} — {dono.Modulo.Nome}",
             Content = new DockPanel
             {
                 Children = { cabecalho, new ContentControl { Content = f.ViewModel, Margin = new Thickness(4) } },
@@ -143,22 +215,23 @@ public partial class MainWindow : Window
         };
         Teclado.SetEnterAvanca(w, true);                       // Enter avança de campo em todas as telas de digitação
         Posicionar(w);
-        fechar.Click += (_, _) => _vm?.FecharFuncao(f);
+        fechar.Click += (_, _) => dono.FecharFuncao(f);
         f.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != nameof(FuncaoAberta.Titulo)) return;
-            w.Title = $"{f.Titulo} — {_vm?.Modulo.Nome}";
+            w.Title = $"{f.Titulo} — {dono.Modulo.Nome}";
             titulo.Text = f.Titulo;
         };
-        w.Activated += (_, _) => _vm?.AtivarFuncao(f);
+        w.Activated += (_, _) => dono.AtivarFuncao(f);
         w.Closed += (_, _) =>
         {
-            if (!_fechandoPorCodigo.Remove(w)) _vm?.FecharFuncao(f);   // Alt+F4
+            if (!_fechandoPorCodigo.Remove(w)) dono.FecharFuncao(f);   // Alt+F4
         };
-        w.KeyDown += (_, e) => TratarEsc(e, () => _vm?.FecharFuncaoComConfirmacaoAsync(f));   // Esc fecha a função
+        w.KeyDown += (_, e) => TratarEsc(e, () => dono.FecharFuncaoComConfirmacaoAsync(f));   // Esc fecha a função
         w.KeyBindings.AddRange(KeyBindings);   // mesmos atalhos (Ctrl+L, Ctrl+B, F1)
         _janelas[f] = w;
-        w.Show(this);
+        _donos[f] = dono;
+        if (ReferenceEquals(dono, _vm) && Suite?.MostraPainel != true) w.Show(this);
     }
 
     /// <summary>Esc (sem outra tecla e não tratado por um campo, lista ou caixa aberta) executa o fechamento.</summary>
@@ -272,6 +345,29 @@ public partial class MainWindow : Window
         MenuPrincipal.Items.Clear();
         _itensComRecurso.Clear();
         foreach (var item in vm.Menus) MenuPrincipal.Items.Add(CriarItem(vm, item));
+        if (Suite is { } suite) MenuPrincipal.Items.Insert(MenuPrincipal.Items.Count - 1, MenuExibir(suite));
+    }
+
+    /// <summary>Suite: Exibir › layout (A, B, C, D) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
+    private static MenuItem MenuExibir(SuiteViewModel suite)
+    {
+        var layout = new MenuItem { Header = "Layout da Suite" };
+        foreach (var (valor, nome) in SuiteViewModel.Nomes)
+            layout.Items.Add(new MenuItem
+            {
+                Header = (valor == suite.Layout ? "●  " : "     ") + nome, Command = suite.EscolherLayoutCommand, CommandParameter = valor,
+            });
+        var exibir = new MenuItem { Header = "E_xibir" };
+        exibir.Items.Add(layout);
+        exibir.Items.Add(new Separator());
+        for (var i = 0; i < suite.Modulos.Count; i++)
+            exibir.Items.Add(new MenuItem
+            {
+                Header = $"Ir para o {suite.Modulos[i].NomeCompleto}", Command = suite.TrocarCommand, CommandParameter = suite.Modulos[i],
+                InputGesture = i < 9 ? KeyGesture.Parse($"Ctrl+{i + 1}") : null,
+            });
+        if (suite.EhPainel) exibir.Items.Add(new MenuItem { Header = "Início (painel dos módulos)", Command = suite.IrParaPainelCommand });
+        return exibir;
     }
 
     private void AtualizarItensComRecurso(MainViewModelBase vm)
@@ -305,6 +401,20 @@ public partial class MainWindow : Window
     private void MontarAtalhos(MainViewModelBase vm)
     {
         KeyBindings.Clear();
+        if (Suite is { } suite)
+        {
+            for (var i = 0; i < Math.Min(9, suite.Modulos.Count); i++)
+                KeyBindings.Add(new KeyBinding { Gesture = KeyGesture.Parse($"Ctrl+{i + 1}"), Command = suite.TrocarCommand, CommandParameter = suite.Modulos[i] });
+            KeyBindings.Add(new KeyBinding
+            {
+                Gesture = KeyGesture.Parse("Ctrl+K"),
+                Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+                {
+                    if (!suite.EhArvore) suite.Layout = LayoutSuite.Arvore;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FindControl<TextBox>("CampoBusca")?.Focus());
+                }),
+            });
+        }
         foreach (var a in vm.Atalhos.Where(a => a.Chave is not null))
         {
             var chave = a.Chave!;

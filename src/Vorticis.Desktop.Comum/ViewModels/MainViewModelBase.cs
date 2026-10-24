@@ -469,7 +469,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _consultaCnpj = consultaCnpj ?? _consultaCnpj;
         _consultaIe = consultaIe ?? _consultaIe;
         if (Logado) Sair();
-        if (App is not null) { await App.DisposeAsync(); App = null; }
+        if (App is not null && !ConexaoCompartilhada) await App.DisposeAsync();
+        (App, ConexaoCompartilhada) = (null, false);
         try
         {
             await BancoLocal.GarantirBancoAsync(connectionString);
@@ -494,7 +495,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _implantacao = sessao.Implantacao;
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
-        await OferecerAtivacaoAsync();
+        if (PerguntarAtivacaoAoEntrar) await OferecerAtivacaoAsync();
         if (_implantacao)
         {
             // Instalação nova: abre o cadastro de usuários, que só permite incluir o administrador, até concluir.
@@ -512,6 +513,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             Status = "Configuração inicial: defina os perfis de acesso dos usuários para liberar o sistema.";
         }
         else AbrirInicio();
+        AvisarSessaoPronta();
     }
 
     /// <summary>Tela inicial; no Escritório sem nenhum escritório cadastrado (primeiro uso), o cadastro do escritório.</summary>
@@ -533,6 +535,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         FecharTodasAsJanelas();
         AbrirInicio();
         AtualizarStatus();
+        AvisarSessaoPronta();
     }
 
     public async Task ConcluirImplantacaoAsync(string loginAdministrador)
@@ -872,9 +875,49 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         }
     }
 
+    // ------------------------------------------------------------------ Suite (vários módulos na mesma janela)
+
+    /// <summary>
+    /// A conexão é de outro módulo da Suite (quem conectou e fez o login): este módulo só a usa e não a encerra.
+    /// </summary>
+    public bool ConexaoCompartilhada { get; private set; }
+
+    /// <summary>No login, pergunta se ativa no módulo as empresas que estão fora dele (desligado na Suite).</summary>
+    public bool PerguntarAtivacaoAoEntrar { get; set; } = true;
+
+    /// <summary>A sessão ficou pronta para uso (login concluído, sem implantação nem configuração inicial pendente).</summary>
+    public event EventHandler? SessaoPronta;
+
+    private void AvisarSessaoPronta()
+    {
+        if (Logado && !_implantacao && !_configuracaoInicialPendente) SessaoPronta?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Suite: entra com a conexão e a sessão de outro módulo, sem nova tela de login.</summary>
+    public async Task EntrarComSessaoDeAsync(MainViewModelBase origem)
+    {
+        if (origem.App is null || origem.Sessao is null) return;
+        if (!ReferenceEquals(App, origem.App))
+        {
+            if (Logado) Sair();
+            if (App is not null && !ConexaoCompartilhada) await App.DisposeAsync();
+            (App, _connectionString, ConexaoCompartilhada) = (origem.App, origem.ConnectionString, true);
+            Status = $"Conectado a {Configuracao.Descrever(_connectionString)}.";
+        }
+        if (Logado && Sessao?.Id == origem.Sessao.Id) return;
+        if (Logado) Sair();
+        await EntrarAsync(origem.Sessao);
+    }
+
+    /// <summary>Suite: encerra a sessão deste módulo quando o usuário sai em qualquer um deles.</summary>
+    public void SairDaSessao()
+    {
+        if (Logado) Sair();
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (App is not null) await App.DisposeAsync();
+        if (App is not null && !ConexaoCompartilhada) await App.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }

@@ -89,7 +89,8 @@ public class MenusTests
         var raiz = new DirectoryInfo(AppContext.BaseDirectory);
         while (raiz is not null && !File.Exists(Path.Combine(raiz.FullName, "instalador", "Vorticis.iss"))) raiz = raiz.Parent;
         var iss = File.ReadAllText(Path.Combine(raiz!.FullName, "instalador", "Vorticis.iss"));
-        Assert.Contains("VorticisEscritorio.exe\"; Description: \"{cm:LaunchProgram,Vorticis Escritório}\"; Flags: nowait postinstall skipifsilent; Components: escritorio", iss);
+        // a instalação abre a Suite ao final (ela começa pelo Escritório)
+        Assert.Contains("VorticisSuite.exe\"; Description: \"{cm:LaunchProgram,Vorticis Suite}\"; Flags: nowait postinstall skipifsilent; Components:", iss);
     }
 
     [Fact]

@@ -12,6 +12,23 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
 **Dicas:** para atualizar, basta rodar o instalador novo: os dados são preservados. Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
 
+## Vorticis Suite (todos os módulos numa janela)
+
+**Para que serve:** trabalhar com todos os módulos instalados (Escritório, Contábil, Fiscal, Folha, Condomínio, Gerencial) numa única janela, como se fosse um só programa.
+**Onde fica:** atalho **Vorticis Suite** no menu Iniciar e na área de trabalho. É o programa aberto ao final da instalação.
+
+1. Entre uma vez com o seu usuário: o login vale para todos os módulos. A Suite começa pelo Escritório, quando ele está instalado.
+2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**… (na ordem dos módulos). A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
+3. Para mudar o visual, use *Exibir › Layout da Suite*. Na barra lateral, o botão ⚙ faz o mesmo. A escolha fica gravada neste computador.
+   - **A – Abas no topo:** uma aba por módulo acima do menu.
+   - **B – Barra lateral (padrão):** ícones coloridos dos módulos à esquerda.
+   - **C – Árvore com busca:** todos os módulos e funções num painel à esquerda. Digite no campo **Ir para…** (**Ctrl+K**), por exemplo "férias" ou "balancete", e clique no resultado.
+   - **D – Painel inicial:** um cartão por módulo, com os atalhos e o botão **Abrir módulo**. O botão **Início** volta ao painel e a caixa **Módulo** troca de módulo direto.
+4. O número vermelho no ícone ou na aba mostra quantas funções estão abertas naquele módulo.
+5. **Sair (trocar de usuário)**, em qualquer módulo, encerra a sessão em todos.
+
+Os executáveis de cada módulo (Vorticis Contábil, Vorticis Fiscal…) continuam disponíveis para quem prefere um módulo por janela.
+
 ## Configuração automática do banco de dados
 
 **Para que serve:** você não precisa instalar nem configurar o PostgreSQL. O Vorticis traz um banco embutido que é criado na primeira abertura, escuta só no seu computador e para quando o último módulo é fechado.

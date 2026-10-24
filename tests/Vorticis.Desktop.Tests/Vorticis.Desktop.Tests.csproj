@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\src\Vorticis.Escritorio.Desktop\Vorticis.Escritorio.Desktop.csproj" />
     <ProjectReference Include="..\..\src\Vorticis.Erp.Desktop\Vorticis.Erp.Desktop.csproj" />
     <ProjectReference Include="..\..\src\Vorticis.Condominio.Desktop\Vorticis.Condominio.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\Vorticis.Suite.Desktop\Vorticis.Suite.Desktop.csproj" />
     <ProjectReference Include="..\Vorticis.Infra.Tests\Vorticis.Infra.Tests.csproj" />
     <Compile Include="..\Vorticis.Fiscal.Tests\XmlsDeTeste.cs" Link="XmlsDeTeste.cs" />
     <PackageReference Include="Avalonia.Headless" />

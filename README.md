@@ -34,7 +34,7 @@ docs/                       Arquitetura, regras, desafios fiscais, roadmap
 
 ## Instalar (usuário final, Windows 10/11 64 bits)
 
-1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub). Sem instalar: use os artefatos **Vorticis<Módulo>-portatil** ou **VorticisSuite-portatil** (todos os módulos numa pasta, com o banco embutido).
+1. Baixe `Setup-Vorticis-<versão>.exe` (artefato **Setup-Vorticis** da execução mais recente do CI, na aba *Actions* do GitHub). Sem instalar: use os artefatos **Vorticis<Módulo>-portatil** ou **VorticisSuite-portatil** (todos os módulos numa pasta, com o banco embutido). O `VorticisSuite.exe` abre todos os módulos instalados numa janela só, com login único e quatro layouts de navegação (padrão: barra lateral).
 2. Execute. Não pede senha de administrador (instala para o usuário atual; a primeira tela permite escolher "todos os usuários").
 3. Escolha os módulos: **Vorticis Contábil**, **Vorticis Fiscal**, **Vorticis Folha**, **Vorticis Escritório**, **Vorticis Gerencial** e **Vorticis Condomínio** (todos marcados; pelo menos um é obrigatório). Cada um vira um executável e um atalho próprios; o PostgreSQL embutido é instalado com qualquer módulo.
 4. Ao final da instalação, o instalador instala o *Visual C++ Redistributable* (se faltar) e **configura o banco automaticamente** (página de progresso; roda `VorticisContabil.exe --configurar-banco`, sem janela). Se falhar, a instalação termina assim mesmo e avisa onde está o log.

@@ -67,6 +67,10 @@ jobs:
             dotnet publish "src/$projeto" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+          # Suite (referencia todos os módulos): publicada à parte, para não sobrescrever os executáveis dos módulos; só o exe dela vai para publish
+          dotnet publish src/Vorticis.Suite.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-suite
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item publish-suite/VorticisSuite.exe publish
           Move-Item pgsql publish/pgsql
           # Visual C++ Redistributable 2015-2022 (x64): o instalador o instala em silêncio se faltar; vai também nos portáteis
           Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile publish/vc_redist.x64.exe -UseBasicParsing
