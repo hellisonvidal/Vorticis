@@ -83,14 +83,6 @@ jobs:
             if (-not (Test-Path "publish/pgsql/bin/$dll")) { throw "pgsql/bin sem $dll (runtime do Visual C++)" }
           }
           if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
-          # Portáteis: cada módulo = seu exe + pasta pgsql (o banco local é o mesmo de qualquer módulo)
-          foreach ($modulo in "Contabil", "Fiscal", "Folha", "Escritorio", "Gerencial", "Condominio") {
-            $pasta = "portatil/Vorticis$modulo"
-            New-Item -ItemType Directory -Path $pasta -Force | Out-Null
-            Copy-Item "publish/Vorticis$modulo.exe" $pasta
-            Copy-Item publish/pgsql "$pasta/pgsql" -Recurse
-            Copy-Item publish/vc_redist.x64.exe $pasta
-          }
           # Portáteis das suítes: os executáveis de cada produto numa pasta, com um único pgsql
           $produtos = @{
             "VorticisSuite" = "VorticisSuite", "VorticisEscritorio", "VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisGerencial", "VorticisCondominio";
@@ -141,38 +133,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisContabil-portatil
-          path: portatil/VorticisContabil/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisFiscal-portatil
-          path: portatil/VorticisFiscal/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisFolha-portatil
-          path: portatil/VorticisFolha/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisSuite-portatil
           path: portatil/VorticisSuite/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisEscritorio-portatil
-          path: portatil/VorticisEscritorio/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisGerencial-portatil
-          path: portatil/VorticisGerencial/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisCondominio-portatil
-          path: portatil/VorticisCondominio/
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
