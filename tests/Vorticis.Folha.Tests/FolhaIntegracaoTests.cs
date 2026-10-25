@@ -289,6 +289,47 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
     }
 
     [Fact]
+    public async Task Assistente_do_eSocial_aponta_as_pendencias_por_etapa_e_libera_depois_de_corrigidas()
+    {
+        var (empresa, adm) = await PrepararAsync("63810427000175", RegimeTributario.SimplesNacional);
+        var cad = db.Folha.Cadastros;
+        var assistente = db.Folha.AssistenteEsocial;
+        var competencia = new DateOnly(2026, 6, 1);
+
+        // empresa recém-cadastrada: falta o responsável, não há funcionário nem folha
+        var etapas = await assistente.DiagnosticarAsync(empresa, competencia, adm, Ct);
+        Assert.Equal(8, etapas.Count);
+        Assert.StartsWith("1. Dados do empregador", etapas[0].Titulo);
+        Assert.Equal(SituacaoEtapaEsocial.Pendente, etapas[1].Situacao);                       // responsável
+        Assert.Contains(etapas[1].Pendencias, p => p.Contains("nome do responsável"));
+        Assert.Equal(SituacaoEtapaEsocial.Pronta, etapas[2].Situacao);                         // produção restrita (padrão)
+        Assert.Equal(SituacaoEtapaEsocial.Atencao, etapas[5].Situacao);                        // nenhum funcionário
+        Assert.Equal(DestinoEtapaEsocial.Funcionarios, etapas[5].Destino);
+        Assert.Equal(SituacaoEtapaEsocial.Atencao, etapas[^1].Situacao);                       // nada gerado ainda
+
+        // funcionário com cadastro incompleto (sem CBO/sindicato) aparece na etapa 6, com o nome
+        Ok(await cad.GravarParametrosAsync(empresa, ParametroEmpresa.Padrao with { SimplesAnexo = "III", ResponsavelNome = "Contador Responsável",
+            ResponsavelCpf = "52998224725", ResponsavelEmail = "resp@exemplo.com.br" }, adm, Ct));
+        var incompleto = Novo("7", "Pedro Incompleto", "11144477735", 2500m) with { CnpjSindicato = null };
+        Ok(await cad.GravarFuncionarioAsync(empresa, incompleto, adm, ct: Ct));
+        etapas = await assistente.DiagnosticarAsync(empresa, competencia, adm, Ct);
+        Assert.Equal(SituacaoEtapaEsocial.Pronta, etapas[1].Situacao);
+        Assert.Equal(SituacaoEtapaEsocial.Pendente, etapas[5].Situacao);
+        Assert.Contains(etapas[5].Pendencias, p => p.Contains("Pedro Incompleto") && p.Contains("sindicato"));
+        Assert.Equal(SituacaoEtapaEsocial.Pendente, etapas[6].Situacao);                       // folha não calculada
+        Assert.Contains("não foi calculada", etapas[6].Pendencias[0]);
+
+        // cadastro corrigido e folha calculada: trabalhadores prontos; competência ainda aberta (atenção)
+        var f = (await cad.ListarFuncionariosAsync(empresa, adm, Ct)).Single();
+        Ok(await cad.GravarFuncionarioAsync(empresa, (await cad.ObterFuncionarioAsync(empresa, f.Id, adm, Ct))! with { CnpjSindicato = "11222333000181" }, adm, ct: Ct));
+        Ok(await db.Folha.Folha.CalcularMensalAsync(empresa, competencia, adm, ct: Ct));
+        etapas = await assistente.DiagnosticarAsync(empresa, competencia, adm, Ct);
+        Assert.True(etapas.Take(6).All(e => e.Situacao == SituacaoEtapaEsocial.Pronta), string.Join(" | ", etapas.Take(6).SelectMany(e => e.Pendencias)));
+        Assert.Equal(SituacaoEtapaEsocial.Atencao, etapas[6].Situacao);
+        Assert.Contains("está aberta", etapas[6].Pendencias[0]);
+    }
+
+    [Fact]
     public async Task ESocial_gera_os_xmls_com_id_no_padrao_e_exporta_por_competencia()
     {
         var (empresa, adm) = await PrepararAsync("00000000000191", RegimeTributario.SimplesNacional);

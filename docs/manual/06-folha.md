@@ -125,6 +125,27 @@ Escolha a competência e **Calcular provisões**: 1/12 de férias (mais 1/3) e 1
 
 Exige também a permissão de incluir lançamentos (e de estornar, para desfazer).
 
+## eSocial: assistente de configuração
+
+**Para que serve:** preparar a empresa para o eSocial, conferindo etapa por etapa o que falta antes de gerar e transmitir os eventos. O assistente não grava nada: ele monta os arquivos em memória, confere com o leiaute oficial e mostra o que corrigir.
+**Onde fica:** *Obrigações › eSocial › Assistente de configuração*.
+
+1. Escolha a **competência** (mês e ano) e clique em **Verificar**. O resumo no topo mostra quantas etapas estão prontas.
+2. Cada etapa aparece com um sinal: ✔ **Pronta** (verde), **!** **Atenção** (amarelo, pode seguir, mas leia o aviso) ou ✖ **Pendente** (vermelho, precisa corrigir).
+3. Clique na etapa para ver a explicação e o que foi encontrado. O botão da etapa (por exemplo, **Abrir Rubricas** ou **Abrir Cadastro de funcionários**) abre a tela onde se corrige. Use **Próxima etapa ›** e **‹ Etapa anterior** para seguir em ordem.
+4. Depois de corrigir, clique em **Verificar** de novo.
+
+As etapas:
+1. **Dados do empregador (S-1000 e S-1005):** CNPJ, classificação tributária, CNAE, município, RAT, FAP e terceiros.
+2. **Responsável pelas informações:** nome, CPF e e-mail ou telefone (em *Parâmetros e tabelas legais*).
+3. **Ambiente e quem transmite:** produção restrita (testes) ou produção, e se transmite o empregador, um procurador ou o escritório (em *Cadastros › Parâmetros*). Em produção, a etapa fica em **Atenção**, porque os envios são definitivos.
+4. **Rubricas (S-1010):** natureza do eSocial e incidências de cada provento e desconto.
+5. **Lotações (S-1020):** os departamentos (e a lotação GERAL).
+6. **Trabalhadores (S-2200):** o cadastro de cada funcionário ativo na competência. Quem tiver dado faltando aparece com a matrícula, o nome e o campo a corrigir (por exemplo, o CNPJ do sindicato).
+7. **Folha da competência (S-1200, S-1210 e S-1299):** a folha precisa estar calculada; o ideal é fechar a competência antes de transmitir.
+8. **Certificado digital:** o certificado padrão de quem transmite, dentro da validade (em *Configurações › Certificados digitais*; só o administrador vê).
+9. **Gerar e transmitir:** mostra os eventos já gerados ou enviados na competência. **Gerar todos os eventos** gera tudo de uma vez (os já enviados não são gerados de novo) e **Abrir Transmissão** leva à assinatura e ao envio. Se houver evento **rejeitado**, a etapa fica pendente: veja o motivo na Transmissão, corrija e gere de novo.
+
 ## eSocial: geração dos eventos
 
 **Onde fica:** *Obrigações › eSocial › Geração dos eventos*.

@@ -21,6 +21,7 @@
     <DataTemplate DataType="vm:DecimoTerceiroViewModel"><v:DecimoTerceiroView /></DataTemplate>
     <DataTemplate DataType="vm:RescisoesViewModel"><v:RescisoesView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilizacaoFolhaViewModel"><v:ContabilizacaoFolhaView /></DataTemplate>
+    <DataTemplate DataType="vm:AssistenteEsocialViewModel"><v:AssistenteEsocialView /></DataTemplate>
     <DataTemplate DataType="vm:ESocialViewModel"><v:ESocialView /></DataTemplate>
     <DataTemplate DataType="vm:TransmissaoEsocialViewModel"><v:TransmissaoEsocialView /></DataTemplate>
     <DataTemplate DataType="vm:ResumoFolhaViewModel"><v:ResumoFolhaView /></DataTemplate>

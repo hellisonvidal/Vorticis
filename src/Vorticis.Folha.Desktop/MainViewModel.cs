@@ -18,6 +18,7 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloFolha())
     public RescisoesViewModel Rescisoes => Instancia<RescisoesViewModel>();
     public ContabilizacaoFolhaViewModel Contabilizacao => Instancia<ContabilizacaoFolhaViewModel>();
     public ESocialViewModel ESocial => Instancia<ESocialViewModel>();
+    public AssistenteEsocialViewModel AssistenteEsocial => Instancia<AssistenteEsocialViewModel>();
     public TransmissaoEsocialViewModel Transmissao => Instancia<TransmissaoEsocialViewModel>();
     public ResumoFolhaViewModel Resumo => Instancia<ResumoFolhaViewModel>();
     public EncargosFolhaViewModel Encargos => Instancia<EncargosFolhaViewModel>();

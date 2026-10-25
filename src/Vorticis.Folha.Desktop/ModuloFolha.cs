@@ -51,6 +51,8 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios))),
         ItemMenu.Submenu("_Obrigações",
             ItemMenu.Submenu("eSocial",
+                ItemMenu.Tela("Assistente de configuração", FolhaTelas.AssistenteEsocial),
+                ItemMenu.Separador,
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
                 ItemMenu.Tela("Transmissão", FolhaTelas.Transmissao)),
             ItemMenu.EmBreve("FGTS (GFD)"),
@@ -126,6 +128,9 @@ public sealed class ModuloFolha : IModuloDesktop
                     aoLimpar: v => { v.Eventos.Clear(); v.Xml = ""; },
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.ESocial, "Obrigações › eSocial", m => Pode(m, Permissao.FolhaESocial), v => v.CarregarAsync());
+        c.Instancia("AssistenteEsocial", m => new AssistenteEsocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.AssistenteEsocial, "Obrigações › eSocial › Assistente de configuração", m => Pode(m, Permissao.FolhaESocial), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Transmissao), m => new TransmissaoEsocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
