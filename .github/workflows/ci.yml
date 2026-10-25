@@ -107,38 +107,47 @@ jobs:
           ./instalador/teste-instalacao.ps1 -Setup $setup
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: Setup-Vorticis
           path: saida/Setup-Vorticis-*.exe
           compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisContabil-portatil
           path: portatil/VorticisContabil/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisFiscal-portatil
           path: portatil/VorticisFiscal/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisFolha-portatil
           path: portatil/VorticisFolha/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisSuite-portatil
           path: portatil/VorticisSuite/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisEscritorio-portatil
           path: portatil/VorticisEscritorio/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisGerencial-portatil
           path: portatil/VorticisGerencial/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisCondominio-portatil
           path: portatil/VorticisCondominio/
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisFrota-portatil
           path: portatil/VorticisFrota/
