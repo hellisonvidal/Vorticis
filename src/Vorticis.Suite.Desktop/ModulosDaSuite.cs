@@ -3,9 +3,9 @@ using Avalonia.Controls.Templates;
 namespace Vorticis.Suite.Desktop;
 
 /// <summary>
-/// Módulos hospedados pela Suite: os instalados (o executável do módulo está na pasta da Suite), na ordem Escritório,
-/// Contábil, Fiscal, Folha, Condomínio e Gerencial. O primeiro faz a conexão e o login. Sem nenhum executável ao lado
-/// (pasta de desenvolvimento), entram todos.
+/// Módulos hospedados pela Suite: os instalados (o executável do módulo está na pasta da Suite). A Suite os mostra em ordem
+/// alfabética, e o Escritório (quando instalado) faz a conexão e o login. Sem nenhum executável ao lado (pasta de
+/// desenvolvimento), entram todos.
 /// </summary>
 public static class ModulosDaSuite
 {

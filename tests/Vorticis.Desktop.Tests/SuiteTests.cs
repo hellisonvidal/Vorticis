@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
@@ -25,12 +26,16 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     {
         SuiteViewModel.ArquivoLayout = ArquivoTemporario();
         var modulos = ModulosDaSuite.Criar(Path.GetTempPath());   // pasta sem executáveis: entram todos
-        Assert.Equal(["Escritório", "Contábil", "Fiscal", "Folha", "Condomínio", "Gerencial"], modulos.Select(m => m.Modulo.NomeCurto));
         var suite = new SuiteViewModel(modulos);
+        // em ordem alfabética em todos os layouts; o Escritório (que administra a suíte) faz o login
+        Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Modulos.Select(m => m.Nome));
+        Assert.Equal(["Vorticis Condomínio", "Vorticis Contábil", "Vorticis Escritório", "Vorticis Fiscal", "Vorticis Folha de Pagamento", "Vorticis Gerencial"],
+                     suite.Arvore.Select(n => n.Titulo));
         Assert.Equal(LayoutSuite.Lateral, suite.Layout);              // B é o padrão
         Assert.True(suite.EhLateral);
-        Assert.Same(modulos[0], suite.Principal);                     // o Escritório conecta e faz o login
-        Assert.Equal(["E", "C", "F", "FP", "CD", "G"], suite.Modulos.Select(m => m.Sigla));
+        Assert.Equal("Escritório", suite.Principal.Modulo.NomeCurto);
+        Assert.Same(suite.Principal, suite.Ativo.Vm);                 // começa pelo Escritório
+        Assert.Equal(["CD", "C", "E", "F", "FP", "G"], suite.Modulos.Select(m => m.Sigla));
         Assert.All(modulos, m => Assert.False(m.PerguntarAtivacaoAoEntrar));
 
         suite.Layout = LayoutSuite.Arvore;                            // a escolha fica gravada para a próxima abertura
@@ -46,15 +51,15 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.Empty(suite.Resultados);
 
         // antes do login só o principal (tela de entrada) fica à frente
-        suite.Trocar(suite.Modulos[2]);
-        Assert.Same(suite.Modulos[0], suite.Ativo);
-        Assert.Contains("Entre com o seu usuário", suite.Modulos[0].Vm.Status);
+        suite.Trocar(suite.Modulos[3]);
+        Assert.Same(suite.Principal, suite.Ativo.Vm);
+        Assert.Contains("Entre com o seu usuário", suite.Principal.Status);
 
         // instalação só com alguns módulos: entram os executáveis presentes, na ordem da Suite
         var pasta = Directory.CreateTempSubdirectory("suite").FullName;
         File.WriteAllText(Path.Combine(pasta, "VorticisFiscal.exe"), "");
         File.WriteAllText(Path.Combine(pasta, "VorticisEscritorio.exe"), "");
-        Assert.Equal(["Escritório", "Fiscal"], ModulosDaSuite.Criar(pasta).Select(m => m.Modulo.NomeCurto));
+        Assert.Equal(["Escritório", "Fiscal"], new SuiteViewModel(ModulosDaSuite.Criar(pasta)).Modulos.Select(m => m.Nome));
     }
 
     [Fact]
@@ -69,6 +74,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         {
             ModulosDaSuite.IncluirTelas(Avalonia.Application.Current!);
             var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+            ModuloSuite M(string nome) => suite.Modulos.Single(m => m.Nome == nome);
             var janela = new MainWindow { Width = 1400, Height = 860 };
             janela.UsarSuite(suite);
             janela.Show();
@@ -96,32 +102,37 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             for (var i = 0; i < 200 && suite.Modulos.Any(m => !m.Vm.Logado); i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
             Assert.All(suite.Modulos, m => Assert.True(m.Vm.Logado, m.Nome));
             Assert.All(suite.Modulos, m => Assert.Equal(adm, m.Vm.Sessao!.Id));
-            Assert.All(suite.Modulos.Skip(1), m => Assert.True(m.Vm.ConexaoCompartilhada));
-            Assert.Same(suite.Principal.App, suite.Modulos[1].Vm.App);
+            Assert.All(suite.Modulos.Where(m => m.Vm != suite.Principal), m => Assert.True(m.Vm.ConexaoCompartilhada));
+            Assert.Same(suite.Principal.App, M("Contábil").Vm.App);
 
             // trocar de módulo: a janela passa a mostrar o Contábil; as funções do Escritório ficam escondidas
             var abertasEscritorio = suite.Principal.JanelasAbertas.Count;
-            suite.Trocar(suite.Modulos[1]);
+            suite.Trocar(M("Contábil"));
             Dispatcher.UIThread.RunJobs();
-            Assert.Same(suite.Modulos[1].Vm, janela.DataContext);
+            Assert.Same(M("Contábil").Vm, janela.DataContext);
             Assert.Equal("Vorticis Suite — Contábil", janela.Title);
             var menus = janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>().ToList();
             Assert.Contains(menus, m => (m.Header as string) == "E_xibir");
             var config = Assert.Single(menus, m => (m.Header as string) == "Con_figurações");
             Assert.Equal("Layout da Suite", Assert.IsType<MenuItem>(config.Items[0]).Header);   // o layout também em Configurações
-            suite.Modulos[1].Vm.AbrirCommand.Execute(TelasComuns.Sobre);
+            M("Contábil").Vm.AbrirCommand.Execute(TelasComuns.Sobre);
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal(1, suite.Modulos[1].Abertas);
+            Assert.Equal(1, M("Contábil").Abertas);
             Assert.Equal(abertasEscritorio, suite.Principal.JanelasAbertas.Count);
             // ida e volta entre módulos: a função continua com a janela principal como dona (fica sempre por cima dela)
-            suite.Trocar(suite.Modulos[2]);
+            suite.Trocar(M("Fiscal"));
             Dispatcher.UIThread.RunJobs();
-            Assert.False(janela.JanelaDa(suite.Modulos[1].Vm.JanelasAbertas[0].ViewModel)!.IsVisible);
-            suite.Trocar(suite.Modulos[1]);
+            Assert.False(janela.JanelaDa(M("Contábil").Vm.JanelasAbertas[0].ViewModel)!.IsVisible);
+            suite.Trocar(M("Contábil"));
             Dispatcher.UIThread.RunJobs();
-            var funcao = janela.JanelaDa(suite.Modulos[1].Vm.JanelasAbertas[0].ViewModel)!;
+            var funcao = janela.JanelaDa(M("Contábil").Vm.JanelasAbertas[0].ViewModel)!;
             Assert.True(funcao.IsVisible);
             Assert.Same(janela, funcao.Owner);
+            // a barra fixa de funções abertas fica acima da área das janelas: nenhuma função a cobre
+            var barra = janela.FindControl<Border>("BarraFuncoes")!;
+            Assert.True(barra.IsVisible);
+            var fimBarra = janela.PointToScreen(barra.TranslatePoint(new Avalonia.Point(0, barra.Bounds.Height), janela)!.Value).Y;
+            Assert.True(funcao.Position.Y >= fimBarra, $"função em {funcao.Position.Y}, barra termina em {fimBarra}");
 
             // os quatro layouts renderizam
             foreach (var layout in Enum.GetValues<LayoutSuite>())
@@ -144,10 +155,10 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             }
 
             // painel D: abrir um módulo pelo cartão sai do painel
-            suite.TrocarCommand.Execute(suite.Modulos[2]);
+            suite.TrocarCommand.Execute(M("Fiscal"));
             Dispatcher.UIThread.RunJobs();
             Assert.False(suite.MostraPainel);
-            Assert.Same(suite.Modulos[2].Vm, janela.DataContext);
+            Assert.Same(M("Fiscal").Vm, janela.DataContext);
 
             // árvore C: abrir uma função de outro módulo troca o módulo e abre a tela
             suite.Layout = LayoutSuite.Arvore;
@@ -155,14 +166,14 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var sobreFolha = suite.Resultados.First(n => n.Modulo.Nome == "Folha");
             suite.AbrirFuncaoCommand.Execute(sobreFolha);
             Dispatcher.UIThread.RunJobs();
-            Assert.Same(suite.Modulos[3], suite.Ativo);
-            Assert.Equal(1, suite.Modulos[3].Abertas);
+            Assert.Same(M("Folha"), suite.Ativo);
+            Assert.Equal(1, M("Folha").Abertas);
 
             // sair em qualquer módulo sai de todos e volta ao login do principal
-            suite.Modulos[3].Vm.SairCommand.Execute(null);
+            M("Folha").Vm.SairCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
             Assert.All(suite.Modulos, m => Assert.False(m.Vm.Logado, m.Nome));
-            Assert.Same(suite.Modulos[0], suite.Ativo);
+            Assert.Same(M("Escritório"), suite.Ativo);
             Assert.Same(suite.Principal, janela.DataContext);
             janela.Close();
             return true;

@@ -140,6 +140,13 @@ public abstract partial class CalculosBaseViewModel(IContexto contexto) : Modulo
         var id = CalculoSelecionado?.C.Id;
         Calculos.Clear(); foreach (var c in lista) Calculos.Add(new CalculoLinha(c));
         CalculoSelecionado = Calculos.FirstOrDefault(c => c.C.Id == id);
+        // funcionários com cálculo na competência, para o holerite de um só
+        var escolhido = FuncionarioHolerite?.Id;
+        FuncionariosHolerite.Clear();
+        FuncionariosHolerite.Add(new OpcaoFuncionarioHolerite(null, "Todos os funcionários"));
+        foreach (var f in lista.GroupBy(c => c.FuncionarioId).Select(g => g.First()).OrderBy(c => c.FuncionarioNome))
+            FuncionariosHolerite.Add(new OpcaoFuncionarioHolerite(f.FuncionarioId, $"{f.Matricula} – {f.FuncionarioNome}"));
+        FuncionarioHolerite = FuncionariosHolerite.FirstOrDefault(o => o.Id == escolhido) ?? FuncionariosHolerite[0];
         Totais = lista.Count == 0 ? "Nenhum cálculo na competência."
             : $"{lista.Count} cálculo(s) · proventos {Formato.Moeda(lista.Sum(c => c.TotalProventos))} · descontos {Formato.Moeda(lista.Sum(c => c.TotalDescontos))} · líquido {Formato.Moeda(lista.Sum(c => c.Liquido))} · FGTS {Formato.Moeda(lista.Sum(c => c.Fgts))}";
     }
@@ -154,16 +161,27 @@ public abstract partial class CalculosBaseViewModel(IContexto contexto) : Modulo
         Mensagem = "Recibo gerado: " + ArquivosGerados.Salvar($"recibo_{c.Tipo.Sql().ToLowerInvariant()}_{c.Matricula}_{c.Competencia:yyyyMM}.pdf", r.Valor.Conteudo);
     }, Permissao.FolhaRelatorios);
 
+    /// <summary>Holerites: de todos os funcionários da competência ou só do escolhido na lista.</summary>
+    public ObservableCollection<OpcaoFuncionarioHolerite> FuncionariosHolerite { get; } = [new(null, "Todos os funcionários")];
+    [ObservableProperty] private OpcaoFuncionarioHolerite? _funcionarioHolerite;
+
     [RelayCommand]
     private Task HoleritesAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var tipo = TipoConsulta ?? TipoFolha.Mensal;
-        var r = await app.Folha().Relatorios.HoleritesAsync(empresa, CompetenciaConsulta, tipo, usuario);
+        var funcionario = FuncionarioHolerite?.Id;
+        var r = await app.Folha().Relatorios.HoleritesAsync(empresa, CompetenciaConsulta, tipo, usuario, funcionarioId: funcionario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Mensagem = "Recibos gerados: " + ArquivosGerados.Salvar($"holerites_{tipo.Sql().ToLowerInvariant()}_{CompetenciaConsulta:yyyyMM}.pdf", r.Valor.Conteudo);
+        var sufixo = funcionario is null ? "" : "_" + new string([.. FuncionarioHolerite!.Texto.TakeWhile(c => c != ' ')]);
+        Mensagem = "Holerites gerados: " + ArquivosGerados.Salvar($"holerites_{tipo.Sql().ToLowerInvariant()}_{CompetenciaConsulta:yyyyMM}{sufixo}.pdf", r.Valor.Conteudo);
     }, Permissao.FolhaRelatorios);
 
     public void AtualizarPermissoesBase() => OnPropertyChanged(nameof(PodeRelatorios));
+}
+
+public sealed record OpcaoFuncionarioHolerite(long? Id, string Texto)
+{
+    public override string ToString() => Texto;
 }
 
 /// <summary>Folha › Folha › Cálculo da folha mensal: calcula, mostra a memória por rubrica, fecha/reabre a competência e emite holerites.</summary>

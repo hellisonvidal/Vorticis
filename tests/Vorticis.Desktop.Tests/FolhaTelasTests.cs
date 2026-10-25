@@ -103,6 +103,11 @@ public class FolhaTelasTests(SessaoHeadless headless)
             var fimMenu = menu.Bounds.Left + menu.DesiredSize.Width;
             var inicioDireita = barra.GetVisualChildren().OfType<Control>().Where(c => c != menu && Grid.GetColumn(c) >= 3).Min(c => c.Bounds.Left);
             Assert.True(vm.MostraFaixaPeriodo);                       // a competência fica numa faixa própria, abaixo
+            // ... na mesma linha das funções abertas (faixa fixa logo abaixo dos menus)
+            var faixa = janela.FindControl<Border>("BarraFuncoes")!;
+            Assert.True(faixa.IsVisible);
+            Assert.True(janela.FindControl<StackPanel>("FaixaPeriodo")!.IsVisible);
+            Assert.Same(faixa, janela.FindControl<StackPanel>("FaixaPeriodo")!.FindAncestorOfType<Border>());
             janela.Hide();                                           // Close pediria confirmação ("Deseja realmente fechar?")
             await Task.CompletedTask;
             return inicioDireita - fimMenu;

@@ -84,7 +84,11 @@ public sealed partial class SuiteViewModel : ObservableObject
     public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null)
     {
         if (modulos.Count == 0) throw new ArgumentException("A Suite precisa de pelo menos um módulo.", nameof(modulos));
-        Modulos = [.. modulos.Select(m => new ModuloSuite(m))];
+        // Em ordem alfabética em todos os layouts (abas, barra lateral, árvore, painel e Ctrl+1, Ctrl+2...)
+        var ordem = StringComparer.Create(Domain.Comum.Formato.PtBr, ignoreCase: true);
+        Modulos = [.. modulos.Select(m => new ModuloSuite(m)).OrderBy(m => m.Nome, ordem)];
+        // Quem conecta e faz o login: o módulo que administra a suíte (Escritório), senão o primeiro da lista
+        _principal = Modulos.FirstOrDefault(m => m.Vm.Modulo.GerenciaSistema) ?? Modulos[0];
         foreach (var m in Modulos)
         {
             m.Vm.PerguntarAtivacaoAoEntrar = false;   // na Suite cada módulo mostra as empresas dele, sem perguntar
@@ -96,7 +100,7 @@ public sealed partial class SuiteViewModel : ObservableObject
             };
             m.Vm.JanelasAbertas.CollectionChanged += (_, _) => m.AvisarAbertas();
         }
-        _ativo = Modulos[0];
+        _ativo = _principal;
         _ativo.Ativo = true;
         _layout = layout ?? LerLayout();
         _lateralFixa = LerFixa();
@@ -105,8 +109,10 @@ public sealed partial class SuiteViewModel : ObservableObject
 
     public ObservableCollection<ModuloSuite> Modulos { get; }
 
-    /// <summary>Módulo que faz a conexão e o login (o primeiro da lista: o Escritório, quando instalado).</summary>
-    public MainViewModelBase Principal => Modulos[0].Vm;
+    /// <summary>Módulo que faz a conexão e o login (o Escritório, quando instalado; senão, o primeiro da lista).</summary>
+    private readonly ModuloSuite _principal;
+
+    public MainViewModelBase Principal => _principal.Vm;
 
     [ObservableProperty] private ModuloSuite _ativo;
     [ObservableProperty]
@@ -306,7 +312,7 @@ public sealed partial class SuiteViewModel : ObservableObject
             foreach (var m in Modulos) m.Vm.SairDaSessao();
         }
         finally { _propagando = false; }
-        if (!ReferenceEquals(Ativo.Vm, Principal)) { Ativo = Modulos[0]; AoTrocar?.Invoke(this, Ativo); }
+        if (!ReferenceEquals(Ativo.Vm, Principal)) { Ativo = _principal; AoTrocar?.Invoke(this, Ativo); }
         NoPainel = EhPainel;
         OnPropertyChanged(nameof(MostraPainel));
     }

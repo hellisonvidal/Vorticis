@@ -108,12 +108,18 @@ public sealed class ServicoRelatoriosFolha(IRepositorioCadastrosFolha cadastros,
     }
 
     /// <summary>Holerites de toda a competência (um por página) em um só PDF.</summary>
-    public async Task<Resultado<ArquivoGerado>> HoleritesAsync(long empresaId, DateOnly competencia, TipoFolha tipo, long usuarioId, CancellationToken ct = default)
+    /// <summary>Holerites da competência: de todos os funcionários ou só de um (<paramref name="funcionarioId"/>).</summary>
+    public async Task<Resultado<ArquivoGerado>> HoleritesAsync(long empresaId, DateOnly competencia, TipoFolha tipo, long usuarioId, CancellationToken ct = default,
+                                                               long? funcionarioId = null)
     {
         if (await NegarAsync(empresaId, usuarioId, ct) is { } negado) return Resultado<ArquivoGerado>.Falha(negado);
         competencia = new DateOnly(competencia.Year, competencia.Month, 1);
-        var calculos = await movimento.ListarCalculosAsync(empresaId, competencia, tipo, true, ct);
-        if (calculos.Count == 0) return Resultado<ArquivoGerado>.Falha($"Não há {tipo.Descricao().ToLowerInvariant()} calculada em {Competencia(competencia)}.");
+        var calculos = (await movimento.ListarCalculosAsync(empresaId, competencia, tipo, true, ct))
+            .Where(c => funcionarioId is null || c.FuncionarioId == funcionarioId).ToList();
+        if (calculos.Count == 0)
+            return Resultado<ArquivoGerado>.Falha(funcionarioId is null
+                ? $"Não há {tipo.Descricao().ToLowerInvariant()} calculada em {Competencia(competencia)}."
+                : $"O funcionário escolhido não tem {tipo.Descricao().ToLowerInvariant()} calculada em {Competencia(competencia)}.");
         var funcionarios = (await cadastros.ListarFuncionariosAsync(empresaId, ct)).ToDictionary(x => x.Id);
         var blocos = new List<Bloco>();
         var primeiro = true;

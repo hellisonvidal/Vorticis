@@ -6,7 +6,7 @@
              x:DataType="vm:FolhaMensalViewModel">
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-      <StackPanel Orientation="Horizontal" Spacing="10">
+      <WrapPanel ItemSpacing="10" LineSpacing="6">
         <TextBlock Classes="titulo" Text="Folha mensal" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
         <c:SeletorCompetencia Competencia="{Binding Competencia}" />
@@ -15,8 +15,10 @@
         <Button Content="Reabrir" Command="{Binding ReabrirCommand}" IsEnabled="{Binding PodeReabrir}" />
         <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
         <Button Content="Recibo do selecionado (PDF)" Command="{Binding ReciboCommand}" IsEnabled="{Binding PodeRelatorios}" />
-        <Button Content="Holerites da competência (PDF)" Command="{Binding HoleritesCommand}" IsEnabled="{Binding PodeRelatorios}" />
-      </StackPanel>
+        <ComboBox Name="FuncionarioHolerite" ItemsSource="{Binding FuncionariosHolerite}" SelectedItem="{Binding FuncionarioHolerite}" MinWidth="220"
+                  ToolTip.Tip="Holerite de todos os funcionários da competência ou só de um" />
+        <Button Content="Holerites (PDF)" Command="{Binding HoleritesCommand}" IsEnabled="{Binding PodeRelatorios}" />
+      </WrapPanel>
       <TextBlock Text="{Binding Situacao}" Foreground="#44506A" />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" />

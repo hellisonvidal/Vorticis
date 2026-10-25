@@ -18,7 +18,7 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 **Onde fica:** atalho **Vorticis Suite** no menu Iniciar e na área de trabalho. É o programa aberto ao final da instalação.
 
 1. Entre uma vez com o seu usuário: o login vale para todos os módulos. A Suite começa pelo Escritório, quando ele está instalado.
-2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**… (na ordem dos módulos). A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
+2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**…. Os módulos aparecem em ordem alfabética em todos os layouts (Condomínio, Contábil, Escritório, Fiscal, Folha, Gerencial), e as teclas seguem essa ordem. A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
 3. Para mudar o visual, use o botão **⚙ Layout**, que aparece em todos os layouts (na barra de abas, na barra lateral, embaixo da árvore e no topo do painel). Também dá para usar *Configurações › Layout da Suite* ou *Exibir › Layout da Suite*. A escolha fica gravada neste computador.
    - **A – Abas no topo:** uma aba por módulo acima do menu.
    - **B – Barra lateral (padrão):** ícones coloridos dos módulos à esquerda.
@@ -78,6 +78,8 @@ Usados para assinar arquivos (ECD, ECF, SPED) e transmitir o eSocial. A tela fic
 ## Tela inicial e ajuda
 
 Depois do login abre a **tela inicial**, com as próximas obrigações da empresa. *Ajuda › Tela inicial* volta a ela; *Ajuda › Licença e registro* mostra o titular da licença; *Ajuda › Sobre* mostra versão, atalhos de teclado e a conexão em uso. O seletor de empresa fica no topo da janela: escolha a empresa antes de trabalhar. Fechar o programa pede confirmação.
+
+Logo abaixo dos menus fica, fixa, a **barra de funções abertas**: cada função aberta (que abre na sua própria janela) aparece ali com o nome; clique no nome para trazê-la para a frente e no **✕** para fechá-la. As janelas das funções nunca cobrem essa barra. Na Folha, a competência de trabalho fica na mesma linha, à direita.
 
 ### Tecla Esc
 

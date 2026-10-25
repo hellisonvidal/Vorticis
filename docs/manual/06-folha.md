@@ -6,7 +6,7 @@ Os cadastros da folha (funcionários, cargos, departamentos, rubricas e tabelas 
 
 ## Competência de trabalho (aberta ou fechada)
 
-Na faixa cinza logo abaixo da barra de menus fica a **Competência** em que você está trabalhando (mês/ano) e a situação dela:
+Na faixa cinza logo abaixo da barra de menus fica, à direita, a **Competência** (à esquerda ficam as funções abertas) em que você está trabalhando (mês/ano) e a situação dela:
 
 - **ABERTA** (verde): pode incluir, alterar e excluir eventos variáveis, cálculos (folha, férias, 13º, rescisões) e o pró-labore da competência.
 - **FECHADA** (vermelho): tudo da competência fica só para consulta. O sistema recusa qualquer inclusão, alteração ou exclusão, mesmo que a tela seja aberta.
@@ -75,7 +75,7 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 1. Escolha a **competência**: o **mês** na primeira lista e o **ano** (com 4 dígitos) na lista ao lado. Não há dia a escolher.
 2. **Calcular folha**. A lista mostra proventos, descontos, líquido, INSS, IRRF e FGTS de cada funcionário.
 3. Selecione um funcionário para ver a **memória de cálculo** rubrica a rubrica.
-4. **Recibo do selecionado (PDF)** ou **Holerites da competência (PDF)**.
+4. **Recibo do selecionado (PDF)** gera o recibo do cálculo marcado na lista. Para os holerites, escolha na lista ao lado **Todos os funcionários** ou um funcionário e clique em **Holerites (PDF)**.
 5. Conferido, **Fechar competência** (em ordem). **Reabrir** só é possível se a folha não estiver contabilizada.
 
 O cálculo cobre horas extras, DSR, adicional noturno, insalubridade/periculosidade, INSS progressivo, IRRF (melhor entre deduções legais e desconto simplificado, com a redução de 2026), FGTS e encargos patronais.
@@ -195,7 +195,7 @@ As alíquotas vêm das tabelas legais (*Cadastros › Funcionários › Parâmet
 ## Relatórios da folha
 
 Com exportação para PDF, Excel e CSV:
-- **Holerites e recibos** (*Relatórios › Holerites e recibos*): holerite individual ou de todos da competência.
+- **Holerites e recibos** (*Relatórios › Holerites e recibos*): escolha na lista **Todos os funcionários** ou um funcionário e clique em **Holerites (PDF)**.
 - **Resumo da folha**: totais por rubrica e funcionário na competência.
 - **Encargos patronais**: INSS patronal, RAT, terceiros e FGTS.
 - **Provisões**: veja [Provisões de férias e 13º](#provisoes-de-ferias-e-13o).

@@ -27,10 +27,8 @@ public partial class MainWindow : Window
         KeyDown += (_, e) => { if (_vm?.Logado == true && _vm.FuncaoAtiva is { } topo) TratarEsc(e, () => _vm.FecharFuncaoComConfirmacaoAsync(topo)); };
         // As janelas das funções ocupam a área de trabalho (abaixo do título, menus e barra de janelas) e a acompanham.
         PositionChanged += (_, _) => ReposicionarJanelas();
-        AreaPrincipal.PropertyChanged += (_, e) =>
-        {
-            if (e.Property == BoundsProperty) ReposicionarJanelas();
-        };
+        // Qualquer mudança de layout que mova a área de trabalho (faixa de funções, navegação da Suite) reposiciona as funções.
+        AreaPrincipal.LayoutUpdated += (_, _) => ReposicionarSeMudou();
         DataContextChanged += (_, _) =>
         {
             if (_vm is not null)
@@ -251,6 +249,17 @@ public partial class MainWindow : Window
         var origem = AreaPrincipal.TranslatePoint(new Point(0, 0), this) ?? default;
         w.Position = this.PointToScreen(origem);
         (w.Width, w.Height) = (area.Width, area.Height);
+    }
+
+    private Rect _ultimaArea;
+
+    private void ReposicionarSeMudou()
+    {
+        var origem = AreaPrincipal.TranslatePoint(new Point(0, 0), this) ?? default;
+        var area = new Rect(origem, AreaPrincipal.Bounds.Size);
+        if (area == _ultimaArea) return;
+        _ultimaArea = area;
+        ReposicionarJanelas();
     }
 
     private void ReposicionarJanelas()

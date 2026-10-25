@@ -162,6 +162,10 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
         Ok(holerites);
         Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(holerites.Valor.Conteudo, 0, 4));
         Assert.True(holerites.Valor.Paginas >= 2);
+        var soMaria = await rel.HoleritesAsync(empresa, competencia, TipoFolha.Mensal, adm, Ct, funcionarioId: maria);   // holerite de um funcionário
+        Ok(soMaria);
+        Assert.True(soMaria.Valor.Paginas < holerites.Valor.Paginas);
+        Assert.Contains("funcionário escolhido", (await rel.HoleritesAsync(empresa, competencia, TipoFolha.Mensal, adm, Ct, funcionarioId: -1)).Erros[0]);
         var recibo = await rel.ReciboAsync(empresa, m.Id, adm, Ct);
         Ok(recibo);
         Assert.Equal(1, recibo.Valor.Paginas);
