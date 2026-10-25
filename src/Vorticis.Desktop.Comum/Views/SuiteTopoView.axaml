@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteTopoView" x:DataType="vm:SuiteViewModel">
   <!-- Suite: navegação no topo. A = uma aba por módulo; D = Início (painel) e seletor de módulo -->
   <UserControl.Styles>
@@ -17,6 +17,8 @@
   <Panel>
     <!-- A: abas -->
     <Border Name="BarraAbas" Background="#E2E8F0" Padding="8,6,8,0" IsVisible="{Binding EhAbas}">
+      <DockPanel>
+      <v:SuiteEscolhaLayoutView DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,4,6" />
       <ItemsControl ItemsSource="{Binding Modulos}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
@@ -43,10 +45,13 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      </DockPanel>
     </Border>
 
     <!-- D: Início + seletor de módulo -->
     <Border Name="BarraPainel" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="14,8" IsVisible="{Binding EhPainel}">
+      <DockPanel>
+      <v:SuiteEscolhaLayoutView DockPanel.Dock="Right" VerticalAlignment="Center" />
       <StackPanel Orientation="Horizontal" Spacing="10">
         <Border Width="32" Height="32" CornerRadius="9" Background="#0F172A">
           <TextBlock Text="V" FontSize="16" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -67,6 +72,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
       </StackPanel>
+      </DockPanel>
     </Border>
   </Panel>
 </UserControl>

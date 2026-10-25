@@ -19,12 +19,15 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
 1. Entre uma vez com o seu usuário: o login vale para todos os módulos. A Suite começa pelo Escritório, quando ele está instalado.
 2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**… (na ordem dos módulos). A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
-3. Para mudar o visual, use *Exibir › Layout da Suite*. Na barra lateral, o botão ⚙ faz o mesmo. A escolha fica gravada neste computador.
+3. Para mudar o visual, use o botão **⚙ Layout**, que aparece em todos os layouts (na barra de abas, na barra lateral, embaixo da árvore e no topo do painel). Também dá para usar *Configurações › Layout da Suite* ou *Exibir › Layout da Suite*. A escolha fica gravada neste computador.
    - **A – Abas no topo:** uma aba por módulo acima do menu.
    - **B – Barra lateral (padrão):** ícones coloridos dos módulos à esquerda.
+
    - **C – Árvore com busca:** todos os módulos e funções num painel à esquerda. Digite no campo **Ir para…** (**Ctrl+K**), por exemplo "férias" ou "balancete", e clique no resultado.
    - **D – Painel inicial:** um cartão por módulo, com os atalhos e o botão **Abrir módulo**. O botão **Início** volta ao painel e a caixa **Módulo** troca de módulo direto.
-4. O número vermelho no ícone ou na aba mostra quantas funções estão abertas naquele módulo.
+
+   Na barra lateral (B) e na árvore (C), a navegação fica escondida numa faixa fina à esquerda, para sobrar mais espaço para as telas. Ela abre quando o mouse chega à faixa e se esconde quando ele sai. O botão **Fixar** deixa a navegação sempre aberta; **Soltar** volta a esconder.
+4. O número vermelho no ícone ou na aba mostra quantas funções estão abertas naquele módulo. As janelas das funções ficam sempre na frente da janela principal: para alternar entre elas, clique no nome da função na barra de funções abertas.
 5. **Sair (trocar de usuário)**, em qualquer módulo, encerra a sessão em todos.
 
 Os executáveis de cada módulo (Vorticis Contábil, Vorticis Fiscal…) continuam disponíveis para quem prefere um módulo por janela.

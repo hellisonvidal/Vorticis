@@ -74,7 +74,18 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             janela.Show();
             Dispatcher.UIThread.RunJobs();
             Assert.Equal("Vorticis Suite — Escritório", janela.Title);
-            Assert.True(janela.FindDescendantOfType<SuiteLadoView>()!.FindControl<Border>("BarraLateral")!.IsVisible);
+            // B recolhida numa faixa fina até o mouse chegar; "Fixar" deixa aberta (e fica gravado)
+            var ladoB = janela.FindDescendantOfType<SuiteLadoView>()!;
+            Assert.True(ladoB.FindControl<Border>("FaixaLateral")!.IsVisible);
+            Assert.False(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            suite.LateralAberta = true;
+            Assert.True(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            suite.LateralAberta = false;
+            suite.AlternarFixaCommand.Execute(null);
+            Assert.True(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            Assert.Equal("fixa", File.ReadAllText(SuiteViewModel.ArquivoFixa));
+            suite.AlternarFixaCommand.Execute(null);
+            suite.LateralAberta = true;
             Assert.NotNull(janela.CaptureRenderedFrame());
 
             // login uma vez, no principal: todos os módulos entram com o mesmo usuário
@@ -94,11 +105,23 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Dispatcher.UIThread.RunJobs();
             Assert.Same(suite.Modulos[1].Vm, janela.DataContext);
             Assert.Equal("Vorticis Suite — Contábil", janela.Title);
-            Assert.Contains(janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>(), m => (m.Header as string) == "E_xibir");
+            var menus = janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>().ToList();
+            Assert.Contains(menus, m => (m.Header as string) == "E_xibir");
+            var config = Assert.Single(menus, m => (m.Header as string) == "Con_figurações");
+            Assert.Equal("Layout da Suite", Assert.IsType<MenuItem>(config.Items[0]).Header);   // o layout também em Configurações
             suite.Modulos[1].Vm.AbrirCommand.Execute(TelasComuns.Sobre);
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(1, suite.Modulos[1].Abertas);
             Assert.Equal(abertasEscritorio, suite.Principal.JanelasAbertas.Count);
+            // ida e volta entre módulos: a função continua com a janela principal como dona (fica sempre por cima dela)
+            suite.Trocar(suite.Modulos[2]);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(janela.JanelaDa(suite.Modulos[1].Vm.JanelasAbertas[0].ViewModel)!.IsVisible);
+            suite.Trocar(suite.Modulos[1]);
+            Dispatcher.UIThread.RunJobs();
+            var funcao = janela.JanelaDa(suite.Modulos[1].Vm.JanelasAbertas[0].ViewModel)!;
+            Assert.True(funcao.IsVisible);
+            Assert.Same(janela, funcao.Owner);
 
             // os quatro layouts renderizam
             foreach (var layout in Enum.GetValues<LayoutSuite>())
@@ -113,6 +136,8 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
                 var topo = janela.FindDescendantOfType<SuiteTopoView>()!;
                 Assert.Equal(layout == LayoutSuite.Lateral, lado.FindControl<Border>("BarraLateral")!.IsVisible);
                 Assert.Equal(layout == LayoutSuite.Arvore, lado.FindControl<Border>("PainelArvore")!.IsVisible);
+                // o botão Layout aparece em todos os layouts
+                Assert.Contains(janela.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>(), b => b.IsEffectivelyVisible || layout == LayoutSuite.Lateral);
                 Assert.Equal(layout == LayoutSuite.Abas, topo.FindControl<Border>("BarraAbas")!.IsVisible);
                 Assert.Equal(layout == LayoutSuite.Painel, topo.FindControl<Border>("BarraPainel")!.IsVisible);
                 Assert.Equal(layout == LayoutSuite.Painel, janela.FindControl<ContentControl>("SuitePainel")!.IsVisible);   // D abre no painel

@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         suite.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
-            if (e.PropertyName == nameof(SuiteViewModel.Layout) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
+            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
         };
         DataContext = suite.Ativo.Vm;
         AtualizarPainel();
@@ -111,8 +111,9 @@ public partial class MainWindow : Window
     private void Mostrar(Window w)
     {
         Posicionar(w);
-        if (w.Owner is null) w.Show(this);
-        else w.Show();
+        // Sempre com a janela principal como dona: Show() sem dona soltaria a função, e a janela principal passaria a
+        // cobri-la ao ser clicada (a barra de funções abertas ficava por cima das janelas).
+        w.Show(this);
     }
 
     /// <summary>Ícone e cor do módulo (Contábil verde, Fiscal laranja, Folha roxo) na janela e nas janelas das funções.</summary>
@@ -345,11 +346,19 @@ public partial class MainWindow : Window
         MenuPrincipal.Items.Clear();
         _itensComRecurso.Clear();
         foreach (var item in vm.Menus) MenuPrincipal.Items.Add(CriarItem(vm, item));
-        if (Suite is { } suite) MenuPrincipal.Items.Insert(MenuPrincipal.Items.Count - 1, MenuExibir(suite));
+        if (Suite is { } suite)
+        {
+            MenuPrincipal.Items.Insert(MenuPrincipal.Items.Count - 1, MenuExibir(suite));
+            // o layout também fica em Configurações, onde se procura por ajustes
+            if (MenuPrincipal.Items.OfType<MenuItem>().FirstOrDefault(m => (m.Header as string) == "Con_figurações") is { } config)
+            {
+                config.Items.Insert(0, MenuLayout(suite));
+                config.Items.Insert(1, new Separator());
+            }
+        }
     }
 
-    /// <summary>Suite: Exibir › layout (A, B, C, D) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
-    private static MenuItem MenuExibir(SuiteViewModel suite)
+    private static MenuItem MenuLayout(SuiteViewModel suite)
     {
         var layout = new MenuItem { Header = "Layout da Suite" };
         foreach (var (valor, nome) in SuiteViewModel.Nomes)
@@ -357,8 +366,19 @@ public partial class MainWindow : Window
             {
                 Header = (valor == suite.Layout ? "●  " : "     ") + nome, Command = suite.EscolherLayoutCommand, CommandParameter = valor,
             });
+        layout.Items.Add(new Separator());
+        layout.Items.Add(new MenuItem
+        {
+            Header = (suite.LateralFixa ? "●  " : "     ") + "Navegação à esquerda sempre aberta (B e C)", Command = suite.AlternarFixaCommand,
+        });
+        return layout;
+    }
+
+    /// <summary>Suite: Exibir › layout (A, B, C, D) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
+    private static MenuItem MenuExibir(SuiteViewModel suite)
+    {
         var exibir = new MenuItem { Header = "E_xibir" };
-        exibir.Items.Add(layout);
+        exibir.Items.Add(MenuLayout(suite));
         exibir.Items.Add(new Separator());
         for (var i = 0; i < suite.Modulos.Count; i++)
             exibir.Items.Add(new MenuItem

@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteLadoView" x:DataType="vm:SuiteViewModel">
   <!-- Suite: navegação à esquerda. B (padrão) = barra lateral com os ícones dos módulos; C = árvore com todas as funções e busca -->
   <UserControl.Styles>
@@ -28,15 +28,28 @@
       <Setter Property="FontSize" Value="13.5" />
     </Style>
   </UserControl.Styles>
-  <Panel>
+  <Panel Name="Navegacao" Background="Transparent">
+    <!-- Recolhida: faixa fina à esquerda; o mouse sobre ela abre a navegação (SuiteLadoView.axaml.cs) -->
+    <Border Name="FaixaLateral" Width="10" Background="#0F172A" IsVisible="{Binding MostraFaixaLateral}" ToolTip.Tip="Módulos (aproxime o mouse)">
+      <TextBlock Text="›" Foreground="#94A3B8" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+    <Border Name="FaixaArvore" Width="10" Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,0,1,0" IsVisible="{Binding MostraFaixaArvore}"
+            ToolTip.Tip="Módulos e funções (aproxime o mouse)">
+      <TextBlock Text="›" Foreground="#64748B" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+
     <!-- B: barra lateral -->
-    <Border Name="BarraLateral" Background="#0F172A" Width="86" IsVisible="{Binding EhLateral}">
+    <Border Name="BarraLateral" Background="#0F172A" Width="86" IsVisible="{Binding MostraBarraLateral}">
       <DockPanel>
         <Border DockPanel.Dock="Top" Margin="0,12,0,14" Width="48" Height="48" CornerRadius="14" Background="#38BDF8"
                 HorizontalAlignment="Center" ToolTip.Tip="Vorticis Suite">
           <TextBlock Text="V" FontSize="24" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
-        <Button DockPanel.Dock="Bottom" Classes="plano" Margin="0,8,0,14" HorizontalAlignment="Center" ToolTip.Tip="Layout da Suite (também em Exibir)">
+        <Button DockPanel.Dock="Bottom" Classes="plano" Margin="0,0,0,14" HorizontalAlignment="Center" Command="{Binding AlternarFixaCommand}"
+                ToolTip.Tip="Fixar: a barra fica sempre aberta. Soltar: ela se esconde e abre ao aproximar o mouse">
+          <TextBlock Text="{Binding TextoFixar}" FontSize="10.5" Foreground="#94A3B8" HorizontalAlignment="Center" />
+        </Button>
+        <Button Name="BotaoLayoutLateral" DockPanel.Dock="Bottom" Classes="plano" Margin="0,8,0,6" HorizontalAlignment="Center" ToolTip.Tip="Layout da Suite (também em Exibir e em Configurações)">
           <TextBlock Text="⚙" FontSize="20" Foreground="#94A3B8" HorizontalAlignment="Center" />
           <Button.Flyout>
             <MenuFlyout Placement="RightEdgeAlignedBottom">
@@ -80,8 +93,13 @@
     </Border>
 
     <!-- C: árvore com todos os módulos e funções -->
-    <Border Name="PainelArvore" Width="260" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" IsVisible="{Binding EhArvore}">
+    <Border Name="PainelArvore" Width="260" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" IsVisible="{Binding MostraArvore}">
       <DockPanel Margin="10,10,6,10">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,4,0">
+          <Button DockPanel.Dock="Right" Content="{Binding TextoFixar}" Command="{Binding AlternarFixaCommand}" Padding="10,4"
+                  ToolTip.Tip="Fixar: o painel fica sempre aberto. Soltar: ele se esconde e abre ao aproximar o mouse" />
+          <v:SuiteEscolhaLayoutView HorizontalAlignment="Left" />
+        </DockPanel>
         <TextBox DockPanel.Dock="Top" Name="CampoBusca" Text="{Binding Busca}" Watermark="Ir para… (Ctrl+K)  ex.: férias, balancete" Margin="0,0,4,10" />
         <TextBlock DockPanel.Dock="Top" Text="MÓDULOS" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="4,0,0,6" IsVisible="{Binding !Buscando}" />
         <Panel>

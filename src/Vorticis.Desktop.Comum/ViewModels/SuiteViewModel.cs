@@ -99,6 +99,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         _ativo = Modulos[0];
         _ativo.Ativo = true;
         _layout = layout ?? LerLayout();
+        _lateralFixa = LerFixa();
         Arvore = [.. Modulos.Select(MontarNo)];
     }
 
@@ -109,11 +110,46 @@ public sealed partial class SuiteViewModel : ObservableObject
 
     [ObservableProperty] private ModuloSuite _ativo;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EhAbas), nameof(EhLateral), nameof(EhArvore), nameof(EhPainel), nameof(MostraPainel), nameof(NomeLayout))]
+    [NotifyPropertyChangedFor(nameof(EhAbas), nameof(EhLateral), nameof(EhArvore), nameof(EhPainel), nameof(MostraPainel), nameof(NomeLayout),
+                              nameof(MostraBarraLateral), nameof(MostraFaixaLateral), nameof(MostraArvore), nameof(MostraFaixaArvore))]
     private LayoutSuite _layout;
 
     /// <summary>Layout D: o painel inicial com os cartões dos módulos está à mostra (em vez das telas do módulo).</summary>
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostraPainel))] private bool _noPainel = true;
+
+    // ------------------------------------------------------------------ navegação à esquerda que se esconde (B e C)
+
+    /// <summary>
+    /// A barra lateral (B) e a árvore (C) ficam recolhidas numa faixa fina à esquerda, para não tirar espaço das telas;
+    /// abrem quando o mouse se aproxima e recolhem quando ele sai. "Fixar" deixa sempre aberta (gravado neste computador).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LateralExpandida), nameof(MostraBarraLateral), nameof(MostraFaixaLateral), nameof(MostraArvore), nameof(MostraFaixaArvore))]
+    private bool _lateralAberta;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LateralExpandida), nameof(MostraBarraLateral), nameof(MostraFaixaLateral), nameof(MostraArvore), nameof(MostraFaixaArvore), nameof(TextoFixar))]
+    private bool _lateralFixa;
+
+    public bool LateralExpandida => LateralFixa || LateralAberta;
+    public bool MostraBarraLateral => EhLateral && LateralExpandida;
+    public bool MostraFaixaLateral => EhLateral && !LateralExpandida;
+    public bool MostraArvore => EhArvore && LateralExpandida;
+    public bool MostraFaixaArvore => EhArvore && !LateralExpandida;
+    public string TextoFixar => LateralFixa ? "Soltar" : "Fixar";
+
+    partial void OnLateralFixaChanged(bool value) => GravarTexto(ArquivoFixa, value ? "fixa" : "recolhe");
+
+    [RelayCommand]
+    private void AlternarFixa() => LateralFixa = !LateralFixa;
+
+    public static string ArquivoFixa => Path.ChangeExtension(ArquivoLayout, null) + "-fixa.txt";
+
+    private static bool LerFixa()
+    {
+        try { return File.Exists(ArquivoFixa) && File.ReadAllText(ArquivoFixa).Trim() == "fixa"; }
+        catch (Exception) { return false; }
+    }
 
     public bool EhAbas => Layout == LayoutSuite.Abas;
     public bool EhLateral => Layout == LayoutSuite.Lateral;
@@ -289,12 +325,14 @@ public sealed partial class SuiteViewModel : ObservableObject
         catch (Exception) { return LayoutSuite.Lateral; }
     }
 
-    private static void GravarLayout(LayoutSuite layout)
+    private static void GravarLayout(LayoutSuite layout) => GravarTexto(ArquivoLayout, layout.ToString());
+
+    private static void GravarTexto(string arquivo, string texto)
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(ArquivoLayout)!);
-            File.WriteAllText(ArquivoLayout, layout.ToString());
+            Directory.CreateDirectory(Path.GetDirectoryName(arquivo)!);
+            File.WriteAllText(arquivo, texto);
         }
         catch (Exception) { /* sem gravar a preferência, o layout vale só nesta execução */ }
     }
