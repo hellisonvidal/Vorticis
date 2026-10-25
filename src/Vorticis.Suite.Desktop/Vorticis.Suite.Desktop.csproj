@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Vorticis.Escritorio.Desktop\Vorticis.Escritorio.Desktop.csproj" />
     <ProjectReference Include="..\Vorticis.Erp.Desktop\Vorticis.Erp.Desktop.csproj" />
     <ProjectReference Include="..\Vorticis.Condominio.Desktop\Vorticis.Condominio.Desktop.csproj" />
+    <ProjectReference Include="..\Vorticis.Frota.Desktop\Vorticis.Frota.Desktop.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Vorticis.Desktop.Comum" />

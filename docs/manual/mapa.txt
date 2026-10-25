@@ -161,3 +161,17 @@ condominio.ocorrencias=11-condominio.md#ocorrencias-e-assembleias
 condominio.prestacao=11-condominio.md#prestacao-de-contas-e-inadimplencia
 condominio.rateio=11-condominio.md#rateio-entre-unidades
 condominio.atas=11-condominio.md#atas-de-assembleia
+
+; ---- frota (piloto)
+frota.painel=12-frota.md#painel-da-frota
+frota.veiculos=12-frota.md#veiculos
+frota.motoristas=12-frota.md#motoristas
+frota.planos=12-frota.md#planos-de-manutencao
+frota.documentos=12-frota.md#documentos-e-vencimentos
+frota.abastecimentos=12-frota.md#abastecimentos
+frota.ordens=12-frota.md#ordens-de-servico
+frota.viagens=12-frota.md#viagens
+frota.rel.custos=12-frota.md#relatorios-da-frota
+frota.rel.consumo=12-frota.md#relatorios-da-frota
+frota.rel.viagens=12-frota.md#relatorios-da-frota
+frota.rel.vencimentos=12-frota.md#relatorios-da-frota

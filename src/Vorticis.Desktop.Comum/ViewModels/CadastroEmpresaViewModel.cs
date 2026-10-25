@@ -94,6 +94,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private bool _moduloEscritorio = true;
     [ObservableProperty] private bool _moduloErp = true;
     [ObservableProperty] private bool _moduloCondominio;
+    [ObservableProperty] private bool _moduloFrota;
 
     public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
     public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
@@ -101,15 +102,18 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     public bool EscritorioEditavel => main.ModuloAtual != ModulosEmpresa.Escritorio;
     public bool ErpEditavel => main.ModuloAtual != ModulosEmpresa.Erp;
     public bool CondominioEditavel => main.ModuloAtual != ModulosEmpresa.Condominio;
+    public bool FrotaEditavel => main.ModuloAtual != ModulosEmpresa.Frota;
 
     public ModulosEmpresa Modulos
     {
         get => (ModuloContabil ? ModulosEmpresa.Contabil : 0) | (ModuloFiscal ? ModulosEmpresa.Fiscal : 0) | (ModuloFolha ? ModulosEmpresa.Folha : 0)
-               | (ModuloEscritorio ? ModulosEmpresa.Escritorio : 0) | (ModuloErp ? ModulosEmpresa.Erp : 0) | (ModuloCondominio ? ModulosEmpresa.Condominio : 0);
+               | (ModuloEscritorio ? ModulosEmpresa.Escritorio : 0) | (ModuloErp ? ModulosEmpresa.Erp : 0) | (ModuloCondominio ? ModulosEmpresa.Condominio : 0)
+               | (ModuloFrota ? ModulosEmpresa.Frota : 0);
         set
         {
             (ModuloContabil, ModuloFiscal, ModuloFolha) = (value.HasFlag(ModulosEmpresa.Contabil), value.HasFlag(ModulosEmpresa.Fiscal), value.HasFlag(ModulosEmpresa.Folha));
             (ModuloEscritorio, ModuloErp, ModuloCondominio) = (value.HasFlag(ModulosEmpresa.Escritorio), value.HasFlag(ModulosEmpresa.Erp), value.HasFlag(ModulosEmpresa.Condominio));
+            ModuloFrota = value.HasFlag(ModulosEmpresa.Frota);
         }
     }
 
@@ -233,7 +237,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
         // Condomínio é outro tipo de cadastro: só vem marcado quando a empresa é incluída pelo próprio módulo Condomínio.
-        Modulos = (ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio) | main.ModuloAtual;
+        Modulos = (ModulosEmpresa.Todos & ~(ModulosEmpresa.Condominio | ModulosEmpresa.Frota)) | main.ModuloAtual;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;

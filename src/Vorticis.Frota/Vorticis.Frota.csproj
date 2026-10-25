@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Regras e serviços do módulo Frota (piloto): veículos, motoristas, abastecimentos, manutenção, viagens, documentos e relatórios. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Vorticis.Domain\Vorticis.Domain.csproj" />
+    <ProjectReference Include="..\Vorticis.Application\Vorticis.Application.csproj" />
+    <ProjectReference Include="..\Vorticis.Infra\Vorticis.Infra.csproj" />
+  </ItemGroup>
+</Project>

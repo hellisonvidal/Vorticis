@@ -49,4 +49,3 @@ BEGIN
     RAISE NOTICE 'OK: outros lançamentos do SPED Fiscal (ajuste com código válido, conta de consumo única) e exclusão da empresa';
 END $$;
 
-\echo 'TODOS OS TESTES PASSARAM'

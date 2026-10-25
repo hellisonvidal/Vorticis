@@ -29,7 +29,7 @@ public sealed partial class ModuloSuite(MainViewModelBase vm) : ObservableObject
     public IBrush Cor => Vm.PincelDestaque;
     public IBrush CorBarra => Vm.PincelBarra;
 
-    /// <summary>Sigla do ícone (C, F, FP, E, G, CD).</summary>
+    /// <summary>Sigla do ícone (C, F, FP, E, G, CD, FR).</summary>
     public string Sigla => Vm.Modulo.NomeExecutavel switch
     {
         "VorticisContabil" => "C",
@@ -38,6 +38,7 @@ public sealed partial class ModuloSuite(MainViewModelBase vm) : ObservableObject
         "VorticisEscritorio" => "E",
         "VorticisGerencial" => "G",
         "VorticisCondominio" => "CD",
+        "VorticisFrota" => "FR",
         _ => Nome[..1],
     };
 

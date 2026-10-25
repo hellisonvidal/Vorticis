@@ -18,6 +18,7 @@ Cada função segue o mesmo roteiro: **para que serve**, **onde fica no menu**, 
 | [Escritório](09-escritorio.md) | Carteira de clientes, tarefas e prazos, protocolos e honorários |
 | [Gerencial](10-gerencial.md) | Painel do empresário, pedidos de venda e compra, estoque e transporte |
 | [Condomínio](11-condominio.md) | Unidades, taxas, cobranças, despesas, reservas, ocorrências e prestação de contas |
+| [Frota (piloto)](12-frota.md) | Veículos, motoristas, abastecimentos e consumo, manutenção, viagens e vencimentos |
 | [Configurações](08-configuracoes.md) | Backup, configurações gerais, conexão e solução de problemas |
 
 ## Dicas gerais de uso

@@ -13,7 +13,7 @@ if f'Name: "{comp}"' not in s:
     s = re.sub(r'(Components: contabil fiscal folha[\w ]*)', lambda m: m.group(1) + f" {comp}", s)
     def apos(padrao, linha):
         global s
-        ultimos = list(re.finditer(padrao, s))
+        ultimos = list(re.finditer(padrao + r'[\w ]*$', s, re.M))
         p = ultimos[-1].end()
         s = s[:p] + "\n" + linha + s[p:]
     apos(r'Source: "\.\.\\publish\\Vorticis\w+\.exe"; DestDir: "\{app\}"; Flags: ignoreversion; Components: \w+',

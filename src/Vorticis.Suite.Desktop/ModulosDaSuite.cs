@@ -17,6 +17,7 @@ public static class ModulosDaSuite
         ("VorticisFolha", () => new Vorticis.Folha.Desktop.MainViewModel()),
         ("VorticisCondominio", () => new Vorticis.Condominio.Desktop.MainViewModel()),
         ("VorticisGerencial", () => new Vorticis.Erp.Desktop.MainViewModel()),
+        ("VorticisFrota", () => new Vorticis.Frota.Desktop.MainViewModel()),
     ];
 
     /// <summary>Executáveis dos módulos instalados (nomes sem extensão).</summary>
@@ -39,6 +40,7 @@ public static class ModulosDaSuite
         [
             new Vorticis.Escritorio.Desktop.App(), new Vorticis.Desktop.App(), new Vorticis.Fiscal.Desktop.App(),
             new Vorticis.Folha.Desktop.App(), new Vorticis.Condominio.Desktop.App(), new Vorticis.Erp.Desktop.App(),
+            new Vorticis.Frota.Desktop.App(),
         ];
         foreach (var app in modulos)
         {

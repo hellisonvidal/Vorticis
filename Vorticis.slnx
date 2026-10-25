@@ -14,6 +14,8 @@
     <Project Path="src/Vorticis.Fiscal/Vorticis.Fiscal.csproj" />
     <Project Path="src/Vorticis.Folha.Desktop/Vorticis.Folha.Desktop.csproj" />
     <Project Path="src/Vorticis.Folha/Vorticis.Folha.csproj" />
+    <Project Path="src/Vorticis.Frota.Desktop/Vorticis.Frota.Desktop.csproj" />
+    <Project Path="src/Vorticis.Frota/Vorticis.Frota.csproj" />
     <Project Path="src/Vorticis.Infra/Vorticis.Infra.csproj" />
     <Project Path="src/Vorticis.Suite.Desktop/Vorticis.Suite.Desktop.csproj" />
   </Folder>

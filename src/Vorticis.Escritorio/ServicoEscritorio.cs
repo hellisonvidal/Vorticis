@@ -40,6 +40,7 @@ public sealed class ServicoEscritorio
                        p.complemento, p.bairro, p.cod_municipio_ibge, p.empresa_vinculada_id,
                        (CASE WHEN e.modulo_contabil THEN 1 ELSE 0 END) | (CASE WHEN e.modulo_fiscal THEN 2 ELSE 0 END) | (CASE WHEN e.modulo_folha THEN 4 ELSE 0 END)
                      | (CASE WHEN e.modulo_erp THEN 16 ELSE 0 END) | (CASE WHEN e.modulo_condominio THEN 32 ELSE 0 END)
+                     | (CASE WHEN e.modulo_frota THEN 64 ELSE 0 END)
                   FROM escritorio.pessoa p LEFT JOIN core.empresa e ON e.id = p.empresa_vinculada_id
                  WHERE p.empresa_id = @e ORDER BY p.nome
                 """, r => new PessoaEscritorio(r.GetInt64(0), r.GetInt32(1), r.GetBoolean(2), r.GetBoolean(3), r.GetString(4), r.Texto(5), r.Texto(6), r.Texto(7),

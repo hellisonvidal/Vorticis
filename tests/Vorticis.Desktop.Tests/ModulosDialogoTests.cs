@@ -25,7 +25,7 @@ public class ModulosDialogoTests(SessaoHeadless headless)
             Assert.Equal("Cadastrar esta empresa em quais módulos?", dialogo.Title);
 
             var caixas = dialogo.GetVisualDescendants().OfType<CheckBox>().ToList();
-            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio"], caixas.Select(c => c.Content as string));
+            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio", "Frota"], caixas.Select(c => c.Content as string));
             Assert.All(caixas, c => Assert.True(c.IsChecked));
             Assert.False(caixas[0].IsEnabled);            // módulo atual (Contábil): obrigatório
             Assert.True(caixas[1].IsEnabled);
