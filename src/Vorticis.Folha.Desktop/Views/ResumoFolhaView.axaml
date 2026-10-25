@@ -9,7 +9,7 @@
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Resumo da folha" VerticalAlignment="Center" />
       <TextBlock Text="Competência" VerticalAlignment="Center" />
-      <CalendarDatePicker SelectedDate="{Binding Competencia}" Width="150" />
+      <c:SeletorCompetencia Competencia="{Binding Competencia}" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
       <c:BarraExportacaoView />

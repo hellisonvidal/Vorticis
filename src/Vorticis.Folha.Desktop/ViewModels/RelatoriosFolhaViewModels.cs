@@ -8,7 +8,7 @@ namespace Vorticis.Folha.Desktop.ViewModels;
 /// <summary>Base dos relatórios da folha por competência: a tabela mostrada na tela é a que vai para PDF, Excel e CSV.</summary>
 public abstract partial class RelatorioFolhaBase(IContexto contexto) : RelatorioViewModel(contexto)
 {
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private TabelaRelatorio? _tabela;
     [ObservableProperty] private TabelaRelatorio? _tabela2;
 

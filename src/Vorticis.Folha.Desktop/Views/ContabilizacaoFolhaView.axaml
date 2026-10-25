@@ -9,7 +9,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="Contabilização da folha" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" Width="150" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Prévia da folha" Command="{Binding PreviaFolhaCommand}" IsEnabled="{Binding PodeContabilizar}" />
         <Button Content="Contabilizar folha" Command="{Binding ContabilizarFolhaCommand}" Classes="accent" IsEnabled="{Binding PodeContabilizar}" />
         <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />

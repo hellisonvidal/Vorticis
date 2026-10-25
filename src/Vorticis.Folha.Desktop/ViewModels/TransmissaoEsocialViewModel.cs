@@ -69,7 +69,7 @@ public partial class TransmissaoEsocialViewModel(IContexto contexto) : ModuloVie
     public ObservableCollection<LoteTransmissaoLinha> Lotes { get; } = [];
     public ObservableCollection<string> Ocorrencias { get; } = [];
 
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private OpcaoAmbiente _ambiente = Ambientes[0];
     [ObservableProperty] private OpcaoTransmissor _transmissor = Transmissores[0];
     [ObservableProperty] private EventoTransmissaoLinha? _selecionado;

@@ -10,7 +10,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="Provisões de férias e 13º salário" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" Width="150" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Calcular provisões" Command="{Binding CalcularCommand}" Classes="accent" IsEnabled="{Binding PodeCalcular}" />
         <Button Content="Mostrar" Command="{Binding GerarCommand}" />
         <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />

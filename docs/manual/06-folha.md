@@ -72,7 +72,7 @@ As *tabelas legais por vigência* são exibidas para conferência (valores de 20
 
 **Onde fica:** *Cálculos › Folha › Cálculo da folha mensal* (**Ctrl+F**).
 
-1. Escolha a **competência**: o **mês** na lista e o **ano** no campo ao lado (não há dia a escolher).
+1. Escolha a **competência**: o **mês** na primeira lista e o **ano** (com 4 dígitos) na lista ao lado. Não há dia a escolher.
 2. **Calcular folha**. A lista mostra proventos, descontos, líquido, INSS, IRRF e FGTS de cada funcionário.
 3. Selecione um funcionário para ver a **memória de cálculo** rubrica a rubrica.
 4. **Recibo do selecionado (PDF)** ou **Holerites da competência (PDF)**.
@@ -179,4 +179,4 @@ Com exportação para PDF, Excel e CSV:
 - **Encargos patronais**: INSS patronal, RAT, terceiros e FGTS.
 - **Provisões**: veja [Provisões de férias e 13º](#provisoes-de-ferias-e-13o).
 
-Em todos, informe a competência e clique em **Gerar**.
+Em todos, escolha a **competência** (período de apuração: mês e ano, sem dia) e clique em **Gerar**. A tela já abre na competência de trabalho da faixa cinza. O mesmo seletor de mês e ano é usado em Eventos variáveis, Contabilização, eSocial e Transmissão.

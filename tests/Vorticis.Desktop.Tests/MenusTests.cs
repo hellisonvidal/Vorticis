@@ -238,14 +238,10 @@ public class MenusTests
     {
         var vm = new Vorticis.Folha.Desktop.MainViewModel();
         var folha = vm.FolhaMensal;
-        folha.Competencia = new DateTime(2026, 3, 1);
-        folha.MesCompetencia = 6;
-        Assert.Equal(new DateTime(2026, 7, 1), folha.Competencia);
-        folha.AnoCampo = 2025;
-        Assert.Equal(new DateTime(2025, 7, 1), folha.Competencia);
-        folha.AnoCampo = 1500;                                   // ano inválido é ignorado
+        folha.Competencia = new DateTime(2025, 7, 1);
         Assert.Equal(2025, folha.AnoCompetencia);
-        Assert.Equal(12, Vorticis.Folha.Desktop.ViewModels.FolhaMensalViewModel.Meses.Count);
+        Assert.Equal(12, Vorticis.Desktop.Comum.Views.SeletorCompetencia.Meses.Count);
+        Assert.All(Vorticis.Desktop.Comum.Views.SeletorCompetencia.Anos, a => Assert.Equal(4, a.ToString().Length));   // ano sempre com 4 dígitos
 
         // sem banco nenhuma competência está fechada: a lista tem os meses recentes, e "Só fechadas" a esvazia
         await vm.RecarregarPeriodosAsync();

@@ -37,7 +37,7 @@ public partial class ContabilizacaoFolhaViewModel(IContexto contexto) : ModuloVi
     public ObservableCollection<ContabilizacaoLinha> Contabilizacoes { get; } = [];
     public static IReadOnlyList<Opcao> Lados { get; } = [new("D", "Partida de débito"), new("C", "Partida de crédito")];
 
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private RegraLinha? _regraSelecionada;
     [ObservableProperty] private ContabilizacaoLinha? _contabilizacaoSelecionada;
     [ObservableProperty] private string _chave = "";
@@ -173,7 +173,7 @@ public partial class ESocialViewModel(IContexto contexto) : ModuloViewModel(cont
         new(EventosEsocial.Todos.Select(t => new TipoEsocialOpcao(t.Tipo, t.Descricao, t.Periodico)));
     public ObservableCollection<EventoEsocialLinha> Eventos { get; } = [];
 
-    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(FolhaExtensoes.InicioMes(null));
+    [ObservableProperty] private DateTime? _competencia = FolhaExtensoes.Mes(contexto.PeriodoTrabalho);
     [ObservableProperty] private EventoEsocialLinha? _selecionado;
     [ObservableProperty] private string _xml = "";
     [ObservableProperty] private string _pasta = "";

@@ -10,7 +10,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="Eventos variáveis" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" Width="150" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <TextBlock Text="{Binding Situacao}" VerticalAlignment="Center" Foreground="#44506A" />
       </StackPanel>
       <TextBlock Text="Seu perfil não permite lançar eventos." Classes="erro" IsVisible="{Binding !PodeLancar}" />

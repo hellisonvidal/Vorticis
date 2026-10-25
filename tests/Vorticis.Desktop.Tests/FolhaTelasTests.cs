@@ -52,6 +52,42 @@ public class FolhaTelasTests(SessaoHeadless headless)
     }
 
     [Fact]
+    public async Task Relatorios_e_telas_da_folha_escolhem_a_competencia_por_mes_e_ano_com_ano_de_4_digitos()
+    {
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            var vm = new MainViewModel();
+            (UserControl View, object Contexto)[] telas =
+            [
+                (new FolhaMensalView(), vm.FolhaMensal), (new ResumoFolhaView(), vm.Resumo), (new EncargosFolhaView(), vm.Encargos),
+                (new ProvisoesFolhaView(), vm.Provisoes), (new EventosVariaveisView(), vm.Eventos), (new ContabilizacaoFolhaView(), vm.Contabilizacao),
+                (new ESocialView(), vm.ESocial),
+            ];
+            foreach (var (view, contexto) in telas)
+            {
+                view.DataContext = contexto;
+                var janela = new Window { Content = view, Width = 1200, Height = 800 };
+                janela.Show();
+                Dispatcher.UIThread.RunJobs();
+                var seletor = Assert.Single(view.GetVisualDescendants().OfType<Vorticis.Desktop.Comum.Views.SeletorCompetencia>());
+                var ano = seletor.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "AnoCompetencia");
+                var mes = seletor.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "MesCompetencia");
+                ano.SelectedItem = 2025;
+                mes.SelectedIndex = 6;
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(new DateTime(2025, 7, 1), (DateTime?)contexto.GetType().GetProperty("Competencia")!.GetValue(contexto));
+                // o ano aparece inteiro (4 dígitos) na caixa
+                var texto = ano.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "2025");
+                Assert.True(texto.Bounds.Width + 1 >= texto.DesiredSize.Width && ano.Bounds.Width >= 80, $"{texto.Bounds.Width} / {ano.Bounds.Width}");
+                janela.Close();
+            }
+            await Task.Yield();
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
+    [Fact]
     public async Task Linha_de_menus_da_folha_cabe_na_tela_de_1366_pixels()
     {
         var sobra = await ForaDaSessao(headless.Sessao.Dispatch(async () =>

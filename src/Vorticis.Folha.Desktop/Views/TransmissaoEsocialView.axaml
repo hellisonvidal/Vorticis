@@ -9,7 +9,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="eSocial › Transmissão" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" Width="150" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <TextBlock Text="Ambiente" VerticalAlignment="Center" />
         <ComboBox ItemsSource="{x:Static vm:TransmissaoEsocialViewModel.Ambientes}" SelectedItem="{Binding Ambiente}" Width="220">
           <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoAmbiente"><TextBlock Text="{Binding Texto}" /></DataTemplate></ComboBox.ItemTemplate>

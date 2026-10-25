@@ -9,8 +9,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="Folha mensal" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <ComboBox ItemsSource="{x:Static vm:FolhaMensalViewModel.Meses}" SelectedIndex="{Binding MesCompetencia}" Width="130" />
-        <NumericUpDown Value="{Binding AnoCampo}" Minimum="1990" Maximum="2100" Increment="1" FormatString="0" Width="110" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Calcular folha" Command="{Binding CalcularCommand}" Classes="accent" IsEnabled="{Binding PodeCalcular}" />
         <Button Content="Fechar competência" Command="{Binding FecharCommand}" IsEnabled="{Binding PodeFechar}" />
         <Button Content="Reabrir" Command="{Binding ReabrirCommand}" IsEnabled="{Binding PodeReabrir}" />
