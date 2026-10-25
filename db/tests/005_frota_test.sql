@@ -42,4 +42,3 @@ BEGIN
     RAISE NOTICE 'OK: módulo Frota (empresa só da Frota, placa, viagem concluída, plano de manutenção, documentos e exclusão da empresa)';
 END $$;
 
-\echo 'TODOS OS TESTES PASSARAM'

@@ -9,6 +9,9 @@ public static class TabelasFrota
     public const string TituloConsumo = "Consumo de combustível";
     public const string TituloViagens = "Resultado das viagens";
     public const string TituloVencimentos = "Vencimentos e manutenções";
+    public const string TituloAcompanhamento = "Acompanhamento das ordens de serviço";
+    public const string TituloAprovacoes = "Aprovações de serviços";
+    public const string TituloNotas = "Notas fiscais de compra";
 
     private static LinhaRelatorio L(bool destaque, params object?[] v) => new(v, destaque);
     private static decimal? PorKm(decimal valor, decimal km) => km > 0 ? Math.Round(valor / km, 3) : null;
@@ -88,4 +91,60 @@ public static class TabelasFrota
         new("Situação", LarguraCm: 2.4), new("Assunto", LarguraCm: 5), new("Descrição"), new("Data", TipoColuna.Data),
     ], [.. avisos.Select(a => L(a.Gravidade == GravidadeAviso.Vencido,
         a.Gravidade switch { GravidadeAviso.Vencido => "VENCIDO", GravidadeAviso.AVencer => "A VENCER", _ => "ATENÇÃO" }, a.Assunto, a.Descricao, a.Data))]);
+
+    /// <summary>Ordens abertas no período: situação, dias em aberto, valor da ordem, último valor autorizado e notas de compra lançadas.</summary>
+    public static TabelaRelatorio Acompanhamento(IReadOnlyList<OrdemServico> ordens, IReadOnlyList<Autorizacao> autorizacoes, IReadOnlyList<NotaCompra> notas, DateOnly hoje)
+    {
+        var linhas = new List<LinhaRelatorio>();
+        decimal tOrdem = 0, tAut = 0, tNotas = 0;
+        foreach (var o in ordens.OrderBy(o => o.Data).ThenBy(o => o.Numero))
+        {
+            var aut = autorizacoes.Where(a => a.OrdemId == o.Id && a.Decisao == "APROVADA").MaxBy(a => a.Momento)?.Valor;
+            var nf = notas.Where(n => n.OrdemId == o.Id).Sum(n => n.Total);
+            var cancelada = o.Situacao == "CANCELADA";
+            // destaque: aguardando autorização, ou notas acima do valor autorizado
+            var atencao = o.Situacao == "AGUARDANDO" || (aut is { } a && nf > a);
+            linhas.Add(L(atencao, o.Numero, o.Data, RegrasFrota.FormatarPlaca(o.Placa ?? ""), o.Descricao, RegrasFrota.RotuloManutencao(o.Situacao),
+                         (long)RegrasFrota.DiasEmAberto(o, hoje), o.Total, aut, nf, aut is { } v ? nf - v : null));
+            if (cancelada) continue;
+            (tOrdem, tAut, tNotas) = (tOrdem + o.Total, tAut + (aut ?? 0), tNotas + nf);
+        }
+        linhas.Add(L(true, null, null, "TOTAL", $"{ordens.Count} ordem(ns), {ordens.Count(o => o.Situacao is not ("CONCLUIDA" or "CANCELADA"))} em andamento",
+                     "", null, tOrdem, tAut, tNotas, tNotas - tAut));
+        return new TabelaRelatorio(TituloAcompanhamento,
+        [
+            new("Nº", TipoColuna.Inteiro, 1.2), new("Abertura", TipoColuna.Data), new("Placa", LarguraCm: 2), new("Serviço"), new("Situação", LarguraCm: 3.2),
+            new("Dias", TipoColuna.Inteiro, 1.2), new("Valor da ordem", TipoColuna.Valor), new("Autorizado", TipoColuna.Valor), new("Notas de compra", TipoColuna.Valor),
+            new("Notas − autorizado", TipoColuna.Valor),
+        ], linhas);
+    }
+
+    /// <summary>Decisões do período: quem aprovou ou reprovou, quando, o valor e o motivo; autorizações automáticas aparecem como tal.</summary>
+    public static TabelaRelatorio Aprovacoes(IReadOnlyList<Autorizacao> autorizacoes)
+    {
+        var linhas = autorizacoes.Select(a => L(a.Decisao == "REPROVADA", a.Momento.ToString("dd/MM/yyyy HH:mm"), a.NumeroOrdem, RegrasFrota.FormatarPlaca(a.Placa ?? ""),
+                                                 a.Decisao == "APROVADA" ? (a.Automatica ? "Autorizada (automática)" : "Autorizada") : "Reprovada", a.Valor,
+                                                 a.Automatica ? "Sistema" : a.Usuario ?? "", a.Observacao ?? "")).ToList();
+        var aprovadas = autorizacoes.Where(a => a.Decisao == "APROVADA").ToList();
+        linhas.Add(L(true, "TOTAL", null, "", $"{aprovadas.Count} autorizada(s), {autorizacoes.Count - aprovadas.Count} reprovada(s)", aprovadas.Sum(a => a.Valor), "", ""));
+        return new TabelaRelatorio(TituloAprovacoes,
+        [
+            new("Data e hora", LarguraCm: 3), new("OS nº", TipoColuna.Inteiro, 1.4), new("Placa", LarguraCm: 2), new("Decisão", LarguraCm: 3.6),
+            new("Valor", TipoColuna.Valor), new("Usuário", LarguraCm: 3.5), new("Observação / motivo"),
+        ], linhas);
+    }
+
+    /// <summary>Notas de compra emitidas no período, com a ordem de serviço e o veículo atendidos.</summary>
+    public static TabelaRelatorio Notas(IReadOnlyList<NotaCompra> notas)
+    {
+        var linhas = notas.Select(n => L(n.OrdemId is null, n.Emissao, $"{n.Numero}/{n.Serie}", n.Fornecedor, n.Cnpj is { Length: 14 } c ? Vorticis.Domain.Cadastros.Cnpj.Formatar(c) : n.Cnpj ?? "",
+                                          n.NumeroOrdem is { } os ? (long)os : null, RegrasFrota.FormatarPlaca(n.Placa ?? ""), n.ValorPecas, n.ValorServicos, n.Total)).ToList();
+        linhas.Add(L(true, null, "TOTAL", $"{notas.Count} nota(s), {notas.Count(n => n.OrdemId is null)} sem ordem de serviço", "", null, "",
+                     notas.Sum(n => n.ValorPecas), notas.Sum(n => n.ValorServicos), notas.Sum(n => n.Total)));
+        return new TabelaRelatorio(TituloNotas,
+        [
+            new("Emissão", TipoColuna.Data), new("Número/série", LarguraCm: 2.4), new("Fornecedor"), new("CNPJ/CPF", LarguraCm: 3.6), new("OS nº", TipoColuna.Inteiro, 1.4),
+            new("Placa", LarguraCm: 2), new("Peças", TipoColuna.Valor), new("Serviços", TipoColuna.Valor), new("Total", TipoColuna.Valor),
+        ], linhas);
+    }
 }

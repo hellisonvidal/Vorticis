@@ -94,6 +94,47 @@ public class RegrasFrotaTests
     }
 }
 
+public class RegrasManutencaoTests
+{
+    [Fact]
+    public void Fluxo_da_ordem_de_servico_e_autorizacao_automatica_pelo_limite()
+    {
+        Assert.Equal(("AGUARDANDO", null), RegrasFrota.Transicao("ABERTA", AcaoOrdem.SolicitarAutorizacao));
+        Assert.Equal(("APROVADA", null), RegrasFrota.Transicao("AGUARDANDO", AcaoOrdem.Aprovar));
+        Assert.Equal(("REPROVADA", null), RegrasFrota.Transicao("AGUARDANDO", AcaoOrdem.Reprovar));
+        Assert.Equal(("AGUARDANDO", null), RegrasFrota.Transicao("REPROVADA", AcaoOrdem.SolicitarAutorizacao));
+        Assert.Equal(("CONCLUIDA", null), RegrasFrota.Transicao("APROVADA", AcaoOrdem.Concluir));
+        Assert.Null(RegrasFrota.Transicao("ABERTA", AcaoOrdem.Concluir).Nova);
+        Assert.Null(RegrasFrota.Transicao("ABERTA", AcaoOrdem.Aprovar).Nova);
+        Assert.Null(RegrasFrota.Transicao("CONCLUIDA", AcaoOrdem.Cancelar).Nova);
+        Assert.Null(RegrasFrota.Transicao("CONCLUIDA", AcaoOrdem.Reabrir).Nova);
+        Assert.Equal(("ABERTA", null), RegrasFrota.Transicao("CANCELADA", AcaoOrdem.Reabrir));
+        Assert.True(RegrasFrota.OrdemEditavel("REPROVADA"));
+        Assert.False(RegrasFrota.OrdemEditavel("AGUARDANDO"));
+        Assert.False(RegrasFrota.ExigeAutorizacao(500, 500));
+        Assert.True(RegrasFrota.ExigeAutorizacao(500.01m, 500));
+        Assert.True(RegrasFrota.ExigeAutorizacao(1, 0));
+        Assert.Equal((170m, 120.5m), RegrasFrota.Totais([new(0, null, "PECA", "Filtro", 2, 85), new(0, null, "SERVICO", "Troca", 0.5m, 241)]));
+        var o = new OrdemServico(1, 1, 1, null, "CORRETIVA", new DateOnly(2026, 4, 1), null, "x", null, 0, 0);
+        Assert.Equal(9, RegrasFrota.DiasEmAberto(o, new DateOnly(2026, 4, 10)));
+        Assert.Equal(2, RegrasFrota.DiasEmAberto(o with { Situacao = "CONCLUIDA", Conclusao = new DateOnly(2026, 4, 3) }, new DateOnly(2026, 4, 10)));
+    }
+
+    [Fact]
+    public void Nota_de_compra_confere_CNPJ_valores_e_chave_de_acesso()
+    {
+        const string chave = "35260411222333000181550010000004561123456782";
+        Assert.True(RegrasFrota.ChaveValida(chave));
+        Assert.False(RegrasFrota.ChaveValida(chave[..43] + "3"));
+        var n = new NotaCompra(0, null, "Auto Peças", "11222333000181", "456", "1", new DateOnly(2026, 4, 2), chave, 100, 0, null);
+        Assert.Empty(RegrasFrota.Validar(n));
+        Assert.Contains("A chave de acesso não é do CNPJ do fornecedor informado.", RegrasFrota.Validar(n with { Cnpj = "27183946000197" }));
+        Assert.Contains("Informe o valor das peças e/ou dos serviços.", RegrasFrota.Validar(n with { ValorPecas = 0 }));
+        Assert.Contains("CNPJ/CPF do fornecedor inválido.", RegrasFrota.Validar(n with { Cnpj = "11222333000180", Chave = null }));
+        Assert.Contains(RegrasFrota.Validar(new ItemOrdem(0, null, "PNEU", "", 0, -1)), e => e.Contains("peça ou serviço"));
+    }
+}
+
 public class FrotaIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
 {
     [Fact]
@@ -133,9 +174,13 @@ public class FrotaIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Contains(avisos, a => a.Gravidade == GravidadeAviso.Vencido && a.Assunto.StartsWith("Manutenção"));
         Assert.Contains(avisos, a => a.Gravidade == GravidadeAviso.AVencer && a.Assunto == "CNH – Pedro Alves");
         Assert.Contains(avisos, a => a.Gravidade == GravidadeAviso.Atencao && a.Assunto.StartsWith("Consumo"));   // 800 km / 400 l = 2,0 km/l < 2,5 - 10%
-        var os = await svc.GravarOrdemAsync(empresa, new OrdemServico(0, 0, veiculo, plano, "PREVENTIVA", hoje, 101300, "Troca de óleo", "Oficina B", 900, 300, "CONCLUIDA"), adm, ct);
+        var os = await svc.GravarOrdemAsync(empresa, new OrdemServico(0, 0, veiculo, plano, "PREVENTIVA", hoje, 101300, "Troca de óleo", "Oficina B", 900, 300), [], adm, ct);
         Assert.True(os.Sucesso, string.Join(" ", os.Erros));
         Assert.Equal(1, os.Valor);
+        var idOs = (await svc.OrdensAsync(empresa, hoje, hoje, adm, ct)).Single().Id;
+        Assert.Equal("AGUARDANDO", (await svc.MudarSituacaoAsync(empresa, idOs, AcaoOrdem.SolicitarAutorizacao, adm, ct: ct)).Valor);   // limite 0: toda ordem
+        Assert.Equal("APROVADA", (await svc.MudarSituacaoAsync(empresa, idOs, AcaoOrdem.Aprovar, adm, ct: ct)).Valor);
+        Assert.Equal("CONCLUIDA", (await svc.MudarSituacaoAsync(empresa, idOs, AcaoOrdem.Concluir, adm, conclusao: hoje, ct: ct)).Valor);
         Assert.Equal(101300m, (await svc.PlanosAsync(empresa, adm, ct)).Single().UltimaKm);
         Assert.DoesNotContain(await svc.AvisosAsync(empresa, hoje, adm, ct), a => a.Assunto.StartsWith("Manutenção"));
 
@@ -158,5 +203,71 @@ public class FrotaIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         // veículo com movimento não pode ser excluído; o reboque sem movimento pode
         Assert.Contains("desmarque Ativo", (await svc.ExcluirVeiculoAsync(empresa, veiculo, adm, ct)).Erros[0]);
         Assert.True((await svc.ExcluirVeiculoAsync(empresa, reboque, adm, ct)).Sucesso);
+    }
+
+    [Fact]
+    public async Task Ordem_com_itens_autorizacao_notas_de_compra_e_relatorios_da_manutencao()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = await db.AdminAsync();
+        var empresa = await db.CriarEmpresaAsync("27183946000197");
+        var svc = ServicosFrota.De(db.App);
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        Assert.True((await svc.GravarConfiguracaoAsync(empresa, new ConfiguracaoFrota(30, 15, 500), adm, ct)).Sucesso);   // até R$ 500 autoriza sozinha
+        var veiculo = (await svc.GravarVeiculoAsync(empresa, new Veiculo(0, 1, "OFC2B34", null, "TRUCK", "VW", "Delivery", 2021, 2021, "DIESEL_S10", null, 80000, 4m), adm, ct)).Valor;
+        var filtro = (await svc.GravarItemManutencaoAsync(empresa, new ItemManutencao(0, 1, "PECA", "Filtro de óleo", "UN", 85m), adm, ct)).Valor;
+        Assert.False((await svc.GravarItemManutencaoAsync(empresa, new ItemManutencao(0, 1, "PECA", "Repetido", "UN", null), adm, ct)).Sucesso);
+
+        // ordem pequena: autorizada automaticamente; peças e serviços somados pelos itens
+        ItemOrdem[] pequenos = [new(0, filtro, "PECA", "Filtro de óleo", 2, 85), new(0, null, "SERVICO", "Mão de obra da troca", 1, 120)];
+        Assert.True((await svc.GravarOrdemAsync(empresa, new OrdemServico(0, 0, veiculo, null, "CORRETIVA", hoje, 80500, "Troca de filtros", "Oficina Centro", 0, 0), pequenos, adm, ct)).Sucesso);
+        var os1 = (await svc.OrdensAsync(empresa, hoje, hoje, adm, ct)).Single();
+        Assert.Equal((170m, 120m, 290m), (os1.ValorPecas, os1.ValorMaoObra, os1.Total));
+        Assert.Equal(2, (await svc.ItensOrdemAsync(empresa, os1.Id, adm, ct)).Count);
+        Assert.Contains("autorizada", (await svc.MudarSituacaoAsync(empresa, os1.Id, AcaoOrdem.Concluir, adm, ct: ct)).Erros[0]);
+        Assert.Equal("APROVADA", (await svc.MudarSituacaoAsync(empresa, os1.Id, AcaoOrdem.SolicitarAutorizacao, adm, ct: ct)).Valor);
+        Assert.Contains("Reabrir", (await svc.GravarOrdemAsync(empresa, os1 with { Descricao = "Mudou" }, pequenos, adm, ct)).Erros[0]);   // autorizada: não se mexe
+        Assert.Equal("CONCLUIDA", (await svc.MudarSituacaoAsync(empresa, os1.Id, AcaoOrdem.Concluir, adm, conclusao: hoje, ct: ct)).Valor);
+        Assert.False((await svc.ExcluirOrdemAsync(empresa, os1.Id, adm, ct)).Sucesso);
+
+        // ordem grande: aguarda autorização, reprovação exige motivo, refeita e aprovada; cancelada no fim
+        ItemOrdem[] grandes = [new(0, null, "PECA", "Kit embreagem", 1, 2800), new(0, null, "SERVICO", "Troca da embreagem", 1, 900)];
+        var g2 = await svc.GravarOrdemAsync(empresa, new OrdemServico(0, 0, veiculo, null, "CORRETIVA", hoje, null, "Embreagem", null, 0, 0, Solicitante: "Carlos"), grandes, adm, ct);
+        Assert.True(g2.Sucesso, string.Join(" ", g2.Erros));
+        var os2 = (await svc.OrdensAsync(empresa, hoje, hoje, adm, ct)).Single(o => o.Numero == 2);
+        Assert.Equal("AGUARDANDO", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.SolicitarAutorizacao, adm, ct: ct)).Valor);
+        Assert.Contains(await svc.AvisosAsync(empresa, hoje, adm, ct), a => a.Assunto.StartsWith("Autorização – OS nº 2"));
+        Assert.Contains("motivo", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.Reprovar, adm, " ", ct: ct)).Erros[0]);
+        Assert.Equal("REPROVADA", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.Reprovar, adm, "Pedir outro orçamento", ct: ct)).Valor);
+        Assert.True((await svc.GravarOrdemAsync(empresa, os2 with { Situacao = "REPROVADA" }, [grandes[0] with { ValorUnitario = 2500 }, grandes[1]], adm, ct)).Sucesso);
+        Assert.Equal("ABERTA", (await svc.OrdensAsync(empresa, hoje, hoje, adm, ct)).Single(o => o.Numero == 2).Situacao);   // refeita volta a ficar aberta
+        Assert.Equal("AGUARDANDO", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.SolicitarAutorizacao, adm, ct: ct)).Valor);
+        Assert.Equal("APROVADA", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.Aprovar, adm, "Ok", ct: ct)).Valor);
+
+        // notas de compra: chave conferida, nota repetida recusada, ligação com a ordem
+        var nota = new NotaCompra(0, os2.Id, "Embreagens Brasil", "11.222.333/0001-81", "000456", "1", hoje, null, 2500, 0, null);
+        Assert.True((await svc.GravarNotaCompraAsync(empresa, nota, adm, ct)).Sucesso);
+        Assert.Contains("já foi lançada", (await svc.GravarNotaCompraAsync(empresa, nota with { Numero = "456" }, adm, ct)).Erros[0]);
+        Assert.Contains("have de acesso", (await svc.GravarNotaCompraAsync(empresa, nota with { Numero = "457", Chave = new string('1', 44) }, adm, ct)).Erros[0]);
+        Assert.True((await svc.GravarNotaCompraAsync(empresa, new NotaCompra(0, os2.Id, "Oficina Centro", null, "88", "1", hoje, null, 0, 1300, null), adm, ct)).Sucesso);
+        Assert.Equal("456", (await svc.NotasCompraAsync(empresa, hoje, hoje, adm, ct)).Single(n => n.Fornecedor == "Embreagens Brasil").Numero);
+
+        // relatórios por data
+        var acomp = (await svc.RelatorioAsync(empresa, TabelasFrota.TituloAcompanhamento, hoje, hoje, adm, ct)).Valor!;
+        var linha2 = acomp.Linhas.Single(l => Equals(l.Valores[0], 2));
+        Assert.Equal((3400m, 3400m, 3800m, 400m), ((decimal)linha2.Valores[6]!, (decimal)linha2.Valores[7]!, (decimal)linha2.Valores[8]!, (decimal)linha2.Valores[9]!));
+        Assert.True(linha2.Destaque);                                     // notas acima do autorizado
+        var aprov = (await svc.RelatorioAsync(empresa, TabelasFrota.TituloAprovacoes, hoje, hoje, adm, ct)).Valor!;
+        Assert.Equal(3, aprov.Linhas.Count - 1);                          // automática da 1ª; reprovada e aprovada da 2ª
+        Assert.Contains(aprov.Linhas, l => Equals(l.Valores[3], "Autorizada (automática)") && Equals(l.Valores[5], "Sistema"));
+        Assert.Contains(aprov.Linhas, l => Equals(l.Valores[3], "Reprovada") && Equals(l.Valores[6], "Pedir outro orçamento"));
+        var notas = (await svc.RelatorioAsync(empresa, TabelasFrota.TituloNotas, hoje, hoje, adm, ct)).Valor!;
+        Assert.Equal(3800m, notas.Linhas[^1].Valores[8]);
+        Assert.Empty((await svc.RelatorioAsync(empresa, TabelasFrota.TituloNotas, hoje.AddDays(1), hoje.AddDays(5), adm, ct)).Valor!.Linhas.SkipLast(1));
+
+        Assert.Equal("CANCELADA", (await svc.MudarSituacaoAsync(empresa, os2.Id, AcaoOrdem.Cancelar, adm, ct: ct)).Valor);
+        Assert.True((await svc.ExcluirOrdemAsync(empresa, os2.Id, adm, ct)).Sucesso);
+        Assert.All(await svc.NotasCompraAsync(empresa, hoje, hoje, adm, ct), n => Assert.Null(n.OrdemId));   // as notas ficam, sem a ordem
     }
 }

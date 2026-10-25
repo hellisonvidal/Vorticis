@@ -24,6 +24,12 @@ public static class FrotaTelas
     public const string RelConsumo = "frota.rel.consumo";
     public const string RelViagens = "frota.rel.viagens";
     public const string RelVencimentos = "frota.rel.vencimentos";
+    public const string Itens = "frota.pecas";
+    public const string Autorizacao = "frota.autorizacao";
+    public const string Notas = "frota.notas";
+    public const string RelAcompanhamento = "frota.rel.ordens";
+    public const string RelAprovacoes = "frota.rel.aprovacoes";
+    public const string RelNotas = "frota.rel.notas";
 }
 
 internal static class Ext
@@ -316,7 +322,7 @@ public sealed record PlanoLinha(PlanoManutencao P, SituacaoPreventiva S)
 }
 
 /// <summary>Cadastros › Planos de manutenção: preventivas por km, por dias ou pelo que vencer primeiro.</summary>
-public partial class PlanosViewModel(IContexto contexto) : FrotaBase(contexto, Permissao.FrotaCadastros)
+public partial class PlanosViewModel(IContexto contexto) : FrotaBase(contexto, Permissao.FrotaManutencao)
 {
     public ObservableCollection<PlanoLinha> Lista { get; } = [];
     [ObservableProperty] private PlanoLinha? _selecionado;
@@ -368,7 +374,7 @@ public partial class PlanosViewModel(IContexto contexto) : FrotaBase(contexto, P
         await CarregarAsync();
         Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
         Mensagem = "Plano gravado.";
-    }, Permissao.FrotaCadastros);
+    }, Permissao.FrotaManutencao);
 
     [RelayCommand]
     private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -380,7 +386,7 @@ public partial class PlanosViewModel(IContexto contexto) : FrotaBase(contexto, P
         Novo();
         await CarregarAsync();
         Mensagem = "Plano excluído.";
-    }, Permissao.FrotaCadastros);
+    }, Permissao.FrotaManutencao);
 }
 
 // ---------------------------------------------------------------------------------------------- documentos
@@ -480,7 +486,7 @@ public sealed record AbastecimentoLinha(Abastecimento A, MediaConsumo? M, bool A
     public string Valor => Formato.Moeda(A.ValorTotal);
     public string PrecoLitro => A.PrecoLitro.ToString("N3", Formato.PtBr);
     public string Combustivel => RegrasFrota.Rotulo(A.Combustivel) + (A.TanqueCheio ? "" : " (parcial)");
-    public string Media => M is null ? "" : $"{M.Media:N2} km/l" + (Alerta ? " ⚠" : "");
+    public string Media => M is null ? "" : string.Create(Formato.PtBr, $"{M.Media:N2} km/l") + (Alerta ? " ⚠" : "");
     public string Posto => A.Posto ?? "";
 }
 
@@ -571,8 +577,8 @@ public partial class AbastecimentosViewModel(IContexto contexto) : FrotaBase(con
         await CarregarAsync();
         var gravado = Lista.FirstOrDefault(l => l.A.Id == r.Valor);
         Novo();
-        Mensagem = gravado?.Alerta == true ? $"Abastecimento gravado. Atenção: média de {gravado.M!.Media:N2} km/l, abaixo do esperado para o veículo."
-            : gravado?.M is { } m ? $"Abastecimento gravado. Média desde o último tanque cheio: {m.Media:N2} km/l." : "Abastecimento gravado.";
+        Mensagem = gravado?.Alerta == true ? string.Create(Formato.PtBr, $"Abastecimento gravado. Atenção: média de {gravado.M!.Media:N2} km/l, abaixo do esperado para o veículo.")
+            : gravado?.M is { } m ? string.Create(Formato.PtBr, $"Abastecimento gravado. Média desde o último tanque cheio: {m.Media:N2} km/l.") : "Abastecimento gravado.";
     }, Permissao.FrotaOperacao);
 
     [RelayCommand]
@@ -585,123 +591,6 @@ public partial class AbastecimentosViewModel(IContexto contexto) : FrotaBase(con
         Novo();
         await CarregarAsync();
         Mensagem = "Abastecimento excluído.";
-    }, Permissao.FrotaOperacao);
-}
-
-// ---------------------------------------------------------------------------------------------- ordens de serviço
-
-public sealed record OrdemLinha(OrdemServico O)
-{
-    public int Numero => O.Numero;
-    public string Data => Ext.Data(O.Data);
-    public string Placa => RegrasFrota.FormatarPlaca(O.Placa ?? "");
-    public string Tipo => RegrasFrota.Rotulo(O.Tipo);
-    public string Descricao => O.Descricao;
-    public string Oficina => O.Oficina ?? "";
-    public string Total => Formato.Moeda(O.Total);
-    public string Situacao => RegrasFrota.Rotulo(O.Situacao);
-}
-
-/// <summary>Operação › Ordens de serviço: manutenções corretivas e preventivas; a preventiva concluída renova o plano.</summary>
-public partial class OrdensViewModel(IContexto contexto) : FrotaBase(contexto, Permissao.FrotaOperacao)
-{
-    private List<PlanoManutencao> _planos = [];
-    public ObservableCollection<OrdemLinha> Lista { get; } = [];
-    public ObservableCollection<Opcao> PlanosOpcoes { get; } = [];
-    public static IReadOnlyList<OpcaoCodigo> Tipos { get; } = OpcaoCodigo.De(["CORRETIVA", "PREVENTIVA"]);
-    public static IReadOnlyList<OpcaoCodigo> Situacoes { get; } = OpcaoCodigo.De(["ABERTA", "CONCLUIDA"]);
-    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-2);
-    [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
-    [ObservableProperty] private OrdemLinha? _selecionada;
-    [ObservableProperty] private Opcao? _veiculo;
-    [ObservableProperty] private Opcao? _plano;
-    [ObservableProperty] private OpcaoCodigo? _tipo = Tipos[0];
-    [ObservableProperty] private DateTime? _data = DateTime.Today;
-    [ObservableProperty] private string _km = "";
-    [ObservableProperty] private string _descricao = "";
-    [ObservableProperty] private string _oficina = "";
-    [ObservableProperty] private string _pecas = "";
-    [ObservableProperty] private string _maoObra = "";
-    [ObservableProperty] private OpcaoCodigo? _situacao = Situacoes[0];
-    [ObservableProperty] private string _totais = "";
-
-    partial void OnInicioChanged(DateTime? value) => _ = CarregarAsync();
-    partial void OnFimChanged(DateTime? value) => _ = CarregarAsync();
-    partial void OnVeiculoChanged(Opcao? value) => MontarPlanos(value?.Id, Plano?.Id);
-
-    /// <summary>Escolher o plano torna a ordem preventiva e traz o serviço do plano como descrição.</summary>
-    partial void OnPlanoChanged(Opcao? value)
-    {
-        if (value?.Id is null) return;
-        Tipo = Tipos.First(t => t.Valor == "PREVENTIVA");
-        if (string.IsNullOrWhiteSpace(Descricao)) Descricao = _planos.FirstOrDefault(p => p.Id == value.Id)?.Descricao ?? "";
-    }
-
-    private void MontarPlanos(long? veiculo, long? manter)
-    {
-        PlanosOpcoes.Clear();
-        PlanosOpcoes.Add(new Opcao(null, "(nenhum)"));
-        foreach (var p in _planos.Where(p => p.VeiculoId == veiculo && (p.Ativo || p.Id == manter))) PlanosOpcoes.Add(new Opcao(p.Id, p.Descricao));
-        Plano = PlanosOpcoes.FirstOrDefault(o => o.Id == manter) ?? PlanosOpcoes[0];
-    }
-
-    partial void OnSelecionadaChanged(OrdemLinha? value)
-    {
-        if (value?.O is not { } o) return;
-        Veiculo = Escolher(VeiculosOpcoes, o.VeiculoId, () => RegrasFrota.FormatarPlaca(o.Placa ?? ""));
-        MontarPlanos(o.VeiculoId, o.PlanoId);
-        Tipo = Tipos.FirstOrDefault(t => t.Valor == o.Tipo);
-        Situacao = Situacoes.FirstOrDefault(s => s.Valor == o.Situacao);
-        (Data, Km, Descricao, Oficina, Pecas, MaoObra) = (Ext.Dt(o.Data), Ext.Num(o.Km), o.Descricao, o.Oficina ?? "", Formato.Num(o.ValorPecas), Formato.Num(o.ValorMaoObra));
-    }
-
-    public async Task CarregarAsync()
-    {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
-        var g = NovaGeracao();
-        await CarregarCombosAsync(app, empresa, sessao.Id);
-        _planos = await app.Frota().PlanosAsync(empresa, sessao.Id);
-        var itens = await app.Frota().OrdensAsync(empresa, Ext.Dia(Inicio), Ext.Dia(Fim), sessao.Id);
-        if (!EhAtual(g)) return;
-        Lista.Clear();
-        foreach (var o in itens) Lista.Add(new OrdemLinha(o));
-        Totais = $"{itens.Count} ordem(ns) · {itens.Count(o => o.Situacao == "ABERTA")} aberta(s) · total {Formato.Moeda(itens.Sum(o => o.Total))}";
-        Veiculo ??= VeiculosOpcoes.FirstOrDefault();
-        MontarPlanos(Veiculo?.Id, Plano?.Id);
-    }
-
-    [RelayCommand]
-    private void Nova()
-    {
-        Selecionada = null;
-        (Tipo, Situacao, Data, Km, Descricao, Oficina, Pecas, MaoObra) = (Tipos[0], Situacoes[0], DateTime.Today, "", "", "", "", "");
-        Veiculo = VeiculosOpcoes.FirstOrDefault();
-        MontarPlanos(Veiculo?.Id, null);
-    }
-
-    [RelayCommand]
-    private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Veiculo?.Id is not { } v) { Erros.Add("Escolha o veículo."); return; }
-        var o = new OrdemServico(Selecionada?.O.Id ?? 0, Selecionada?.O.Numero ?? 0, v, Plano?.Id, Tipo?.Valor ?? "CORRETIVA", Ext.Dia(Data), Formato.LerValor(Km),
-                                 Descricao, Oficina, Formato.LerValor(Pecas) ?? 0, Formato.LerValor(MaoObra) ?? 0, Situacao?.Valor ?? "ABERTA");
-        var r = await app.Frota().GravarOrdemAsync(empresa, o, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarAsync();
-        Selecionada = Lista.FirstOrDefault(l => l.O.Numero == r.Valor);
-        Mensagem = $"Ordem de serviço nº {r.Valor} gravada." + (o.Situacao == "CONCLUIDA" && o.PlanoId is not null ? " O plano de manutenção foi renovado." : "");
-    }, Permissao.FrotaOperacao);
-
-    [RelayCommand]
-    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Selecionada?.O is not { } o) { Erros.Add("Selecione a ordem de serviço."); return; }
-        if (!await Contexto.ConfirmarAsync("Excluir ordem de serviço", $"Excluir a ordem nº {o.Numero}?")) return;
-        var r = await app.Frota().ExcluirOrdemAsync(empresa, o.Id, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Nova();
-        await CarregarAsync();
-        Mensagem = "Ordem de serviço excluída.";
     }, Permissao.FrotaOperacao);
 }
 
@@ -888,6 +777,11 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
             new CampoParametro("tolerancia", "Tolerância do consumo (%)", TipoCampoParametro.Texto,
                                "A média abaixo da esperada do veículo menos esta porcentagem gera alerta. Ex.: esperada 2,5 km/l e 15% → alerta abaixo de 2,13 km/l."),
         ], [Atalho("Abrir Painel da frota", FrotaTelas.Painel), Atalho("Abrir Veículos", FrotaTelas.Veiculos)]),
+        new("Manutenção", "Autorização das ordens de serviço (Manutenção › Autorização de serviços).",
+        [
+            new CampoParametro("limite", "Autorizar sozinhas as ordens de até (R$)", TipoCampoParametro.Texto,
+                               "Ordens de serviço com valor até este limite são autorizadas automaticamente ao pedir autorização. Com 0, toda ordem precisa ser autorizada."),
+        ], [Atalho("Abrir Autorização de serviços", FrotaTelas.Autorizacao)]),
     ];
 
     protected override async Task CarregarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -895,12 +789,14 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
         var c = await app.Frota().ConfiguracaoAsync(empresa);
         Campo("dias").Texto = c.DiasAviso.ToString();
         Campo("tolerancia").Texto = Formato.Num(c.ToleranciaConsumo);
+        Campo("limite").Texto = Formato.Num(c.LimiteAutorizacao);
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
     {
         if (Ext.Int(Campo("dias").Texto) is not { } dias) { Erros.Add("Informe a antecedência em dias (número inteiro)."); return; }
-        var r = await app.Frota().GravarConfiguracaoAsync(empresa, new ConfiguracaoFrota(dias, Formato.LerValor(Campo("tolerancia").Texto) ?? 0), usuario);
+        var r = await app.Frota().GravarConfiguracaoAsync(empresa, new ConfiguracaoFrota(dias, Formato.LerValor(Campo("tolerancia").Texto) ?? 0,
+                                                                                                 Formato.LerValor(Campo("limite").Texto) ?? 0), usuario);
         if (!r.Sucesso) MostrarResultado(r, "");
     }
 }

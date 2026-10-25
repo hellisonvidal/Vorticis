@@ -10,7 +10,7 @@ namespace Vorticis.Frota;
 /// Módulo Frota (piloto; a empresa ativa é a transportadora). Cadastros com FROTA_CADASTROS; abastecimentos, ordens de serviço e
 /// viagens com FROTA_OPERACAO; painel e relatórios com FROTA_RELATORIOS (qualquer uma das três dá acesso à consulta).
 /// </summary>
-public sealed class ServicoFrota(VorticisApp app)
+public sealed partial class ServicoFrota(VorticisApp app)
 {
     private readonly BancoModulo _db = new(app.DataSource);
     private readonly Autorizador _aut = app.Autorizador;
@@ -20,7 +20,7 @@ public sealed class ServicoFrota(VorticisApp app)
     private async Task<bool> PodeVerAsync(long u, long e, CancellationToken ct)
     {
         var p = await _aut.ObterAsync(u, e, ct);
-        return p.Administrador || new[] { P.FrotaCadastros, P.FrotaOperacao, P.FrotaRelatorios }.Any(p.Pode);
+        return p.Administrador || new[] { P.FrotaCadastros, P.FrotaOperacao, P.FrotaRelatorios, P.FrotaManutencao, P.FrotaAprovar }.Any(p.Pode);
     }
 
     private static async Task<Resultado<T>> Tentar<T>(Func<Task<T>> acao)
@@ -44,18 +44,20 @@ public sealed class ServicoFrota(VorticisApp app)
     // ------------------------------------------------------------------ configuração
 
     public async Task<ConfiguracaoFrota> ConfiguracaoAsync(long empresa, CancellationToken ct = default)
-        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo FROM frota.configuracao WHERE empresa_id = @e",
-                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
+        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo, limite_autorizacao FROM frota.configuracao WHERE empresa_id = @e",
+                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1), r.GetDecimal(2)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
 
     public async Task<Resultado> GravarConfiguracaoAsync(long empresa, ConfiguracaoFrota c, long usuario, CancellationToken ct = default)
     {
         if (await Negar(usuario, empresa, P.FrotaCadastros, ct) is { } n) return Resultado.Falha(n);
         if (c.DiasAviso is < 1 or > 365) return Resultado.Falha("Antecedência dos avisos: de 1 a 365 dias.");
         if (c.ToleranciaConsumo is < 0 or > 100) return Resultado.Falha("Tolerância do consumo: de 0 a 100%.");
+        if (c.LimiteAutorizacao < 0) return Resultado.Falha("O limite de autorização automática não pode ser negativo.");
         return await Tentar(() => _db.ExecutarAsync("""
-            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo) VALUES (@e, @d, @t)
-            ON CONFLICT (empresa_id) DO UPDATE SET dias_aviso = EXCLUDED.dias_aviso, tolerancia_consumo = EXCLUDED.tolerancia_consumo
-            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo)));
+            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo, limite_autorizacao) VALUES (@e, @d, @t, @l)
+            ON CONFLICT (empresa_id) DO UPDATE SET dias_aviso = EXCLUDED.dias_aviso, tolerancia_consumo = EXCLUDED.tolerancia_consumo,
+                                                   limite_autorizacao = EXCLUDED.limite_autorizacao
+            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo), ("l", c.LimiteAutorizacao)));
     }
 
     // ------------------------------------------------------------------ veículos
@@ -213,7 +215,7 @@ public sealed class ServicoFrota(VorticisApp app)
 
     public async Task<Resultado<long>> GravarPlanoAsync(long empresa, PlanoManutencao p, long usuario, CancellationToken ct = default)
     {
-        if (await Negar(usuario, empresa, P.FrotaCadastros, ct) is { } n) return Resultado<long>.Falha(n);
+        if (await Negar(usuario, empresa, P.FrotaManutencao, ct) is { } n) return Resultado<long>.Falha(n);
         if (string.IsNullOrWhiteSpace(p.Descricao)) return Resultado<long>.Falha("Informe o serviço (ex.: troca de óleo).");
         if (p.IntervaloKm is null && p.IntervaloDias is null) return Resultado<long>.Falha("Informe o intervalo em km, em dias ou os dois.");
         if (p.IntervaloKm is <= 0 || p.IntervaloDias is <= 0) return Resultado<long>.Falha("Os intervalos devem ser maiores que zero.");
@@ -236,59 +238,8 @@ public sealed class ServicoFrota(VorticisApp app)
 
     public async Task<Resultado> ExcluirPlanoAsync(long empresa, long id, long usuario, CancellationToken ct = default)
     {
-        if (await Negar(usuario, empresa, P.FrotaCadastros, ct) is { } n) return Resultado.Falha(n);
+        if (await Negar(usuario, empresa, P.FrotaManutencao, ct) is { } n) return Resultado.Falha(n);
         return await Tentar(() => _db.ExecutarAsync("DELETE FROM frota.plano_manutencao WHERE id = @id AND empresa_id = @e", ct, ("id", id), ("e", empresa)));
-    }
-
-    public async Task<List<OrdemServico>> OrdensAsync(long empresa, DateOnly inicio, DateOnly fim, long usuario, CancellationToken ct = default)
-        => await PodeVerAsync(usuario, empresa, ct) ? await ListarOrdensAsync(empresa, inicio, fim, ct) : [];
-
-    private Task<List<OrdemServico>> ListarOrdensAsync(long empresa, DateOnly inicio, DateOnly fim, CancellationToken ct) => _db.ListarAsync("""
-        SELECT o.id, o.numero, o.veiculo_id, o.plano_id, o.tipo, o.data, o.km, o.descricao, o.oficina, o.valor_pecas, o.valor_mao_obra, o.situacao, v.placa
-          FROM frota.ordem_servico o JOIN frota.veiculo v ON v.id = o.veiculo_id
-         WHERE o.empresa_id = @e AND (o.data BETWEEN @i AND @f OR o.situacao = 'ABERTA') ORDER BY o.data DESC, o.numero DESC
-        """, r => new OrdemServico(r.GetInt64(0), r.GetInt32(1), r.GetInt64(2), r.Id(3), r.GetString(4), r.GetFieldValue<DateOnly>(5), r.Valor(6), r.GetString(7),
-                                   r.Texto(8), r.GetDecimal(9), r.GetDecimal(10), r.GetString(11), r.GetString(12)), ct, ("e", empresa), ("i", inicio), ("f", fim));
-
-    /// <summary>Grava a ordem de serviço (número automático). Concluída e ligada a um plano, a preventiva passa a contar a partir dela.</summary>
-    public async Task<Resultado<int>> GravarOrdemAsync(long empresa, OrdemServico o, long usuario, CancellationToken ct = default)
-    {
-        if (await Negar(usuario, empresa, P.FrotaOperacao, ct) is { } n) return Resultado<int>.Falha(n);
-        if (string.IsNullOrWhiteSpace(o.Descricao)) return Resultado<int>.Falha("Descreva o serviço.");
-        if (o.ValorPecas < 0 || o.ValorMaoObra < 0) return Resultado<int>.Falha("Valores não podem ser negativos.");
-        if (o.Tipo == "PREVENTIVA" && o.PlanoId is null) return Resultado<int>.Falha("Na preventiva, escolha o plano de manutenção atendido.");
-        if (o.Situacao == "CONCLUIDA" && o.PlanoId is not null && o.Km is null) return Resultado<int>.Falha("Para concluir a preventiva, informe o km do veículo.");
-        return await Tentar(async () =>
-        {
-            var numero = o.Id == 0 ? await _db.EscalarAsync<int>("SELECT COALESCE(max(numero), 0) + 1 FROM frota.ordem_servico WHERE empresa_id = @e", ct, ("e", empresa)) : o.Numero;
-            (string, object?)[] p =
-            [
-                ("e", empresa), ("id", o.Id), ("n", numero), ("v", o.VeiculoId), ("pl", o.PlanoId), ("t", o.Tipo), ("d", o.Data), ("km", o.Km), ("desc", o.Descricao.Trim()),
-                ("of", string.IsNullOrWhiteSpace(o.Oficina) ? null : o.Oficina.Trim()), ("vp", o.ValorPecas), ("vm", o.ValorMaoObra), ("s", o.Situacao),
-            ];
-            if (o.Id == 0)
-                await _db.ExecutarAsync("""
-                    INSERT INTO frota.ordem_servico (empresa_id, numero, veiculo_id, plano_id, tipo, data, km, descricao, oficina, valor_pecas, valor_mao_obra, situacao)
-                    VALUES (@e, @n, @v, @pl, @t, @d, @km, @desc, @of, @vp, @vm, @s)
-                    """, ct, p);
-            else if (await _db.ExecutarAsync("""
-                    UPDATE frota.ordem_servico SET veiculo_id = @v, plano_id = @pl, tipo = @t, data = @d, km = @km, descricao = @desc, oficina = @of, valor_pecas = @vp,
-                           valor_mao_obra = @vm, situacao = @s WHERE id = @id AND empresa_id = @e
-                    """, ct, p) == 0) throw new ViolacaoRegraException("Ordem de serviço não encontrada.");
-            if (o.Km is { } km) await AtualizarKmAsync(o.VeiculoId, km, ct);
-            if (o.Situacao == "CONCLUIDA" && o.PlanoId is { } plano)
-                await _db.ExecutarAsync("""
-                    UPDATE frota.plano_manutencao SET ultima_km = GREATEST(COALESCE(ultima_km, 0), @km), ultima_data = GREATEST(COALESCE(ultima_data, @d), @d)
-                     WHERE id = @p AND empresa_id = @e
-                    """, ct, ("p", plano), ("e", empresa), ("km", o.Km ?? 0), ("d", o.Data));
-            return numero;
-        });
-    }
-
-    public async Task<Resultado> ExcluirOrdemAsync(long empresa, long id, long usuario, CancellationToken ct = default)
-    {
-        if (await Negar(usuario, empresa, P.FrotaOperacao, ct) is { } n) return Resultado.Falha(n);
-        return await Tentar(() => _db.ExecutarAsync("DELETE FROM frota.ordem_servico WHERE id = @id AND empresa_id = @e", ct, ("id", id), ("e", empresa)));
     }
 
     // ------------------------------------------------------------------ viagens
@@ -399,7 +350,7 @@ public sealed class ServicoFrota(VorticisApp app)
             var s = RegrasFrota.Situacao(p, veiculos[p.VeiculoId].KmAtual, hoje, cfg.DiasAviso);
             if (s.Gravidade is not { } g) continue;
             var partes = new List<string>();
-            if (s.ProximaKm is { } k) partes.Add($"aos {k:N0} km (veículo com {veiculos[p.VeiculoId].KmAtual:N0} km)");
+            if (s.ProximaKm is { } k) partes.Add(string.Create(Formato.PtBr, $"aos {k:N0} km (veículo com {veiculos[p.VeiculoId].KmAtual:N0} km)"));
             if (s.ProximaData is { } d) partes.Add($"em {d:dd/MM/yyyy}");
             avisos.Add(new AvisoFrota(g, $"Manutenção – {RegrasFrota.FormatarPlaca(p.Placa ?? "")}", $"{p.Descricao}: {string.Join(" ou ", partes)}", s.ProximaData));
         }
@@ -407,7 +358,10 @@ public sealed class ServicoFrota(VorticisApp app)
         foreach (var ultima in RegrasFrota.Medias(abastecimentos).GroupBy(m => m.VeiculoId).Select(g => g.MaxBy(m => m.Data)!))
             if (veiculos.TryGetValue(ultima.VeiculoId, out var v) && RegrasFrota.ConsumoForaDoEsperado(ultima.Media, v.MediaEsperada, cfg.ToleranciaConsumo))
                 avisos.Add(new AvisoFrota(GravidadeAviso.Atencao, $"Consumo – {RegrasFrota.FormatarPlaca(v.Placa)}",
-                                          $"média de {ultima.Media:N2} km/l, abaixo do esperado ({v.MediaEsperada:N2} km/l)", ultima.Data));
+                                          string.Create(Formato.PtBr, $"média de {ultima.Media:N2} km/l, abaixo do esperado ({v.MediaEsperada:N2} km/l)"), ultima.Data));
+        foreach (var o in (await ListarOrdensAsync(empresa, hoje, hoje, ct)).Where(o => o.Situacao == "AGUARDANDO"))
+            avisos.Add(new AvisoFrota(GravidadeAviso.Atencao, $"Autorização – OS nº {o.Numero} ({RegrasFrota.FormatarPlaca(o.Placa ?? "")})",
+                                      $"{o.Descricao}: R$ {o.Total.ToString("N2", Formato.PtBr)} aguardando autorização", o.Data));
         return [.. avisos.OrderBy(a => a.Gravidade).ThenBy(a => a.Data ?? DateOnly.MaxValue)];
     }
 
@@ -421,11 +375,18 @@ public sealed class ServicoFrota(VorticisApp app)
         var abastecimentos = await ListarAbastecimentosAsync(empresa, inicio, fim, null, ct);
         var tabela = titulo switch
         {
-            TabelasFrota.TituloCustos => TabelasFrota.Custos(veiculos, abastecimentos, (await ListarOrdensAsync(empresa, inicio, fim, ct)).Where(o => o.Data >= inicio && o.Data <= fim).ToList(),
+            TabelasFrota.TituloCustos => TabelasFrota.Custos(veiculos, abastecimentos, (await ListarOrdensAsync(empresa, inicio, fim, ct))
+                                                                 .Where(o => o.Data >= inicio && o.Data <= fim && o.Situacao is not ("CANCELADA" or "REPROVADA")).ToList(),
                                                              (await ListarViagensAsync(empresa, inicio, fim, ct)).Where(v => v.Saida >= inicio && v.Saida <= fim).ToList()),
             TabelasFrota.TituloConsumo => TabelasFrota.Consumo(veiculos, abastecimentos, (await ConfiguracaoAsync(empresa, ct)).ToleranciaConsumo),
             TabelasFrota.TituloViagens => TabelasFrota.Viagens((await ListarViagensAsync(empresa, inicio, fim, ct)).Where(v => v.Saida >= inicio && v.Saida <= fim).ToList(),
                                                                await ListarAbastecimentosAsync(empresa, inicio, fim.AddDays(60), null, ct)),
+            TabelasFrota.TituloAcompanhamento => TabelasFrota.Acompanhamento(
+                (await ListarOrdensAsync(empresa, inicio, fim, ct)).Where(o => o.Data >= inicio && o.Data <= fim).ToList(),
+                await ListarAutorizacoesAsync(empresa, inicio, DateOnly.MaxValue, ct), await ListarNotasAsync(empresa, inicio, DateOnly.MaxValue, ct),
+                DateOnly.FromDateTime(DateTime.Today)),
+            TabelasFrota.TituloAprovacoes => TabelasFrota.Aprovacoes(await ListarAutorizacoesAsync(empresa, inicio, fim, ct)),
+            TabelasFrota.TituloNotas => TabelasFrota.Notas(await ListarNotasAsync(empresa, inicio, fim, ct)),
             _ => TabelasFrota.Vencimentos(await AvisosAsync(empresa, DateOnly.FromDateTime(DateTime.Today), usuario, ct)),
         };
         return Resultado<Vorticis.Application.Relatorios.TabelaRelatorio>.Ok(tabela);

@@ -51,13 +51,16 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
         var cadastros = Folhas(vm.Menus[0].Filhos!).Select(i => i.Titulo).ToList();
         Assert.Contains("Veículos", cadastros);
         Assert.Contains("Motoristas", cadastros);
-        Assert.Contains("Planos de manutenção", cadastros);
+        Assert.DoesNotContain("Planos de manutenção", cadastros);
         Assert.Contains("Documentos e vencimentos", cadastros);
         var operacao = Assert.Single(vm.Menus, m => m.Titulo == "_Operação");
-        Assert.Equal(["Abastecimentos", "Ordens de serviço", "Viagens"], operacao.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Abastecimentos", "Viagens"], operacao.Filhos!.Select(i => i.Titulo));
+        var manutencao = Assert.Single(vm.Menus, m => m.Titulo == "_Manutenção");
+        Assert.Equal(["Planos de manutenção", "Peças e serviços", "Ordens de serviço", "Autorização de serviços", "Notas de compra"], manutencao.Filhos!.Select(i => i.Titulo));
         var rel = Assert.Single(vm.Menus, m => m.Titulo == "_Relatórios");
-        Assert.Equal(["Painel da frota", TabelasFrota.TituloCustos, TabelasFrota.TituloConsumo, TabelasFrota.TituloViagens, TabelasFrota.TituloVencimentos],
-                     rel.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Painel da frota", TabelasFrota.TituloCustos, TabelasFrota.TituloConsumo, TabelasFrota.TituloViagens, TabelasFrota.TituloVencimentos,
+                      "Acompanhamento das ordens de serviço", "Aprovações de serviços", "Notas fiscais de compra"],
+                     rel.Filhos!.Where(i => !i.EhSeparador).Select(i => i.Titulo));
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
     }
@@ -79,6 +82,10 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
                 (new F.ViewModels.AbastecimentosViewModel(m), new F.Views.AbastecimentosView()),
                 (new F.ViewModels.OrdensViewModel(m), new F.Views.OrdensView()),
                 (new F.ViewModels.ViagensViewModel(m), new F.Views.ViagensView()),
+                (new F.ViewModels.ItensManutencaoViewModel(m), new F.Views.ItensManutencaoView()),
+                (new F.ViewModels.AutorizacaoViewModel(m), new F.Views.AutorizacaoView()),
+                (new F.ViewModels.NotasCompraViewModel(m), new F.Views.NotasCompraView()),
+                (new F.ViewModels.RelatorioFrotaViewModel(m, TabelasFrota.TituloAcompanhamento), new F.Views.RelatorioFrotaView()),
                 (relatorio, new F.Views.RelatorioFrotaView()),
             ];
             foreach (var (vm, view) in telas)
@@ -141,5 +148,68 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
         await painel.CarregarAsync();
         Assert.Contains("Nenhuma pendência", painel.Resumo);
         Assert.Contains("1 veículo(s) ativo(s)", painel.Numeros);
+    }
+
+    [Fact]
+    public async Task Ordem_de_servico_com_itens_autorizada_concluida_e_nota_de_compra_pelas_telas()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ctx = new Contexto(db.App, await db.AdminAsync(), await db.CriarEmpresaAsync("27183946000278"));
+        var hoje = DateTime.Today;
+        var veiculos = new F.ViewModels.VeiculosViewModel(ctx);
+        await veiculos.CarregarAsync();
+        (veiculos.Placa, veiculos.KmAtual) = ("MAN3C45", "20000");
+        await veiculos.GravarCommand.ExecuteAsync(null);
+
+        var itens = new F.ViewModels.ItensManutencaoViewModel(ctx);
+        await itens.CarregarAsync();
+        (itens.Descricao, itens.Valor) = ("Pastilha de freio", "150");
+        await itens.GravarCommand.ExecuteAsync(null);
+        Assert.Equal("Item gravado.", itens.Mensagem);
+
+        var ordens = new F.ViewModels.OrdensViewModel(ctx);
+        await ordens.CarregarAsync();
+        ordens.Veiculo = ordens.VeiculosOpcoes.Single(o => o.Id is not null);
+        ordens.Descricao = "Revisão dos freios";
+        ordens.ItemCatalogo = ordens.CatalogoOpcoes.Single(o => o.Id is not null);
+        Assert.Equal(("Pastilha de freio", "150"), (ordens.ItemDescricao, ordens.ItemValor));   // vem do catálogo
+        ordens.ItemQuantidade = "4";
+        ordens.AdicionarItemCommand.Execute(null);
+        (ordens.ItemTipo, ordens.ItemDescricao, ordens.ItemValor) = (F.ViewModels.OrdensViewModel.TiposItem[1], "Mão de obra", "200");
+        ordens.AdicionarItemCommand.Execute(null);
+        Assert.Contains("= 800,00", ordens.TotalOrdem);
+        await ordens.GravarCommand.ExecuteAsync(null);
+        Assert.Empty(ordens.Erros);
+        Assert.Equal(1, ordens.Selecionada!.Numero);
+        await ordens.PedirAutorizacaoCommand.ExecuteAsync(null);
+        Assert.Equal("Aguardando autorização", ordens.Selecionada!.Situacao);
+        Assert.False(ordens.Editavel);
+
+        var aut = new F.ViewModels.AutorizacaoViewModel(ctx);
+        await aut.CarregarAsync();
+        Assert.Equal(1, Assert.Single(aut.Pendentes).Numero);
+        await aut.ReprovarCommand.ExecuteAsync(null);
+        Assert.Contains("motivo", Assert.Single(aut.Erros));
+        await aut.AprovarCommand.ExecuteAsync(null);
+        Assert.Empty(aut.Pendentes);
+        Assert.Equal("Autorizada", Assert.Single(aut.Historico).Decisao);
+
+        await ordens.CarregarAsync();
+        ordens.Selecionada = ordens.Lista.Single();
+        await ordens.ConcluirCommand.ExecuteAsync(null);
+        Assert.Equal("Concluída", ordens.Lista.Single().Situacao);
+
+        var notas = new F.ViewModels.NotasCompraViewModel(ctx);
+        await notas.CarregarAsync();
+        notas.Ordem = notas.OrdensOpcoes.Single(o => o.Id is not null);
+        Assert.Contains("total 800,00", notas.Conferencia);
+        (notas.Fornecedor, notas.Numero, notas.ValorPecas, notas.ValorServicos) = ("Freios Já", "321", "600", "300");
+        await notas.GravarCommand.ExecuteAsync(null);
+        Assert.Contains("passa o da OS nº 1", notas.Mensagem);
+        Assert.Equal("1 (MAN3C45)", Assert.Single(notas.Lista).Ordem);
+
+        var rel = new F.ViewModels.RelatorioFrotaViewModel(ctx, TabelasFrota.TituloAcompanhamento) { Inicio = hoje, Fim = hoje };
+        await rel.GerarCommand.ExecuteAsync(null);
+        Assert.Equal(("Concluída", "800,00", "900,00", "100,00"), (rel.Linhas[0].V4, rel.Linhas[0].V7, rel.Linhas[0].V8, rel.Linhas[0].V9));
     }
 }

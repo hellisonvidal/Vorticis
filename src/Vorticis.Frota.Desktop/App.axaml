@@ -14,6 +14,9 @@
     <DataTemplate DataType="vm:DocumentosViewModel"><v:DocumentosView /></DataTemplate>
     <DataTemplate DataType="vm:AbastecimentosViewModel"><v:AbastecimentosView /></DataTemplate>
     <DataTemplate DataType="vm:OrdensViewModel"><v:OrdensView /></DataTemplate>
+    <DataTemplate DataType="vm:ItensManutencaoViewModel"><v:ItensManutencaoView /></DataTemplate>
+    <DataTemplate DataType="vm:AutorizacaoViewModel"><v:AutorizacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:NotasCompraViewModel"><v:NotasCompraView /></DataTemplate>
     <DataTemplate DataType="vm:ViagensViewModel"><v:ViagensView /></DataTemplate>
     <DataTemplate DataType="vm:RelatorioFrotaViewModel"><v:RelatorioFrotaView /></DataTemplate>
   </Application.DataTemplates>

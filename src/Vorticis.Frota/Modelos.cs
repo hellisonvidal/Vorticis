@@ -2,7 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace Vorticis.Frota;
 
-public sealed record ConfiguracaoFrota(int DiasAviso = 30, decimal ToleranciaConsumo = 15m);
+/// <summary>Configuração da frota; LimiteAutorizacao: ordens de serviço até este total são autorizadas automaticamente (0 = todas passam por autorização).</summary>
+public sealed record ConfiguracaoFrota(int DiasAviso = 30, decimal ToleranciaConsumo = 15m, decimal LimiteAutorizacao = 0m);
 
 /// <summary>Veículo da frota (inclusive reboques e semirreboques, que não abastecem).</summary>
 public sealed record Veiculo(long Id, int Codigo, string Placa, string? Renavam, string Tipo, string? Marca, string? Modelo, int? AnoFabricacao, int? AnoModelo,
@@ -24,7 +25,8 @@ public sealed record PlanoManutencao(long Id, long VeiculoId, string Descricao, 
                                      bool Ativo = true, string? Placa = null, decimal KmAtual = 0);
 
 public sealed record OrdemServico(long Id, int Numero, long VeiculoId, long? PlanoId, string Tipo, DateOnly Data, decimal? Km, string Descricao, string? Oficina,
-                                  decimal ValorPecas, decimal ValorMaoObra, string Situacao = "ABERTA", string? Placa = null)
+                                  decimal ValorPecas, decimal ValorMaoObra, string Situacao = "ABERTA", string? Placa = null, string? Solicitante = null,
+                                  DateOnly? Previsao = null, DateOnly? Conclusao = null)
 {
     public decimal Total => ValorPecas + ValorMaoObra;
 }
@@ -130,7 +132,7 @@ public static partial class RegrasFrota
         if (a.Litros <= 0) erros.Add("Informe os litros abastecidos.");
         if (a.ValorTotal <= 0) erros.Add("Informe o valor total do abastecimento.");
         if (a.Km < 0) erros.Add("Informe a quilometragem do hodômetro.");
-        if (kmAnterior is { } k && a.Km < k) erros.Add($"A quilometragem ({a.Km:N0}) é menor que a do abastecimento anterior ({k:N0}).");
+        if (kmAnterior is { } k && a.Km < k) erros.Add(string.Create(Vorticis.Domain.Comum.Formato.PtBr, $"A quilometragem ({a.Km:N0}) é menor que a do abastecimento anterior ({k:N0})."));
         if (!CombustiveisAbastecimento.Contains(a.Combustivel)) erros.Add("Escolha o combustível abastecido.");
         else if (!CombinaCombustivel(v.Combustivel, a.Combustivel)) erros.Add($"Combustível {Rotulo(a.Combustivel)} não combina com o veículo ({Rotulo(v.Combustivel)}).");
         return erros;
