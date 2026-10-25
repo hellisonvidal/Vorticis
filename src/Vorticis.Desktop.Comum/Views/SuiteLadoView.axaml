@@ -42,7 +42,7 @@
     <Border Name="BarraLateral" Background="#0F172A" Width="86" IsVisible="{Binding MostraBarraLateral}">
       <DockPanel>
         <Border DockPanel.Dock="Top" Margin="0,12,0,14" Width="48" Height="48" CornerRadius="14" Background="#38BDF8"
-                HorizontalAlignment="Center" ToolTip.Tip="Vorticis Suite">
+                HorizontalAlignment="Center" ToolTip.Tip="{Binding Nome}">
           <TextBlock Text="V" FontSize="24" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <Button DockPanel.Dock="Bottom" Classes="plano" Margin="0,0,0,14" HorizontalAlignment="Center" Command="{Binding AlternarFixaCommand}"

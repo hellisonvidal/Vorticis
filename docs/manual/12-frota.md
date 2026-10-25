@@ -1,10 +1,23 @@
 # Frota
 
-Módulo **Vorticis Frota** (ícone grafite, **piloto**): controle de frota para transportadoras. A empresa escolhida no topo é a **transportadora** (cadastre-a em *Cadastros › Transportadoras* com o CNPJ e marque o módulo **Frota (piloto)**). Por ser piloto, o módulo vem **desmarcado** no instalador: escolha a instalação personalizada e marque **Vorticis Frota (piloto)**. Emissão de CT-e/MDF-e e rastreamento por GPS ficam para uma próxima etapa.
+Módulo **Vorticis Frota** (ícone grafite): coordenação da frota e manutenção para transportadoras. A empresa escolhida no topo é a **transportadora** (cadastre-a em *Cadastros › Transportadoras* com o CNPJ e marque o módulo **Frota**). Emissão de CT-e/MDF-e e rastreamento por GPS ficam para uma próxima etapa.
+
+## Vorticis Suite Logística
+
+O Frota faz parte do **Vorticis Suite Logística**, instalador próprio para transportadoras: um hub das informações da empresa, com a frota, o gerencial, o financeiro, a contabilidade, os impostos e a folha.
+
+**Módulos instalados:** **Vorticis Frota** (veículos, motoristas, abastecimentos, viagens, vencimentos e manutenção), **Vorticis Gerencial** (vendas, compras, estoque e financeiro: contas a pagar e a receber), **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha**.
+
+1. Rode o instalador **Setup-VorticisLogistica**. Na instalação completa vão todos os módulos; na personalizada, escolha quais (pelo menos um).
+2. O banco de dados é configurado sozinho durante a instalação, como no Vorticis.
+3. Abra o atalho **Vorticis Suite Logística**: os módulos instalados ficam numa janela só, com a mesma navegação do Vorticis Suite (abas, barra lateral, árvore ou painel, em *Configurações › Layout da Suite*). Troque de módulo pela navegação ou com **Ctrl+1**, **Ctrl+2**…
+4. O **Frota** abre primeiro e faz a entrada com o seu usuário; os demais módulos entram com o mesmo usuário.
+
+Os módulos também podem ser abertos sozinhos pelos atalhos do menu Iniciar (pasta **Vorticis Suite Logística**). O Vorticis Suite Logística é instalado na pasta própria (*Vorticis Logistica*) e usa o mesmo banco de dados do Vorticis no computador.
 
 ## Ordem dos cadastros
 
-1. **A transportadora:** *Cadastros › Transportadoras*, com o módulo **Frota (piloto)** marcado. Escolha-a no topo da tela.
+1. **A transportadora:** *Cadastros › Transportadoras*, com o módulo **Frota** marcado (e Gerencial, Contábil, Fiscal e Folha, se for usar). Escolha-a no topo da tela.
 2. **Parâmetros:** *Cadastros › Parâmetros*, com a antecedência dos avisos e a tolerância do consumo (já vêm com 30 dias e 15%).
 3. **Veículos** e **Motoristas**.
 4. **Documentos e vencimentos** de cada veículo e motorista.

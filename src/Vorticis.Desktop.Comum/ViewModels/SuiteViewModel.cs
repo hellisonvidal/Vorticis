@@ -82,14 +82,18 @@ public sealed partial class SuiteViewModel : ObservableObject
 {
     private bool _propagando;
 
-    public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null)
+    /// <param name="nome">Nome do produto na janela e no menu (Vorticis Suite, Vorticis Suite Logística...).</param>
+    /// <param name="principal">Executável do módulo que conecta e faz o login; sem ele, o que administra a suíte (Escritório) ou o primeiro.</param>
+    public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null, string nome = "Vorticis Suite", string? principal = null)
     {
+        Nome = nome;
         if (modulos.Count == 0) throw new ArgumentException("A Suite precisa de pelo menos um módulo.", nameof(modulos));
         // Em ordem alfabética em todos os layouts (abas, barra lateral, árvore, painel e Ctrl+1, Ctrl+2...)
         var ordem = StringComparer.Create(Domain.Comum.Formato.PtBr, ignoreCase: true);
         Modulos = [.. modulos.Select(m => new ModuloSuite(m)).OrderBy(m => m.Nome, ordem)];
         // Quem conecta e faz o login: o módulo que administra a suíte (Escritório), senão o primeiro da lista
-        _principal = Modulos.FirstOrDefault(m => m.Vm.Modulo.GerenciaSistema) ?? Modulos[0];
+        _principal = Modulos.FirstOrDefault(m => principal is not null && m.Vm.Modulo.NomeExecutavel == principal)
+                     ?? Modulos.FirstOrDefault(m => m.Vm.Modulo.GerenciaSistema) ?? Modulos[0];
         foreach (var m in Modulos)
         {
             m.Vm.PerguntarAtivacaoAoEntrar = false;   // na Suite cada módulo mostra as empresas dele, sem perguntar
@@ -109,6 +113,9 @@ public sealed partial class SuiteViewModel : ObservableObject
     }
 
     public ObservableCollection<ModuloSuite> Modulos { get; }
+
+    /// <summary>Nome do produto (título da janela e marca do menu).</summary>
+    public string Nome { get; }
 
     /// <summary>Módulo que faz a conexão e o login (o Escritório, quando instalado; senão, o primeiro da lista).</summary>
     private readonly ModuloSuite _principal;

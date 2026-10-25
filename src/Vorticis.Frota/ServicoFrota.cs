@@ -7,7 +7,7 @@ using P = Vorticis.Domain.Seguranca.Permissao;
 namespace Vorticis.Frota;
 
 /// <summary>
-/// Módulo Frota (piloto; a empresa ativa é a transportadora). Cadastros com FROTA_CADASTROS; abastecimentos, ordens de serviço e
+/// Módulo Frota (a empresa ativa é a transportadora). Cadastros com FROTA_CADASTROS; abastecimentos, ordens de serviço e
 /// viagens com FROTA_OPERACAO; painel e relatórios com FROTA_RELATORIOS (qualquer uma das três dá acesso à consulta).
 /// </summary>
 public sealed partial class ServicoFrota(VorticisApp app)

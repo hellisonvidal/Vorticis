@@ -52,8 +52,6 @@ Name: "folha"; Description: "Vorticis Folha"; Types: completa personalizada
 Name: "escritorio"; Description: "Vorticis Escritório"; Types: completa personalizada
 Name: "erp"; Description: "Vorticis Gerencial"; Types: completa personalizada
 Name: "condominio"; Description: "Vorticis Condomínio"; Types: completa personalizada
-; Piloto: fora da instalação completa e desmarcado na personalizada (marque para testar).
-Name: "frota"; Description: "Vorticis Frota (piloto)"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -74,8 +72,8 @@ Type: files; Name: "{autodesktop}\Vorticis ERP.lnk"
 
 [Files]
 ; Comuns a todos os módulos: banco de dados local e ícone
-Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: contabil fiscal folha escritorio erp condominio frota
-Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; DestName: "Vorticis.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio frota
+Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: contabil fiscal folha escritorio erp condominio
+Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; DestName: "Vorticis.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio
 ; Executáveis (arquivo único, sem exigir .NET instalado)
 Source: "..\publish\VorticisContabil.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "..\publish\VorticisFiscal.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
@@ -84,8 +82,7 @@ Source: "..\publish\VorticisEscritorio.exe"; DestDir: "{app}"; Flags: ignorevers
 Source: "..\publish\VorticisGerencial.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
 Source: "..\publish\VorticisCondominio.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: condominio
 ; Vorticis Suite: os módulos instalados numa janela só (mostra os módulos cujo executável está na pasta)
-Source: "..\publish\VorticisSuite.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio frota
-Source: "..\publish\VorticisFrota.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: frota
+Source: "..\publish\VorticisSuite.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio
 ; Ícone de cada módulo (atalhos): espiral verde (Contábil), laranja (Fiscal) e roxa (Folha)
 Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
 Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
@@ -93,8 +90,7 @@ Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Compo
 Source: "icone\VorticisEscritorio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
 Source: "icone\VorticisGerencial.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
 Source: "icone\VorticisCondominio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: condominio
-Source: "icone\VorticisFrota.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: frota
-Source: "icone\VorticisInstalador.ico"; DestDir: "{app}"; DestName: "VorticisSuite.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio frota
+Source: "icone\VorticisInstalador.ico"; DestDir: "{app}"; DestName: "VorticisSuite.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio
 
 #ifexist "..\publish\vc_redist.x64.exe"
 ; Microsoft Visual C++ Redistributable 2015-2022 (x64), instalado em silêncio só se ainda não existir (ver InstalarVcRuntime)
@@ -106,34 +102,31 @@ Source: "..\publish\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinst
 Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 
 [Icons]
-Name: "{autoprograms}\Vorticis Suite"; Filename: "{app}\VorticisSuite.exe"; IconFilename: "{app}\VorticisSuite.ico"; Components: contabil fiscal folha escritorio erp condominio frota
-Name: "{autodesktop}\Vorticis Suite"; Filename: "{app}\VorticisSuite.exe"; IconFilename: "{app}\VorticisSuite.ico"; Tasks: desktopicon; Components: contabil fiscal folha escritorio erp condominio frota
+Name: "{autoprograms}\Vorticis Suite"; Filename: "{app}\VorticisSuite.exe"; IconFilename: "{app}\VorticisSuite.ico"; Components: contabil fiscal folha escritorio erp condominio
+Name: "{autodesktop}\Vorticis Suite"; Filename: "{app}\VorticisSuite.exe"; IconFilename: "{app}\VorticisSuite.ico"; Tasks: desktopicon; Components: contabil fiscal folha escritorio erp condominio
 Name: "{autoprograms}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Components: contabil
 Name: "{autoprograms}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Components: fiscal
 Name: "{autoprograms}\Vorticis Folha"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Components: folha
 Name: "{autoprograms}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Components: escritorio
 Name: "{autoprograms}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe"; IconFilename: "{app}\VorticisGerencial.ico"; Components: erp
 Name: "{autoprograms}\Vorticis Condomínio"; Filename: "{app}\VorticisCondominio.exe"; IconFilename: "{app}\VorticisCondominio.ico"; Components: condominio
-Name: "{autoprograms}\Vorticis Frota (piloto)"; Filename: "{app}\VorticisFrota.exe"; IconFilename: "{app}\VorticisFrota.ico"; Components: frota
 Name: "{autodesktop}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Tasks: desktopicon; Components: contabil
 Name: "{autodesktop}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Tasks: desktopicon; Components: fiscal
 Name: "{autodesktop}\Vorticis Folha"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Tasks: desktopicon; Components: folha
 Name: "{autodesktop}\Vorticis Escritório"; Filename: "{app}\VorticisEscritorio.exe"; IconFilename: "{app}\VorticisEscritorio.ico"; Tasks: desktopicon; Components: escritorio
 Name: "{autodesktop}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe"; IconFilename: "{app}\VorticisGerencial.ico"; Tasks: desktopicon; Components: erp
 Name: "{autodesktop}\Vorticis Condomínio"; Filename: "{app}\VorticisCondominio.exe"; IconFilename: "{app}\VorticisCondominio.ico"; Tasks: desktopicon; Components: condominio
-Name: "{autodesktop}\Vorticis Frota (piloto)"; Filename: "{app}\VorticisFrota.exe"; IconFilename: "{app}\VorticisFrota.ico"; Tasks: desktopicon; Components: frota
 
 [Run]
 ; Ao final abre a Vorticis Suite (todos os módulos instalados numa janela; começa pelo Escritório, para cadastrar o escritório
 ; e os clientes). Os módulos avulsos podem ser marcados.
-Filename: "{app}\VorticisSuite.exe"; Description: "{cm:LaunchProgram,Vorticis Suite}"; Flags: nowait postinstall skipifsilent; Components: contabil fiscal folha escritorio erp condominio frota
+Filename: "{app}\VorticisSuite.exe"; Description: "{cm:LaunchProgram,Vorticis Suite}"; Flags: nowait postinstall skipifsilent; Components: contabil fiscal folha escritorio erp condominio
 Filename: "{app}\VorticisContabil.exe"; Description: "{cm:LaunchProgram,Vorticis Contábil}"; Flags: nowait postinstall skipifsilent unchecked; Components: contabil
 Filename: "{app}\VorticisFiscal.exe"; Description: "{cm:LaunchProgram,Vorticis Fiscal}"; Flags: nowait postinstall skipifsilent unchecked; Components: fiscal
 Filename: "{app}\VorticisFolha.exe"; Description: "{cm:LaunchProgram,Vorticis Folha}"; Flags: nowait postinstall skipifsilent unchecked; Components: folha
 Filename: "{app}\VorticisEscritorio.exe"; Description: "{cm:LaunchProgram,Vorticis Escritório}"; Flags: nowait postinstall skipifsilent unchecked; Components: escritorio
 Filename: "{app}\VorticisGerencial.exe"; Description: "{cm:LaunchProgram,Vorticis Gerencial}"; Flags: nowait postinstall skipifsilent unchecked; Components: erp
 Filename: "{app}\VorticisCondominio.exe"; Description: "{cm:LaunchProgram,Vorticis Condomínio}"; Flags: nowait postinstall skipifsilent unchecked; Components: condominio
-Filename: "{app}\VorticisFrota.exe"; Description: "{cm:LaunchProgram,Vorticis Frota (piloto)}"; Flags: nowait postinstall skipifsilent unchecked; Components: frota
 
 [Code]
 // O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover
@@ -198,7 +191,6 @@ begin
   else if WizardIsComponentSelected('escritorio') then Result := 'VorticisEscritorio.exe'
   else if WizardIsComponentSelected('erp') then Result := 'VorticisGerencial.exe'
   else if WizardIsComponentSelected('condominio') then Result := 'VorticisCondominio.exe'
-  else if WizardIsComponentSelected('frota') then Result := 'VorticisFrota.exe'
   else Result := 'VorticisFolha.exe';
 end;
 

@@ -27,7 +27,7 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 4. **Gravar**. Cliente com tarefas, honorários, protocolos ou contratos não pode ser excluído: desmarque **Ativo**.
 
 ### Módulos do contrato
-1. Na aba **Módulos do contrato**, marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**, **Frota (piloto)**.
+1. Na aba **Módulos do contrato**, marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**, **Frota**.
 2. **Gravar**. O cliente é cadastrado como empresa nesses módulos, com os dados da aba Dados cadastrais (com Contabilidade marcada, o plano de contas modelo é importado). Se já existir empresa com o mesmo CNPJ, ela é atualizada e passa a aparecer também nos módulos marcados.
 3. Para isso, a aba Dados cadastrais precisa ter CNPJ, regime, natureza jurídica, CNAE, município IBGE, UF e início das atividades; o botão **Buscar na Receita** traz quase tudo. Só o **administrador** cadastra empresas nos módulos.
 

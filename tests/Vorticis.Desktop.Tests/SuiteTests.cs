@@ -28,21 +28,21 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         var modulos = ModulosDaSuite.Criar(Path.GetTempPath());   // pasta sem executáveis: entram todos
         var suite = new SuiteViewModel(modulos);
         // em ordem alfabética em todos os layouts; o Escritório (que administra a suíte) faz o login
-        Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Frota", "Gerencial"], suite.Modulos.Select(m => m.Nome));
-        Assert.Equal(["Vorticis Condomínio", "Vorticis Contábil", "Vorticis Escritório", "Vorticis Fiscal", "Vorticis Folha de Pagamento", "Vorticis Frota", "Vorticis Gerencial"],
+        Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Modulos.Select(m => m.Nome));
+        Assert.Equal(["Vorticis Condomínio", "Vorticis Contábil", "Vorticis Escritório", "Vorticis Fiscal", "Vorticis Folha de Pagamento", "Vorticis Gerencial"],
                      suite.Arvore.Select(n => n.Titulo));
         Assert.Equal(LayoutSuite.Lateral, suite.Layout);              // B é o padrão
         Assert.True(suite.EhLateral);
         Assert.Equal("Escritório", suite.Principal.Modulo.NomeCurto);
         Assert.Same(suite.Principal, suite.Ativo.Vm);                 // começa pelo Escritório
-        Assert.Equal(["CD", "C", "E", "F", "FP", "FR", "G"], suite.Modulos.Select(m => m.Sigla));
+        Assert.Equal(["CD", "C", "E", "F", "FP", "G"], suite.Modulos.Select(m => m.Sigla));
         Assert.All(modulos, m => Assert.False(m.PerguntarAtivacaoAoEntrar));
 
         suite.Layout = LayoutSuite.Arvore;                            // a escolha fica gravada para a próxima abertura
         Assert.Equal(LayoutSuite.Arvore, SuiteViewModel.LerLayout());
         Assert.Equal(LayoutSuite.Arvore, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
 
-        Assert.Equal(7, suite.Arvore.Count);
+        Assert.Equal(6, suite.Arvore.Count);
         suite.Busca = "ferias";                                       // sem acento e sem maiúscula
         Assert.Contains(suite.Resultados, n => n.Modulo.Nome == "Folha" && n.Titulo.Contains("Férias"));
         suite.Busca = "balancete";

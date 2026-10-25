@@ -41,7 +41,7 @@ public partial class MainWindow : Window
             _vm = DataContext as MainViewModelBase;
             if (_vm is not null)
             {
-                Title = Suite is null ? _vm.Modulo.Nome : $"Vorticis Suite — {_vm.Modulo.NomeCurto}";
+                Title = Suite is null ? _vm.Modulo.Nome : $"{Suite.Nome} — {_vm.Modulo.NomeCurto}";
                 AplicarIdentidadeVisual(_vm);
                 MontarMenu(_vm);
                 MontarAtalhos(_vm);
@@ -145,7 +145,7 @@ public partial class MainWindow : Window
         if (_fechamentoConfirmado || _vm is null) return;
         e.Cancel = true;
         if (_vm.Confirmacao is not null) return;                          // já há uma pergunta aberta
-        if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : "Vorticis Suite")}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
+        if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : Suite.Nome)}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
         {
             _fechamentoConfirmado = true;
             Close();

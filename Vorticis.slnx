@@ -18,6 +18,7 @@
     <Project Path="src/Vorticis.Frota/Vorticis.Frota.csproj" />
     <Project Path="src/Vorticis.Infra/Vorticis.Infra.csproj" />
     <Project Path="src/Vorticis.Suite.Desktop/Vorticis.Suite.Desktop.csproj" />
+    <Project Path="src/Vorticis.SuiteLogistica.Desktop/Vorticis.SuiteLogistica.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vorticis.Desktop.Tests/Vorticis.Desktop.Tests.csproj" />

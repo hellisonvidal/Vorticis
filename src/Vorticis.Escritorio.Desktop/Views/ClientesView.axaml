@@ -91,7 +91,7 @@
             <CheckBox Content="Folha de pagamento" IsChecked="{Binding ModFolha}" />
             <CheckBox Content="Condomínio" IsChecked="{Binding ModCondominio}" />
             <CheckBox Content="Gerencial" IsChecked="{Binding ModGerencial}" />
-            <CheckBox Content="Frota (piloto)" IsChecked="{Binding ModFrota}" />
+            <CheckBox Content="Frota" IsChecked="{Binding ModFrota}" />
           </StackPanel>
           <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                      Text="Para cadastrar nos módulos, preencha na aba Dados cadastrais o CNPJ, o regime, a natureza jurídica, o CNAE, o município IBGE, a UF e o início das atividades (o botão Buscar na Receita traz quase tudo). Com Contabilidade marcada, o plano de contas modelo é importado. Desmarcar um módulo aqui não apaga nada no módulo." />
