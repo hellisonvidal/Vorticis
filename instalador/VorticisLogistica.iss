@@ -57,9 +57,9 @@ Source: "..\publish\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinst
 Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 
 [InstallDelete]
-; Atalhos do nome antigo (Vorticis Suite Logística), trocados pelos de Vorticis Suite Logística ao atualizar
-Type: files; Name: "{autoprograms}\Vorticis Suite Logística.lnk"
-Type: files; Name: "{autodesktop}\Vorticis Suite Logística.lnk"
+; Atalhos do nome antigo (Vorticis Logística), trocados pelos de Vorticis Suite Logística ao atualizar
+Type: files; Name: "{autoprograms}\Vorticis Logística.lnk"
+Type: files; Name: "{autodesktop}\Vorticis Logística.lnk"
 
 [Icons]
 Name: "{autoprograms}\Vorticis Suite Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"
