@@ -9,7 +9,7 @@ using Vorticis.Logistica.Desktop;
 
 namespace Vorticis.Desktop.Tests;
 
-/// <summary>Vorticis Logística: um programa só, com as telas de Frota, Gerencial, Contábil, Fiscal e Folha num menu único.</summary>
+/// <summary>Vorticis Suite Logística: um programa só, com as telas de Frota, Gerencial, Contábil, Fiscal e Folha num menu único.</summary>
 public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoDeTeste db) : IClassFixture<Vorticis.Infra.Tests.BancoDeTeste>
 {
     private static IEnumerable<ItemMenu> Folhas(IEnumerable<ItemMenu> itens) => itens.SelectMany(i => i.Filhos is null ? [i] : Folhas(i.Filhos));
@@ -22,19 +22,41 @@ public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoD
     }
 
     [Fact]
-    public void Um_menu_so_com_frota_manutencao_emissao_financeiro_fiscal_contabil_folha_e_relatorios()
+    public void Um_menu_so_com_frota_manutencao_emissao_financeiro_gerencial_e_relatorios()
     {
         var vm = new MainViewModel();
-        Assert.Equal("Vorticis Logística", vm.Modulo.Nome);
-        Assert.Equal(["_Cadastros", "_Operação", "_Manutenção", "_Emissão", "_Financeiro", "F_iscal", "_Contábil", "Fol_ha", "_Relatórios", "_Obrigações", "Con_figurações", "_Ajuda"],
+        Assert.Equal("Vorticis Suite Logística", vm.Modulo.Nome);
+        Assert.Equal(["_Cadastros", "_Operação", "_Manutenção", "_Emissão", "_Financeiro", "_Gerencial", "_Relatórios", "Con_figurações", "_Ajuda"],
                      vm.Menus.Select(m => m.Titulo));
         // toda função habilitada abre uma tela conhecida; o que ainda falta (emissão de CT-e, MDF-e e NFS-e) fica "em breve"
         var itens = Folhas(vm.Menus).Where(i => !i.EhSeparador).ToList();
         Assert.All(itens.Where(i => i.Habilitado && i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), $"{i.Titulo}: {i.Chave}"));
         Assert.Equal(3, Folhas(vm.Menus.Single(m => m.Titulo == "_Emissão").Filhos!).Count(i => !i.Habilitado));
+        // Gerencial: submenus Contábil e Folha (sem os relatórios, que vão para Relatórios)
+        var gerencial = vm.Menus.Single(m => m.Titulo == "_Gerencial");
+        Assert.Equal(["_Contábil", "_Folha"], gerencial.Filhos!.Select(m => m.Titulo));
+        Assert.DoesNotContain(Folhas(gerencial.Filhos!), i => i.Chave == ViewModels.Telas.Balancete || i.Chave == Folha.Desktop.ViewModels.FolhaTelas.Holerites);
+        // Operação ganha Coletas (em breve)
+        var coletas = vm.Menus.Single(m => m.Titulo == "_Operação").Filhos!.Single(m => m.Titulo == "_Coletas");
+        Assert.Equal(["Ordens de coleta (em breve)"], coletas.Filhos!.Select(i => i.Titulo));
+        Assert.False(coletas.Filhos![0].Habilitado);
+        // Relatórios por submenus; todos os relatórios saíram dos menus de origem
+        var relatorios = vm.Menus.Single(m => m.Titulo == "_Relatórios");
+        Assert.Equal(["_Frota e operação", "_Manutenção", "_Financeiro e gerencial", "_Contábil", "_Folha"], relatorios.Filhos!.Select(m => m.Titulo));
+        foreach (var chave in new[] { Frota.Desktop.ViewModels.FrotaTelas.Painel, Frota.Desktop.ViewModels.FrotaTelas.RelNotas, ViewModels.Telas.Balancete,
+                                      Folha.Desktop.ViewModels.FolhaTelas.Holerites, Fiscal.Desktop.ViewModels.Telas.RelDuplicatasPagar })
+            Assert.Single(Folhas(vm.Menus), i => i.Chave == chave);
+        Assert.Contains(Folhas(relatorios.Filhos!), i => i.Chave == ViewModels.Telas.Balancete);
+        // ausentes: Fiscal, Calendário de obrigações, Painel do empresário e relatórios fiscais
+        Assert.DoesNotContain(vm.Menus, m => m.Titulo.Replace("_", "") is "Fiscal" or "Obrigações");
+        Assert.DoesNotContain(itens, i => i.Chave is TelasComuns.Obrigacoes or Erp.Desktop.ViewModels.ErpTelas.Painel
+            || i.Chave == Fiscal.Desktop.ViewModels.Telas.LivroEntradas || i.Chave == Fiscal.Desktop.ViewModels.Telas.Documentos || i.Chave == Fiscal.Desktop.ViewModels.Telas.RegrasContabilizacao);
+        Assert.DoesNotContain(vm.Menus[0].Filhos!, i => i.Titulo == "_Fiscal");
+        Assert.DoesNotContain(vm.Atalhos, a => a.Chave == Fiscal.Desktop.ViewModels.Telas.Documentos);
+        Assert.False(vm.Modulo.UsaCalendarioObrigacoes);
         // funções de cada área no mesmo programa
         foreach (var chave in new[] { Frota.Desktop.ViewModels.FrotaTelas.Ordens, Frota.Desktop.ViewModels.FrotaTelas.Autorizacao, Fiscal.Desktop.ViewModels.Telas.ContasPagar,
-                                      Fiscal.Desktop.ViewModels.Telas.ContasReceber, ViewModels.Telas.Lancamento, ViewModels.Telas.Balancete, Fiscal.Desktop.ViewModels.Telas.ImportacaoXml,
+                                      Fiscal.Desktop.ViewModels.Telas.ContasReceber, Fiscal.Desktop.ViewModels.Telas.RelDuplicatasReceber, ViewModels.Telas.Lancamento, ViewModels.Telas.Balancete, Fiscal.Desktop.ViewModels.Telas.ImportacaoXml,
                                       Folha.Desktop.ViewModels.FolhaTelas.FolhaMensal })
             Assert.Contains(itens, i => i.Chave == chave);
         // cada módulo continua com os seus parâmetros, num submenu de Cadastros
@@ -131,12 +153,13 @@ public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoD
         var raiz = new DirectoryInfo(AppContext.BaseDirectory);
         while (raiz is not null && !File.Exists(Path.Combine(raiz.FullName, "instalador", "VorticisLogistica.iss"))) raiz = raiz.Parent;
         var iss = File.ReadAllText(Path.Combine(raiz!.FullName, "instalador", "VorticisLogistica.iss"));
-        Assert.Contains("AppName=Vorticis Logística", iss);
-        Assert.Contains("OutputBaseFilename=Setup-VorticisLogistica-{#Versao}", iss);
+        Assert.Contains("AppName=Vorticis Suite Logística", iss);
+        Assert.Contains("OutputBaseFilename=Setup-VorticisSuiteLogistica-{#Versao}", iss);
         Assert.Contains(@"Source: ""..\publish\VorticisLogistica.exe""; DestDir: ""{app}""; Flags: ignoreversion", iss);
-        Assert.Contains(@"Filename: ""{app}\VorticisLogistica.exe""; Description: ""{cm:LaunchProgram,Vorticis Logística}""", iss);
+        Assert.Contains(@"Filename: ""{app}\VorticisLogistica.exe""; Description: ""{cm:LaunchProgram,Vorticis Suite Logística}""", iss);
         Assert.DoesNotContain("[Components]", iss);                         // nada para escolher: é um programa só
         Assert.DoesNotContain("VorticisFrota.exe", iss);
+        Assert.Contains(@"Name: ""{autoprograms}\Vorticis Logística.lnk""", iss);   // atalho antigo removido ao atualizar
         Assert.Contains("AppId={{8C1F4A6D", iss);                           // produto próprio, não substitui o Vorticis
         foreach (var ico in new[] { "VorticisLogistica.ico", "VorticisLogisticaInstalador.ico" })
             Assert.True(File.Exists(Path.Combine(raiz.FullName, "instalador", "icone", ico)), ico);
@@ -145,6 +168,6 @@ public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoD
         Assert.Contains("dotnet publish src/Vorticis.Logistica.Desktop", ci);
         Assert.Contains("instalador/VorticisLogistica.iss", ci);
         Assert.Contains("-Programa VorticisLogistica.exe", ci);
-        Assert.Contains("VorticisLogistica-portatil", ci);
+        Assert.Contains("VorticisSuiteLogistica-portatil", ci);
     }
 }

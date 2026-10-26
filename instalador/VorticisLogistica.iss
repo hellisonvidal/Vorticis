@@ -1,4 +1,4 @@
-﻿; Instalador do Vorticis Logística (Inno Setup 6): o programa único da transportadora — frota, manutenção, financeiro, fiscal,
+﻿; Instalador do Vorticis Suite Logística (Inno Setup 6): o programa único da transportadora — frota, manutenção, financeiro, fiscal,
 ; contábil e folha num só menu. Gerado pelo CI.
 ; Entrada: ..\publish (VorticisLogistica.exe + pasta pgsql com os binários do PostgreSQL).
 ; Compilar: iscc /DVersao=0.4.0 instalador\VorticisLogistica.iss
@@ -10,12 +10,12 @@
 [Setup]
 ; Produto próprio (AppId diferente do Vorticis): instala ao lado, em outra pasta, e usa o mesmo banco local (AppData\Local\Vorticis).
 AppId={{8C1F4A6D-3B52-4E07-A9D1-6F2E7B4C9A30}
-AppName=Vorticis Logística
+AppName=Vorticis Suite Logística
 AppVersion={#Versao}
-AppVerName=Vorticis Logística {#Versao}
+AppVerName=Vorticis Suite Logística {#Versao}
 AppPublisher=Vorticis Tecnologia Financeira
 DefaultDirName={autopf}\Vorticis Logistica
-DefaultGroupName=Vorticis Logística
+DefaultGroupName=Vorticis Suite Logística
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -23,20 +23,20 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir=..\saida
-OutputBaseFilename=Setup-VorticisLogistica-{#Versao}
+OutputBaseFilename=Setup-VorticisSuiteLogistica-{#Versao}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=icone\VorticisLogisticaInstalador.ico
 UninstallDisplayIcon={app}\VorticisLogistica.ico
-UninstallDisplayName=Vorticis Logística
+UninstallDisplayName=Vorticis Suite Logística
 CloseApplications=yes
 
 [Languages]
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-ptbr.FinishedLabel=O Vorticis Logística foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
+ptbr.FinishedLabel=O Vorticis Suite Logística foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -56,12 +56,17 @@ Source: "..\publish\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinst
 ; Pasta padrão dos backups (dentro da instalação), gravável pelos usuários; não é apagada na desinstalação.
 Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 
+[InstallDelete]
+; Atalhos do nome antigo (Vorticis Suite Logística), trocados pelos de Vorticis Suite Logística ao atualizar
+Type: files; Name: "{autoprograms}\Vorticis Suite Logística.lnk"
+Type: files; Name: "{autodesktop}\Vorticis Suite Logística.lnk"
+
 [Icons]
-Name: "{autoprograms}\Vorticis Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"
-Name: "{autodesktop}\Vorticis Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"; Tasks: desktopicon
+Name: "{autoprograms}\Vorticis Suite Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"
+Name: "{autodesktop}\Vorticis Suite Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\VorticisLogistica.exe"; Description: "{cm:LaunchProgram,Vorticis Logística}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\VorticisLogistica.exe"; Description: "{cm:LaunchProgram,Vorticis Suite Logística}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 // O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover

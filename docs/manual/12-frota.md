@@ -4,7 +4,7 @@ Módulo **Vorticis Frota** (ícone grafite): coordenação da frota e manutenç�
 
 ## Onde o Frota está
 
-O Frota é a base do **[Vorticis Logística](13-logistica.md)**, o programa único da transportadora: ali, os menus **Operação**, **Manutenção** e **Relatórios** são os deste capítulo, ao lado do financeiro, do fiscal, do contábil e da folha. O Vorticis Frota também pode ser aberto sozinho.
+O Frota é a base do **[Vorticis Suite Logística](13-logistica.md)**, o programa único da transportadora: ali, os menus **Operação** e **Manutenção** são os deste capítulo, e os relatórios da frota ficam no menu **Relatórios** (submenus *Frota e operação* e *Manutenção*), ao lado do financeiro e, no menu **Gerencial**, do contábil e da folha. O Vorticis Frota também pode ser aberto sozinho.
 
 ## Ordem dos cadastros
 

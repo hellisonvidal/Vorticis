@@ -3,7 +3,7 @@ using Vorticis.Desktop.Comum.ViewModels;
 namespace Vorticis.Desktop.Comum.Modulos;
 
 /// <summary>
-/// Programa único que reúne as telas de vários módulos num só menu (o Vorticis Logística: Frota, Gerencial, Contábil, Fiscal e Folha).
+/// Programa único que reúne as telas de vários módulos num só menu (o Vorticis Suite Logística: Frota, Gerencial, Contábil, Fiscal e Folha).
 /// Cada parte registra as suas telas como sempre; telas repetidas entre as partes ficam uma só, e os Parâmetros de cada parte
 /// ganham chave própria (<see cref="Chave"/>). O menu é montado pelo programa, com os menus das partes já traduzidos.
 /// </summary>

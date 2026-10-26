@@ -82,9 +82,9 @@ public sealed partial class SuiteViewModel : ObservableObject
 {
     private bool _propagando;
 
-    /// <param name="nome">Nome do produto na janela e no menu (Vorticis Suite, Vorticis Suite Logística...).</param>
+    /// <param name="nome">Nome do produto na janela e no menu (Vorticis Suite Empresarial, Vorticis Suite Logística...).</param>
     /// <param name="principal">Executável do módulo que conecta e faz o login; sem ele, o que administra a suíte (Escritório) ou o primeiro.</param>
-    public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null, string nome = "Vorticis Suite", string? principal = null)
+    public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null, string nome = "Vorticis Suite Empresarial", string? principal = null)
     {
         Nome = nome;
         if (modulos.Count == 0) throw new ArgumentException("A Suite precisa de pelo menos um módulo.", nameof(modulos));

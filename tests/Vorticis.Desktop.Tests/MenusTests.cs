@@ -90,7 +90,7 @@ public class MenusTests
         while (raiz is not null && !File.Exists(Path.Combine(raiz.FullName, "instalador", "Vorticis.iss"))) raiz = raiz.Parent;
         var iss = File.ReadAllText(Path.Combine(raiz!.FullName, "instalador", "Vorticis.iss"));
         // a instalação abre a Suite ao final (ela começa pelo Escritório)
-        Assert.Contains("VorticisSuite.exe\"; Description: \"{cm:LaunchProgram,Vorticis Suite}\"; Flags: nowait postinstall skipifsilent; Components:", iss);
+        Assert.Contains("VorticisSuite.exe\"; Description: \"{cm:LaunchProgram,Vorticis Suite Empresarial}\"; Flags: nowait postinstall skipifsilent; Components:", iss);
     }
 
     [Fact]

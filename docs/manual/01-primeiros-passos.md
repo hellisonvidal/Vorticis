@@ -12,12 +12,12 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
 **Dicas:** para atualizar, basta rodar o instalador novo: os dados são preservados. Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
 
-## Vorticis Suite (todos os módulos numa janela)
+## Vorticis Suite Empresarial (todos os módulos numa janela)
 
 **Para que serve:** trabalhar com todos os módulos instalados (Escritório, Contábil, Fiscal, Folha, Condomínio, Gerencial) numa única janela, como se fosse um só programa.
-**Onde fica:** atalho **Vorticis Suite** no menu Iniciar e na área de trabalho. É o programa aberto ao final da instalação.
+**Onde fica:** atalho **Vorticis Suite Empresarial** no menu Iniciar e na área de trabalho. É o programa aberto ao final da instalação.
 
-Para transportadoras há o **Vorticis Logística**, um programa só com frota, manutenção, financeiro, fiscal, contábil e folha num menu único, com instalador próprio: veja [Vorticis Logística](13-logistica.md).
+Para transportadoras há o **Vorticis Suite Logística**, um programa só com frota, manutenção, financeiro, contábil e folha num menu único, com instalador próprio: veja [Vorticis Suite Logística](13-logistica.md).
 
 1. Entre uma vez com o seu usuário: o login vale para todos os módulos. A Suite começa pelo Escritório, quando ele está instalado.
 2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**…. Os módulos aparecem em ordem alfabética em todos os layouts (Condomínio, Contábil, Escritório, Fiscal, Folha, Gerencial), e as teclas seguem essa ordem. A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
