@@ -1,15 +1,13 @@
-using Avalonia.Controls.Templates;
-
 namespace Vorticis.Suite.Desktop;
 
 /// <summary>
-/// Módulos hospedados pela Suite: os instalados (o executável do módulo está na pasta da Suite). A Suite os mostra em ordem
-/// alfabética, e o Escritório (quando instalado) faz a conexão e o login. Sem nenhum executável ao lado (pasta de
+/// Módulos hospedados pela Vorticis Suite (escritório contábil): os instalados (o executável do módulo está na pasta da Suite). A Suite os
+/// mostra em ordem alfabética, e o Escritório (quando instalado) faz a conexão e o login. Sem nenhum executável ao lado (pasta de
 /// desenvolvimento), entram todos.
 /// </summary>
 public static class ModulosDaSuite
 {
-    private static readonly (string Executavel, Func<MainViewModelBase> Criar)[] Todos =
+    public static readonly IReadOnlyList<(string Executavel, Func<MainViewModelBase> Criar)> Todos =
     [
         ("VorticisEscritorio", () => new Vorticis.Escritorio.Desktop.MainViewModel()),
         ("VorticisContabil", () => new Vorticis.Desktop.ViewModels.MainViewModel()),
@@ -20,34 +18,16 @@ public static class ModulosDaSuite
     ];
 
     /// <summary>Executáveis dos módulos instalados (nomes sem extensão).</summary>
-    public static IReadOnlyList<string> Instalados(string pasta) =>
-        [.. Todos.Select(t => t.Executavel).Where(e => File.Exists(Path.Combine(pasta, e + ".exe")) || File.Exists(Path.Combine(pasta, e)))];
+    public static IReadOnlyList<string> Instalados(string pasta) => HospedeiroSuite.Instalados(pasta, Todos.Select(t => t.Executavel));
 
-    public static IReadOnlyList<MainViewModelBase> Criar(string? pasta = null)
-    {
-        var instalados = Instalados(pasta ?? AppContext.BaseDirectory);
-        return [.. Todos.Where(t => instalados.Count == 0 || instalados.Contains(t.Executavel)).Select(t => t.Criar())];
-    }
+    public static IReadOnlyList<MainViewModelBase> Criar(string? pasta = null) => HospedeiroSuite.Criar(Todos, pasta);
 
-    /// <summary>
-    /// Leva para a Suite as telas (DataTemplates) de cada módulo, carregando o App.axaml de cada executável: assim cada
-    /// tela continua declarada num lugar só, o App.axaml do próprio módulo.
-    /// </summary>
-    public static void IncluirTelas(Avalonia.Application destino)
-    {
-        Avalonia.Application[] modulos =
-        [
-            new Vorticis.Escritorio.Desktop.App(), new Vorticis.Desktop.App(), new Vorticis.Fiscal.Desktop.App(),
-            new Vorticis.Folha.Desktop.App(), new Vorticis.Condominio.Desktop.App(), new Vorticis.Erp.Desktop.App(),
-        ];
-        foreach (var app in modulos)
-        {
-            app.Initialize();
-            foreach (var t in app.DataTemplates.Where(t => t is not TemplatesComuns).ToList())
-            {
-                app.DataTemplates.Remove(t);
-                destino.DataTemplates.Add(t);
-            }
-        }
-    }
+    /// <summary>Telas de cada módulo, do App.axaml de cada executável.</summary>
+    public static IEnumerable<Avalonia.Application> Apps() =>
+    [
+        new Vorticis.Escritorio.Desktop.App(), new Vorticis.Desktop.App(), new Vorticis.Fiscal.Desktop.App(),
+        new Vorticis.Folha.Desktop.App(), new Vorticis.Condominio.Desktop.App(), new Vorticis.Erp.Desktop.App(),
+    ];
+
+    public static void IncluirTelas(Avalonia.Application destino) => HospedeiroSuite.IncluirTelas(destino, Apps());
 }

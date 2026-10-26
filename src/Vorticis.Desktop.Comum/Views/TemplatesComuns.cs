@@ -33,6 +33,8 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(LicencaViewModel)] = () => new LicencaView(),
         [typeof(SobreViewModel)] = () => new SobreView(),
         [typeof(ManualViewModel)] = () => new ManualView(),
+        [typeof(PreferenciasMenuViewModel)] = () => new PreferenciasMenuView(),
+        [typeof(ContabilizacaoLoteViewModel)] = () => new ContabilizacaoLoteView(),
     };
 
     public bool Match(object? data) => data is ParametrosViewModel || (data is not null && Mapa.ContainsKey(data.GetType()));

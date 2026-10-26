@@ -147,6 +147,7 @@ public sealed class ServicoLancamento(IRepositorioContabil repositorio, Autoriza
                 OrigemLancamento.ApuracaoTributo => "pelo módulo Fiscal; desfaça a provisão na tela de Apuração correspondente",
                 OrigemLancamento.Folha => "pelo módulo Folha; desfaça a contabilização em Cálculos › Folha › Contabilização",
                 OrigemLancamento.Depreciacao => "pelo módulo Imobilizado; desfaça o lançamento em Imobilizado › Cálculo e lançamento da depreciação",
+                OrigemLancamento.Frota => "pelo módulo Frota; desfaça a contabilização em Contabilização em lote (ou estorne o pagamento da diária)",
                 OrigemLancamento.Encerramento => "pelo encerramento do exercício; desfaça-o em Lançamentos › Encerramento do exercício",
                 _ => null,
             };

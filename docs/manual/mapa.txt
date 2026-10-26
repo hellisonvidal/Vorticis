@@ -23,6 +23,8 @@ configuracoesgerais=08-configuracoes.md#configuracoes-gerais
 certificados=08-configuracoes.md#certificados-digitais
 obrigacoes=07-obrigacoes.md#calendario-de-obrigacoes
 parametros=02-cadastros-comuns.md#parametros
+menus=02-cadastros-comuns.md#menus-do-programa
+contabilizacaolote=03-contabil.md#contabilizacao-em-lote
 
 ; ---- Contábil
 planocontas=03-contabil.md#plano-de-contas
@@ -161,3 +163,4 @@ condominio.ocorrencias=11-condominio.md#ocorrencias-e-assembleias
 condominio.prestacao=11-condominio.md#prestacao-de-contas-e-inadimplencia
 condominio.rateio=11-condominio.md#rateio-entre-unidades
 condominio.atas=11-condominio.md#atas-de-assembleia
+

@@ -107,6 +107,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
     [ObservableProperty] private bool _modFolha;
     [ObservableProperty] private bool _modCondominio;
     [ObservableProperty] private bool _modGerencial;
+    [ObservableProperty] private bool _modFrota;
     [ObservableProperty] private string _situacaoModulos = "";
 
     public bool TemSelecionado => Selecionado is not null;

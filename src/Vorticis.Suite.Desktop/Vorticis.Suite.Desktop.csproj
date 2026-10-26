@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Vorticis Suite: os módulos instalados numa única janela (troca de módulo por abas, barra lateral, árvore ou painel) -->
+  <!-- Vorticis Suite Empresarial: os módulos instalados numa única janela (troca de módulo por abas, barra lateral, árvore ou painel) -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <AssemblyName>VorticisSuite</AssemblyName>
-    <Product>Vorticis Suite</Product>
-    <Title>Vorticis Suite</Title>
+    <Product>Vorticis Suite Empresarial</Product>
+    <Title>Vorticis Suite Empresarial</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>..\..\instalador\icone\VorticisInstalador.ico</ApplicationIcon>

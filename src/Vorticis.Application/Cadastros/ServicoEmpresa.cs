@@ -10,7 +10,7 @@ namespace Vorticis.Application.Cadastros;
 [Flags]
 public enum ModulosEmpresa : byte
 {
-    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Escritorio = 8, Erp = 16, Condominio = 32, Todos = 63,
+    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Escritorio = 8, Erp = 16, Condominio = 32, Frota = 64 /* sem uso: o módulo Frota foi transferido para o repositório vorticis-suite-logistica; o bit e a coluna modulo_frota permanecem no banco */, Todos = 127,
 }
 
 public static class ModulosEmpresaExtensoes
@@ -19,7 +19,7 @@ public static class ModulosEmpresaExtensoes
     {
         ModulosEmpresa.Contabil => "Contábil", ModulosEmpresa.Fiscal => "Fiscal", ModulosEmpresa.Folha => "Folha de Pagamento",
         ModulosEmpresa.Escritorio => "Escritório", ModulosEmpresa.Erp => "Gerencial", ModulosEmpresa.Condominio => "Condomínio",
-        _ => string.Join(", ", Individuais.Where(x => m.HasFlag(x)).Select(Nome)),
+        ModulosEmpresa.Frota => "Frota", _ => string.Join(", ", Individuais.Where(x => m.HasFlag(x)).Select(Nome)),
     };
 
     /// <summary>Cada módulo da suíte, na ordem do menu de escolha.</summary>
@@ -31,7 +31,7 @@ public static class ModulosEmpresaExtensoes
     {
         ModulosEmpresa.Contabil => "modulo_contabil", ModulosEmpresa.Fiscal => "modulo_fiscal", ModulosEmpresa.Folha => "modulo_folha",
         ModulosEmpresa.Escritorio => "modulo_escritorio", ModulosEmpresa.Erp => "modulo_erp", ModulosEmpresa.Condominio => "modulo_condominio",
-        _ => throw new ArgumentException("Informe um único módulo.", nameof(m)),
+        ModulosEmpresa.Frota => "modulo_frota", _ => throw new ArgumentException("Informe um único módulo.", nameof(m)),
     };
 }
 

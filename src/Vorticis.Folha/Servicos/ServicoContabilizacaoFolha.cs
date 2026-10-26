@@ -16,7 +16,7 @@ public sealed record PreviaContabilizacao(LancamentoProposto Proposta, decimal T
 /// Desfazer estorna o lançamento. A folha só é contabilizada com a competência fechada.
 /// </summary>
 public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha repositorio, IRepositorioMovimentoFolha movimento, ServicoLancamento lancamentos,
-                                               Autorizador autorizador)
+                                               Autorizador autorizador, ServicoPendencias? pendencias = null)
 {
     public const string TipoFolhaMensal = "FOLHA";
     public const string TipoProvisao = "PROVISAO";
@@ -222,7 +222,12 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
 
     // ------------------------------------------------------------------ contabilizar e desfazer
 
-    public async Task<Resultado<LancamentoEfetivado>> ContabilizarAsync(long empresaId, DateOnly competencia, string tipo, long usuarioId, CancellationToken ct = default)
+    /// <summary>
+    /// Contabiliza a folha (ou as provisões) da competência. Com a empresa em contabilização em lote, só registra a pendência
+    /// (devolve o lançamento 0/0, <see cref="LancamentoEfetivado"/> sem número); <paramref name="imediato"/> ignora o modo (usado pela tela de lote).
+    /// </summary>
+    public async Task<Resultado<LancamentoEfetivado>> ContabilizarAsync(long empresaId, DateOnly competencia, string tipo, long usuarioId, CancellationToken ct = default,
+                                                                         bool imediato = false)
     {
         if (await autorizador.NegarAsync<LancamentoEfetivado>(usuarioId, empresaId, Permissao.FolhaContabilizar, ct) is { } negado) return negado;
         if (tipo is not (TipoFolhaMensal or TipoProvisao)) return Resultado<LancamentoEfetivado>.Falha("Tipo de contabilização inválido.");
@@ -235,6 +240,12 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
         var previa = tipo == TipoProvisao ? await MontarProvisaoAsync(empresaId, competencia, ct) : await MontarFolhaAsync(empresaId, competencia, ct);
         if (!previa.Sucesso) return Resultado<LancamentoEfetivado>.Falha(previa.Erros);
 
+        if (!imediato && pendencias is not null && await pendencias.ModoDaEmpresaAsync(empresaId, ct) == ModoContabilizacao.Lote)
+        {
+            await pendencias.RegistrarAsync(empresaId, new NovaPendencia(OrigensPendencia.Folha, tipo, competencia.ToString("yyyy-MM"), competencia,
+                $"{(tipo == TipoProvisao ? "Provisões da folha" : "Folha de pagamento")} {competencia:MM/yyyy}", previa.Valor.Total), usuarioId, ct);
+            return Resultado<LancamentoEfetivado>.Ok(new LancamentoEfetivado(0, 0));
+        }
         var r = await lancamentos.EfetivarAsync(previa.Valor.Proposta, usuarioId, ct);
         if (!r.Sucesso) return r;
         try
@@ -265,4 +276,29 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
 
     public async Task<IReadOnlyList<ContabilizacaoRegistro>> ListarAsync(long empresaId, DateOnly? competencia, long usuarioId, CancellationToken ct = default)
         => await autorizador.PodeVerAsync(usuarioId, empresaId, ct) ? await repositorio.ListarContabilizacoesAsync(empresaId, competencia, ct) : [];
+
+    // ------------------------------------------------------------------ contabilização em lote
+
+    /// <summary>Processador da origem FOLHA (folha e provisões pendentes da Contabilização em lote): as mesmas regras da contabilização on-line.</summary>
+    public IProcessadorPendencia ProcessadorPendencias => new ProcessadorFolha(this);
+
+    private sealed class ProcessadorFolha(ServicoContabilizacaoFolha s) : IProcessadorPendencia
+    {
+        public string Origem => OrigensPendencia.Folha;
+
+        public async Task<IReadOnlyList<string>> PreviaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+        {
+            var r = await s.PreviaAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct);
+            return r.Sucesso ? r.Valor.Linhas : r.Erros;
+        }
+
+        public async Task<ResultadoProcessamento> ContabilizarAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+        {
+            var r = await s.ContabilizarAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct, imediato: true);
+            if (r.Sucesso) return ResultadoProcessamento.Ok(r.Valor.Id);
+            return r.Erros.Any(e => e.StartsWith("Já contabilizado", StringComparison.Ordinal)) ? ResultadoProcessamento.Cancelada("já contabilizada pela folha.") : ResultadoProcessamento.Falha(r.Erros);
+        }
+
+        public Task<Resultado> DesfazerAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.DesfazerAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct);
+    }
 }

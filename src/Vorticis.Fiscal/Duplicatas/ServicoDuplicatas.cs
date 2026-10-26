@@ -20,6 +20,8 @@ public interface IRepositorioDuplicatas
     /// <summary>Grava a baixa (travando a duplicata); o saldo e a situação são recalculados pelo banco.</summary>
     Task<long> InserirBaixaAsync(long empresaId, NovaBaixa baixa, long? lancamentoId, long? partidaExtratoId, long usuarioId, CancellationToken ct);
     Task DefinirConciliacaoAsync(long baixaId, long conciliacaoId, CancellationToken ct);
+    /// <summary>Liga (ou desliga, com null) o lançamento contábil da baixa — usado pela Contabilização em lote.</summary>
+    Task DefinirLancamentoBaixaAsync(long empresaId, long baixaId, long? lancamentoId, CancellationToken ct);
     Task ExcluirBaixaAsync(long empresaId, long baixaId, CancellationToken ct);
 
     Task<ConfiguracaoDuplicatas> ObterConfiguracaoAsync(long empresaId, CancellationToken ct);
@@ -43,7 +45,8 @@ public interface IRepositorioDuplicatas
 /// (pelo <see cref="ServicoLancamento"/>), estorno da baixa e conciliação com o extrato bancário (OFX já importado no contábil). Toda operação verifica a
 /// permissão do usuário na empresa antes de qualquer outra regra.
 /// </summary>
-public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, ServicoLancamento lancamentos, ServicoConciliacao conciliacao, Autorizador autorizador)
+public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, ServicoLancamento lancamentos, ServicoConciliacao conciliacao, Autorizador autorizador,
+                                      ServicoPendencias? pendencias = null)
 {
     // ------------------------------------------------------------------ consultas
 
@@ -240,6 +243,15 @@ public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, Servic
         var cfg = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
         var (proposta, errosLanc) = MontarLancamento(empresaId, d, b, cfg, b.ContaDisponivel);
         if (proposta is null) return Resultado<long>.Falha(errosLanc);
+        if (pendencias is not null && await pendencias.ModoDaEmpresaAsync(empresaId, ct) == ModoContabilizacao.Lote)
+        {
+            // Contabilização em lote: a baixa é gravada sem lançamento e fica pendente na Contabilização em lote.
+            var idBaixa = await repositorio.InserirBaixaAsync(empresaId, b, null, null, usuarioId, ct);
+            await pendencias.RegistrarAsync(empresaId, new NovaPendencia(OrigensPendencia.Duplicatas, TipoBaixa, idBaixa.ToString(), b.Data,
+                $"{(d.Tipo == TipoDuplicata.Pagar ? "Pagamento" : "Recebimento")} da duplicata {d.Titulo}{(string.IsNullOrWhiteSpace(d.ParticipanteNome) ? "" : " - " + d.ParticipanteNome)}",
+                b.Principal + b.Juros + b.Multa - b.Desconto), usuarioId, ct);
+            return Resultado<long>.Ok(idBaixa);
+        }
         var lanc = await lancamentos.EfetivarAsync(proposta, usuarioId, ct);
         if (!lanc.Sucesso) return Resultado<long>.Falha(lanc.Erros);
         try
@@ -251,6 +263,62 @@ public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, Servic
             await lancamentos.EstornarAsync(empresaId, lanc.Valor.Id, b.Data, $"Baixa não registrada da duplicata {d.Titulo}", usuarioId, ct);
             return Resultado<long>.Falha(ex.Message);
         }
+    }
+
+    // ------------------------------------------------------------------ contabilização em lote das baixas
+
+    public const string TipoBaixa = "BAIXA";
+
+    private async Task<(BaixaDuplicata? Baixa, Duplicata? Duplicata, LancamentoProposto? Proposta, IReadOnlyList<string> Erros)> PropostaDaBaixaAsync(
+        long empresaId, PendenciaContabil p, CancellationToken ct)
+    {
+        if (!long.TryParse(p.Referencia, out var id) || await repositorio.ObterBaixaAsync(empresaId, id, ct) is not { } baixa) return (null, null, null, ["Baixa não encontrada."]);
+        var d = await repositorio.ObterAsync(empresaId, baixa.DuplicataId, ct);
+        if (d is null) return (baixa, null, null, ["Duplicata não encontrada."]);
+        var cfg = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
+        var nova = new NovaBaixa(d.Id, baixa.Data, baixa.Principal, baixa.Juros, baixa.Multa, baixa.Desconto, baixa.ContaDisponivel ?? "");
+        var (proposta, erros) = MontarLancamento(empresaId, d, nova, cfg, nova.ContaDisponivel);
+        return (baixa, d, proposta, erros);
+    }
+
+    /// <summary>Processador da origem DUPLICATAS (baixas pendentes da Contabilização em lote): as mesmas regras da baixa on-line.</summary>
+    public IProcessadorPendencia ProcessadorPendencias => new ProcessadorBaixas(this);
+
+    private async Task<IReadOnlyList<string>> PreviaPendenciaAsync(long empresaId, PendenciaContabil p, CancellationToken ct)
+    {
+        var (_, _, proposta, erros) = await PropostaDaBaixaAsync(empresaId, p, ct);
+        return proposta is null ? erros : [.. proposta.Partidas.Select(x => $"{x.DC} {x.CodigoConta}  {Formato.Moeda(x.Valor)}")];
+    }
+
+    private async Task<ResultadoProcessamento> ContabilizarPendenciaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalDuplicatasBaixar, ct) is { } negado) return ResultadoProcessamento.Falha(negado);
+        var (baixa, _, proposta, erros) = await PropostaDaBaixaAsync(empresaId, p, ct);
+        if (baixa is null) return ResultadoProcessamento.Cancelada("a baixa foi estornada.");
+        if (baixa.LancamentoId is { } ja) return ResultadoProcessamento.Ok(ja);
+        if (proposta is null) return ResultadoProcessamento.Falha(erros);
+        var lanc = await lancamentos.EfetivarAsync(proposta, usuarioId, ct);
+        if (!lanc.Sucesso) return ResultadoProcessamento.Falha(lanc.Erros);
+        await repositorio.DefinirLancamentoBaixaAsync(empresaId, baixa.Id, lanc.Valor.Id, ct);
+        return ResultadoProcessamento.Ok(lanc.Valor.Id);
+    }
+
+    private async Task<Resultado> DesfazerPendenciaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalDuplicatasBaixar, ct) is { } negado) return Resultado.Falha(negado);
+        if (!long.TryParse(p.Referencia, out var id) || await repositorio.ObterBaixaAsync(empresaId, id, ct) is not { LancamentoId: { } lanc } baixa) return Resultado.Ok();
+        var e = await lancamentos.EstornarAsync(empresaId, lanc, baixa.Data, "Desfazer lote de contabilização - baixa de duplicata", usuarioId, ct);
+        if (!e.Sucesso) return Resultado.Falha(e.Erros);
+        await repositorio.DefinirLancamentoBaixaAsync(empresaId, baixa.Id, null, ct);
+        return Resultado.Ok();
+    }
+
+    private sealed class ProcessadorBaixas(ServicoDuplicatas s) : IProcessadorPendencia
+    {
+        public string Origem => OrigensPendencia.Duplicatas;
+        public Task<IReadOnlyList<string>> PreviaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.PreviaPendenciaAsync(empresaId, p, ct);
+        public Task<ResultadoProcessamento> ContabilizarAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.ContabilizarPendenciaAsync(empresaId, p, usuarioId, ct);
+        public Task<Resultado> DesfazerAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.DesfazerPendenciaAsync(empresaId, p, usuarioId, ct);
     }
 
     /// <summary>Baixa o saldo inteiro de cada duplicata selecionada, na mesma data e conta; uma com pendência não impede as outras.</summary>

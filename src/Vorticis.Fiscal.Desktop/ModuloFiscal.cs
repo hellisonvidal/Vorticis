@@ -10,6 +10,8 @@ namespace Vorticis.Fiscal.Desktop;
 /// </summary>
 public sealed class ModuloFiscal : IModuloDesktop
 {
+    public void PrepararServicos(Vorticis.Infra.VorticisApp app) => _ = app.Fiscal();
+
     public string Nome => "Vorticis Fiscal";
     public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Fiscal;
     public string NomeCurto => "Fiscal";

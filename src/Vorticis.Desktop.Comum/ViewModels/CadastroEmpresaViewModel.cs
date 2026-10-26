@@ -233,7 +233,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
         // Condomínio é outro tipo de cadastro: só vem marcado quando a empresa é incluída pelo próprio módulo Condomínio.
-        Modulos = (ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio) | main.ModuloAtual;
+        Modulos = (ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio) | main.Modulo.ModuloEmpresa;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;

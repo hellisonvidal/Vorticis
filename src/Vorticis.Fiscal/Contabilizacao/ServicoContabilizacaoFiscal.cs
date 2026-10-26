@@ -34,7 +34,7 @@ public interface IRepositorioContabilizacao
 
 public sealed record FalhaContabilizacao(string Documento, IReadOnlyList<string> Erros);
 
-public sealed record ResultadoContabilizacao(int Contabilizados, decimal Valor, IReadOnlyList<FalhaContabilizacao> Falhas)
+public sealed record ResultadoContabilizacao(int Contabilizados, decimal Valor, IReadOnlyList<FalhaContabilizacao> Falhas, int Registradas = 0)
 {
     public string Resumo => $"{Contabilizados} nota(s) contabilizada(s), total {Formato.Moeda(Valor)}" +
                             (Falhas.Count > 0 ? $"; {Falhas.Count} com pendência." : ".");
@@ -46,7 +46,7 @@ public sealed record ResultadoContabilizacao(int Contabilizados, decimal Valor, 
 /// a de incluir (ou estornar) lançamentos, verificada pelo próprio serviço de lançamento.
 /// </summary>
 public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repositorio, IRepositorioDocumentos documentos, ServicoLancamento lancamentos,
-                                                Autorizador autorizador, IRepositorioDuplicatas? duplicatas = null)
+                                                Autorizador autorizador, IRepositorioDuplicatas? duplicatas = null, ServicoPendencias? pendencias = null)
 {
     // ------------------------------------------------------------------ regras
 
@@ -172,12 +172,70 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
     public async Task<Resultado<ResultadoContabilizacao>?> ContabilizarSeOnlineAsync(long empresaId, DateOnly inicio, DateOnly fim, IReadOnlySet<long>? ids,
                                                                                      long usuarioId, CancellationToken ct = default)
     {
+        if (pendencias is not null && await pendencias.ModoDaEmpresaAsync(empresaId, ct) == ModoContabilizacao.Lote)
+            return await RegistrarPendenciasAsync(empresaId, inicio, fim, ids, usuarioId, ct);
         if (!await repositorio.ContabilizacaoOnlineAsync(empresaId, ct)) return null;
         var r = await ContabilizarAsync(empresaId, inicio, fim, null, ids, usuarioId, ct);
         // nada pendente não é erro na contabilização automática
         return !r.Sucesso && r.Erros.All(e => e.StartsWith("Nenhuma nota pendente", StringComparison.Ordinal))
             ? Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(0, 0, []))
             : r;
+    }
+
+    public const string TipoNota = "NOTA";
+
+    /// <summary>Contabilização em lote: em vez de gerar o lançamento, registra uma pendência para cada nota pendente do período.</summary>
+    private async Task<Resultado<ResultadoContabilizacao>> RegistrarPendenciasAsync(long empresaId, DateOnly inicio, DateOnly fim, IReadOnlySet<long>? ids, long usuarioId,
+                                                                                    CancellationToken ct)
+    {
+        var docs = await documentos.ListarAsync(empresaId, new FiltroDocumentos(inicio, fim, null, Situacao: SituacaoDocumento.Autorizada, Contabilizado: false, Limite: 20000), ct);
+        if (ids is not null) docs = docs.Where(d => ids.Contains(d.Id)).ToList();
+        var n = 0;
+        foreach (var d in docs)
+        {
+            var parte = d.Operacao == TipoOperacao.Entrada ? d.Emitente.Nome : d.Destinatario?.Nome;
+            var descricao = $"NF {d.Numero} ({(d.Operacao == TipoOperacao.Entrada ? "entrada" : "saída")}){(string.IsNullOrWhiteSpace(parte) ? "" : " - " + parte)}";
+            if (await pendencias!.RegistrarAsync(empresaId, new NovaPendencia(OrigensPendencia.Fiscal, TipoNota, d.Id.ToString(), d.DataLivro, descricao, d.Totais.Total), usuarioId, ct)) n++;
+        }
+        return Resultado<ResultadoContabilizacao>.Ok(new ResultadoContabilizacao(0, 0, [], n));
+    }
+
+    /// <summary>Processador da origem FISCAL (notas pendentes da Contabilização em lote): as mesmas regras e o mesmo motor da contabilização on-line.</summary>
+    public IProcessadorPendencia ProcessadorPendencias => new ProcessadorNotas(this);
+
+    private async Task<IReadOnlyList<string>> PreviaPendenciaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+    {
+        var r = await PrevisaoAsync(empresaId, p.Periodo, p.Periodo, null, new HashSet<long> { long.Parse(p.Referencia) }, usuarioId, ct);
+        if (!r.Sucesso) return r.Erros;
+        if (r.Valor.Count == 0) return ["A nota não está mais pendente de contabilização."];
+        var prop = r.Valor[0];
+        return prop.Lancamento is null || prop.Erros.Count > 0 ? prop.Erros : [.. prop.Lancamento.Partidas.Select(x => $"{x.DC} {x.CodigoConta}  {Formato.Moeda(x.Valor)}")];
+    }
+
+    private async Task<ResultadoProcessamento> ContabilizarPendenciaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+    {
+        var id = long.Parse(p.Referencia);
+        var r = await ContabilizarAsync(empresaId, p.Periodo, p.Periodo, null, new HashSet<long> { id }, usuarioId, ct);
+        if (!r.Sucesso)
+            return r.Erros.All(e => e.StartsWith("Nenhuma nota pendente", StringComparison.Ordinal)) ? ResultadoProcessamento.Cancelada("a nota não está mais pendente.") : ResultadoProcessamento.Falha(r.Erros);
+        if (r.Valor.Contabilizados == 0) return ResultadoProcessamento.Falha(r.Valor.Falhas.SelectMany(f => f.Erros).ToList());
+        var doc = (await documentos.ListarAsync(empresaId, new FiltroDocumentos(p.Periodo, p.Periodo, Contabilizado: true), ct)).FirstOrDefault(d => d.Id == id);
+        return ResultadoProcessamento.Ok(doc?.LancamentoId);
+    }
+
+    private async Task<Resultado> DesfazerPendenciaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+    {
+        var r = await DesfazerAsync(empresaId, [long.Parse(p.Referencia)], null, usuarioId, ct);
+        if (!r.Sucesso) return Resultado.Falha(r.Erros);
+        return r.Valor.Falhas.Count > 0 ? Resultado.Falha(r.Valor.Falhas.SelectMany(f => f.Erros)) : Resultado.Ok();
+    }
+
+    private sealed class ProcessadorNotas(ServicoContabilizacaoFiscal s) : IProcessadorPendencia
+    {
+        public string Origem => OrigensPendencia.Fiscal;
+        public Task<IReadOnlyList<string>> PreviaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.PreviaPendenciaAsync(empresaId, p, usuarioId, ct);
+        public Task<ResultadoProcessamento> ContabilizarAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.ContabilizarPendenciaAsync(empresaId, p, usuarioId, ct);
+        public Task<Resultado> DesfazerAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.DesfazerPendenciaAsync(empresaId, p, usuarioId, ct);
     }
 
     /// <summary>Estorna o lançamento de cada nota (na data dele, ou em <paramref name="dataEstorno"/>) e a devolve à situação de não contabilizada.</summary>

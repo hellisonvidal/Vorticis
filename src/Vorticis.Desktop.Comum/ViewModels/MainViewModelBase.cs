@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Cadastros;
 using Vorticis.Application.Seguranca;
+using Vorticis.Application.Sistema;
 using Vorticis.Desktop.Comum.Modulos;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Infra;
@@ -74,7 +75,11 @@ public static class TelasComuns
     public const string Obrigacoes = "obrigacoes";
     /// <summary>Cadastros › Parâmetros: cada módulo registra a sua tela com esta chave.</summary>
     public const string Parametros = "parametros";
+    /// <summary>Cadastros › Menus do programa: o usuário escolhe os itens de menu que quer ver (preferências por usuário).</summary>
+    public const string Menus = "menus";
     public const string ConfiguracoesGerais = "configuracoesgerais";
+    /// <summary>Integrações › Exportar › Contabilização em lote (pendências dos módulos quando a empresa contabiliza em lote).</summary>
+    public const string ContabilizacaoLote = "contabilizacaolote";
     public const string Certificados = "certificados";
     public const string Licenca = "licenca";
     public const string Sobre = "sobre";
@@ -152,6 +157,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public ContasBancariasViewModel ContasBancarias => Instancia<ContasBancariasViewModel>();
     public FormasPagamentoViewModel FormasPagamento => Instancia<FormasPagamentoViewModel>();
     public ConexaoViewModel Conexao => Instancia<ConexaoViewModel>();
+    public PreferenciasMenuViewModel MenusDoPrograma => Instancia<PreferenciasMenuViewModel>();
+    public ContabilizacaoLoteViewModel ContabilizacaoLote => Instancia<ContabilizacaoLoteViewModel>();
     public InicioViewModel Inicio => Instancia<InicioViewModel>();
     public CadastroEmpresaViewModel Empresas => Instancia<CadastroEmpresaViewModel>();
     public UsuariosViewModel Usuarios => Instancia<UsuariosViewModel>();
@@ -185,6 +192,14 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Obrigacoes), m => new ObrigacoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Obrigacoes, "Obrigações › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
+
+        c.Instancia(nameof(MenusDoPrograma), m => new PreferenciasMenuViewModel(m),
+                    aoTrocarEmpresa: (v, ativa) => { if (ativa) v.Carregar(); return Task.CompletedTask; })
+            .Tela(TelasComuns.Menus, "Cadastros › Menus do programa", ComAcesso, v => { v.Carregar(); return Task.CompletedTask; });
+
+        c.Instancia(nameof(ContabilizacaoLote), m => new ContabilizacaoLoteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.ContabilizacaoLote, "Integrações › Exportar › Contabilização em lote", ComAcesso, v => v.CarregarAsync());
 
         c.Instancia(nameof(Empresas), m => new CadastroEmpresaViewModel(m), reiniciaJunto: [nameof(Socios), nameof(Contabilidade), nameof(Sindico)],
                     atualizarPermissoes: v => v.AtualizarBarraCadastro(), aoLimpar: v => v.AoTrocarEmpresa())
@@ -281,7 +296,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (Modulo.UsaCadastrosComuns && Modulo.UsaClientesFornecedores)
             cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
-        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros)]);
+        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)]);
         // O calendário de obrigações fica em "Obrigações", se o módulo tem esse menu; senão, em "Consultas";
         // sem nenhum dos dois, o casco cria o menu "Obrigações".
         var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);
@@ -354,7 +369,15 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     public async Task AtualizarRecursosAsync()
     {
-        try { RecursosAtivos = App is not null && Sessao is not null && EmpresaSelecionada is not null ? await Modulo.RecursosAtivosAsync(this) : new HashSet<string>(); }
+        try
+        {
+            if (App is null || Sessao is null || EmpresaSelecionada is null) { RecursosAtivos = new HashSet<string>(); return; }
+            var recursos = new HashSet<string>(await Modulo.RecursosAtivosAsync(this));
+            // Contabilização em lote (Contábil › Parâmetros › Tipo de contabilização): liga o item do menu Exportar
+            if (await App.Pendencias.ModoAsync(EmpresaSelecionada.Id, Sessao.Id) is { Sucesso: true } m && m.Valor == Vorticis.Application.Contabil.ModoContabilizacao.Lote)
+                recursos.Add(RecursoContabilizacaoLote);
+            RecursosAtivos = recursos;
+        }
         catch (Exception) { RecursosAtivos = new HashSet<string>(); }
     }
 
@@ -475,6 +498,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         {
             await BancoLocal.GarantirBancoAsync(connectionString);
             App = await VorticisApp.IniciarAsync(connectionString, _consultaCnpj, consultaIe: _consultaIe);
+            Modulo.PrepararServicos(App);
             Status = $"Conectado a {Configuracao.Descrever(connectionString)}.";
             await Login.PrepararAsync();
             Conteudo = Login;
@@ -495,6 +519,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _implantacao = sessao.Implantacao;
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
+        await CarregarPreferenciasMenuAsync();
         if (PerguntarAtivacaoAoEntrar) await OferecerAtivacaoAsync();
         if (_implantacao)
         {
@@ -560,6 +585,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _permissoes = PermissoesEfetivas.Nenhuma;
         _telaAtual = null;
         TituloTela = "";
+        AplicarPreferenciasMenu(PreferenciasMenu.Vazia);
         RecriarModulos();
         Login.Limpar();
         Login.CarregarLoginSalvo();
@@ -610,7 +636,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             ? Sessao.Administrador
             : EmpresaSelecionada is not null && _permissoes.Pode(permissao));
 
-    public bool PodeAbrir(string? tela) => Logado && tela is not null && _catalogo.Telas.TryGetValue(tela, out var def)
+    public bool PodeAbrir(string? tela) => Logado && tela is not null && _catalogo.Telas.TryGetValue(tela, out var def) && !_chavesBloqueadas.Contains(tela)
         && (_implantacao
             ? tela is TelasComuns.Usuarios or TelasComuns.Sobre or TelasComuns.Manual or TelasComuns.ManualContextual
             : !_configuracaoInicialPendente
@@ -628,7 +654,11 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     [RelayCommand(CanExecute = nameof(PodeAbrir))]
     private void Abrir(string? tela)
     {
-        if (!PodeAbrir(tela)) return;
+        if (!PodeAbrir(tela))
+        {
+            if (Logado && TelaBloqueadaPorMenu(tela)) AvisarTelaOculta(tela!);
+            return;
+        }
         var def = _catalogo.Telas[tela!];
         var vm = _instancias[def.Instancia];
         // F1: guarda a tela em uso (a janela ativa) para o manual abrir o tópico dela; F1 dentro do próprio manual não muda o tópico

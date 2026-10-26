@@ -173,6 +173,25 @@ Use **Gerar planilha modelo (.xlsx)**, preencha (`LANCAMENTO;DATA;CONTA;DC;VALOR
 **Onde fica:** *Integrações › Exportar › Lançamentos contábeis*.
 Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em **Gerar** e exporte em Excel, PDF ou CSV.
 
+## Contabilização em lote
+
+**Para que serve:** escolher *quando* os documentos dos outros módulos (notas fiscais, baixas de duplicatas e folha de pagamento) viram lançamentos contábeis. Com o tipo de contabilização **On-line** (o padrão, como sempre foi), cada nota, baixa ou folha gera o lançamento na hora. Com **Em lote**, os módulos só deixam uma *pendência de contabilização*, e você gera os lançamentos de uma vez, depois de conferir.
+
+**Como ligar:** em *Cadastros › Parâmetros*, grupo *Tipo de contabilização*, escolha **Em lote** e clique em **Salvar**. A mudança vale para a empresa ativa e não altera os lançamentos que já existem. Para voltar ao normal, escolha **On-line**.
+
+**Onde fica:** *Integrações › Exportar › Contabilização em lote* (o item só aparece quando a empresa está em lote).
+
+**Como usar:**
+1. Escolha a **origem** (Fiscal, baixas de duplicatas ou todas) e, se quiser, o período (*De* e *Até*). Clique em **Consultar**.
+2. A tela mostra um resumo por mês e origem e a lista das pendências, com data, descrição e valor.
+3. Marque as pendências (ou **Marcar todas**) e clique em **Ver prévia** para conferir as partidas do lançamento sem gravar nada.
+4. Clique em **Contabilizar selecionadas**. O sistema gera os lançamentos pelas mesmas regras da contabilização on-line (regras de contabilização das notas, contas dos Parâmetros do Fiscal, regras da folha). As pendências que não puderem ser contabilizadas (por exemplo, sem regra ou período fechado) continuam na lista, com o motivo, e não impedem as outras.
+5. Cada vez que você contabiliza, é criado um **lote**. Em *Lotes já contabilizados*, selecione um lote e clique em **Desfazer lote** para estornar os lançamentos dele: as pendências voltam para a lista e podem ser contabilizadas de novo.
+
+**O que gera pendência no modo Em lote:** a gravação ou importação de notas fiscais, a baixa de duplicatas (a baixa é registrada e o saldo da duplicata diminui na hora; só o lançamento contábil espera), o botão **Contabilizar** da folha e das provisões da folha. As provisões de tributos (Simples, IRPJ/CSLL, PIS/COFINS) continuam sendo lançadas na hora. Se a baixa for estornada antes de entrar em um lote, a pendência dela é cancelada sozinha.
+
+**Dica:** o programa que processa cada origem precisa estar instalado.
+
 ## Conciliação automática
 
 **Para que serve:** conferir, numa conta (fornecedores, clientes, bancos), o que já foi pago ou recebido.

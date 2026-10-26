@@ -247,7 +247,8 @@ public partial class DuplicatasViewModel : ModuloViewModel
         var id = s.Id;
         await ConsultarAsync();
         Selecionada = Lista.FirstOrDefault(l => l.Id == id);
-        Mensagem = "Baixa registrada e lançamento contábil gerado.";
+        var lote = await app.Pendencias.ModoAsync(empresa, usuario) is { Sucesso: true } m && m.Valor == Vorticis.Application.Contabil.ModoContabilizacao.Lote;
+        Mensagem = lote ? "Baixa registrada; o lançamento contábil será gerado na Contabilização em lote." : "Baixa registrada e lançamento contábil gerado.";
     }, Permissao.FiscalDuplicatasBaixar);
 
     /// <summary>Baixa o saldo total de todas as duplicatas marcadas, na data e conta da área de baixa.</summary>

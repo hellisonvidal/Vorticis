@@ -72,6 +72,7 @@ public enum Permissao
     CondominioFinanceiro,
     CondominioRelatorios,
 
+
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
 }

@@ -9,7 +9,7 @@ using Vorticis.Suite.Desktop;
 
 namespace Vorticis.Desktop.Tests;
 
-/// <summary>Vorticis Suite: os módulos numa janela só, com quatro layouts de navegação (B, a barra lateral, é o padrão) e login único.</summary>
+/// <summary>Vorticis Suite Empresarial: os módulos numa janela só, com quatro layouts de navegação (B, a barra lateral, é o padrão) e login único.</summary>
 public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixture<BancoDeTeste>
 {
     private static string ArquivoTemporario() => Path.Combine(Path.GetTempPath(), $"suite-layout-{Guid.NewGuid():N}.txt");
@@ -79,7 +79,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             janela.UsarSuite(suite);
             janela.Show();
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal("Vorticis Suite — Escritório", janela.Title);
+            Assert.Equal("Vorticis Suite Empresarial — Escritório", janela.Title);
             // B recolhida numa faixa fina até o mouse chegar; "Fixar" deixa aberta (e fica gravado)
             var ladoB = janela.FindDescendantOfType<SuiteLadoView>()!;
             Assert.True(ladoB.FindControl<Border>("FaixaLateral")!.IsVisible);
@@ -110,7 +110,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             suite.Trocar(M("Contábil"));
             Dispatcher.UIThread.RunJobs();
             Assert.Same(M("Contábil").Vm, janela.DataContext);
-            Assert.Equal("Vorticis Suite — Contábil", janela.Title);
+            Assert.Equal("Vorticis Suite Empresarial — Contábil", janela.Title);
             var menus = janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>().ToList();
             Assert.Contains(menus, m => (m.Header as string) == "E_xibir");
             var config = Assert.Single(menus, m => (m.Header as string) == "Con_figurações");

@@ -73,8 +73,6 @@
     <Border Name="BarraFuncoes" DockPanel.Dock="Top" Background="#EEF1F5" BorderBrush="#D0D5DD" BorderThickness="0,0,0,1" Padding="8,3"
             MinHeight="34" IsVisible="{Binding Logado}">
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="Nenhuma função aberta: escolha uma no menu." Foreground="#8A94A6" FontSize="12" VerticalAlignment="Center"
-                   IsVisible="{Binding !TemJanelasAbertas}" Margin="4,0" />
         <ItemsControl Name="FuncoesAbertas" ItemsSource="{Binding JanelasAbertas}" VerticalAlignment="Center">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>

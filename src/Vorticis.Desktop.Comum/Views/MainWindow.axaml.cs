@@ -34,6 +34,7 @@ public partial class MainWindow : Window
             if (_vm is not null)
             {
                 _vm.PropertyChanged -= AoMudarVm;
+                _vm.MenusAlterados -= AoMudarMenus;
                 if (Suite is null) _vm.JanelasAbertas.CollectionChanged -= AoMudarJanelas;
                 else EsconderJanelasDe(_vm);
                 if (_dialogo is { } aberto) { _dialogo = null; _fechandoPorCodigo.Add(aberto); aberto.Close(); }
@@ -41,11 +42,12 @@ public partial class MainWindow : Window
             _vm = DataContext as MainViewModelBase;
             if (_vm is not null)
             {
-                Title = Suite is null ? _vm.Modulo.Nome : $"Vorticis Suite — {_vm.Modulo.NomeCurto}";
+                Title = Suite is null ? _vm.Modulo.Nome : $"{Suite.Nome} — {_vm.Modulo.NomeCurto}";
                 AplicarIdentidadeVisual(_vm);
                 MontarMenu(_vm);
                 MontarAtalhos(_vm);
                 _vm.PropertyChanged += AoMudarVm;
+                _vm.MenusAlterados += AoMudarMenus;
                 if (Suite is null) _vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
                 Sincronizar(_vm);
                 MostrarJanelasDe(_vm);
@@ -145,7 +147,7 @@ public partial class MainWindow : Window
         if (_fechamentoConfirmado || _vm is null) return;
         e.Cancel = true;
         if (_vm.Confirmacao is not null) return;                          // já há uma pergunta aberta
-        if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : "Vorticis Suite")}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
+        if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : Suite.Nome)}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))
         {
             _fechamentoConfirmado = true;
             Close();
@@ -350,11 +352,17 @@ public partial class MainWindow : Window
     /// <summary>Itens que dependem de um recurso dos parâmetros: aparecem ou somem quando a empresa ou os parâmetros mudam.</summary>
     private readonly List<(MenuItem Item, string Recurso)> _itensComRecurso = [];
 
+    /// <summary>O usuário escondeu ou mostrou itens do menu (aba Menus dos Parâmetros): refaz a barra de menus.</summary>
+    private void AoMudarMenus(object? sender, EventArgs e)
+    {
+        if (_vm is { } vm && ReferenceEquals(sender, vm)) { MontarMenu(vm); MontarAtalhos(vm); }
+    }
+
     private void MontarMenu(MainViewModelBase vm)
     {
         MenuPrincipal.Items.Clear();
         _itensComRecurso.Clear();
-        foreach (var item in vm.Menus) MenuPrincipal.Items.Add(CriarItem(vm, item));
+        foreach (var item in vm.MenusVisiveis) MenuPrincipal.Items.Add(CriarItem(vm, item));
         if (Suite is { } suite)
         {
             MenuPrincipal.Items.Insert(MenuPrincipal.Items.Count - 1, MenuExibir(suite));
@@ -452,7 +460,7 @@ public partial class MainWindow : Window
                 Gesture = KeyGesture.Parse(a.Gesto),
                 Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
                 {
-                    if (DataContext is MainViewModelBase atual && atual.AbrirCommand.CanExecute(chave)) atual.AbrirCommand.Execute(chave);
+                    if (DataContext is MainViewModelBase atual) atual.AbrirPorAtalho(chave);
                 }),
             });
         }

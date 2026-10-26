@@ -165,6 +165,7 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
     {
         null => "",
         { Sucesso: false } => $" Contabilização on-line não feita: {string.Join(" ", r.Erros)}",
+        { Valor.Registradas: > 0 } => $" {r.Valor.Registradas} nota(s) registrada(s) na Contabilização em lote (o lançamento é gerado lá).",
         _ => (r.Valor.Contabilizados > 0 ? $" Contabilização on-line: {r.Valor.Contabilizados} nota(s) contabilizada(s)." : "") +
              (r.Valor.Falhas.Count > 0 ? $" {r.Valor.Falhas.Count} nota(s) ficaram pendentes de contabilização (sem regra ou conta válida): " +
                                          string.Join("; ", r.Valor.Falhas.Take(5).Select(f => $"nota {f.Documento}: {string.Join(" ", f.Erros)}")) : ""),

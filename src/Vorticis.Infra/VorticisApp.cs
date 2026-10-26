@@ -65,6 +65,8 @@ public sealed class VorticisApp : IAsyncDisposable
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Obrigacoes = new ServicoObrigacoes(new RepositorioObrigacoes(ds), autorizador);
         Migrador = new Migrador(ds);
+        Pendencias = new ServicoPendencias(new RepositorioPendencias(ds), autorizador);
+        PreferenciasMenu = new ServicoPreferenciasMenu(new RepositorioPreferenciasMenu(ds));
     }
 
     /// <summary>Fonte de dados do PostgreSQL, para módulos (Folha, Fiscal) comporem seus próprios repositórios.</summary>
@@ -104,6 +106,10 @@ public sealed class VorticisApp : IAsyncDisposable
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }
     public Migrador Migrador { get; }
+    /// <summary>Tipo de contabilização (on-line ou em lote) e pendências de contabilização dos módulos.</summary>
+    public ServicoPendencias Pendencias { get; }
+    /// <summary>Itens de menu que cada usuário (ou todos) escondeu.</summary>
+    public ServicoPreferenciasMenu PreferenciasMenu { get; }
 
     /// <summary>Conecta e aplica migrações pendentes.</summary>
     /// <param name="consultaCnpj">Fonte de dados de CNPJ; padrão: base pública da RFB via internet.</param>

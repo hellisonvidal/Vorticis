@@ -14,7 +14,7 @@ public enum IndicadorLancamento
 public enum OrigemLancamento
 {
     Manual, NFe, NFSe, CTe, Extrato, Planilha, Folha,
-    Encerramento, Estorno, SaldoInicial, Depreciacao, ApuracaoTributo,
+    Encerramento, Estorno, SaldoInicial, Depreciacao, ApuracaoTributo, Frota /* sem uso: origem do módulo Frota, transferido para o repositório vorticis-suite-logística; mantida pelos lançamentos já gravados */,
 }
 
 public enum StatusLancamento { Rascunho, Efetivado, Estornado }

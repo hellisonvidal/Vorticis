@@ -101,7 +101,10 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
     }
 
     /// <summary>Novo centro: sugere como superior o centro selecionado.</summary>
-    protected override void PrepararInclusao() => (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", Selecionado?.Codigo ?? "", true, false);
+    protected override void PrepararInclusao()
+    {
+        (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", Selecionado?.Codigo ?? "", true, false);
+    }
 
     protected override async Task<bool> GravarAsync(bool inclusao)
     {

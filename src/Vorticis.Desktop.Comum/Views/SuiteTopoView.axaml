@@ -56,7 +56,7 @@
         <Border Width="32" Height="32" CornerRadius="9" Background="#0F172A">
           <TextBlock Text="V" FontSize="16" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
-        <TextBlock Text="Vorticis Suite" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <TextBlock Text="{Binding Nome}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0" />
         <Button Content="⌂  Início" Command="{Binding IrParaPainelCommand}" ToolTip.Tip="Painel com todos os módulos" />
         <TextBlock Text="Módulo:" VerticalAlignment="Center" Foreground="#64748B" Margin="8,0,0,0" />
         <ComboBox Name="SeletorModulo" ItemsSource="{Binding Modulos}" SelectedItem="{Binding ModuloNoSeletor}" MinWidth="200">

@@ -32,7 +32,7 @@ public class ModulosDialogoTests(SessaoHeadless headless)
 
             caixas[2].IsChecked = false;                  // desmarca a Folha
             vm.ResponderConfirmacaoCommand.Execute(true);
-            Assert.Equal(ModulosEmpresa.Todos & ~ModulosEmpresa.Folha, await tarefa);
+            Assert.Equal(ModulosEmpresa.Todos & ~ModulosEmpresa.Folha & ~ModulosEmpresa.Frota, await tarefa);
 
             // cancelar não cadastra
             var cancelada = vm.EscolherModulosAsync(ModulosEmpresa.Todos);

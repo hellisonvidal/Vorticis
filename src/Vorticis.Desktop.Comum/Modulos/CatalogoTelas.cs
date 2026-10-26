@@ -71,6 +71,42 @@ public sealed class CatalogoTelas
         return new InstanciaBuilder<T>(this, nome);
     }
 
+    /// <summary>
+    /// Traz as telas de outro catálogo (programa que junta vários módulos). Tela com chave já registrada fica com a primeira (os módulos
+    /// compartilham telas, como as duplicatas do Fiscal no Gerencial); as chaves em <paramref name="renomear"/> (ex.: Parâmetros, que cada
+    /// módulo tem o seu) entram como "prefixo:chave". Instâncias sem tela nem uso por outras são descartadas. Devolve as chaves renomeadas.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Incorporar(CatalogoTelas outro, string prefixo, IReadOnlySet<string> renomear)
+    {
+        var chaves = new Dictionary<string, string>();
+        var telas = new List<DefinicaoTela>();
+        foreach (var t in outro._telas.Values)
+        {
+            if (!_telas.ContainsKey(t.Chave)) telas.Add(t);
+            else if (renomear.Contains(t.Chave)) telas.Add(Copia(t, chaves[t.Chave] = $"{prefixo}:{t.Chave}"));
+        }
+        var usadas = telas.Select(t => t.Instancia).ToHashSet();
+        foreach (var i in outro._instancias.Where(i => usadas.Contains(i.Nome)).ToList())
+            foreach (var n in i.ReiniciaJunto) usadas.Add(n);
+        var nomes = outro._instancias.Where(i => usadas.Contains(i.Nome))
+                         .ToDictionary(i => i.Nome, i => _instancias.Any(x => x.Nome == i.Nome) ? $"{prefixo}.{i.Nome}" : i.Nome);
+        foreach (var i in outro._instancias.Where(i => nomes.ContainsKey(i.Nome)))
+            _instancias.Add(new DefinicaoInstancia
+            {
+                Nome = nomes[i.Nome], Criar = i.Criar, Fixa = i.Fixa, ReiniciaJunto = [.. i.ReiniciaJunto.Select(n => nomes.GetValueOrDefault(n, n))],
+                AtualizarPermissoes = i.AtualizarPermissoes, AoLimpar = i.AoLimpar, AoTrocarEmpresa = i.AoTrocarEmpresa,
+            });
+        foreach (var t in telas)
+        {
+            var c = Copia(t, chaves.GetValueOrDefault(t.Chave, t.Chave));
+            _telas.Add(c.Chave, new DefinicaoTela { Chave = c.Chave, Instancia = nomes[t.Instancia], Titulo = c.Titulo, Pode = c.Pode, AoAbrir = c.AoAbrir });
+        }
+        return chaves;
+
+        static DefinicaoTela Copia(DefinicaoTela t, string chave) =>
+            new() { Chave = chave, Instancia = t.Instancia, Titulo = t.Titulo, Pode = t.Pode, AoAbrir = t.AoAbrir };
+    }
+
     internal void AdicionarTela(DefinicaoTela tela)
     {
         if (!_telas.TryAdd(tela.Chave, tela)) throw new InvalidOperationException($"Tela já registrada: {tela.Chave}.");

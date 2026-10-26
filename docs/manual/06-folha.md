@@ -116,6 +116,8 @@ Escolha a competência e **Calcular provisões**: 1/12 de férias (mais 1/3) e 1
 
 ## Contabilização da folha
 
+Se a empresa usa o tipo de contabilização **Em lote** (*Cadastros › Parâmetros › Contábil*), o botão **Contabilizar** apenas registra a pendência; o lançamento sai em *Integrações › Exportar › Contabilização em lote* (veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote)).
+
 **Onde fica:** *Cálculos › Folha › Contabilização*.
 
 1. **Regras**: cada regra liga uma rubrica (ou `ENC_*` para encargos, `PROV_*` para provisões) a uma conta de débito e uma de crédito. **Gerar regras sugeridas** cria as regras com base no plano modelo; ajuste e **Gravar regra** (ou **Excluir**). Marque *Abrir por centro de custo do funcionário* se for o caso.
