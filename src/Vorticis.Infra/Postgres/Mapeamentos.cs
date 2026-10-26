@@ -22,6 +22,7 @@ internal static class Mapeamentos
         OrigemLancamento.SaldoInicial => "SALDO_INICIAL",
         OrigemLancamento.Depreciacao => "DEPRECIACAO",
         OrigemLancamento.ApuracaoTributo => "APURACAO_TRIBUTO",
+        OrigemLancamento.Frota => "FROTA",
         _ => throw new ArgumentOutOfRangeException(nameof(o)),
     };
 

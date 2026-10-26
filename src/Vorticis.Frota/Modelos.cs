@@ -4,7 +4,12 @@ namespace Vorticis.Frota;
 
 /// <summary>Configuração da frota; LimiteAutorizacao: ordens de serviço até este total são autorizadas automaticamente (0 = todas passam por autorização).</summary>
 public sealed record ConfiguracaoFrota(int DiasAviso = 30, decimal ToleranciaConsumo = 15m, decimal LimiteAutorizacao = 0m,
-                                       decimal FatorRodoviario = 1.25m, decimal VelocidadeMedia = 60m);
+                                       decimal FatorRodoviario = 1.25m, decimal VelocidadeMedia = 60m,
+                                       string? ContaDiariaDespesa = null, string? ContaDiariaCredito = null)
+{
+    /// <summary>As duas contas da contabilização das diárias estão informadas.</summary>
+    public bool ContabilizaDiarias => !string.IsNullOrWhiteSpace(ContaDiariaDespesa) && !string.IsNullOrWhiteSpace(ContaDiariaCredito);
+}
 
 /// <summary>Veículo da frota (inclusive reboques e semirreboques, que não abastecem).</summary>
 public sealed record Veiculo(long Id, int Codigo, string Placa, string? Renavam, string Tipo, string? Marca, string? Modelo, int? AnoFabricacao, int? AnoModelo,
@@ -55,7 +60,10 @@ public sealed record SituacaoPreventiva(PlanoManutencao Plano, decimal? ProximaK
 }
 
 /// <summary>Média de consumo calculada entre dois abastecimentos de tanque cheio.</summary>
-public sealed record MediaConsumo(long VeiculoId, DateOnly Data, decimal KmRodado, decimal Litros, decimal Media);
+public sealed record MediaConsumo(long VeiculoId, DateOnly Data, decimal KmRodado, decimal Litros, decimal Media, long? MotoristaId = null);
+
+/// <summary>Filtros opcionais dos relatórios novos da Frota (vazio = todos).</summary>
+public sealed record FiltroRelatorioFrota(long? VeiculoId = null, long? MotoristaId = null);
 
 /// <summary>Regras puras da frota (sem banco): placa, RENAVAM, consumo, preventivas e vencimentos.</summary>
 public static partial class RegrasFrota
@@ -168,7 +176,7 @@ public static partial class RegrasFrota
                 litros += a.Litros;
                 if (!a.TanqueCheio) continue;
                 var km = a.Km - cheio.Km;
-                if (km > 0 && litros > 0) medias.Add(new MediaConsumo(g.Key, a.Data, km, litros, Math.Round(km / litros, 2)));
+                if (km > 0 && litros > 0) medias.Add(new MediaConsumo(g.Key, a.Data, km, litros, Math.Round(km / litros, 2), a.MotoristaId));
                 (cheio, litros) = (a, 0);
             }
         }

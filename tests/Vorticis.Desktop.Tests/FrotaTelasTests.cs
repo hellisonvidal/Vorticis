@@ -62,7 +62,10 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
         Assert.Equal(["Planos de manutenção", "Peças e serviços", "Ordens de serviço", "Autorização de serviços", "Notas de compra"], manutencao.Filhos!.Select(i => i.Titulo));
         var rel = Assert.Single(vm.Menus, m => m.Titulo == "_Relatórios");
         Assert.Equal(["Painel da frota", TabelasFrota.TituloCustos, TabelasFrota.TituloConsumo, TabelasFrota.TituloViagens, TabelasFrota.TituloVencimentos,
-                      TabelasFrota.TituloCustosFrota, TabelasFrota.TituloDiariasColaborador, TabelasFrota.TituloDiariasFrota, "Acompanhamento das ordens de serviço", "Aprovações de serviços", "Notas fiscais de compra"],
+                      TabelasFrota.TituloCustosFrota, TabelasFrota.TituloDiariasColaborador, TabelasFrota.TituloDiariasFrota, TabelasFrota.TituloDiariasAcerto, TabelasFrota.TituloConsumoVeiculo,
+                      TabelasFrota.TituloConsumoMotorista, TabelasFrota.TituloViagensMotorista, TabelasFrota.TituloViagensCliente, TabelasFrota.TituloViagensRota,
+                      TabelasFrota.TituloColetasCliente, TabelasFrota.TituloColetasRota, TabelasFrota.TituloColetasMotorista, TabelasFrota.TituloResumo,
+                      "Acompanhamento das ordens de serviço", "Aprovações de serviços", "Notas fiscais de compra", TabelasFrota.TituloPreventivas, TabelasFrota.TituloHistoricoManutencao],
                      rel.Filhos!.Where(i => !i.EhSeparador).Select(i => i.Titulo));
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
@@ -94,6 +97,7 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
                 (new F.ViewModels.AutorizacaoViewModel(m), new F.Views.AutorizacaoView()),
                 (new F.ViewModels.NotasCompraViewModel(m), new F.Views.NotasCompraView()),
                 (new F.ViewModels.RelatorioFrotaViewModel(m, TabelasFrota.TituloAcompanhamento), new F.Views.RelatorioFrotaView()),
+                (new F.ViewModels.RelatorioFrotaViewModel(m, TabelasFrota.TituloViagensCliente), new F.Views.RelatorioFrotaView()),
                 (relatorio, new F.Views.RelatorioFrotaView()),
             ];
             foreach (var (vm, view) in telas)

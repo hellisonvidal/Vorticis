@@ -3,7 +3,7 @@ using Vorticis.Application.Relatorios;
 namespace Vorticis.Frota;
 
 /// <summary>Relatórios da frota (na tela e exportados em PDF, Excel e CSV).</summary>
-public static class TabelasFrota
+public static partial class TabelasFrota
 {
     public const string TituloCustos = "Custos por veículo";
     public const string TituloConsumo = "Consumo de combustível";

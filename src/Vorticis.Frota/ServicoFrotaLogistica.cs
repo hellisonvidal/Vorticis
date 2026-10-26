@@ -265,11 +265,26 @@ public sealed partial class ServicoFrota
                 """, ct, ("e", empresa), ("doc", $"DIA-{d.Numero}"), ("em", vencimento < hoje ? vencimento : hoje), ("v", vencimento), ("val", d.ValorPagamento),
                 ("obs", $"Diária nº {d.Numero} – {d.Colaborador}"), ("u", usuario));
             await _db.ExecutarAsync("UPDATE frota.diaria SET situacao = 'PAGA', duplicata_id = @dp WHERE id = @id", ct, ("dp", duplicata), ("id", id));
+            // contabilização: em lote, só a pendência; on-line, o lançamento na hora (se falhar, a pendência guarda o pagamento para contabilizar depois)
             var pendencia = false;
+            long? lancamento = null;
+            string? aviso = null;
+            var referencia = new NovaPendencia(OrigensPendencia.Frota, "DIARIA", $"DIARIA:{id}", d.Data, $"Diária nº {d.Numero} – {d.Colaborador}", d.ValorPagamento);
             if (await app.Pendencias.ModoDaEmpresaAsync(empresa, ct) == ModoContabilizacao.Lote)
-                pendencia = await app.Pendencias.RegistrarAsync(empresa, new NovaPendencia(OrigensPendencia.Frota, "DIARIA", $"DIARIA:{id}", d.Data,
-                    $"Diária nº {d.Numero} – {d.Colaborador}", d.ValorPagamento), usuario, ct);
-            return new ResultadoPagamentoDiaria(duplicata, d.ValorPagamento, pendencia);
+                pendencia = await app.Pendencias.RegistrarAsync(empresa, referencia, usuario, ct);
+            else if (!(await ConfiguracaoAsync(empresa, ct)).ContabilizaDiarias)
+                aviso = "O pagamento não foi contabilizado: informe as contas das diárias em Cadastros › Parâmetros › Frota.";
+            else
+            {
+                var r = await ContabilizarDiariaAsync(empresa, d with { Situacao = "PAGA" }, usuario, ct);
+                if (r.Sucesso) lancamento = r.LancamentoId;
+                else
+                {
+                    pendencia = await app.Pendencias.RegistrarAsync(empresa, referencia, usuario, ct);
+                    aviso = "A diária foi paga, mas não foi contabilizada (" + string.Join(" ", r.Erros) + "). Ela ficou nas pendências de contabilização.";
+                }
+            }
+            return new ResultadoPagamentoDiaria(duplicata, d.ValorPagamento, pendencia, lancamento, aviso);
         });
     }
 

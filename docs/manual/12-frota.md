@@ -170,10 +170,20 @@ A lista de municípios e as coordenadas vêm do IBGE (base kelvins/municipios-br
 1. Antes, em *Cadastros › Parâmetros › Frota*, cadastre o **valor de cada tipo de diária** (pernoite, alimentação, refeição, hospedagem e outra).
 2. **Nova diária**: escolha a **data**, o **colaborador**, a **função**, o veículo, a frota, a rota ou a viagem (se houver), o **tipo da diária**, a **quantidade** e, se for o caso, o **adiantamento**. O valor unitário vem da tabela e o **total** é calculado; você pode alterar o valor unitário. Frota e centro de custo em branco são preenchidos sozinhos (pela frota do veículo ou do centro de custo).
 3. **Gravar**. A diária fica **Lançada**.
-4. **Pagar:** informe o **vencimento** e clique em **Pagar (gerar conta a pagar)**. O sistema cria a conta a pagar no Financeiro (com o valor do adiantamento ou, se não houve adiantamento, o total) e a diária passa a **Paga**. Se a empresa contabiliza **em lote** (*Cadastros › Parâmetros › Contábil*), também fica registrada a pendência de contabilização da Frota; veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote). A geração do lançamento contábil a partir dessa pendência da Frota será liberada numa próxima etapa; até lá ela fica listada na tela de contabilização em lote.
+4. **Pagar:** informe o **vencimento** e clique em **Pagar (gerar conta a pagar)**. O sistema cria a conta a pagar no Financeiro (com o valor do adiantamento ou, se não houve adiantamento, o total) e a diária passa a **Paga**. Em seguida, a diária é contabilizada (veja [Contabilização das diárias](#contabilizacao-das-diarias)).
 5. **Acertar** (só diárias com adiantamento): quando o colaborador prestar contas, informe o **valor gasto** e clique em **Acertar**. O saldo é o adiantamento menos o gasto: se sobrou, o colaborador **devolve**; se faltou, a empresa **paga a diferença**. A diária passa a **Acertada**.
 
-Diária paga ou acertada não pode mais ser alterada nem excluída. Use os filtros de período, colaborador e frota no alto da tela e, em *Relatórios*, **Diárias por colaborador** e **Diárias por frota**.
+Diária paga ou acertada não pode mais ser alterada nem excluída. Use os filtros de período, colaborador e frota no alto da tela e, em *Relatórios*, **Diárias por colaborador**, **Diárias por frota** e **Diárias pagas e acertadas**.
+
+### Contabilização das diárias
+
+Quando a diária é paga, o sistema gera o lançamento contábil: **débito** na conta de despesa de diárias (com o centro de custo da diária, que vem da frota) e **crédito** na conta a pagar ou no caixa, no valor pago.
+
+1. Antes, em *Cadastros › Parâmetros › Frota*, grupo **Contabilização das diárias**, informe a **conta de despesa das diárias** e a **conta de crédito** (contas analíticas do plano de contas). Informe as duas ou nenhuma. Clique em **Salvar**.
+2. **Contabilização On-line** (o padrão): o lançamento sai na hora, ao clicar em **Pagar**; a tela avisa que o lançamento foi gerado. Se as contas ainda não foram informadas, a diária é paga normalmente e a tela avisa que o pagamento não foi contabilizado. Se o lançamento não puder ser feito (por exemplo, período fechado), a diária é paga e fica nas pendências de contabilização, com o aviso do motivo.
+3. **Contabilização Em lote:** ao pagar, fica só a pendência da Frota. Em *Integrações › Exportar › Contabilização em lote*, escolha a origem **Frota**, confira a prévia e clique em **Contabilizar selecionadas**; veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote). Se as contas não estiverem informadas, a pendência continua na lista com a orientação. **Desfazer lote** estorna o lançamento e a pendência volta para a lista.
+
+O valor lançado é o do pagamento (o adiantamento ou, sem adiantamento, o total da diária). O acerto da prestação de contas não gera outro lançamento.
 
 ## Ordens de coleta
 
@@ -201,26 +211,33 @@ Embaixo do título, os números da frota: veículos ativos, motoristas e viagens
 
 ## Relatórios da frota
 
-**Onde fica:** *Relatórios* (Custos por veículo, Consumo de combustível, Resultado das viagens, Vencimentos e manutenções, Acompanhamento das ordens de serviço, Aprovações de serviços e Notas fiscais de compra).
+**Onde fica:** *Relatórios › Frota e operação* (no Vorticis Suite Logística) ou *Relatórios* (no Frota).
 
-Escolha o **Período** e clique em **Gerar**; o relatório aparece na tela e pode ser exportado em PDF, Excel ou CSV.
+Escolha o **Período** e, nos relatórios que têm, o **Veículo** e o **Motorista** (**(todos)** mostra tudo) e clique em **Gerar**; o relatório aparece na tela e pode ser exportado em PDF, Excel ou CSV.
 
 - **Custos por veículo:** combustível, manutenção (ordens de serviço, menos as canceladas e reprovadas) e despesas de viagem de cada veículo, o km rodado, a média e o **custo por km**.
 - **Consumo de combustível:** cada média de tanque cheio a tanque cheio, com a média esperada e a marcação **ABAIXO DO ESPERADO**.
+- **Consumo por veículo** e **Consumo por motorista:** o resumo do período: abastecimentos, litros, valor, preço médio do litro, km rodado e média km/l (por veículo, com a esperada e o alerta; por motorista, a média vai para quem fez o abastecimento que fechou o ciclo). O Arla 32 não entra.
 - **Resultado das viagens:** frete menos despesas e combustível de cada viagem; viagens com resultado negativo saem em destaque.
-- **Vencimentos e manutenções:** a mesma lista do painel, para imprimir. Não pede período: é a posição de hoje.
+- **Viagens por motorista**, **Viagens por cliente** e **Viagens por rota** (origem → destino): quantidade de viagens, km rodado, **frete**, despesas, resultado (frete menos despesas), frete por km e frete médio, do maior frete para o menor. Viagens canceladas não entram. É também o faturamento de frete por cliente e por rota.
+- **Coletas por cliente**, **Coletas por rota** e **Coletas por motorista:** quantidade de coletas, coletadas, canceladas, volumes, peso e valor da mercadoria no período.
+- **Vencimentos e manutenções:** a mesma lista do painel (documentos, CNHs e manutenções vencidos ou a vencer), para imprimir. Não pede período: é a posição de hoje.
 - **Custos por frota:** combustível, manutenção, despesas de viagem e diárias de cada frota (os veículos sem frota saem em *sem frota*).
 - **Diárias por colaborador** e **Diárias por frota:** as diárias do período com subtotal de cada colaborador ou frota, adiantamento e saldo do acerto.
+- **Diárias pagas e acertadas:** as diárias já pagas, com o valor pago, o valor gasto e o saldo do acerto; as que têm adiantamento e ainda **aguardam acerto** saem em destaque, com o total a acertar no fim.
+- **Resumo gerencial da frota:** os indicadores do período (viagens, km, frete, despesas, combustível, litros, média km/l, manutenção, diárias, custo total, resultado, custo por km e coletas) ao lado do período anterior de mesmo tamanho, com a **variação em %**, e a posição de hoje (veículos ativos, ordens de serviço em andamento e vencimentos em atraso). Para ver o mês, use do dia 1 ao último dia do mês.
 
 ## Relatórios da manutenção
 
-**Onde fica:** *Relatórios › Acompanhamento das ordens de serviço*, *Aprovações de serviços* e *Notas fiscais de compra*.
+**Onde fica:** *Relatórios › Manutenção*: *Acompanhamento das ordens de serviço*, *Aprovações de serviços*, *Notas fiscais de compra*, *Manutenções preventivas* e *Histórico de manutenção por veículo*.
 
 Em cada um, informe as datas desejadas em **Período** (de/até) e clique em **Gerar**. Todos saem na tela e podem ser exportados em PDF, Excel ou CSV.
 
 - **Acompanhamento das ordens de serviço:** as ordens abertas no período, com a situação, os **dias em aberto** (até a conclusão, ou até hoje), o valor da ordem, o valor **autorizado**, o total das **notas de compra** e a diferença. Ficam em destaque as ordens aguardando autorização e as que têm notas acima do autorizado.
 - **Aprovações de serviços:** as autorizações e reprovações feitas no período, com data e hora, ordem, placa, decisão, valor, usuário e o motivo. As reprovadas ficam em destaque.
 - **Notas fiscais de compra:** as notas emitidas no período, com fornecedor, CNPJ, ordem de serviço, placa e os valores de peças e serviços, com o total.
+- **Manutenções preventivas:** cada plano de manutenção ativo com a última manutenção, a próxima **por km e por data**, quanto **falta** (negativo = já passou), e a situação **VENCIDA**, **A VENCER** ou **Em dia**; as vencidas vêm primeiro. Pode ser filtrado por veículo. Não pede período: é a posição de hoje.
+- **Histórico de manutenção por veículo:** as ordens de serviço do período agrupadas por veículo (data, tipo, serviço, oficina, km, situação, peças e mão de obra) com subtotal de cada veículo. Ordens canceladas ou reprovadas aparecem, mas não entram nos totais. Pode ser filtrado por veículo.
 
 ## Parâmetros da Frota
 
@@ -230,4 +247,5 @@ Em cada um, informe as datas desejadas em **Período** (de/até) e clique em **G
 - **Tolerância do consumo (%):** quanto a média pode ficar abaixo da esperada antes de gerar alerta (padrão 15%). Ex.: média esperada 2,5 km/l e 15% → alerta abaixo de 2,13 km/l.
 - **Fator rodoviário** e **Velocidade média (km/h):** usados na estimativa de distância e tempo das [rotas](#rotas) (padrão 1,25 e 60).
 - **Valor da diária** de cada tipo: sugerido ao lançar uma [diária](#diarias).
+- **Conta de despesa das diárias** e **Conta de crédito:** contas do lançamento gerado quando a diária é paga (veja [Contabilização das diárias](#contabilizacao-das-diarias)).
 - **Autorizar sozinhas as ordens de até (R$):** ordens de serviço com valor até este limite são autorizadas automaticamente ao clicar em **Pedir autorização**. Com 0 (padrão), toda ordem passa por *Manutenção › Autorização de serviços*.

@@ -35,7 +35,7 @@ Os atalhos de teclado do Frota valem aqui (**Ctrl+B** abastecimentos, **Ctrl+P**
 
 | Aba | O que tem |
 |---|---|
-| **Frota** | Avisos de vencimento, alerta de consumo, limite de autorização das ordens de serviço, fator rodoviário das rotas e valores das diárias. |
+| **Frota** | Avisos de vencimento, alerta de consumo, limite de autorização das ordens de serviço, fator rodoviário das rotas e valores das diárias e contas da contabilização das diárias. |
 | **Gerencial e financeiro** | Os parâmetros do financeiro e do fiscal usados nas contas a pagar e a receber (contas de fornecedores e clientes, juros, multa, descontos e históricos das baixas). |
 | **Contábil** | Regras de lançamento, centros de custo, encerramento e o **Tipo de contabilização** (On-line ou Em lote, veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote)). |
 | **Folha** | Encargos patronais, dia de pagamento e eSocial. |

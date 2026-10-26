@@ -19,6 +19,8 @@ public sealed class ModuloFrota : IModuloDesktop
     public string CorDestaque => "#475569";   // grafite-aço (ícone e selo do módulo)
     public string CorBarra => "#1E293B";      // asfalto
     public bool UsaCalendarioObrigacoes => false;
+    /// <summary>Cria os serviços da Frota na abertura, para registrar o processador da Contabilização em lote.</summary>
+    public void PrepararServicos(Vorticis.Infra.VorticisApp app) => _ = app.Frota();
     public string RotuloEmpresas => "Transportadoras";
     public string RotuloEmpresaAtiva => "Transportadora";
 
@@ -54,10 +56,22 @@ public sealed class ModuloFrota : IModuloDesktop
             ItemMenu.Tela("Custos por frota", FrotaTelas.RelCustosFrota),
             ItemMenu.Tela("Diárias por colaborador", FrotaTelas.RelDiariasColaborador),
             ItemMenu.Tela("Diárias por frota", FrotaTelas.RelDiariasFrota),
+            ItemMenu.Tela("Diárias pagas e acertadas", FrotaTelas.RelDiariasAcerto),
+            ItemMenu.Tela("Consumo por veículo", FrotaTelas.RelConsumoVeiculo),
+            ItemMenu.Tela("Consumo por motorista", FrotaTelas.RelConsumoMotorista),
+            ItemMenu.Tela("Viagens por motorista", FrotaTelas.RelViagensMotorista),
+            ItemMenu.Tela("Viagens por cliente", FrotaTelas.RelViagensCliente),
+            ItemMenu.Tela("Viagens por rota", FrotaTelas.RelViagensRota),
+            ItemMenu.Tela("Coletas por cliente", FrotaTelas.RelColetasCliente),
+            ItemMenu.Tela("Coletas por rota", FrotaTelas.RelColetasRota),
+            ItemMenu.Tela("Coletas por motorista", FrotaTelas.RelColetasMotorista),
+            ItemMenu.Tela("Resumo gerencial da frota", FrotaTelas.RelResumo),
             ItemMenu.Separador,
             ItemMenu.Tela("Acompanhamento das ordens de serviço", FrotaTelas.RelAcompanhamento),
             ItemMenu.Tela("Aprovações de serviços", FrotaTelas.RelAprovacoes),
-            ItemMenu.Tela("Notas fiscais de compra", FrotaTelas.RelNotas)),
+            ItemMenu.Tela("Notas fiscais de compra", FrotaTelas.RelNotas),
+            ItemMenu.Tela("Manutenções preventivas", FrotaTelas.RelPreventivas),
+            ItemMenu.Tela("Histórico de manutenção por veículo", FrotaTelas.RelHistoricoManutencao)),
     ];
 
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
@@ -127,6 +141,18 @@ public sealed class ModuloFrota : IModuloDesktop
         Relatorio(c, "RelOrdensFrota", FrotaTelas.RelAcompanhamento, Vorticis.Frota.TabelasFrota.TituloAcompanhamento);
         Relatorio(c, "RelAprovacoesFrota", FrotaTelas.RelAprovacoes, Vorticis.Frota.TabelasFrota.TituloAprovacoes);
         Relatorio(c, "RelNotasFrota", FrotaTelas.RelNotas, Vorticis.Frota.TabelasFrota.TituloNotas);
+        Relatorio(c, "RelConsumoVeiculo", FrotaTelas.RelConsumoVeiculo, Vorticis.Frota.TabelasFrota.TituloConsumoVeiculo);
+        Relatorio(c, "RelConsumoMotorista", FrotaTelas.RelConsumoMotorista, Vorticis.Frota.TabelasFrota.TituloConsumoMotorista);
+        Relatorio(c, "RelPreventivas", FrotaTelas.RelPreventivas, Vorticis.Frota.TabelasFrota.TituloPreventivas);
+        Relatorio(c, "RelHistoricoManutencao", FrotaTelas.RelHistoricoManutencao, Vorticis.Frota.TabelasFrota.TituloHistoricoManutencao);
+        Relatorio(c, "RelViagensMotorista", FrotaTelas.RelViagensMotorista, Vorticis.Frota.TabelasFrota.TituloViagensMotorista);
+        Relatorio(c, "RelViagensCliente", FrotaTelas.RelViagensCliente, Vorticis.Frota.TabelasFrota.TituloViagensCliente);
+        Relatorio(c, "RelViagensRota", FrotaTelas.RelViagensRota, Vorticis.Frota.TabelasFrota.TituloViagensRota);
+        Relatorio(c, "RelColetasCliente", FrotaTelas.RelColetasCliente, Vorticis.Frota.TabelasFrota.TituloColetasCliente);
+        Relatorio(c, "RelColetasRota", FrotaTelas.RelColetasRota, Vorticis.Frota.TabelasFrota.TituloColetasRota);
+        Relatorio(c, "RelColetasMotorista", FrotaTelas.RelColetasMotorista, Vorticis.Frota.TabelasFrota.TituloColetasMotorista);
+        Relatorio(c, "RelDiariasAcerto", FrotaTelas.RelDiariasAcerto, Vorticis.Frota.TabelasFrota.TituloDiariasAcerto);
+        Relatorio(c, "RelResumoFrota", FrotaTelas.RelResumo, Vorticis.Frota.TabelasFrota.TituloResumo);
         c.Instancia("ParametrosModulo", m => new ParametrosFrotaViewModel(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
     }

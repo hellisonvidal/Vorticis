@@ -460,7 +460,8 @@ public partial class DiariasViewModel(IContexto contexto) : FrotaBase(contexto, 
         await CarregarAsync();
         Selecionada = Lista.FirstOrDefault(l => l.D.Numero == n);
         Mensagem = $"Diária nº {n} paga: conta a pagar de R$ {Formato.Moeda(r.Valor.Valor)} gerada no Financeiro"
-                   + (r.Valor.PendenciaRegistrada ? " e pendência de contabilização registrada (Contabilização em lote)." : ".");
+                   + (r.Valor.LancamentoId is not null ? " e lançamento contábil gerado." : r.Valor.PendenciaRegistrada ? " e pendência de contabilização registrada (Contabilização em lote)." : ".")
+                   + (r.Valor.Aviso is { } aviso ? " " + aviso : "");
     }, Permissao.FrotaOperacao);
 
     [RelayCommand]

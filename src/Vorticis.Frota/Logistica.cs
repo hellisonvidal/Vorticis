@@ -31,7 +31,8 @@ public sealed record Diaria(long Id, int Numero, DateOnly Data, long MotoristaId
     public decimal? Saldo => ValorGasto is { } g ? Adiantamento - g : null;
 }
 
-public sealed record ResultadoPagamentoDiaria(long DuplicataId, decimal Valor, bool PendenciaRegistrada);
+/// <summary>Resultado do pagamento: a conta a pagar, o lançamento contábil (contabilização on-line) ou a pendência (em lote); Aviso quando não foi possível contabilizar.</summary>
+public sealed record ResultadoPagamentoDiaria(long DuplicataId, decimal Valor, bool PendenciaRegistrada, long? LancamentoId = null, string? Aviso = null);
 
 public sealed record Coleta(long Id, int Numero, DateTime AgendadaEm, long? RemetenteId, long? DestinatarioId, string EnderecoColeta, string? Mercadoria, int Volumes,
                             decimal PesoKg, decimal ValorMercadoria, long? VeiculoId, long? MotoristaId, long? RotaId, string Situacao, string? Observacao,

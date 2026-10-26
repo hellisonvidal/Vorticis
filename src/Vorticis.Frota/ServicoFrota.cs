@@ -44,8 +44,8 @@ public sealed partial class ServicoFrota(VorticisApp app)
     // ------------------------------------------------------------------ configuração
 
     public async Task<ConfiguracaoFrota> ConfiguracaoAsync(long empresa, CancellationToken ct = default)
-        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media FROM frota.configuracao WHERE empresa_id = @e",
-                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
+        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media, conta_diaria_despesa, conta_diaria_credito FROM frota.configuracao WHERE empresa_id = @e",
+                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4), r.Texto(5), r.Texto(6)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
 
     public async Task<Resultado> GravarConfiguracaoAsync(long empresa, ConfiguracaoFrota c, long usuario, CancellationToken ct = default)
     {
@@ -55,12 +55,24 @@ public sealed partial class ServicoFrota(VorticisApp app)
         if (c.LimiteAutorizacao < 0) return Resultado.Falha("O limite de autorização automática não pode ser negativo.");
         if (c.FatorRodoviario is < 1 or > 3) return Resultado.Falha("Fator rodoviário: de 1,00 a 3,00.");
         if (c.VelocidadeMedia is < 10 or > 130) return Resultado.Falha("Velocidade média: de 10 a 130 km/h.");
+        c = c with { ContaDiariaDespesa = N(c.ContaDiariaDespesa), ContaDiariaCredito = N(c.ContaDiariaCredito) };
+        if ((c.ContaDiariaDespesa is null) != (c.ContaDiariaCredito is null)) return Resultado.Falha("Contabilização das diárias: informe as duas contas (despesa e crédito) ou nenhuma.");
+        if (c.ContaDiariaDespesa is not null)
+        {
+            if (c.ContaDiariaDespesa == c.ContaDiariaCredito) return Resultado.Falha("As contas de despesa e de crédito das diárias devem ser diferentes.");
+            foreach (var conta in new[] { c.ContaDiariaDespesa, c.ContaDiariaCredito! })
+                if (await _db.EscalarAsync<int>("SELECT count(*)::int FROM contabil.plano_contas WHERE empresa_id = @e AND codigo = @c AND tipo = 'A' AND ativa", ct, ("e", empresa), ("c", conta)) == 0)
+                    return Resultado.Falha($"A conta {conta} não existe no plano de contas, não é analítica ou está inativa.");
+        }
         return await Tentar(() => _db.ExecutarAsync("""
-            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media) VALUES (@e, @d, @t, @l, @f, @vm)
+            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media, conta_diaria_despesa, conta_diaria_credito)
+            VALUES (@e, @d, @t, @l, @f, @vm, @cd, @cc)
             ON CONFLICT (empresa_id) DO UPDATE SET dias_aviso = EXCLUDED.dias_aviso, tolerancia_consumo = EXCLUDED.tolerancia_consumo,
                                                    limite_autorizacao = EXCLUDED.limite_autorizacao, fator_rodoviario = EXCLUDED.fator_rodoviario,
-                                                   velocidade_media = EXCLUDED.velocidade_media
-            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo), ("l", c.LimiteAutorizacao), ("f", c.FatorRodoviario), ("vm", c.VelocidadeMedia)));
+                                                   velocidade_media = EXCLUDED.velocidade_media, conta_diaria_despesa = EXCLUDED.conta_diaria_despesa,
+                                                   conta_diaria_credito = EXCLUDED.conta_diaria_credito
+            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo), ("l", c.LimiteAutorizacao), ("f", c.FatorRodoviario), ("vm", c.VelocidadeMedia),
+            ("cd", c.ContaDiariaDespesa), ("cc", c.ContaDiariaCredito)));
     }
 
     // ------------------------------------------------------------------ veículos
@@ -339,7 +351,11 @@ public sealed partial class ServicoFrota(VorticisApp app)
     public async Task<List<AvisoFrota>> AvisosAsync(long empresa, DateOnly hoje, long usuario, CancellationToken ct = default)
     {
         if (!await PodeVerAsync(usuario, empresa, ct)) return [];
-        var cfg = await ConfiguracaoAsync(empresa, ct);
+        return await AvisosInternosAsync(empresa, hoje, await ConfiguracaoAsync(empresa, ct), ct);
+    }
+
+    private async Task<List<AvisoFrota>> AvisosInternosAsync(long empresa, DateOnly hoje, ConfiguracaoFrota cfg, CancellationToken ct)
+    {
         var avisos = new List<AvisoFrota>();
         foreach (var d in await ListarDocumentosAsync(empresa, ct))
             if (RegrasFrota.SituacaoVencimento(d.Vencimento, hoje, cfg.DiasAviso) is { } g)
@@ -371,9 +387,10 @@ public sealed partial class ServicoFrota(VorticisApp app)
     // ------------------------------------------------------------------ relatórios
 
     public async Task<Resultado<Vorticis.Application.Relatorios.TabelaRelatorio>> RelatorioAsync(long empresa, string titulo, DateOnly inicio, DateOnly fim, long usuario,
-                                                                                                CancellationToken ct = default)
+                                                                                                CancellationToken ct = default, FiltroRelatorioFrota? filtro = null)
     {
         if (await Negar(usuario, empresa, P.FrotaRelatorios, ct) is { } n) return Resultado<Vorticis.Application.Relatorios.TabelaRelatorio>.Falha(n);
+        if (TabelasFrota.UsaFiltros(titulo) || titulo == TabelasFrota.TituloResumo) return await RelatorioNovoAsync(empresa, titulo, inicio, fim, filtro ?? new(), ct);
         var veiculos = await ListarVeiculosAsync(empresa, ct);
         var abastecimentos = await ListarAbastecimentosAsync(empresa, inicio, fim, null, ct);
         var tabela = titulo switch
@@ -404,5 +421,10 @@ public sealed partial class ServicoFrota(VorticisApp app)
 public static class ServicosFrota
 {
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<VorticisApp, ServicoFrota> Instancias = new();
-    public static ServicoFrota De(VorticisApp app) => Instancias.GetValue(app, a => new ServicoFrota(a));
+    public static ServicoFrota De(VorticisApp app) => Instancias.GetValue(app, a =>
+    {
+        var s = new ServicoFrota(a);
+        a.Pendencias.RegistrarProcessador(s.ProcessadorPendencias);
+        return s;
+    });
 }

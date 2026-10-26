@@ -37,6 +37,18 @@ public static class FrotaTelas
     public const string RelCustosFrota = "frota.rel.frotas";
     public const string RelDiariasColaborador = "frota.rel.diarias";
     public const string RelDiariasFrota = "frota.rel.diariasfrota";
+    public const string RelConsumoVeiculo = "frota.rel.consumoveiculo";
+    public const string RelConsumoMotorista = "frota.rel.consumomotorista";
+    public const string RelPreventivas = "frota.rel.preventivas";
+    public const string RelHistoricoManutencao = "frota.rel.historicoman";
+    public const string RelViagensMotorista = "frota.rel.viagensmotorista";
+    public const string RelViagensCliente = "frota.rel.viagenscliente";
+    public const string RelViagensRota = "frota.rel.viagensrota";
+    public const string RelColetasCliente = "frota.rel.coletascliente";
+    public const string RelColetasRota = "frota.rel.coletasrota";
+    public const string RelColetasMotorista = "frota.rel.coletasmotorista";
+    public const string RelDiariasAcerto = "frota.rel.diariasacerto";
+    public const string RelResumo = "frota.rel.resumo";
 }
 
 internal static class Ext
@@ -747,24 +759,48 @@ public sealed partial class RelatorioFrotaViewModel(IContexto contexto, string t
     [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
 
     public string Titulo => titulo;
-    /// <summary>O relatório de vencimentos é sempre "a partir de hoje": não pede período.</summary>
-    public bool UsaPeriodo => titulo != TabelasFrota.TituloVencimentos;
+    /// <summary>Os relatórios de vencimentos e de manutenções preventivas são sempre "a partir de hoje": não pedem período.</summary>
+    public bool UsaPeriodo => !TabelasFrota.SemPeriodo(titulo);
+    /// <summary>Relatórios que podem ser filtrados por veículo e por motorista.</summary>
+    public bool UsaFiltros => TabelasFrota.UsaFiltros(titulo);
+    public ObservableCollection<Opcao> FiltroVeiculos { get; } = [];
+    public ObservableCollection<Opcao> FiltroMotoristas { get; } = [];
+    [ObservableProperty] private Opcao? _filtroVeiculo;
+    [ObservableProperty] private Opcao? _filtroMotorista;
     protected override string TituloRelatorio => titulo;
     protected override string Parametros => _parametros;
     protected override string NomeArquivo => "frota_" + titulo.ToLowerInvariant().Replace(' ', '_').Replace("í", "i").Replace("ç", "c").Replace("õ", "o").Replace("ú", "u").Replace("ê", "e");
     protected override bool Paisagem => true;
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() => _tabela is null ? [] : [_tabela];
 
-    public Task CarregarAsync() => UsaPeriodo ? Task.CompletedTask : GerarAsync();
+    public async Task CarregarAsync()
+    {
+        if (UsaFiltros) await CarregarFiltrosAsync();
+        if (!UsaPeriodo) await GerarAsync();
+    }
+
+    private Task CarregarFiltrosAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var (v0, m0) = (FiltroVeiculo?.Id, FiltroMotorista?.Id);
+        FiltroVeiculos.Clear(); FiltroVeiculos.Add(new Opcao(null, "(todos)"));
+        foreach (var v in (await app.Frota().VeiculosAsync(empresa, usuario)).Where(v => v.Ativo)) FiltroVeiculos.Add(new Opcao(v.Id, v.Descricao));
+        FiltroMotoristas.Clear(); FiltroMotoristas.Add(new Opcao(null, "(todos)"));
+        foreach (var m in (await app.Frota().MotoristasAsync(empresa, usuario)).Where(m => m.Ativo)) FiltroMotoristas.Add(new Opcao(m.Id, m.Nome));
+        FiltroVeiculo = FiltroVeiculos.FirstOrDefault(o => o.Id == v0) ?? FiltroVeiculos[0];
+        FiltroMotorista = FiltroMotoristas.FirstOrDefault(o => o.Id == m0) ?? FiltroMotoristas[0];
+    }, Permissao.FrotaRelatorios);
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var (ini, fim) = (Ext.Dia(Inicio), Ext.Dia(Fim));
-        var r = await app.Frota().RelatorioAsync(empresa, titulo, ini, fim, usuario);
+        var r = await app.Frota().RelatorioAsync(empresa, titulo, ini, fim, usuario, filtro: new FiltroRelatorioFrota(FiltroVeiculo?.Id, FiltroMotorista?.Id));
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var t = r.Valor!;
-        (_tabela, _parametros) = (t, UsaPeriodo ? $"Período de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}" : $"Posição em {DateTime.Today:dd/MM/yyyy}");
+        var filtros = new List<string>();
+        if (UsaFiltros && FiltroVeiculo?.Id is not null) filtros.Add("Veículo: " + FiltroVeiculo.Texto);
+        if (UsaFiltros && FiltroMotorista?.Id is not null) filtros.Add("Motorista: " + FiltroMotorista.Texto);
+        (_tabela, _parametros) = (t, string.Join(" – ", new[] { UsaPeriodo ? $"Período de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}" : $"Posição em {DateTime.Today:dd/MM/yyyy}" }.Concat(filtros)));
         Colunas = t.Colunas;
         Linhas.Clear();
         foreach (var l in t.Linhas)
@@ -808,6 +844,13 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
         [
             .. RegrasLogistica.TiposDiaria.Select(t => new CampoParametro("diaria_" + t, "Valor da diária – " + RegrasFrota.Rotulo(t), TipoCampoParametro.Texto, null)),
         ], [Atalho("Abrir Diárias", FrotaTelas.Diarias)]),
+        new("Contabilização das diárias", "Contas do lançamento gerado quando a diária é paga (Operação › Diárias › Pagar): débito na despesa, crédito na conta a pagar ou no caixa. Informe as duas ou nenhuma.",
+        [
+            new CampoParametro("conta_despesa", "Conta de despesa das diárias (código)", TipoCampoParametro.Texto,
+                               "Conta analítica de resultado. O centro de custo da diária (o da frota) vai junto. Ex.: 4.2.01.010."),
+            new CampoParametro("conta_credito", "Conta de crédito (contas a pagar ou caixa)", TipoCampoParametro.Texto,
+                               "Conta analítica de onde sai o valor pago. Ex.: 2.1.06.003."),
+        ], [Atalho("Abrir Diárias", FrotaTelas.Diarias)]),
     ];
 
     protected override async Task CarregarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -818,6 +861,8 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
         Campo("limite").Texto = Formato.Num(c.LimiteAutorizacao);
         Campo("fator").Texto = c.FatorRodoviario.ToString("0.00", Formato.PtBr);
         Campo("velocidade").Texto = Formato.Num(c.VelocidadeMedia);
+        Campo("conta_despesa").Texto = c.ContaDiariaDespesa ?? "";
+        Campo("conta_credito").Texto = c.ContaDiariaCredito ?? "";
         foreach (var (tipo, valor) in await app.Frota().ValoresDiariaAsync(empresa)) Campo("diaria_" + tipo).Texto = Formato.Moeda(valor);
     }
 
@@ -826,7 +871,8 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
         if (Ext.Int(Campo("dias").Texto) is not { } dias) { Erros.Add("Informe a antecedência em dias (número inteiro)."); return; }
         var r = await app.Frota().GravarConfiguracaoAsync(empresa, new ConfiguracaoFrota(dias, Formato.LerValor(Campo("tolerancia").Texto) ?? 0,
                                                                                                  Formato.LerValor(Campo("limite").Texto) ?? 0,
-                                                                                                 Formato.LerValor(Campo("fator").Texto) ?? 0, Formato.LerValor(Campo("velocidade").Texto) ?? 0), usuario);
+                                                                                                 Formato.LerValor(Campo("fator").Texto) ?? 0, Formato.LerValor(Campo("velocidade").Texto) ?? 0,
+                                                                                                 Campo("conta_despesa").Texto, Campo("conta_credito").Texto), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var valores = RegrasLogistica.TiposDiaria.ToDictionary(t => t, t => Formato.LerValor(Campo("diaria_" + t).Texto) ?? 0);
         var rv = await app.Frota().GravarValoresDiariaAsync(empresa, valores, usuario);
