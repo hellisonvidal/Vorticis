@@ -46,7 +46,10 @@ public static class ManualUsuario
 
     /// <summary>Tópico da tela (ou nulo se a tela não tem tópico ou ele não existe).</summary>
     public static TopicoManual? TopicoDaTela(string? chave) =>
-        chave is not null && Mapa.TryGetValue(chave, out var destino) ? Resolver(destino, null) : null;
+        chave is null ? null
+        : Mapa.TryGetValue(chave, out var destino) ? Resolver(destino, null)
+        // no programa que junta módulos, a tela que cada módulo tem a sua vira "Modulo:chave" (ex.: os Parâmetros de cada um)
+        : chave.IndexOf(':') is > 0 and var i ? TopicoDaTela(chave[(i + 1)..]) : null;
 
     /// <summary>Resolve "arquivo.md#seção", "#seção" (no arquivo de <paramref name="atual"/>) ou "arquivo.md".</summary>
     public static TopicoManual? Resolver(string destino, string? atual)
@@ -79,8 +82,11 @@ public static class ManualUsuario
     }
 
     /// <summary>Arquivos do módulo atual e comuns (ou todos).</summary>
-    public static IEnumerable<ArquivoManual> Visiveis(string moduloNomeCurto, bool todos) =>
-        Arquivos.Where(a => todos || a.Area == "Comum" || a.Area == moduloNomeCurto);
+    public static IEnumerable<ArquivoManual> Visiveis(string moduloNomeCurto, bool todos) => Visiveis([moduloNomeCurto], todos);
+
+    /// <summary>Arquivos das áreas dadas (programa que junta vários módulos) e os comuns.</summary>
+    public static IEnumerable<ArquivoManual> Visiveis(IReadOnlyList<string> areas, bool todos) =>
+        Arquivos.Where(a => todos || a.Area == "Comum" || areas.Contains(a.Area));
 
     /// <summary>Busca por palavras (sem acentos, qualquer ordem) no título e no texto das seções.</summary>
     public static IReadOnlyList<TopicoManual> Buscar(string termo, IEnumerable<ArquivoManual> arquivos)

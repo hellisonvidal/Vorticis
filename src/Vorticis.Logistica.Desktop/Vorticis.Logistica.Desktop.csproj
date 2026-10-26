@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Vorticis Suite Logística: hub da transportadora numa única janela — Frota (coordenação e manutenção), Gerencial, Contábil, Fiscal e Folha -->
+  <!-- Vorticis Logística: programa único da transportadora — frota, manutenção, financeiro, fiscal, contábil e folha num só menu -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>VorticisSuiteLogistica</AssemblyName>
-    <Product>Vorticis Suite Logística</Product>
-    <Title>Vorticis Suite Logística</Title>
+    <AssemblyName>VorticisLogistica</AssemblyName>
+    <Product>Vorticis Logística</Product>
+    <Title>Vorticis Logística</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>..\..\instalador\icone\VorticisLogistica.ico</ApplicationIcon>

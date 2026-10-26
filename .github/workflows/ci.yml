@@ -71,10 +71,10 @@ jobs:
           dotnet publish src/Vorticis.Suite.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-suite
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item publish-suite/VorticisSuite.exe publish
-          # Vorticis Suite Logística (Frota, Gerencial, Contábil, Fiscal e Folha): idem, só o exe dela
-          dotnet publish src/Vorticis.SuiteLogistica.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-logistica
+          # Vorticis Logística (programa único com as telas de Frota, Gerencial, Contábil, Fiscal e Folha): idem, só o exe dele
+          dotnet publish src/Vorticis.Logistica.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-logistica
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Copy-Item publish-logistica/VorticisSuiteLogistica.exe publish
+          Copy-Item publish-logistica/VorticisLogistica.exe publish
           Move-Item pgsql publish/pgsql
           # Visual C++ Redistributable 2015-2022 (x64): o instalador o instala em silêncio se faltar; vai também nos portáteis
           Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile publish/vc_redist.x64.exe -UseBasicParsing
@@ -86,7 +86,7 @@ jobs:
           # Portáteis das suítes: os executáveis de cada produto numa pasta, com um único pgsql
           $produtos = @{
             "VorticisSuite" = "VorticisSuite", "VorticisEscritorio", "VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisGerencial", "VorticisCondominio";
-            "VorticisSuiteLogistica" = "VorticisSuiteLogistica", "VorticisFrota", "VorticisGerencial", "VorticisContabil", "VorticisFiscal", "VorticisFolha"
+            "VorticisLogistica" = "VorticisLogistica"
           }
           foreach ($produto in $produtos.Keys) {
             New-Item -ItemType Directory -Path "portatil/$produto" -Force | Out-Null
@@ -110,14 +110,13 @@ jobs:
         run: |
           $setup = (Get-ChildItem saida/Setup-Vorticis-*.exe).FullName
           ./instalador/teste-instalacao.ps1 -Setup $setup
-      - name: Teste de instalação do Vorticis Suite Logística (Windows limpo, sem configuração)
+      - name: Teste de instalação do Vorticis Logística (Windows limpo, sem configuração)
         shell: powershell
         run: |
-          # começa do zero, como numa transportadora que só instala a Suite Logística
+          # começa do zero, como numa transportadora que só instala o Vorticis Logística
           Remove-Item "$env:LOCALAPPDATA\Vorticis", "$env:APPDATA\Vorticis" -Recurse -Force -ErrorAction SilentlyContinue
           $setup = (Get-ChildItem saida/Setup-VorticisLogistica-*.exe).FullName
-          ./instalador/teste-instalacao.ps1 -Setup $setup -Pasta "Programs\Vorticis Logistica" -Programa VorticisFrota.exe `
-            -Arquivos VorticisSuiteLogistica.exe, VorticisSuiteLogistica.ico, VorticisGerencial.exe, VorticisContabil.exe, VorticisFiscal.exe, VorticisFolha.exe
+          ./instalador/teste-instalacao.ps1 -Setup $setup -Pasta "Programs\Vorticis Logistica" -Programa VorticisLogistica.exe -Arquivos VorticisLogistica.ico
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
@@ -138,5 +137,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisSuiteLogistica-portatil
-          path: portatil/VorticisSuiteLogistica/
+          name: VorticisLogistica-portatil
+          path: portatil/VorticisLogistica/

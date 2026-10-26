@@ -58,7 +58,7 @@ public sealed partial class ManualViewModel(MainViewModelBase main) : ModuloView
         Preparar();
         if (ManualUsuario.TopicoDaTela(chave) is not { } t) return;
         if (Busca.Length > 0) Busca = "";
-        var visiveis = ManualUsuario.Visiveis(ModuloAtual, TodosModulos);
+        var visiveis = ManualUsuario.Visiveis(main.Modulo.AreasDoManual, TodosModulos);
         if (!visiveis.Any(a => a.Nome == t.Arquivo)) TodosModulos = true;
         IrPara(t);
     }
@@ -79,7 +79,7 @@ public sealed partial class ManualViewModel(MainViewModelBase main) : ModuloView
         if (destino.Contains("://")) { AbrirArquivo(destino); return; }
         if (ManualUsuario.Resolver(destino, Topico?.Arquivo) is { } t)
         {
-            if (!ManualUsuario.Visiveis(ModuloAtual, TodosModulos).Any(a => a.Nome == t.Arquivo)) TodosModulos = true;
+            if (!ManualUsuario.Visiveis(main.Modulo.AreasDoManual, TodosModulos).Any(a => a.Nome == t.Arquivo)) TodosModulos = true;
             IrPara(t);
         }
     }
@@ -93,7 +93,7 @@ public sealed partial class ManualViewModel(MainViewModelBase main) : ModuloView
             var pasta = Path.Combine(Path.GetTempPath(), "Vorticis-Manual");
             Directory.CreateDirectory(pasta);
             var caminho = Path.Combine(pasta, "manual.html");
-            File.WriteAllText(caminho, ManualUsuario.GerarHtml(ManualUsuario.Visiveis(ModuloAtual, TodosModulos)), new System.Text.UTF8Encoding(false));
+            File.WriteAllText(caminho, ManualUsuario.GerarHtml(ManualUsuario.Visiveis(main.Modulo.AreasDoManual, TodosModulos)), new System.Text.UTF8Encoding(false));
             UltimoHtml = caminho;
             var alvo = Topico is { } t ? "#" + ManualUsuario.IdHtml(t.Arquivo, t.Ancora) : "";
             AbrirArquivo(new Uri(caminho).AbsoluteUri + alvo);
@@ -118,7 +118,7 @@ public sealed partial class ManualViewModel(MainViewModelBase main) : ModuloView
         var atual = Topico;
         _montando = true;
         Itens.Clear();
-        var arquivos = ManualUsuario.Visiveis(ModuloAtual, TodosModulos).ToList();
+        var arquivos = ManualUsuario.Visiveis(main.Modulo.AreasDoManual, TodosModulos).ToList();
         if (Busca.Trim().Length > 0)
             foreach (var t in ManualUsuario.Buscar(Busca, arquivos))
                 Itens.Add(new ItemIndice(t, $"{t.Titulo}  ({ManualUsuario.Arquivo(t.Arquivo)?.Titulo})", 0));

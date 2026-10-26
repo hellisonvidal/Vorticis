@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace Vorticis.SuiteLogistica.Desktop;
+namespace Vorticis.Logistica.Desktop;
 
 internal static class Program
 {

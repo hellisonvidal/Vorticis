@@ -1,9 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Vorticis.SuiteLogistica.Desktop.App"
+             x:Class="Vorticis.Logistica.Desktop.App"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              RequestedThemeVariant="Light">
-  <!-- As telas de cada módulo entram em Application.DataTemplates ao iniciar (ModulosDaSuite.IncluirTelas) -->
+  <!-- As telas de cada módulo entram em Application.DataTemplates ao iniciar (ModuloLogistica.Apps, em App.axaml.cs) -->
   <Application.DataTemplates>
     <c:TemplatesComuns />
   </Application.DataTemplates>

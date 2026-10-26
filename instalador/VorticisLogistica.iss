@@ -1,6 +1,6 @@
-﻿; Instalador do Vorticis Suite Logística (Inno Setup 6): hub da transportadora — Frota, Gerencial, Contábil, Fiscal e Folha. Gerado pelo CI.
-; Entrada: ..\publish (VorticisSuiteLogistica.exe, VorticisFrota.exe, VorticisGerencial.exe, VorticisContabil.exe, VorticisFiscal.exe,
-; VorticisFolha.exe + pasta pgsql com os binários do PostgreSQL).
+﻿; Instalador do Vorticis Logística (Inno Setup 6): o programa único da transportadora — frota, manutenção, financeiro, fiscal,
+; contábil e folha num só menu. Gerado pelo CI.
+; Entrada: ..\publish (VorticisLogistica.exe + pasta pgsql com os binários do PostgreSQL).
 ; Compilar: iscc /DVersao=0.4.0 instalador\VorticisLogistica.iss
 
 #ifndef Versao
@@ -10,12 +10,12 @@
 [Setup]
 ; Produto próprio (AppId diferente do Vorticis): instala ao lado, em outra pasta, e usa o mesmo banco local (AppData\Local\Vorticis).
 AppId={{8C1F4A6D-3B52-4E07-A9D1-6F2E7B4C9A30}
-AppName=Vorticis Suite Logística
+AppName=Vorticis Logística
 AppVersion={#Versao}
-AppVerName=Vorticis Suite Logística {#Versao}
+AppVerName=Vorticis Logística {#Versao}
 AppPublisher=Vorticis Tecnologia Financeira
 DefaultDirName={autopf}\Vorticis Logistica
-DefaultGroupName=Vorticis Suite Logística
+DefaultGroupName=Vorticis Logística
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -27,50 +27,25 @@ OutputBaseFilename=Setup-VorticisLogistica-{#Versao}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=icone\VorticisLogistica.ico
-UninstallDisplayIcon={app}\VorticisSuiteLogistica.ico
-UninstallDisplayName=Vorticis Suite Logística
+SetupIconFile=icone\VorticisLogisticaInstalador.ico
+UninstallDisplayIcon={app}\VorticisLogistica.ico
+UninstallDisplayName=Vorticis Logística
 CloseApplications=yes
 
 [Languages]
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-ptbr.FinishedLabel=O Vorticis Suite Logística foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
-
-[Types]
-Name: "completa"; Description: "Instalação completa (todos os módulos da Suite Logística)"
-Name: "personalizada"; Description: "Instalação personalizada (escolher os módulos)"; Flags: iscustom
-
-[Components]
-; Todos marcados por padrão; é preciso manter pelo menos um (ver NextButtonClick). Banco de dados, login, empresas e
-; configurações são comuns: o PostgreSQL embutido (pasta pgsql) é instalado com qualquer módulo.
-Name: "frota"; Description: "Vorticis Frota (coordenação da frota e manutenção)"; Types: completa personalizada
-Name: "erp"; Description: "Vorticis Gerencial (vendas, compras, estoque e financeiro)"; Types: completa personalizada
-Name: "contabil"; Description: "Vorticis Contábil"; Types: completa personalizada
-Name: "fiscal"; Description: "Vorticis Fiscal"; Types: completa personalizada
-Name: "folha"; Description: "Vorticis Folha"; Types: completa personalizada
+ptbr.FinishedLabel=O Vorticis Logística foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-; Comuns a todos os módulos: banco de dados local
-Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: frota erp contabil fiscal folha
-; Vorticis Suite Logística: os módulos instalados numa janela só (a Frota faz o login)
-Source: "..\publish\VorticisSuiteLogistica.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: frota erp contabil fiscal folha
-Source: "icone\VorticisLogistica.ico"; DestDir: "{app}"; DestName: "VorticisSuiteLogistica.ico"; Flags: ignoreversion; Components: frota erp contabil fiscal folha
-; Executáveis dos módulos (arquivo único, sem exigir .NET instalado) e ícones dos atalhos
-Source: "..\publish\VorticisFrota.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: frota
-Source: "..\publish\VorticisGerencial.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
-Source: "..\publish\VorticisContabil.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
-Source: "..\publish\VorticisFiscal.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
-Source: "..\publish\VorticisFolha.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
-Source: "icone\VorticisFrota.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: frota
-Source: "icone\VorticisGerencial.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
-Source: "icone\VorticisContabil.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: contabil
-Source: "icone\VorticisFiscal.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: fiscal
-Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: folha
+; Um programa só (arquivo único, sem exigir .NET instalado) e o banco de dados local
+Source: "..\publish\VorticisLogistica.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "icone\VorticisLogistica.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 #ifexist "..\publish\vc_redist.x64.exe"
 ; Microsoft Visual C++ Redistributable 2015-2022 (x64), instalado em silêncio só se ainda não existir (ver InstalarVcRuntime)
@@ -82,17 +57,11 @@ Source: "..\publish\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinst
 Name: "{app}\Backups"; Permissions: users-modify; Flags: uninsneveruninstall
 
 [Icons]
-Name: "{autoprograms}\Vorticis Suite Logística"; Filename: "{app}\VorticisSuiteLogistica.exe"; IconFilename: "{app}\VorticisSuiteLogistica.ico"; Components: frota erp contabil fiscal folha
-Name: "{autodesktop}\Vorticis Suite Logística"; Filename: "{app}\VorticisSuiteLogistica.exe"; IconFilename: "{app}\VorticisSuiteLogistica.ico"; Tasks: desktopicon; Components: frota erp contabil fiscal folha
-Name: "{group}\Vorticis Frota"; Filename: "{app}\VorticisFrota.exe"; IconFilename: "{app}\VorticisFrota.ico"; Components: frota
-Name: "{group}\Vorticis Gerencial"; Filename: "{app}\VorticisGerencial.exe"; IconFilename: "{app}\VorticisGerencial.ico"; Components: erp
-Name: "{group}\Vorticis Contábil"; Filename: "{app}\VorticisContabil.exe"; IconFilename: "{app}\VorticisContabil.ico"; Components: contabil
-Name: "{group}\Vorticis Fiscal"; Filename: "{app}\VorticisFiscal.exe"; IconFilename: "{app}\VorticisFiscal.ico"; Components: fiscal
-Name: "{group}\Vorticis Folha"; Filename: "{app}\VorticisFolha.exe"; IconFilename: "{app}\VorticisFolha.ico"; Components: folha
+Name: "{autoprograms}\Vorticis Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"
+Name: "{autodesktop}\Vorticis Logística"; Filename: "{app}\VorticisLogistica.exe"; IconFilename: "{app}\VorticisLogistica.ico"; Tasks: desktopicon
 
 [Run]
-; Ao final abre a Vorticis Suite Logística (os módulos instalados numa janela; começa pela Frota, que faz o login).
-Filename: "{app}\VorticisSuiteLogistica.exe"; Description: "{cm:LaunchProgram,Vorticis Suite Logística}"; Flags: nowait postinstall skipifsilent; Components: frota erp contabil fiscal folha
+Filename: "{app}\VorticisLogistica.exe"; Description: "{cm:LaunchProgram,Vorticis Logística}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 // O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover
@@ -110,17 +79,6 @@ begin
     else Dados := ExpandConstant('{localappdata}\Perseus\banco');
     if FileExists(PgCtl) and FileExists(Dados + '\postmaster.pid') then
       Exec(PgCtl, 'stop -D "' + Dados + '" -m fast -w -t 60', '', SW_HIDE, ewWaitUntilTerminated, Codigo);
-  end;
-end;
-
-// Pelo menos um módulo precisa ficar marcado.
-function NextButtonClick(CurPageID: Integer): Boolean;
-begin
-  Result := True;
-  if (CurPageID = wpSelectComponents) and (WizardSelectedComponents(False) = '') then
-  begin
-    MsgBox('Escolha pelo menos um módulo do Vorticis Suite Logística para instalar.', mbError, MB_OK);
-    Result := False;
   end;
 end;
 
@@ -152,11 +110,7 @@ end;
 
 function ModuloParaConfigurar(): String;
 begin
-  if WizardIsComponentSelected('frota') then Result := 'VorticisFrota.exe'
-  else if WizardIsComponentSelected('erp') then Result := 'VorticisGerencial.exe'
-  else if WizardIsComponentSelected('contabil') then Result := 'VorticisContabil.exe'
-  else if WizardIsComponentSelected('fiscal') then Result := 'VorticisFiscal.exe'
-  else Result := 'VorticisFolha.exe';
+  Result := 'VorticisLogistica.exe';
 end;
 
 // Configuração automática do banco: o primeiro módulo selecionado roda com --configurar-banco (sem janela; código 0 = pronto).

@@ -38,8 +38,8 @@ public class MenusTests
     [Fact]
     public void Cada_modulo_tem_cor_e_icone_proprios_para_nao_confundir_os_sistemas()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel(), new Vorticis.Frota.Desktop.MainViewModel()];
-        Assert.Equal(["#1B7F5A", "#D97706", "#7E22CE", "#1D4ED8", "#0891B2", "#BE123C", "#475569"], modulos.Select(m => m.Modulo.CorDestaque));
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel(), new Vorticis.Frota.Desktop.MainViewModel(), new Vorticis.Logistica.Desktop.MainViewModel()];
+        Assert.Equal(["#1B7F5A", "#D97706", "#7E22CE", "#1D4ED8", "#0891B2", "#BE123C", "#475569", "#0F766E"], modulos.Select(m => m.Modulo.CorDestaque));
         Assert.Equal(modulos.Length, modulos.Select(m => m.Modulo.CorBarra).Distinct().Count());
         Assert.Equal("#14532D", modulos[0].Modulo.CorBarra);                      // verde-escuro: não confunde com o azul do Escritório
         // a cor chega ao casco como pincel (faixa sob os menus, login e tela inicial)
@@ -200,7 +200,7 @@ public class MenusTests
     [Fact]
     public void Todos_os_modulos_tem_Parametros_no_menu_Cadastros()
     {
-        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel(), new Vorticis.Frota.Desktop.MainViewModel()];
+        MainViewModelBase[] modulos = [new MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel(), new Vorticis.Frota.Desktop.MainViewModel(), new Vorticis.Logistica.Desktop.MainViewModel()];
         foreach (var vm in modulos)
         {
             var cadastros = vm.Menus[0];

@@ -2,18 +2,9 @@
 
 Módulo **Vorticis Frota** (ícone grafite): coordenação da frota e manutenção para transportadoras. A empresa escolhida no topo é a **transportadora** (cadastre-a em *Cadastros › Transportadoras* com o CNPJ e marque o módulo **Frota**). Emissão de CT-e/MDF-e e rastreamento por GPS ficam para uma próxima etapa.
 
-## Vorticis Suite Logística
+## Onde o Frota está
 
-O Frota faz parte do **Vorticis Suite Logística**, instalador próprio para transportadoras: um hub das informações da empresa, com a frota, o gerencial, o financeiro, a contabilidade, os impostos e a folha.
-
-**Módulos instalados:** **Vorticis Frota** (veículos, motoristas, abastecimentos, viagens, vencimentos e manutenção), **Vorticis Gerencial** (vendas, compras, estoque e financeiro: contas a pagar e a receber), **Vorticis Contábil**, **Vorticis Fiscal** e **Vorticis Folha**.
-
-1. Rode o instalador **Setup-VorticisLogistica**. Na instalação completa vão todos os módulos; na personalizada, escolha quais (pelo menos um).
-2. O banco de dados é configurado sozinho durante a instalação, como no Vorticis.
-3. Abra o atalho **Vorticis Suite Logística**: os módulos instalados ficam numa janela só, com a mesma navegação do Vorticis Suite (abas, barra lateral, árvore ou painel, em *Configurações › Layout da Suite*). Troque de módulo pela navegação ou com **Ctrl+1**, **Ctrl+2**…
-4. O **Frota** abre primeiro e faz a entrada com o seu usuário; os demais módulos entram com o mesmo usuário.
-
-Os módulos também podem ser abertos sozinhos pelos atalhos do menu Iniciar (pasta **Vorticis Suite Logística**). O Vorticis Suite Logística é instalado na pasta própria (*Vorticis Logistica*) e usa o mesmo banco de dados do Vorticis no computador.
+O Frota é a base do **[Vorticis Logística](13-logistica.md)**, o programa único da transportadora: ali, os menus **Operação**, **Manutenção** e **Relatórios** são os deste capítulo, ao lado do financeiro, do fiscal, do contábil e da folha. O Vorticis Frota também pode ser aberto sozinho.
 
 ## Ordem dos cadastros
 

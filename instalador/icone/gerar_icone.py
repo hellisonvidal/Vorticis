@@ -1,12 +1,12 @@
 """Gera os ícones da suíte Vorticis a partir da logo (logo-vorticis.jpg):
 
   Um ícone por módulo (VorticisContabil, VorticisFiscal, VorticisFolha, VorticisEscritorio, VorticisGerencial,
-  VorticisCondominio, VorticisFrota — .ico, -256.png e -512.png): a espiral da logo inteira na cor do módulo (o verde vira a
+  VorticisCondominio, VorticisFrota, VorticisLogistica — .ico, -256.png e -512.png): a espiral da logo inteira na cor do módulo (o verde vira a
   cor de destaque e o azul-marinho, a cor da barra) com um selo redondo na mesma cor e a sigla do módulo
-  (C, F, FP, E, G, CD, FR), para não confundir os sistemas na barra de tarefas.
+  (C, F, FP, E, G, CD, FR, VL), para não confundir os sistemas na barra de tarefas.
   VorticisInstalador.ico — o ícone do instalador (e da Vorticis Suite), diferente de todos: a espiral branca sobre um quadrado
   azul-marinho arredondado, com uma faixa nas cores dos módulos e uma seta de instalação.
-  VorticisLogistica.ico — o mesmo desenho em grafite-asfalto, com as cores dos módulos da Vorticis Suite Logística.
+  VorticisLogisticaInstalador.ico — o mesmo desenho em grafite-asfalto, com as cores dos módulos reunidos no Vorticis Logística.
 
 Usa só o símbolo (a espiral à esquerda da logo): o nome VORTICIS fica ilegível nos tamanhos de ícone.
 O fundo branco da logo vira transparente. As cores devem ser as mesmas de IModuloDesktop.CorDestaque e
@@ -37,6 +37,7 @@ MODULOS = {
     "VorticisGerencial": ("#0891B2", "#164E63", "G"),
     "VorticisCondominio": ("#BE123C", "#881337", "CD"),
     "VorticisFrota": ("#475569", "#1E293B", "FR"),
+    "VorticisLogistica": ("#0F766E", "#134E4A", "VL"),
 }
 
 
@@ -121,7 +122,7 @@ def selo(img: Image.Image, cor: str, sigla: str) -> Image.Image:
 INSTALADORES = {
     "VorticisInstalador": (MARINHO_LOGO, ["VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisEscritorio", "VorticisGerencial",
                                           "VorticisCondominio"]),
-    "VorticisLogistica": ("#1E293B", ["VorticisFrota", "VorticisGerencial", "VorticisContabil", "VorticisFiscal", "VorticisFolha"]),
+    "VorticisLogisticaInstalador": ("#1E293B", ["VorticisFrota", "VorticisGerencial", "VorticisContabil", "VorticisFiscal", "VorticisFolha"]),
 }
 
 
