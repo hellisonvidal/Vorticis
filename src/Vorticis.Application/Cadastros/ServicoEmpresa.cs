@@ -10,7 +10,7 @@ namespace Vorticis.Application.Cadastros;
 [Flags]
 public enum ModulosEmpresa : byte
 {
-    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Escritorio = 8, Erp = 16, Condominio = 32, Frota = 64, Todos = 127,
+    Nenhum = 0, Contabil = 1, Fiscal = 2, Folha = 4, Escritorio = 8, Erp = 16, Condominio = 32, Frota = 64 /* sem uso: o módulo Frota foi transferido para o repositório vorticis-suite-logistica; o bit e a coluna modulo_frota permanecem no banco */, Todos = 127,
 }
 
 public static class ModulosEmpresaExtensoes
@@ -24,8 +24,7 @@ public static class ModulosEmpresaExtensoes
 
     /// <summary>Cada módulo da suíte, na ordem do menu de escolha.</summary>
     public static readonly ModulosEmpresa[] Individuais =
-        [ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha, ModulosEmpresa.Escritorio, ModulosEmpresa.Erp, ModulosEmpresa.Condominio,
-         ModulosEmpresa.Frota];
+        [ModulosEmpresa.Contabil, ModulosEmpresa.Fiscal, ModulosEmpresa.Folha, ModulosEmpresa.Escritorio, ModulosEmpresa.Erp, ModulosEmpresa.Condominio];
 
     /// <summary>Coluna de core.empresa que indica o módulo.</summary>
     public static string Coluna(this ModulosEmpresa m) => m switch

@@ -33,7 +33,6 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(LicencaViewModel)] = () => new LicencaView(),
         [typeof(SobreViewModel)] = () => new SobreView(),
         [typeof(ManualViewModel)] = () => new ManualView(),
-        [typeof(ParametrosAbasViewModel)] = () => new ParametrosAbasView(),
         [typeof(PreferenciasMenuViewModel)] = () => new PreferenciasMenuView(),
         [typeof(ContabilizacaoLoteViewModel)] = () => new ContabilizacaoLoteView(),
     };

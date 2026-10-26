@@ -17,13 +17,7 @@ public sealed record NovaConta(string Codigo, string Descricao, string CodNat, I
                                long? GrupoParticipantesId = null);
 
 public sealed record CentroCustoDetalhe(long Id, string Codigo, string Descricao, long? PaiId, bool Ativo, bool TemMovimento,
-                                        bool Analitico = true, short Nivel = 1, bool TemFilhos = false, long? FrotaId = null);
-
-/// <summary>Frota que um centro de custo pode representar (cadastro do módulo Frota).</summary>
-public sealed record FrotaDoCentro(long Id, string Texto)
-{
-    public override string ToString() => Texto;
-}
+                                        bool Analitico = true, short Nivel = 1, bool TemFilhos = false);
 
 public interface IRepositorioPlanoContas
 {
@@ -52,8 +46,6 @@ public interface IRepositorioPlanoContas
     Task<long> IncluirCentroAsync(long empresaId, string codigo, string descricao, long? paiId, DateOnly dataInclusao, short nivel, bool analitico,
                                   long? paiParaSintetico, CancellationToken ct);
     Task AlterarCentroAsync(long centroId, string descricao, bool ativo, bool analitico, CancellationToken ct);
-    Task<IReadOnlyList<FrotaDoCentro>> ListarFrotasAsync(long empresaId, CancellationToken ct);
-    Task DefinirFrotaCentroAsync(long centroId, long? frotaId, CancellationToken ct);
     Task<string?> ObterMascaraCentrosAsync(long empresaId, CancellationToken ct);
     /// <summary>Grava a máscara e, se informado, troca os códigos dos centros (id → novo código; nível recalculado), numa transação.</summary>
     Task DefinirMascaraCentrosAsync(long empresaId, string? mascara, IReadOnlyDictionary<long, string>? codigos, long usuarioId, CancellationToken ct);
@@ -451,21 +443,6 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
                 return Resultado.Falha("Os centros de nível 1 são sempre grupos (sintéticos).");
         }
         await repositorio.AlterarCentroAsync(centroId, descricao.Trim(), ativo, tipo, ct);
-        return Resultado.Ok();
-    }
-
-    /// <summary>Frotas ativas da empresa (módulo Frota) para o campo opcional "Frota" do centro de custo.</summary>
-    public async Task<IReadOnlyList<FrotaDoCentro>> ListarFrotasAsync(long empresaId, long usuarioId, CancellationToken ct = default)
-        => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ListarFrotasAsync(empresaId, ct) : [];
-
-    /// <summary>Liga (ou desliga, com null) o centro de custo a uma frota: o centro passa a representar a frota nos relatórios de custo por frota.</summary>
-    public async Task<Resultado> DefinirFrotaDoCentroAsync(long empresaId, long centroId, long? frotaId, long usuarioId, CancellationToken ct = default)
-    {
-        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.CentroCustoManter, ct) is { } negado) return Resultado.Falha(negado);
-        var centro = (await repositorio.ListarCentrosAsync(empresaId, ct)).FirstOrDefault(c => c.Id == centroId);
-        if (centro is null) return Resultado.Falha("Centro de custo não encontrado.");
-        if (frotaId is { } f && (await repositorio.ListarFrotasAsync(empresaId, ct)).All(x => x.Id != f)) return Resultado.Falha("Frota não encontrada.");
-        await repositorio.DefinirFrotaCentroAsync(centroId, frotaId, ct);
         return Resultado.Ok();
     }
 

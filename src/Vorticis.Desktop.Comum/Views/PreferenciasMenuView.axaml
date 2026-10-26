@@ -6,9 +6,9 @@
              x:DataType="vm:PreferenciasMenuViewModel">
   <Grid RowDefinitions="Auto,*,Auto" Margin="12" MaxWidth="820" HorizontalAlignment="Left">
     <StackPanel Grid.Row="0" Spacing="4">
-      <TextBlock Classes="titulo" Text="Menus" />
+      <TextBlock Classes="titulo" Text="Menus do programa" />
       <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="Gray"
-                 Text="Desmarque o que você não quer ver no menu. O item some e a função fica bloqueada (também por atalho de teclado). Parâmetros, Sair e Ajuda não podem ser desmarcados." />
+                 Text="Desmarque o que você não quer ver no menu. O item some e a função fica bloqueada (também por atalho de teclado). Parâmetros, Menus do programa, Sair e Ajuda não podem ser desmarcados." />
     </StackPanel>
     <TreeView Grid.Row="1" ItemsSource="{Binding Raiz}" Margin="0,8" MinHeight="260">
       <TreeView.ItemTemplate>

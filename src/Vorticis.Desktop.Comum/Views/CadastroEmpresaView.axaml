@@ -114,7 +114,6 @@
           <CheckBox Margin="0,0,16,4" Content="Escritório" IsChecked="{Binding ModuloEscritorio}" IsEnabled="{Binding EscritorioEditavel}" />
           <CheckBox Margin="0,0,16,4" Content="Gerencial" IsChecked="{Binding ModuloErp}" IsEnabled="{Binding ErpEditavel}" />
           <CheckBox Margin="0,0,16,4" Content="Condomínio" IsChecked="{Binding ModuloCondominio}" IsEnabled="{Binding CondominioEditavel}" />
-          <CheckBox Margin="0,0,16,4" Content="Frota" IsChecked="{Binding ModuloFrota}" IsEnabled="{Binding FrotaEditavel}" />
         </WrapPanel>
 
         <TextBlock Classes="secao" Text="Escrituração" />

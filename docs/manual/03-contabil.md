@@ -34,7 +34,6 @@ Menus do módulo Vorticis Contábil. Permissões: cada função depende do seu p
 
 1. **Incluir**: código (obrigatório nos níveis 2 ou mais, conforme a máscara), descrição e superior.
 2. Marque **Sintético** para grupos que não recebem lançamentos. **Ativo** controla o uso.
-3. **Frota** (opcional): se a empresa usa o módulo Frota (por exemplo, no Vorticis Suite Logística), escolha a frota que este centro de custo representa. Os relatórios de custo por frota usam esse vínculo (veja [Frotas](12-frota.md#frotas)). Deixe **(nenhuma)** nos demais centros.
 
 ## Históricos padrão
 
@@ -178,20 +177,20 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 
 **Para que serve:** escolher *quando* os documentos dos outros módulos (notas fiscais, baixas de duplicatas e folha de pagamento) viram lançamentos contábeis. Com o tipo de contabilização **On-line** (o padrão, como sempre foi), cada nota, baixa ou folha gera o lançamento na hora. Com **Em lote**, os módulos só deixam uma *pendência de contabilização*, e você gera os lançamentos de uma vez, depois de conferir.
 
-**Como ligar:** em *Cadastros › Parâmetros* (aba **Contábil** no Vorticis Suite Logística), grupo *Tipo de contabilização*, escolha **Em lote** e clique em **Salvar**. A mudança vale para a empresa ativa e não altera os lançamentos que já existem. Para voltar ao normal, escolha **On-line**.
+**Como ligar:** em *Cadastros › Parâmetros*, grupo *Tipo de contabilização*, escolha **Em lote** e clique em **Salvar**. A mudança vale para a empresa ativa e não altera os lançamentos que já existem. Para voltar ao normal, escolha **On-line**.
 
 **Onde fica:** *Integrações › Exportar › Contabilização em lote* (o item só aparece quando a empresa está em lote).
 
 **Como usar:**
-1. Escolha a **origem** (Fiscal, baixas de duplicatas, Folha de pagamento, Frota ou todas) e, se quiser, o período (*De* e *Até*). Clique em **Consultar**.
+1. Escolha a **origem** (Fiscal, baixas de duplicatas ou todas) e, se quiser, o período (*De* e *Até*). Clique em **Consultar**.
 2. A tela mostra um resumo por mês e origem e a lista das pendências, com data, descrição e valor.
 3. Marque as pendências (ou **Marcar todas**) e clique em **Ver prévia** para conferir as partidas do lançamento sem gravar nada.
 4. Clique em **Contabilizar selecionadas**. O sistema gera os lançamentos pelas mesmas regras da contabilização on-line (regras de contabilização das notas, contas dos Parâmetros do Fiscal, regras da folha). As pendências que não puderem ser contabilizadas (por exemplo, sem regra ou período fechado) continuam na lista, com o motivo, e não impedem as outras.
 5. Cada vez que você contabiliza, é criado um **lote**. Em *Lotes já contabilizados*, selecione um lote e clique em **Desfazer lote** para estornar os lançamentos dele: as pendências voltam para a lista e podem ser contabilizadas de novo.
 
-**O que gera pendência no modo Em lote:** a gravação ou importação de notas fiscais, a baixa de duplicatas (a baixa é registrada e o saldo da duplicata diminui na hora; só o lançamento contábil espera) o botão **Contabilizar** da folha e das provisões da folha e o pagamento de diárias da Frota (débito na despesa de diárias, crédito na conta a pagar ou caixa informadas em *Cadastros › Parâmetros › Frota*). As provisões de tributos (Simples, IRPJ/CSLL, PIS/COFINS) continuam sendo lançadas na hora. Se a baixa for estornada antes de entrar em um lote, a pendência dela é cancelada sozinha.
+**O que gera pendência no modo Em lote:** a gravação ou importação de notas fiscais, a baixa de duplicatas (a baixa é registrada e o saldo da duplicata diminui na hora; só o lançamento contábil espera), o botão **Contabilizar** da folha e das provisões da folha. As provisões de tributos (Simples, IRPJ/CSLL, PIS/COFINS) continuam sendo lançadas na hora. Se a baixa for estornada antes de entrar em um lote, a pendência dela é cancelada sozinha.
 
-**Dica:** o programa que processa cada origem precisa estar instalado. No Vorticis Suite Logística todas as origens estão disponíveis.
+**Dica:** o programa que processa cada origem precisa estar instalado.
 
 ## Conciliação automática
 

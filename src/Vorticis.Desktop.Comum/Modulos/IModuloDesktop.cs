@@ -94,9 +94,6 @@ public interface IModuloDesktop
     /// <summary>Atalhos de teclado do módulo (listados na tela Sobre; os que têm chave abrem a tela).</summary>
     IReadOnlyList<AtalhoTela> Atalhos { get; }
 
-    /// <summary>Módulos marcados ao cadastrar uma empresa por este programa (o Vorticis Logística marca todos os que reúne).</summary>
-    Vorticis.Application.Cadastros.ModulosEmpresa ModulosAoCadastrar => ModuloEmpresa;
-
     /// <summary>Áreas do manual mostradas sem marcar "todos os módulos" (o programa que junta módulos mostra as de todos eles).</summary>
     IReadOnlyList<string> AreasDoManual => [NomeCurto];
 

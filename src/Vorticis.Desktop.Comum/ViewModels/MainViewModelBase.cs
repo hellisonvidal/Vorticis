@@ -75,6 +75,8 @@ public static class TelasComuns
     public const string Obrigacoes = "obrigacoes";
     /// <summary>Cadastros › Parâmetros: cada módulo registra a sua tela com esta chave.</summary>
     public const string Parametros = "parametros";
+    /// <summary>Cadastros › Menus do programa: o usuário escolhe os itens de menu que quer ver (preferências por usuário).</summary>
+    public const string Menus = "menus";
     public const string ConfiguracoesGerais = "configuracoesgerais";
     /// <summary>Integrações › Exportar › Contabilização em lote (pendências dos módulos quando a empresa contabiliza em lote).</summary>
     public const string ContabilizacaoLote = "contabilizacaolote";
@@ -155,6 +157,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public ContasBancariasViewModel ContasBancarias => Instancia<ContasBancariasViewModel>();
     public FormasPagamentoViewModel FormasPagamento => Instancia<FormasPagamentoViewModel>();
     public ConexaoViewModel Conexao => Instancia<ConexaoViewModel>();
+    public PreferenciasMenuViewModel MenusDoPrograma => Instancia<PreferenciasMenuViewModel>();
     public ContabilizacaoLoteViewModel ContabilizacaoLote => Instancia<ContabilizacaoLoteViewModel>();
     public InicioViewModel Inicio => Instancia<InicioViewModel>();
     public CadastroEmpresaViewModel Empresas => Instancia<CadastroEmpresaViewModel>();
@@ -189,6 +192,10 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Obrigacoes), m => new ObrigacoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Obrigacoes, "Obrigações › Calendário de obrigações", ComAcesso, v => v.CarregarAsync());
+
+        c.Instancia(nameof(MenusDoPrograma), m => new PreferenciasMenuViewModel(m),
+                    aoTrocarEmpresa: (v, ativa) => { if (ativa) v.Carregar(); return Task.CompletedTask; })
+            .Tela(TelasComuns.Menus, "Cadastros › Menus do programa", ComAcesso, v => { v.Carregar(); return Task.CompletedTask; });
 
         c.Instancia(nameof(ContabilizacaoLote), m => new ContabilizacaoLoteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
@@ -289,7 +296,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (Modulo.UsaCadastrosComuns && Modulo.UsaClientesFornecedores)
             cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
-        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros)]);
+        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)]);
         // O calendário de obrigações fica em "Obrigações", se o módulo tem esse menu; senão, em "Consultas";
         // sem nenhum dos dois, o casco cria o menu "Obrigações".
         var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);

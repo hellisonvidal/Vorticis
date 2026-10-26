@@ -19,17 +19,15 @@ public static class OrigensPendencia
     public const string Fiscal = "FISCAL";
     public const string Duplicatas = "DUPLICATAS";
     public const string Folha = "FOLHA";
-    public const string Frota = "FROTA";
     public const string Gerencial = "GERENCIAL";
 
-    public static readonly IReadOnlyList<string> Todas = [Fiscal, Duplicatas, Folha, Frota, Gerencial];
+    public static readonly IReadOnlyList<string> Todas = [Fiscal, Duplicatas, Folha, Gerencial];
 
     public static string Nome(string origem) => origem switch
     {
         Fiscal => "Fiscal (notas e provisões)",
         Duplicatas => "Fiscal (baixas de duplicatas)",
         Folha => "Folha de pagamento",
-        Frota => "Frota",
         Gerencial => "Gerencial",
         _ => origem,
     };

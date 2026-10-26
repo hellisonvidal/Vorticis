@@ -35,7 +35,7 @@ public abstract partial class MainViewModelBase
 
     /// <summary>Telas que nunca podem ser escondidas: Parâmetros (onde se desfaz a escolha), Sair, Ajuda e a tela inicial.</summary>
     public static bool ChaveEssencial(string? chave) => chave is not null
-        && (chave is TelasComuns.Parametros or TelasComuns.Sair or TelasComuns.Manual or TelasComuns.ManualContextual or TelasComuns.Inicio
+        && (chave is TelasComuns.Parametros or TelasComuns.Menus or TelasComuns.Sair or TelasComuns.Manual or TelasComuns.ManualContextual or TelasComuns.Inicio
                 or TelasComuns.Sobre or TelasComuns.Licenca
             || chave.EndsWith(":" + TelasComuns.Parametros, StringComparison.Ordinal));
 
@@ -128,7 +128,7 @@ public abstract partial class MainViewModelBase
     private void AvisarTelaOculta(string tela)
     {
         var titulo = _catalogo.Telas.TryGetValue(tela, out var def) && !string.IsNullOrWhiteSpace(def.Titulo) ? def.Titulo : tela;
-        Status = $"A função \"{titulo}\" está oculta nas suas preferências de menu. Para usá-la, marque-a de novo em Cadastros › Parâmetros › Menus.";
+        Status = $"A função \"{titulo}\" está oculta nas suas preferências de menu. Para usá-la, marque-a de novo em Cadastros › Menus do programa.";
     }
 
     /// <summary>Atalho de teclado ou chamada direta: abre a tela ou, se ela foi escondida do menu, avisa na barra de status.</summary>

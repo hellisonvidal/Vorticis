@@ -51,8 +51,6 @@ Estes cadastros existem em todos os módulos e têm o mesmo código em todos ele
 2. Altere os campos desejados. Os botões de cada grupo (por exemplo, *Abrir Encerramento do exercício*) levam à tela completa daquela configuração.
 3. Clique em **Salvar**. *Descartar alterações* volta aos valores gravados.
 
-No Vorticis Suite Logística a tela tem uma aba para cada área e a aba *Menus*; veja [Parâmetros do programa](13-logistica.md#parametros).
-
 Se o seu perfil não permite alterar, a tela só mostra os valores. Se você apertar Esc com alterações não salvas, o sistema pergunta antes de fechar.
 
 ### Contábil
@@ -162,3 +160,20 @@ No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF,
 **Regras:** o assistente da ECD/ECF e a transmissão do eSocial só aceitam o procurador com procuração **vigente hoje** e com a **abrangência** da obrigação (ex.: procuração marcada só para ECF não vale para a ECD). O certificado usado deve ser o do próprio procurador (mesmo CPF).
 
 **Importante:** a procuração em si deve ser outorgada no e-CAC da Receita; o Vorticis apenas registra quem é o procurador, por quanto tempo e para quais obrigações.
+
+## Menus do programa
+
+**Para que serve:** deixar o menu só com o que você usa no dia a dia.
+
+**Onde fica:** *Cadastros › Menus do programa* (em todos os módulos).
+
+**Como usar:**
+1. Abra *Cadastros › Menus do programa*. Aparece a lista dos menus e itens, em árvore, com uma caixa de marcação em cada um.
+2. **Desmarque** o que não quer ver. Desmarcar um menu esconde também tudo o que está dentro dele; marcar um item mostra de novo o menu que o contém. **Mostrar todos** marca tudo.
+3. Clique em **Salvar**. O menu muda na hora.
+
+**O que acontece com o que foi escondido:** o item some do menu e a função fica **bloqueada**: o atalho de teclado e qualquer outra forma de abrir a tela mostram, na barra de situação, o aviso de que a função está oculta nas suas preferências. Para voltar a usá-la, marque o item de novo nesta tela.
+
+**Itens essenciais:** *Parâmetros*, *Menus do programa*, *Sair (trocar de usuário)* e todo o menu *Ajuda* (e os menus que os contêm) não podem ser desmarcados.
+
+**Cada usuário escolhe o seu.** Quem é administrador vê a opção **Aplicar para todos os usuários**: ao salvar com ela marcada, os itens desmarcados ficam escondidos para todos (os outros usuários não conseguem mostrá-los de novo; aparecem como *oculto pelo administrador*). Sem a opção marcada, a escolha vale só para você.

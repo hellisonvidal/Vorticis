@@ -38,7 +38,6 @@ public sealed partial class ModuloSuite(MainViewModelBase vm) : ObservableObject
         "VorticisEscritorio" => "E",
         "VorticisGerencial" => "G",
         "VorticisCondominio" => "CD",
-        "VorticisFrota" => "FR",
         _ => Nome[..1],
     };
 
@@ -82,7 +81,7 @@ public sealed partial class SuiteViewModel : ObservableObject
 {
     private bool _propagando;
 
-    /// <param name="nome">Nome do produto na janela e no menu (Vorticis Suite Empresarial, Vorticis Suite Logística...).</param>
+    /// <param name="nome">Nome do produto na janela e no menu (Vorticis Suite Empresarial).</param>
     /// <param name="principal">Executável do módulo que conecta e faz o login; sem ele, o que administra a suíte (Escritório) ou o primeiro.</param>
     public SuiteViewModel(IReadOnlyList<MainViewModelBase> modulos, LayoutSuite? layout = null, string nome = "Vorticis Suite Empresarial", string? principal = null)
     {

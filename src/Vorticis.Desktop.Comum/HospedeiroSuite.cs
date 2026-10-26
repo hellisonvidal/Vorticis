@@ -8,7 +8,7 @@ using Vorticis.Domain.Comum;
 namespace Vorticis.Desktop.Comum;
 
 /// <summary>
-/// Base dos produtos que reúnem módulos numa janela só (Vorticis Suite Empresarial, Vorticis Suite Logística): cada um diz o nome, os módulos que
+/// Base dos produtos que reúnem módulos numa janela só (Vorticis Suite Empresarial): cada um diz o nome, os módulos que
 /// hospeda e quem faz o login; aqui ficam a escolha dos módulos instalados, as telas de cada módulo e a abertura da janela.
 /// </summary>
 public abstract class AppSuiteBase : Avalonia.Application

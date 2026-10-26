@@ -65,7 +65,7 @@ public sealed partial class NoMenuViewModel : ObservableObject
 }
 
 /// <summary>
-/// Cadastros › Parâmetros › Menus: árvore dos menus do programa com caixas de marcação. O que for desmarcado some do menu e a tela fica
+/// Cadastros › Menus do programa: árvore dos menus do programa com caixas de marcação. O que for desmarcado some do menu e a tela fica
 /// bloqueada (inclusive por atalho). Cada usuário escolhe para si; o administrador pode aplicar a escolha para todos.
 /// </summary>
 public sealed partial class PreferenciasMenuViewModel(MainViewModelBase main) : ModuloViewModel(main), IAlteracoesPendentes

@@ -166,7 +166,6 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
         (ModContabil, ModFiscal, ModFolha) = (m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Contabil), m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Fiscal),
                                               m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Folha));
         (ModCondominio, ModGerencial) = (m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Condominio), m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Erp));
-        ModFrota = m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Frota);
         SituacaoModulos = p?.EmpresaVinculadaId is null
             ? "Marque os módulos do contrato: ao gravar, o cliente é cadastrado como empresa nesses módulos (só o administrador)."
             : "Cliente já cadastrado como empresa nos módulos marcados. Marque outros para incluí-lo neles também.";
@@ -181,7 +180,6 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
         if (ModFolha) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Folha;
         if (ModCondominio) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Condominio;
         if (ModGerencial) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Erp;
-        if (ModFrota) m |= Vorticis.Application.Cadastros.ModulosEmpresa.Frota;
         return m;
     }
 

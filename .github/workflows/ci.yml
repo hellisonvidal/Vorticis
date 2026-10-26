@@ -63,7 +63,7 @@ jobs:
         shell: pwsh
         run: |
           # Todos os módulos vão para a mesma pasta (publish), junto com a pasta pgsql: é a entrada do instalador.
-          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop", "Vorticis.Escritorio.Desktop", "Vorticis.Erp.Desktop", "Vorticis.Condominio.Desktop", "Vorticis.Frota.Desktop") {
+          foreach ($projeto in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.Desktop", "Vorticis.Escritorio.Desktop", "Vorticis.Erp.Desktop", "Vorticis.Condominio.Desktop") {
             dotnet publish "src/$projeto" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -71,10 +71,6 @@ jobs:
           dotnet publish src/Vorticis.Suite.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-suite
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item publish-suite/VorticisSuite.exe publish
-          # Vorticis Suite Logística (programa único com as telas de Frota, Gerencial, Contábil, Fiscal e Folha): idem, só o exe dele
-          dotnet publish src/Vorticis.Logistica.Desktop -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish-logistica
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Copy-Item publish-logistica/VorticisLogistica.exe publish
           Move-Item pgsql publish/pgsql
           # Visual C++ Redistributable 2015-2022 (x64): o instalador o instala em silêncio se faltar; vai também nos portáteis
           Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile publish/vc_redist.x64.exe -UseBasicParsing
@@ -85,8 +81,7 @@ jobs:
           if (-not (Test-Path publish/pgsql/bin/initdb.exe)) { throw "pgsql/bin sem initdb.exe" }
           # Portáteis das suítes: os executáveis de cada produto numa pasta, com um único pgsql
           $produtos = @{
-            "VorticisSuite" = "VorticisSuite", "VorticisEscritorio", "VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisGerencial", "VorticisCondominio";
-            "VorticisLogistica" = "VorticisLogistica"
+            "VorticisSuite" = "VorticisSuite", "VorticisEscritorio", "VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisGerencial", "VorticisCondominio"
           }
           foreach ($produto in $produtos.Keys) {
             New-Item -ItemType Directory -Path "portatil/$produto" -Force | Out-Null
@@ -100,7 +95,7 @@ jobs:
           $versao = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE -ne 0) { exit 1 } }
-          foreach ($iss in "instalador/Vorticis.iss", "instalador/VorticisLogistica.iss") {
+          foreach ($iss in "instalador/Vorticis.iss") {
             & $iscc "/DVersao=$versao" $iss
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -110,13 +105,6 @@ jobs:
         run: |
           $setup = (Get-ChildItem saida/Setup-Vorticis-*.exe).FullName
           ./instalador/teste-instalacao.ps1 -Setup $setup
-      - name: Teste de instalação do Vorticis Suite Logística (Windows limpo, sem configuração)
-        shell: powershell
-        run: |
-          # começa do zero, como numa transportadora que só instala o Vorticis Suite Logística
-          Remove-Item "$env:LOCALAPPDATA\Vorticis", "$env:APPDATA\Vorticis" -Recurse -Force -ErrorAction SilentlyContinue
-          $setup = (Get-ChildItem saida/Setup-VorticisSuiteLogistica-*.exe).FullName
-          ./instalador/teste-instalacao.ps1 -Setup $setup -Pasta "Programs\Vorticis Logistica" -Programa VorticisLogistica.exe -Arquivos VorticisLogistica.ico
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
@@ -126,16 +114,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: Setup-VorticisSuiteLogistica
-          path: saida/Setup-VorticisSuiteLogistica-*.exe
-          compression-level: 0
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisSuiteEmpresarial-portatil
           path: portatil/VorticisSuite/
-      - uses: actions/upload-artifact@v4
-        with:
-          retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
-          name: VorticisSuiteLogistica-portatil
-          path: portatil/VorticisLogistica/

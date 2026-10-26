@@ -217,10 +217,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var salvandoEmpresa = emp.SalvarCommand.ExecuteAsync(null);
             var modulos = await AguardarConfirmacao(vm);                      // cadastrar em quais módulos?
             Assert.Equal("Cadastrar esta empresa em quais módulos?", modulos.Titulo);
-            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio", "Frota"], modulos.Opcoes.Select(o => o.Texto));
+            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio"], modulos.Opcoes.Select(o => o.Texto));
             Assert.All(modulos.Opcoes.Take(5), o => Assert.True(o.Marcada));
             Assert.False(modulos.Opcoes[5].Marcada);                          // Condomínio só se incluída pelo próprio módulo
-            Assert.False(modulos.Opcoes[6].Marcada);                          // Frota (piloto) também
             modulos.Opcoes[2].Marcada = false;                                // sem Folha
             vm.ResponderConfirmacaoCommand.Execute(true);
             await salvandoEmpresa;

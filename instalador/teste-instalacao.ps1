@@ -1,7 +1,6 @@
 ﻿# Teste de fumaça em Windows limpo (CI): instala a suíte em modo silencioso, abre o Vorticis Contábil e confere que o banco local foi
 # criado, iniciado e migrado sem nenhuma configuração; depois fecha o programa e confere que o banco foi parado.
 # Requer Windows PowerShell 5.1 (DPAPI via System.Security).
-# Também serve ao Vorticis Suite Logística: -Pasta "Programs\Vorticis Logistica" -Programa VorticisLogistica.exe -Arquivos VorticisLogistica.ico.
 param([Parameter(Mandatory)] [string]$Setup,
       [string]$Pasta = "Programs\Vorticis",
       [string]$Programa = "VorticisContabil.exe",

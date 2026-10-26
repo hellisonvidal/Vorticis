@@ -72,12 +72,6 @@ public enum Permissao
     CondominioFinanceiro,
     CondominioRelatorios,
 
-    // Módulo Frota
-    FrotaCadastros,
-    FrotaOperacao,
-    FrotaRelatorios,
-    FrotaManutencao,
-    FrotaAprovar,
 
     /// <summary>Exclusiva do administrador; não aparece no catálogo de perfis.</summary>
     AdministrarSistema,
@@ -156,11 +150,6 @@ public static class Permissoes
         new(Permissao.CondominioCadastros, "CONDOMINIO_CADASTROS", "Condomínio", "Unidades, condôminos, áreas comuns, reservas e ocorrências"),
         new(Permissao.CondominioFinanceiro, "CONDOMINIO_FINANCEIRO", "Condomínio", "Taxas condominiais, cobranças, recebimentos e despesas do condomínio"),
         new(Permissao.CondominioRelatorios, "CONDOMINIO_RELATORIOS", "Condomínio", "Prestação de contas e inadimplência"),
-        new(Permissao.FrotaCadastros, "FROTA_CADASTROS", "Frota", "Veículos, motoristas e documentos com vencimento"),
-        new(Permissao.FrotaOperacao, "FROTA_OPERACAO", "Frota", "Abastecimentos e viagens"),
-        new(Permissao.FrotaRelatorios, "FROTA_RELATORIOS", "Frota", "Painel da frota e relatórios de custos, consumo, viagens, vencimentos e manutenção"),
-        new(Permissao.FrotaManutencao, "FROTA_MANUTENCAO", "Frota", "Manutenção: planos, peças e serviços, ordens de serviço e notas de compra"),
-        new(Permissao.FrotaAprovar, "FROTA_APROVAR", "Frota", "Autorizar ou reprovar ordens de serviço de manutenção"),
     ];
 
     private static readonly Dictionary<string, Permissao> PorCodigo = Catalogo.ToDictionary(d => d.Codigo, d => d.Permissao);
