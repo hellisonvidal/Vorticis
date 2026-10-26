@@ -285,10 +285,14 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
             {
                 string? codEmitente;
                 await using (var it = new NpgsqlCommand("""
-                    UPDATE fiscal.documento_item SET cfop_escrituracao = CASE WHEN @cfop = cfop THEN NULL ELSE @cfop END, produto_id = @p, centro_custo_id = @cc
+                    UPDATE fiscal.documento_item SET cfop_escrituracao = CASE WHEN @cfop = cfop THEN NULL ELSE @cfop END, produto_id = @p, centro_custo_id = @cc,
+                           cst_icms_escrituracao = CASE WHEN @cst::text IS NULL THEN cst_icms_escrituracao WHEN @cst = cst_icms THEN NULL ELSE @cst END,
+                           credita_icms = COALESCE(@ci, credita_icms), credita_ipi = COALESCE(@cip, credita_ipi), credita_pis = COALESCE(@cp, credita_pis),
+                           credita_cofins = COALESCE(@cf, credita_cofins), sem_regra = FALSE
                      WHERE documento_id = @d AND n_item = @n RETURNING cod_produto
                     """, con, tx).Com("d", esc.DocumentoId).Com("n", i.Numero).ComTexto("cfop", i.Cfop).Com("p", NpgsqlDbType.Bigint, i.ProdutoId)
-                                 .Com("cc", NpgsqlDbType.Bigint, i.CentroCustoId))
+                                 .Com("cc", NpgsqlDbType.Bigint, i.CentroCustoId).ComTexto("cst", i.CstIcms).Com("ci", NpgsqlDbType.Boolean, i.CreditaIcms)
+                                 .Com("cip", NpgsqlDbType.Boolean, i.CreditaIpi).Com("cp", NpgsqlDbType.Boolean, i.CreditaPis).Com("cf", NpgsqlDbType.Boolean, i.CreditaCofins))
                 {
                     var r = await it.ExecuteScalarAsync(ct);
                     if (r is null) throw new ViolacaoRegraException($"Item {i.Numero} não encontrado na nota.");

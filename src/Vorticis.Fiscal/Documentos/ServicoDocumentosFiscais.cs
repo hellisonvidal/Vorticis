@@ -17,7 +17,7 @@ public sealed record DocumentoFiscal(
     string? NaturezaOperacao, SituacaoDocumento Situacao, ParteDocumento Emitente, ParteDocumento? Destinatario, long? ParticipanteId,
     string? ParticipanteCodigo, TotaisDocumento Totais, long? LancamentoId, bool Contabilizado,
     string Origem = "XML", long? CentroCustoId = null, string? CentroCustoCodigo = null,
-    string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null)
+    string? Observacoes = null, string? ContaDebito = null, string? ContaCredito = null, bool SemRegra = false)
 {
     public bool Digitado => Origem == "DIGITADO";
 
@@ -28,13 +28,16 @@ public sealed record DocumentoFiscal(
 
 public sealed record FiltroDocumentos(
     DateOnly? Inicio = null, DateOnly? Fim = null, TipoOperacao? Operacao = null, ModeloDocumento? Modelo = null,
-    SituacaoDocumento? Situacao = null, string? Texto = null, string? Cfop = null, bool? Contabilizado = null, int Limite = 5000);
+    SituacaoDocumento? Situacao = null, string? Texto = null, string? Cfop = null, bool? Contabilizado = null, int Limite = 5000, bool? SemRegra = null);
 
 /// <summary>Resultado de gravar um documento: <see cref="Duplicado"/> quando a chave já existia na empresa.</summary>
 public sealed record GravacaoDocumento(bool Duplicado, long DocumentoId, bool ParticipanteCriado, string? ParticipanteNome);
 
 /// <summary>Resultado de ler um XML para conferência: o documento, o sentido para a empresa e a contraparte (fornecedor ou cliente).</summary>
 public sealed record NotaPreparada(DocumentoLido Documento, TipoOperacao Operacao, ParteDocumento? Contraparte);
+
+/// <summary>Resultado de gravar a nota lida de um XML (pop-up de entrada/saída): id gravado ou da nota que já existia com a mesma chave.</summary>
+public sealed record NotaImportada(long DocumentoId, bool JaExistia, string Aviso);
 
 public sealed record CancelamentoRegistrado(bool Encontrado, bool JaCancelado, bool Contabilizado, long DocumentoId, string? Numero);
 
@@ -348,6 +351,30 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
                     : Resultado<NotaPreparada>.Falha(ident.Erros);
             default: return Resultado<NotaPreparada>.Falha("Arquivo não reconhecido.");
         }
+    }
+
+    /// <summary>
+    /// Grava a nota lida de um XML (ou baixada pela chave) como nota importada: guarda o XML original e a chave e aplica as regras fiscais, como na importação em lote.
+    /// Se a chave já existe na empresa, nada é gravado e o resultado traz a nota existente (<see cref="NotaImportada.JaExistia"/>).
+    /// </summary>
+    public async Task<Resultado<NotaImportada>> ImportarPreparadaAsync(long empresaId, NotaPreparada nota, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<NotaImportada>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
+        var empresa = await repositorio.ObterEmpresaAsync(empresaId, ct);
+        if (empresa is null) return Resultado<NotaImportada>.Falha("Empresa não encontrada.");
+        var doc = nota.Documento;
+        var ident = IdentificadorOperacao.Identificar(doc, empresa.Cnpjs);
+        if (!ident.Sucesso) return Resultado<NotaImportada>.Falha(ident.Erros);
+        try
+        {
+            var g = await repositorio.GravarAsync(empresaId, doc, ident.Valor, usuarioId, ct);
+            if (g.Duplicado) return Resultado<NotaImportada>.Ok(new NotaImportada(g.DocumentoId, true, $"A NF-e {doc.Numero} já está lançada nesta empresa."));
+            var aviso = Math.Abs(doc.DiferencaItens) > 0.05m ? $" Atenção: a soma dos itens difere do total da nota em {Formato.Moeda(doc.DiferencaItens)}." : "";
+            var part = g.ParticipanteCriado ? $" Participante cadastrado: {g.ParticipanteNome}." : "";
+            return Resultado<NotaImportada>.Ok(new NotaImportada(g.DocumentoId, false, $"{doc.Modelo.Rotulo()} {doc.Numero} importada.{part}{aviso}"));
+        }
+        catch (ViolacaoRegraException ex) { return Resultado<NotaImportada>.Falha(ex.Message); }
+        catch (Npgsql.PostgresException ex) { return Resultado<NotaImportada>.Falha($"Erro ao gravar no banco: {ex.MessageText}"); }
     }
 
     /// <summary>Documento da empresa com a chave de acesso informada (qualquer origem), ou null.</summary>

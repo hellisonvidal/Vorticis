@@ -306,20 +306,19 @@ public class NotasFiscaisPopupTests(BancoDeTeste db, SessaoHeadless headless) : 
             };
             var (janela, view, _) = await AbrirAsync(vm);
 
-            // ---- por XML: preenche, não grava; depois "Gravar nota"
+            // ---- por XML: grava como nota importada (XML original e chave) e abre para conferir a escrituração
             vm.NovoCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
             await vm.ImportarArquivoParaConferenciaAsync(xml901);
             Dispatcher.UIThread.RunJobs();
             Confere(vm.Erros.Count == 0, "importar XML: " + string.Join("; ", vm.Erros));
             Confere(vm.Numero == "901" && vm.Chave == chave901 && vm.Itens.Count == 1, $"campos do XML: {vm.Numero} {vm.Chave} {vm.Itens.Count}");
-            Confere(vm.Itens[0].Cfop == "1102" && vm.Itens[0].Item.Icms == 54m && vm.Itens[0].Item.AliqIcms == 18m, "CFOP de entrada / ICMS do XML");
-            Confere(vm.TemNovoParticipante && vm.NovoNome == "Fornecedor Gama SA", "fornecedor novo vindo do XML");
-            Confere(vm.Mensagem?.Contains("nada foi gravado") == true, "aviso de conferência: " + vm.Mensagem);
-            Confere(await db.EscalarAsync<long>("SELECT count(*) FROM fiscal.documento WHERE empresa_id = @e", ("e", empresa)) == 0, "o XML não deveria gravar antes da conferência");
-            await vm.SalvarCommand.ExecuteAsync(null);
-            Confere(vm.Erros.Count == 0 && !vm.DigitacaoAberta, "gravar após importar XML: " + string.Join("; ", vm.Erros));
-            Confere(await db.EscalarAsync<long>("SELECT count(*) FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c", ("e", empresa), ("c", chave901)) == 1, "nota do XML não gravou");
+            Confere(vm.Itens[0].CfopNota == "1102" && vm.Itens[0].Item.Icms == 54m && vm.Itens[0].Item.AliqIcms == 18m, "CFOP de entrada / ICMS do XML");
+            Confere(vm.Participante == "Fornecedor Gama SA", "fornecedor cadastrado a partir do XML: " + vm.Participante);
+            Confere(vm.Mensagem?.Contains("Nota importada") == true, "aviso de nota importada: " + vm.Mensagem);
+            Confere(vm.Importada, "a nota importada só permite editar a escrituração");
+            Confere(await db.EscalarAsync<long>("SELECT count(*) FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c AND origem = 'XML' AND xml_original IS NOT NULL", ("e", empresa), ("c", chave901)) == 1,
+                    "a nota do XML deve ser gravada como importada, com o XML original");
 
             // ---- por chave: já lançada => carrega a que está no sistema, sem SEFAZ
             vm.NovoCommand.Execute(null);
@@ -352,7 +351,7 @@ public class NotasFiscaisPopupTests(BancoDeTeste db, SessaoHeadless headless) : 
             Confere(vm.Erros.Count == 0 && vm.Numero == "902" && vm.Itens.Count == 1 && vm.Itens[0].Item.ValorProduto == 120m, "SEFAZ completa: " + string.Join(";", vm.Erros) + vm.Numero);
             Confere(sefaz.Corpos.Count == 1 && sefaz.Corpos[0].Contains($"<consChNFe><chNFe>{chave902}</chNFe></consChNFe>") && sefaz.Corpos[0].Contains("<tpAmb>1</tpAmb>")
                     && sefaz.Corpos[0].Contains($"<CNPJ>{cnpjEmpresa}</CNPJ>"), "requisição à SEFAZ: " + string.Join("|", sefaz.Corpos));
-            Confere(await db.EscalarAsync<long>("SELECT count(*) FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c", ("e", empresa), ("c", chave902)) == 0, "SEFAZ não deveria gravar sozinha");
+            Confere(await db.EscalarAsync<long>("SELECT count(*) FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c AND origem = 'XML' AND xml_original IS NOT NULL", ("e", empresa), ("c", chave902)) == 1, "a nota baixada deve ser gravada como importada");
 
             // ---- SEFAZ: só o resumo => avisa da manifestação
             vm.NovoCommand.Execute(null);

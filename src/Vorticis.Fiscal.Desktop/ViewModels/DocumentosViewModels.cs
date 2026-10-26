@@ -204,6 +204,7 @@ public sealed record DocumentoLinha(DocumentoFiscal Documento)
     public string Contabilizado => Documento.Contabilizado ? "Sim" : "Não";
     public string Chave => Documento.Chave;
     public string Origem => Documento.Digitado ? "Digitada" : "XML";
+    public string Regra => Documento.SemRegra ? "Sem regra" : "";
 }
 
 public sealed record ItemDocumentoLinha(ItemFiscal Item)

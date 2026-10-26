@@ -99,9 +99,11 @@ public sealed class RepositorioEfd(NpgsqlDataSource ds) : IRepositorioEfd
         await using (var cmd = ds.CreateCommand("""
             SELECT i.documento_id, i.n_item, i.produto_id, pr.codigo, i.cod_produto, COALESCE(pr.descricao, i.descricao), COALESCE(NULLIF(i.ncm, ''), pr.ncm),
                    COALESCE(NULLIF(i.cest, ''), pr.cest), COALESCE(i.gtin, pr.gtin), pr.tipo_item, pr.aliq_icms, COALESCE(i.cfop_escrituracao, i.cfop), i.unidade,
-                   i.quantidade, i.valor_produto, i.valor_desconto, i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, i.cst_icms, i.origem_mercadoria,
-                   i.vl_bc_icms, i.aliq_icms, i.vl_icms, i.vl_bc_icms_st, i.vl_icms_st, i.cst_ipi, i.vl_bc_ipi, i.aliq_ipi, i.vl_ipi,
-                   i.cst_pis, i.vl_bc_pis, i.aliq_pis, i.vl_pis, i.cst_cofins, i.vl_bc_cofins, i.aliq_cofins, i.vl_cofins, i.vl_bc_iss, i.aliq_iss, i.vl_iss, d.modelo
+                   i.quantidade, i.valor_produto, i.valor_desconto, i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, COALESCE(i.cst_icms_escrituracao, i.cst_icms), i.origem_mercadoria,
+                   CASE WHEN i.credita_icms THEN i.vl_bc_icms ELSE 0 END, i.aliq_icms, CASE WHEN i.credita_icms THEN i.vl_icms ELSE 0 END, i.vl_bc_icms_st, i.vl_icms_st,
+                   i.cst_ipi, CASE WHEN i.credita_ipi THEN i.vl_bc_ipi ELSE 0 END, i.aliq_ipi, CASE WHEN i.credita_ipi THEN i.vl_ipi ELSE 0 END,
+                   i.cst_pis, CASE WHEN i.credita_pis THEN i.vl_bc_pis ELSE 0 END, i.aliq_pis, CASE WHEN i.credita_pis THEN i.vl_pis ELSE 0 END,
+                   i.cst_cofins, CASE WHEN i.credita_cofins THEN i.vl_bc_cofins ELSE 0 END, i.aliq_cofins, CASE WHEN i.credita_cofins THEN i.vl_cofins ELSE 0 END, i.vl_bc_iss, i.aliq_iss, i.vl_iss, d.modelo
               FROM fiscal.documento_item i
               JOIN fiscal.documento d ON d.id = i.documento_id
               LEFT JOIN fiscal.produto pr ON pr.id = i.produto_id

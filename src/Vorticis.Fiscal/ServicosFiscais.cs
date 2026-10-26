@@ -39,6 +39,7 @@ public sealed class ServicosFiscais
         Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
         ParticipantesNota = new ServicoParticipanteNota(app);
         Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
+        Regras = new Regras.ServicoRegrasFiscais(new RepositorioRegrasFiscais(ds), autorizador);
         Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador, repoDuplicatas, app.Pendencias);
         Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador, app.Pendencias);
         app.Pendencias.RegistrarProcessador(Contabilizacao.ProcessadorPendencias);
@@ -59,6 +60,7 @@ public sealed class ServicosFiscais
     public ServicoDigitacaoFiscal Digitacao { get; }
     public ServicoParticipanteNota ParticipantesNota { get; }
     public ServicoProdutos Produtos { get; }
+    public Regras.ServicoRegrasFiscais Regras { get; }
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
     public ServicoDuplicatas Duplicatas { get; }
     public ServicoSimplesNacional Simples { get; }

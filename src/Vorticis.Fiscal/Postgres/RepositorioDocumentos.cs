@@ -4,6 +4,7 @@ using System.Text;
 using Npgsql;
 using NpgsqlTypes;
 using Vorticis.Fiscal.Documentos;
+using Vorticis.Fiscal.Regras;
 
 namespace Vorticis.Fiscal.Postgres;
 
@@ -54,14 +55,16 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     private sealed class LoteGravacao(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long usuarioId) : ILoteGravacao
     {
         private Duplicatas.ConfiguracaoDuplicatas? _configuracao;
+        private ContextoRegras? _regras;
 
         public async Task<GravacaoDocumento> GravarAsync(DocumentoLido d, Identificacao ident, CancellationToken ct)
         {
             _configuracao ??= await RepositorioDuplicatas.ConfiguracaoAsync(con, tx, empresaId, ct);
+            _regras ??= await RepositorioRegrasFiscais.CarregarContextoAsync(con, tx, empresaId, TipoOperacao.Entrada, ct);
             await using (var sp = new NpgsqlCommand("SAVEPOINT nota", con, tx)) await sp.ExecuteNonQueryAsync(ct);
             try
             {
-                var g = await Sql.TraduzirErrosAsync(() => GravarNaTransacaoAsync(con, tx, empresaId, d, ident, usuarioId, _configuracao, ct));
+                var g = await Sql.TraduzirErrosAsync(() => GravarNaTransacaoAsync(con, tx, empresaId, d, ident, usuarioId, _configuracao, _regras, ct));
                 await using var rel = new NpgsqlCommand("RELEASE SAVEPOINT nota", con, tx);
                 await rel.ExecuteNonQueryAsync(CancellationToken.None);
                 return g;
@@ -84,7 +87,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
     }
 
     private static async Task<GravacaoDocumento> GravarNaTransacaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, DocumentoLido d,
-                                                                       Identificacao ident, long usuarioId, Duplicatas.ConfiguracaoDuplicatas configuracao, CancellationToken ct)
+                                                                       Identificacao ident, long usuarioId, Duplicatas.ConfiguracaoDuplicatas configuracao, ContextoRegras regras, CancellationToken ct)
     {
             await using (var existe = new NpgsqlCommand("SELECT id FROM fiscal.documento WHERE empresa_id = @e AND chave_acesso = @c", con, tx)
                              .Com("e", empresaId).Com("c", d.Chave))
@@ -125,6 +128,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 .Com("usu", NpgsqlDbType.Bigint, usuarioId))
                 documentoId = (long)(await ins.ExecuteScalarAsync(ct))!;
 
+            string? contaDebito = null, contaCredito = null;
             foreach (var i in d.Itens)
             {
                 var produtoId = i.Cfop == Cfop.Servico ? null : await VincularProdutoAsync(con, tx, empresaId, d.Emitente.Documento, ident.Operacao, i, ct);
@@ -149,7 +153,18 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss)
                     .Com("prod", NpgsqlDbType.Bigint, produtoId).ComTexto("gtin", i.Gtin);
                 await item.ExecuteNonQueryAsync(ct);
+
+                // Nota de entrada: CFOP de entrada, CST e créditos pelas regras fiscais (sem regra: conversão padrão e marca "sem regra").
+                if (ident.Operacao == TipoOperacao.Entrada && i.Cfop != Cfop.Servico)
+                {
+                    var decisao = MotorRegrasFiscais.DecidirEntrada(regras.Regras, new ItemParaRegra(i.Cfop, participanteId, i.Ncm, produtoId, i.CstIcms));
+                    await using (var aplicar = RepositorioRegrasFiscais.ComandoAplicarItem(con, tx, documentoId, i.Numero, i.Cfop, i.CstIcms, decisao, regras.CentroCustoAtivo))
+                        await aplicar.ExecuteNonQueryAsync(ct);
+                    contaDebito ??= decisao.ContaDebito;
+                    contaCredito ??= decisao.ContaCredito;
+                }
             }
+            await RepositorioRegrasFiscais.AplicarContasDoDocumentoAsync(con, tx, documentoId, contaDebito, contaCredito, ct);
 
             // Duplicatas: as parcelas da cobrança do XML ou, sem cobrança, uma parcela à vista (conforme a configuração). NFC-e só tem duplicata se trouxer cobrança.
             if (situacao == SituacaoDocumento.Autorizada)
@@ -299,7 +314,8 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         d.valor_produtos, d.valor_desconto, d.valor_frete, d.valor_seguro, d.valor_outras, d.valor_total,
         d.vl_bc_icms, d.vl_icms, d.vl_bc_icms_st, d.vl_icms_st, d.vl_ipi, d.vl_pis, d.vl_cofins, d.vl_iss, d.iss_retido,
         d.vl_ret_pis, d.vl_ret_cofins, d.vl_ret_csll, d.vl_irrf, d.vl_ret_prev,
-        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE), d.origem, d.centro_custo_id, ccd.codigo, d.observacoes, d.conta_debito, d.conta_credito
+        d.lancamento_id, COALESCE(l.status = 'EFETIVADO', FALSE), d.origem, d.centro_custo_id, ccd.codigo, d.observacoes, d.conta_debito, d.conta_credito,
+        EXISTS (SELECT 1 FROM fiscal.documento_item xi WHERE xi.documento_id = d.id AND xi.sem_regra)
         """;
 
     public async Task<IReadOnlyList<DocumentoFiscal>> ListarAsync(long empresaId, FiltroDocumentos f, CancellationToken ct)
@@ -316,6 +332,7 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
             onde.Append(" AND EXISTS (SELECT 1 FROM fiscal.documento_item i WHERE i.documento_id = d.id AND i.cfop LIKE @cfop || '%')");
             cmd.Com("cfop", f.Cfop.Trim().ToUpperInvariant());
         }
+        if (f.SemRegra is true) onde.Append(" AND EXISTS (SELECT 1 FROM fiscal.documento_item xi WHERE xi.documento_id = d.id AND xi.sem_regra)");
         if (f.Contabilizado is true) onde.Append(" AND COALESCE(l.status = 'EFETIVADO', FALSE)");
         if (f.Contabilizado is false) onde.Append(" AND NOT COALESCE(l.status = 'EFETIVADO', FALSE)");
         if (!string.IsNullOrWhiteSpace(f.Texto))
@@ -355,17 +372,21 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 r.GetString(4), r.GetString(5), r.GetFieldValue<DateOnly>(6), r.GetFieldValue<DateOnly>(7), r.Texto(8), ModelosExtensions.SituacaoDe(r.GetString(9)),
                 new ParteDocumento(r.Texto(10), r.Texto(11), r.Texto(12)),
                 r.IsDBNull(13) && r.IsDBNull(14) ? null : new ParteDocumento(r.Texto(13), r.Texto(14), r.Texto(15)),
-                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39), r.GetString(40), r.LongOuNulo(41), r.Texto(42), r.Texto(43), r.Texto(44), r.Texto(45)));
+                r.LongOuNulo(16), r.Texto(17), totais, r.LongOuNulo(38), r.GetBoolean(39), r.GetString(40), r.LongOuNulo(41), r.Texto(42), r.Texto(43), r.Texto(44), r.Texto(45), r.GetBoolean(46)));
         }
         return res;
     }
 
     internal const string ColunasItemSql = """
         i.n_item, i.cod_produto, i.descricao, i.ncm, i.cest, COALESCE(i.cfop_escrituracao, i.cfop), i.unidade, i.quantidade, i.valor_unitario, i.valor_produto, i.valor_desconto,
-        i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, i.cst_icms, i.origem_mercadoria, i.vl_bc_icms, i.aliq_icms, i.vl_icms,
-        i.vl_bc_icms_st, i.vl_icms_st, i.cst_ipi, i.vl_bc_ipi, i.aliq_ipi, i.vl_ipi, i.cst_pis, i.vl_bc_pis, i.aliq_pis, i.vl_pis,
-        i.cst_cofins, i.vl_bc_cofins, i.aliq_cofins, i.vl_cofins, i.vl_bc_iss, i.aliq_iss, i.vl_iss,
-        i.gtin, i.produto_id, i.centro_custo_id, cci.codigo, i.cfop
+        i.valor_frete, i.valor_seguro, i.valor_outras, i.valor_contabil, COALESCE(i.cst_icms_escrituracao, i.cst_icms), i.origem_mercadoria,
+        CASE WHEN i.credita_icms THEN i.vl_bc_icms ELSE 0 END, i.aliq_icms, CASE WHEN i.credita_icms THEN i.vl_icms ELSE 0 END,
+        i.vl_bc_icms_st, i.vl_icms_st, i.cst_ipi, CASE WHEN i.credita_ipi THEN i.vl_bc_ipi ELSE 0 END, i.aliq_ipi, CASE WHEN i.credita_ipi THEN i.vl_ipi ELSE 0 END,
+        i.cst_pis, CASE WHEN i.credita_pis THEN i.vl_bc_pis ELSE 0 END, i.aliq_pis, CASE WHEN i.credita_pis THEN i.vl_pis ELSE 0 END,
+        i.cst_cofins, CASE WHEN i.credita_cofins THEN i.vl_bc_cofins ELSE 0 END, i.aliq_cofins, CASE WHEN i.credita_cofins THEN i.vl_cofins ELSE 0 END,
+        i.vl_bc_iss, i.aliq_iss, i.vl_iss,
+        i.gtin, i.produto_id, i.centro_custo_id, cci.codigo, i.cfop,
+        i.credita_icms, i.credita_ipi, i.credita_pis, i.credita_cofins, i.sem_regra
         """;
 
     internal static ItemFiscal LerItemSql(NpgsqlDataReader r, int o) => new(
@@ -375,7 +396,8 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         r.GetDecimal(o + 21), r.Texto(o + 22), r.GetDecimal(o + 23), r.GetDecimal(o + 24), r.GetDecimal(o + 25), r.Texto(o + 26),
         r.GetDecimal(o + 27), r.GetDecimal(o + 28), r.GetDecimal(o + 29), r.Texto(o + 30), r.GetDecimal(o + 31), r.GetDecimal(o + 32),
         r.GetDecimal(o + 33), r.GetDecimal(o + 34), r.GetDecimal(o + 35), r.GetDecimal(o + 36),
-        r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40), r.Texto(o + 41));
+        r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40), r.Texto(o + 41),
+        r.GetBoolean(o + 42), r.GetBoolean(o + 43), r.GetBoolean(o + 44), r.GetBoolean(o + 45), r.GetBoolean(o + 46));
 
     public async Task<IReadOnlyList<ItemFiscal>> ListarItensDoDocumentoAsync(long documentoId, CancellationToken ct)
     {

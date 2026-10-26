@@ -11,6 +11,22 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 2. Informe os padrões fiscais: CFOP e CST de entrada e de saída, e as alíquotas de ICMS, IPI, PIS e COFINS.
 3. **Salvar**. O filtro busca por descrição, código, GTIN ou NCM; *Somente ativos* esconde os inativos.
 
+## Regras fiscais
+
+**Para que serve:** ensinar o sistema a escriturar as notas de **entrada** importadas do XML do fornecedor. O fornecedor emite a nota com o CFOP de saída dele (5.102, 6.102, 5.405...); na sua escrituração o CFOP é de entrada (1.102, 2.102, 1.403...). Aqui você define essa troca, o CST e se a empresa tem direito a crédito de ICMS, IPI, PIS e COFINS.
+**Onde fica:** *Cadastros › Regras fiscais*.
+
+1. Clique em **Gerar regras padrão** para criar a troca usual (5.xxx vira 1.xxx, 6.xxx vira 2.xxx, com as correspondências conhecidas, como 5.405 para 1.403 e 5.933 para 1.933). Só entram correspondências seguras; as demais ficam sem regra. As regras que você já cadastrou não são alteradas.
+2. Para uma regra própria, clique em **Nova**, escolha o tipo **Entrada** e informe o **CFOP do emitente** e o **CFOP a usar**. Se quiser, restrinja a regra a um fornecedor, a um NCM (ou ao começo dele, para valer para um grupo), a um produto ou a um CST/CSOSN do XML.
+3. Em **Então**, informe, se precisar, o CST/CSOSN a usar e desmarque os impostos que **não geram crédito** (os valores de crédito do item ficam zerados na escrituração, e o XML original não muda). Também pode indicar as contas de débito e de crédito (código da conta analítica) para a contabilização.
+4. **Salvar**. A regra vale nas próximas importações; para notas já importadas use **Reaplicar regras** (veja abaixo).
+
+**Qual regra vale:** a mais específica. Produto vence NCM, que vence fornecedor, que vence a regra só com o CFOP. Se duas forem igualmente específicas, vale a de menor **Ordem**.
+
+**Sem regra:** se nenhuma regra servir, o item recebe a troca padrão (5 vira 1, 6 vira 2, 7 vira 3) e fica marcado como **Sem regra**, para você conferir. Na tela de entrada marque *Só notas com itens sem regra fiscal* para listar essas notas.
+
+**Notas de saída:** crie uma regra do tipo **Saída** para o sistema sugerir o CFOP e o CST ao digitar um item, conforme o produto, o NCM, o cliente e o destino (*Dentro do estado* ou *Outro estado*). A sugestão aparece quando você busca o produto no item e pode ser alterada.
+
 ## Documentos de entrada e de saída (digitação)
 
 **Para que serve:** consultar as notas já lançadas e lançar à mão as que não têm XML (ou conferir um XML antes de gravar).
@@ -42,12 +58,15 @@ A nota tem abas na mesma janela: **Nota**, **Itens**, **Tributos**, **Parcelas**
 - *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
 - *Nota contabilizada*: desfaça a contabilização para alterar, ou use **Novo lançamento** para lançar outra.
 - *Nota aberta para consulta*: você abriu pelo botão **Consultar**; feche e use **Editar**.
-- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, centro de custo, produto vinculado, contas e observações). Escolha o item na aba **Itens**, ajuste na aba **Escrituração**, clique em **Aplicar ao item** e depois em **Gravar escrituração**.
+- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, CST, créditos de ICMS, IPI, PIS e COFINS, centro de custo, produto vinculado, contas e observações). Escolha o item na aba **Itens**, ajuste na aba **Escrituração**, clique em **Aplicar ao item** e depois em **Gravar escrituração**. A coluna *Regra fiscal* mostra *Sem regra* nos itens que não encontraram regra; ao gravar a escrituração a marca sai.
 
-### Importar uma nota para conferência (XML ou chave de acesso)
-No alto da janela da nota há dois atalhos que **preenchem os campos para você conferir**. Nada é gravado até clicar em **Gravar nota**.
+### Reaplicar regras (notas de entrada)
+Na tela de *Entrada*, **Reaplicar regras** refaz o CFOP, o CST e os créditos das notas **importadas e ainda não contabilizadas** do período filtrado, pelas regras de *Cadastros › Regras fiscais*. Itens sem regra que você já conferiu à mão são mantidos. Notas contabilizadas, ou de período fiscal fechado, não são alteradas.
 
-**Importar por XML:** clique em **Escolher arquivo...** e escolha o XML de uma nota. O cabeçalho, o fornecedor/cliente, os itens, os tributos e as parcelas do XML aparecem nas abas. Se o fornecedor/cliente não estiver cadastrado, os dados dele vêm do XML e são conferidos antes de cadastrar. Em notas de entrada, os CFOP do emitente (5.xxx, 6.xxx, 7.xxx) são trocados pelos de entrada (1.xxx, 2.xxx, 3.xxx): confira. A nota precisa ser da empresa selecionada, e da operação da tela (uma nota de saída do seu cliente abre em *Saída*).
+### Importar uma nota (XML ou chave de acesso)
+No alto da janela da nota há dois atalhos. Eles **gravam a nota como importada** (com o XML original e a chave de acesso, como na importação em lote) e abrem a nota para você conferir a escrituração. Os valores do XML não mudam; só a escrituração.
+
+**Importar por XML:** clique em **Escolher arquivo...** e escolha o XML de uma nota. O fornecedor/cliente é cadastrado a partir do XML, se ainda não existir. Em notas de entrada, o CFOP de entrada, o CST e os créditos vêm das *Regras fiscais*; itens sem regra são avisados. A nota precisa ser da empresa selecionada, e da operação da tela (uma nota de saída do seu cliente abre em *Saída*). Se a nota (mesma chave de acesso) já estiver lançada, o sistema avisa e abre a que já existe, sem duplicar.
 
 **Importar por chave de acesso:** cole a chave de 44 dígitos (pode ter espaços ou pontos) e clique em **Importar por chave**. O sistema confere o dígito verificador e então:
 1. **procura a nota entre as já lançadas e os XMLs importados da empresa**; se achar, mostra a nota que já está no sistema (não duplica);
@@ -76,6 +95,7 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - Clientes e fornecedores são criados ou vinculados automaticamente. Com **Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)** marcado (vem marcado), o cadastro criado a partir do XML é completado como no botão *Buscar dados na Receita* do cadastro de clientes e fornecedores: nome fantasia, endereço completo, e-mail, telefone e inscrição estadual que faltarem. Os dados que vieram no XML são mantidos. Na janela da nota (Importar por XML ou por chave), o fornecedor novo aparece com os dados do XML para conferência e é cadastrado só ao gravar a nota.
 - **Nota de outra empresa:** se o XML não for da empresa selecionada (o CNPJ dela não é o do emitente nem o do destinatário), a nota não é importada e aparece na lista como *Outra empresa*, com os CNPJs do emitente e do destinatário. Escolha a empresa certa no topo e importe de novo.
 - Se acontecer um erro inesperado, o programa mostra o aviso, grava os detalhes em `%LOCALAPPDATA%\Vorticis\logs\erros.log` e continua aberto.
+- **Regras fiscais:** nas notas de **entrada**, cada item recebe o CFOP de entrada, o CST e os créditos conforme [Regras fiscais](#regras-fiscais); sem regra, vale a troca padrão (5 para 1, 6 para 2, 7 para 3) e o item fica marcado como *Sem regra* para conferência.
 - **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
 
 ## Consulta de documentos

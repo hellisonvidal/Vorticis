@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.RegrasFiscaisView"
+             x:DataType="vm:RegrasFiscaisViewModel">
+  <!-- Cadastros › Regras fiscais -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Regras fiscais" />
+      <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
+                 Text="Entrada: troca o CFOP do fornecedor (5.102, 6.102...) pelo CFOP de entrada da empresa (1.102, 2.102...) ao importar o XML, com CST e créditos. Vale a regra mais específica: produto, depois NCM, depois fornecedor, depois só o CFOP; em empate, a menor ordem. Saída: sugere CFOP e CST na digitação, por produto e destino." />
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6" IsEnabled="{Binding PodeManter}">
+        <TextBlock Text="Tipo" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:RegrasFiscaisViewModel.Operacoes}" SelectedIndex="{Binding Operacao}" Width="230" />
+        <TextBlock Grid.Column="2" Text="Descrição" VerticalAlignment="Center" />
+        <TextBox Grid.Column="3" Text="{Binding Descricao}" Width="260" />
+        <TextBlock Grid.Column="4" Text="Ordem" VerticalAlignment="Center" />
+        <TextBox Grid.Column="5" Text="{Binding Ordem}" Width="70" />
+        <TextBlock Grid.Row="1" Text="Quando" VerticalAlignment="Center" />
+        <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5">
+          <TextBox Text="{Binding CfopOrigem}" Watermark="CFOP do emitente" Width="130" Margin="0,0,6,0" />
+          <TextBox Text="{Binding Participante}" Watermark="Fornecedor/cliente (nome ou CNPJ)" Width="240" Margin="0,0,6,0" />
+          <TextBox Text="{Binding Ncm}" Watermark="NCM ou início" Width="120" Margin="0,0,6,0" />
+          <TextBox Text="{Binding Produto}" Watermark="Produto (código ou descrição)" Width="220" Margin="0,0,6,0" />
+          <TextBox Text="{Binding CstOrigem}" Watermark="CST/CSOSN do XML" Width="130" Margin="0,0,6,0" />
+          <ComboBox ItemsSource="{x:Static vm:RegrasFiscaisViewModel.Destinos}" SelectedIndex="{Binding Destino}" Width="150" ToolTip.Tip="Só para regras de saída" />
+        </WrapPanel>
+        <TextBlock Grid.Row="2" Text="Então" VerticalAlignment="Center" />
+        <WrapPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5">
+          <TextBox Text="{Binding CfopDestino}" Watermark="CFOP a usar" Width="110" Margin="0,0,6,0" />
+          <TextBox Text="{Binding CstDestino}" Watermark="CST/CSOSN a usar" Width="130" Margin="0,0,14,0" />
+          <CheckBox Content="Credita ICMS" IsChecked="{Binding CreditaIcms}" />
+          <CheckBox Content="Credita IPI" IsChecked="{Binding CreditaIpi}" />
+          <CheckBox Content="Credita PIS" IsChecked="{Binding CreditaPis}" />
+          <CheckBox Content="Credita COFINS" IsChecked="{Binding CreditaCofins}" />
+        </WrapPanel>
+        <TextBlock Grid.Row="3" Text="Contabilização" VerticalAlignment="Center" />
+        <WrapPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="5">
+          <TextBox Text="{Binding ContaDebito}" Watermark="Conta de débito (código)" Width="190" Margin="0,0,6,0" />
+          <TextBox Text="{Binding ContaCredito}" Watermark="Conta de crédito (código)" Width="190" Margin="0,0,14,0" />
+          <CheckBox Content="Regra ativa" IsChecked="{Binding Ativa}" />
+        </WrapPanel>
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Nova" Command="{Binding NovaCommand}" />
+        <Button Content="Salvar" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeManter}" Classes="accent" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeManter}" />
+        <Button Content="Gerar regras padrão" Command="{Binding GerarPadraoCommand}" IsEnabled="{Binding PodeManter}"
+                ToolTip.Tip="Cria o de-para usual (5 para 1, 6 para 2) sem mexer nas regras que você já cadastrou" />
+      </StackPanel>
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Regras}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Operacao}" Width="75" />
+        <DataGridTextColumn Header="CFOP do emitente" Binding="{ReflectionBinding CfopOrigem}" Width="125" />
+        <DataGridTextColumn Header="CFOP a usar" Binding="{ReflectionBinding CfopDestino}" Width="100" />
+        <DataGridTextColumn Header="CST" Binding="{ReflectionBinding Cst}" Width="60" />
+        <DataGridTextColumn Header="Condições" Binding="{ReflectionBinding Condicoes}" Width="*" MinWidth="200" />
+        <DataGridTextColumn Header="Créditos" Binding="{ReflectionBinding Creditos}" Width="190" />
+        <DataGridTextColumn Header="Ordem" Binding="{ReflectionBinding Ordem}" Width="70" />
+        <DataGridTextColumn Header="Ativa" Binding="{ReflectionBinding Ativa}" Width="60" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

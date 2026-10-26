@@ -76,6 +76,7 @@ public sealed record ItemNotaLinha(ItemFiscal Item, string? ProdutoVinculado = n
     public string Cofins => Numeros.MoedaOuVazio(Item.Cofins);
     public string Iss => Numeros.MoedaOuVazio(Item.Iss);
     public string CentroCusto => Item.CentroCustoCodigo ?? "";
+    public string Regra => Item.SemRegra ? "Sem regra" : "";
 }
 
 /// <summary>Campos de digitação de um item (texto, como digitado); converte de e para <see cref="ItemFiscal"/>.</summary>
@@ -286,7 +287,15 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [ObservableProperty] private string _filtroNumero = "";
     [ObservableProperty] private int _filtroOrigem;
     [ObservableProperty] private int _filtroSituacao;
+    [ObservableProperty] private bool _filtroSemRegra;
     [ObservableProperty] private string _totaisLista = "";
+
+    /// <summary>Escrituração do item selecionado: se credita ICMS, IPI, PIS e COFINS (regras fiscais ou escolha do usuário).</summary>
+    [ObservableProperty] private bool _escCreditaIcms = true;
+    [ObservableProperty] private bool _escCreditaIpi = true;
+    [ObservableProperty] private bool _escCreditaPis = true;
+    [ObservableProperty] private bool _escCreditaCofins = true;
+    public bool EhEntrada => Operacao == TipoOperacao.Entrada;
     private bool _semCarga;
 
     /// <summary>Formas de pagamento ativas (Cadastros › Formas de pagamento): escolher uma gera as duplicatas pelos prazos dela.</summary>
@@ -430,6 +439,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Item.Carregar(value.Item);
         CentroItem = Centros.FirstOrDefault(c => c.Id == value.Item.CentroCustoId) ?? Centros[0];
         EscProduto = value.ProdutoVinculado?.Split(" - ")[0] ?? "";
+        (EscCreditaIcms, EscCreditaIpi, EscCreditaPis, EscCreditaCofins) = (value.Item.CreditaIcms, value.Item.CreditaIpi, value.Item.CreditaPis, value.Item.CreditaCofins);
     }
 
     /// <summary>Carga ao abrir: configuração (centros de custo), centros e notas digitadas do período.</summary>
@@ -463,7 +473,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (fim < inicio) { Erros.Add("O período está invertido: a data final é anterior à inicial."); return; }
         var f = new FiltroDocumentos(inicio, fim, Operacao,
             Situacao: FiltroSituacao switch { 1 => SitDoc.Autorizada, 2 => SitDoc.Cancelada, _ => null },
-            Contabilizado: FiltroSituacao switch { 3 => true, 4 => false, _ => null });
+            Contabilizado: FiltroSituacao switch { 3 => true, 4 => false, _ => null }, SemRegra: FiltroSemRegra ? true : null);
         var r = await app.Fiscal().Documentos.ConsultarAsync(empresa, f, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var part = FiltroParticipante.Trim();
@@ -493,7 +503,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [RelayCommand]
     private Task LimparFiltrosAsync()
     {
-        (FiltroParticipante, FiltroNumero, FiltroOrigem, FiltroSituacao) = ("", "", 0, 0);
+        (FiltroParticipante, FiltroNumero, FiltroOrigem, FiltroSituacao, FiltroSemRegra) = ("", "", 0, 0, false);
         return ConsultarAsync();
     }
 
@@ -639,7 +649,21 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         var p = await Resolvedores.ProdutoAsync(app, empresa, usuario, Item.Produto, true);
         if (p is null) { Erros.Add($"Produto \"{Item.Produto.Trim()}\" não encontrado ou ambíguo (cadastre em Cadastros › Produtos)."); return; }
         Item.AplicarProduto(p, Operacao);
+        if (Operacao == TipoOperacao.Saida) await SugerirPelasRegrasAsync(app, empresa, usuario, p);
     });
+
+    /// <summary>Nota de saída: se houver regra fiscal (Cadastros › Regras fiscais) para o produto e o destino (dentro ou fora do estado), sugere o CFOP e o CST.</summary>
+    private async Task SugerirPelasRegrasAsync(VorticisApp app, long empresa, long usuario, Produto p)
+    {
+        var uf = NovoUf;
+        if (_participanteId != 0)
+            uf = (await app.Participantes.ListarAsync(empresa, usuario)).FirstOrDefault(x => x.Id == _participanteId)?.Uf ?? uf;
+        var r = await app.Fiscal().Regras.SugerirSaidaAsync(empresa, p.Id, p.Ncm, _participanteId == 0 ? null : _participanteId, uf, null, usuario);
+        if (!r.Sucesso || r.Valor is not { } regra) return;
+        if (regra.CfopDestino is { } cfop) Item.Cfop = cfop;
+        if (regra.CstDestino is { } cst) Item.CstIcms = cst;
+        Mensagem = "CFOP e CST sugeridos pela regra fiscal" + (string.IsNullOrWhiteSpace(regra.Descricao) ? "" : $" \"{regra.Descricao}\"") + ": confira antes de adicionar o item.";
+    }
 
     [RelayCommand]
     private void CalcularTributos() => Item.CalcularTributos();
@@ -856,12 +880,33 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
             (produtoId, produtoNome) = (p.Id, $"{p.Codigo} - {p.Descricao}");
         }
         var cfop = string.IsNullOrWhiteSpace(Item.Cfop) ? sel.Cfop : Item.Cfop.Trim().ToUpperInvariant();
-        var novo = sel.Item with { Cfop = cfop, ProdutoId = produtoId, CentroCustoId = CentroItem?.Id, CentroCustoCodigo = CentroItem?.Codigo };
+        var novo = sel.Item with
+        {
+            Cfop = cfop, ProdutoId = produtoId, CentroCustoId = CentroItem?.Id, CentroCustoCodigo = CentroItem?.Codigo, CstIcms = string.IsNullOrWhiteSpace(Item.CstIcms) ? sel.Item.CstIcms : Item.CstIcms.Trim(),
+            CreditaIcms = EscCreditaIcms, CreditaIpi = EscCreditaIpi, CreditaPis = EscCreditaPis, CreditaCofins = EscCreditaCofins, SemRegra = false,
+        };
         var pos = Itens.IndexOf(sel);
         Itens[pos] = new ItemNotaLinha(novo, produtoNome);
         ItemSelecionado = Itens[pos];
         Mensagem = $"Item {novo.Numero} atualizado na tela. Clique em \"Gravar escrituração\" para salvar.";
     });
+
+    /// <summary>"Reaplicar regras": refaz CFOP, CST e créditos das notas de entrada importadas e não contabilizadas do período da grade.</summary>
+    [RelayCommand]
+    private Task ReaplicarRegrasAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var inicio = Data(FiltroInicio, new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var fim = Data(FiltroFim, DateOnly.FromDateTime(DateTime.Today));
+        if (!await Contexto.ConfirmarAsync("Reaplicar regras fiscais",
+                $"Refazer o CFOP, o CST e os créditos das notas de entrada importadas e ainda não contabilizadas de {inicio:dd/MM/yyyy} a {fim:dd/MM/yyyy}? " +
+                "Itens que você já conferiu à mão e não têm regra são mantidos.", "Reaplicar", "Cancelar")) return;
+        var r = await app.Fiscal().Regras.ReaplicarAsync(empresa, inicio, fim, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await ListarAsync(app, empresa, usuario);
+        var v = r.Valor;
+        Mensagem = $"Regras reaplicadas em {v.Notas} nota(s): {v.ItensComRegra} item(ns) pela regra, {v.ItensSemRegra} sem regra (marcados para revisão)." +
+                   (v.NotasPuladas > 0 ? $" {v.NotasPuladas} nota(s) não puderam ser alteradas (período fiscal fechado)." : "");
+    }, Permissao.FiscalDocumentosImportar);
 
     /// <summary>Grava somente a escrituração da nota importada: CFOP, produto e centro de custo dos itens, centro de custo da nota, contas e observações.</summary>
     [RelayCommand]
@@ -869,7 +914,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     {
         if (_documentoId == 0) { Erros.Add("Selecione uma nota na lista."); return; }
         var esc = new EscrituracaoDocumento(_documentoId, Texto(Observacoes), CentroDocumento?.Id, Texto(ContaDebito), Texto(ContaCredito),
-            Itens.Select(i => new EscrituracaoItem(i.N, i.Item.Cfop, i.Item.ProdutoId, i.Item.CentroCustoId)).ToList());
+            Itens.Select(i => new EscrituracaoItem(i.N, i.Item.Cfop, i.Item.ProdutoId, i.Item.CentroCustoId, i.Item.CstIcms,
+                i.Item.CreditaIcms, i.Item.CreditaIpi, i.Item.CreditaPis, i.Item.CreditaCofins)).ToList());
         var r = await app.Fiscal().Digitacao.GravarEscrituracaoAsync(empresa, esc, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var id = _documentoId;
@@ -949,7 +995,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     private Task<Resultado<System.Security.Cryptography.X509Certificates.X509Certificate2>> CertificadoAsync()
         => ObterCertificado is { } f ? f() : CertificadosPadrao.AbrirParaEsocialAsync(Contexto, Vorticis.Application.Sistema.PapelAssinatura.Responsavel);
 
-    /// <summary>"Importar por XML": lê o arquivo e preenche a nota para conferência; nada é gravado até clicar em "Gravar nota".</summary>
+    /// <summary>"Importar por XML": importa o arquivo como nota importada (guarda o XML original) e abre a nota para conferir a escrituração.</summary>
     public Task ImportarArquivoParaConferenciaAsync(string caminho) => ExecutarAsync(async (app, empresa, usuario) =>
     {
         byte[] bytes;
@@ -957,7 +1003,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Erros.Add($"Não foi possível ler o arquivo: {ex.Message}"); return; }
         var p = await app.Fiscal().Documentos.PrepararAsync(empresa, bytes, usuario);
         if (!p.Sucesso) { MostrarResultado(p, ""); return; }
-        await PreencherAsync(app, empresa, usuario, p.Valor, $"XML \"{Path.GetFileName(caminho)}\" lido.");
+        await ImportarNotaAsync(app, empresa, usuario, p.Valor, $"XML \"{Path.GetFileName(caminho)}\" importado.");
     }, Permissao.FiscalDocumentosImportar);
 
     /// <summary>
@@ -991,7 +1037,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         switch (r.Valor.Situacao)
         {
             case Sefaz.SituacaoChave.Baixada:
-                await PreencherAsync(app, empresa, usuario, r.Valor.Nota!, "NF-e baixada da SEFAZ. Confira os dados e clique em \"Gravar nota\".");
+                await ImportarNotaAsync(app, empresa, usuario, r.Valor.Nota!, "NF-e baixada da SEFAZ.");
                 break;
             case Sefaz.SituacaoChave.SomenteResumo:
                 PodeManifestar = true;
@@ -1002,7 +1048,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     }, Permissao.FiscalDocumentosImportar);
 
     /// <summary>A chave/XML é de uma nota já lançada: mostra a que está no sistema em vez de duplicar.</summary>
-    private async Task ApresentarExistenteAsync(VorticisApp app, long empresa, long usuario, DocumentoFiscal existente, string mensagem)
+    private async Task ApresentarExistenteAsync(VorticisApp app, long empresa, long usuario, DocumentoFiscal existente, string mensagem, bool complemento = true)
     {
         if (existente.Operacao != Operacao)
         {
@@ -1014,66 +1060,38 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         Selecionada = Lista.FirstOrDefault(d => d.Id == existente.Id);
         await CarregarDocumentoAsync(existente.Id);
         ChaveImportacao = "";
-        Mensagem = $"{mensagem} Os dados da nota gravada foram carregados para conferência.";
+        if (complemento) Mensagem = $"{mensagem} Os dados da nota gravada foram carregados para conferência.";
     }
 
-    /// <summary>CFOP de entrada equivalente ao do emitente (5.102 vira 1.102; 6.xxx vira 2.xxx; 7.xxx vira 3.xxx).</summary>
-    internal static string CfopDeEntrada(string cfop) => cfop.Length == 4 && cfop[0] is '5' or '6' or '7' && cfop.All(char.IsAsciiDigit)
-        ? ((char)(cfop[0] - 4)) + cfop[1..] : cfop;
-
-    private async Task PreencherAsync(VorticisApp app, long empresa, long usuario, NotaPreparada nota, string origemTexto)
+    /// <summary>
+    /// Grava a nota lida do XML (arquivo ou SEFAZ) como nota importada (origem XML, com o XML original e a chave), aplica as regras fiscais e abre a nota gravada
+    /// para conferir a escrituração. Chave já lançada: avisa e abre a nota existente.
+    /// </summary>
+    private async Task ImportarNotaAsync(VorticisApp app, long empresa, long usuario, NotaPreparada nota, string origemTexto)
     {
-        var d = nota.Documento;
         if (nota.Operacao != Operacao)
         {
             Erros.Add($"Esta nota é de {nota.Operacao.Rotulo().ToLowerInvariant()} para a empresa: abra-a em Lançamentos › Documentos fiscais › {nota.Operacao.Rotulo()}.");
             return;
         }
-        var existente = await app.Fiscal().Documentos.LocalizarPorChaveAsync(empresa, d.Chave, usuario);
-        if (existente.Sucesso && existente.Valor is { } ja)
+        var r = await app.Fiscal().Documentos.ImportarPreparadaAsync(empresa, nota, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var achada = await app.Fiscal().Documentos.LocalizarPorChaveAsync(empresa, nota.Documento.Chave, usuario);
+        if (!achada.Sucesso || achada.Valor is not { } gravada) { MostrarResultado(achada, ""); return; }
+        if (r.Valor.JaExistia)
         {
-            await ApresentarExistenteAsync(app, empresa, usuario, ja, $"A NF-e {ja.Numero} já está lançada nesta empresa.");
+            await ApresentarExistenteAsync(app, empresa, usuario, gravada, r.Valor.Aviso);
             return;
         }
-        LimparNota();
-        _suprimirBusca = true;
-        (Modelo, Serie, Numero, Chave, Emissao, DataLivro, Natureza) =
-            (Math.Max(0, ModelosValores.ToList().IndexOf(d.Modelo)), d.Serie, d.Numero, d.Chave, d.Emissao.ToDateTime(TimeOnly.MinValue),
-             d.DataLivro.ToDateTime(TimeOnly.MinValue), d.NaturezaOperacao ?? "");
-        var parte = nota.Contraparte;
-        Participante = parte?.Documento is { Length: > 0 } doc ? doc : parte?.Nome ?? "";
-        _suprimirBusca = false;
-        await PreencherParticipanteDoXmlAsync(app, empresa, usuario, parte);
-        _retencoes = d.Totais;
-        var n = 0;
-        foreach (var i in d.Itens)
-        {
-            var cfop = Operacao == TipoOperacao.Entrada ? CfopDeEntrada(i.Cfop) : i.Cfop;
-            Itens.Add(Linha(i with { Numero = ++n, Cfop = cfop, CfopOriginal = null }));
-        }
-        foreach (var p in d.Duplicatas ?? []) Parcelas.Add(new ParcelaLinha(p.Numero, p.Vencimento, p.Valor));
-        ChaveImportacao = "";
-        SituacaoDocumento = "Nota lida do XML: confira os dados e grave";
-        AtualizarTotais();
-        var aviso = Math.Abs(d.DiferencaItens) > 0.05m ? $" Atenção: a soma dos itens difere do total do XML em {Numeros.Moeda(d.DiferencaItens)}." : "";
-        var cfopAviso = Operacao == TipoOperacao.Entrada && d.Itens.Any(i => CfopDeEntrada(i.Cfop) != i.Cfop) ? " Os CFOP foram trocados pelos de entrada equivalentes: confira." : "";
-        Mensagem = $"{origemTexto} Campos preenchidos para conferência; nada foi gravado ainda.{aviso}{cfopAviso}";
-    }
-
-    private async Task PreencherParticipanteDoXmlAsync(VorticisApp app, long empresa, long usuario, ParteDocumento? parte)
-    {
-        var doc = new string((parte?.Documento ?? "").Where(char.IsAsciiDigit).ToArray());
-        if (doc.Length is not (11 or 14)) { ParticipanteInfo = parte?.Nome is { Length: > 0 } nome ? $"{RotuloParticipante} do XML: {nome} (sem CPF/CNPJ; informe o cadastro)." : ""; return; }
-        var cad = (await app.Participantes.ListarAsync(empresa, usuario)).FirstOrDefault(x => x.CpfCnpj == doc);
-        if (cad is not null)
-        {
-            (_participanteId, _novoParticipante, TemNovoParticipante) = (cad.Id, null, false);
-            ParticipanteInfo = $"{RotuloParticipante} cadastrado: {cad.Codigo} - {cad.Nome}" + (string.IsNullOrWhiteSpace(cad.Uf) ? "" : $" ({cad.Municipio} / {cad.Uf})");
-            return;
-        }
-        var novo = new Participante(0, "", parte!.Nome ?? "", null, doc, parte.InscricaoEstadual, parte.Uf, parte.CodMunicipioIbge, parte.Municipio, null, null,
-            Operacao == TipoOperacao.Saida, Operacao == TipoOperacao.Entrada, null, true);
-        AplicarNovoParticipante(new ParticipanteResolvido(null, novo, "Dados do XML: confira antes de gravar."));
+        await ApresentarExistenteAsync(app, empresa, usuario, gravada, $"{origemTexto} {r.Valor.Aviso}", complemento: false);
+        var semRegra = Itens.Count(i => i.Item.SemRegra);
+        var regraAviso = Operacao == TipoOperacao.Entrada
+            ? semRegra > 0
+                ? $" {semRegra} item(ns) sem regra fiscal receberam o CFOP de entrada padrão e estão marcados para revisão: confira (Cadastros › Regras fiscais)."
+                : " CFOP, CST e créditos aplicados pelas regras fiscais."
+            : "";
+        Mensagem = $"{origemTexto} {r.Valor.Aviso} Nota importada: confira a escrituração e clique em \"Gravar escrituração\" se alterar algo.{regraAviso}";
+        if (!DigitacaoAberta) DigitacaoAberta = true;
     }
 
     /// <summary>Registra a "Ciência da operação" (manifestação do destinatário), que libera o XML completo na SEFAZ.</summary>

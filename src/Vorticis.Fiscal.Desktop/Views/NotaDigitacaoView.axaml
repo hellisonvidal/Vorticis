@@ -244,6 +244,13 @@
             </Grid>
             <StackPanel IsVisible="{Binding Importada}" Spacing="3">
               <TextBlock Classes="grupo" Text="Item selecionado (escolha na aba Itens)" />
+              <WrapPanel IsVisible="{Binding EhEntrada}" Margin="4,0">
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN de escrituração" /><TextBox Text="{Binding Item.CstIcms}" Width="110" /></StackPanel>
+                <CheckBox Content="Credita ICMS" IsChecked="{Binding EscCreditaIcms}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
+                <CheckBox Content="Credita IPI" IsChecked="{Binding EscCreditaIpi}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
+                <CheckBox Content="Credita PIS" IsChecked="{Binding EscCreditaPis}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
+                <CheckBox Content="Credita COFINS" IsChecked="{Binding EscCreditaCofins}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
+              </WrapPanel>
               <Grid ColumnDefinitions="*,2*,*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP de escrituração (ex.: entrada 1.102)" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Produto vinculado (código, descrição ou GTIN do cadastro)" /><TextBox Text="{Binding EscProduto}" /></StackPanel>
@@ -257,6 +264,7 @@
                   <DataGridTextColumn Header="CFOP" Binding="{ReflectionBinding Cfop}" Width="70" />
                   <DataGridTextColumn Header="CFOP escrit." Binding="{ReflectionBinding CfopEscrituracao}" Width="100" />
                   <DataGridTextColumn Header="Produto vinculado" Binding="{ReflectionBinding Vinculo}" Width="200" />
+                  <DataGridTextColumn Header="Regra fiscal" Binding="{ReflectionBinding Regra}" Width="100" />
                 </DataGrid.Columns>
               </DataGrid>
             </StackPanel>
