@@ -44,8 +44,8 @@ public sealed partial class ServicoFrota(VorticisApp app)
     // ------------------------------------------------------------------ configuração
 
     public async Task<ConfiguracaoFrota> ConfiguracaoAsync(long empresa, CancellationToken ct = default)
-        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo, limite_autorizacao FROM frota.configuracao WHERE empresa_id = @e",
-                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1), r.GetDecimal(2)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
+        => (await _db.ListarAsync("SELECT dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media FROM frota.configuracao WHERE empresa_id = @e",
+                                  r => new ConfiguracaoFrota(r.GetInt16(0), r.GetDecimal(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4)), ct, ("e", empresa))).FirstOrDefault() ?? new ConfiguracaoFrota();
 
     public async Task<Resultado> GravarConfiguracaoAsync(long empresa, ConfiguracaoFrota c, long usuario, CancellationToken ct = default)
     {
@@ -53,11 +53,14 @@ public sealed partial class ServicoFrota(VorticisApp app)
         if (c.DiasAviso is < 1 or > 365) return Resultado.Falha("Antecedência dos avisos: de 1 a 365 dias.");
         if (c.ToleranciaConsumo is < 0 or > 100) return Resultado.Falha("Tolerância do consumo: de 0 a 100%.");
         if (c.LimiteAutorizacao < 0) return Resultado.Falha("O limite de autorização automática não pode ser negativo.");
+        if (c.FatorRodoviario is < 1 or > 3) return Resultado.Falha("Fator rodoviário: de 1,00 a 3,00.");
+        if (c.VelocidadeMedia is < 10 or > 130) return Resultado.Falha("Velocidade média: de 10 a 130 km/h.");
         return await Tentar(() => _db.ExecutarAsync("""
-            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo, limite_autorizacao) VALUES (@e, @d, @t, @l)
+            INSERT INTO frota.configuracao (empresa_id, dias_aviso, tolerancia_consumo, limite_autorizacao, fator_rodoviario, velocidade_media) VALUES (@e, @d, @t, @l, @f, @vm)
             ON CONFLICT (empresa_id) DO UPDATE SET dias_aviso = EXCLUDED.dias_aviso, tolerancia_consumo = EXCLUDED.tolerancia_consumo,
-                                                   limite_autorizacao = EXCLUDED.limite_autorizacao
-            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo), ("l", c.LimiteAutorizacao)));
+                                                   limite_autorizacao = EXCLUDED.limite_autorizacao, fator_rodoviario = EXCLUDED.fator_rodoviario,
+                                                   velocidade_media = EXCLUDED.velocidade_media
+            """, ct, ("e", empresa), ("d", (short)c.DiasAviso), ("t", c.ToleranciaConsumo), ("l", c.LimiteAutorizacao), ("f", c.FatorRodoviario), ("vm", c.VelocidadeMedia)));
     }
 
     // ------------------------------------------------------------------ veículos
@@ -66,11 +69,11 @@ public sealed partial class ServicoFrota(VorticisApp app)
         => await PodeVerAsync(usuario, empresa, ct) ? await ListarVeiculosAsync(empresa, ct) : [];
 
     private Task<List<Veiculo>> ListarVeiculosAsync(long empresa, CancellationToken ct) => _db.ListarAsync("""
-        SELECT id, codigo, placa, renavam, tipo, marca, modelo, ano_fabricacao, ano_modelo, combustivel, capacidade_kg, km_atual, media_esperada, ativo, observacao
+        SELECT id, codigo, placa, renavam, tipo, marca, modelo, ano_fabricacao, ano_modelo, combustivel, capacidade_kg, km_atual, media_esperada, ativo, observacao, frota_id
           FROM frota.veiculo WHERE empresa_id = @e ORDER BY codigo
         """, r => new Veiculo(r.GetInt64(0), r.GetInt32(1), r.GetString(2), r.Texto(3), r.GetString(4), r.Texto(5), r.Texto(6),
                               r.IsDBNull(7) ? null : r.GetInt16(7), r.IsDBNull(8) ? null : r.GetInt16(8), r.GetString(9), r.Valor(10), r.GetDecimal(11), r.Valor(12),
-                              r.GetBoolean(13), r.Texto(14)), ct, ("e", empresa));
+                              r.GetBoolean(13), r.Texto(14), r.Id(15)), ct, ("e", empresa));
 
     public async Task<Resultado<long>> GravarVeiculoAsync(long empresa, Veiculo v, long usuario, CancellationToken ct = default)
     {
@@ -83,17 +86,17 @@ public sealed partial class ServicoFrota(VorticisApp app)
         [
             ("e", empresa), ("id", v.Id), ("cod", v.Codigo), ("placa", v.Placa), ("ren", v.Renavam), ("tipo", v.Tipo), ("marca", v.Marca), ("modelo", v.Modelo),
             ("af", (short?)v.AnoFabricacao), ("am", (short?)v.AnoModelo), ("comb", v.Combustivel), ("cap", v.CapacidadeKg), ("km", v.KmAtual),
-            ("media", v.MediaEsperada), ("ativo", v.Ativo), ("obs", v.Observacao),
+            ("media", v.MediaEsperada), ("ativo", v.Ativo), ("obs", v.Observacao), ("fro", v.FrotaId),
         ];
         return await Tentar(async () => v.Id == 0
             ? await _db.EscalarAsync<long>("""
                 INSERT INTO frota.veiculo (empresa_id, codigo, placa, renavam, tipo, marca, modelo, ano_fabricacao, ano_modelo, combustivel, capacidade_kg, km_atual,
-                                           media_esperada, ativo, observacao)
-                VALUES (@e, @cod, @placa, @ren, @tipo, @marca, @modelo, @af, @am, @comb, @cap, @km, @media, @ativo, @obs) RETURNING id
+                                           media_esperada, ativo, observacao, frota_id)
+                VALUES (@e, @cod, @placa, @ren, @tipo, @marca, @modelo, @af, @am, @comb, @cap, @km, @media, @ativo, @obs, @fro) RETURNING id
                 """, ct, p)
             : await _db.EscalarAsync<long?>("""
                 UPDATE frota.veiculo SET placa = @placa, renavam = @ren, tipo = @tipo, marca = @marca, modelo = @modelo, ano_fabricacao = @af, ano_modelo = @am,
-                       combustivel = @comb, capacidade_kg = @cap, km_atual = @km, media_esperada = @media, ativo = @ativo, observacao = @obs
+                       combustivel = @comb, capacidade_kg = @cap, km_atual = @km, media_esperada = @media, ativo = @ativo, observacao = @obs, frota_id = @fro
                  WHERE id = @id AND empresa_id = @e RETURNING id
                 """, ct, p) ?? throw new ViolacaoRegraException("Veículo não encontrado."));
     }
@@ -387,6 +390,11 @@ public sealed partial class ServicoFrota(VorticisApp app)
                 DateOnly.FromDateTime(DateTime.Today)),
             TabelasFrota.TituloAprovacoes => TabelasFrota.Aprovacoes(await ListarAutorizacoesAsync(empresa, inicio, fim, ct)),
             TabelasFrota.TituloNotas => TabelasFrota.Notas(await ListarNotasAsync(empresa, inicio, fim, ct)),
+            TabelasFrota.TituloCustosFrota => TabelasFrota.CustosFrota(await ListarFrotasAsync(empresa, ct), veiculos, abastecimentos,
+                (await ListarOrdensAsync(empresa, inicio, fim, ct)).Where(o => o.Data >= inicio && o.Data <= fim && o.Situacao is not ("CANCELADA" or "REPROVADA")).ToList(),
+                (await ListarViagensAsync(empresa, inicio, fim, ct)).Where(v => v.Saida >= inicio && v.Saida <= fim).ToList(), await ListarDiariasAsync(empresa, inicio, fim, null, null, ct)),
+            TabelasFrota.TituloDiariasColaborador => TabelasFrota.Diarias(await ListarDiariasAsync(empresa, inicio, fim, null, null, ct), false),
+            TabelasFrota.TituloDiariasFrota => TabelasFrota.Diarias(await ListarDiariasAsync(empresa, inicio, fim, null, null, ct), true),
             _ => TabelasFrota.Vencimentos(await AvisosAsync(empresa, DateOnly.FromDateTime(DateTime.Today), usuario, ct)),
         };
         return Resultado<Vorticis.Application.Relatorios.TabelaRelatorio>.Ok(tabela);

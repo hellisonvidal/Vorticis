@@ -30,6 +30,13 @@ public static class FrotaTelas
     public const string RelAcompanhamento = "frota.rel.ordens";
     public const string RelAprovacoes = "frota.rel.aprovacoes";
     public const string RelNotas = "frota.rel.notas";
+    public const string Frotas = "frota.frotas";
+    public const string Rotas = "frota.rotas";
+    public const string Diarias = "frota.diarias";
+    public const string Coletas = "frota.coletas";
+    public const string RelCustosFrota = "frota.rel.frotas";
+    public const string RelDiariasColaborador = "frota.rel.diarias";
+    public const string RelDiariasFrota = "frota.rel.diariasfrota";
 }
 
 internal static class Ext
@@ -164,6 +171,8 @@ public partial class VeiculosViewModel(IContexto contexto) : FrotaBase(contexto,
     [ObservableProperty] private bool _ativo = true;
     [ObservableProperty] private string _observacao = "";
     [ObservableProperty] private string _totais = "";
+    public ObservableCollection<Opcao> FrotasOpcoes { get; } = [];
+    [ObservableProperty] private Opcao? _frota;
 
     /// <summary>Reboque e semirreboque não têm motor: o combustível passa a "Não abastece".</summary>
     partial void OnTipoChanged(OpcaoCodigo? value)
@@ -180,6 +189,7 @@ public partial class VeiculosViewModel(IContexto contexto) : FrotaBase(contexto,
         (AnoFabricacao, AnoModelo, Capacidade, KmAtual, MediaEsperada) = (v.AnoFabricacao?.ToString() ?? "", v.AnoModelo?.ToString() ?? "", Ext.Num(v.CapacidadeKg),
                                                                             Ext.Num(v.KmAtual), Ext.Num(v.MediaEsperada));
         (Ativo, Observacao) = (v.Ativo, v.Observacao ?? "");
+        Frota = FrotasOpcoes.FirstOrDefault(f => f.Id == v.FrotaId) ?? FrotasOpcoes.FirstOrDefault();
     }
 
     public async Task CarregarAsync()
@@ -187,7 +197,12 @@ public partial class VeiculosViewModel(IContexto contexto) : FrotaBase(contexto,
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
         var itens = await app.Frota().VeiculosAsync(empresa, sessao.Id);
+        var frotas = await app.Frota().FrotasAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
+        FrotasOpcoes.Clear();
+        FrotasOpcoes.Add(new Opcao(null, "(nenhuma)"));
+        foreach (var f in frotas.Where(f => f.Ativa)) FrotasOpcoes.Add(new Opcao(f.Id, $"{f.Codigo} – {f.Descricao}"));
+        Frota ??= FrotasOpcoes.FirstOrDefault();
         Lista.Clear();
         foreach (var v in itens) Lista.Add(new VeiculoLinha(v));
         Totais = $"{itens.Count(v => v.Ativo)} veículo(s) ativo(s), {itens.Count(v => v.Ativo && !v.Abastece)} reboque(s)";
@@ -201,13 +216,14 @@ public partial class VeiculosViewModel(IContexto contexto) : FrotaBase(contexto,
         Codigo = ((Lista.Count == 0 ? 0 : Lista.Max(l => l.V.Codigo)) + 1).ToString();
         (Placa, Renavam, Marca, Modelo, AnoFabricacao, AnoModelo, Capacidade, KmAtual, MediaEsperada, Ativo, Observacao) = ("", "", "", "", "", "", "", "0", "", true, "");
         (Tipo, Combustivel) = (Tipos[0], Combustiveis[0]);
+        Frota = FrotasOpcoes.FirstOrDefault();
     }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var v = new Veiculo(Selecionado?.V.Id ?? 0, Ext.Int(Codigo) ?? 0, Placa, Renavam, Tipo?.Valor ?? "", Marca, Modelo, Ext.Int(AnoFabricacao), Ext.Int(AnoModelo),
-                            Combustivel?.Valor ?? "", Formato.LerValor(Capacidade), Formato.LerValor(KmAtual) ?? 0, Formato.LerValor(MediaEsperada), Ativo, Observacao);
+                            Combustivel?.Valor ?? "", Formato.LerValor(Capacidade), Formato.LerValor(KmAtual) ?? 0, Formato.LerValor(MediaEsperada), Ativo, Observacao, Frota?.Id);
         var r = await app.Frota().GravarVeiculoAsync(empresa, v, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
@@ -782,6 +798,16 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
             new CampoParametro("limite", "Autorizar sozinhas as ordens de até (R$)", TipoCampoParametro.Texto,
                                "Ordens de serviço com valor até este limite são autorizadas automaticamente ao pedir autorização. Com 0, toda ordem precisa ser autorizada."),
         ], [Atalho("Abrir Autorização de serviços", FrotaTelas.Autorizacao)]),
+        new("Rotas", "Distância estimada das rotas (Cadastros › Rotas): linha reta entre as cidades vezes o fator rodoviário.",
+        [
+            new CampoParametro("fator", "Fator rodoviário", TipoCampoParametro.Texto,
+                               "Multiplica a distância em linha reta para chegar perto da distância pelas estradas. Padrão 1,25. Ex.: 400 km em linha reta e fator 1,25 → 500 km."),
+            new CampoParametro("velocidade", "Velocidade média (km/h)", TipoCampoParametro.Texto, "Usada para estimar o tempo da rota. Padrão 60."),
+        ], [Atalho("Abrir Rotas", FrotaTelas.Rotas)]),
+        new("Diárias", "Valor unitário de cada tipo de diária (Operação › Diárias). Ao escolher o tipo, o valor é sugerido e pode ser alterado no lançamento.",
+        [
+            .. RegrasLogistica.TiposDiaria.Select(t => new CampoParametro("diaria_" + t, "Valor da diária – " + RegrasFrota.Rotulo(t), TipoCampoParametro.Texto, null)),
+        ], [Atalho("Abrir Diárias", FrotaTelas.Diarias)]),
     ];
 
     protected override async Task CarregarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -790,13 +816,20 @@ public sealed class ParametrosFrotaViewModel(IContexto contexto) : ParametrosVie
         Campo("dias").Texto = c.DiasAviso.ToString();
         Campo("tolerancia").Texto = Formato.Num(c.ToleranciaConsumo);
         Campo("limite").Texto = Formato.Num(c.LimiteAutorizacao);
+        Campo("fator").Texto = c.FatorRodoviario.ToString("0.00", Formato.PtBr);
+        Campo("velocidade").Texto = Formato.Num(c.VelocidadeMedia);
+        foreach (var (tipo, valor) in await app.Frota().ValoresDiariaAsync(empresa)) Campo("diaria_" + tipo).Texto = Formato.Moeda(valor);
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
     {
         if (Ext.Int(Campo("dias").Texto) is not { } dias) { Erros.Add("Informe a antecedência em dias (número inteiro)."); return; }
         var r = await app.Frota().GravarConfiguracaoAsync(empresa, new ConfiguracaoFrota(dias, Formato.LerValor(Campo("tolerancia").Texto) ?? 0,
-                                                                                                 Formato.LerValor(Campo("limite").Texto) ?? 0), usuario);
-        if (!r.Sucesso) MostrarResultado(r, "");
+                                                                                                 Formato.LerValor(Campo("limite").Texto) ?? 0,
+                                                                                                 Formato.LerValor(Campo("fator").Texto) ?? 0, Formato.LerValor(Campo("velocidade").Texto) ?? 0), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var valores = RegrasLogistica.TiposDiaria.ToDictionary(t => t, t => Formato.LerValor(Campo("diaria_" + t).Texto) ?? 0);
+        var rv = await app.Frota().GravarValoresDiariaAsync(empresa, valores, usuario);
+        if (!rv.Sucesso) MostrarResultado(rv, "");
     }
 }

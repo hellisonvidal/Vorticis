@@ -15,8 +15,8 @@ O Vorticis Suite Logística é instalado numa pasta própria (*Vorticis Logistic
 
 | Menu | O que tem | Detalhes no manual |
 |---|---|---|
-| **Cadastros** | Transportadoras, contadores, clientes, fornecedores, veículos, motoristas, documentos e vencimentos; os cadastros do financeiro (produtos, formas de pagamento, contas bancárias), do contábil (plano de contas, históricos...) e da folha (funcionários, cargos, rubricas...) em submenus; os **Parâmetros** | [Frota](12-frota.md), [Contábil](03-contabil.md), [Folha](06-folha.md) |
-| **Operação** | Abastecimentos e viagens; submenu **Coletas** (*Ordens de coleta*, em breve) | [Frota](12-frota.md#abastecimentos) |
+| **Cadastros** | Transportadoras, contadores, clientes, fornecedores, veículos, motoristas, **frotas**, **rotas**, documentos e vencimentos; os cadastros do financeiro (produtos, formas de pagamento, contas bancárias), do contábil (plano de contas, históricos...) e da folha (funcionários, cargos, rubricas...) em submenus; os **Parâmetros** | [Frota](12-frota.md), [Contábil](03-contabil.md), [Folha](06-folha.md) |
+| **Operação** | Abastecimentos e viagens; **Diárias** e submenu **Coletas** (*Ordens de coleta*) | [Frota](12-frota.md#abastecimentos), [Diárias](12-frota.md#diarias), [Coletas](12-frota.md#ordens-de-coleta) |
 | **Manutenção** | Planos de manutenção, peças e serviços, ordens de serviço, autorização de serviços e notas de compra | [Frota](12-frota.md#ordens-de-servico) |
 | **Emissão** | CT-e, MDF-e e NFS-e (em breve) | — |
 | **Financeiro** | Contas a pagar, contas a receber e conciliação bancária; faturamento (pedidos de venda e notas de saída), compras, estoque e monitores | [Gerencial](10-gerencial.md) |
@@ -35,7 +35,7 @@ Os atalhos de teclado do Frota valem aqui (**Ctrl+B** abastecimentos, **Ctrl+P**
 
 | Aba | O que tem |
 |---|---|
-| **Frota** | Avisos de vencimento, alerta de consumo e limite de autorização das ordens de serviço. |
+| **Frota** | Avisos de vencimento, alerta de consumo, limite de autorização das ordens de serviço, fator rodoviário das rotas e valores das diárias. |
 | **Gerencial e financeiro** | Os parâmetros do financeiro e do fiscal usados nas contas a pagar e a receber (contas de fornecedores e clientes, juros, multa, descontos e históricos das baixas). |
 | **Contábil** | Regras de lançamento, centros de custo, encerramento e o **Tipo de contabilização** (On-line ou Em lote, veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote)). |
 | **Folha** | Encargos patronais, dia de pagamento e eSocial. |

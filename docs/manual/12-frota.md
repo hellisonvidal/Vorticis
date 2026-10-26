@@ -9,11 +9,11 @@ O Frota é a base do **[Vorticis Suite Logística](13-logistica.md)**, o program
 ## Ordem dos cadastros
 
 1. **A transportadora:** *Cadastros › Transportadoras*, com o módulo **Frota** marcado (e Gerencial, Contábil, Fiscal e Folha, se for usar). Escolha-a no topo da tela.
-2. **Parâmetros:** *Cadastros › Parâmetros*, com a antecedência dos avisos e a tolerância do consumo (já vêm com 30 dias e 15%).
-3. **Veículos** e **Motoristas**.
+2. **Parâmetros:** *Cadastros › Parâmetros*, com a antecedência dos avisos e a tolerância do consumo (já vêm com 30 dias e 15%), o fator rodoviário das rotas e os valores das diárias.
+3. **Frotas** (se você separa os veículos em grupos), **Veículos**, **Motoristas** (e ajudantes) e **Rotas**.
 4. **Documentos e vencimentos** de cada veículo e motorista.
 5. **Manutenção:** os **Planos de manutenção** (preventivas) e o catálogo de **Peças e serviços**.
-6. No dia a dia: **Abastecimentos** e **Viagens** (menu Operação), **Ordens de serviço**, **Autorização de serviços** e **Notas de compra** (menu Manutenção); acompanhe tudo no **Painel da frota**.
+6. No dia a dia: **Abastecimentos**, **Viagens**, **Diárias** e **Ordens de coleta** (menu Operação), **Ordens de serviço**, **Autorização de serviços** e **Notas de compra** (menu Manutenção); acompanhe tudo no **Painel da frota**.
 
 ## Veículos
 
@@ -22,7 +22,8 @@ O Frota é a base do **[Vorticis Suite Logística](13-logistica.md)**, o program
 1. **Novo veículo**: o código já vem sugerido. Informe a **Placa** (padrão antigo ABC-1234 ou Mercosul ABC1D23), o **RENAVAM** (o sistema confere o dígito), o **Tipo** (cavalo mecânico, truck, toco, carreta, bitrem, van, utilitário, reboque, semirreboque...), marca, modelo e anos.
 2. Escolha o **Combustível**. Reboque e semirreboque ficam como **Não abastece**.
 3. Informe o **Km atual** e a **Média esperada (km/l)**: é com ela que o sistema avisa quando o consumo cai.
-4. **Gravar**. Para tirar um veículo de uso, desmarque **Veículo ativo** (um veículo com abastecimentos, manutenções ou viagens não pode ser excluído).
+4. Se a empresa tem [frotas](#frotas) cadastradas, escolha a **Frota** do veículo.
+5. **Gravar**. Para tirar um veículo de uso, desmarque **Veículo ativo** (um veículo com abastecimentos, manutenções ou viagens não pode ser excluído).
 
 O km atual é atualizado sozinho pelos abastecimentos, ordens de serviço e viagens.
 
@@ -131,6 +132,61 @@ A mesma nota (fornecedor, número e série) não pode ser lançada duas vezes. N
 
 O combustível da viagem não é digitado aqui: o relatório *Resultado das viagens* soma os abastecimentos do veículo entre a saída e a chegada.
 
+## Frotas
+
+**Para que serve:** separar os veículos em grupos (frota própria, de agregados ou de terceiros) para ver os custos de cada grupo.
+
+**Onde fica:** *Cadastros › Frotas*.
+
+1. **Nova frota**: o código já vem sugerido. Informe a **descrição**, o **tipo** (própria, agregada ou terceiros) e o **responsável**.
+2. Se quiser, escolha o **centro de custo padrão** da frota: as diárias dessa frota usam esse centro quando você não escolhe outro.
+3. **Gravar**. Para parar de usar uma frota, desmarque **Frota ativa**. Excluir uma frota não apaga os veículos: eles ficam sem frota.
+
+**Vincular veículos:** em *Cadastros › Veículos*, escolha a **Frota** do veículo. A coluna *Veículos* da lista de frotas mostra quantos há em cada uma.
+
+**Centro de custo da frota:** em *Cadastros › Centros de custo* (programa Contábil/Gerencial) há o campo opcional **Frota**: escolha a frota que o centro representa. Os relatórios [Custos por frota](#relatorios-da-frota) e a frota das diárias usam esse vínculo.
+
+## Rotas
+
+**Para que serve:** cadastrar os percursos que a transportadora faz, com a distância, o tempo e os pedágios estimados.
+
+**Onde fica:** *Cadastros › Rotas*.
+
+1. **Nova rota**: informe o código e a **descrição**.
+2. Monte o percurso: escolha a **UF** e o **município** e clique em **Adicionar**, na ordem do percurso. A primeira cidade é a **origem**, a última é o **destino** e as do meio são as **paradas**. Use **Subir**, **Descer** e **Remover** para ajustar.
+3. A **distância** aparece sozinha: é a distância em linha reta entre cidades seguidas, multiplicada pelo **fator rodoviário** (padrão 1,25, em *Cadastros › Parâmetros › Frota*). O **tempo estimado** sai da velocidade média (padrão 60 km/h).
+4. Para uma distância mais fiel, clique em **Buscar distância rodoviária**: o sistema consulta um serviço de rotas gratuito na internet (OpenStreetMap). Sem internet, aparece um aviso e a estimativa continua valendo.
+5. Você também pode **digitar a distância** (km): ela passa a valer como informada por você e não muda mais quando você altera as paradas. **Recalcular estimativa** volta para o cálculo automático.
+6. Informe os **pedágios** estimados e clique em **Gravar**.
+
+A lista de municípios e as coordenadas vêm do IBGE (base kelvins/municipios-brasileiros, licença MIT), já dentro do programa.
+
+## Diárias
+
+**Para que serve:** controlar as diárias pagas a motoristas e ajudantes, com adiantamento e prestação de contas.
+
+**Onde fica:** *Operação › Diárias*. O motorista ou ajudante precisa estar em *Cadastros › Motoristas*.
+
+1. Antes, em *Cadastros › Parâmetros › Frota*, cadastre o **valor de cada tipo de diária** (pernoite, alimentação, refeição, hospedagem e outra).
+2. **Nova diária**: escolha a **data**, o **colaborador**, a **função**, o veículo, a frota, a rota ou a viagem (se houver), o **tipo da diária**, a **quantidade** e, se for o caso, o **adiantamento**. O valor unitário vem da tabela e o **total** é calculado; você pode alterar o valor unitário. Frota e centro de custo em branco são preenchidos sozinhos (pela frota do veículo ou do centro de custo).
+3. **Gravar**. A diária fica **Lançada**.
+4. **Pagar:** informe o **vencimento** e clique em **Pagar (gerar conta a pagar)**. O sistema cria a conta a pagar no Financeiro (com o valor do adiantamento ou, se não houve adiantamento, o total) e a diária passa a **Paga**. Se a empresa contabiliza **em lote** (*Cadastros › Parâmetros › Contábil*), também fica registrada a pendência de contabilização da Frota; veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote). A geração do lançamento contábil a partir dessa pendência da Frota será liberada numa próxima etapa; até lá ela fica listada na tela de contabilização em lote.
+5. **Acertar** (só diárias com adiantamento): quando o colaborador prestar contas, informe o **valor gasto** e clique em **Acertar**. O saldo é o adiantamento menos o gasto: se sobrou, o colaborador **devolve**; se faltou, a empresa **paga a diferença**. A diária passa a **Acertada**.
+
+Diária paga ou acertada não pode mais ser alterada nem excluída. Use os filtros de período, colaborador e frota no alto da tela e, em *Relatórios*, **Diárias por colaborador** e **Diárias por frota**.
+
+## Ordens de coleta
+
+**Para que serve:** agendar e acompanhar as coletas de mercadoria nos clientes.
+
+**Onde fica:** *Operação › Coletas › Ordens de coleta*.
+
+1. **Nova ordem**: informe a **data e hora** agendadas, o **remetente** e o **destinatário** (clientes ou fornecedores já cadastrados), o **endereço de coleta**, a **mercadoria**, os **volumes**, o **peso** e o **valor**. Escolha o veículo, o motorista e a rota, se já souber. O número é sequencial.
+2. **Gravar**. A coleta fica **Agendada**.
+3. Para acompanhar, mude a **situação** e grave: **Em coleta** quando o motorista sair, **Coletada** quando recolher a mercadoria. **Cancelada** vale para coletas agendadas ou em andamento. Coleta coletada ou cancelada não pode mais ser alterada.
+4. **Imprimir ordem (PDF)** gera a ordem de coleta para entregar ao motorista, com campos de assinatura.
+5. Na lista, filtre por **período** e por **situação**.
+
 ## Painel da frota
 
 **Onde fica:** *Relatórios › Painel da frota* (atalho **Ctrl+P**).
@@ -153,6 +209,8 @@ Escolha o **Período** e clique em **Gerar**; o relatório aparece na tela e pod
 - **Consumo de combustível:** cada média de tanque cheio a tanque cheio, com a média esperada e a marcação **ABAIXO DO ESPERADO**.
 - **Resultado das viagens:** frete menos despesas e combustível de cada viagem; viagens com resultado negativo saem em destaque.
 - **Vencimentos e manutenções:** a mesma lista do painel, para imprimir. Não pede período: é a posição de hoje.
+- **Custos por frota:** combustível, manutenção, despesas de viagem e diárias de cada frota (os veículos sem frota saem em *sem frota*).
+- **Diárias por colaborador** e **Diárias por frota:** as diárias do período com subtotal de cada colaborador ou frota, adiantamento e saldo do acerto.
 
 ## Relatórios da manutenção
 
@@ -170,4 +228,6 @@ Em cada um, informe as datas desejadas em **Período** (de/até) e clique em **G
 
 - **Avisar vencimentos com antecedência de (dias):** a partir de quantos dias antes do vencimento documentos, CNHs e preventivas por data passam a **a vencer** (padrão 30).
 - **Tolerância do consumo (%):** quanto a média pode ficar abaixo da esperada antes de gerar alerta (padrão 15%). Ex.: média esperada 2,5 km/l e 15% → alerta abaixo de 2,13 km/l.
+- **Fator rodoviário** e **Velocidade média (km/h):** usados na estimativa de distância e tempo das [rotas](#rotas) (padrão 1,25 e 60).
+- **Valor da diária** de cada tipo: sugerido ao lançar uma [diária](#diarias).
 - **Autorizar sozinhas as ordens de até (R$):** ordens de serviço com valor até este limite são autorizadas automaticamente ao clicar em **Pedir autorização**. Com 0 (padrão), toda ordem passa por *Manutenção › Autorização de serviços*.

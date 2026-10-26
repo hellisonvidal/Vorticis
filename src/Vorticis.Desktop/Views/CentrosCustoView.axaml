@@ -30,7 +30,7 @@
       <Button Content="Abrir o cadastro da empresa" Command="{Binding AbrirCadastroEmpresaCommand}" IsVisible="{Binding PodeAbrirEmpresa}" />
       <Separator Margin="0,4" />
       <TextBlock Text="Centro de custo" FontWeight="SemiBold" Foreground="#1F3A5F" />
-      <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+      <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
         <TextBlock Classes="rotulo" Text="Código" />
         <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.01.001" IsEnabled="{Binding EmInclusao}" />
         <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
@@ -39,6 +39,8 @@
         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CodigoPai}" Watermark="Obrigatório nos níveis 2+ (pela máscara)" IsEnabled="{Binding EmInclusao}" />
         <CheckBox Grid.Row="3" Grid.Column="1" Content="Sintético (grupo, não recebe lançamentos)" IsChecked="{Binding Sintetico}" IsEnabled="{Binding EmEdicao}" />
         <CheckBox Grid.Row="4" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" IsEnabled="{Binding EmAlteracao}" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Frota" />
+        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding FrotasOpcoes}" SelectedItem="{Binding Frota}" IsEnabled="{Binding EmEdicao}" HorizontalAlignment="Stretch" />
       </Grid>
       <c:MensagensView />
     </StackPanel>

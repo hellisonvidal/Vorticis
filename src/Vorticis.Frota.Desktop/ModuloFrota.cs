@@ -26,6 +26,8 @@ public sealed class ModuloFrota : IModuloDesktop
     [
         ItemMenu.Tela("Veículos", FrotaTelas.Veiculos),
         ItemMenu.Tela("Motoristas", FrotaTelas.Motoristas),
+        ItemMenu.Tela("Frotas", FrotaTelas.Frotas),
+        ItemMenu.Tela("Rotas", FrotaTelas.Rotas),
         ItemMenu.Tela("Documentos e vencimentos", FrotaTelas.Documentos),
     ];
 
@@ -33,7 +35,10 @@ public sealed class ModuloFrota : IModuloDesktop
     [
         ItemMenu.Submenu("_Operação",
             ItemMenu.Tela("Abastecimentos", FrotaTelas.Abastecimentos),
-            ItemMenu.Tela("Viagens", FrotaTelas.Viagens)),
+            ItemMenu.Tela("Viagens", FrotaTelas.Viagens),
+            ItemMenu.Tela("Diárias", FrotaTelas.Diarias),
+            ItemMenu.Separador,
+            ItemMenu.Submenu("_Coletas", ItemMenu.Tela("Ordens de coleta", FrotaTelas.Coletas))),
         ItemMenu.Submenu("_Manutenção",
             ItemMenu.Tela("Planos de manutenção", FrotaTelas.Planos),
             ItemMenu.Tela("Peças e serviços", FrotaTelas.Itens),
@@ -46,6 +51,9 @@ public sealed class ModuloFrota : IModuloDesktop
             ItemMenu.Tela("Consumo de combustível", FrotaTelas.RelConsumo),
             ItemMenu.Tela("Resultado das viagens", FrotaTelas.RelViagens),
             ItemMenu.Tela("Vencimentos e manutenções", FrotaTelas.RelVencimentos),
+            ItemMenu.Tela("Custos por frota", FrotaTelas.RelCustosFrota),
+            ItemMenu.Tela("Diárias por colaborador", FrotaTelas.RelDiariasColaborador),
+            ItemMenu.Tela("Diárias por frota", FrotaTelas.RelDiariasFrota),
             ItemMenu.Separador,
             ItemMenu.Tela("Acompanhamento das ordens de serviço", FrotaTelas.RelAcompanhamento),
             ItemMenu.Tela("Aprovações de serviços", FrotaTelas.RelAprovacoes),
@@ -97,6 +105,21 @@ public sealed class ModuloFrota : IModuloDesktop
         c.Instancia("Viagens", m => new ViagensViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FrotaTelas.Viagens, "Operação › Viagens", m => Pode(m, Permissao.FrotaOperacao, Permissao.FrotaRelatorios), v => v.CarregarAsync());
+        c.Instancia("Frotas", m => new FrotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FrotaTelas.Frotas, "Cadastros › Frotas", m => Pode(m, Todas), v => v.CarregarAsync());
+        c.Instancia("Rotas", m => new RotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FrotaTelas.Rotas, "Cadastros › Rotas", m => Pode(m, Todas), v => v.CarregarAsync());
+        c.Instancia("Diarias", m => new DiariasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FrotaTelas.Diarias, "Operação › Diárias", m => Pode(m, Permissao.FrotaOperacao, Permissao.FrotaRelatorios), v => v.CarregarAsync());
+        c.Instancia("Coletas", m => new ColetasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FrotaTelas.Coletas, "Operação › Coletas › Ordens de coleta", m => Pode(m, Permissao.FrotaOperacao, Permissao.FrotaRelatorios), v => v.CarregarAsync());
+        Relatorio(c, "RelCustosFrotaGrupo", FrotaTelas.RelCustosFrota, Vorticis.Frota.TabelasFrota.TituloCustosFrota);
+        Relatorio(c, "RelDiariasColab", FrotaTelas.RelDiariasColaborador, Vorticis.Frota.TabelasFrota.TituloDiariasColaborador);
+        Relatorio(c, "RelDiariasFrota", FrotaTelas.RelDiariasFrota, Vorticis.Frota.TabelasFrota.TituloDiariasFrota);
         Relatorio(c, "RelCustosFrota", FrotaTelas.RelCustos, Vorticis.Frota.TabelasFrota.TituloCustos);
         Relatorio(c, "RelConsumoFrota", FrotaTelas.RelConsumo, Vorticis.Frota.TabelasFrota.TituloConsumo);
         Relatorio(c, "RelViagensFrota", FrotaTelas.RelViagens, Vorticis.Frota.TabelasFrota.TituloViagens);

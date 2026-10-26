@@ -3,11 +3,12 @@ using System.Text.RegularExpressions;
 namespace Vorticis.Frota;
 
 /// <summary>Configuração da frota; LimiteAutorizacao: ordens de serviço até este total são autorizadas automaticamente (0 = todas passam por autorização).</summary>
-public sealed record ConfiguracaoFrota(int DiasAviso = 30, decimal ToleranciaConsumo = 15m, decimal LimiteAutorizacao = 0m);
+public sealed record ConfiguracaoFrota(int DiasAviso = 30, decimal ToleranciaConsumo = 15m, decimal LimiteAutorizacao = 0m,
+                                       decimal FatorRodoviario = 1.25m, decimal VelocidadeMedia = 60m);
 
 /// <summary>Veículo da frota (inclusive reboques e semirreboques, que não abastecem).</summary>
 public sealed record Veiculo(long Id, int Codigo, string Placa, string? Renavam, string Tipo, string? Marca, string? Modelo, int? AnoFabricacao, int? AnoModelo,
-                             string Combustivel, decimal? CapacidadeKg, decimal KmAtual, decimal? MediaEsperada, bool Ativo = true, string? Observacao = null)
+                             string Combustivel, decimal? CapacidadeKg, decimal KmAtual, decimal? MediaEsperada, bool Ativo = true, string? Observacao = null, long? FrotaId = null)
 {
     public string Descricao => $"{RegrasFrota.FormatarPlaca(Placa)} – {string.Join(" ", new[] { Marca, Modelo }.Where(x => !string.IsNullOrWhiteSpace(x)))}".TrimEnd(' ', '–');
     public bool Abastece => Combustivel != "NENHUM";
@@ -74,6 +75,8 @@ public static partial class RegrasFrota
         "EXAME_TOXICO" => "Exame toxicológico", "MOPP" => "Curso MOPP", "SEGURO" => "Seguro", "IPVA" => "IPVA",
         "EM_ANDAMENTO" => "Em andamento", "CONCLUIDA" => "Concluída", "CANCELADA" => "Cancelada", "ABERTA" => "Aberta",
         "PREVENTIVA" => "Preventiva", "CORRETIVA" => "Corretiva",
+        "PROPRIA" => "Própria", "ALIMENTACAO" => "Alimentação", "REFEICAO" => "Refeição", "LANCADA" => "Lançada", "EM_COLETA" => "Em coleta",
+        "RODOVIARIA" => "Rodoviária (online)", "ESTIMADA" => "Estimada (linha reta)",
         _ => codigo.Length > 1 ? codigo[..1] + codigo[1..].ToLowerInvariant() : codigo,
     };
 

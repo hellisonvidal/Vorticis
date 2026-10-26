@@ -51,15 +51,18 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
         var cadastros = Folhas(vm.Menus[0].Filhos!).Select(i => i.Titulo).ToList();
         Assert.Contains("Veículos", cadastros);
         Assert.Contains("Motoristas", cadastros);
+        Assert.Contains("Frotas", cadastros);
+        Assert.Contains("Rotas", cadastros);
         Assert.DoesNotContain("Planos de manutenção", cadastros);
         Assert.Contains("Documentos e vencimentos", cadastros);
         var operacao = Assert.Single(vm.Menus, m => m.Titulo == "_Operação");
-        Assert.Equal(["Abastecimentos", "Viagens"], operacao.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Abastecimentos", "Viagens", "Diárias", "_Coletas"], operacao.Filhos!.Where(i => !i.EhSeparador).Select(i => i.Titulo));
+        Assert.Equal(["Ordens de coleta"], operacao.Filhos!.Single(i => i.Titulo == "_Coletas").Filhos!.Select(i => i.Titulo));
         var manutencao = Assert.Single(vm.Menus, m => m.Titulo == "_Manutenção");
         Assert.Equal(["Planos de manutenção", "Peças e serviços", "Ordens de serviço", "Autorização de serviços", "Notas de compra"], manutencao.Filhos!.Select(i => i.Titulo));
         var rel = Assert.Single(vm.Menus, m => m.Titulo == "_Relatórios");
         Assert.Equal(["Painel da frota", TabelasFrota.TituloCustos, TabelasFrota.TituloConsumo, TabelasFrota.TituloViagens, TabelasFrota.TituloVencimentos,
-                      "Acompanhamento das ordens de serviço", "Aprovações de serviços", "Notas fiscais de compra"],
+                      TabelasFrota.TituloCustosFrota, TabelasFrota.TituloDiariasColaborador, TabelasFrota.TituloDiariasFrota, "Acompanhamento das ordens de serviço", "Aprovações de serviços", "Notas fiscais de compra"],
                      rel.Filhos!.Where(i => !i.EhSeparador).Select(i => i.Titulo));
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
@@ -82,6 +85,11 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
                 (new F.ViewModels.AbastecimentosViewModel(m), new F.Views.AbastecimentosView()),
                 (new F.ViewModels.OrdensViewModel(m), new F.Views.OrdensView()),
                 (new F.ViewModels.ViagensViewModel(m), new F.Views.ViagensView()),
+                (new F.ViewModels.FrotasViewModel(m), new F.Views.FrotasView()),
+                (new F.ViewModels.RotasViewModel(m), new F.Views.RotasView()),
+                (new F.ViewModels.DiariasViewModel(m), new F.Views.DiariasView()),
+                (new F.ViewModels.ColetasViewModel(m), new F.Views.ColetasView()),
+                (new F.ViewModels.RelatorioFrotaViewModel(m, TabelasFrota.TituloDiariasColaborador), new F.Views.RelatorioFrotaView()),
                 (new F.ViewModels.ItensManutencaoViewModel(m), new F.Views.ItensManutencaoView()),
                 (new F.ViewModels.AutorizacaoViewModel(m), new F.Views.AutorizacaoView()),
                 (new F.ViewModels.NotasCompraViewModel(m), new F.Views.NotasCompraView()),
@@ -106,6 +114,36 @@ public class FrotaTelasTests(SessaoHeadless headless, BancoDeTeste db) : IClassF
             return Task.FromResult(true);
         }, TestContext.Current.CancellationToken));
         Assert.True(ok);
+    }
+
+    [Fact]
+    public async Task Rota_pela_tela_estima_a_distancia_e_a_edicao_manual_trava_o_recalculo()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ctx = new Contexto(db.App, await db.AdminAsync(), await db.CriarEmpresaAsync("11222333000181"));
+        var rotas = new F.ViewModels.RotasViewModel(ctx);
+        await rotas.CarregarAsync();
+        Assert.Equal("1", rotas.Codigo);
+        rotas.Descricao = "SP - RJ";
+        foreach (var (uf, ibge) in new[] { ("SP", "3550308"), ("RJ", "3304557") })
+        {
+            rotas.Uf = uf;
+            rotas.Municipio = rotas.MunicipiosUf.Single(m => m.Ibge == ibge);
+            rotas.AdicionarParadaCommand.Execute(null);
+        }
+        Assert.Equal(["1. Origem: São Paulo/SP", "2. Destino: Rio de Janeiro/RJ"], rotas.Paradas.Select(p => p.Texto));
+        var estimada = Vorticis.Domain.Comum.Formato.LerValor(rotas.DistanciaKm)!.Value;
+        Assert.InRange(estimada, 440m, 460m);                 // ~360 km em linha reta x 1,25
+        Assert.Equal("ESTIMADA", rotas.OrigemDistancia);
+        rotas.DistanciaKm = "505";                            // edição manual
+        Assert.Equal("MANUAL", rotas.OrigemDistancia);
+        rotas.SubirParadaCommand.Execute(null);
+        Assert.Equal("505", rotas.DistanciaKm);               // mudar as paradas não recalcula uma distância manual
+        await rotas.GravarCommand.ExecuteAsync(null);
+        Assert.Equal("Rota gravada.", rotas.Mensagem);
+        Assert.Equal("505,0 km", rotas.Lista.Single().Distancia);
+        rotas.RecalcularEstimativaCommand.Execute(null);
+        Assert.Equal(estimada, Vorticis.Domain.Comum.Formato.LerValor(rotas.DistanciaKm));
     }
 
     [Fact]

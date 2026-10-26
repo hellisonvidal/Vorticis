@@ -33,6 +33,9 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private string _codigoPai = "";
     [ObservableProperty] private bool _ativo = true;
+    /// <summary>Campo opcional "Frota": o centro de custo representa uma frota (Id 0 = nenhuma).</summary>
+    public ObservableCollection<FrotaDoCentro> FrotasOpcoes { get; } = [new(0, "(nenhuma)")];
+    [ObservableProperty] private FrotaDoCentro? _frota;
     [ObservableProperty] private bool _sintetico;
     [ObservableProperty] private string _mascara = "";          // máscara em uso (vazia = cadastro livre); definida na aba Contabilidade da empresa
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(AvisoNaoUsa))] private bool _empresaUsaCentros = true;
@@ -78,7 +81,11 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
         var centros = await app.PlanoContas.ListarCentrosAsync(empresa, sessao.Id);
         var mascara = await app.PlanoContas.ObterMascaraCentrosAsync(empresa, sessao.Id) ?? "";
         var usa = (await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id)).UsaCentroCusto;
+        var frotas = await app.PlanoContas.ListarFrotasAsync(empresa, sessao.Id);
         if (!EhAtual(geracao)) return;
+        FrotasOpcoes.Clear();
+        FrotasOpcoes.Add(new FrotaDoCentro(0, "(nenhuma)"));
+        foreach (var f in frotas) FrotasOpcoes.Add(f);
         Mascara = mascara;
         EmpresaUsaCentros = usa;
         var id = Selecionado?.Centro.Id;
@@ -98,10 +105,15 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
     {
         if (Selecionado is { } s) (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = (s.Codigo, s.Descricao, s.Superior, s.Centro.Ativo, !s.Centro.Analitico);
         else (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", "", true, false);
+        Frota = FrotasOpcoes.FirstOrDefault(f => f.Id == (Selecionado?.Centro.FrotaId ?? 0)) ?? FrotasOpcoes.FirstOrDefault();
     }
 
     /// <summary>Novo centro: sugere como superior o centro selecionado.</summary>
-    protected override void PrepararInclusao() => (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", Selecionado?.Codigo ?? "", true, false);
+    protected override void PrepararInclusao()
+    {
+        (Codigo, Descricao, CodigoPai, Ativo, Sintetico) = ("", "", Selecionado?.Codigo ?? "", true, false);
+        Frota = FrotasOpcoes.FirstOrDefault();
+    }
 
     protected override async Task<bool> GravarAsync(bool inclusao)
     {
@@ -123,6 +135,12 @@ public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewMod
                 r = await app.PlanoContas.AlterarCentroAsync(empresa, Selecionado.Centro.Id, Descricao, Ativo, usuario, analitico: !Sintetico);
             }
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+            var escolhida = Frota?.Id is > 0 and var fid ? fid : (long?)null;
+            if (id is { } centroId && escolhida != (inclusao ? null : Selecionado?.Centro.FrotaId))
+            {
+                var rf = await app.PlanoContas.DefinirFrotaDoCentroAsync(empresa, centroId, escolhida, usuario);
+                if (!rf.Sucesso) { MostrarResultado(rf, ""); return; }
+            }
             ok = true;
             Modo = ModoCadastro.Consulta;
             var codigo = Codigo.Trim();

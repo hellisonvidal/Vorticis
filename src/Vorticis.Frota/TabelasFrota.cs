@@ -12,6 +12,9 @@ public static class TabelasFrota
     public const string TituloAcompanhamento = "Acompanhamento das ordens de serviço";
     public const string TituloAprovacoes = "Aprovações de serviços";
     public const string TituloNotas = "Notas fiscais de compra";
+    public const string TituloCustosFrota = "Custos por frota";
+    public const string TituloDiariasColaborador = "Diárias por colaborador";
+    public const string TituloDiariasFrota = "Diárias por frota";
 
     private static LinhaRelatorio L(bool destaque, params object?[] v) => new(v, destaque);
     private static decimal? PorKm(decimal valor, decimal km) => km > 0 ? Math.Round(valor / km, 3) : null;
@@ -146,5 +149,57 @@ public static class TabelasFrota
             new("Emissão", TipoColuna.Data), new("Número/série", LarguraCm: 2.4), new("Fornecedor"), new("CNPJ/CPF", LarguraCm: 3.6), new("OS nº", TipoColuna.Inteiro, 1.4),
             new("Placa", LarguraCm: 2), new("Peças", TipoColuna.Valor), new("Serviços", TipoColuna.Valor), new("Total", TipoColuna.Valor),
         ], linhas);
+    }
+
+    /// <summary>Custos por frota (veículos vinculados à frota; diárias pela frota da diária, que vem do centro de custo da frota); sem vínculo vão em "(sem frota)".</summary>
+    public static TabelaRelatorio CustosFrota(IReadOnlyList<FrotaCadastro> frotas, IReadOnlyList<Veiculo> veiculos, IReadOnlyList<Abastecimento> abastecimentos,
+                                              IReadOnlyList<OrdemServico> ordens, IReadOnlyList<Viagem> viagens, IReadOnlyList<Diaria> diarias)
+    {
+        var frotaDe = veiculos.ToDictionary(v => v.Id, v => v.FrotaId);
+        long? Fr(long veiculoId) => frotaDe.GetValueOrDefault(veiculoId);
+        var grupos = frotas.Select(f => (Id: (long?)f.Id, Nome: $"{f.Codigo} – {f.Descricao}")).Append((null, "(sem frota)"));
+        var linhas = new List<LinhaRelatorio>();
+        decimal[] t = new decimal[5];
+        foreach (var (id, nome) in grupos)
+        {
+            var nVeic = veiculos.Count(v => v.FrotaId == id);
+            var comb = abastecimentos.Where(a => Fr(a.VeiculoId) == id).Sum(a => a.ValorTotal);
+            var man = ordens.Where(o => Fr(o.VeiculoId) == id).Sum(o => o.Total);
+            var desp = viagens.Where(x => x.Situacao != "CANCELADA" && Fr(x.VeiculoId) == id).Sum(x => x.Despesas);
+            var dia = diarias.Where(d => d.FrotaId == id || (d.FrotaId is null && id is null)).Sum(d => d.Total);
+            if (id is null && comb + man + desp + dia == 0) continue;
+            var total = comb + man + desp + dia;
+            linhas.Add(L(false, nome, nVeic, comb, man, desp, dia, total));
+            t[0] += comb; t[1] += man; t[2] += desp; t[3] += dia; t[4] += total;
+        }
+        linhas.Add(L(true, "TOTAL", veiculos.Count, t[0], t[1], t[2], t[3], t[4]));
+        return new TabelaRelatorio(TituloCustosFrota,
+        [
+            new("Frota"), new("Veículos", TipoColuna.Inteiro), new("Combustível", TipoColuna.Valor), new("Manutenção", TipoColuna.Valor),
+            new("Despesas de viagem", TipoColuna.Valor), new("Diárias", TipoColuna.Valor), new("Custo total", TipoColuna.Valor),
+        ], linhas);
+    }
+
+    /// <summary>Diárias do período agrupadas por colaborador ou por frota, com subtotal de cada grupo.</summary>
+    public static TabelaRelatorio Diarias(IReadOnlyList<Diaria> diarias, bool porFrota)
+    {
+        string Chave(Diaria d) => porFrota ? d.FrotaNome ?? "(sem frota)" : d.Colaborador ?? "";
+        var linhas = new List<LinhaRelatorio>();
+        decimal tTotal = 0, tAdi = 0, tSaldo = 0;
+        foreach (var g in diarias.OrderBy(Chave).ThenBy(d => d.Data).ThenBy(d => d.Numero).GroupBy(Chave))
+        {
+            foreach (var d in g)
+                linhas.Add(L(false, g.Key, d.Data, d.Numero, $"{d.Quantidade:0.##} × {RegrasFrota.Rotulo(d.Tipo)}", porFrota ? d.Colaborador : (d.FrotaNome ?? ""),
+                             RegrasFrota.FormatarPlaca(d.Placa ?? ""), d.Total, d.Adiantamento, d.Saldo, RegrasFrota.Rotulo(d.Situacao)));
+            var saldo = g.Sum(d => d.Saldo ?? 0);
+            linhas.Add(L(true, $"Subtotal – {g.Key}", null, null, $"{g.Count()} lançamento(s)", null, null, g.Sum(d => d.Total), g.Sum(d => d.Adiantamento), saldo, null));
+            tTotal += g.Sum(d => d.Total); tAdi += g.Sum(d => d.Adiantamento); tSaldo += saldo;
+        }
+        linhas.Add(L(true, "TOTAL", null, null, $"{diarias.Count} lançamento(s)", null, null, tTotal, tAdi, tSaldo, null));
+        return new TabelaRelatorio(porFrota ? TituloDiariasFrota : TituloDiariasColaborador,
+        [
+            new(porFrota ? "Frota" : "Colaborador"), new("Data", TipoColuna.Data), new("Nº", TipoColuna.Inteiro), new("Diária"), new(porFrota ? "Colaborador" : "Frota"),
+            new("Placa", LarguraCm: 2), new("Total", TipoColuna.Valor), new("Adiantamento", TipoColuna.Valor), new("Saldo do acerto", TipoColuna.Valor), new("Situação", LarguraCm: 2.4),
+        ], linhas, "Saldo do acerto: positivo = o colaborador devolve; negativo = a empresa paga a diferença.");
     }
 }

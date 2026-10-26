@@ -217,14 +217,14 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
         await using var cmd = ds.CreateCommand("""
             SELECT c.id, c.codigo, c.descricao, c.centro_pai_id, c.ativo,
                    EXISTS (SELECT 1 FROM contabil.partida p WHERE p.centro_custo_id = c.id),
-                   c.tipo = 'A', c.nivel, EXISTS (SELECT 1 FROM contabil.centro_custo f WHERE f.centro_pai_id = c.id)
+                   c.tipo = 'A', c.nivel, EXISTS (SELECT 1 FROM contabil.centro_custo f WHERE f.centro_pai_id = c.id), c.frota_id
               FROM contabil.centro_custo c WHERE c.empresa_id = @e ORDER BY c.codigo
             """).Com("e", empresaId);
         var res = new List<CentroCustoDetalhe>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))
             res.Add(new CentroCustoDetalhe(r.GetInt64(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? null : r.GetInt64(3),
-                                           r.GetBoolean(4), r.GetBoolean(5), r.GetBoolean(6), r.GetInt16(7), r.GetBoolean(8)));
+                                           r.GetBoolean(4), r.GetBoolean(5), r.GetBoolean(6), r.GetInt16(7), r.GetBoolean(8), r.IsDBNull(9) ? null : r.GetInt64(9)));
         return res;
     }
 
@@ -253,6 +253,22 @@ public sealed class RepositorioPlanoContas(NpgsqlDataSource ds) : IRepositorioPl
         {
             await using var cmd = ds.CreateCommand("UPDATE contabil.centro_custo SET descricao = @d, ativo = @a, tipo = @t WHERE id = @id")
                                     .Com("d", descricao).Com("a", ativo).Com("t", analitico ? "A" : "S").Com("id", centroId);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
+
+    public async Task<IReadOnlyList<FrotaDoCentro>> ListarFrotasAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id, codigo || ' – ' || descricao FROM frota.frota WHERE empresa_id = @e AND ativa ORDER BY codigo").Com("e", empresaId);
+        var res = new List<FrotaDoCentro>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) res.Add(new FrotaDoCentro(r.GetInt64(0), r.GetString(1)));
+        return res;
+    }
+
+    public Task DefinirFrotaCentroAsync(long centroId, long? frotaId, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            await using var cmd = ds.CreateCommand("UPDATE contabil.centro_custo SET frota_id = @f WHERE id = @id").Com("f", NpgsqlTypes.NpgsqlDbType.Bigint, frotaId).Com("id", centroId);
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 

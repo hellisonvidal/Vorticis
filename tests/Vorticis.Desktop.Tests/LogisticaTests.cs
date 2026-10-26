@@ -36,10 +36,12 @@ public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoD
         var gerencial = vm.Menus.Single(m => m.Titulo == "_Gerencial");
         Assert.Equal(["_Contábil", "_Folha"], gerencial.Filhos!.Select(m => m.Titulo));
         Assert.DoesNotContain(Folhas(gerencial.Filhos!), i => i.Chave == ViewModels.Telas.Balancete || i.Chave == Folha.Desktop.ViewModels.FolhaTelas.Holerites);
-        // Operação ganha Coletas (em breve)
+        // Operação tem Diárias e o submenu Coletas com as ordens de coleta
         var coletas = vm.Menus.Single(m => m.Titulo == "_Operação").Filhos!.Single(m => m.Titulo == "_Coletas");
-        Assert.Equal(["Ordens de coleta (em breve)"], coletas.Filhos!.Select(i => i.Titulo));
-        Assert.False(coletas.Filhos![0].Habilitado);
+        Assert.Equal(["Ordens de coleta"], coletas.Filhos!.Select(i => i.Titulo));
+        Assert.True(coletas.Filhos![0].Habilitado);
+        Assert.Equal(Frota.Desktop.ViewModels.FrotaTelas.Coletas, coletas.Filhos![0].Chave);
+        Assert.Contains(vm.Menus.Single(m => m.Titulo == "_Operação").Filhos!, i => i.Titulo == "Diárias");
         // Relatórios por submenus; todos os relatórios saíram dos menus de origem
         var relatorios = vm.Menus.Single(m => m.Titulo == "_Relatórios");
         Assert.Equal(["_Frota e operação", "_Manutenção", "_Financeiro e gerencial", "_Contábil", "_Folha"], relatorios.Filhos!.Select(m => m.Titulo));

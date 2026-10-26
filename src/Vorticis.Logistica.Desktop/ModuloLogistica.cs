@@ -87,7 +87,7 @@ public sealed class ModuloLogistica() : ModuloCombinado(Frota, Contabil, Fiscal,
             var operacao = DaParte(Frota, Frota.Menus.Where(m => Sem(m) == "Operação")).Single();
             return
             [
-                operacao with { Filhos = [.. operacao.Filhos!, ItemMenu.Separador, ItemMenu.Submenu("_Coletas", ItemMenu.EmBreve("Ordens de coleta"))] },
+                operacao,
                 .. DaParte(Frota, Frota.Menus.Where(m => Sem(m) == "Manutenção")),
                 ItemMenu.Submenu("_Emissão",
                     ItemMenu.EmBreve("CT-e – Conhecimento de transporte"),

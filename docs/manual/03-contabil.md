@@ -34,6 +34,7 @@ Menus do módulo Vorticis Contábil. Permissões: cada função depende do seu p
 
 1. **Incluir**: código (obrigatório nos níveis 2 ou mais, conforme a máscara), descrição e superior.
 2. Marque **Sintético** para grupos que não recebem lançamentos. **Ativo** controla o uso.
+3. **Frota** (opcional): se a empresa usa o módulo Frota (por exemplo, no Vorticis Suite Logística), escolha a frota que este centro de custo representa. Os relatórios de custo por frota usam esse vínculo (veja [Frotas](12-frota.md#frotas)). Deixe **(nenhuma)** nos demais centros.
 
 ## Históricos padrão
 
