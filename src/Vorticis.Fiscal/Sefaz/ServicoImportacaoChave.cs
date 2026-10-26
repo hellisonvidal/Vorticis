@@ -7,9 +7,15 @@ using Vorticis.Fiscal.Sped;
 
 namespace Vorticis.Fiscal.Sefaz;
 
-public enum SituacaoChave { Importada, JaImportada, SomenteResumo, NaoLocalizada }
+public enum SituacaoChave { Importada, JaImportada, SomenteResumo, NaoLocalizada, Baixada, JaCadastrada }
 
 public sealed record ResultadoChave(SituacaoChave Situacao, string Mensagem, ResultadoArquivo? Arquivo = null);
+
+/// <summary>
+/// Consulta de uma chave para conferência na digitação (nada é gravado). <see cref="SituacaoChave.JaCadastrada"/>: a nota já está na empresa
+/// (<see cref="Existente"/>; <see cref="Nota"/> traz o XML guardado, se houver); <see cref="SituacaoChave.Baixada"/>: XML completo vindo da SEFAZ.
+/// </summary>
+public sealed record ConsultaChave(SituacaoChave Situacao, string Mensagem, NotaPreparada? Nota = null, DocumentoFiscal? Existente = null);
 
 /// <summary>
 /// Importação individual de NF-e pela chave de acesso: consulta o Ambiente Nacional (NFeDistribuicaoDFe, como no Portal da NF-e) com o
@@ -35,6 +41,50 @@ public sealed class ServicoImportacaoChave(NpgsqlDataSource ds, ServicoDocumento
         cmd.Parameters.AddWithValue("e", empresaId);
         await using var r = await cmd.ExecuteReaderAsync(ct);
         return await r.ReadAsync(ct) ? (r.GetString(0).Trim(), r.GetString(1).Trim()) : null;
+    }
+
+    /// <summary>Procura a chave entre as notas já lançadas/importadas da empresa (e o XML guardado delas). Nunca acessa a SEFAZ.</summary>
+    public async Task<Resultado<ConsultaChave?>> ProcurarLocalAsync(long empresaId, string chave, long usuarioId, CancellationToken ct = default)
+    {
+        if (Validar(chave) is { } erro) return Resultado<ConsultaChave?>.Falha(erro);
+        chave = Limpar(chave);
+        var achada = await documentos.LocalizarPorChaveAsync(empresaId, chave, usuarioId, ct);
+        if (!achada.Sucesso) return Resultado<ConsultaChave?>.Falha(achada.Erros);
+        if (achada.Valor is not { } doc) return Resultado<ConsultaChave?>.Ok(null);
+        NotaPreparada? nota = null;
+        var xml = await documentos.ObterXmlAsync(empresaId, doc.Id, usuarioId, ct);
+        if (xml.Sucesso && xml.Valor.Length > 0)
+        {
+            var p = await documentos.PrepararAsync(empresaId, xml.Valor, usuarioId, ct);
+            if (p.Sucesso) nota = p.Valor;
+        }
+        return Resultado<ConsultaChave?>.Ok(new ConsultaChave(SituacaoChave.JaCadastrada,
+            $"A NF-e {doc.Numero} já está lançada nesta empresa ({doc.Operacao.Rotulo().ToLowerInvariant()}, {(doc.Digitado ? "digitada" : "XML importado")}).", nota, doc));
+    }
+
+    /// <summary>Baixa o XML completo da NF-e na SEFAZ (Distribuição DF-e, Ambiente Nacional) e o lê para conferência, sem gravar.</summary>
+    public async Task<Resultado<ConsultaChave>> BaixarAsync(long empresaId, string chave, IClienteNfe cliente, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<ConsultaChave>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
+        if (Validar(chave) is { } erro) return Resultado<ConsultaChave>.Falha(erro);
+        chave = Limpar(chave);
+        if (await EmpresaAsync(empresaId, ct) is not { } emp) return Resultado<ConsultaChave>.Falha("Empresa não encontrada.");
+        if (CodigosUf.De(emp.Uf) is not { } uf) return Resultado<ConsultaChave>.Falha($"UF da empresa inválida ({emp.Uf}). Corrija em Cadastros › Empresas.");
+        RespostaDistribuicao resp;
+        try { resp = await cliente.ConsultarChaveAsync(emp.Cnpj, uf, chave, ct); }
+        catch (ErroComunicacaoSefaz ex) { return Resultado<ConsultaChave>.Falha(ex.Message); }
+        if (!resp.Localizado) return Resultado<ConsultaChave>.Ok(new ConsultaChave(SituacaoChave.NaoLocalizada, $"SEFAZ: {resp.CStat} - {resp.Motivo}"));
+        if (resp.Documentos.FirstOrDefault(d => d.NotaCompleta) is { } completa)
+        {
+            var p = await documentos.PrepararAsync(empresaId, System.Text.Encoding.UTF8.GetBytes(completa.Xml), usuarioId, ct);
+            return p.Sucesso
+                ? Resultado<ConsultaChave>.Ok(new ConsultaChave(SituacaoChave.Baixada, "XML completo obtido na SEFAZ. Confira os dados e grave a nota.", p.Valor))
+                : Resultado<ConsultaChave>.Falha(p.Erros);
+        }
+        return Resultado<ConsultaChave>.Ok(resp.Documentos.Any(d => d.Resumo)
+            ? new ConsultaChave(SituacaoChave.SomenteResumo,
+                "A SEFAZ devolveu só o resumo da nota (resNFe): para baixar o XML completo é preciso a manifestação do destinatário. Clique em \"Manifestar ciência\" e tente de novo em alguns minutos.")
+            : new ConsultaChave(SituacaoChave.NaoLocalizada, "A SEFAZ não devolveu o XML da nota para esta empresa."));
     }
 
     public async Task<Resultado<ResultadoChave>> ImportarAsync(long empresaId, string chave, IClienteNfe cliente, long usuarioId, CancellationToken ct = default)

@@ -20,6 +20,17 @@ internal static class SelecaoXml
         return arquivos.Select(a => a.TryGetLocalPath()).OfType<string>().ToList();
     }
 
+    /// <summary>Um único .xml de nota (importação para conferência dentro da digitação); null se o usuário cancelar.</summary>
+    public static async Task<string?> UmArquivoAsync(TopLevel top)
+    {
+        var arquivos = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "XML da nota fiscal", AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("XML da nota (.xml)") { Patterns = ["*.xml", "*.XML"] }, FilePickerFileTypes.All],
+        });
+        return arquivos.Count > 0 ? arquivos[0].TryGetLocalPath() : null;
+    }
+
     public static async Task<string?> PastaAsync(TopLevel top)
     {
         var pastas = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Pasta com os XML (as subpastas também são lidas)", AllowMultiple = false });

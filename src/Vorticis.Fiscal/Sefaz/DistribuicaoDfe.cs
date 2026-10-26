@@ -44,13 +44,13 @@ public interface IClienteNfe
 /// leiaute 1.01, NT 2014.002) e NFeRecepcaoEvento4 (manifestação do destinatário, NT 2020.001). TLS mútuo com o certificado ICP-Brasil
 /// do destinatário; o CNPJ do certificado (ou de um procurador com procuração eletrônica) precisa ser o da empresa.
 /// </summary>
-public sealed class ClienteNfe(HttpClient http, X509Certificate2? certificado, bool producao = true) : IClienteNfe
+public sealed class ClienteNfe(HttpClient http, X509Certificate2? certificado, bool producao = true, Uri? urlDistribuicaoAlternativa = null) : IClienteNfe
 {
     public const string NsNfe = "http://www.portalfiscal.inf.br/nfe";
     private const string NsDist = "http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe";
     private const string NsEvento = "http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4";
 
-    private Uri UrlDistribuicao => new(producao
+    private Uri UrlDistribuicao => urlDistribuicaoAlternativa ?? new(producao
         ? "https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx"
         : "https://hom1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx");
     private Uri UrlEvento => new(producao

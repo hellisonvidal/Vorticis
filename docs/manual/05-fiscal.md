@@ -13,38 +13,48 @@ Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de client
 
 ## Documentos de entrada e de saída (digitação)
 
-**Para que serve:** lançar à mão notas que não têm XML.
+**Para que serve:** consultar as notas já lançadas e lançar à mão as que não têm XML (ou conferir um XML antes de gravar).
 **Onde fica:** *Lançamentos › Documentos fiscais › Entrada* e *Saída*.
 
-1. Clique em **Nova nota**.
-2. **Emissão**: data, modelo, série, número, chave de acesso (opcional) e natureza da operação. Digite o **CNPJ/CPF** do cliente/fornecedor (busca automática, ou **Buscar participante**). Se não existir, informe nome, UF e município para cadastrá-lo na hora.
-3. **Itens**: digite o produto (código, descrição ou GTIN; **Buscar produto**), CFOP, quantidade e valor unitário. Em *Detalhes e tributos do item* confira NCM, CST, bases e alíquotas de ICMS, ICMS-ST, IPI, PIS, COFINS e ISS, desconto, frete, seguro e outras despesas. **Calcular tributos** preenche pelas alíquotas do produto.
-4. **Adicionar item** (ou **Atualizar item selecionado** / **Remover item selecionado**).
-5. Em **Duplicatas (forma de pagamento e parcelas)**, escolha a **Forma de pagamento** ([cadastro](02-cadastros-comuns.md#formas-de-pagamento)): as parcelas são geradas pelos prazos dela, contados da emissão, sobre o total da nota. Se mudar os itens depois, clique em **Gerar pela forma** para refazer. A forma escolhida fica gravada na nota. Para parcelar à mão, informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas**. As parcelas saem iguais (a última recebe a diferença de centavos) e a soma tem de bater com o valor da nota. **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
-6. Confira o **total informado**: precisa bater com a soma dos itens. **Salvar**.
-7. Nota de entrada com itens de **ativo imobilizado** (CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406): ao gravar a nota nova, o sistema pergunta se quer cadastrar os bens. Respondendo **Cadastrar os bens**, abre a tela [Bens do imobilizado da nota](#bens-do-imobilizado-da-nota). Depois, o botão **Cadastrar bens do imobilizado** (ao lado de *Gravar nota*) abre a mesma tela.
+### A tela de consulta
+Ao abrir, a tela mostra a **grade das notas lançadas** (digitadas e importadas), em tela cheia:
 
-**Campos bloqueados?** Uma faixa vermelha no topo explica o motivo:
+- **Filtros:** período (de/até), cliente ou fornecedor (nome ou CNPJ/CPF), número, **Origem** (todas, digitadas ou importadas por XML) e **Situação** (todas, autorizadas, canceladas, contabilizadas ou não contabilizadas). Clique em **Filtrar**; **Limpar filtros** volta ao padrão.
+- **Rodapé:** quantidade de notas e totais de valor, ICMS, IPI, PIS, COFINS e ISS do que está na grade (notas canceladas não entram nos valores).
+- **Novo lançamento:** abre a digitação de uma nota em branco numa janela à parte (pop-up).
+- **Editar** (ou dois cliques na nota, ou Enter): abre a nota para alterar.
+- **Consultar:** abre a nota só para leitura.
+- **Excluir:** apaga a nota e as duplicatas dela (notas contabilizadas devem ter a contabilização desfeita antes; nota com duplicata já baixada só pode ser excluída depois de estornar as baixas).
+- **Importar XML:** importa arquivos, pastas ou .zip em lote (veja [Importação de XML](#importacao-de-xml-nf-e-nfc-e-nfs-e)); as notas aparecem na grade.
+
+### A janela da nota
+A nota tem abas na mesma janela: **Nota**, **Itens**, **Tributos**, **Parcelas** e **Escrituração**. **Enter** passa para o próximo campo; **Esc** (ou **Fechar**) fecha a janela. Ao **Gravar nota**, a janela fecha e a grade é atualizada.
+
+1. Aba **Nota**: modelo, série, número, **Emissão**, data de entrada/saída, chave de acesso (opcional) e natureza da operação. Digite o **CNPJ/CPF** do cliente/fornecedor (busca automática, ou **Buscar participante**). Se não existir, informe nome, UF e município para cadastrá-lo na hora. A data de entrada/saída acompanha a emissão.
+2. Aba **Itens**: produto (código, descrição ou GTIN; **Buscar produto**), CFOP, quantidade, valor unitário, NCM, unidade, desconto, frete, seguro e outras despesas. **Adicionar item**, **Atualizar item selecionado** ou **Remover item selecionado**.
+3. Aba **Tributos**: escolha um item na lista e confira **CFOP, CST/CSOSN, base, alíquota e valor de ICMS**, ICMS-ST, IPI, PIS, COFINS e, para serviço, ISS. Ao alterar a **base** ou a **alíquota**, o valor do tributo é recalculado (base × alíquota); você pode corrigir o valor à mão depois. **Calcular tributos** preenche pelas alíquotas do produto o que estiver em branco. Clique em **Aplicar ao item** para guardar; os **totais da nota** (rodapé da janela) são recalculados. Nas notas importadas de XML os tributos são só de leitura.
+4. Aba **Parcelas**: escolha a **Forma de pagamento** ([cadastro](02-cadastros-comuns.md#formas-de-pagamento)) e as duplicatas são geradas pelos prazos dela, contados da emissão, sobre o total da nota. Se mudar os itens depois, clique em **Gerar pela forma** para refazer. Para parcelar à mão, informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas** (a última recebe a diferença de centavos; a soma tem de bater com o valor da nota). **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
+5. Aba **Escrituração**: centro de custo, contas de débito e crédito e observações (veja abaixo, nas notas importadas).
+6. Confira o **total informado** (aba Nota): precisa bater com a soma dos itens; em branco, vale a soma. Clique em **Gravar nota**.
+7. Nota de entrada com itens de **ativo imobilizado** (CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406): ao gravar a nota nova, o sistema pergunta se quer cadastrar os bens. Respondendo **Cadastrar os bens**, abre a tela [Bens do imobilizado da nota](#bens-do-imobilizado-da-nota). Depois, o botão **Cadastrar bens do imobilizado** abre a mesma tela.
+
+**Campos bloqueados?** Uma faixa no topo da janela explica o motivo:
 - *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
-- *Nota contabilizada*: desfaça a contabilização para alterar, ou clique em **Nova nota** para lançar outra.
-- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, centro de custo, produto, contas, observações).
+- *Nota contabilizada*: desfaça a contabilização para alterar, ou use **Novo lançamento** para lançar outra.
+- *Nota aberta para consulta*: você abriu pelo botão **Consultar**; feche e use **Editar**.
+- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, centro de custo, produto vinculado, contas e observações). Escolha o item na aba **Itens**, ajuste na aba **Escrituração**, clique em **Aplicar ao item** e depois em **Gravar escrituração**.
 
-Para lançar uma nota nova a qualquer momento, clique em **Nova nota**: os campos são limpos e liberados.
+### Importar uma nota para conferência (XML ou chave de acesso)
+No alto da janela da nota há dois atalhos que **preenchem os campos para você conferir**. Nada é gravado até clicar em **Gravar nota**.
 
-### Importar uma NF-e pela chave de acesso
+**Importar por XML:** clique em **Escolher arquivo...** e escolha o XML de uma nota. O cabeçalho, o fornecedor/cliente, os itens, os tributos e as parcelas do XML aparecem nas abas. Se o fornecedor/cliente não estiver cadastrado, os dados dele vêm do XML e são conferidos antes de cadastrar. Em notas de entrada, os CFOP do emitente (5.xxx, 6.xxx, 7.xxx) são trocados pelos de entrada (1.xxx, 2.xxx, 3.xxx): confira. A nota precisa ser da empresa selecionada, e da operação da tela (uma nota de saída do seu cliente abre em *Saída*).
 
-**Para que serve:** trazer uma NF-e recebida (em que a empresa é a destinatária) sem ter o arquivo XML, só com a chave de 44 dígitos (a mesma consulta do Portal da NF-e).
+**Importar por chave de acesso:** cole a chave de 44 dígitos (pode ter espaços ou pontos) e clique em **Importar por chave**. O sistema confere o dígito verificador e então:
+1. **procura a nota entre as já lançadas e os XMLs importados da empresa**; se achar, mostra a nota que já está no sistema (não duplica);
+2. se não achar, e a empresa tiver **certificado digital** (e-CNPJ A1 ou A3, cadastrado em *Configurações › Certificados digitais* e marcado como padrão do responsável), **baixa o XML na SEFAZ** (Ambiente Nacional, a mesma consulta do Portal da NF-e). Se o certificado for A1, o sistema pede a senha;
+3. sem certificado, o sistema avisa que a nota não está entre as importadas e que é preciso o certificado digital da empresa.
 
-**Antes:** cadastre o certificado digital da empresa (e-CNPJ A1 ou A3) em *Configurações › Certificados digitais* e marque-o como padrão do responsável. O CNPJ do certificado precisa ser o da empresa.
-
-1. Em *Lançamentos › Documentos fiscais › Entrada*, cole a chave no campo **Chave de acesso da NF-e** (pode ter espaços ou pontos).
-2. Clique em **Importar pela chave**. Se o certificado for A1, o sistema pede a senha.
-3. Se a SEFAZ devolver o XML completo, a nota é importada e aparece selecionada na lista. Fornecedor novo é cadastrado e completado pela consulta do CNPJ (opção marcada no painel de importação).
-4. Se a SEFAZ devolver só o **resumo**, aparece o botão **Manifestar ciência**: ele registra a *Ciência da operação* em nome da empresa, o que libera o XML. Aguarde alguns minutos e clique de novo em **Importar pela chave**.
-
-Mensagens da SEFAZ (ex.: *137 – Nenhum documento localizado*, *656 – Consumo indevido*) aparecem como vieram. A SEFAZ limita o número de consultas por hora; se aparecer *656*, espere uma hora.
-
-A lista *Notas digitadas* mostra data, número, participante, valor, origem e se já foi contabilizada. Use **Editar** e **Excluir** (notas já contabilizadas devem ter a contabilização desfeita antes; nota com duplicata já baixada só pode ser excluída ou ter as parcelas alteradas depois de estornar as baixas).
+Se a SEFAZ devolver só o **resumo** da nota, ela ainda não foi manifestada: aparece o botão **Manifestar ciência**, que registra a *Ciência da operação* em nome da empresa e libera o XML completo. Aguarde alguns minutos e clique de novo em **Importar por chave**. Mensagens da SEFAZ (ex.: *137 – Nenhum documento localizado*, *656 – Consumo indevido*) aparecem como vieram; a SEFAZ limita o número de consultas por hora (se aparecer *656*, espere uma hora).
 
 ## Importação de XML (NF-e, NFC-e, NFS-e)
 
@@ -63,7 +73,7 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - Aceita NF-e e NFC-e (modelos 55 e 65) e NFS-e no padrão nacional (ADN).
 - O sentido é identificado pelo **CNPJ da empresa** (e dos estabelecimentos): é entrada se a empresa é o destinatário e saída se é o emitente. Notas de terceiros são recusadas.
 - **Duplicidade:** a mesma chave de acesso não é importada duas vezes. Eventos de cancelamento são aplicados, mesmo que cheguem antes da nota.
-- Clientes e fornecedores são criados ou vinculados automaticamente. Com **Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)** marcado (vem marcado), o cadastro criado a partir do XML é completado como no botão *Buscar dados na Receita* do cadastro de clientes e fornecedores: nome fantasia, endereço completo, e-mail, telefone e inscrição estadual que faltarem. Os dados que vieram no XML são mantidos. Vale também para a nota importada pela chave de acesso.
+- Clientes e fornecedores são criados ou vinculados automaticamente. Com **Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)** marcado (vem marcado), o cadastro criado a partir do XML é completado como no botão *Buscar dados na Receita* do cadastro de clientes e fornecedores: nome fantasia, endereço completo, e-mail, telefone e inscrição estadual que faltarem. Os dados que vieram no XML são mantidos. Na janela da nota (Importar por XML ou por chave), o fornecedor novo aparece com os dados do XML para conferência e é cadastrado só ao gravar a nota.
 - **Nota de outra empresa:** se o XML não for da empresa selecionada (o CNPJ dela não é o do emitente nem o do destinatário), a nota não é importada e aparece na lista como *Outra empresa*, com os CNPJs do emitente e do destinatário. Escolha a empresa certa no topo e importe de novo.
 - Se acontecer um erro inesperado, o programa mostra o aviso, grava os detalhes em `%LOCALAPPDATA%\Vorticis\logs\erros.log` e continua aberto.
 - **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.

@@ -33,6 +33,9 @@ public sealed record FiltroDocumentos(
 /// <summary>Resultado de gravar um documento: <see cref="Duplicado"/> quando a chave já existia na empresa.</summary>
 public sealed record GravacaoDocumento(bool Duplicado, long DocumentoId, bool ParticipanteCriado, string? ParticipanteNome);
 
+/// <summary>Resultado de ler um XML para conferência: o documento, o sentido para a empresa e a contraparte (fornecedor ou cliente).</summary>
+public sealed record NotaPreparada(DocumentoLido Documento, TipoOperacao Operacao, ParteDocumento? Contraparte);
+
 public sealed record CancelamentoRegistrado(bool Encontrado, bool JaCancelado, bool Contabilizado, long DocumentoId, string? Numero);
 
 /// <summary>Transação de importação em lote. <see cref="ConfirmarAsync"/> grava o que foi aceito; sem confirmar, o descarte desfaz tudo.</summary>
@@ -326,6 +329,33 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
     {
         if (await autorizador.NegarAsync<IReadOnlyList<DocumentoFiscal>>(usuarioId, empresaId, Permissao.FiscalDocumentosConsultar, ct) is { } negado) return negado;
         return Resultado<IReadOnlyList<DocumentoFiscal>>.Ok(await repositorio.ListarAsync(empresaId, filtro, ct));
+    }
+
+    /// <summary>Nota lida de um XML e identificada para a empresa (entrada ou saída), ainda não gravada: serve para conferir os dados antes de gravar.</summary>
+    public async Task<Resultado<NotaPreparada>> PrepararAsync(long empresaId, byte[] xml, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<NotaPreparada>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;
+        var empresa = await repositorio.ObterEmpresaAsync(empresaId, ct);
+        if (empresa is null) return Resultado<NotaPreparada>.Falha("Empresa não encontrada.");
+        switch (LeitorXmlFiscal.Ler(xml))
+        {
+            case LeituraInvalida inv: return Resultado<NotaPreparada>.Falha($"XML não reconhecido: {inv.Motivo}");
+            case LeituraCancelamento: return Resultado<NotaPreparada>.Falha("Este XML é um evento de cancelamento, não uma nota fiscal.");
+            case LeituraDocumento lido:
+                var ident = IdentificadorOperacao.Identificar(lido.Documento, empresa.Cnpjs);
+                return ident.Sucesso
+                    ? Resultado<NotaPreparada>.Ok(new NotaPreparada(lido.Documento, ident.Valor.Operacao, ident.Valor.Contraparte))
+                    : Resultado<NotaPreparada>.Falha(ident.Erros);
+            default: return Resultado<NotaPreparada>.Falha("Arquivo não reconhecido.");
+        }
+    }
+
+    /// <summary>Documento da empresa com a chave de acesso informada (qualquer origem), ou null.</summary>
+    public async Task<Resultado<DocumentoFiscal?>> LocalizarPorChaveAsync(long empresaId, string chave, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<DocumentoFiscal?>(usuarioId, empresaId, Permissao.FiscalDocumentosConsultar, ct) is { } negado) return negado;
+        var lista = await repositorio.ListarAsync(empresaId, new FiltroDocumentos(Texto: chave, Limite: 20), ct);
+        return Resultado<DocumentoFiscal?>.Ok(lista.FirstOrDefault(d => d.Chave == chave));
     }
 
     public async Task<Resultado<IReadOnlyList<ItemFiscal>>> ItensAsync(long empresaId, long documentoId, long usuarioId, CancellationToken ct = default)
