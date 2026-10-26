@@ -1,4 +1,5 @@
 using Vorticis.Desktop.Comum.Modulos;
+using Vorticis.Desktop.Comum.ViewModels;
 using C = Vorticis.Desktop;
 using E = Vorticis.Erp.Desktop;
 using F = Vorticis.Fiscal.Desktop;
@@ -49,13 +50,21 @@ public sealed class ModuloLogistica() : ModuloCombinado(Frota, Contabil, Fiscal,
         ItemMenu.Submenu("_Gerencial e financeiro", [.. DaParte(Gerencial, Gerencial.ItensCadastros)]),
         ItemMenu.Submenu("_Contábil", [.. DaParte(Contabil, Contabil.ItensCadastros)]),
         ItemMenu.Submenu("F_olha de pagamento", [.. DaParte(Folha, Folha.ItensCadastros)]),
-        ItemMenu.Separador,
-        ItemMenu.Submenu("Parâmetros dos _módulos",
-            ItemMenu.Tela("Gerencial e financeiro", Chave(Gerencial, TelasComuns.Parametros)),
-            ItemMenu.Tela("Contábil", Chave(Contabil, TelasComuns.Parametros)),
-            ItemMenu.Tela("Fiscal", Chave(Fiscal, TelasComuns.Parametros)),
-            ItemMenu.Tela("Folha de pagamento", Chave(Folha, TelasComuns.Parametros))),
     ];
+
+    /// <summary>
+    /// Cadastros › Parâmetros é uma janela só, com uma aba para cada área (cada uma é a tela de parâmetros do módulo, com os mesmos campos e a mesma
+    /// gravação) e a aba Menus. Os parâmetros do Fiscal são os mesmos do Gerencial e financeiro (contas a pagar e a receber), por isso não têm aba própria.
+    /// </summary>
+    protected override void RegistrarTelasPrimeiro(CatalogoTelas catalogo) =>
+        catalogo.Instancia("ParametrosLogistica", m => new ParametrosAbasViewModel(m,
+            [
+                ("Frota", Chave(Frota, TelasComuns.Parametros)),
+                ("Gerencial e financeiro", Chave(Gerencial, TelasComuns.Parametros)),
+                ("Contábil", Chave(Contabil, TelasComuns.Parametros)),
+                ("Folha", Chave(Folha, TelasComuns.Parametros)),
+            ]), atualizarPermissoes: v => v.AtualizarPermissoes(), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
 
     private static string Sem(ItemMenu m) => m.Titulo.Replace("_", "");
 

@@ -77,6 +77,12 @@ public interface IModuloDesktop
     Task<IReadOnlySet<string>> RecursosAtivosAsync(ViewModels.MainViewModelBase main) => Task.FromResult<IReadOnlySet<string>>(new HashSet<string>());
 
     /// <summary>
+    /// Chamado ao conectar ao banco: o módulo compõe os seus serviços, que assim registram na Contabilização em lote o processador das suas
+    /// pendências (Fiscal, Folha...), mesmo que nenhuma tela do módulo tenha sido aberta ainda.
+    /// </summary>
+    void PrepararServicos(Vorticis.Infra.VorticisApp app) { }
+
+    /// <summary>
     /// Rótulo do período de trabalho mostrado ao lado do seletor de empresas ("Competência"), com a situação (aberto/fechado);
     /// null se o módulo não trabalha por período. A situação vem de <see cref="ViewModels.MainViewModelBase.ConsultarPeriodoAsync"/>.
     /// </summary>

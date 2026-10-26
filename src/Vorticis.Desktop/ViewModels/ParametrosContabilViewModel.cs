@@ -1,4 +1,6 @@
 using Vorticis.Application.Cadastros;
+using Vorticis.Application.Contabil;
+using Vorticis.Desktop.Comum.ViewModels;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Infra;
 
@@ -48,13 +50,21 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         {
             new("grandePorte", "Empresa de grande porte", TipoCampoParametro.SimNao, "Informação usada na ECD e nas apurações."),
         };
-        Observar([.. lanc, .. cc, .. part, .. enc, .. sped]);
+        var tipo = new CampoParametro[]
+        {
+            new("tipoContabilizacao", "Tipo de contabilização", TipoCampoParametro.Escolha,
+                "On-line: cada nota, baixa de duplicata e folha gera o lançamento na hora (como sempre foi). Em lote: os módulos só registram pendências e você gera os lançamentos em Integrações › Exportar › Contabilização em lote.",
+                [new("ONLINE", "On-line (o lançamento é gerado na hora)"), new("LOTE", "Em lote (os módulos geram pendências)")]),
+        };
+        Observar([.. lanc, .. cc, .. part, .. enc, .. sped, .. tipo]);
         return
         [
             new("Lançamentos", "Como os lançamentos são digitados e corrigidos. O bloqueio por data fica em Cadastros › Bloqueio de lançamentos.", lanc,
                 [Atalho("Abrir Bloqueio de lançamentos", Telas.BloqueioLancamentos)]),
             new("Centros de custo e contabilidade gerencial", "Recursos opcionais de gestão. A máscara dos centros fica na tela Centros de custo.", cc,
                 [Atalho("Abrir Centros de custo", Telas.CentrosCusto)]),
+            new("Tipo de contabilização", "Quando os documentos dos outros módulos viram lançamentos contábeis. Não altera os lançamentos já gerados.", tipo,
+                [Atalho("Abrir Contabilização em lote", TelasComuns.ContabilizacaoLote)]),
             new("Participantes", "Clientes e fornecedores como contas do plano (controle por participante).", part),
             new("Encerramento do exercício", "Contas padrão usadas pela tela Encerramento do exercício.", enc,
                 [Atalho("Abrir Encerramento do exercício", Telas.Encerramento)]),
@@ -76,6 +86,8 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         Campo("contaLucros").Texto = c.ContaLucros ?? "";
         Campo("contaPrejuizos").Texto = c.ContaPrejuizos ?? "";
         Campo("grandePorte").Marcado = c.GrandePorte;
+        var modo = await app.Pendencias.ModoAsync(empresa, usuario);
+        Campo("tipoContabilizacao").DefinirEscolha(modo.Sucesso && modo.Valor == ModoContabilizacao.Lote ? "LOTE" : "ONLINE");
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -96,6 +108,9 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         try { inicio = (await app.Empresas.ObterAsync(empresa))?.DataInicioAtividades; } catch (Exception) { /* a conferência da data fica de fora */ }
         var r = await app.PlanoContas.SalvarConfiguracaoAsync(empresa, novo, inicio, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var modoNovo = Campo("tipoContabilizacao").ValorEscolha == "LOTE" ? ModoContabilizacao.Lote : ModoContabilizacao.Online;
+        var m = await app.Pendencias.GravarModoAsync(empresa, modoNovo, usuario);
+        if (!m.Sucesso) { MostrarResultado(m, ""); return; }
         await Contexto.AtualizarRecursosAsync();
         var usa = Campo("usaParticipantes").Marcado;
         if (usa != await app.Participantes.UsaParticipantesAsync(empresa))

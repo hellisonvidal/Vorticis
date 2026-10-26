@@ -29,7 +29,34 @@ Os atalhos de teclado do Frota valem aqui (**Ctrl+B** abastecimentos, **Ctrl+P**
 
 ## Parâmetros
 
-*Cadastros › Parâmetros* abre os parâmetros da frota (avisos de vencimento, alerta de consumo e limite de autorização das ordens de serviço). Os parâmetros de cada área ficam em *Cadastros › Parâmetros dos módulos*: **Gerencial e financeiro**, **Contábil**, **Fiscal** (usado pelo financeiro) e **Folha de pagamento**, iguais aos de cada módulo.
+**Para que serve:** reunir, numa janela só, os parâmetros de todas as áreas do programa e as suas preferências de menu.
+
+**Onde fica:** *Cadastros › Parâmetros*. A janela tem uma **aba** para cada área:
+
+| Aba | O que tem |
+|---|---|
+| **Frota** | Avisos de vencimento, alerta de consumo e limite de autorização das ordens de serviço. |
+| **Gerencial e financeiro** | Os parâmetros do financeiro e do fiscal usados nas contas a pagar e a receber (contas de fornecedores e clientes, juros, multa, descontos e históricos das baixas). |
+| **Contábil** | Regras de lançamento, centros de custo, encerramento e o **Tipo de contabilização** (On-line ou Em lote, veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote)). |
+| **Folha** | Encargos patronais, dia de pagamento e eSocial. |
+| **Menus** | Escolha dos itens de menu que você quer ver (veja abaixo). |
+
+**Como usar:** clique na aba, altere os campos e clique em **Salvar** (cada aba salva os seus próprios campos; *Descartar alterações* volta aos valores gravados). Os campos e a gravação são os mesmos de cada módulo, como descrito em [Parâmetros](02-cadastros-comuns.md#parametros).
+
+### Menus: esconder o que você não usa
+
+**Para que serve:** deixar o menu só com o que você usa no dia a dia.
+
+**Como usar:**
+1. Abra *Cadastros › Parâmetros* e clique na aba **Menus**. Aparece a lista dos menus e itens, em árvore, com uma caixa de marcação em cada um.
+2. **Desmarque** o que não quer ver. Desmarcar um menu esconde também tudo o que está dentro dele; marcar um item mostra de novo o menu que o contém. **Mostrar todos** marca tudo.
+3. Clique em **Salvar**. O menu muda na hora.
+
+**O que acontece com o que foi escondido:** o item some do menu e a função fica **bloqueada**: o atalho de teclado e qualquer outra forma de abrir a tela mostram, na barra de situação, o aviso de que a função está oculta nas suas preferências. Para voltar a usá-la, marque o item de novo nesta aba.
+
+**Itens essenciais:** *Parâmetros*, *Sair (trocar de usuário)* e todo o menu *Ajuda* (e os menus que os contêm) não podem ser desmarcados.
+
+**Cada usuário escolhe o seu.** Quem é administrador vê a opção **Aplicar para todos os usuários**: ao salvar com ela marcada, os itens desmarcados ficam escondidos para todos (os outros usuários não conseguem mostrá-los de novo; aparecem como *oculto pelo administrador*). Sem a opção marcada, a escolha vale só para você.
 
 ## Quem pode usar cada área
 

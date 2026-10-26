@@ -44,8 +44,14 @@ public abstract class ModuloCombinado(params IModuloDesktop[] partes) : IModuloD
         return todos;
     }
 
+    public void PrepararServicos(Vorticis.Infra.VorticisApp app)
+    {
+        foreach (var p in partes) p.PrepararServicos(app);
+    }
+
     public void RegistrarTelas(CatalogoTelas catalogo)
     {
+        RegistrarTelasPrimeiro(catalogo);
         foreach (var p in partes)
         {
             var proprio = new CatalogoTelas();
@@ -54,6 +60,12 @@ public abstract class ModuloCombinado(params IModuloDesktop[] partes) : IModuloD
         }
         RegistrarTelasProprias(catalogo);
     }
+
+    /// <summary>
+    /// Telas do programa registradas antes das partes: uma chave de <c>ChavesPorParte</c> (ex.: Parâmetros) registrada aqui é do programa
+    /// (uma janela só) e todas as partes passam a ter a sua com chave própria (<see cref="Chave"/>).
+    /// </summary>
+    protected virtual void RegistrarTelasPrimeiro(CatalogoTelas catalogo) { }
 
     /// <summary>Telas que não são de nenhuma parte (as do próprio programa).</summary>
     protected virtual void RegistrarTelasProprias(CatalogoTelas catalogo) { }

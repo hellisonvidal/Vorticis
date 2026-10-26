@@ -51,6 +51,8 @@ Estes cadastros existem em todos os módulos e têm o mesmo código em todos ele
 2. Altere os campos desejados. Os botões de cada grupo (por exemplo, *Abrir Encerramento do exercício*) levam à tela completa daquela configuração.
 3. Clique em **Salvar**. *Descartar alterações* volta aos valores gravados.
 
+No Vorticis Suite Logística a tela tem uma aba para cada área e a aba *Menus*; veja [Parâmetros do programa](13-logistica.md#parametros).
+
 Se o seu perfil não permite alterar, a tela só mostra os valores. Se você apertar Esc com alterações não salvas, o sistema pergunta antes de fechar.
 
 ### Contábil
@@ -59,6 +61,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Lançamentos | Usar estorno de lançamentos e exigir número do documento nas partidas. O bloqueio por data fica em *Cadastros › Bloqueio de lançamentos*. |
 | Centros de custo e contabilidade gerencial | Usar centros de custo; **Contabilidade gerencial**: ligado, aparece o menu *Relatórios › Gerenciais*; desligado, ele fica escondido. |
 | Participantes | Plano de contas com participantes. |
+| Tipo de contabilização | **On-line** (o lançamento sai na hora, o padrão) ou **Em lote** (os módulos geram pendências e você contabiliza em *Integrações › Exportar › Contabilização em lote*). Veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote). |
 | Encerramento do exercício | Contas de apuração do resultado, de lucros e de prejuízos acumulados. |
 | SPED Contábil (ECD) e ECF | Empresa de grande porte. |
 

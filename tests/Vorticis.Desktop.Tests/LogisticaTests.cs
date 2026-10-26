@@ -59,11 +59,10 @@ public class LogisticaTests(SessaoHeadless headless, Vorticis.Infra.Tests.BancoD
                                       Fiscal.Desktop.ViewModels.Telas.ContasReceber, Fiscal.Desktop.ViewModels.Telas.RelDuplicatasReceber, ViewModels.Telas.Lancamento, ViewModels.Telas.Balancete, Fiscal.Desktop.ViewModels.Telas.ImportacaoXml,
                                       Folha.Desktop.ViewModels.FolhaTelas.FolhaMensal })
             Assert.Contains(itens, i => i.Chave == chave);
-        // cada módulo continua com os seus parâmetros, num submenu de Cadastros
-        var parametros = Folhas(vm.Menus[0].Filhos!.Single(i => i.Titulo == "Parâmetros dos _módulos").Filhos!).Select(i => i.Chave!).ToList();
-        Assert.Equal(4, parametros.Distinct().Count());
-        Assert.All(parametros, c => Assert.True(vm.ConheceTela(c), c));
-        Assert.Contains(vm.Menus[0].Filhos!, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);   // os do Frota
+        // Parâmetros é uma janela só, com abas (a de cada módulo mantém a sua tela com chave própria); não há mais o submenu por módulo
+        Assert.DoesNotContain(vm.Menus[0].Filhos!, i => i.Titulo.Contains("Parâmetros dos"));
+        Assert.Contains(vm.Menus[0].Filhos!, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);
+        Assert.Equal(6, vm.ChavesDeTelas.Count(c => c == TelasComuns.Parametros || c.EndsWith(":" + TelasComuns.Parametros)));
         // atalhos sem tecla repetida, todos para telas conhecidas
         Assert.Equal(vm.Atalhos.Count, vm.Atalhos.Select(a => a.Gesto).Distinct().Count());
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));

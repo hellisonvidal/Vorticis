@@ -134,6 +134,13 @@ public sealed class RepositorioDuplicatas(NpgsqlDataSource ds) : IRepositorioDup
             return id;
         });
 
+    public async Task DefinirLancamentoBaixaAsync(long empresaId, long baixaId, long? lancamentoId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("UPDATE fiscal.duplicata_baixa SET lancamento_id = @l WHERE id = @b AND duplicata_id IN (SELECT id FROM fiscal.duplicata WHERE empresa_id = @e)")
+            .Com("l", NpgsqlDbType.Bigint, lancamentoId).Com("b", baixaId).Com("e", empresaId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     public async Task DefinirConciliacaoAsync(long baixaId, long conciliacaoId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("UPDATE fiscal.duplicata_baixa SET conciliacao_id = @c WHERE id = @b").Com("c", conciliacaoId).Com("b", baixaId);

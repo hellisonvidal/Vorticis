@@ -91,6 +91,7 @@ Vale a regra **mais específica** (participante, CFOP completo, prefixo, geral);
 ### On-line ou em lote
 Em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, escolha como as notas vão para o Contábil:
 - **Em lote** (*Contabilizar as notas on-line* desmarcado, o padrão): as notas ficam pendentes e você contabiliza depois, por período, nesta tela.
+- Se a empresa usa o tipo de contabilização **Em lote** do Contábil (veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote)), as notas gravadas ou importadas e as baixas de duplicatas viram pendências nessa tela de lote, em vez de lançamentos na hora.
 - **On-line** (marcado): cada nota é contabilizada assim que é gravada (digitação) ou importada (XML ou chave de acesso), pelas regras de contabilização. O menu *Contabilizar notas fiscais* fica escondido. Nota sem regra ou com período contábil fechado continua pendente, e o motivo aparece na mensagem da gravação ou no resumo da importação; corrija a regra e grave a nota de novo, ou volte para **em lote** para contabilizar as pendentes.
 
 1. Escolha o período e clique em **Pré-visualizar**: aparecem as notas pendentes, com o lançamento previsto.

@@ -11,6 +11,8 @@ namespace Vorticis.Folha.Desktop;
 /// </summary>
 public sealed class ModuloFolha : IModuloDesktop
 {
+    public void PrepararServicos(Vorticis.Infra.VorticisApp app) => _ = app.Folha();
+
     public string Nome => "Vorticis Folha de Pagamento";
     public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Folha;
     public string NomeCurto => "Folha";

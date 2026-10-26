@@ -39,8 +39,10 @@ public sealed class ServicosFiscais
         Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
         ParticipantesNota = new ServicoParticipanteNota(app);
         Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
-        Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador, repoDuplicatas);
-        Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador);
+        Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador, repoDuplicatas, app.Pendencias);
+        Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador, app.Pendencias);
+        app.Pendencias.RegistrarProcessador(Contabilizacao.ProcessadorPendencias);
+        app.Pendencias.RegistrarProcessador(Duplicatas.ProcessadorPendencias);
         Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);

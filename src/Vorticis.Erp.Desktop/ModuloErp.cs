@@ -11,6 +11,8 @@ namespace Vorticis.Erp.Desktop;
 /// </summary>
 public sealed class ModuloErp : IModuloDesktop
 {
+    public void PrepararServicos(Vorticis.Infra.VorticisApp app) => _ = Vorticis.Fiscal.VorticisAppFiscalExtensions.Fiscal(app);
+
     public string Nome => "Vorticis Gerencial";
     public Vorticis.Application.Cadastros.ModulosEmpresa ModuloEmpresa => Vorticis.Application.Cadastros.ModulosEmpresa.Erp;
     public string NomeCurto => "Gerencial";

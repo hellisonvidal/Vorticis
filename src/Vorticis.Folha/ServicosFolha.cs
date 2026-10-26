@@ -31,7 +31,8 @@ public sealed class ServicosFolha
         var contab = new RepositorioContabilizacaoFolha(ds);
         Cadastros = new ServicoCadastrosFolha(cadastros, app.Autorizador);
         Folha = new ServicoFolha(cadastros, movimento, contab, app.Autorizador);
-        Contabilizacao = new ServicoContabilizacaoFolha(contab, movimento, app.Lancamentos, app.Autorizador);
+        Contabilizacao = new ServicoContabilizacaoFolha(contab, movimento, app.Lancamentos, app.Autorizador, app.Pendencias);
+        app.Pendencias.RegistrarProcessador(Contabilizacao.ProcessadorPendencias);
         Relatorios = new ServicoRelatoriosFolha(cadastros, movimento, contab, new GeradorPdf(), app.Autorizador);
         var repoEsocial = new RepositorioESocial(ds);
         ESocial = new ServicoESocial(cadastros, movimento, repoEsocial, app.Autorizador);

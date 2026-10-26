@@ -123,6 +123,7 @@ public partial class ContabilizacaoFolhaViewModel(IContexto contexto) : ModuloVi
         var r = await app.Folha().Contabilizacao.ContabilizarAsync(empresa, Comp, tipo, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
+        if (r.Valor.Numero == 0) { Mensagem = "Contabilização em lote: a pendência foi registrada. Gere o lançamento em Integrações › Exportar › Contabilização em lote."; return; }
         Mensagem = $"Contabilizado: lançamento nº {r.Valor.Numero} em {Comp.AddMonths(1).AddDays(-1):dd/MM/yyyy}.";
     }, Permissao.FolhaContabilizar);
 

@@ -69,6 +69,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Vínculo ao plano referencial (RFB)", Telas.MapeamentoReferencial)),
             ItemMenu.Submenu("_Exportar",
                 ItemMenu.Tela("Lançamentos contábeis (Excel, PDF, CSV)", Telas.ExportarLancamentos),
+                ItemMenu.Tela("Contabilização em lote", Comum.ViewModels.TelasComuns.ContabilizacaoLote).SoCom(Comum.ViewModels.MainViewModelBase.RecursoContabilizacaoLote),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Gerar ECD (SPED Contábil)", Telas.EcdAssistente),
                 ItemMenu.Tela("Gerar ECF (SPED)", Telas.EcfAssistente))),
