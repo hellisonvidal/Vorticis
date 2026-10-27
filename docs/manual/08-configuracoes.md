@@ -10,7 +10,7 @@ Menu *Configurações*. As telas de backup, configurações gerais e conexão s�
 **Onde fica:** *Configurações › Backup e restauração* (no Escritório: *Configurações › Banco de dados › Backup e restauração*).
 
 ### Fazer backup
-1. Veja a **pasta** de destino. O padrão é a pasta *Backups* dentro da instalação (ou *Documentos\Vorticis Contabil\Backups*, se não for possível gravar). **Escolher pasta...** muda o destino dos próximos backups, inclusive os automáticos.
+1. Veja a **pasta** de destino. O padrão é a pasta *Backups* dentro da instalação (ou *Documentos\Vorticis Empresarial\Backups*, se não for possível gravar). **Escolher pasta...** muda o destino dos próximos backups, inclusive os automáticos.
 2. Clique em **Fazer backup agora**. O arquivo aparece na lista (nome, data e tamanho).
 
 ### Restaurar
@@ -63,7 +63,10 @@ A lista avisa os certificados **vencidos ou que vencem em até 30 dias**.
 
 ### O programa abriu na tela de conexão
 1. Clique em **Configurar automaticamente**. Ele localiza o PostgreSQL embutido, confere o Visual C++, remove travas antigas, cria e inicia o banco, aplica as atualizações e testa a conexão.
-2. Se falhar, clique em **Copiar diagnóstico** e envie ao suporte. Os logs ficam em `%LOCALAPPDATA%\Vorticis\logs`.
+2. Se falhar, clique em **Copiar diagnóstico** e envie ao suporte. Os logs ficam em `%LOCALAPPDATA%\VorticisEmpresarial\logs`.
+3. Se aparecer a mensagem "Este banco de dados foi usado por outro programa Vorticis (ex.: Suite Logística) e tem atualizações que este programa não reconhece", o banco configurado pertence a outro programa. Vá em **Configurações › Conexão** e clique em **Configurar automaticamente** para usar o banco próprio deste programa.
+
+**Onde ficam os seus dados:** a configuração e o login salvo ficam em `%APPDATA%\VorticisEmpresarial`; o banco local, os logs e as senhas de certificados ficam em `%LOCALAPPDATA%\VorticisEmpresarial`. O Vorticis Suite Logística usa pasta e banco próprios, por isso os dois programas podem ficar instalados no mesmo computador sem se misturar.
 
 ### Problemas frequentes
 | Situação | O que fazer |

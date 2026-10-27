@@ -53,8 +53,17 @@ public sealed class Migrador(NpgsqlDataSource dataSource)
         await using (var r = await cmd.ExecuteReaderAsync(ct))
             while (await r.ReadAsync(ct)) aplicadas[r.GetString(0)] = r.GetString(1);
 
+        var scripts = ScriptsEmbutidos();
+        var conhecidas = scripts.Select(x => x.Nome).ToHashSet(StringComparer.Ordinal);
+        var desconhecidas = aplicadas.Keys.Where(n => !conhecidas.Contains(n)).OrderBy(n => n, StringComparer.Ordinal).ToArray();
+        if (desconhecidas.Length > 0)
+            throw new InvalidOperationException(
+                "Este banco de dados foi usado por outro programa Vorticis (ex.: Suite Logística) e tem atualizações que este programa não reconhece: "
+                + string.Join(", ", desconhecidas)
+                + ". Use um banco próprio: Configurações › Conexão › Configurar automaticamente.");
+
         var resultado = new List<MigracaoAplicada>();
-        foreach (var (nome, sql) in ScriptsEmbutidos())
+        foreach (var (nome, sql) in scripts)
         {
             var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sql)));
             if (aplicadas.TryGetValue(nome, out var hashAplicado))
@@ -76,7 +85,19 @@ public sealed class Migrador(NpgsqlDataSource dataSource)
             }
 
             await using var tx = await con.BeginTransactionAsync(ct);
-            await using (var cmd = new NpgsqlCommand(sql, con, tx)) await cmd.ExecuteNonQueryAsync(ct);
+            try
+            {
+                await using var cmd = new NpgsqlCommand(sql, con, tx);
+                await cmd.ExecuteNonQueryAsync(ct);
+            }
+            catch (PostgresException ex) when (ex.SqlState is PostgresErrorCodes.DuplicateTable or PostgresErrorCodes.DuplicateColumn
+                                                or PostgresErrorCodes.DuplicateObject or PostgresErrorCodes.DuplicateSchema or PostgresErrorCodes.DuplicateFunction)
+            {
+                throw new InvalidOperationException(
+                    $"A migração {nome} não pôde ser aplicada porque o banco já tem um objeto com o mesmo nome ({ex.MessageText}). "
+                    + "Isso acontece quando o banco foi usado por outro programa Vorticis (ex.: Suite Logística). "
+                    + "Use um banco próprio: Configurações › Conexão › Configurar automaticamente.", ex);
+            }
             await using (var cmd = new NpgsqlCommand("INSERT INTO public.vorticis_migracao (nome, sha256) VALUES (@n, @h)", con, tx))
             {
                 cmd.Parameters.AddWithValue("n", nome);

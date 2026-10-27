@@ -45,7 +45,8 @@ cuida do resto:
 
 | Item | Como funciona |
 |---|---|
-| Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\Vorticis\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\Vorticis\vorticis.json` |
+| Pasta e banco próprios | Este produto usa `%APPDATA%\VorticisEmpresarial`, `%LOCALAPPDATA%\VorticisEmpresarial` e o banco `vorticis_empresarial`; o Vorticis Suite Logística usa pasta e banco próprios (`Vorticis` / `vorticis`). O migrador recusa, com mensagem em português, um banco com atualizações de outro programa. |
+| Criação | `initdb` na primeira abertura, em `%LOCALAPPDATA%\VorticisEmpresarial\banco`, com senha aleatória (autenticação SCRAM) gravada cifrada (DPAPI) em `%APPDATA%\VorticisEmpresarial\vorticis.json` |
 | Execução | O servidor sobe quando o primeiro módulo do Vorticis abre e para quando o último fecha; escuta só em `127.0.0.1`, na porta 54329 (ou outra livre, se ocupada) |
 | Segurança | Nenhum serviço do Windows nem privilégio de administrador; outros usuários do Windows não leem a senha |
 | Atualização | Basta rodar o instalador novo: ele para o banco, troca os arquivos e preserva os dados |
@@ -57,13 +58,13 @@ Também há os artefatos portáteis **VorticisContabil-portatil**, **VorticisFis
 
 ### Solução de problemas do banco
 
-Se o programa abrir na tela **Conexão com o banco de dados**, clique em **Configurar automaticamente**: ela localiza o `pgsql`, confere o Visual C++, remove `postmaster.pid` órfão, cria/inicia o banco, aplica as migrações, grava a configuração e testa a conexão, mostrando cada passo. **Copiar diagnóstico** copia o log (também em `%LOCALAPPDATA%\Vorticis\logs\configuracao-banco.log`; o do PostgreSQL fica em `postgres.log` na mesma pasta). Sem Windows/instalador: `VorticisContabil.exe --configurar-banco` faz o mesmo sem janela (código de saída 0 = pronto).
+Se o programa abrir na tela **Conexão com o banco de dados**, clique em **Configurar automaticamente**: ela localiza o `pgsql`, confere o Visual C++, remove `postmaster.pid` órfão, cria/inicia o banco, aplica as migrações, grava a configuração e testa a conexão, mostrando cada passo. **Copiar diagnóstico** copia o log (também em `%LOCALAPPDATA%\VorticisEmpresarial\logs\configuracao-banco.log`; o do PostgreSQL fica em `postgres.log` na mesma pasta). Sem Windows/instalador: `VorticisContabil.exe --configurar-banco` faz o mesmo sem janela (código de saída 0 = pronto).
 
 - `vorticis` / `vorticis` é o **login do aplicativo** no primeiro acesso, não usuário/senha do banco; o banco local não pede nada.
 - *Existe banco local, mas a senha não é conhecida* (config apagada ou de outro usuário do Windows): use **Recriar o banco local**; a pasta antiga é preservada como `banco.backup-<data>`.
 - *Faltam DLLs do Visual C++*: instale `vc_redist.x64.exe` (vai no instalador e nos portáteis).
 - Sem `pgsql` ao lado do programa, a configuração tenta um PostgreSQL em `localhost:5432` e pede só usuário e senha. Servidor externo é opção avançada na mesma tela.
-- Os módulos podem abrir juntos: uma trava entre processos (`%LOCALAPPDATA%\Vorticis\banco.lock`) evita disputa pela criação do banco.
+- Os módulos podem abrir juntos: uma trava entre processos (`%LOCALAPPDATA%\VorticisEmpresarial\banco.lock`) evita disputa pela criação do banco.
 
 ## Executar (desenvolvimento)
 
@@ -77,7 +78,7 @@ export VORTICIS_DB="Host=localhost;Database=vorticis;Username=postgres;Password=
 dotnet run --project src/Vorticis.Desktop          # Contábil (ou src/Vorticis.Fiscal.Desktop, src/Vorticis.Folha.Desktop)
 ```
 
-Sem `VORTICIS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a instalação nova entra em **modo de implantação** (ver *Usuários e perfis de acesso*): só vale o usuário `vorticis` / senha `vorticis`, que abre o cadastro de usuários para criar o administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. A janela sempre abre maximizada. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Vorticis abre a tela de conexão; a configuração fica em `%APPDATA%\Vorticis\vorticis.json`, com a senha cifrada por DPAPI no Windows.
+Sem `VORTICIS_DB` e sem binários do PostgreSQL ao lado do programa, usa o servidor padrão acima. Na primeira execução o banco é criado (se o usuário do PostgreSQL tiver permissão), as migrações são aplicadas e a instalação nova entra em **modo de implantação** (ver *Usuários e perfis de acesso*): só vale o usuário `vorticis` / senha `vorticis`, que abre o cadastro de usuários para criar o administrador. Em seguida, a **configuração dos perfis de acesso é obrigatória** (as demais funções ficam bloqueadas até o administrador clicar em *Concluir configuração dos perfis*); o cadastro de empresas não é exigido no primeiro uso. A janela sempre abre maximizada. Depois do login o sistema abre a **tela inicial** (nome do programa ao fundo; *Ajuda › Tela inicial* volta a ela). Se a conexão falhar, o próprio Vorticis abre a tela de conexão; a configuração fica em `%APPDATA%\VorticisEmpresarial\vorticis.json`, com a senha cifrada por DPAPI no Windows.
 
 ### Usuários e perfis de acesso
 
@@ -97,7 +98,7 @@ Perfis padrão (não excluíveis): **Administrador** (todas as funções, sempre
 
 **Primeiro acesso e usuário de implantação.** Em instalação nova (banco sem nenhum usuário), qualquer módulo aceita **somente** o login `vorticis` com a senha `vorticis` (a tela de entrada avisa). Esse usuário não existe no banco: é tratado em `ServicoUsuarios` (senha conferida pelo mesmo hash PBKDF2, nunca gravada) e a sessão dele (`SessaoUsuario.Implantacao`) não é administradora. Ao entrar, abre sozinho o cadastro de usuários, onde só se pode **incluir um usuário Administrador** (o login `vorticis` é reservado); as demais funções ficam bloqueadas. Assim que o primeiro administrador é criado o sistema volta à tela de login e a combinação `vorticis`/`vorticis` **deixa de funcionar** (a condição é "não existir usuário no banco", então não há nada a desativar nem a esquecer ligado). Em seguida segue o fluxo normal (definição obrigatória dos perfis etc.). Bancos que já têm administrador não são afetados. A *limpeza do banco* apaga todos os usuários e devolve o banco a este estado.
 
-Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso` (aba *Registro de acessos*). Na tela de entrada, **Salvar login neste computador** guarda usuário e senha em `%APPDATA%\Vorticis\login.json`, com a senha cifrada pelo Windows (DPAPI, só o mesmo usuário do Windows consegue ler); não use em computadores compartilhados.
+Senhas com PBKDF2-SHA256 (600 mil iterações); bloqueio de 15 minutos após 5 tentativas inválidas; usuário criado pelo administrador troca a senha no primeiro acesso; todas as tentativas de login ficam em `core.registro_acesso` (aba *Registro de acessos*). Na tela de entrada, **Salvar login neste computador** guarda usuário e senha em `%APPDATA%\VorticisEmpresarial\login.json`, com a senha cifrada pelo Windows (DPAPI, só o mesmo usuário do Windows consegue ler); não use em computadores compartilhados.
 
 ### Módulo Folha de Pagamento (VorticisFolha.exe)
 
@@ -201,7 +202,7 @@ O Vorticis não traz a tabela embutida: ela é oficial, muda a cada ano e deve v
 
 ### Backup e restauração
 
-*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado). Por padrão elas ficam na pasta **Backups dentro do diretório de instalação** do programa (criada pelo instalador; se não puder ser gravada, `Documentos\Vorticis Contabil\Backups`); *Escolher pasta...* grava outra pasta para os próximos backups, inclusive os automáticos. *Excluir backup selecionado* apaga um arquivo de backup (com confirmação). A restauração pede confirmação com a **senha de administrador** (padrão `VORTICIS`), gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `VORTICIS_PG_BIN`).
+*Configurações › Backup e restauração* gera cópias com `pg_dump` (formato compactado). Por padrão elas ficam na pasta **Backups dentro do diretório de instalação** do programa (criada pelo instalador; se não puder ser gravada, `Documentos\Vorticis Empresarial\Backups`); *Escolher pasta...* grava outra pasta para os próximos backups, inclusive os automáticos. *Excluir backup selecionado* apaga um arquivo de backup (com confirmação). A restauração pede confirmação com a **senha de administrador** (padrão `VORTICIS`), gera antes um backup de segurança do estado atual e encerra todas as sessões. Usa as ferramentas do PostgreSQL que acompanham o instalador (ou as de um PostgreSQL instalado na máquina, ou a pasta indicada em `VORTICIS_PG_BIN`).
 
 ### Consulta de CNPJ
 

@@ -72,7 +72,7 @@ Vorticis.Desktop (VorticisContabil)  Vorticis.Fiscal.Desktop (VorticisFiscal)  V
 
 O casco mantém os menus **Cadastros comuns**, **Configurações** e **Ajuda**; o login, a empresa ativa, as permissões, as janelas de função e as confirmações ficam em `MainViewModelBase`. Telas novas: ViewModel + View (`UserControl`) no projeto do módulo, um `DataTemplate` no `App.axaml` do módulo e o registro em `RegistrarTelas`. Telas comuns a vários módulos entram no casco (e em `TemplatesComuns`).
 
-**Banco compartilhado.** O servidor local sobe com o primeiro módulo aberto e só é parado pelo último a fechar (marcas travadas em `%LOCALAPPDATA%\Vorticis\execucao`).
+**Banco compartilhado.** O servidor local sobe com o primeiro módulo aberto e só é parado pelo último a fechar (marcas travadas em `%LOCALAPPDATA%\VorticisEmpresarial\execucao`).
 
 **Migrações centralizadas.** Todas ficam em `db/` (um único migrador; toda base recebe todos os esquemas, independentemente dos módulos instalados). Faixas reservadas: **001–024** núcleo e contábil (em uso), **025–029** ECD/ECF, **030–039** Fiscal, **040–049** Folha de Pagamento.
 
@@ -170,7 +170,7 @@ Folha calculada ──► provisões/encargos ───────────�
 - **Troca de usuário**: ao sair, todas as telas são recriadas, para que nada consultado por um usuário fique visível ao próximo.
 - **Consulta de CNPJ**: `IConsultaCnpj` (Application) com implementação sobre a base pública da RFB (BrasilAPI → Minha Receita). Os dados apenas pré-preenchem o formulário; a origem e a data da consulta ficam gravadas na empresa (`fonte_dados`, `dados_consultados_em`).
 - **Certificado digital**: A1 (`.pfx`) cifrado com DPAPI do Windows; A3 via Windows Certificate Store (token/cartão). Nunca gravar senha do PFX em texto.
-- **Conexão**: `%APPDATA%\Vorticis\vorticis.json`, senha cifrada com DPAPI (escopo do usuário do Windows).
+- **Conexão**: `%APPDATA%\VorticisEmpresarial\vorticis.json`, senha cifrada com DPAPI (escopo do usuário do Windows).
 - **Banco**: PostgreSQL escutando só em `localhost`; usuário da aplicação sem permissão de `TRUNCATE`/`DROP`; papel separado para migrações.
 - **Backup**: `pg_dump` agendado diário + antes de todo fechamento de período/geração de SPED; retenção local + cópia externa (pasta sincronizada pelo usuário). Restauração testável pela própria UI.
 - **LGPD**: dados de trabalhadores (CPF, saúde em atestados/ASO, dependentes) com acesso por perfil, mascaramento em telas de consulta e registro de acesso.

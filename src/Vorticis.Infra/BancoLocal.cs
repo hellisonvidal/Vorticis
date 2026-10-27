@@ -5,7 +5,7 @@ namespace Vorticis.Infra;
 /// <summary>Primeira execução: cria o banco da aplicação no PostgreSQL local se ainda não existir.</summary>
 public static class BancoLocal
 {
-    private const string NomeAtual = "vorticis";
+    private const string NomeAtual = "vorticis_empresarial";
     private const string NomeAnterior = "perseus";
 
     public static async Task GarantirBancoAsync(string connectionString, CancellationToken ct = default)

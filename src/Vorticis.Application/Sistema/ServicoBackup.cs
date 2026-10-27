@@ -28,7 +28,7 @@ public sealed class ServicoBackup(IBackupBanco backup)
 
     /// <summary>
     /// Pasta padrão: "Backups" dentro do diretório de instalação do programa. Se ela não puder ser gravada
-    /// (instalação em Arquivos de Programas para todos os usuários), usa Documentos\Vorticis Contabil\Backups.
+    /// (instalação em Arquivos de Programas para todos os usuários), usa Documentos\Vorticis Empresarial\Backups.
     /// </summary>
     public static string PastaPadrao => _pastaPadrao.Value;
 
@@ -37,7 +37,7 @@ public sealed class ServicoBackup(IBackupBanco backup)
         var naInstalacao = Path.Combine(AppContext.BaseDirectory, "Backups");
         return PodeGravar(naInstalacao)
             ? naInstalacao
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Vorticis Contabil", "Backups");
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Vorticis Empresarial", "Backups");
     });
 
     /// <summary>Verifica se é possível criar a pasta e gravar nela.</summary>

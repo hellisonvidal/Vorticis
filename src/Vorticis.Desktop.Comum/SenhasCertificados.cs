@@ -12,8 +12,7 @@ namespace Vorticis.Desktop.Comum;
 public static class SenhasCertificados
 {
     /// <summary>Arquivo das senhas protegidas (mude nos testes).</summary>
-    public static string Arquivo { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Vorticis", "senhas_certificados.json");
+    public static string Arquivo { get; set; } = Path.Combine(Configuracao.PastaLocal, "senhas_certificados.json");
 
     /// <summary>Proteção/abertura dos bytes; padrão: DPAPI do usuário no Windows. Substituível nos testes.</summary>
     public static Func<byte[], byte[]>? Proteger { get; set; } = OperatingSystem.IsWindows() ? ProtegerDpapi : null;

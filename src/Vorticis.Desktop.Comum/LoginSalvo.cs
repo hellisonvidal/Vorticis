@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 namespace Vorticis.Desktop.Comum;
 
 /// <summary>
-/// "Salvar login neste computador": usuário e senha gravados em %APPDATA%\Vorticis\login.json.
+/// "Salvar login neste computador": usuário e senha gravados em %APPDATA%\VorticisEmpresarial\login.json.
 /// A senha é cifrada com DPAPI (só o mesmo usuário do Windows, neste computador, consegue decifrá-la);
 /// fora do Windows só o usuário é lembrado.
 /// </summary>
@@ -15,7 +15,7 @@ public static class LoginSalvo
     public sealed record Dados(string Usuario, string? Senha);
 
     public static string Arquivo =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vorticis", "login.json");
+        Path.Combine(Configuracao.PastaDados, "login.json");
 
     public static Dados? Obter()
     {

@@ -21,19 +21,19 @@ foreach ($f in @($app) + ($Arquivos | ForEach-Object { Join-Path $pasta $_ }) + 
 Write-Host "Instalado em $pasta"
 
 # 0. configuração automática feita pelo instalador (VorticisContabil.exe --configurar-banco), antes de abrir o programa
-$logConfig = Join-Path $env:LOCALAPPDATA "Vorticis\logs\configuracao-banco.log"
+$logConfig = Join-Path $env:LOCALAPPDATA "VorticisEmpresarial\logs\configuracao-banco.log"
 if (-not (Test-Path $logConfig)) { throw "O instalador não gerou $logConfig (configuração automática do banco não executou)." }
 $textoLog = Get-Content $logConfig -Raw -Encoding UTF8
 if ($textoLog -notmatch "CONCLUÍDO") { Write-Host $textoLog; throw "A configuração automática do banco falhou durante a instalação." }
-if (-not (Test-Path (Join-Path $env:APPDATA "Vorticis\vorticis.json"))) { throw "Configuração não gravada pela configuração automática." }
+if (-not (Test-Path (Join-Path $env:APPDATA "VorticisEmpresarial\vorticis.json"))) { throw "Configuração não gravada pela configuração automática." }
 # o modo sem interface para o banco ao terminar; repetir o comando deve funcionar e dar código 0 (idempotente)
 $pc = Start-Process $app -ArgumentList "--configurar-banco" -Wait -PassThru
 if ($pc.ExitCode -ne 0) { Get-Content $logConfig -Tail 40; throw "--configurar-banco terminou com código $($pc.ExitCode)" }
 Write-Host "Configuração automática do banco: OK (código 0, log em $logConfig)"
 
-$dados = Join-Path $env:LOCALAPPDATA "Vorticis\banco"
-$cfgArquivo = Join-Path $env:APPDATA "Vorticis\vorticis.json"
-$logPg = Join-Path $env:LOCALAPPDATA "Vorticis\logs\postgres.log"
+$dados = Join-Path $env:LOCALAPPDATA "VorticisEmpresarial\banco"
+$cfgArquivo = Join-Path $env:APPDATA "VorticisEmpresarial\vorticis.json"
+$logPg = Join-Path $env:LOCALAPPDATA "VorticisEmpresarial\logs\postgres.log"
 $proc = Start-Process $app -PassThru
 
 function Falhar($msg) {

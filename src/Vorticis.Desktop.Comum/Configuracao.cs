@@ -16,19 +16,28 @@ public enum ModoBanco { Local, Servidor }
 public sealed record ConfiguracaoBanco(ModoBanco Modo, string? ConnectionString = null, int Porta = 0, string? Senha = null);
 
 /// <summary>
-/// Onde está o banco. Ordem: variável VORTICIS_DB → %APPDATA%\Vorticis\vorticis.json → banco local embutido (se o
+/// Onde está o banco. Ordem: variável VORTICIS_DB → %APPDATA%\VorticisEmpresarial\vorticis.json → banco local embutido (se o
 /// programa foi instalado com ele) → servidor padrão em localhost:5432.
 /// No Windows as senhas são gravadas cifradas com DPAPI (só o mesmo usuário do Windows consegue decifrar).
 /// </summary>
 public static class Configuracao
 {
-    public const string Padrao = "Host=localhost;Port=5432;Database=vorticis;Username=vorticis;Password=vorticis";
-    public const string NomeBanco = "vorticis";
+    public const string Padrao = "Host=localhost;Port=5432;Database=vorticis_empresarial;Username=vorticis;Password=vorticis";
+    public const string NomeBanco = "vorticis_empresarial";
 
-    public static string ArquivoConfiguracao =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vorticis", "vorticis.json");
+    /// <summary>
+    /// Nome da pasta de dados deste produto. O Vorticis Suite Logística usa pasta e banco próprios (%APPDATA%\Vorticis e
+    /// banco "vorticis"): os dois programas não compartilham configuração, login salvo nem banco.
+    /// </summary>
+    public const string NomePasta = "VorticisEmpresarial";
 
-    /// <summary>Dados do banco local: %LOCALAPPDATA%\Vorticis\banco (não sai com a desinstalação do programa).</summary>
+    /// <summary>Configuração e login salvo: %APPDATA%\VorticisEmpresarial.</summary>
+    public static string PastaDados =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), NomePasta);
+
+    public static string ArquivoConfiguracao => Path.Combine(PastaDados, "vorticis.json");
+
+    /// <summary>Dados do banco local: %LOCALAPPDATA%\VorticisEmpresarial\banco (não sai com a desinstalação do programa).</summary>
     public static string PastaBancoLocal => Path.Combine(PastaLocal, "banco");
 
     /// <summary>Marcas dos módulos abertos (um arquivo travado por processo): o último a fechar para o banco local compartilhado.</summary>
@@ -43,19 +52,24 @@ public static class Configuracao
     public static string LogBancoLocal => Path.Combine(PastaLocal, "logs", "postgres.log");
 
     public static string PastaLocal =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Vorticis");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), NomePasta);
 
     /// <summary>
     /// Instalações anteriores à troca de nome guardavam tudo em %APPDATA%\Perseus e %LOCALAPPDATA%\Perseus. Na primeira
-    /// abertura do Vorticis essas pastas são renomeadas (o banco local ainda não está em execução nesse momento).
+    /// abertura essas pastas são renomeadas para VorticisEmpresarial (o banco local ainda não está em execução nesse
+    /// momento), somente se a nova não existir. A pasta "Vorticis" é do Vorticis Suite Logística e nunca é tocada.
     /// </summary>
-    public static void MigrarPastasDoNomeAnterior()
+    public static void MigrarPastasDoNomeAnterior() =>
+        MigrarPastasDoNomeAnterior(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+
+    public static void MigrarPastasDoNomeAnterior(string appData, string localAppData)
     {
-        foreach (var raiz in new[] { Environment.SpecialFolder.ApplicationData, Environment.SpecialFolder.LocalApplicationData })
+        foreach (var baseDir in new[] { appData, localAppData })
         {
-            var baseDir = Environment.GetFolderPath(raiz);
             var antiga = Path.Combine(baseDir, "Perseus");
-            var nova = Path.Combine(baseDir, "Vorticis");
+            var nova = Path.Combine(baseDir, NomePasta);
             try
             {
                 if (!Directory.Exists(antiga) || Directory.Exists(nova)) continue;

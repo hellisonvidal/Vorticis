@@ -37,7 +37,7 @@ CloseApplications=yes
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-ptbr.FinishedLabel=O Vorticis foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\Vorticis\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
+ptbr.FinishedLabel=O Vorticis foi instalado e o banco de dados foi configurado automaticamente (na pasta AppData\Local\VorticisEmpresarial\banco do seu usuário), compartilhado por todos os módulos; não é preciso instalar nem configurar o PostgreSQL.%n%nSe o banco não estiver pronto, ao abrir o programa a tela de Conexão traz o botão "Configurar automaticamente".
 
 [Types]
 Name: "completa"; Description: "Instalação completa (todos os módulos da suíte)"
@@ -135,7 +135,7 @@ Filename: "{app}\VorticisCondominio.exe"; Description: "{cm:LaunchProgram,Vortic
 
 [Code]
 // O banco local roda a partir da pasta pgsql do programa; é preciso pará-lo antes de substituir ou remover
-// esses arquivos. Os dados (%LOCALAPPDATA%\Vorticis) NÃO são apagados na desinstalação.
+// esses arquivos. Os dados (%LOCALAPPDATA%\VorticisEmpresarial) NÃO são apagados na desinstalação. A pasta antiga %LOCALAPPDATA%\Vorticis é do Vorticis Suite Logística: não é parada nem apagada.
 procedure PararBancoLocal();
 var
   Codigo, I: Integer;
@@ -145,7 +145,7 @@ begin
   // Perseus: pasta de dados das versões anteriores à troca de nome (o programa a renomeia ao abrir).
   for I := 0 to 1 do
   begin
-    if I = 0 then Dados := ExpandConstant('{localappdata}\Vorticis\banco')
+    if I = 0 then Dados := ExpandConstant('{localappdata}\VorticisEmpresarial\banco')
     else Dados := ExpandConstant('{localappdata}\Perseus\banco');
     if FileExists(PgCtl) and FileExists(Dados + '\postmaster.pid') then
       Exec(PgCtl, 'stop -D "' + Dados + '" -m fast -w -t 60', '', SW_HIDE, ewWaitUntilTerminated, Codigo);
@@ -205,7 +205,7 @@ var
   Codigo: Integer;
   ArquivoLog: String;
 begin
-  ArquivoLog := ExpandConstant('{localappdata}\Vorticis\logs\configuracao-banco.log');
+  ArquivoLog := ExpandConstant('{localappdata}\VorticisEmpresarial\logs\configuracao-banco.log');
   Progresso.SetText('Configurando o banco de dados do Vorticis (pode levar até um minuto)...', '');
   Progresso.SetProgress(0, 0);
   if (not Exec(ExpandConstant('{app}\' + ModuloParaConfigurar()), '--configurar-banco', ExpandConstant('{app}'), SW_HIDE,

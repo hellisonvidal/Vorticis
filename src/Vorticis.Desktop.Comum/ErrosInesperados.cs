@@ -4,7 +4,7 @@ namespace Vorticis.Desktop.Comum;
 
 /// <summary>
 /// Rede de segurança: um erro não previsto na tela (ex.: um botão que lê arquivos) não fecha mais o módulo. O erro vai para a barra de
-/// status e para o arquivo %LOCALAPPDATA%\Vorticis\logs\erros.log, e o usuário continua trabalhando.
+/// status e para o arquivo %LOCALAPPDATA%\VorticisEmpresarial\logs\erros.log, e o usuário continua trabalhando.
 /// </summary>
 public static class ErrosInesperados
 {
