@@ -2,6 +2,8 @@
 
 Menus do módulo Vorticis Contábil. Permissões: cada função depende do seu perfil (veja [Usuários e perfis](01-primeiros-passos.md#usuarios-perfis-e-empresas-por-usuario)).
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 ## Plano de contas
 
 **Para que serve:** a lista de contas da empresa.

@@ -2,6 +2,8 @@
 
 Menus do módulo Vorticis Folha. Os dados dos trabalhadores só aparecem a quem tem alguma permissão da folha (LGPD). Atalhos: **Ctrl+F** abre o cálculo da folha e **Ctrl+E** abre os eventos variáveis.
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 Os cadastros da folha (funcionários, cargos, departamentos, rubricas e tabelas legais) ficam em *Cadastros › Funcionários*. O menu *Cadastros* da Folha não mostra Clientes e Fornecedores, que não são usados na folha (eles continuam nos módulos Contábil e Fiscal).
 
 ## Competência de trabalho (aberta ou fechada)

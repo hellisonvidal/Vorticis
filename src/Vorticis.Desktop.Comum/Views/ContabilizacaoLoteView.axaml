@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:fg="using:Vorticis.Desktop.Comum.Views" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
              xmlns:v="using:Vorticis.Desktop.Comum.Views"
@@ -22,7 +22,7 @@
       <ItemsControl ItemsSource="{Binding Resumo}">
         <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontSize="12" Foreground="#1F3A5F" /></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
-      <DataGrid ItemsSource="{Binding Pendencias}" AutoGenerateColumns="False" Height="260" CanUserSortColumns="False">
+      <DataGrid fg:FiltroGrade.Forcar="True" ItemsSource="{Binding Pendencias}" AutoGenerateColumns="False" Height="260" CanUserSortColumns="False">
         <DataGrid.Columns>
           <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Marcada}" Width="40" />
           <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" IsReadOnly="True" />

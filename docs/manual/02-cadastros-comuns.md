@@ -2,6 +2,8 @@
 
 Estes cadastros existem em todos os módulos e têm o mesmo código em todos eles. Todos usam a barra **Incluir · Alterar · Excluir · Salvar · Cancelar**, mostram o **Nº** de cada registro e a lista dos cadastrados à direita. As datas, CNPJ, CPF e CEP são formatados enquanto você digita.
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 ## Empresas
 
 **Para que serve:** cadastrar as empresas atendidas. Só o administrador cria e altera.

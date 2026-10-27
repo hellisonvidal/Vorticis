@@ -76,6 +76,34 @@ Um perfil é um conjunto de funções liberadas (lançar, estornar, fechar perí
 
 Usados para assinar arquivos (ECD, ECF, SPED) e transmitir o eSocial. A tela fica em *Configurações › Certificados digitais* e é exclusiva do administrador. Veja [Certificados digitais](08-configuracoes.md#certificados-digitais).
 
+## Filtros nas listas
+
+Toda tela que mostra uma **lista de registros** (cadastros, consultas, lançamentos, notas, duplicatas, funcionários, eventos etc.) tem, logo acima da lista, a barra de localização. Ela funciona em todos os módulos do mesmo jeito e age só sobre as linhas que já estão na tela: não busca de novo no banco. Os filtros próprios da tela (período, empresa, situação) continuam valendo; a barra serve para refinar o resultado. Telas de digitação (itens da nota, partidas do lançamento, orçamento mês a mês) não têm a barra.
+
+### Busca rápida
+1. Clique na caixa **Buscar na lista** (ou aperte **Ctrl+F**, que leva o cursor direto para ela).
+2. Digite parte do que procura. A lista mostra só as linhas que têm o texto em **qualquer coluna visível**. Não faz diferença usar maiúsculas ou acentos: *conceicao* encontra *Conceição*.
+3. Com **vários termos separados por espaço**, a linha precisa ter todos: *maria souza* mostra só as linhas que têm *maria* e *souza*.
+4. **Esc** dentro da caixa apaga a busca.
+
+### Filtros por coluna
+1. Clique em **Filtros**. Abre um painel com um quadro para cada coluna.
+2. Colunas de texto: escolha **Contém**, **Começa com** ou **É igual a** e digite o texto.
+3. Colunas de número ou valor: preencha **de** e **até** (qualquer um dos dois pode ficar vazio).
+4. Colunas de data: escolha a data inicial (**De**) e a final (**Até**).
+5. Colunas de sim/não: escolha **Todos**, **Sim** ou **Não**.
+6. Quando a coluna tem poucos valores diferentes, aparece **Escolher valores**: marque só os que quer ver.
+7. Os filtros se somam: a linha precisa passar por todos. O botão passa a mostrar quantos filtros estão ligados (por exemplo, **Filtros (2)**). Clique em **Filtros** de novo para fechar o painel.
+
+### Quantas linhas aparecem
+À direita fica o contador, por exemplo **12 de 340 registros**. Com a lista inteira ele mostra só o total. Para voltar a ver tudo, clique em **Limpar filtros** (o botão só aparece quando há filtro ligado).
+
+### Bom saber
+- Selecionar uma linha, abrir, alterar, excluir ou usar os botões da tela funciona normalmente sobre as linhas que estão à mostra.
+- Linhas incluídas depois também passam pelo filtro ligado.
+- O programa **lembra os filtros de cada tela** enquanto estiver aberto: se você fechar a lista e abrir de novo, a busca continua lá (use **Limpar filtros** para zerar). Ao fechar o programa, os filtros são esquecidos.
+- Na **Folha**, o atalho Ctrl+F continua abrindo o cálculo da folha quando o cursor não está numa lista; dentro de uma lista, Ctrl+F vai para a busca.
+
 ## Tela inicial e ajuda
 
 Depois do login abre a **tela inicial**, com as próximas obrigações da empresa. *Ajuda › Tela inicial* volta a ela; *Ajuda › Licença e registro* mostra o titular da licença; *Ajuda › Sobre* mostra versão, atalhos de teclado e a conexão em uso. O seletor de empresa fica no topo da janela: escolha a empresa antes de trabalhar. Fechar o programa pede confirmação.

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:fg="using:Vorticis.Desktop.Comum.Views" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
@@ -40,7 +40,7 @@
                  Text="Automática: junta as partidas em aberto com o mesmo nº de documento (ignorando espaços, zeros à esquerda e maiúsculas) cujos débitos e créditos se anulam — por exemplo, a nota fiscal lançada na compra e o pagamento da mesma nota. Manual: marque as partidas que se compensam. O que fica em aberto compõe o saldo da conta." />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid ItemsSource="{Binding Linhas}" SelectedItem="{Binding LinhaSelecionada}" AutoGenerateColumns="False" CanUserSortColumns="True">
+    <DataGrid fg:FiltroGrade.Forcar="True" ItemsSource="{Binding Linhas}" SelectedItem="{Binding LinhaSelecionada}" AutoGenerateColumns="False" CanUserSortColumns="True">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Selecionada}" Width="40" />
         <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="100" IsReadOnly="True" />

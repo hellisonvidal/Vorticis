@@ -31,6 +31,8 @@
     <Setter Property="CanUserResizeColumns" Value="True" />
     <!-- Ctrl+C copia só a célula atual (não a linha); Ctrl+V cola na célula editável -->
     <Setter Property="v:CopiaCelula.Ativa" Value="True" />
+    <!-- Busca rápida e filtros por coluna acima das listas de registros (grades somente leitura) -->
+    <Setter Property="v:FiltroGrade.Ativa" Value="True" />
   </Style>
   <!-- Calendário sem destaque do dia atual: só o calendário -->
   <Style Selector="Calendar">

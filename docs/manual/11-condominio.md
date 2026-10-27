@@ -2,6 +2,8 @@
 
 Módulo **Vorticis Condomínio** (ícone vermelho-rubi): administração de condomínios. A empresa escolhida no topo é o **condomínio** (cadastre-o em *Cadastros › Condomínios* com o CNPJ do condomínio e marque o módulo **Condomínio**). Proprietários, inquilinos e fornecedores são cadastrados em *Cadastros › Clientes* e *Fornecedores* (cadastro comum a todos os módulos).
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 ## Ordem dos cadastros
 
 Para as cobranças e os rateios funcionarem, cadastre nesta ordem:

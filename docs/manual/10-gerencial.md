@@ -2,6 +2,8 @@
 
 Módulo **Vorticis Gerencial** (antigo ERP; ícone verde-petróleo, selo "G"): as rotinas do dia a dia da empresa. Ele usa os mesmos dados do Fiscal: produtos, notas fiscais, contas a pagar e a receber (duplicatas) e conciliação são as mesmas telas e os mesmos registros. Clientes e fornecedores vêm de *Cadastros* (comuns a todos os módulos).
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 ## Painel do empresário
 
 **Para que serve:** ver a saúde do negócio numa tela só.

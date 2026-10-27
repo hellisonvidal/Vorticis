@@ -2,6 +2,8 @@
 
 Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de clientes e fornecedores e o plano de contas do módulo Contábil, no mesmo banco.
 
+Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
+
 ## Produtos
 
 **Para que serve:** cadastro das mercadorias e serviços, usado na digitação das notas e na EFD.

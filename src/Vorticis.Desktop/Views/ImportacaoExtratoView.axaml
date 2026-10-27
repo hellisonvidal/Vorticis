@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:fg="using:Vorticis.Desktop.Comum.Views" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views"
              xmlns:vm="using:Vorticis.Desktop.ViewModels"
@@ -96,7 +96,7 @@
     <Grid RowDefinitions="*,8,*" Margin="0,8,0,0">
       <TabControl Padding="0,4,0,0">
         <TabItem Header="Movimentos">
-          <DataGrid ItemsSource="{Binding Transacoes}" AutoGenerateColumns="False" CanUserSortColumns="False">
+          <DataGrid fg:FiltroGrade.Forcar="True" ItemsSource="{Binding Transacoes}" AutoGenerateColumns="False" CanUserSortColumns="False">
             <DataGrid.Columns>
               <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Importar}" Width="44" />
               <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="112" IsReadOnly="True" />
