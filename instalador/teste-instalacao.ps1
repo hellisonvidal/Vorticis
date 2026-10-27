@@ -67,7 +67,7 @@ $senha = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::
 $env:PGPASSWORD = $senha
 $porta = [int]$cfg.Local.Porta
 $psql = Join-Path $pgBin "psql.exe"
-$conexao = "host=127.0.0.1 port=$porta user=postgres dbname=vorticis connect_timeout=5"
+$conexao = "host=127.0.0.1 port=$porta user=postgres dbname=vorticis_empresarial connect_timeout=5"
 $script:ultimoErro = ""
 function Consultar($sql) {
     # PowerShell 5 transforma qualquer saída de erro de programa externo em exceção com "Stop".
