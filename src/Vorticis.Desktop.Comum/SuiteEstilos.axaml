@@ -1,0 +1,90 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Visual da navegação da Suite (tema claro). Marca: azul-marinho #0F2A47 e verde #1FA67A; cada módulo entra com a sua CorDestaque.
+    Superfícies brancas sobre #F4F6FA, bordas #E2E8F0, texto #0F172A / #64748B, cantos de 8 a 12, sombras suaves e transições de 120 ms.
+  -->
+  <Style Selector="Button.su">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.su /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Transitions">
+      <Transitions><BrushTransition Property="Background" Duration="0:0:0.12" /></Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.su:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#EDF1F7" />
+  </Style>
+  <Style Selector="Button.su:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#E1E8F2" />
+  </Style>
+  <Style Selector="Button.su.sel /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#E6EEF9" />
+  </Style>
+  <Style Selector="Button.su.sel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#DCE8F7" />
+  </Style>
+  <Style Selector="Button.su:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- Botão principal da marca (Abrir módulo, etc.) -->
+  <Style Selector="Button.su-marca">
+    <Setter Property="Background" Value="#0F2A47" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="14,7" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.su-marca:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#17406B" />
+    <Setter Property="TextElement.Foreground" Value="White" />
+  </Style>
+
+  <Style Selector="TextBlock.su-titulo"><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#0F172A" /></Style>
+  <Style Selector="TextBlock.su-sub"><Setter Property="FontSize" Value="11" /><Setter Property="Foreground" Value="#64748B" /></Style>
+  <Style Selector="TextBlock.su-secao">
+    <Setter Property="FontSize" Value="10.5" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#7A8AA0" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+  </Style>
+  <Style Selector="Border.su-cartao">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="#E2E8F0" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BoxShadow" Value="0 2 10 0 #14233B55" />
+  </Style>
+  <Style Selector="Border.su-flutuante">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="#CBD5E1" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="0,12,12,0" />
+    <Setter Property="BoxShadow" Value="6 4 22 0 #33233B55" />
+  </Style>
+  <Style Selector="Border.su-selo">
+    <Setter Property="MinWidth" Value="17" /><Setter Property="Height" Value="17" /><Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Background" Value="#E5484D" /><Setter Property="Padding" Value="5,0" />
+  </Style>
+  <Style Selector="Border.su-selo TextBlock">
+    <Setter Property="FontSize" Value="10" /><Setter Property="FontWeight" Value="Bold" /><Setter Property="Foreground" Value="White" />
+    <Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.aba /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="CornerRadius" Value="9,9,0,0" />
+  </Style>
+  <Style Selector="FlyoutPresenter.seletor">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MaxWidth" Value="720" />
+    <Setter Property="MinWidth" Value="0" />
+  </Style>
+</Styles>

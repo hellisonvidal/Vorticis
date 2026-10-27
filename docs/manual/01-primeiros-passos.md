@@ -20,14 +20,18 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
 1. Entre uma vez com o seu usuário: o login vale para todos os módulos. A Suite começa pelo Escritório, quando ele está instalado.
 2. Troque de módulo pela navegação do layout escolhido ou pelas teclas **Ctrl+1**, **Ctrl+2**…. Os módulos aparecem em ordem alfabética em todos os layouts (Condomínio, Contábil, Escritório, Fiscal, Folha, Gerencial), e as teclas seguem essa ordem. A empresa escolhida continua a mesma quando também está liberada no outro módulo. As funções abertas de cada módulo ficam guardadas: ao voltar, elas reaparecem.
-3. Para mudar o visual, use o botão **⚙ Layout**, que aparece em todos os layouts (na barra de abas, na barra lateral, embaixo da árvore e no topo do painel). Também dá para usar *Configurações › Layout da Suite* ou *Exibir › Layout da Suite*. A escolha fica gravada neste computador.
-   - **A – Abas no topo:** uma aba por módulo acima do menu.
-   - **B – Barra lateral (padrão):** ícones coloridos dos módulos à esquerda.
+3. Para mudar o visual, clique no botão discreto **Layout** (ícone de quadradinhos), que fica em todos os layouts: na faixa de abas, na coluna de ícones à esquerda e no topo do painel. Abre uma janelinha com a **miniatura de cada layout**; clique na que você quiser e a troca é imediata, sem fechar o programa. Também dá para usar *Exibir › Layout da Suite* (ou *Configurações › Layout da Suite*), que tem a opção **Escolher com miniaturas…** e a lista dos layouts. A escolha fica gravada **para o seu usuário**: cada pessoa que entra no programa vê o layout que escolheu.
 
-   - **C – Árvore com busca:** todos os módulos e funções num painel à esquerda. Digite no campo **Ir para…** (**Ctrl+K**), por exemplo "férias" ou "balancete", e clique no resultado.
-   - **D – Painel inicial:** um cartão por módulo, com os atalhos e o botão **Abrir módulo**. O botão **Início** volta ao painel e a caixa **Módulo** troca de módulo direto.
+   São cinco opções:
+   - **A – Clássico com abas:** uma aba para cada módulo no topo (com o ícone colorido do módulo) e, logo abaixo, os menus do módulo.
+   - **B – Barra lateral (padrão):** uma coluna estreita à esquerda com os ícones dos módulos. Ao passar o mouse ou clicar, ela abre com os nomes; o módulo em uso mostra as suas funções agrupadas por categoria (Cadastros, Lançamentos, Relatórios…). Clique numa função para abri-la.
+   - **C – Árvore com busca:** todos os módulos e funções numa árvore. No alto ficam o campo **Ir para…** (**Ctrl+K**; digite, por exemplo, "férias" ou "balancete" e clique no resultado), os seus **Favoritos** e os **Recentes**. Na árvore, a estrela ao lado de uma função a marca como favorita.
+   - **D – Painel inicial:** um cartão grande por módulo, com o ícone, as funções que você mais usa e o botão **Abrir módulo**; embaixo, os seus favoritos e recentes e os **próximos vencimentos** das obrigações. Dentro de um módulo, a faixa de cima tem o botão **Voltar ao painel** e a caixa **Módulo** para trocar de módulo direto.
+   - **E – Faixa de opções:** uma aba por módulo e, embaixo, a faixa com botões grandes agrupados por categoria (Cadastros, Lançamentos, Relatórios…). Botões com uma setinha abrem uma lista; **Mais** mostra as demais funções do grupo.
 
-   Na barra lateral (B) e na árvore (C), a navegação fica escondida numa faixa fina à esquerda, para sobrar mais espaço para as telas. Ela abre quando o mouse chega à faixa e se esconde quando ele sai. O botão **Fixar** deixa a navegação sempre aberta; **Soltar** volta a esconder.
+   Os menus de cima (Cadastros, Lançamentos…) continuam em todos os layouts, com o ícone de cada categoria, e todas as funções continuam acessíveis em qualquer layout.
+
+   **Fixar e ocultar os menus.** No B e no C, a navegação da esquerda fica **oculta** por padrão: só a coluna de ícones aparece, para sobrar espaço para as telas. Ao passar o mouse ou clicar na coluna, a navegação abre **por cima** das telas e se fecha quando o mouse sai ou quando você escolhe uma função. O botão **Fixar** (alfinete) deixa a navegação sempre aberta, empurrando as telas para o lado; **Ocultar** volta a escondê-la. No A e no E existe o botão **Ocultar faixa / Fixar faixa**: oculta, a faixa mostra só os títulos das abas (no A, só os ícones) e a faixa de botões do E abre por cima ao passar o mouse ou clicar numa aba. Essas escolhas também ficam gravadas para o seu usuário e podem ser feitas em *Exibir › Layout da Suite*.
 4. O número vermelho no ícone ou na aba mostra quantas funções estão abertas naquele módulo. As janelas das funções ficam sempre na frente da janela principal: para alternar entre elas, clique no nome da função na barra de funções abertas.
 5. **Sair (trocar de usuário)**, em qualquer módulo, encerra a sessão em todos.
 

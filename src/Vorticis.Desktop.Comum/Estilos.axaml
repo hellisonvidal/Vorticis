@@ -8,6 +8,7 @@
     <x:Double x:Key="DataGridFontSize">12.5</x:Double>
   </Styles.Resources>
   <FluentTheme />
+  <StyleInclude Source="avares://Vorticis.Desktop.Comum/SuiteEstilos.axaml" />
   <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
   <Style Selector="TextBlock.titulo">
     <Setter Property="FontSize" Value="16" />

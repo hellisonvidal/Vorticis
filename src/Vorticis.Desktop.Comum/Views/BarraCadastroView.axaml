@@ -1,17 +1,28 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.BarraCadastroView"
              x:DataType="vm:CadastroViewModel">
   <!-- Barra padrão dos cadastros -->
   <StackPanel Spacing="4">
     <StackPanel Orientation="Horizontal" Spacing="6">
-      <Button Content="Incluir" Command="{Binding IncluirCommand}" MinWidth="86" HorizontalContentAlignment="Center" />
-      <Button Content="Alterar" Command="{Binding AlterarCommand}" MinWidth="86" HorizontalContentAlignment="Center" />
-      <Button Content="Excluir" Command="{Binding ExcluirCommand}" MinWidth="86" HorizontalContentAlignment="Center" />
+      <Button Command="{Binding IncluirCommand}" MinWidth="86" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Novo}" Width="14" Height="14" /><TextBlock Text="Incluir" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Command="{Binding AlterarCommand}" MinWidth="86" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Editar}" Width="14" Height="14" /><TextBlock Text="Alterar" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Command="{Binding ExcluirCommand}" MinWidth="86" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Excluir}" Width="14" Height="14" /><TextBlock Text="Excluir" VerticalAlignment="Center" /></StackPanel>
+      </Button>
       <Rectangle Width="1" Fill="#D0D5DD" Margin="6,2" />
-      <Button Content="Salvar" Command="{Binding SalvarCommand}" Classes="accent" MinWidth="86" HorizontalContentAlignment="Center" />
-      <Button Content="Cancelar" Command="{Binding CancelarCommand}" MinWidth="86" HorizontalContentAlignment="Center" />
+      <Button Command="{Binding SalvarCommand}" Classes="accent" MinWidth="86" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Salvar}" Width="14" Height="14" /><TextBlock Text="Salvar" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Command="{Binding CancelarCommand}" MinWidth="86" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Cancelar}" Width="14" Height="14" /><TextBlock Text="Cancelar" VerticalAlignment="Center" /></StackPanel>
+      </Button>
     </StackPanel>
     <TextBlock Text="{Binding SituacaoCadastro}" FontSize="11" Foreground="#44506A"
                IsVisible="{Binding SituacaoCadastro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />

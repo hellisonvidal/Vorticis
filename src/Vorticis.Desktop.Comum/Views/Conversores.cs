@@ -6,6 +6,12 @@ namespace Vorticis.Desktop.Comum.Views;
 
 public static class Conversores
 {
+    /// <summary>Negrito quando verdadeiro (nome do módulo na árvore da Suite).</summary>
+    public static readonly IValueConverter NegritoSe = new FuncValueConverter<bool, Avalonia.Media.FontWeight>(b => b ? Avalonia.Media.FontWeight.SemiBold : Avalonia.Media.FontWeight.Normal);
+
+    /// <summary>Estrela cheia (favorito) ou só o contorno.</summary>
+    public static readonly IValueConverter EstrelaSe = new FuncValueConverter<bool, Avalonia.Media.Geometry?>(b => b ? Icones.Star : Icones.StarOutline);
+
     public static readonly IValueConverter OkOuErro =
         new FuncValueConverter<bool, IBrush>(ok => ok ? new SolidColorBrush(Color.Parse("#1B6E3A")) : new SolidColorBrush(Color.Parse("#B3261E")));
 

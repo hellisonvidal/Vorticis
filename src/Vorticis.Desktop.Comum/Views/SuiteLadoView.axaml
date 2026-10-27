@@ -1,89 +1,45 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteLadoView" x:DataType="vm:SuiteViewModel">
-  <!-- Suite: navegação à esquerda. B (padrão) = barra lateral com os ícones dos módulos; C = árvore com todas as funções e busca -->
-  <UserControl.Styles>
-    <Style Selector="Button.plano">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="Cursor" Value="Hand" />
-    </Style>
-    <Style Selector="Button.plano:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Border.icone-lateral">
-      <Setter Property="Background" Value="#334155" />
-    </Style>
-    <Style Selector="Button.plano:pointerover Border.icone-lateral">
-      <Setter Property="Background" Value="#475569" />
-    </Style>
-    <Style Selector="Button.no:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#F1F5F9" />
-    </Style>
-    <Style Selector="TextBlock.modulo">
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="FontSize" Value="13.5" />
-    </Style>
-  </UserControl.Styles>
+  <!--
+    Suite, layouts B (barra lateral) e C (árvore com busca). Por padrão fica oculta: só a faixa de ícones (Rail) aparece e a navegação abre
+    por cima das telas ao passar o mouse ou clicar. Fixada, a navegação completa fica no lugar da faixa e empurra o conteúdo.
+  -->
   <Panel Name="Navegacao" Background="Transparent">
-    <!-- Recolhida: faixa fina à esquerda; o mouse sobre ela abre a navegação (SuiteLadoView.axaml.cs) -->
-    <Border Name="FaixaLateral" Width="10" Background="#0F172A" IsVisible="{Binding MostraFaixaLateral}" ToolTip.Tip="Módulos (aproxime o mouse)">
-      <TextBlock Text="›" Foreground="#94A3B8" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-    </Border>
-    <Border Name="FaixaArvore" Width="10" Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,0,1,0" IsVisible="{Binding MostraFaixaArvore}"
-            ToolTip.Tip="Módulos e funções (aproxime o mouse)">
-      <TextBlock Text="›" Foreground="#64748B" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-    </Border>
+    <v:SuiteNavegacaoView Name="NavFixa" IsVisible="{Binding MostraNavFixa}" />
 
-    <!-- B: barra lateral -->
-    <Border Name="BarraLateral" Background="#0F172A" Width="86" IsVisible="{Binding MostraBarraLateral}">
+    <!-- faixa de ícones (navegação oculta) -->
+    <Border Name="Rail" Width="60" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" IsVisible="{Binding MostraRail}">
       <DockPanel>
-        <Border DockPanel.Dock="Top" Margin="0,12,0,14" Width="48" Height="48" CornerRadius="14" Background="#38BDF8"
-                HorizontalAlignment="Center" ToolTip.Tip="{Binding Nome}">
-          <TextBlock Text="V" FontSize="24" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Border>
-        <Button DockPanel.Dock="Bottom" Classes="plano" Margin="0,0,0,14" HorizontalAlignment="Center" Command="{Binding AlternarFixaCommand}"
-                ToolTip.Tip="Fixar: a barra fica sempre aberta. Soltar: ela se esconde e abre ao aproximar o mouse">
-          <TextBlock Text="{Binding TextoFixar}" FontSize="10.5" Foreground="#94A3B8" HorizontalAlignment="Center" />
+        <Image DockPanel.Dock="Top" Source="avares://Vorticis.Desktop.Comum/Assets/marca-vorticis.png" Width="32" Height="32" Margin="0,14,0,10"
+               ToolTip.Tip="{Binding Nome}" />
+        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,12" HorizontalAlignment="Center">
+          <Button Classes="su" Padding="9" Command="{Binding AlternarFixaCommand}" ToolTip.Tip="Fixar a navegação (ela fica sempre aberta e empurra as telas)">
+            <PathIcon Data="{x:Static v:Icones.Pin}" Width="18" Height="18" Foreground="#475569" />
+          </Button>
+          <v:SuiteEscolhaLayoutView Compacto="True" />
+        </StackPanel>
+        <Border DockPanel.Dock="Top" Height="1" Background="#EDF1F7" Margin="12,0,12,8" />
+        <Button DockPanel.Dock="Top" Classes="su" Margin="8,0,8,4" Padding="0,9" IsVisible="{Binding EhArvore}" ToolTip.Tip="Buscar uma função (Ctrl+K)">
+          <PathIcon Data="{x:Static v:Icones.Magnify}" Width="20" Height="20" Foreground="#475569" />
         </Button>
-        <Button Name="BotaoLayoutLateral" DockPanel.Dock="Bottom" Classes="plano" Margin="0,8,0,6" HorizontalAlignment="Center" ToolTip.Tip="Layout da Suite (também em Exibir e em Configurações)">
-          <TextBlock Text="⚙" FontSize="20" Foreground="#94A3B8" HorizontalAlignment="Center" />
-          <Button.Flyout>
-            <MenuFlyout Placement="RightEdgeAlignedBottom">
-              <MenuItem Header="A – Abas no topo" Command="{Binding EscolherLayoutCommand}" CommandParameter="{x:Static vm:LayoutSuite.Abas}" />
-              <MenuItem Header="B – Barra lateral (padrão)" Command="{Binding EscolherLayoutCommand}" CommandParameter="{x:Static vm:LayoutSuite.Lateral}" />
-              <MenuItem Header="C – Árvore com busca" Command="{Binding EscolherLayoutCommand}" CommandParameter="{x:Static vm:LayoutSuite.Arvore}" />
-              <MenuItem Header="D – Painel inicial" Command="{Binding EscolherLayoutCommand}" CommandParameter="{x:Static vm:LayoutSuite.Painel}" />
-            </MenuFlyout>
-          </Button.Flyout>
-        </Button>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Hidden">
           <ItemsControl ItemsSource="{Binding Modulos}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ModuloSuite">
-                <Button Classes="plano" Margin="0,0,0,10" ToolTip.Tip="{Binding NomeCompleto}"
+                <Button Classes="su" Classes.sel="{Binding Ativo}" Margin="8,2" Padding="0,8" ToolTip.Tip="{Binding NomeCompleto}"
                         Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).TrocarCommand}" CommandParameter="{Binding}">
-                  <Grid>
-                    <Border Width="4" HorizontalAlignment="Left" CornerRadius="0,3,3,0" Background="{Binding Cor}" IsVisible="{Binding Ativo}" />
-                    <Border Margin="8,0" CornerRadius="12" Background="#1E293B" IsVisible="{Binding Ativo}" />
-                    <StackPanel Margin="0,8" Spacing="5">
-                      <Panel Width="48" Height="48" HorizontalAlignment="Center">
-                        <Border CornerRadius="13" Background="{Binding Cor}" />
-                        <Border Classes="icone-lateral" CornerRadius="13" IsVisible="{Binding !Ativo}" />
-                        <TextBlock Text="{Binding Sigla}" FontSize="15" FontWeight="Bold" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <Border Width="18" Height="18" CornerRadius="9" Background="#EF4444" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                Margin="0,-5,-5,0" IsVisible="{Binding TemAbertas}" ToolTip.Tip="Funções abertas neste módulo">
-                          <TextBlock Text="{Binding Abertas}" FontSize="10" FontWeight="Bold" Foreground="White"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                      </Panel>
-                      <TextBlock Text="{Binding Nome}" FontSize="10.5" Foreground="#CBD5E1" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                  </Grid>
+                  <Panel>
+                    <Border Width="3" Height="20" CornerRadius="0,2,2,0" Background="{Binding Cor}" HorizontalAlignment="Left" Margin="-8,0,0,0" IsVisible="{Binding Ativo}" />
+                    <Panel Width="30" Height="30">
+                      <Border CornerRadius="8" Background="{Binding Cor}" Opacity="0.14" />
+                      <PathIcon Data="{Binding Icone}" Width="19" Height="19" Foreground="{Binding Cor}" />
+                    </Panel>
+                    <Border Classes="su-selo" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,2,0" IsVisible="{Binding TemAbertas}"
+                            ToolTip.Tip="Funções abertas neste módulo">
+                      <TextBlock Text="{Binding Abertas}" />
+                    </Border>
+                  </Panel>
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -92,45 +48,10 @@
       </DockPanel>
     </Border>
 
-    <!-- C: árvore com todos os módulos e funções -->
-    <Border Name="PainelArvore" Width="260" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" IsVisible="{Binding MostraArvore}">
-      <DockPanel Margin="10,10,6,10">
-        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,4,0">
-          <Button DockPanel.Dock="Right" Content="{Binding TextoFixar}" Command="{Binding AlternarFixaCommand}" Padding="10,4"
-                  ToolTip.Tip="Fixar: o painel fica sempre aberto. Soltar: ele se esconde e abre ao aproximar o mouse" />
-          <v:SuiteEscolhaLayoutView HorizontalAlignment="Left" />
-        </DockPanel>
-        <TextBox DockPanel.Dock="Top" Name="CampoBusca" Text="{Binding Busca}" Watermark="Ir para… (Ctrl+K)  ex.: férias, balancete" Margin="0,0,4,10" />
-        <TextBlock DockPanel.Dock="Top" Text="MÓDULOS" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="4,0,0,6" IsVisible="{Binding !Buscando}" />
-        <Panel>
-          <ListBox Name="ResultadosBusca" ItemsSource="{Binding Resultados}" IsVisible="{Binding Buscando}" Background="Transparent">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:NoSuite">
-                <Button Classes="plano no" Padding="6,4" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                  <StackPanel Spacing="1">
-                    <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Caminho}" FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
-                </Button>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-          <TreeView Name="ArvoreModulos" ItemsSource="{Binding Arvore}" IsVisible="{Binding !Buscando}">
-            <TreeView.ItemTemplate>
-              <TreeDataTemplate x:DataType="vm:NoSuite" ItemsSource="{Binding Filhos}">
-                <Button Classes="plano no" Padding="4,3" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Border Width="20" Height="20" CornerRadius="5" Background="{Binding Modulo.Cor}" IsVisible="{Binding EhModulo}">
-                      <TextBlock Text="{Binding Modulo.Sigla}" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" Classes.modulo="{Binding EhModulo}" />
-                  </StackPanel>
-                </Button>
-              </TreeDataTemplate>
-            </TreeView.ItemTemplate>
-          </TreeView>
-        </Panel>
-      </DockPanel>
-    </Border>
+    <!-- a mesma navegação, aberta por cima das telas (janela própria, para ficar acima das funções abertas) -->
+    <Popup Name="Flutuante" IsOpen="{Binding NavFlutuanteAberta, Mode=OneWay}" PlacementTarget="{Binding #Rail}" Placement="AnchorAndGravity"
+           PlacementAnchor="TopRight" PlacementGravity="BottomRight" IsLightDismissEnabled="False" Topmost="True">
+      <v:SuiteNavegacaoView Name="NavFlutuante" Flutuante="True" Height="{Binding #Rail.Bounds.Height}" />
+    </Popup>
   </Panel>
 </UserControl>

@@ -1,16 +1,23 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.BarraExportacaoView"
              x:DataType="vm:RelatorioViewModel">
   <!-- Exportação padrão dos relatórios (a partir do que está na tela). As assinaturas valem para o PDF. -->
   <StackPanel Spacing="3">
     <StackPanel Orientation="Horizontal" Spacing="6">
       <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="#44506A" />
-      <Button Content="PDF" Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center" />
-      <Button Content="Excel (.xlsx)" Command="{Binding ExportarExcelCommand}" IsVisible="{Binding PodeExportarPlanilha}" />
-      <Button Content="CSV" Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportarPlanilha}" MinWidth="60"
-              HorizontalContentAlignment="Center" />
+      <Button Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Pdf}" Width="14" Height="14" /><TextBlock Text="PDF" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Command="{Binding ExportarExcelCommand}" IsVisible="{Binding PodeExportarPlanilha}">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Excel}" Width="14" Height="14" /><TextBlock Text="Excel (.xlsx)" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Command="{Binding ExportarCsvCommand}" IsVisible="{Binding PodeExportarPlanilha}" MinWidth="60"
+              HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Csv}" Width="14" Height="14" /><TextBlock Text="CSV" VerticalAlignment="Center" /></StackPanel>
+      </Button>
     </StackPanel>
     <StackPanel Orientation="Horizontal" Spacing="12">
       <CheckBox Content="Assinatura do sócio/responsável" IsChecked="{Binding AssinaturaResponsavel}" FontSize="11" MinHeight="20" Padding="4,0" />

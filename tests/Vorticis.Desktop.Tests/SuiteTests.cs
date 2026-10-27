@@ -29,8 +29,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         var suite = new SuiteViewModel(modulos);
         // em ordem alfabética em todos os layouts; o Escritório (que administra a suíte) faz o login
         Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Modulos.Select(m => m.Nome));
-        Assert.Equal(["Vorticis Condomínio", "Vorticis Contábil", "Vorticis Escritório", "Vorticis Fiscal", "Vorticis Folha de Pagamento", "Vorticis Gerencial"],
-                     suite.Arvore.Select(n => n.Titulo));
+        Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Arvore.Select(n => n.Titulo));
         Assert.Equal(LayoutSuite.Lateral, suite.Layout);              // B é o padrão
         Assert.True(suite.EhLateral);
         Assert.Equal("Escritório", suite.Principal.Modulo.NomeCurto);
@@ -41,6 +40,11 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         suite.Layout = LayoutSuite.Arvore;                            // a escolha fica gravada para a próxima abertura
         Assert.Equal(LayoutSuite.Arvore, SuiteViewModel.LerLayout());
         Assert.Equal(LayoutSuite.Arvore, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
+        suite.Layout = LayoutSuite.Faixa;                             // E, a faixa de opções, também é gravada
+        Assert.Equal(LayoutSuite.Faixa, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
+        suite.Layout = LayoutSuite.Arvore;
+        Assert.Equal(5, SuiteViewModel.Opcoes.Count);
+        Assert.Equal(Enum.GetValues<LayoutSuite>(), SuiteViewModel.Opcoes.Select(o => o.Valor));
 
         Assert.Equal(6, suite.Arvore.Count);
         suite.Busca = "ferias";                                       // sem acento e sem maiúscula
@@ -63,6 +67,127 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     }
 
     [Fact]
+    public void Troca_de_layout_e_preferencias_por_usuario()
+    {
+        SuiteViewModel.ArquivoLayout = ArquivoTemporario();
+        var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+        // oculto por padrão: só a faixa de ícones; a navegação abre por cima ao passar o mouse e fecha ao escolher
+        Assert.False(suite.LateralFixa);
+        Assert.True(suite.MostraRail);
+        Assert.False(suite.MostraNavFixa);
+        suite.LateralAberta = true;
+        Assert.True(suite.NavFlutuanteAberta);
+        suite.LateralAberta = false;
+        // fixada, a navegação ocupa o lugar da faixa (empurra o conteúdo)
+        suite.AlternarFixaCommand.Execute(null);
+        Assert.True(suite.MostraNavFixa);
+        Assert.False(suite.MostraRail);
+        Assert.Equal("Ocultar", suite.TextoFixar);
+        suite.AlternarFixaCommand.Execute(null);
+        Assert.Equal("Fixar", suite.TextoFixar);
+
+        // faixa de cima (A e E): fixa por padrão; oculta, só os títulos das abas
+        suite.Layout = LayoutSuite.Faixa;
+        Assert.True(suite.MostraCorpoFaixa);
+        suite.AlternarFaixaCommand.Execute(null);
+        Assert.False(suite.MostraCorpoFaixa);
+        suite.FaixaAberta = true;
+        Assert.True(suite.FaixaFlutuanteAberta);
+        suite.Layout = LayoutSuite.Abas;
+        Assert.True(suite.AbasCompactas);                 // A oculta: abas só com o ícone
+        Assert.False(suite.FaixaFlutuanteAberta);
+
+        // cada usuário tem as suas preferências
+        const long ana = 101, beto = 102;
+        suite.UsarPreferenciasDe(ana);
+        suite.Layout = LayoutSuite.Painel;
+        suite.LateralFixa = true;
+        suite.FaixaFixa = false;
+        var fiscal = suite.Modulos.Single(m => m.Nome == "Fiscal");
+        var folha = suite.Arvore.SelectMany(n => n.Filhos).Count();
+        Assert.True(folha > 0);
+        suite.UsarPreferenciasDe(beto);                    // sem arquivo ainda: vale a última escolha do computador
+        suite.Layout = LayoutSuite.Arvore;
+        suite.LateralFixa = false;
+        suite.FaixaFixa = true;
+        var no = fiscal.Raiz.Filhos.SelectMany(Folhas).First();
+        suite.AlternarFavoritoCommand.Execute(no);
+        Assert.Contains(suite.Favoritos, f => f.Id == no.Id);
+
+        var outra = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));   // nova abertura do programa
+        outra.UsarPreferenciasDe(ana);
+        Assert.Equal(LayoutSuite.Painel, outra.Layout);
+        Assert.True(outra.LateralFixa);
+        Assert.False(outra.FaixaFixa);
+        Assert.Empty(outra.Favoritos);
+        outra.UsarPreferenciasDe(beto);
+        Assert.Equal(LayoutSuite.Arvore, outra.Layout);
+        Assert.False(outra.LateralFixa);
+        Assert.True(outra.FaixaFixa);
+        Assert.Contains(outra.Favoritos, f => f.Id == no.Id);
+        Assert.True(File.Exists(SuiteViewModel.ArquivoDoUsuario(ana)));
+
+        // troca imediata entre os cinco layouts (flags coerentes)
+        foreach (var l in Enum.GetValues<LayoutSuite>())
+        {
+            outra.EscolherLayoutCommand.Execute(l);
+            Assert.Equal(l, outra.Layout);
+            Assert.Equal(l == LayoutSuite.Abas || l == LayoutSuite.Faixa, outra.MostraAbas);
+            Assert.Equal(l == LayoutSuite.Lateral || l == LayoutSuite.Arvore, outra.NavLateral);
+        }
+    }
+
+    private static IEnumerable<NoSuite> Folhas(NoSuite n) => n.Filhos.Count == 0 ? (n.Chave is null ? [] : [n]) : n.Filhos.SelectMany(Folhas);
+
+    [Fact]
+    public async Task Todas_as_funcoes_acessiveis_nas_listas_da_navegacao()
+    {
+        await ForaDaSessao(headless.Sessao.Dispatch(() => { Todas_as_funcoes_corpo(); return true; }, TestContext.Current.CancellationToken));
+    }
+
+    private static void Todas_as_funcoes_corpo()
+    {
+        SuiteViewModel.ArquivoLayout = ArquivoTemporario();
+        var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+        foreach (var m in suite.Modulos)
+        {
+            var esperadas = Chaves(m.Vm).ToHashSet();
+            Assert.NotEmpty(esperadas);
+            Assert.Equal(esperadas, Folhas(m.Raiz).Select(n => n.Chave!).ToHashSet());                  // árvore (C)
+            Assert.Equal(esperadas, m.Linhas.Where(n => n.EhFuncao).Select(n => n.Chave!).ToHashSet());  // barra lateral (B)
+            Assert.All(m.Linhas.Where(n => n.EhGrupo), n => Assert.NotNull(n.Icone));                    // categorias com ícone
+        }
+    }
+
+    private static IEnumerable<string> ChavesDoMenu(IEnumerable<object?> itens) =>
+        itens.OfType<MenuItem>().Where(i => i.IsVisible).SelectMany(i => i.ItemCount > 0 ? ChavesDoMenu(i.Items.Cast<object?>())
+                                                 : (i.CommandParameter as string) is { } c && c != TelasComuns.Sair ? [c] : []);
+
+    private static IEnumerable<string> Chaves(MainViewModelBase vm) => Chaves(vm, vm.MenusVisiveis);
+
+    private static IEnumerable<string> Chaves(MainViewModelBase vm, IEnumerable<Vorticis.Desktop.Comum.Modulos.ItemMenu> itens) =>
+        itens.Where(i => i.Recurso is null || vm.RecursoAtivo(i.Recurso))
+             .SelectMany(i => i.Filhos is null ? (i.Chave is null || i.EhSeparador ? [] : [i.Chave]) : Chaves(vm, i.Filhos));
+
+    [Fact]
+    public async Task Icones_dos_modulos_e_das_categorias()
+    {
+        await ForaDaSessao(headless.Sessao.Dispatch(() => { Icones_corpo(); return true; }, TestContext.Current.CancellationToken));
+    }
+
+    private static void Icones_corpo()
+    {
+        Assert.NotNull(Icones.Salvar);
+        Assert.NotNull(Icones.Obter("FilePdfBox"));
+        Assert.Null(Icones.Obter("NaoExiste"));
+        string[] exe = ["VorticisEscritorio", "VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisGerencial", "VorticisCondominio"];
+        Assert.Equal(exe.Length, exe.Select(e => IconesSuite.DoModulo(e)).Distinct().Count());   // um desenho diferente por módulo
+        foreach (var c in new[] { "_Cadastros", "_Lançamentos", "C_onsultas", "_Relatórios", "_Integrações", "_Obrigações", "Con_figurações", "_Ajuda" })
+            Assert.NotSame(Icones.FolderOutline, IconesSuite.DaCategoria(c));
+        Assert.Same(Icones.FolderOutline, IconesSuite.DaCategoria("Qualquer coisa"));
+    }
+
+    [Fact]
     public async Task Janela_unica_com_os_quatro_layouts_e_login_unico()
     {
         BancoDeTeste.ExigirBanco();
@@ -80,18 +205,19 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             janela.Show();
             Dispatcher.UIThread.RunJobs();
             Assert.Equal("Vorticis Suite Empresarial — Escritório", janela.Title);
-            // B recolhida numa faixa fina até o mouse chegar; "Fixar" deixa aberta (e fica gravado)
+            // B oculta: só a faixa de ícones; a navegação abre por cima ao passar o mouse; "Fixar" deixa aberta (e fica gravado)
             var ladoB = janela.FindDescendantOfType<SuiteLadoView>()!;
-            Assert.True(ladoB.FindControl<Border>("FaixaLateral")!.IsVisible);
-            Assert.False(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            Assert.True(ladoB.FindControl<Border>("Rail")!.IsVisible);
+            Assert.False(ladoB.FindControl<SuiteNavegacaoView>("NavFixa")!.IsVisible);
+            Assert.False(ladoB.FindControl<Avalonia.Controls.Primitives.Popup>("Flutuante")!.IsOpen);
             suite.LateralAberta = true;
-            Assert.True(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            Assert.True(ladoB.FindControl<Avalonia.Controls.Primitives.Popup>("Flutuante")!.IsOpen);
             suite.LateralAberta = false;
             suite.AlternarFixaCommand.Execute(null);
-            Assert.True(ladoB.FindControl<Border>("BarraLateral")!.IsVisible);
+            Assert.True(ladoB.FindControl<SuiteNavegacaoView>("NavFixa")!.IsVisible);
+            Assert.False(ladoB.FindControl<Border>("Rail")!.IsVisible);
             Assert.Equal("fixa", File.ReadAllText(SuiteViewModel.ArquivoFixa));
             suite.AlternarFixaCommand.Execute(null);
-            suite.LateralAberta = true;
             Assert.NotNull(janela.CaptureRenderedFrame());
 
             // login uma vez, no principal: todos os módulos entram com o mesmo usuário
@@ -134,24 +260,37 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var fimBarra = janela.PointToScreen(barra.TranslatePoint(new Avalonia.Point(0, barra.Bounds.Height), janela)!.Value).Y;
             Assert.True(funcao.Position.Y >= fimBarra, $"função em {funcao.Position.Y}, barra termina em {fimBarra}");
 
-            // os quatro layouts renderizam
+            // os cinco layouts renderizam e mostram só o que é deles
             foreach (var layout in Enum.GetValues<LayoutSuite>())
             {
                 suite.Layout = layout;
                 Dispatcher.UIThread.RunJobs();
                 Dispatcher.UIThread.RunJobs();
-                var quadro = janela.CaptureRenderedFrame();
-                Assert.NotNull(quadro);
-                if (Environment.GetEnvironmentVariable("VORTICIS_SCREENSHOTS") is { } pasta) quadro.Save(Path.Combine(pasta, $"suite_{layout}.png"));
+                Assert.NotNull(janela.CaptureRenderedFrame());
                 var lado = janela.FindDescendantOfType<SuiteLadoView>()!;
                 var topo = janela.FindDescendantOfType<SuiteTopoView>()!;
-                Assert.Equal(layout == LayoutSuite.Lateral, lado.FindControl<Border>("BarraLateral")!.IsVisible);
-                Assert.Equal(layout == LayoutSuite.Arvore, lado.FindControl<Border>("PainelArvore")!.IsVisible);
-                // o botão Layout aparece em todos os layouts
-                Assert.Contains(janela.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>(), b => b.IsEffectivelyVisible || layout == LayoutSuite.Lateral);
-                Assert.Equal(layout == LayoutSuite.Abas, topo.FindControl<Border>("BarraAbas")!.IsVisible);
+                Assert.Equal(layout is LayoutSuite.Lateral or LayoutSuite.Arvore, lado.FindControl<Border>("Rail")!.IsVisible);
+                Assert.Equal(layout is LayoutSuite.Abas or LayoutSuite.Faixa, topo.FindControl<Border>("BarraAbas")!.IsVisible);
+                Assert.Equal(layout == LayoutSuite.Faixa, topo.FindControl<ContentControl>("CorpoFixo")!.IsVisible);
                 Assert.Equal(layout == LayoutSuite.Painel, topo.FindControl<Border>("BarraPainel")!.IsVisible);
                 Assert.Equal(layout == LayoutSuite.Painel, janela.FindControl<ContentControl>("SuitePainel")!.IsVisible);   // D abre no painel
+                Assert.Contains(janela.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>(), b => b.IsEffectivelyVisible);   // o botão Layout está em todos
+                // o menu do módulo (todas as funções) continua à mostra em qualquer layout
+                var menu = janela.FindControl<Menu>("MenuPrincipal")!;
+                Assert.Equal(Chaves(M("Contábil").Vm).Count(c => c != TelasComuns.Sair), ChavesDoMenu(menu.Items).Count());
+                if (layout == LayoutSuite.Faixa)
+                {
+                    // faixa de opções: todas as funções do módulo estão em algum botão ou no "Mais"
+                    var ativo = suite.Ativo;
+                    Assert.Equal(Chaves(ativo.Vm).Order(), topo.ChavesDaFaixa().Order());
+                    // oculta, só as abas ficam à mostra; abre por cima ao clicar
+                    suite.AlternarFaixaCommand.Execute(null);
+                    Assert.False(topo.FindControl<ContentControl>("CorpoFixo")!.IsVisible);
+                    suite.FaixaAberta = true;
+                    Assert.True(topo.FindControl<Avalonia.Controls.Primitives.Popup>("CorpoFlutuante")!.IsOpen);
+                    suite.AlternarFaixaCommand.Execute(null);
+                    Assert.True(topo.FindControl<ContentControl>("CorpoFixo")!.IsVisible);
+                }
             }
 
             // painel D: abrir um módulo pelo cartão sai do painel
@@ -175,6 +314,108 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.All(suite.Modulos, m => Assert.False(m.Vm.Logado, m.Nome));
             Assert.Same(M("Escritório"), suite.Ativo);
             Assert.Same(suite.Principal, janela.DataContext);
+            janela.Close();
+            return true;
+        }, ct));
+        Assert.True(ok);
+    }
+
+    /// <summary>
+    /// Verificação visual: renderiza os cinco layouts (e o seletor) em 1366x768 com dados de exemplo. Com VORTICIS_SCREENSHOTS apontando para uma
+    /// pasta, grava os PNGs (layout_A_*.png ... seletor.png) para conferir a olho.
+    /// </summary>
+    [Fact]
+    public async Task Capturas_dos_cinco_layouts_e_do_seletor()
+    {
+        BancoDeTeste.ExigirBanco();
+        SuiteViewModel.ArquivoLayout = ArquivoTemporario();
+        var adm = await db.AdminAsync();
+        await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), TestContext.Current.CancellationToken);
+        var ct = TestContext.Current.CancellationToken;
+        var pasta = Environment.GetEnvironmentVariable("VORTICIS_SCREENSHOTS");
+        if (pasta is not null) Directory.CreateDirectory(pasta);
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            ModulosDaSuite.IncluirTelas(Avalonia.Application.Current!);
+            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+            var janela = new MainWindow();
+            janela.UsarSuite(suite);
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            await suite.Principal.InicializarAsync(db.ConnectionString);
+            var login = Assert.IsType<LoginViewModel>(suite.Principal.Conteudo);
+            (login.Usuario, login.Senha) = ("admin_teste", "Senha1234");
+            await login.EntrarCommand.ExecuteAsync(null);
+            for (var i = 0; i < 200 && suite.Modulos.Any(m => !m.Vm.Logado); i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            janela.WindowState = WindowState.Normal;
+            janela.Width = 1366; janela.Height = 768;
+            for (var i = 0; i < 5; i++) { await Task.Delay(30, ct); Dispatcher.UIThread.RunJobs(); }
+
+            // dados de exemplo: vencimentos, favoritos e funções usadas
+            ModuloSuite M(string nome) => suite.Modulos.Single(m => m.Nome == nome);
+            var inicio = suite.Vencimentos!;
+            inicio.Proximas.Clear();
+            var amarelo = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#FDE68A"));
+            var vermelho = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#FECACA"));
+            var verde = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#BBF7D0"));
+            inicio.Proximas.Add(new("10/11", "GPS/INSS (10/2026)", "vence em 14 dias", amarelo));
+            inicio.Proximas.Add(new("20/11", "DCTFWeb (10/2026)", "vence em 24 dias", verde));
+            inicio.Proximas.Add(new("25/10", "EFD-Reinf (09/2026)", "atrasada", vermelho));
+            inicio.TemProximas = true;
+            NoSuite Achar(string modulo, string trecho) => M(modulo).Raiz.Filhos.SelectMany(Folhas).First(n => n.Titulo.Contains(trecho, StringComparison.OrdinalIgnoreCase));
+            suite.AlternarFavoritoCommand.Execute(Achar("Contábil", "Balancete"));
+            suite.AlternarFavoritoCommand.Execute(Achar("Folha", "Férias"));
+            suite.AlternarFavoritoCommand.Execute(Achar("Fiscal", "Notas"));
+            suite.AbrirFuncaoCommand.Execute(Achar("Contábil", "Plano de contas"));
+            suite.AbrirFuncaoCommand.Execute(Achar("Contábil", "Razão"));
+            suite.AbrirFuncaoCommand.Execute(Achar("Folha", "Funcionários"));
+            for (var i = 0; i < 3; i++) { await Task.Delay(30, ct); Dispatcher.UIThread.RunJobs(); }
+            foreach (var m in suite.Modulos) foreach (var f in m.Vm.JanelasAbertas.ToList()) m.Vm.FecharFuncaoCommand.Execute(f);
+            suite.Trocar(M("Contábil"));
+            Dispatcher.UIThread.RunJobs();
+
+            void Foto(string nome)
+            {
+                for (var i = 0; i < 3; i++) Dispatcher.UIThread.RunJobs();
+                var quadro = janela.CaptureRenderedFrame();
+                Assert.NotNull(quadro);
+                if (pasta is not null) quadro.Save(Path.Combine(pasta, nome + ".png"));
+            }
+
+            suite.LateralFixa = false; suite.FaixaFixa = true;
+            suite.Layout = LayoutSuite.Abas; Foto("layout_A_abas");
+            suite.FaixaFixa = false; Foto("layout_A_abas_ocultas"); suite.FaixaFixa = true;
+            suite.Layout = LayoutSuite.Lateral; Foto("layout_B_lateral_oculta");
+            suite.LateralFixa = true; Foto("layout_B_lateral_fixa"); suite.LateralFixa = false;
+            suite.Layout = LayoutSuite.Arvore; Foto("layout_C_arvore_oculta");
+            suite.LateralFixa = true;
+            suite.Busca = ""; Foto("layout_C_arvore_fixa");
+            suite.Busca = "balan"; Foto("layout_C_arvore_busca"); suite.Busca = ""; suite.LateralFixa = false;
+            suite.Layout = LayoutSuite.Painel;
+            for (var i = 0; i < 8; i++) { await Task.Delay(40, ct); Dispatcher.UIThread.RunJobs(); }   // a consulta de vencimentos termina antes dos dados de exemplo
+            inicio = suite.Vencimentos!;
+            inicio.Proximas.Clear();
+            inicio.Proximas.Add(new("10/11", "GPS/INSS (10/2026)", "vence em 14 dias", amarelo));
+            inicio.Proximas.Add(new("20/11", "DCTFWeb (10/2026)", "vence em 24 dias", verde));
+            inicio.Proximas.Add(new("25/10", "EFD-Reinf (09/2026)", "atrasada", vermelho));
+            inicio.TemProximas = true;
+            Foto("layout_D_painel");
+            suite.Trocar(M("Folha")); Foto("layout_D_modulo"); suite.Trocar(M("Contábil"));
+            suite.Layout = LayoutSuite.Faixa; Foto("layout_E_faixa");
+            suite.FaixaFixa = false; Foto("layout_E_faixa_recolhida"); suite.FaixaFixa = true;
+            suite.Trocar(M("Folha")); Foto("layout_E_faixa_folha"); suite.Trocar(M("Contábil"));
+
+            // seletor de layouts (em cima da janela, como o botão Layout o abre)
+            suite.Layout = LayoutSuite.Lateral;
+            var fundo = new Avalonia.Controls.Border { Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#6F94A3B8")) };
+            var seletor = new SuiteSeletorView { DataContext = suite, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            var tela = new Window { Width = 1366, Height = 768, Content = new Avalonia.Controls.Panel { Children = { new Avalonia.Controls.Border { Background = Avalonia.Media.Brushes.White }, fundo, seletor } } };
+            tela.Show();
+            for (var i = 0; i < 3; i++) Dispatcher.UIThread.RunJobs();
+            var q = tela.CaptureRenderedFrame();
+            Assert.NotNull(q);
+            if (pasta is not null) q.Save(Path.Combine(pasta, "seletor.png"));
+            tela.Close();
             janela.Close();
             return true;
         }, ct));

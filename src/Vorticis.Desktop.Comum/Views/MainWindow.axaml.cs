@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         suite.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
-            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
+            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
         };
         DataContext = suite.Ativo.Vm;
         AtualizarPainel();
@@ -89,6 +89,8 @@ public partial class MainWindow : Window
     {
         var painel = Suite?.MostraPainel == true;
         SuitePainel.IsVisible = painel;
+        BlocoMenus.IsVisible = !painel;   // no painel inicial não há menus de módulo: cada cartão leva ao seu módulo
+        if (painel) Suite?.Vencimentos?.Atualizar();
         if (_vm is null) return;
         if (painel) EsconderJanelasDe(_vm);
         else MostrarJanelasDe(_vm);
@@ -375,9 +377,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private static MenuItem MenuLayout(SuiteViewModel suite)
+    private MenuItem MenuLayout(SuiteViewModel suite)
     {
-        var layout = new MenuItem { Header = "Layout da Suite" };
+        var layout = new MenuItem { Header = "Layout da Suite", Icon = IconesSuite.IconeDe(Icones.ViewDashboard) };
+        layout.Items.Add(new MenuItem
+        {
+            Header = "Escolher com miniaturas…", Icon = IconesSuite.IconeDe(Icones.ViewGridOutline),
+            Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+                this.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>().FirstOrDefault(v => v.IsEffectivelyVisible)?.Abrir()),
+        });
+        layout.Items.Add(new Separator());
         foreach (var (valor, nome) in SuiteViewModel.Nomes)
             layout.Items.Add(new MenuItem
             {
@@ -386,15 +395,21 @@ public partial class MainWindow : Window
         layout.Items.Add(new Separator());
         layout.Items.Add(new MenuItem
         {
-            Header = (suite.LateralFixa ? "●  " : "     ") + "Navegação à esquerda sempre aberta (B e C)", Command = suite.AlternarFixaCommand,
+            Header = (suite.LateralFixa ? "●  " : "     ") + "Menu à esquerda fixo (B e C); desmarcado, fica oculto e abre ao passar o mouse",
+            Command = suite.AlternarFixaCommand, Icon = IconesSuite.IconeDe(suite.IconeFixar),
+        });
+        layout.Items.Add(new MenuItem
+        {
+            Header = (suite.FaixaFixa ? "●  " : "     ") + "Faixa de cima fixa (A e E); desmarcada, só os títulos das abas à mostra",
+            Command = suite.AlternarFaixaCommand, Icon = IconesSuite.IconeDe(suite.IconeFixarFaixa),
         });
         return layout;
     }
 
-    /// <summary>Suite: Exibir › layout (A, B, C, D) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
-    private static MenuItem MenuExibir(SuiteViewModel suite)
+    /// <summary>Suite: Exibir › layout (A a E) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
+    private MenuItem MenuExibir(SuiteViewModel suite)
     {
-        var exibir = new MenuItem { Header = "E_xibir" };
+        var exibir = new MenuItem { Header = "E_xibir", Icon = IconesSuite.IconeDe(Icones.ViewGridOutline) };
         exibir.Items.Add(MenuLayout(suite));
         exibir.Items.Add(new Separator());
         for (var i = 0; i < suite.Modulos.Count; i++)
@@ -402,8 +417,9 @@ public partial class MainWindow : Window
             {
                 Header = $"Ir para o {suite.Modulos[i].NomeCompleto}", Command = suite.TrocarCommand, CommandParameter = suite.Modulos[i],
                 InputGesture = i < 9 ? KeyGesture.Parse($"Ctrl+{i + 1}") : null,
+                Icon = new PathIcon { Data = suite.Modulos[i].Icone, Width = 16, Height = 16, Foreground = suite.Modulos[i].Cor },
             });
-        if (suite.EhPainel) exibir.Items.Add(new MenuItem { Header = "Início (painel dos módulos)", Command = suite.IrParaPainelCommand });
+        if (suite.EhPainel) exibir.Items.Add(new MenuItem { Header = "Início (painel dos módulos)", Command = suite.IrParaPainelCommand, Icon = IconesSuite.IconeDe(Icones.Home) });
         return exibir;
     }
 
@@ -416,6 +432,8 @@ public partial class MainWindow : Window
     {
         if (item.EhSeparador) return new Separator();
         var menu = new MenuItem { Header = item.Titulo, IsEnabled = item.Habilitado };
+        // ícone à esquerda das categorias (Cadastros, Lançamentos, Relatórios...) e dos itens de topo
+        if (item.Filhos is not null) menu.Icon = IconesSuite.IconeDe(IconesSuite.DaCategoria(item.Titulo), 16);
         if (item.Recurso is { } recurso)
         {
             _itensComRecurso.Add((menu, recurso));
@@ -448,7 +466,7 @@ public partial class MainWindow : Window
                 Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
                 {
                     if (!suite.EhArvore) suite.Layout = LayoutSuite.Arvore;
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FindControl<TextBox>("CampoBusca")?.Focus());
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FocarBusca());
                 }),
             });
         }

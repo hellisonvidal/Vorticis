@@ -1,60 +1,68 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.SuitePainelView" x:DataType="vm:SuiteViewModel">
-  <!-- Suite, layout D: painel inicial com um cartão por módulo (atalhos e botão para abrir o módulo) -->
+  <!-- Suite, layout D: painel inicial (launcher) com um cartão por módulo, funções mais usadas e próximos vencimentos -->
   <UserControl.Styles>
-    <Style Selector="Button.atalho">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0,3" />
-      <Setter Property="Cursor" Value="Hand" />
+    <Style Selector="Border.cartao-modulo">
+      <Setter Property="Transitions">
+        <Transitions><BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.15" /></Transitions>
+      </Setter>
     </Style>
-    <Style Selector="Button.atalho:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.atalho:pointerover TextBlock">
-      <Setter Property="TextDecorations" Value="Underline" />
+    <Style Selector="Border.cartao-modulo:pointerover">
+      <Setter Property="BoxShadow" Value="0 8 24 0 #33233B55" />
     </Style>
   </UserControl.Styles>
-  <ScrollViewer Background="#EEF1F5">
-    <StackPanel Margin="28,22" Spacing="6">
-      <TextBlock Text="{Binding Saudacao}" FontSize="26" FontWeight="Bold" Foreground="#0F172A" />
-      <TextBlock Text="{Binding Hoje}" FontSize="13.5" Foreground="#64748B" Margin="0,0,0,14" />
+  <ScrollViewer Background="#F4F6FA">
+    <StackPanel Margin="32,18,32,20" Spacing="4">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+        <StackPanel>
+          <TextBlock Text="{Binding Saudacao}" FontSize="24" FontWeight="Bold" Foreground="#0F2A47" />
+          <TextBlock Text="{Binding Hoje}" FontSize="13" Foreground="#64748B" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <PathIcon Data="{x:Static v:Icones.Account}" Width="16" Height="16" Foreground="#64748B" />
+          <TextBlock Text="{Binding UsuarioRotulo}" Foreground="#475569" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
       <ItemsControl Name="CartoesModulos" ItemsSource="{Binding Modulos}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:ModuloSuite">
-            <Border Margin="0,0,18,18" CornerRadius="16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" BoxShadow="0 4 14 0 #1F94A3B8"
-                    ClipToBounds="True">
+            <Border Classes="su-cartao cartao-modulo" Margin="0,0,16,12" ClipToBounds="True">
               <DockPanel>
-                <Border DockPanel.Dock="Top" Background="{Binding Cor}" Padding="18,16">
-                  <StackPanel Orientation="Horizontal" Spacing="14">
-                    <Border Width="48" Height="48" CornerRadius="12" Background="White">
-                      <TextBlock Text="{Binding Sigla}" FontSize="16" FontWeight="Bold" Foreground="{Binding Cor}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                <Border DockPanel.Dock="Top" Height="4" Background="{Binding Cor}" />
+                <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*" Margin="18,4,18,12">
+                  <Button Classes="su-marca" Background="{Binding Cor}" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).TrocarCommand}" CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="Abrir módulo" VerticalAlignment="Center" />
+                      <PathIcon Data="{x:Static v:Icones.ChevronRight}" Width="14" Height="14" Foreground="White" />
+                    </StackPanel>
+                  </Button>
+                  <TextBlock Grid.Column="1" Text="{Binding Abertas, StringFormat='{}{0} função(ões) aberta(s)'}" IsVisible="{Binding TemAbertas}"
+                             Foreground="#64748B" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <StackPanel Margin="18,12,18,2" Spacing="1">
+                  <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,0,0,6">
+                    <Panel Width="46" Height="46">
+                      <Border CornerRadius="14" Background="{Binding Cor}" Opacity="0.14" />
+                      <PathIcon Data="{Binding Icone}" Width="26" Height="26" Foreground="{Binding Cor}" />
+                    </Panel>
                     <StackPanel VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Nome}" FontSize="21" FontWeight="Bold" Foreground="White" />
-                      <TextBlock Text="{Binding NomeCompleto}" FontSize="12" Foreground="#E2E8F0" />
+                      <TextBlock Text="{Binding Nome}" FontSize="19" FontWeight="Bold" Foreground="#0F172A" />
+                      <TextBlock Text="{Binding Subtitulo}" Classes="su-sub" FontSize="11.5" TextWrapping="Wrap" MaxWidth="260" />
                     </StackPanel>
                   </StackPanel>
-                </Border>
-                <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*" Margin="18,6,18,16">
-                  <Button Content="Abrir módulo  →" Background="{Binding Cor}" Foreground="White" FontWeight="SemiBold" Padding="16,8" CornerRadius="10"
-                          Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).TrocarCommand}" CommandParameter="{Binding}" />
-                  <TextBlock Grid.Column="1" Text="{Binding Abertas, StringFormat='{}{0} função(ões) aberta(s)'}" IsVisible="{Binding TemAbertas}"
-                             Foreground="#64748B" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                </Grid>
-                <StackPanel Margin="18,14,18,6" Spacing="2">
-                  <TextBlock Text="{Binding Subtitulo}" Foreground="#334155" FontSize="13.5" TextWrapping="Wrap" Margin="0,0,0,6" />
+                  <TextBlock Text="FUNÇÕES MAIS USADAS" Classes="su-secao" Margin="0,2,0,3" />
                   <ItemsControl ItemsSource="{Binding Atalhos}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:NoSuite">
-                        <Button Classes="atalho" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                          <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Ellipse Width="7" Height="7" Fill="{Binding Modulo.Cor}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Titulo}" Foreground="#0F172A" />
+                        <Button Classes="su" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                          <StackPanel Orientation="Horizontal" Spacing="9" Margin="6,3">
+                            <PathIcon Data="{x:Static v:Icones.ChevronRight}" Width="12" Height="12" Foreground="{Binding CorIcone}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" TextTrimming="CharacterEllipsis" />
                           </StackPanel>
                         </Button>
                       </DataTemplate>
@@ -66,6 +74,71 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+
+      <Grid ColumnDefinitions="*,*" Margin="0,0,16,0">
+        <Border Classes="su-cartao" Margin="0,0,16,0" Padding="18,12">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{x:Static v:Icones.Star}" Width="14" Height="14" Foreground="#E0A100" />
+              <TextBlock Text="FAVORITOS E RECENTES" Classes="su-secao" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Favoritos}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:NoSuite">
+                  <Button Classes="su" Margin="0,0,6,6" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                    <Border CornerRadius="14" BorderBrush="#E2E8F0" BorderThickness="1" Padding="10,4">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Ellipse Width="7" Height="7" Fill="{Binding CorIcone}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" />
+                      </StackPanel>
+                    </Border>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Recentes}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:NoSuite">
+                  <Button Classes="su" Margin="0,0,6,6" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                    <Border CornerRadius="14" Background="#F1F5F9" Padding="10,4">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{x:Static v:Icones.History}" Width="12" Height="12" Foreground="#7A8AA0" />
+                        <TextBlock Text="{Binding Titulo}" Foreground="#334155" />
+                      </StackPanel>
+                    </Border>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Marque funções com a estrela na árvore (layout C) e as que você abrir aparecem aqui." Classes="su-sub"
+                       IsVisible="{Binding !TemRecentes}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="su-cartao" Padding="18,12">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{x:Static v:Icones.CalendarCheck}" Width="14" Height="14" Foreground="#1FA67A" />
+              <TextBlock Text="PRÓXIMOS VENCIMENTOS" Classes="su-secao" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Vencimentos.Proximas}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ProximaObrigacao">
+                  <Grid ColumnDefinitions="52,*,Auto" Margin="0,3">
+                    <TextBlock Text="{Binding Vencimento}" FontWeight="SemiBold" Foreground="#0F172A" />
+                    <TextBlock Grid.Column="1" Text="{Binding Nome}" Foreground="#334155" TextTrimming="CharacterEllipsis" />
+                    <Border Grid.Column="2" CornerRadius="9" Padding="8,1" Background="{Binding Cor}">
+                      <TextBlock Text="{Binding Situacao}" FontSize="10.5" Foreground="#1F2937" />
+                    </Border>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Nada a vencer nos próximos dias para a empresa ativa." Classes="su-sub" IsVisible="{Binding !Vencimentos.TemProximas}" />
+          </StackPanel>
+        </Border>
+      </Grid>
     </StackPanel>
   </ScrollViewer>
 </UserControl>
