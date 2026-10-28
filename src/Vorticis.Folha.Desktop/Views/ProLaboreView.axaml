@@ -5,7 +5,7 @@
              x:Class="Vorticis.Folha.Desktop.Views.ProLaboreView"
              x:DataType="vm:ProLaboreViewModel">
   <Grid ColumnDefinitions="*,16,360" RowDefinitions="Auto,*,Auto,200" Margin="8">
-    <TextBlock Grid.ColumnSpan="3" Text="{Binding Situacao}" Margin="0,0,0,8" FontWeight="SemiBold" Foreground="#4C1D95" />
+    <TextBlock Grid.ColumnSpan="3" Text="{Binding Situacao}" Margin="0,0,0,8" FontWeight="SemiBold" Foreground="{DynamicResource TxRoxo}" />
     <DockPanel Grid.Row="1">
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Sócios da empresa" Margin="0,0,0,8" />
       <TextBlock DockPanel.Dock="Bottom" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,6,0,0"
@@ -22,7 +22,7 @@
     </DockPanel>
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding TemSelecionado}">
       <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-      <TextBlock Text="Pró-labore do sócio" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Pró-labore do sócio" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <CheckBox Content="Retira pró-labore" IsChecked="{Binding Retira}" IsEnabled="{Binding PodeEditar}" />
       <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
         <TextBlock Classes="rotulo" Text="Valor mensal (R$)" />

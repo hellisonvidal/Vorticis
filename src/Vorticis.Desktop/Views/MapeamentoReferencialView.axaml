@@ -26,7 +26,7 @@
           <Button Content="Aceitar sugestões" Command="{Binding AceitarSugestoesCommand}" />
           <Button Content="Copiar do ano anterior" Command="{Binding CopiarAnoAnteriorCommand}" />
         </WrapPanel>
-        <TextBlock Text="{Binding PlanoAtual}" FontSize="12" Foreground="#44506A" />
+        <TextBlock Text="{Binding PlanoAtual}" FontSize="12" Foreground="{DynamicResource TxSutil}" />
         <CheckBox Content="Mostrar só pendências (contas com movimento sem vínculo)" IsChecked="{Binding SomentePendentes}" />
       </StackPanel>
       <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resumo}" FontWeight="SemiBold" Margin="0,6,0,0" />
@@ -44,7 +44,7 @@
     <DockPanel Grid.Column="2" IsEnabled="{Binding PodeEditar}">
       <StackPanel DockPanel.Dock="Top" Spacing="6">
         <TextBlock Text="Seu perfil permite apenas consultar os vínculos." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-        <TextBlock Text="{Binding Selecionada.Codigo, StringFormat='Conta selecionada: {0}'}" FontWeight="SemiBold" Foreground="#1F3A5F"
+        <TextBlock Text="{Binding Selecionada.Codigo, StringFormat='Conta selecionada: {0}'}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}"
                    IsVisible="{Binding TemSelecionada}" />
         <TextBlock Text="{Binding Selecionada.Descricao}" TextWrapping="Wrap" IsVisible="{Binding TemSelecionada}" />
         <TextBox Text="{Binding FiltroReferencial}" Watermark="Buscar referencial (código ou descrição)" />

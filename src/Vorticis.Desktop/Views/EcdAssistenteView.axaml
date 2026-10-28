@@ -11,9 +11,9 @@
       <ScrollViewer>
         <StackPanel Spacing="8" MaxWidth="860" HorizontalAlignment="Left" Margin="4,8">
           <TextBlock Classes="titulo" Text="Gerar ECD (SPED Contábil)" />
-          <TextBlock Text="{Binding IndicadorPasso}" FontSize="12" Foreground="#44506A" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding TituloPasso}" FontWeight="SemiBold" FontSize="15" Foreground="#1F3A5F" />
-          <TextBlock Text="{Binding ExplicacaoPasso}" TextWrapping="Wrap" FontSize="12" Foreground="#44506A" />
+          <TextBlock Text="{Binding IndicadorPasso}" FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TituloPasso}" FontWeight="SemiBold" FontSize="15" Foreground="{DynamicResource TxTitulo}" />
+          <TextBlock Text="{Binding ExplicacaoPasso}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}" />
 
           <!-- 1. Empresa e exercício -->
           <StackPanel Spacing="6" IsVisible="{Binding NoPasso1}">
@@ -24,7 +24,7 @@
               <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Ano}" Minimum="2000" Maximum="2100" FormatString="0" Width="130" HorizontalAlignment="Left" />
               <TextBlock Grid.Row="2" Text="NIRE" VerticalAlignment="Center" />
               <TextBlock Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
-                <Run Text="{Binding Nire}" /><Run Text="  (alterar em Cadastros › Empresas)" Foreground="#667085" />
+                <Run Text="{Binding Nire}" /><Run Text="  (alterar em Cadastros › Empresas)" Foreground="{DynamicResource TxSutil}" />
               </TextBlock>
               <TextBlock Grid.Row="3" Text="Grande porte" VerticalAlignment="Center" />
               <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding GrandePorte}" IsEnabled="False" Content="conforme Cadastros › Contabilidade da empresa" />
@@ -33,7 +33,7 @@
               <TextBlock Grid.Row="5" Text="Número do livro" VerticalAlignment="Center" />
               <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8">
                 <NumericUpDown Value="{Binding NumeroLivro}" Minimum="1" Maximum="9999" FormatString="0" Width="130" />
-                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="#667085" Text="{Binding NumeroLivroSugerido, StringFormat='sugerido: {0}'}" />
+                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TxSutil}" Text="{Binding NumeroLivroSugerido, StringFormat='sugerido: {0}'}" />
               </StackPanel>
               <TextBlock Grid.Row="6" Text="Mutações do patrimônio líquido" VerticalAlignment="Center" />
               <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{Binding OpcoesMutacoes}" SelectedItem="{Binding Mutacoes}" Width="320" />
@@ -56,7 +56,7 @@
                     <TextBlock Text="{Binding Marca}" Foreground="{Binding Cor}" FontWeight="Bold" />
                     <StackPanel Grid.Column="1">
                       <TextBlock Text="{Binding Titulo}" />
-                      <TextBlock Text="{Binding Detalhe}" FontSize="12" Foreground="#667085" />
+                      <TextBlock Text="{Binding Detalhe}" FontSize="12" Foreground="{DynamicResource TxSutil}" />
                     </StackPanel>
                     <Button Grid.Column="2" Content="{Binding TextoAtalho}" IsVisible="{Binding TemAtalho}"
                             Command="{Binding $parent[ItemsControl].((vm:EcdAssistenteViewModel)DataContext).AbrirAtalhoCommand}"
@@ -91,12 +91,12 @@
             <ItemsControl ItemsSource="{Binding Signatarios}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:SignatarioAssinatura">
-                  <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,4">
+                  <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,4">
                     <StackPanel Spacing="6">
                       <TextBlock FontWeight="SemiBold">
                         <Run Text="{Binding Nome}" /><Run Text=" — " /><Run Text="{Binding Qualificacao}" />
                       </TextBlock>
-                      <TextBlock Text="{Binding Documento, StringFormat='CPF/CNPJ: {0}'}" FontSize="12" Foreground="#667085" />
+                      <TextBlock Text="{Binding Documento, StringFormat='CPF/CNPJ: {0}'}" FontSize="12" Foreground="{DynamicResource TxSutil}" />
                       <TextBlock Classes="erro" Text="CPF/CNPJ inválido no cadastro." IsVisible="{Binding !DocumentoValido}" />
                       <ComboBox SelectedIndex="{Binding ModoIndice}" Width="360">
                         <ComboBoxItem Content="Não assinar agora (assino no PVA)" />
@@ -130,11 +130,11 @@
 
           <!-- 5. Gerar e salvar -->
           <StackPanel Spacing="8" IsVisible="{Binding NoPasso5}">
-            <Border Background="#FFF4E5" CornerRadius="4" Padding="12,8" IsVisible="{Binding TemAvisoProcuracao}">
-              <TextBlock Text="{Binding AvisoProcuracao}" TextWrapping="Wrap" Foreground="#7A4B00" />
+            <Border Background="{DynamicResource FundoAviso}" CornerRadius="4" Padding="12,8" IsVisible="{Binding TemAvisoProcuracao}">
+              <TextBlock Text="{Binding AvisoProcuracao}" TextWrapping="Wrap" Foreground="{DynamicResource TxAviso}" />
             </Border>
             <Button Content="Gerar arquivo da ECD" Command="{Binding GerarCommand}" Classes="accent" HorizontalAlignment="Left" />
-            <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="{Binding Gerado}">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="{Binding Gerado}">
               <TextBlock Text="{Binding ResumoArquivo}" TextWrapping="Wrap" FontFamily="Consolas, Menlo, monospace" FontSize="12" />
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Gerado}">
@@ -143,12 +143,12 @@
               <Button Content="Escolher..." Click="EscolherPasta" />
               <Button Content="Salvar arquivo" Command="{Binding SalvarCommand}" Classes="accent" />
             </StackPanel>
-            <Border Background="#EEF4FF" CornerRadius="4" Padding="12,8" IsVisible="{Binding Salvo}">
+            <Border Background="{DynamicResource Realce}" CornerRadius="4" Padding="12,8" IsVisible="{Binding Salvo}">
               <StackPanel Spacing="4">
                 <TextBlock Text="Pronto! Último passo, no PVA da Receita Federal" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding CaminhoSalvo, StringFormat='Arquivo: {0}'}" TextWrapping="Wrap" />
                 <TextBlock x:Name="Instrucoes" TextWrapping="Wrap" />
-                <TextBlock x:Name="Observacao" TextWrapping="Wrap" FontSize="12" Foreground="#44506A" />
+                <TextBlock x:Name="Observacao" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}" />
               </StackPanel>
             </Border>
             <Button Content="Gerar outra ECD" Command="{Binding ReiniciarCommand}" HorizontalAlignment="Left" IsVisible="{Binding Salvo}" />

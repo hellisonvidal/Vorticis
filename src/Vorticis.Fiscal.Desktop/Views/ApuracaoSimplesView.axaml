@@ -25,7 +25,7 @@
         <Button Content="Salvar apuração" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeApurar}" />
         <Button Content="Contabilizar provisão" Command="{Binding ContabilizarCommand}" IsEnabled="{Binding PodeContabilizar}" />
         <Button Content="Desfazer provisão" Command="{Binding DesfazerCommand}" IsEnabled="{Binding PodeDesfazer}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="Gray" />
@@ -35,9 +35,9 @@
     <Grid ColumnDefinitions="520,12,*">
       <DockPanel>
         <!-- Inclusão manual da receita (sem notas no sistema, ou para completar o que veio das notas) -->
-        <Border DockPanel.Dock="Top" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8">
+        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="6" Margin="0,0,0,8">
           <StackPanel Spacing="4">
-            <TextBlock Text="Incluir receita manualmente" FontWeight="SemiBold" Foreground="#1F3A5F" />
+            <TextBlock Text="Incluir receita manualmente" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
             <Grid ColumnDefinitions="*,8,130" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
               <ComboBox ItemsSource="{x:Static vm:ApuracaoSimplesViewModel.RotulosAtividades}" SelectedIndex="{Binding NovaAtividade}" HorizontalAlignment="Stretch"
                         ToolTip.Tip="Atividade (anexo) da receita" />
@@ -57,7 +57,7 @@
           </StackPanel>
         </Border>
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="Receitas do mês por atividade (clique no valor para alterar)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock DockPanel.Dock="Top" Text="Receitas do mês por atividade (clique no valor para alterar)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
           <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Receitas}" SelectedItem="{Binding ReceitaSelecionada}" AutoGenerateColumns="False" CanUserSortColumns="False">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Atividade" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />

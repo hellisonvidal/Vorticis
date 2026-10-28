@@ -235,7 +235,8 @@ public sealed class BarraFiltro : StackPanel
         _botaoFiltros.Click += (_, _) => AlternarPainel();
         _botaoLimpar = new Button { Name = "BotaoLimparFiltros", Content = "Limpar filtros", Padding = new Thickness(10, 3), IsVisible = false };
         _botaoLimpar.Click += (_, _) => Limpar();
-        _contador = new TextBlock { Name = "ContadorFiltro", VerticalAlignment = VerticalAlignment.Center, Foreground = new SolidColorBrush(Color.Parse("#44506A")) };
+        _contador = new TextBlock { Name = "ContadorFiltro", VerticalAlignment = VerticalAlignment.Center, };
+        _contador.TextoRecurso("TxSutil");
 
         var linha = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
         linha.Children.Add(_busca);
@@ -247,8 +248,8 @@ public sealed class BarraFiltro : StackPanel
         _painel = new Border
         {
             Name = "PainelFiltros", IsVisible = false, Padding = new Thickness(8), CornerRadius = new CornerRadius(4),
-            BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#C9D1E0")), Background = new SolidColorBrush(Color.Parse("#F5F7FB")),
-        };
+            BorderThickness = new Thickness(1), 
+        }.BordaRecurso("Linha").FundoRecurso("FundoSuave");
         Children.Add(_painel);
         Bind(IsVisibleProperty, Grade.GetObservable(Visual.IsVisibleProperty));
     }
@@ -427,8 +428,8 @@ public sealed class BarraFiltro : StackPanel
         return new Border
         {
             Margin = new Thickness(0, 0, 8, 8), Padding = new Thickness(6), CornerRadius = new CornerRadius(3),
-            BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#D5DBE8")), Background = Brushes.White, Child = corpo,
-        };
+            BorderThickness = new Thickness(1), Child = corpo,
+        }.BordaRecurso("Linha").FundoRecurso("FundoCartao");
     }
 
     private static decimal? LerNumero(string? t)

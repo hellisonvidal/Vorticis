@@ -16,7 +16,7 @@
       </DataGrid>
     </DockPanel>
     <StackPanel Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
-      <TextBlock Text="Evento" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Evento" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
         <TextBlock Classes="rotulo" Text="Código" />
         <TextBox Grid.Column="1" Text="{Binding Codigo}" MaxLength="30" Watermark="Ex.: SAL" />

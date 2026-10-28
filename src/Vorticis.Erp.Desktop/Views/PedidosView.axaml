@@ -42,7 +42,7 @@
           <TextBlock Grid.Row="3" Classes="rotulo" Text="1º vencimento" />
           <CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding PrimeiroVencimento}" Watermark="data + intervalo" />
         </Grid>
-        <TextBlock Text="Itens" FontWeight="SemiBold" Foreground="#134E4A" />
+        <TextBlock Text="Itens" FontWeight="SemiBold" Foreground="{DynamicResource TxVerdeEscuro}" />
         <StackPanel Spacing="4" IsEnabled="{Binding EmAberto}">
           <ComboBox ItemsSource="{Binding ProdutosDisponiveis}" SelectedItem="{Binding Produto}" HorizontalAlignment="Stretch" PlaceholderText="Produto" />
           <StackPanel Orientation="Horizontal" Spacing="6">

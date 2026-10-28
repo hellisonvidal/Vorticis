@@ -23,7 +23,7 @@
     </StackPanel>
     <Grid RowDefinitions="*,6,*">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Notas pendentes de contabilização" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock DockPanel.Dock="Top" Text="Notas pendentes de contabilização" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <DataGrid fg:FiltroGrade.Forcar="True" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Pendentes}" AutoGenerateColumns="False" CanUserSortColumns="False">
           <DataGrid.Columns>
             <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Marcada}" Width="44" />
@@ -38,7 +38,7 @@
         </DataGrid>
       </DockPanel>
       <DockPanel Grid.Row="2">
-        <TextBlock DockPanel.Dock="Top" Text="Notas contabilizadas no período" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock DockPanel.Dock="Top" Text="Notas contabilizadas no período" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <DataGrid fg:FiltroGrade.Forcar="True" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Contabilizadas}" AutoGenerateColumns="False" CanUserSortColumns="False">
           <DataGrid.Columns>
             <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Marcada}" Width="44" />

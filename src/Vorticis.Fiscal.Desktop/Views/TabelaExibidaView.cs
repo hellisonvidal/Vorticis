@@ -41,10 +41,10 @@ public sealed class TabelaExibidaView : UserControl
             e.Row.FontWeight = i >= 0 && i < t.Destaques.Count && t.Destaques[i] ? FontWeight.Bold : FontWeight.Normal;
         };
         var painel = new StackPanel { Spacing = 3, Margin = new Avalonia.Thickness(0, 0, 0, 10) };
-        painel.Children.Add(new TextBlock { Text = t.Titulo, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#1F3A5F")) });
+        painel.Children.Add(new TextBlock { Text = t.Titulo, FontWeight = FontWeight.SemiBold }.TextoRecurso("TxTitulo"));
         painel.Children.Add(grade);
         if (!string.IsNullOrWhiteSpace(t.Rodape))
-            painel.Children.Add(new TextBlock { Text = t.Rodape, FontSize = 11, Foreground = Brushes.Gray, TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left });
+            painel.Children.Add(new TextBlock { Text = t.Rodape, FontSize = 11, TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left, Opacity = 0.7 });
         Content = painel;
     }
 }

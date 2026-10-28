@@ -13,7 +13,7 @@
         <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Calcular provisões" Command="{Binding CalcularCommand}" Classes="accent" IsEnabled="{Binding PodeCalcular}" />
         <Button Content="Mostrar" Command="{Binding GerarCommand}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"

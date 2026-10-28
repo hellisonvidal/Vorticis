@@ -32,7 +32,7 @@
         <TextBox Grid.Row="4" Grid.Column="3" Text="{Binding Crc}" Watermark="CRC (ex.: SP-123456/O-7)" />
         <TextBlock Grid.Row="5" Text="NIRE (do cadastro da empresa)" VerticalAlignment="Center" />
         <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Nire}" IsReadOnly="True" Watermark="Não cadastrado" />
-        <TextBlock Grid.Row="5" Grid.Column="3" Text="{Binding AvisoNire}" IsVisible="{Binding SemNire}" Foreground="#B54708" FontSize="11"
+        <TextBlock Grid.Row="5" Grid.Column="3" Text="{Binding AvisoNire}" IsVisible="{Binding SemNire}" Foreground="{DynamicResource TxAviso}" FontSize="11"
                    TextWrapping="Wrap" VerticalAlignment="Center" />
         <TextBlock Grid.Row="6" Text="Arquivamento dos atos (opcional)" VerticalAlignment="Center" />
         <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding DataArquivamento}" Watermark="dd/mm/aaaa" />

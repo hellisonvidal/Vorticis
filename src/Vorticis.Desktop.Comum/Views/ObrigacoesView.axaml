@@ -49,7 +49,7 @@
     </DockPanel>
     <ScrollViewer Grid.Column="2">
       <StackPanel Spacing="6">
-        <TextBlock Text="Obrigação selecionada" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Obrigação selecionada" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <StackPanel IsVisible="{Binding Selecionada, Converter={x:Static ObjectConverters.IsNotNull}}" Spacing="4" DataContext="{Binding}">
           <TextBlock Text="{Binding Selecionada.Nome}" TextWrapping="Wrap" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Selecionada.Orgao}" FontSize="11" Foreground="Gray" />

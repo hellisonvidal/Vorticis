@@ -28,7 +28,7 @@
 
     <ScrollViewer Grid.Row="1" Grid.Column="2">
       <StackPanel Spacing="8">
-        <TextBlock Text="Usuário" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Usuário" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Login" />
           <TextBox Grid.Column="1" Text="{Binding Login}" IsEnabled="{Binding EmInclusao}" />
@@ -53,7 +53,7 @@
             <Button Content="Marcar todas" Command="{Binding MarcarTodasCommand}" />
             <Button Content="Desmarcar todas" Command="{Binding DesmarcarTodasCommand}" />
           </StackPanel>
-          <TextBlock Text="{Binding ResumoEmpresas}" FontSize="11" Foreground="#44506A" />
+          <TextBlock Text="{Binding ResumoEmpresas}" FontSize="11" Foreground="{DynamicResource TxSutil}" />
           <ScrollViewer MaxHeight="320">
             <ItemsControl ItemsSource="{Binding AcessosFiltrados}" IsEnabled="{Binding EmEdicao}">
               <ItemsControl.ItemTemplate>

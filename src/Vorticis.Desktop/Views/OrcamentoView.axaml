@@ -12,7 +12,7 @@
         <TextBlock Text="Ano" VerticalAlignment="Center" />
         <NumericUpDown Value="{Binding Ano}" Minimum="2000" Maximum="2100" FormatString="0" Width="110" />
         <Button Content="Abrir orçamento do ano" Command="{Binding CarregarOrcamentoCommand}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <TextBlock Text="Reajuste (%)" VerticalAlignment="Center" />
         <NumericUpDown Value="{Binding Percentual}" Minimum="-100" Maximum="1000" FormatString="0.00" Width="120" IsEnabled="{Binding PodeManter}" />
         <Button Content="Copiar orçamento do ano anterior" Command="{Binding CopiarOrcadoCommand}" IsEnabled="{Binding PodeManter}" />
@@ -23,7 +23,7 @@
         <TextBox Text="{Binding Arquivo}" Watermark="Planilha .xlsx ou .csv" Width="320" />
         <Button Content="Procurar..." Click="Procurar" IsEnabled="{Binding PodeManter}" />
         <Button Content="Importar planilha" Command="{Binding ImportarCommand}" IsEnabled="{Binding PodeManter}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <Button Content="Adicionar linha" Command="{Binding AdicionarLinhaCommand}" IsEnabled="{Binding PodeManter}" />
         <Button Content="Remover linha" Command="{Binding RemoverLinhaCommand}" IsEnabled="{Binding PodeManter}" />
         <Button Content="Salvar orçamento" Command="{Binding SalvarCommand}" Classes="accent" IsEnabled="{Binding PodeManter}" />

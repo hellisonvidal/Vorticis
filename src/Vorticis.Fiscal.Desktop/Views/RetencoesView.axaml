@@ -22,9 +22,9 @@
       </WrapPanel>
       <c:MensagensView />
     </StackPanel>
-    <Border DockPanel.Dock="Bottom" BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
       <StackPanel Spacing="4">
-        <TextBlock Text="Nova retenção (lançamento manual)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Nova retenção (lançamento manual)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <WrapPanel>
           <CalendarDatePicker SelectedDate="{Binding NovaCompetencia}" Width="140" Margin="0,0,6,4" />
           <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.SentidosNova}" SelectedIndex="{Binding NovoSentido}" Width="170" Margin="0,0,6,4" />

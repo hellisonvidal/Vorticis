@@ -57,7 +57,7 @@
             </StackPanel>
           </StackPanel>
           <DockPanel>
-            <TextBlock DockPanel.Dock="Top" Text="LALUR / LACS · Parte A (adições e exclusões do ano)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+            <TextBlock DockPanel.Dock="Top" Text="LALUR / LACS · Parte A (adições e exclusões do ano)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
             <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lalur}" SelectedItem="{Binding LalurSelecionada}" IsReadOnly="True" AutoGenerateColumns="False">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Período" Binding="{ReflectionBinding Periodo}" Width="85" />
@@ -79,7 +79,7 @@
             <Button Content="Gravar saldos iniciais" Command="{Binding DefinirSaldosIniciaisCommand}" IsEnabled="{Binding PodeManterLalur}" />
           </StackPanel>
           <DockPanel>
-            <TextBlock DockPanel.Dock="Top" Text="Parte B · prejuízos fiscais e base negativa (razão)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+            <TextBlock DockPanel.Dock="Top" Text="Parte B · prejuízos fiscais e base negativa (razão)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
             <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding ParteB}" IsReadOnly="True" AutoGenerateColumns="False">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Tributo" Binding="{ReflectionBinding Tributo}" Width="70" />

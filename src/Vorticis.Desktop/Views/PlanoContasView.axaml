@@ -13,7 +13,7 @@
     </Style>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,10,0,2" />
     </Style>
   </UserControl.Styles>
@@ -24,17 +24,17 @@
     <!-- Plano atual e botão para trocá-lo (a grade só aparece com o plano escolhido) -->
     <DockPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,8" IsVisible="{Binding MostrarGrade}">
       <Button DockPanel.Dock="Right" Content="Escolher plano" Command="{Binding EscolherPlanoCommand}" IsEnabled="{Binding !EmEdicao}" Margin="12,0,0,0" />
-      <TextBlock Text="{Binding PlanoAtual}" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding PlanoAtual}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" />
     </DockPanel>
 
     <!-- Escolha do modelo de plano: empresa sem plano ou troca pedida pelo usuário -->
-    <Border Grid.Row="2" Grid.ColumnSpan="3" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="14"
+    <Border Grid.Row="2" Grid.ColumnSpan="3" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="14"
             VerticalAlignment="Top" HorizontalAlignment="Left" MaxWidth="780" IsVisible="{Binding MostrarEscolha}">
       <StackPanel Spacing="8">
         <TextBlock Classes="titulo" Text="Escolher o plano de contas" />
-        <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap" IsVisible="{Binding !TemPlano}"
+        <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" IsVisible="{Binding !TemPlano}"
                    Text="Esta empresa ainda não tem plano de contas. Escolha um dos modelos abaixo (estrutura da Lei 6.404/76 e do CPC 26); depois é possível incluir, alterar e inativar contas." />
-        <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap" IsVisible="{Binding TemPlano}"
+        <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" IsVisible="{Binding TemPlano}"
                    Text="Trocar o plano substitui todas as contas da empresa e só é possível enquanto não houver lançamentos." />
         <ComboBox ItemsSource="{x:Static vm:PlanoContasViewModel.ModelosPlano}" SelectedItem="{Binding ModeloEscolhido}" HorizontalAlignment="Stretch"
                   PlaceholderText="Escolha um modelo de plano de contas">
@@ -66,7 +66,7 @@
       <StackPanel Spacing="6" Margin="0,0,12,8">
         <StackPanel Orientation="Horizontal" Spacing="12">
           <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
-          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="#44506A" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Bottom" Margin="0,0,0,2" />
         </StackPanel>
         <TextBlock Text="Seu perfil permite apenas consultar o plano." Classes="erro" IsVisible="{Binding !PodeEditar}" />
 
@@ -74,7 +74,7 @@
         <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Código" />
           <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.1.01.004" IsEnabled="{Binding EmInclusao}" />
-          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DicaPai}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DicaPai}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Código reduzido" />
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Reduzido}" IsEnabled="{Binding EmEdicao}" Width="120" HorizontalAlignment="Left"
                    ToolTip.Tip="Atalho numérico usado na digitação dos lançamentos (contas analíticas)" />

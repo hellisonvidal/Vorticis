@@ -10,7 +10,7 @@
       <TextBlock Text="a" VerticalAlignment="Center" Name="RotuloA" />
       <CalendarDatePicker SelectedDate="{Binding Fim}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Name="Fim" />
       <Button Content="Gerar" Command="{ReflectionBinding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />

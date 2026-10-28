@@ -33,7 +33,7 @@ public sealed class SuiteSeletorView : UserControl
                     new Border { Width = 18, Height = 18, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.Parse("#0F2A47")),
                                  Child = new TextBlock { Text = o.Letra, FontSize = 10.5, FontWeight = FontWeight.Bold, Foreground = Brushes.White,
                                                          HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
-                    new TextBlock { Text = o.Nome, FontSize = 12.5, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(Color.Parse("#0F172A")), VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = o.Nome, FontSize = 12.5, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }.TextoRecurso("TxForte"),
                 },
             };
             var conteudo = new StackPanel
@@ -43,7 +43,7 @@ public sealed class SuiteSeletorView : UserControl
                 {
                     new Panel { Children = { new LayoutMiniatura(o.Valor), marca } },
                     titulo,
-                    new TextBlock { Text = o.Descricao, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#64748B")), TextWrapping = TextWrapping.Wrap, Width = 176, MinHeight = 44 },
+                    new TextBlock { Text = o.Descricao, FontSize = 11, TextWrapping = TextWrapping.Wrap, Width = 176, MinHeight = 44 }.TextoRecurso("TxSutil"),
                 },
             };
             var botao = new Button { Content = conteudo, Margin = new Thickness(3), Padding = new Thickness(0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top };
@@ -55,21 +55,53 @@ public sealed class SuiteSeletorView : UserControl
         }
         Content = new Border
         {
-            Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.Parse("#CBD5E1")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12),
             Padding = new Thickness(12, 10, 12, 8),
             Child = new StackPanel
             {
                 Children =
                 {
-                    new TextBlock { Text = "Layout da Suite", FontSize = 15, FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#0F2A47")), Margin = new Thickness(4, 0, 0, 0) },
+                    new TextBlock { Text = "Layout da Suite", FontSize = 15, FontWeight = FontWeight.Bold, Margin = new Thickness(4, 0, 0, 0) }.TextoRecurso("TxTitulo"),
                     new TextBlock { Text = "Escolha como navegar entre os módulos. A troca é imediata e fica gravada para o seu usuário.", FontSize = 11.5,
-                                    Foreground = new SolidColorBrush(Color.Parse("#64748B")), Margin = new Thickness(4, 2, 0, 8) },
+                                    Margin = new Thickness(4, 2, 0, 8) }.TextoRecurso("TxSutil"),
                     painel,
+                    LinhaDeTema(),
                 },
             },
-        };
+        }.FundoRecurso("FundoCartao").BordaRecurso("BordaForte");
         DataContextChanged += (_, _) => Ligar();
     }
+
+    /// <summary>Tema de cores (claro, escuro ou automático), junto das miniaturas: vale para todos os layouts e fica gravado para o usuário.</summary>
+    private Control LinhaDeTema()
+    {
+        var linha = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(4, 6, 0, 2) };
+        linha.Children.Add(new TextBlock { Text = "Tema de cores:", FontSize = 12.5, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) }.TextoRecurso("TxForte"));
+        foreach (var (valor, nome) in SuiteViewModel.Temas)
+        {
+            var rotulo = valor == TemaSuite.Automatico ? "Automático" : nome;
+            var botao = new Button
+            {
+                Classes = { "su" }, Padding = new Thickness(10, 6), Name = "Tema" + valor,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal, Spacing = 6,
+                    Children =
+                    {
+                        new PathIcon { Data = valor switch { TemaSuite.Claro => Icones.WhiteBalanceSunny, TemaSuite.Escuro => Icones.WeatherNight, _ => Icones.ThemeLightDark }, Width = 15, Height = 15 }.TextoRecurso("TxSutil"),
+                        new TextBlock { Text = rotulo, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }.TextoRecurso("TxForte"),
+                    },
+                },
+            };
+            botao.SetValue(ToolTip.TipProperty, valor == TemaSuite.Automatico ? "Acompanha o tema do Windows (claro ou escuro)" : $"Usar o tema {nome.ToLowerInvariant()}");
+            botao.Click += (_, _) => _suite?.EscolherTemaCommand.Execute(valor);
+            _botoesTema[valor] = botao;
+            linha.Children.Add(botao);
+        }
+        return linha;
+    }
+
+    private readonly Dictionary<TemaSuite, Button> _botoesTema = [];
 
     private void Ligar()
     {
@@ -81,11 +113,12 @@ public sealed class SuiteSeletorView : UserControl
 
     private void AoMudar(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SuiteViewModel.Layout)) Marcar();
+        if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.Tema)) Marcar();
     }
 
     private void Marcar()
     {
+        foreach (var (tema, botao) in _botoesTema) botao.Classes.Set("sel", _suite?.Tema == tema);
         foreach (var (layout, (botao, marca)) in _cartoes)
         {
             var atual = _suite?.Layout == layout;

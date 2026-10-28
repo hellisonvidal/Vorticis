@@ -6,7 +6,7 @@
              x:Class="Vorticis.Fiscal.Desktop.Views.DigitacaoDocumentoView"
              x:DataType="vm:DigitacaoDocumentoViewModel">
   <UserControl.Styles>
-    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="#5A6478" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
+    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
     <Style Selector="StackPanel.campo"><Setter Property="Margin" Value="0,0,6,0" /></Style>
     <Style Selector="StackPanel.campo TextBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
     <Style Selector="StackPanel.campo ComboBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
@@ -51,7 +51,7 @@
       </Button>
       <Button Classes="mini" Content="Reaplicar regras" Command="{Binding ReaplicarRegrasCommand}" IsEnabled="{Binding PodeManter}" IsVisible="{Binding EhEntrada}"
               ToolTip.Tip="Refaz o CFOP, o CST e os créditos das notas importadas e ainda não contabilizadas do período, pelas regras de Cadastros › Regras fiscais" />
-      <TextBlock Text="Dê dois cliques numa nota (ou Enter) para abri-la." FontSize="11" Foreground="#5A6478" VerticalAlignment="Center" />
+      <TextBlock Text="Dê dois cliques numa nota (ou Enter) para abri-la." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
     </StackPanel>
 
     <StackPanel Grid.Row="3" Spacing="2">

@@ -10,7 +10,7 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,6,0,0" />
     </Style>
     <Style Selector="TextBlock.dica">
@@ -22,7 +22,7 @@
   <Grid ColumnDefinitions="460,16,*" Margin="8">
     <ScrollViewer>
       <StackPanel Spacing="6" Margin="0,0,12,0">
-        <TextBlock Classes="dica" FontSize="12" Foreground="#44506A"
+        <TextBlock Classes="dica" FontSize="12" Foreground="{DynamicResource TxSutil}"
                    Text="Importe lançamentos de qualquer planilha (Excel .xlsx ou CSV). Crie um layout dizendo qual coluna é a data, as contas, o valor e o histórico; salve-o para usar de novo nas próximas importações." />
         <TextBlock Classes="secao" Text="1. Planilha" />
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
@@ -107,11 +107,11 @@
     <!-- À direita: a planilha como está no arquivo (para definir as colunas) e a pré-visualização dos lançamentos -->
     <Grid Grid.Column="2" RowDefinitions="Auto,*,10,*">
       <StackPanel Spacing="2">
-        <TextBlock Text="Planilha carregada" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Planilha carregada" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                    Text="Como está no arquivo (até 200 linhas). O cabeçalho de cada coluna mostra, entre colchetes, o papel definido no layout." />
       </StackPanel>
-      <Border Grid.Row="1" BorderBrush="#D0D5DD" BorderThickness="1" Margin="0,4,0,0">
+      <Border Grid.Row="1" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Margin="0,4,0,0">
         <Panel>
           <DataGrid Name="GradePlanilha" ItemsSource="{Binding LinhasPlanilha}" IsReadOnly="True" AutoGenerateColumns="False"
                     IsVisible="{Binding TemPlanilha}" FontSize="12" />

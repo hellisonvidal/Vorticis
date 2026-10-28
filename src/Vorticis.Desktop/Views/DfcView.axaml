@@ -16,7 +16,7 @@
         <TextBlock Text="Nível" VerticalAlignment="Center" />
         <ComboBox ItemsSource="{x:Static vm:DfcViewModel.Niveis}" SelectedItem="{Binding Nivel}" Width="70" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </WrapPanel>
     </StackPanel>

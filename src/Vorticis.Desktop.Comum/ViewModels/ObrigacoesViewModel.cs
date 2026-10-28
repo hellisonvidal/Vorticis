@@ -32,7 +32,7 @@ public sealed record LinhaObrigacao(ItemObrigacao Item)
     public IBrush Fundo => Item.Status == StatusObrigacao.Atrasada ? new SolidColorBrush(Color.Parse("#FDE2E2"))
         : Item.Vencendo7Dias ? new SolidColorBrush(Color.Parse("#FFF1CC")) : Item.Status == StatusObrigacao.Cumprida ? new SolidColorBrush(Color.Parse("#E3F4E8")) : Brushes.Transparent;
     public IBrush Texto => Item.Status == StatusObrigacao.Atrasada ? new SolidColorBrush(Color.Parse("#9B1C1C"))
-        : Item.Vencendo7Dias ? new SolidColorBrush(Color.Parse("#8A5A00")) : Item.Status == StatusObrigacao.Cumprida ? new SolidColorBrush(Color.Parse("#17623A")) : new SolidColorBrush(Color.Parse("#2B3445"));
+        : Item.Vencendo7Dias ? new SolidColorBrush(Color.Parse("#8A5A00")) : Item.Status == StatusObrigacao.Cumprida ? new SolidColorBrush(Color.Parse("#17623A")) : new SolidColorBrush(Color.Parse(Views.TemaCores.Escuro ? "#E6EBF3" : "#2B3445"));
 }
 
 /// <summary>

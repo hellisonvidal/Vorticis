@@ -22,7 +22,7 @@
     <TextBlock Grid.Row="2" Grid.ColumnSpan="3" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,6,0,0"
                Text="Taxas fiscais: IN RFB 1.700/2017, Anexo III, e RIR/2018 arts. 317 a 330 (bens móveis em 2 ou 3 turnos: depreciação fiscal acelerada em 1,5 ou 2,0 — art. 323). Contabilmente (NBC TG 27 / CPC 27) a vida útil, o valor residual e o método de cada bem são estimados pela empresa; a vida útil fiscal é só a sugestão inicial. A diferença entre as duas é controlada no LALUR." />
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
-      <TextBlock Text="Grupo" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Grupo" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
         <TextBlock Classes="rotulo" Text="Código" />
         <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="80" HorizontalAlignment="Left" />

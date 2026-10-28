@@ -10,7 +10,7 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,6,0,0" />
     </Style>
     <Style Selector="TextBlock.dica">
@@ -21,7 +21,7 @@
   </UserControl.Styles>
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6">
-      <TextBlock Classes="dica" FontSize="12" Foreground="#44506A"
+      <TextBlock Classes="dica" FontSize="12" Foreground="{DynamicResource TxSutil}"
                  Text="1. Carregue o extrato: OFX do internet banking, ou PDF, TXT ou CSV. Cada movimento vira um lançamento: entradas debitam a conta do banco e creditam a contrapartida; saídas, o contrário. Movimentos já importados não são duplicados." />
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
         <TextBlock Text="Arquivo do extrato" VerticalAlignment="Center" />
@@ -32,7 +32,7 @@
       <TextBlock Text="{Binding DadosExtrato}" FontWeight="SemiBold" TextWrapping="Wrap" />
 
       <!-- 2. Layout personalizado: só para PDF, TXT e CSV, montado a partir do documento carregado -->
-      <Border IsVisible="{Binding UsaLayout}" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="8,6">
+      <Border IsVisible="{Binding UsaLayout}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8,6">
         <StackPanel Spacing="4">
           <TextBlock Classes="secao" Margin="0" Text="2. Layout do extrato (confira na aba Documento carregado como as colunas ficaram)" />
           <WrapPanel>

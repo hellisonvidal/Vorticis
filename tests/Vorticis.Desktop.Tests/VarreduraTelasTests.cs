@@ -170,4 +170,117 @@ public class VarreduraTelasTests(BancoDeTeste db, SessaoHeadless headless) : ICl
         }
         Assert.True(falhas.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, falhas));
     }
+
+    // ------------------------------------------------------------------ tema escuro: texto legível em todas as telas
+
+    private static double Luminancia(Avalonia.Media.Color c)
+    {
+        static double L(byte v) { var x = v / 255.0; return x <= 0.03928 ? x / 12.92 : Math.Pow((x + 0.055) / 1.055, 2.4); }
+        return 0.2126 * L(c.R) + 0.7152 * L(c.G) + 0.0722 * L(c.B);
+    }
+
+    private static double Contraste(Avalonia.Media.Color a, Avalonia.Media.Color b)
+    {
+        var (x, y) = (Luminancia(a), Luminancia(b));
+        return (Math.Max(x, y) + 0.05) / (Math.Min(x, y) + 0.05);
+    }
+
+    /// <summary>Cor de fundo efetiva atrás do controle: o primeiro ancestral com fundo sólido (opaco); a janela quando não há.</summary>
+    private static Avalonia.Media.Color FundoDe(Avalonia.Visual v, Avalonia.Media.Color janela)
+    {
+        for (var a = v.GetVisualParent(); a is not null; a = a.GetVisualParent())
+        {
+            Avalonia.Media.IBrush? b = a switch
+            {
+                Border x => x.Background,
+                Panel x => x.Background,
+                ContentPresenter x => x.Background,
+                Avalonia.Controls.Primitives.TemplatedControl x => x.Background,
+                _ => null,
+            };
+            if (b is Avalonia.Media.ISolidColorBrush { Color.A: > 200 } s) return s.Color;
+        }
+        return janela;
+    }
+
+    private static IEnumerable<string> TextosIlegiveis(Window w)
+    {
+        var janelaBg = (w.Background as Avalonia.Media.ISolidColorBrush)?.Color ?? Avalonia.Media.Colors.Black;
+        foreach (var t in w.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (!t.IsEffectivelyVisible || string.IsNullOrWhiteSpace(t.Text) || t.Opacity < 0.5) continue;
+            if (t.Foreground is not Avalonia.Media.ISolidColorBrush { Color.A: > 200 } fg) continue;
+            if (t.GetVisualAncestors().Any(a => a.Opacity < 0.6 || a is Control { IsEffectivelyEnabled: false })) continue;   // apagados de propósito (desabilitados)
+            var fundo = FundoDe(t, janelaBg);
+            if (fundo == Avalonia.Media.Color.Parse("#0078D7")) continue;   // linha selecionada (cor de destaque do sistema), igual nos dois temas
+            var c = Contraste(fg.Color, fundo);
+            if (c < 2.6) yield return $"\"{(t.Text!.Length > 28 ? t.Text[..28] : t.Text)}\" {fg.Color}/{fundo} = {c:0.0}";
+        }
+    }
+
+    [Fact]
+    public async Task Todas_as_telas_no_tema_escuro_tem_texto_legivel()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var pasta = Environment.GetEnvironmentVariable("VORTICIS_SCREENSHOTS");
+        if (pasta is not null) Directory.CreateDirectory(pasta);
+        SuiteViewModel.ArquivoLayout = Path.Combine(Path.GetTempPath(), $"suite-layout-{Guid.NewGuid():N}.txt");
+        var adm = await db.AdminAsync();
+        await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), ct);
+        var empresa = await db.CriarEmpresaAsync("11444777000161");
+        await SemearAsync(empresa, adm, ct);
+        var falhas = new List<string>();
+        await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            ModulosDaSuite.IncluirTelas(Avalonia.Application.Current!);
+            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())) { Tema = TemaSuite.Escuro };
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, Avalonia.Application.Current!.RequestedThemeVariant);
+            var janela = new MainWindow { Width = 1400, Height = 860 };
+            janela.UsarSuite(suite);
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            await suite.Principal.InicializarAsync(db.ConnectionString);
+            var login = Assert.IsType<LoginViewModel>(suite.Principal.Conteudo);
+            (login.Usuario, login.Senha) = ("admin_teste", "Senha1234");
+            await login.EntrarCommand.ExecuteAsync(null);
+            for (var i = 0; i < 300 && suite.Modulos.Any(m => !m.Vm.Logado); i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            foreach (var l in new[] { LayoutSuite.Lateral, LayoutSuite.Faixa, LayoutSuite.Painel, LayoutSuite.Abas, LayoutSuite.Arvore })
+            {
+                suite.Layout = l;
+                await Calma(3);
+                foreach (var m in suite.Modulos.Take(2)) { suite.Trocar(m); await Calma(2); foreach (var t in TextosIlegiveis(janela).Distinct()) falhas.Add($"layout {l}/{m.Nome}: {t}"); }
+            }
+            suite.Layout = LayoutSuite.Lateral;
+            foreach (var modulo in suite.Modulos)
+            {
+                var vm = modulo.Vm;
+                suite.Trocar(modulo);
+                await Calma();
+                if (vm.EmpresasPermitidas.FirstOrDefault(e => e.Id == empresa) is { } emp) vm.EmpresaSelecionada = emp;
+                await Calma(10);
+                foreach (var chave in vm.ChavesDeTelas.ToList())
+                {
+                    if (chave is TelasComuns.Sair or TelasComuns.Inicio || !vm.PodeAbrir(chave)) continue;
+                    vm.AbrirCommand.Execute(chave);
+                    await Calma(4);
+                    if (vm.Confirmacao is not null) vm.ResponderConfirmacaoCommand.Execute(false);
+                    var f = vm.JanelasAbertas.FirstOrDefault(j => ReferenceEquals(j.ViewModel, vm.Conteudo));
+                    if (f is null || janela.JanelaDa(f.ViewModel) is not { } w) continue;
+                    w.UpdateLayout();
+                    Dispatcher.UIThread.RunJobs();
+                    foreach (var t in TextosIlegiveis(w).Distinct().Take(6)) falhas.Add($"{modulo.Nome}/{chave}: {t}");
+                    if (pasta is not null && chave is "plano_contas" or "balancete" or "painel_bi" or "bi" or "notas" or "funcionarios" or "lancamento" or "empresas" or "participantes" or "parametros")
+                        w.CaptureRenderedFrame()?.Save(Path.Combine(pasta, $"escuro_tela_{modulo.Nome}_{chave}.png"));
+                    vm.FecharFuncao(f);
+                    Dispatcher.UIThread.RunJobs();
+                    if (vm.Confirmacao is not null) vm.ResponderConfirmacaoCommand.Execute(true);
+                }
+            }
+            suite.Tema = TemaSuite.Claro;
+            janela.Close();
+            return true;
+        }, ct));
+        Assert.True(falhas.Count == 0, Environment.NewLine + string.Join(Environment.NewLine, falhas.Take(80)));
+    }
 }

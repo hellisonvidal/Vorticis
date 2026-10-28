@@ -20,7 +20,7 @@
         <Button Content="Consultar" Command="{Binding ConsultarCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
       </WrapPanel>
       <ItemsControl ItemsSource="{Binding Resumo}">
-        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontSize="12" Foreground="#1F3A5F" /></DataTemplate></ItemsControl.ItemTemplate>
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontSize="12" Foreground="{DynamicResource TxTitulo}" /></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
       <DataGrid fg:FiltroGrade.Forcar="True" ItemsSource="{Binding Pendencias}" AutoGenerateColumns="False" Height="260" CanUserSortColumns="False">
         <DataGrid.Columns>
@@ -40,18 +40,18 @@
         <Button Content="Ver prévia" Command="{Binding VerPreviaCommand}" />
         <Button Content="Contabilizar selecionadas" Classes="accent" Command="{Binding ContabilizarCommand}" />
       </WrapPanel>
-      <Border IsVisible="{Binding TemBensPendentes}" Background="#EAF2FF" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
+      <Border IsVisible="{Binding TemBensPendentes}" Background="{DynamicResource Realce}" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
         <StackPanel Spacing="6">
-          <TextBlock Text="{Binding BensPendentes}" TextWrapping="Wrap" Foreground="#1F3A5F" />
+          <TextBlock Text="{Binding BensPendentes}" TextWrapping="Wrap" Foreground="{DynamicResource TxTitulo}" />
           <Button Content="Cadastrar bens das notas" Command="{Binding CadastrarBensDasNotasCommand}" HorizontalAlignment="Left" />
         </StackPanel>
       </Border>
       <ItemsControl ItemsSource="{Binding Previa}">
         <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontFamily="Consolas, Menlo, monospace" FontSize="12" /></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Border BorderBrush="#D0D7E2" BorderThickness="1" CornerRadius="4" Padding="10">
+      <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10">
         <StackPanel Spacing="6">
-          <TextBlock Text="Lotes já contabilizados" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock Text="Lotes já contabilizados" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
           <ListBox ItemsSource="{Binding Lotes}" SelectedItem="{Binding LoteSelecionado}" MaxHeight="150">
             <ListBox.ItemTemplate><DataTemplate x:DataType="vm:LinhaLote"><TextBlock Text="{Binding Texto}" /></DataTemplate></ListBox.ItemTemplate>
           </ListBox>

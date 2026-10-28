@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         suite.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
-            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
+            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) or nameof(SuiteViewModel.Tema) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
         };
         DataContext = suite.Ativo.Vm;
         AtualizarPainel();
@@ -224,9 +224,9 @@ public partial class MainWindow : Window
             CanResize = false,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.Manual,
-            Background = Background,
             Icon = Icon,
         };
+        w.Bind(Window.BackgroundProperty, w.GetResourceObservable("FundoJanela"));   // fundo do tema (claro ou escuro)
         Teclado.SetEnterAvanca(w, true);                       // Enter avança de campo em todas as telas de digitação
         Posicionar(w);
         fechar.Click += (_, _) => dono.FecharFuncao(f);
@@ -408,6 +408,11 @@ public partial class MainWindow : Window
             {
                 Header = (valor == suite.Layout ? "●  " : "     ") + nome, Command = suite.EscolherLayoutCommand, CommandParameter = valor,
             });
+        layout.Items.Add(new Separator());
+        var tema = new MenuItem { Header = "Tema de cores", Icon = IconesSuite.IconeDe(Icones.ThemeLightDark) };
+        foreach (var (valor, nome) in SuiteViewModel.Temas)
+            tema.Items.Add(new MenuItem { Header = (valor == suite.Tema ? "●  " : "     ") + nome, Command = suite.EscolherTemaCommand, CommandParameter = valor });
+        layout.Items.Add(tema);
         layout.Items.Add(new Separator());
         layout.Items.Add(new MenuItem
         {

@@ -20,16 +20,16 @@
     </Setter>
   </Style>
   <Style Selector="Button.su:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#EDF1F7" />
+    <Setter Property="Background" Value="{DynamicResource FundoSuave}" />
   </Style>
   <Style Selector="Button.su:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#E1E8F2" />
+    <Setter Property="Background" Value="{DynamicResource Pressionado}" />
   </Style>
   <Style Selector="Button.su.sel /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#E6EEF9" />
+    <Setter Property="Background" Value="{DynamicResource Selecionado}" />
   </Style>
   <Style Selector="Button.su.sel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#DCE8F7" />
+    <Setter Property="Background" Value="{DynamicResource SelecionadoHover}" />
   </Style>
   <Style Selector="Button.su:disabled">
     <Setter Property="Opacity" Value="0.45" />
@@ -37,7 +37,7 @@
 
   <!-- Botão principal da marca (Abrir módulo, etc.) -->
   <Style Selector="Button.su-marca">
-    <Setter Property="Background" Value="#0F2A47" />
+    <Setter Property="Background" Value="{DynamicResource Marca}" />
     <Setter Property="Foreground" Value="White" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="14,7" />
@@ -45,26 +45,26 @@
     <Setter Property="Cursor" Value="Hand" />
   </Style>
   <Style Selector="Button.su-marca:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#17406B" />
+    <Setter Property="Background" Value="{DynamicResource MarcaHover}" />
     <Setter Property="TextElement.Foreground" Value="White" />
   </Style>
 
-  <Style Selector="TextBlock.su-titulo"><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#0F172A" /></Style>
-  <Style Selector="TextBlock.su-sub"><Setter Property="FontSize" Value="11" /><Setter Property="Foreground" Value="#64748B" /></Style>
+  <Style Selector="TextBlock.su-titulo"><Setter Property="FontSize" Value="13" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="{DynamicResource TxForte}" /></Style>
+  <Style Selector="TextBlock.su-sub"><Setter Property="FontSize" Value="11" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" /></Style>
   <Style Selector="TextBlock.su-secao">
-    <Setter Property="FontSize" Value="10.5" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#7A8AA0" />
+    <Setter Property="FontSize" Value="10.5" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" />
     <Setter Property="LetterSpacing" Value="0.6" />
   </Style>
   <Style Selector="Border.su-cartao">
-    <Setter Property="Background" Value="White" />
-    <Setter Property="BorderBrush" Value="#E2E8F0" />
+    <Setter Property="Background" Value="{DynamicResource FundoCartao}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Linha}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="12" />
     <Setter Property="BoxShadow" Value="0 2 10 0 #14233B55" />
   </Style>
   <Style Selector="Border.su-flutuante">
-    <Setter Property="Background" Value="White" />
-    <Setter Property="BorderBrush" Value="#CBD5E1" />
+    <Setter Property="Background" Value="{DynamicResource FundoCartao}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BordaForte}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0,12,12,0" />
     <Setter Property="BoxShadow" Value="6 4 22 0 #33233B55" />

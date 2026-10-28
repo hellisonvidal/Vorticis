@@ -13,7 +13,7 @@
 
   <Window.Styles>
     <Style Selector="Border.janela-aberta">
-      <Setter Property="Background" Value="#DDE3EC" />
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
     </Style>
     <Style Selector="Border.janela-aberta.ativa">
       <Setter Property="Background" Value="{DynamicResource CorDestaqueModulo}" />
@@ -73,7 +73,7 @@
 
     <!-- Faixa fixa logo abaixo dos menus (sempre visível depois de entrar, para as janelas das funções nunca a cobrirem):
          à esquerda, as funções abertas (clicar traz para a frente, ✕ fecha); à direita, na Folha, a competência e a situação dela -->
-    <Border Name="BarraFuncoes" Background="#EEF1F5" BorderBrush="#D0D5DD" BorderThickness="0,0,0,1" Padding="8,3"
+    <Border Name="BarraFuncoes" Background="{DynamicResource FundoSuave}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="8,3"
             MinHeight="34" IsVisible="False">
       <Grid ColumnDefinitions="*,Auto">
         <ItemsControl Name="FuncoesAbertas" ItemsSource="{Binding JanelasAbertas}" VerticalAlignment="Center">
@@ -96,7 +96,7 @@
         <!-- Período de trabalho do módulo (Folha: competência) e a situação dela; fechado bloqueia inclusões, alterações e exclusões -->
         <StackPanel Name="FaixaPeriodo" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding UsaPeriodo}"
                     Margin="12,0,0,0">
-          <TextBlock Text="{Binding RotuloPeriodo}" Foreground="#44506A" FontSize="12" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding RotuloPeriodo}" Foreground="{DynamicResource TxSutil}" FontSize="12" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding ListaPeriodos}" SelectedItem="{Binding PeriodoEscolhido}" Width="150"
                     FontSize="12" MinHeight="24" MaxDropDownHeight="360">
             <ComboBox.ItemTemplate>
@@ -105,19 +105,19 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <CheckBox Content="Só fechadas" IsChecked="{Binding SomenteFechados}" Foreground="#44506A" FontSize="12"
+          <CheckBox Content="Só fechadas" IsChecked="{Binding SomenteFechados}" Foreground="{DynamicResource TxSutil}" FontSize="12"
                     VerticalAlignment="Center" Margin="6,0,0,0" ToolTip.Tip="Mostra na lista só as competências já fechadas" />
           <Border Background="{Binding PincelSituacaoPeriodo}" CornerRadius="3" Padding="6,1"
                   VerticalAlignment="Center" ToolTip.Tip="Situação do período: inclusões, alterações e exclusões só com o período aberto">
-            <TextBlock Text="{Binding SituacaoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="#1F2937" />
+            <TextBlock Text="{Binding SituacaoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
           </Border>
         </StackPanel>
       </Grid>
     </Border>
     </StackPanel>
 
-    <Border DockPanel.Dock="Bottom" Background="#EEF1F5" Padding="12,3">
-      <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource FundoSuave}" Padding="12,3">
+      <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
     </Border>
 
     <Panel Name="AreaTrabalho">

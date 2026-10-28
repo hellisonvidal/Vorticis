@@ -6,7 +6,7 @@
              x:Class="Vorticis.Fiscal.Desktop.Views.DuplicatasView"
              x:DataType="vm:DuplicatasViewModel">
   <UserControl.Styles>
-    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="#5A6478" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
+    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
     <Style Selector="StackPanel.campo"><Setter Property="Margin" Value="0,0,6,4" /></Style>
     <Style Selector="StackPanel.campo TextBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
     <Style Selector="StackPanel.campo ComboBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
@@ -49,7 +49,7 @@
 
       <Expander Header="Duplicata selecionada ou nova" IsExpanded="True">
         <StackPanel Spacing="4">
-          <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="#7C2D12" />
+          <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxAviso}" />
           <WrapPanel IsEnabled="{Binding PodeManter}">
             <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox Text="{Binding FormParticipante}" Width="260" /></StackPanel>
@@ -71,7 +71,7 @@
       <Expander Header="Baixa (pagamento ou recebimento)" IsExpanded="True">
         <StackPanel Spacing="4" IsEnabled="{Binding PodeBaixar}">
           <TextBlock Text="Para uma duplicata: selecione-a na lista, ajuste os valores e use Baixar selecionada. Para várias: marque-as na primeira coluna e use Baixar marcadas (baixa o saldo total de cada uma)."
-                     FontSize="11" Foreground="#5A6478" TextWrapping="Wrap" />
+                     FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
           <WrapPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Data" /><CalendarDatePicker SelectedDate="{Binding BaixaData}" Width="135" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor principal" /><TextBox Text="{Binding BaixaPrincipal}" Width="110" /></StackPanel>
@@ -85,7 +85,7 @@
             <Button Classes="mini" Content="Baixar marcadas" Command="{Binding BaixarMarcadasCommand}" />
             <Button Classes="mini" Content="Estornar baixa selecionada" Command="{Binding EstornarBaixaCommand}" />
           </StackPanel>
-          <TextBlock Text="Baixas da duplicata selecionada" FontWeight="SemiBold" Foreground="#1F3A5F" FontSize="11" />
+          <TextBlock Text="Baixas da duplicata selecionada" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" FontSize="11" />
           <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Baixas}" SelectedItem="{Binding BaixaSelecionada}" IsReadOnly="True" AutoGenerateColumns="False" Height="120">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />

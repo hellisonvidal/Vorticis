@@ -14,7 +14,7 @@
         <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
         <CheckBox Content="Incluir estornados e estornos" IsChecked="{Binding IncluirEstornados}" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock FontSize="11" Foreground="Gray"

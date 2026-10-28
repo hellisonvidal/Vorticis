@@ -5,7 +5,7 @@
              x:DataType="vm:SobreViewModel">
   <ScrollViewer>
     <StackPanel Spacing="8" MaxWidth="720" HorizontalAlignment="Left" Margin="8">
-      <TextBlock Text="{Binding Nome}" FontSize="24" FontWeight="Bold" Foreground="#1F3A5F" />
+      <TextBlock Text="{Binding Nome}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TxTitulo}" />
       <TextBlock Text="{Binding Cabecalho}" />
       <TextBlock Text="{Binding Usuario, StringFormat='Usuário: {0}'}" />
       <TextBlock Text="{Binding Conexao, StringFormat='Banco de dados: {0}'}" />

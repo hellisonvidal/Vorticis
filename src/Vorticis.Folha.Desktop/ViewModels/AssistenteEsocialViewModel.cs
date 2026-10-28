@@ -12,9 +12,9 @@ namespace Vorticis.Folha.Desktop.ViewModels;
 /// <summary>Etapa do assistente na tela: ícone e cor da situação.</summary>
 public sealed class EtapaEsocialLinha(EtapaEsocial e)
 {
-    private static readonly IBrush Verde = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#15803D"));
-    private static readonly IBrush Amarelo = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#B45309"));
-    private static readonly IBrush Vermelho = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#B91C1C"));
+    private static readonly IBrush Verde = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#16A34A"));
+    private static readonly IBrush Amarelo = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#D97706"));
+    private static readonly IBrush Vermelho = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(Color.Parse("#DC2626"));
 
     public EtapaEsocial E { get; } = e;
     public string Titulo => E.Titulo;

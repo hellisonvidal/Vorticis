@@ -12,7 +12,7 @@
         <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Prévia da folha" Command="{Binding PreviaFolhaCommand}" IsEnabled="{Binding PodeContabilizar}" />
         <Button Content="Contabilizar folha" Command="{Binding ContabilizarFolhaCommand}" Classes="accent" IsEnabled="{Binding PodeContabilizar}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <Button Content="Prévia das provisões" Command="{Binding PreviaProvisoesCommand}" IsEnabled="{Binding PodeContabilizar}" />
         <Button Content="Contabilizar provisões" Command="{Binding ContabilizarProvisoesCommand}" Classes="accent" IsEnabled="{Binding PodeContabilizar}" />
       </StackPanel>
@@ -21,7 +21,7 @@
     </StackPanel>
 
     <DockPanel Grid.Row="1">
-      <TextBlock DockPanel.Dock="Top" Text="Regras de contabilização (rubrica ou código especial → contas)" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,0,0,4" />
+      <TextBlock DockPanel.Dock="Top" Text="Regras de contabilização (rubrica ou código especial → contas)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,0,0,4" />
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6" IsEnabled="{Binding PodeParametros}">
         <Button Content="Gerar regras sugeridas" Command="{Binding GerarSugeridasCommand}" />
         <CheckBox Content="Férias e 13º baixam a provisão (usa provisões)" IsChecked="{Binding ComProvisoes}" />
@@ -37,7 +37,7 @@
       </DataGrid>
     </DockPanel>
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeParametros}">
-      <TextBlock Text="Regra" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Regra" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
         <TextBlock Classes="rotulo" Text="Chave" />
         <TextBox Grid.Column="1" Text="{Binding Chave}" Watermark="Código da rubrica (1000...) ou ENC_*, PROV_*" />
@@ -65,7 +65,7 @@
       </DockPanel>
       <DockPanel Grid.Column="2">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
-          <TextBlock Text="Contabilizações" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+          <TextBlock Text="Contabilizações" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" />
           <Button Content="Desfazer selecionada" Command="{Binding DesfazerCommand}" IsEnabled="{Binding PodeContabilizar}" />
         </StackPanel>
         <c:MensagensView DockPanel.Dock="Bottom" />

@@ -37,7 +37,7 @@
     </ScrollViewer>
     <DockPanel Grid.Row="1" Grid.Column="2">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-        <TextBlock Text="Rescisões calculadas" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+        <TextBlock Text="Rescisões calculadas" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" />
         <Button Content="TRCT simplificado (PDF)" Command="{Binding TrctCommand}" />
         <Button Content="Cancelar rescisão" Command="{Binding CancelarCommand}" IsEnabled="{Binding PodeCalcular}" />
       </StackPanel>

@@ -11,11 +11,13 @@ namespace Vorticis.Desktop.Comum.Views;
 /// <summary>Desenha os blocos do Markdown simples do manual com controles do Avalonia (sem pacotes de terceiros).</summary>
 public static class MarkdownRenderizador
 {
-    private static readonly IBrush Azul = new SolidColorBrush(Color.Parse("#1F3A5F"));
-    private static readonly IBrush Link = new SolidColorBrush(Color.Parse("#1B5FBF"));
-    private static readonly IBrush FundoCodigo = new SolidColorBrush(Color.Parse("#EEF1F5"));
-    private static readonly IBrush Borda = new SolidColorBrush(Color.Parse("#C8D3E6"));
-    private static readonly IBrush FundoCabecalho = new SolidColorBrush(Color.Parse("#EEF3FA"));
+    // pincéis escolhidos na hora de desenhar, pelo tema em uso (o manual é redesenhado ao abrir)
+    private static IBrush Pincel(string claro, string escuro) => new SolidColorBrush(Color.Parse(TemaCores.Escuro ? escuro : claro));
+    private static IBrush Azul => Pincel("#1F3A5F", "#BFD3F2");
+    private static IBrush Link => Pincel("#1B5FBF", "#7DB2FF");
+    private static IBrush FundoCodigo => Pincel("#EEF1F5", "#232C3B");
+    private static IBrush Borda => Pincel("#C8D3E6", "#3A4659");
+    private static IBrush FundoCabecalho => Pincel("#EEF3FA", "#26324A");
 
     public static StackPanel Construir(IEnumerable<Bloco> blocos, Action<string?> navegar)
     {

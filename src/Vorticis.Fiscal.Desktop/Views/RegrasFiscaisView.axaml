@@ -9,7 +9,7 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Regras fiscais" />
-      <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
+      <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                  Text="Entrada: troca o CFOP do fornecedor (5.102, 6.102...) pelo CFOP de entrada da empresa (1.102, 2.102...) ao importar o XML, com CST e créditos. Vale a regra mais específica: produto, depois NCM, depois fornecedor, depois só o CFOP; em empate, a menor ordem. Saída: sugere CFOP e CST na digitação, por produto e destino." />
       <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6" IsEnabled="{Binding PodeManter}">
         <TextBlock Text="Tipo" VerticalAlignment="Center" />

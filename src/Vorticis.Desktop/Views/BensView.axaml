@@ -9,8 +9,8 @@
   <Grid ColumnDefinitions="*,16,430" RowDefinitions="Auto,*,Auto" Margin="8">
     <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,8" Spacing="6">
       <c:BarraCadastroView />
-      <Border IsVisible="{Binding TemAvisoNota}" Background="#EAF2FF" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
-        <TextBlock Text="{Binding AvisoNota}" TextWrapping="Wrap" Foreground="#1F3A5F" />
+      <Border IsVisible="{Binding TemAvisoNota}" Background="{DynamicResource Realce}" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
+        <TextBlock Text="{Binding AvisoNota}" TextWrapping="Wrap" Foreground="{DynamicResource TxTitulo}" />
       </Border>
     </StackPanel>
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
@@ -35,7 +35,7 @@
 
     <ScrollViewer Grid.Row="1" Grid.RowSpan="2" Grid.Column="2">
       <StackPanel Spacing="6">
-        <TextBlock Text="Bem" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Bem" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Código" />
           <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="80" HorizontalAlignment="Left" />
@@ -45,7 +45,7 @@
           <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Grupos}" SelectedItem="{Binding Grupo}" HorizontalAlignment="Stretch" PlaceholderText="Escolha o grupo">
             <ComboBox.ItemTemplate><DataTemplate x:DataType="app:GrupoBem"><TextBlock Text="{Binding Descricao}" /></DataTemplate></ComboBox.ItemTemplate>
           </ComboBox>
-          <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RegraFiscal}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap" />
+          <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RegraFiscal}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
           <TextBlock Grid.Row="4" Classes="rotulo" Text="Plaqueta / local" />
           <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,6,*">
             <TextBox Text="{Binding Plaqueta}" Watermark="nº patrimônio" />
@@ -69,7 +69,7 @@
           </Grid>
         </Grid>
 
-        <TextBlock Text="Depreciação contábil (CPC 27) e fiscal" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,6,0,0" />
+        <TextBlock Text="Depreciação contábil (CPC 27) e fiscal" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
         <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Vida útil (meses)" />
           <TextBox Grid.Column="1" Text="{Binding VidaUtil}" Width="80" HorizontalAlignment="Left" />
@@ -89,7 +89,7 @@
                    ToolTip.Tip="Depreciação acumulada antes de usar o Vorticis (implantação)" />
         </Grid>
 
-        <TextBlock Text="Contas contábeis" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,6,0,0" />
+        <TextBlock Text="Contas contábeis" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
         <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Conta do bem" />
           <TextBox Grid.Column="1" Text="{Binding ContaBem}" Watermark="código ou reduzido" />
@@ -99,7 +99,7 @@
           <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContaDespesa}" Watermark="código ou reduzido" />
         </Grid>
 
-        <TextBlock Text="Baixa" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,6,0,0" />
+        <TextBlock Text="Baixa" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
         <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmAlteracao}">
           <TextBlock Classes="rotulo" Text="Data da baixa" />
           <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding DataBaixa}" Width="135" HorizontalAlignment="Left" />

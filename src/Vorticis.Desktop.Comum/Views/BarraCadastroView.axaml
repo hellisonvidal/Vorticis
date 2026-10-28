@@ -16,7 +16,7 @@
       <Button Command="{Binding ExcluirCommand}" MinWidth="86" HorizontalContentAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Excluir}" Width="14" Height="14" /><TextBlock Text="Excluir" VerticalAlignment="Center" /></StackPanel>
       </Button>
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,2" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,2" />
       <Button Command="{Binding SalvarCommand}" Classes="accent" MinWidth="86" HorizontalContentAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Salvar}" Width="14" Height="14" /><TextBlock Text="Salvar" VerticalAlignment="Center" /></StackPanel>
       </Button>
@@ -24,7 +24,7 @@
         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Cancelar}" Width="14" Height="14" /><TextBlock Text="Cancelar" VerticalAlignment="Center" /></StackPanel>
       </Button>
     </StackPanel>
-    <TextBlock Text="{Binding SituacaoCadastro}" FontSize="11" Foreground="#44506A"
+    <TextBlock Text="{Binding SituacaoCadastro}" FontSize="11" Foreground="{DynamicResource TxSutil}"
                IsVisible="{Binding SituacaoCadastro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
   </StackPanel>
 </UserControl>

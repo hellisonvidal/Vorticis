@@ -27,7 +27,7 @@
         <CheckBox Content="Mostrar conciliadas" IsChecked="{Binding MostrarConciliadas}" />
         <CheckBox Content="Somente com documento" IsChecked="{Binding SomenteComDocumento}" />
       </StackPanel>
-      <TextBlock Text="{Binding NomeConta}" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="{Binding NomeConta}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button Content="Conciliar automaticamente (nº do documento)" Command="{Binding ConciliarAutomaticoCommand}" Classes="accent" />
         <Button Content="Conciliar selecionadas" Command="{Binding ConciliarSelecionadasCommand}" />

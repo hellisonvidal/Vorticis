@@ -11,7 +11,7 @@
         <TextBlock Classes="titulo" Text="Eventos variáveis" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
         <c:SeletorCompetencia Competencia="{Binding Competencia}" />
-        <TextBlock Text="{Binding Situacao}" VerticalAlignment="Center" Foreground="#44506A" />
+        <TextBlock Text="{Binding Situacao}" VerticalAlignment="Center" Foreground="{DynamicResource TxSutil}" />
       </StackPanel>
       <TextBlock Text="Seu perfil não permite lançar eventos." Classes="erro" IsVisible="{Binding !PodeLancar}" />
       <WrapPanel Orientation="Horizontal" IsEnabled="{Binding PodeLancar}">

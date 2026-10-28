@@ -13,9 +13,9 @@
       <ScrollViewer>
         <StackPanel Spacing="8" MaxWidth="860" HorizontalAlignment="Left" Margin="4,8">
           <TextBlock Classes="titulo" Text="{Binding TituloTela}" />
-          <TextBlock Text="{Binding IndicadorPasso}" FontSize="12" Foreground="#44506A" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding TituloPasso}" FontWeight="SemiBold" FontSize="15" Foreground="#7C2D12" />
-          <TextBlock Text="{Binding ExplicacaoPasso}" TextWrapping="Wrap" FontSize="12" Foreground="#44506A" />
+          <TextBlock Text="{Binding IndicadorPasso}" FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TituloPasso}" FontWeight="SemiBold" FontSize="15" Foreground="{DynamicResource TxAviso}" />
+          <TextBlock Text="{Binding ExplicacaoPasso}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}" />
 
           <!-- 1. Empresa e período -->
           <StackPanel Spacing="6" IsVisible="{Binding NoPasso1}">
@@ -48,7 +48,7 @@
                     <TextBlock Text="{Binding Marca}" Foreground="{Binding Cor}" FontWeight="Bold" />
                     <StackPanel Grid.Column="1">
                       <TextBlock Text="{Binding Titulo}" />
-                      <TextBlock Text="{Binding Detalhe}" FontSize="12" Foreground="#667085" />
+                      <TextBlock Text="{Binding Detalhe}" FontSize="12" Foreground="{DynamicResource TxSutil}" />
                     </StackPanel>
                     <Button Grid.Column="2" Content="{Binding TextoAtalho}" IsVisible="{Binding TemAtalho}"
                             Command="{Binding $parent[ItemsControl].((vm:EfdAssistenteViewModel)DataContext).AbrirAtalhoCommand}"
@@ -111,7 +111,7 @@
           <!-- 5. Gerar e salvar -->
           <StackPanel Spacing="8" IsVisible="{Binding NoPasso5}">
             <Button Content="Gerar arquivo" Command="{Binding GerarCommand}" Classes="accent" HorizontalAlignment="Left" />
-            <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="{Binding Gerado}">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="{Binding Gerado}">
               <TextBlock Text="{Binding ResumoArquivo}" TextWrapping="Wrap" FontFamily="Consolas, Menlo, monospace" FontSize="12" />
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Gerado}">
@@ -120,12 +120,12 @@
               <Button Content="Escolher..." Click="EscolherPasta" />
               <Button Content="Salvar arquivo" Command="{Binding SalvarCommand}" Classes="accent" />
             </StackPanel>
-            <Border Background="#EEF4FF" CornerRadius="4" Padding="12,8" IsVisible="{Binding Salvo}">
+            <Border Background="{DynamicResource Realce}" CornerRadius="4" Padding="12,8" IsVisible="{Binding Salvo}">
               <StackPanel Spacing="4">
                 <TextBlock Text="Pronto! Último passo, no PVA da Receita Federal" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding CaminhoSalvo, StringFormat='Arquivo: {0}'}" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding InstrucoesPva}" TextWrapping="Wrap" />
-                <TextBlock Text="{x:Static vm:EfdAssistenteViewModel.ObservacaoPva}" TextWrapping="Wrap" FontSize="12" Foreground="#44506A" />
+                <TextBlock Text="{x:Static vm:EfdAssistenteViewModel.ObservacaoPva}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}" />
               </StackPanel>
             </Border>
             <Button Content="Gerar outro arquivo" Command="{Binding ReiniciarCommand}" HorizontalAlignment="Left" IsVisible="{Binding Salvo}" />

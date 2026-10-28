@@ -15,7 +15,7 @@
         <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
       </StackPanel>
 
-      <TextBlock Text="O que entra no livro" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,8,0,0" />
+      <TextBlock Text="O que entra no livro" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,8,0,0" />
       <WrapPanel>
         <CheckBox Content="Termo de abertura" IsChecked="{Binding IncluirTermoAbertura}" Width="230" />
         <CheckBox Content="Livro Diário" IsChecked="{Binding IncluirDiario}" Width="230" />
@@ -32,7 +32,7 @@
         <CheckBox Content="Assinar digitalmente o PDF" IsChecked="{Binding AssinarPdfDigitalmente}" Width="230" />
       </WrapPanel>
 
-      <TextBlock Text="Livro, termos de abertura e encerramento e assinaturas" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,8,0,0" />
+      <TextBlock Text="Livro, termos de abertura e encerramento e assinaturas" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,8,0,0" />
       <Grid ColumnDefinitions="230,*,12,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
         <TextBlock Text="Número do livro a gerar" VerticalAlignment="Center" />
         <NumericUpDown Grid.Column="1" Value="{Binding NumeroLivro}" Minimum="1" Maximum="9999" FormatString="0" Width="130" HorizontalAlignment="Left" />
@@ -44,7 +44,7 @@
         <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Crc}" Watermark="CRC (ex.: SP-123456/O-7)" />
         <TextBlock Grid.Row="3" Text="NIRE (do cadastro da empresa)" VerticalAlignment="Center" />
         <TextBox Name="CampoNire" Grid.Row="3" Grid.Column="1" Text="{Binding Nire}" IsReadOnly="True" Watermark="Não cadastrado" />
-        <TextBlock Grid.Row="3" Grid.Column="3" Text="{Binding AvisoNire}" IsVisible="{Binding SemNire}" Foreground="#B54708" FontSize="11"
+        <TextBlock Grid.Row="3" Grid.Column="3" Text="{Binding AvisoNire}" IsVisible="{Binding SemNire}" Foreground="{DynamicResource TxAviso}" FontSize="11"
                    TextWrapping="Wrap" VerticalAlignment="Center" />
         <TextBlock Grid.Row="4" Text="Arquivamento dos atos (opcional)" VerticalAlignment="Center" />
         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding DataArquivamento}" Watermark="dd/mm/aaaa" />

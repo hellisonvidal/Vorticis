@@ -5,7 +5,7 @@
              x:Class="Vorticis.Desktop.Comum.Views.PerfisView"
              x:DataType="vm:PerfisViewModel">
   <DockPanel>
-  <Border DockPanel.Dock="Top" IsVisible="{Binding ConfiguracaoInicial}" Background="#FFF6E0" BorderBrush="#E8C66A"
+  <Border DockPanel.Dock="Top" IsVisible="{Binding ConfiguracaoInicial}" Background="{DynamicResource FundoAviso}" BorderBrush="{DynamicResource BordaAviso}"
           BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="8,8,8,0">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="4">
@@ -46,7 +46,7 @@
           <TextBlock Grid.Row="1" Text="Descrição" VerticalAlignment="Center" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" />
         </Grid>
-        <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="#44506A" />
+        <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="{DynamicResource TxSutil}" />
         <v:MensagensView />
 
         <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
@@ -59,9 +59,9 @@
         <ItemsControl ItemsSource="{Binding Grupos}" IsEnabled="{Binding PodeMarcar}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:GrupoFuncoes">
-              <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,4">
+              <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,4">
                 <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" Foreground="#1F3A5F" />
+                  <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
                   <ItemsControl ItemsSource="{Binding Funcoes}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:FuncaoMarcavel">

@@ -4,7 +4,7 @@
   <!-- Suite, parte de cima: A e E = abas dos módulos (E com a faixa de opções embaixo); D = painel inicial e módulo atual -->
   <StackPanel>
     <!-- A e E: uma aba por módulo -->
-    <Border Name="BarraAbas" Background="#E9EEF5" BorderBrush="#D5DCE6" BorderThickness="0,0,0,1" Padding="10,6,10,0" IsVisible="{Binding MostraAbas}">
+    <Border Name="BarraAbas" Background="{DynamicResource FundoSuave}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="10,6,10,0" IsVisible="{Binding MostraAbas}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="8,0,0,6">
           <!-- E: empresa ativa, usuário e Exibir no lugar da barra de menus clássica -->
@@ -18,19 +18,19 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <TextBlock Text="{Binding UsuarioRotulo}" FontSize="12" Foreground="#334155" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding UsuarioRotulo}" FontSize="12" Foreground="{DynamicResource TxForte}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" />
             <Button Name="BotaoExibir" Classes="su" Padding="9,6" Click="AbrirExibir">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <PathIcon Data="{x:Static v:Icones.ViewGridOutline}" Width="15" Height="15" Foreground="#475569" />
-                <TextBlock Text="Exibir" FontSize="12" Foreground="#475569" VerticalAlignment="Center" />
+                <PathIcon Data="{x:Static v:Icones.ViewGridOutline}" Width="15" Height="15" Foreground="{DynamicResource TxSutil}" />
+                <TextBlock Text="Exibir" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </StackPanel>
           <Button Name="BotaoFaixa" Classes="su" Padding="9,6" Command="{Binding AlternarFaixaCommand}"
                   ToolTip.Tip="Fixar: a faixa fica sempre à mostra. Ocultar: só os títulos das abas ficam à mostra e a faixa abre por cima ao passar o mouse">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <PathIcon Data="{Binding IconeFixarFaixa}" Width="15" Height="15" Foreground="#475569" />
-              <TextBlock Text="{Binding TextoFixarFaixa}" FontSize="12" Foreground="#475569" VerticalAlignment="Center" IsVisible="{Binding EhAbas}" />
+              <PathIcon Data="{Binding IconeFixarFaixa}" Width="15" Height="15" Foreground="{DynamicResource TxSutil}" />
+              <TextBlock Text="{Binding TextoFixarFaixa}" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" IsVisible="{Binding EhAbas}" />
             </StackPanel>
           </Button>
           <v:SuiteEscolhaLayoutView />
@@ -46,11 +46,11 @@
               <Button Classes="su aba" ToolTip.Tip="{Binding NomeCompleto}"
                       Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).TrocarCommand}" CommandParameter="{Binding}">
                 <Panel>
-                  <Border CornerRadius="9,9,0,0" Background="White" IsVisible="{Binding Ativo}" BoxShadow="0 -1 6 0 #14233B55" />
+                  <Border CornerRadius="9,9,0,0" Background="{DynamicResource FundoCartao}" IsVisible="{Binding Ativo}" BoxShadow="0 -1 6 0 #14233B55" />
                   <Border Height="3" VerticalAlignment="Top" CornerRadius="9,9,0,0" Background="{Binding Cor}" IsVisible="{Binding Ativo}" />
                   <StackPanel Orientation="Horizontal" Spacing="8" Margin="14,9,14,9">
                     <PathIcon Data="{Binding Icone}" Width="18" Height="18" Foreground="{Binding Cor}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Nome}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="#0F172A"
+                    <TextBlock Text="{Binding Nome}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource TxForte}"
                                IsVisible="{Binding !$parent[UserControl].((vm:SuiteViewModel)DataContext).AbasCompactas}" />
                     <Border Classes="su-selo" VerticalAlignment="Center" IsVisible="{Binding TemAbertas}" ToolTip.Tip="Funções abertas neste módulo">
                       <TextBlock Text="{Binding Abertas}" />
@@ -72,13 +72,13 @@
     </Popup>
 
     <!-- D: marca, painel inicial e módulo atual -->
-    <Border Name="BarraPainel" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="14,8" IsVisible="{Binding EhPainel}">
+    <Border Name="BarraPainel" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="14,8" IsVisible="{Binding EhPainel}">
       <DockPanel>
         <v:SuiteEscolhaLayoutView DockPanel.Dock="Right" VerticalAlignment="Center" />
         <StackPanel Orientation="Horizontal" Spacing="10">
           <Image Source="avares://Vorticis.Desktop.Comum/Assets/marca-vorticis.png" Width="30" Height="30" />
           <StackPanel VerticalAlignment="Center" Margin="0,0,14,0">
-            <TextBlock Text="{Binding Nome}" FontSize="14.5" FontWeight="Bold" Foreground="#0F2A47" />
+            <TextBlock Text="{Binding Nome}" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource TxTitulo}" />
             <TextBlock Text="Escolha um módulo para começar" Classes="su-sub" FontSize="10.5" />
           </StackPanel>
           <Button Name="BotaoVoltarPainel" Classes="su-marca" IsVisible="{Binding !NoPainel}" Command="{Binding IrParaPainelCommand}" ToolTip.Tip="Voltar ao painel com todos os módulos">
@@ -87,7 +87,7 @@
               <TextBlock Text="Voltar ao painel" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <Border Width="1" Background="#E2E8F0" Margin="6,4" />
+          <Border Width="1" Background="{DynamicResource FundoSuave}" Margin="6,4" />
           <TextBlock Text="Módulo:" VerticalAlignment="Center" Classes="su-sub" FontSize="12" />
           <ComboBox Name="SeletorModulo" ItemsSource="{Binding Modulos}" SelectedItem="{Binding ModuloNoSeletor}" MinWidth="220" CornerRadius="8">
             <ComboBox.ItemTemplate>

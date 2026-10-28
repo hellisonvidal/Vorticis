@@ -16,9 +16,6 @@ namespace Vorticis.Desktop.Comum.Views;
 /// </summary>
 public partial class SuiteTopoView : UserControl
 {
-    private static readonly IBrush Texto = new SolidColorBrush(Color.Parse("#1E293B"));
-    private static readonly IBrush Sutil = new SolidColorBrush(Color.Parse("#64748B"));
-    private static readonly IBrush Linha = new SolidColorBrush(Color.Parse("#E2E8F0"));
     private readonly DispatcherTimer _recolher = new() { Interval = TimeSpan.FromMilliseconds(420) };
     private SuiteViewModel? _suite;
     private ModuloSuite? _observado;
@@ -102,12 +99,12 @@ public partial class SuiteTopoView : UserControl
         foreach (var categoria in modulo.Raiz.Filhos)
         {
             grupos.Children.Add(CriarGrupo(suite, modulo, categoria));
-            grupos.Children.Add(new Border { Width = 1, Background = Linha, Margin = new Thickness(4, 4, 4, 16) });
+            grupos.Children.Add(new Border { Width = 1, Margin = new Thickness(4, 4, 4, 16) }.FundoRecurso("Linha"));
         }
         var rolagem = new ScrollViewer { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, Content = grupos };
         Button Seta(Geometry g, int sentido)
         {
-            var b = new Button { Classes = { "su" }, Width = 26, Margin = new Thickness(2, 6), Content = new PathIcon { Data = g, Width = 16, Height = 16, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Center } };
+            var b = new Button { Classes = { "su" }, Width = 26, Margin = new Thickness(2, 6), Content = new PathIcon { Data = g, Width = 16, Height = 16, HorizontalAlignment = HorizontalAlignment.Center }.TextoRecurso("TxSutil") };
             b.Click += (_, _) => rolagem.Offset = new Vector(Math.Clamp(rolagem.Offset.X + sentido * 320, 0, Math.Max(0, rolagem.Extent.Width - rolagem.Viewport.Width)), 0);
             return b;
         }
@@ -127,8 +124,7 @@ public partial class SuiteTopoView : UserControl
         };
         var corpo = new Border
         {
-            Background = Brushes.White,
-            BorderBrush = new SolidColorBrush(Color.Parse("#D5DCE6")), BorderThickness = new Thickness(0, 0, 0, 1),
+            BorderThickness = new Thickness(0, 0, 0, 1),
             Height = 100, MinWidth = flutuante ? 900 : 0,
             Child = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children = { esquerda, rolagem, direita } },
         };
@@ -141,6 +137,7 @@ public partial class SuiteTopoView : UserControl
             corpo.PointerExited += (_, _) => _recolher.Start();
             corpo.Width = Math.Max(900, (VisualRoot as Control)?.Bounds.Width ?? 900);
         }
+        corpo.FundoRecurso("FundoCartao").BordaRecurso("Linha");
         return corpo;
     }
 
@@ -170,8 +167,8 @@ public partial class SuiteTopoView : UserControl
             Children =
             {
                 botoes,
-                new TextBlock { Text = categoria.Titulo, FontSize = 11, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 5),
-                                [Grid.RowProperty] = 1, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 220 },
+                new TextBlock { Text = categoria.Titulo, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 5),
+                                [Grid.RowProperty] = 1, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 220 }.TextoRecurso("TxSutil"),
             },
         };
     }
@@ -181,8 +178,8 @@ public partial class SuiteTopoView : UserControl
         var linhaIcone = new Grid { HorizontalAlignment = HorizontalAlignment.Center };
         linhaIcone.Children.Add(new PathIcon { Data = icone, Width = 22, Height = 22, Foreground = modulo.Cor, HorizontalAlignment = HorizontalAlignment.Center });
         if (seta)
-            linhaIcone.Children.Add(new PathIcon { Data = Icones.ChevronDown, Width = 9, Height = 9, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Right,
-                                                   VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, -12, -1) });
+            linhaIcone.Children.Add(new PathIcon { Data = Icones.ChevronDown, Width = 9, Height = 9, HorizontalAlignment = HorizontalAlignment.Right,
+                                                   VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, -12, -1) }.TextoRecurso("TxSutil"));
         var b = new Button
         {
             Width = 78, Height = 64, Margin = new Thickness(1, 0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, HorizontalContentAlignment = HorizontalAlignment.Center,
@@ -192,7 +189,7 @@ public partial class SuiteTopoView : UserControl
                 Children =
                 {
                     linhaIcone,
-                    new TextBlock { Text = texto, FontSize = 11.5, Foreground = Texto, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxWidth = 74, MaxHeight = 32 },
+                    new TextBlock { Text = texto, FontSize = 11.5, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxWidth = 74, MaxHeight = 32 }.TextoRecurso("TxForte"),
                 },
             },
         };

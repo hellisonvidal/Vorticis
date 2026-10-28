@@ -4,7 +4,7 @@
              x:Class="Vorticis.Desktop.Views.PreviaImportacaoView"
              x:DataType="vm:ImportacaoLancamentosBase">
   <DockPanel>
-    <TextBlock DockPanel.Dock="Top" Text="Pré-visualização" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,0,0,4" />
+    <TextBlock DockPanel.Dock="Top" Text="Pré-visualização" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,0,0,4" />
     <TextBlock DockPanel.Dock="Top" Text="{Binding Resumo}" TextWrapping="Wrap" Margin="0,0,0,6" />
     <DataGrid ItemsSource="{Binding Previa}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>

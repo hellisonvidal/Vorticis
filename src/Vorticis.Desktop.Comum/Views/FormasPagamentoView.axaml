@@ -8,7 +8,7 @@
   <DockPanel Margin="8">
     <c:BarraCadastroView DockPanel.Dock="Top" Margin="0,0,0,8" />
     <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Formas de pagamento" Margin="0,0,0,6" />
-    <Border DockPanel.Dock="Top" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
       <StackPanel Spacing="6">
         <WrapPanel IsEnabled="{Binding EmEdicao}">
           <WrapPanel.Styles><Style Selector="WrapPanel &gt; StackPanel"><Setter Property="Margin" Value="0,0,12,6" /></Style></WrapPanel.Styles>
@@ -30,7 +30,7 @@
             <ComboBox ItemsSource="{Binding Contas}" SelectedItem="{Binding Conta}" DisplayMemberBinding="{ReflectionBinding Texto}" Width="220" /></StackPanel>
           <StackPanel Spacing="2" VerticalAlignment="Bottom"><CheckBox Content="Ativa" IsChecked="{Binding Ativa}" /></StackPanel>
         </WrapPanel>
-        <TextBlock Text="{Binding Exemplo}" FontSize="11.5" Foreground="#44506A" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Exemplo}" FontSize="11.5" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                    Text="Informe as parcelas, o 1º vencimento e os dias entre parcelas: os prazos são montados sozinhos (ou digite os prazos à mão, ex.: 0/30/45). Os prazos contam a partir da emissão da nota." />
         <c:MensagensView />

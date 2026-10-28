@@ -13,7 +13,7 @@
       <TextBlock Text="Saldo credor anterior (R$)" VerticalAlignment="Center" IsVisible="{Binding MostrarSaldo}" />
       <TextBox Text="{Binding SaldoCredorAnterior}" Width="110" Watermark="0,00" IsVisible="{Binding MostrarSaldo}" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />

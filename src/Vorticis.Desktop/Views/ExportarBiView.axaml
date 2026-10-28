@@ -27,7 +27,7 @@
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="10">
         <Button Content="Exportar dados para BI" Command="{Binding ExportarCommand}" Classes="accent" IsEnabled="{Binding PodeExportar}" />
-        <TextBlock Text="Seu perfil não permite exportar relatórios." Foreground="#B3261E" VerticalAlignment="Center" IsVisible="{Binding !PodeExportar}" />
+        <TextBlock Text="Seu perfil não permite exportar relatórios." Foreground="{DynamicResource TxErro}" VerticalAlignment="Center" IsVisible="{Binding !PodeExportar}" />
       </StackPanel>
       <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
       <c:MensagensView />

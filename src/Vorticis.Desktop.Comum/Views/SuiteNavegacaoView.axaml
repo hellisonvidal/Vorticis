@@ -9,24 +9,24 @@
       <Setter Property="Margin" Value="0,1" />
     </Style>
   </UserControl.Styles>
-  <Border Name="Raiz" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" Width="248">
+  <Border Name="Raiz" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,1,0" Width="248">
     <DockPanel>
       <!-- cabeçalho: marca e Fixar/Ocultar -->
       <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="14,12,10,8">
         <Image Source="avares://Vorticis.Desktop.Comum/Assets/marca-vorticis.png" Width="30" Height="30" />
         <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-          <TextBlock Text="Vorticis" FontSize="15" FontWeight="Bold" Foreground="#0F2A47" />
+          <TextBlock Text="Vorticis" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TxTitulo}" />
           <TextBlock Text="{Binding Nome}" Classes="su-sub" FontSize="10.5" TextTrimming="CharacterEllipsis" />
         </StackPanel>
         <Button Grid.Column="2" Classes="su" Padding="8,6" VerticalAlignment="Center" Command="{Binding AlternarFixaCommand}"
                 ToolTip.Tip="Fixar: a navegação fica sempre aberta e empurra as telas. Ocultar: ela volta a abrir por cima ao passar o mouse">
           <StackPanel Orientation="Horizontal" Spacing="5">
-            <PathIcon Data="{Binding IconeFixar}" Width="14" Height="14" Foreground="#475569" />
-            <TextBlock Text="{Binding TextoFixar}" FontSize="11.5" Foreground="#475569" VerticalAlignment="Center" />
+            <PathIcon Data="{Binding IconeFixar}" Width="14" Height="14" Foreground="{DynamicResource TxSutil}" />
+            <TextBlock Text="{Binding TextoFixar}" FontSize="11.5" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>
-      <Border DockPanel.Dock="Top" Height="1" Background="#EDF1F7" Margin="12,0" />
+      <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource FundoSuave}" Margin="12,0" />
 
       <!-- B: módulos e funções do módulo ativo -->
       <ScrollViewer Name="ListaB" IsVisible="{Binding EhLateral}" VerticalScrollBarVisibility="Auto" Margin="0,6,0,8">
@@ -55,12 +55,12 @@
                     <DataTemplate x:DataType="vm:NoSuite">
                       <Panel>
                         <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding EhGrupo}" Margin="26,8,10,3">
-                          <PathIcon Data="{Binding Icone}" Width="14" Height="14" Foreground="#7A8AA0" Margin="{Binding Recuo}" />
-                          <TextBlock Text="{Binding Titulo}" FontSize="11.5" FontWeight="SemiBold" Foreground="#475569" />
+                          <PathIcon Data="{Binding Icone}" Width="14" Height="14" Foreground="{DynamicResource TxSutil}" Margin="{Binding Recuo}" />
+                          <TextBlock Text="{Binding Titulo}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TxSutil}" />
                         </StackPanel>
                         <Button Classes="su" IsVisible="{Binding EhFuncao}" Margin="30,0,8,0"
                                 Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                          <TextBlock Text="{Binding Titulo}" FontSize="12.5" Foreground="#1E293B" Margin="30,5,6,5" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Titulo}" FontSize="12.5" Foreground="{DynamicResource TxForte}" Margin="30,5,6,5" TextTrimming="CharacterEllipsis" />
                         </Button>
                       </Panel>
                     </DataTemplate>
@@ -74,9 +74,9 @@
 
       <!-- C: busca, favoritos, recentes e árvore -->
       <DockPanel Name="ListaC" IsVisible="{Binding EhArvore}" Margin="10,8,8,8">
-        <Border DockPanel.Dock="Top" CornerRadius="8" Background="#F1F5F9" Padding="10,0" Margin="2,0,2,10">
+        <Border DockPanel.Dock="Top" CornerRadius="8" Background="{DynamicResource FundoSuave}" Padding="10,0" Margin="2,0,2,10">
           <Grid ColumnDefinitions="Auto,*">
-            <PathIcon Data="{x:Static v:Icones.Magnify}" Width="15" Height="15" Foreground="#64748B" VerticalAlignment="Center" />
+            <PathIcon Data="{x:Static v:Icones.Magnify}" Width="15" Height="15" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
             <TextBox Name="CampoBusca" Grid.Column="1" Text="{Binding Busca}" Watermark="Ir para…  (Ctrl+K)" Background="Transparent"
                      BorderThickness="0" Padding="8,7" />
           </Grid>
@@ -89,7 +89,7 @@
                 <DataTemplate x:DataType="vm:NoSuite">
                   <Button Classes="su" Margin="0,1" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
                     <StackPanel Margin="10,5" Spacing="1">
-                      <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="#0F172A" />
+                      <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
                       <TextBlock Text="{Binding Caminho}" Classes="su-sub" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                   </Button>
@@ -109,7 +109,7 @@
                       <Button Classes="su" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,4">
                           <Ellipse Width="7" Height="7" Fill="{Binding CorIcone}" VerticalAlignment="Center" />
-                          <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" />
+                          <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
                           <TextBlock Text="{Binding Modulo.Nome}" Classes="su-sub" VerticalAlignment="Center" />
                         </StackPanel>
                       </Button>
@@ -119,7 +119,7 @@
               </StackPanel>
               <StackPanel IsVisible="{Binding TemRecentes}" Margin="0,0,0,8">
                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="4,0,0,4">
-                  <PathIcon Data="{x:Static v:Icones.History}" Width="12" Height="12" Foreground="#7A8AA0" />
+                  <PathIcon Data="{x:Static v:Icones.History}" Width="12" Height="12" Foreground="{DynamicResource TxSutil}" />
                   <TextBlock Text="RECENTES" Classes="su-secao" />
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding Recentes}">
@@ -128,7 +128,7 @@
                       <Button Classes="su" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,4">
                           <Ellipse Width="7" Height="7" Fill="{Binding CorIcone}" VerticalAlignment="Center" />
-                          <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" />
+                          <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
                           <TextBlock Text="{Binding Modulo.Nome}" Classes="su-sub" VerticalAlignment="Center" />
                         </StackPanel>
                       </Button>
@@ -144,7 +144,7 @@
                       <Button Classes="su" Padding="6,4" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                           <PathIcon Data="{Binding Icone}" Width="16" Height="16" Foreground="{Binding CorIcone}" IsVisible="{Binding Icone, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                          <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" Foreground="#1E293B"
+                          <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" Foreground="{DynamicResource TxForte}"
                                      FontWeight="{Binding EhModulo, Converter={x:Static v:Conversores.NegritoSe}}" />
                         </StackPanel>
                       </Button>

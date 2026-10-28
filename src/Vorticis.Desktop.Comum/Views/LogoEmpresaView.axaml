@@ -6,7 +6,7 @@
   <!-- Logo da empresa: prévia, carregar, remover e "Usar a logo nos relatórios" -->
   <StackPanel Spacing="6">
     <StackPanel Orientation="Horizontal" Spacing="12">
-      <Border Width="160" Height="80" BorderBrush="#B8C2D4" BorderThickness="1" Background="White" CornerRadius="3">
+      <Border Width="160" Height="80" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Background="{DynamicResource FundoCartao}" CornerRadius="3">
         <Panel>
           <Image Source="{Binding Previa}" Stretch="Uniform" Margin="4" />
           <TextBlock Text="Sem logo" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"

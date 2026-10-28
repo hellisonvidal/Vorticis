@@ -12,7 +12,7 @@
       <TextBlock Text="Nível" VerticalAlignment="Center" />
       <ComboBox ItemsSource="{x:Static vm:BalancoViewModel.Niveis}" SelectedItem="{Binding Nivel}" Width="70" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />
     </StackPanel>
     <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
@@ -25,8 +25,8 @@
     <Panel>
       <Panel IsVisible="{Binding MostraNormal}">
             <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,*">
-              <TextBlock Text="ATIVO" FontWeight="SemiBold" Foreground="#1F3A5F" />
-              <TextBlock Grid.Column="2" Text="PASSIVO E PATRIMÔNIO LÍQUIDO" FontWeight="SemiBold" Foreground="#1F3A5F" />
+              <TextBlock Text="ATIVO" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+              <TextBlock Grid.Column="2" Text="PASSIVO E PATRIMÔNIO LÍQUIDO" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
               <DataGrid Grid.Row="1" ItemsSource="{Binding Ativo}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />

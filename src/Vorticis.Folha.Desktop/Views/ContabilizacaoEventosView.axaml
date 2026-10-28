@@ -42,7 +42,7 @@
     </DataGrid>
     <Grid Grid.Row="2" ColumnDefinitions="*,16,*" Margin="0,8,0,0" Height="170">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Partidas do evento selecionado" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,0,0,4" />
+        <TextBlock DockPanel.Dock="Top" Text="Partidas do evento selecionado" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,0,0,4" />
         <ListBox ItemsSource="{Binding Lancamento}" FontFamily="Consolas, Menlo, monospace" FontSize="11" />
       </DockPanel>
       <c:MensagensView Grid.Column="2" />

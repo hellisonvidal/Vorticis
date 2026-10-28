@@ -19,7 +19,7 @@
     </DockPanel>
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
       <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-      <TextBlock Text="Cargo" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Cargo" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
         <TextBlock Classes="rotulo" Text="Código" />
         <TextBox Grid.Column="1" Text="{Binding Codigo}" IsEnabled="{Binding EmEdicao}" MaxLength="20" />

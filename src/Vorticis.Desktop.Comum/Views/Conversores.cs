@@ -13,7 +13,7 @@ public static class Conversores
     public static readonly IValueConverter EstrelaSe = new FuncValueConverter<bool, Avalonia.Media.Geometry?>(b => b ? Icones.Star : Icones.StarOutline);
 
     public static readonly IValueConverter OkOuErro =
-        new FuncValueConverter<bool, IBrush>(ok => ok ? new SolidColorBrush(Color.Parse("#1B6E3A")) : new SolidColorBrush(Color.Parse("#B3261E")));
+        new FuncValueConverter<bool, IBrush>(ok => ok ? new SolidColorBrush(Color.Parse(TemaCores.Escuro ? "#6FD39A" : "#1B6E3A")) : new SolidColorBrush(Color.Parse(TemaCores.Escuro ? "#FF8A80" : "#B3261E")));
 
     public static readonly IValueConverter NomeRegime = new FuncValueConverter<RegimeTributario, string>(r => r switch
     {

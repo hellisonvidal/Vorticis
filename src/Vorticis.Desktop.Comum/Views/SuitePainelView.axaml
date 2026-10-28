@@ -12,16 +12,16 @@
       <Setter Property="BoxShadow" Value="0 8 24 0 #33233B55" />
     </Style>
   </UserControl.Styles>
-  <ScrollViewer Background="#F4F6FA">
+  <ScrollViewer Background="{DynamicResource FundoPagina}">
     <StackPanel Margin="32,18,32,20" Spacing="4">
       <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
         <StackPanel>
-          <TextBlock Text="{Binding Saudacao}" FontSize="24" FontWeight="Bold" Foreground="#0F2A47" />
-          <TextBlock Text="{Binding Hoje}" FontSize="13" Foreground="#64748B" />
+          <TextBlock Text="{Binding Saudacao}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TxTitulo}" />
+          <TextBlock Text="{Binding Hoje}" FontSize="13" Foreground="{DynamicResource TxSutil}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-          <PathIcon Data="{x:Static v:Icones.Account}" Width="16" Height="16" Foreground="#64748B" />
-          <TextBlock Text="{Binding UsuarioRotulo}" Foreground="#475569" VerticalAlignment="Center" />
+          <PathIcon Data="{x:Static v:Icones.Account}" Width="16" Height="16" Foreground="{DynamicResource TxSutil}" />
+          <TextBlock Text="{Binding UsuarioRotulo}" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
         </StackPanel>
       </Grid>
 
@@ -42,7 +42,7 @@
                     </StackPanel>
                   </Button>
                   <TextBlock Grid.Column="1" Text="{Binding Abertas, StringFormat='{}{0} função(ões) aberta(s)'}" IsVisible="{Binding TemAbertas}"
-                             Foreground="#64748B" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                             Foreground="{DynamicResource TxSutil}" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
                 <StackPanel Margin="18,12,18,2" Spacing="1">
                   <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,0,0,6">
@@ -51,7 +51,7 @@
                       <PathIcon Data="{Binding Icone}" Width="26" Height="26" Foreground="{Binding Cor}" />
                     </Panel>
                     <StackPanel VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Nome}" FontSize="19" FontWeight="Bold" Foreground="#0F172A" />
+                      <TextBlock Text="{Binding Nome}" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource TxForte}" />
                       <TextBlock Text="{Binding Subtitulo}" Classes="su-sub" FontSize="11.5" TextWrapping="Wrap" MaxWidth="260" />
                     </StackPanel>
                   </StackPanel>
@@ -62,7 +62,7 @@
                         <Button Classes="su" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
                           <StackPanel Orientation="Horizontal" Spacing="9" Margin="6,3">
                             <PathIcon Data="{x:Static v:Icones.ChevronRight}" Width="12" Height="12" Foreground="{Binding CorIcone}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" TextTrimming="CharacterEllipsis" />
                           </StackPanel>
                         </Button>
                       </DataTemplate>
@@ -87,10 +87,10 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:NoSuite">
                   <Button Classes="su" Margin="0,0,6,6" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                    <Border CornerRadius="14" BorderBrush="#E2E8F0" BorderThickness="1" Padding="10,4">
+                    <Border CornerRadius="14" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="10,4">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <Ellipse Width="7" Height="7" Fill="{Binding CorIcone}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Titulo}" Foreground="#1E293B" />
+                        <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
                       </StackPanel>
                     </Border>
                   </Button>
@@ -102,10 +102,10 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:NoSuite">
                   <Button Classes="su" Margin="0,0,6,6" Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
-                    <Border CornerRadius="14" Background="#F1F5F9" Padding="10,4">
+                    <Border CornerRadius="14" Background="{DynamicResource FundoSuave}" Padding="10,4">
                       <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="{x:Static v:Icones.History}" Width="12" Height="12" Foreground="#7A8AA0" />
-                        <TextBlock Text="{Binding Titulo}" Foreground="#334155" />
+                        <PathIcon Data="{x:Static v:Icones.History}" Width="12" Height="12" Foreground="{DynamicResource TxSutil}" />
+                        <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
                       </StackPanel>
                     </Border>
                   </Button>
@@ -126,11 +126,11 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ProximaObrigacao">
                   <Grid ColumnDefinitions="52,*,Auto" Margin="0,3">
-                    <TextBlock Text="{Binding Vencimento}" FontWeight="SemiBold" Foreground="#0F172A" />
-                    <TextBlock Grid.Column="1" Text="{Binding Nome}" Foreground="#334155" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Vencimento}" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Nome}" Foreground="{DynamicResource TxForte}" TextTrimming="CharacterEllipsis" />
                     <Panel Grid.Column="2">
                       <Border CornerRadius="9" Background="{Binding Cor}" Opacity="0.22" />
-                      <TextBlock Text="{Binding Situacao}" FontSize="10.5" FontWeight="SemiBold" Foreground="#1F2937" Margin="8,1" />
+                      <TextBlock Text="{Binding Situacao}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" Margin="8,1" />
                     </Panel>
                   </Grid>
                 </DataTemplate>

@@ -7,7 +7,7 @@
   <!-- Exportação padrão dos relatórios (a partir do que está na tela). As assinaturas valem para o PDF. -->
   <StackPanel Spacing="3">
     <StackPanel Orientation="Horizontal" Spacing="6">
-      <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="#44506A" />
+      <TextBlock Text="Exportar:" VerticalAlignment="Center" Foreground="{DynamicResource TxSutil}" />
       <Button Command="{Binding ExportarPdfCommand}" MinWidth="70" HorizontalContentAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><PathIcon Data="{x:Static v:Icones.Pdf}" Width="14" Height="14" /><TextBlock Text="PDF" VerticalAlignment="Center" /></StackPanel>
       </Button>

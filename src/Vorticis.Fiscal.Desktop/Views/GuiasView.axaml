@@ -17,7 +17,7 @@
         <ComboBox ItemsSource="{x:Static vm:GuiasViewModel.Situacoes}" SelectedIndex="{Binding Situacao}" Width="100" Margin="0,0,8,6" />
         <Button Content="Consultar" Command="{Binding ConsultarCommand}" Classes="accent" Margin="0,0,8,6" />
         <Button Content="Gerar guias" Command="{Binding GerarCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,8,6" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <CalendarDatePicker SelectedDate="{Binding DataPagamento}" Width="140" Margin="0,0,6,6" />
         <Button Content="Marcar como paga" Command="{Binding MarcarPagaCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,6,6" />
         <Button Content="Reabrir" Command="{Binding ReabrirCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,6,6" />
@@ -28,9 +28,9 @@
                  Text="Geradas do DAS (Simples), do IRPJ/CSLL (DARF 2089/2372 no Presumido; 0220/6012 no Real), do PIS/COFINS (8109/2172 cumulativo; 6912/5856 não cumulativo) e das retenções efetuadas (IRRF, CSRF 5952, INSS 11% informativo e ISS)." />
       <c:MensagensView />
     </StackPanel>
-    <Border DockPanel.Dock="Bottom" BorderBrush="#D0D5DD" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
       <StackPanel Spacing="4">
-        <TextBlock Text="Nova guia (manual)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Nova guia (manual)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <WrapPanel>
           <ComboBox ItemsSource="{x:Static vm:GuiasViewModel.Documentos}" SelectedIndex="{Binding ManualDocumento}" Width="95" Margin="0,0,6,4" />
           <TextBox Text="{Binding ManualTributo}" Watermark="Tributo" Width="100" Margin="0,0,6,4" />

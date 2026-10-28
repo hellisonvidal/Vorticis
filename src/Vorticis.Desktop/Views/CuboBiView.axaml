@@ -21,7 +21,7 @@
         <TextBox Text="{Binding ContaPrefixo}" Watermark="Conta ou grupo (ex.: 4.2)" Width="170" />
         <CheckBox Content="Só contas de resultado" IsChecked="{Binding SoResultado}" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </WrapPanel>
     </StackPanel>

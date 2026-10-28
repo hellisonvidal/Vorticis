@@ -4,8 +4,8 @@
   <!-- Botão discreto "Layout": abre o seletor com a miniatura de cada layout (também em Exibir › Layout da Suite) -->
   <Button Name="BotaoLayout" Classes="su" Padding="9,6" ToolTip.Tip="Layout da Suite: escolher entre as 5 formas de navegar">
     <StackPanel Orientation="Horizontal" Spacing="6">
-      <PathIcon Data="{x:Static v:Icones.ViewDashboard}" Width="17" Height="17" Foreground="#475569" />
-      <TextBlock Name="RotuloLayout" Text="Layout" FontSize="12" Foreground="#475569" VerticalAlignment="Center" />
+      <PathIcon Data="{x:Static v:Icones.ViewDashboard}" Width="17" Height="17" Foreground="{DynamicResource TxSutil}" />
+      <TextBlock Name="RotuloLayout" Text="Layout" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
     </StackPanel>
     <Button.Flyout>
       <Flyout Placement="BottomEdgeAlignedRight" ShowMode="Standard" FlyoutPresenterClasses="seletor">

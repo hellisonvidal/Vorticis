@@ -6,7 +6,7 @@
       <TextBlock Classes="titulo" Text="Painel do empresário" VerticalAlignment="Center" />
       <TextBlock Text="Mês de referência" VerticalAlignment="Center" />
       <CalendarDatePicker SelectedDate="{Binding Referencia}" Width="140" />
-      <TextBlock Text="{Binding Resumo}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#134E4A" />
+      <TextBlock Text="{Binding Resumo}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TxVerdeEscuro}" />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" />
     <Grid ColumnDefinitions="*,12,*" RowDefinitions="*,12,*">

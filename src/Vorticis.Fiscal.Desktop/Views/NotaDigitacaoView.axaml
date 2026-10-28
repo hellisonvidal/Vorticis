@@ -7,8 +7,8 @@
              x:DataType="vm:DigitacaoDocumentoViewModel"
              c:Teclado.EnterAvanca="True">
   <UserControl.Styles>
-    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="#5A6478" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
-    <Style Selector="TextBlock.grupo"><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#1F3A5F" /><Setter Property="Margin" Value="0,4,0,0" /></Style>
+    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
+    <Style Selector="TextBlock.grupo"><Setter Property="FontSize" Value="11" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="{DynamicResource TxTitulo}" /><Setter Property="Margin" Value="0,4,0,0" /></Style>
     <Style Selector="StackPanel.campo"><Setter Property="Margin" Value="0,0,6,0" /></Style>
     <Style Selector="StackPanel.campo TextBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
     <Style Selector="StackPanel.campo ComboBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
@@ -21,16 +21,16 @@
   <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="8,4,8,6">
     <StackPanel Orientation="Horizontal" Spacing="12">
       <TextBlock Classes="titulo" Text="{Binding TituloPopup}" VerticalAlignment="Center" />
-      <TextBlock Text="{Binding SituacaoDocumento}" FontWeight="SemiBold" Foreground="#7C2D12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      <TextBlock Text="{Binding SituacaoDocumento}" FontWeight="SemiBold" Foreground="{DynamicResource TxAviso}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
     </StackPanel>
 
     <!-- Avisos e importação para conferência (arquivo XML ou chave de acesso) -->
     <StackPanel Grid.Row="1" Spacing="3" Margin="0,3,0,3">
-      <Border IsVisible="{Binding MostraMotivoSomenteLeitura}" Background="#FDECEC" BorderBrush="#E0A0A0" BorderThickness="1" Padding="8,3" CornerRadius="4">
-        <TextBlock Text="{Binding MotivoSomenteLeitura}" TextWrapping="Wrap" FontSize="12" Foreground="#7F1D1D" />
+      <Border IsVisible="{Binding MostraMotivoSomenteLeitura}" Background="{DynamicResource FundoErro}" BorderBrush="{DynamicResource BordaErro}" BorderThickness="1" Padding="8,3" CornerRadius="4">
+        <TextBlock Text="{Binding MotivoSomenteLeitura}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxErroForte}" />
       </Border>
-      <Border IsVisible="{Binding Importada}" Background="#FFF7E0" BorderBrush="#E0C060" BorderThickness="1" Padding="8,3" CornerRadius="4">
-        <TextBlock Text="{Binding AvisoImportada}" TextWrapping="Wrap" FontSize="12" Foreground="#6B4E00" />
+      <Border IsVisible="{Binding Importada}" Background="{DynamicResource FundoAviso}" BorderBrush="{DynamicResource BordaAviso}" BorderThickness="1" Padding="8,3" CornerRadius="4">
+        <TextBlock Text="{Binding AvisoImportada}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxAviso}" />
       </Border>
       <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
         <TextBlock Text="Importar por XML:" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" />
@@ -52,7 +52,7 @@
       <TabItem Header="Nota">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="6" Margin="0,4">
-            <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="6,4" CornerRadius="4">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
               <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="3" IsEnabled="{Binding PodeEditar}">
                 <StackPanel Grid.Row="0" Grid.Column="0" Classes="campo"><TextBlock Classes="rot" Text="Modelo" />
                   <ComboBox ItemsSource="{x:Static vm:DigitacaoDocumentoViewModel.Modelos}" SelectedIndex="{Binding Modelo}" HorizontalAlignment="Stretch" /></StackPanel>
@@ -65,11 +65,11 @@
                 <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Classes="campo"><TextBlock Classes="rot" Text="Natureza da operação" /><TextBox Text="{Binding Natureza}" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Classes="campo"><TextBlock Classes="rot" Text="Chave de acesso (opcional)" /><TextBox Text="{Binding Chave}" /></StackPanel>
                 <Button Grid.Row="2" Grid.Column="0" Classes="mini" Content="Buscar participante" Command="{Binding BuscarParticipanteCommand}" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Text="{Binding ParticipanteInfo}" FontSize="12" Foreground="#1F3A5F" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Text="{Binding ParticipanteInfo}" FontSize="12" Foreground="{DynamicResource TxTitulo}" TextWrapping="Wrap" VerticalAlignment="Center" />
               </Grid>
             </Border>
             <!-- Participante novo (CPF/CNPJ não cadastrado): conferido antes de cadastrar ao gravar a nota -->
-            <Border IsVisible="{Binding TemNovoParticipante}" BorderBrush="#D0D5DD" BorderThickness="1" Padding="6,4" CornerRadius="4">
+            <Border IsVisible="{Binding TemNovoParticipante}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
               <Grid ColumnDefinitions="3*,0.6*,1.6*,1.4*" IsEnabled="{Binding PodeEditar}">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nome / razão social (será cadastrado)" /><TextBox Text="{Binding NovoNome}" /></StackPanel>
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="UF" /><TextBox Text="{Binding NovoUf}" MaxLength="2" /></StackPanel>
@@ -77,10 +77,10 @@
                 <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Inscrição estadual" /><TextBox Text="{Binding NovoIe}" /></StackPanel>
               </Grid>
             </Border>
-            <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="6,4" CornerRadius="4" IsEnabled="{Binding PodeEditar}">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4" IsEnabled="{Binding PodeEditar}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Total informado (confere com os itens)" /><TextBox Text="{Binding TotalInformado}" Width="200" /></StackPanel>
-                <TextBlock Text="Deixe em branco para usar a soma dos itens." FontSize="11" Foreground="#5A6478" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+                <TextBlock Text="Deixe em branco para usar a soma dos itens." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -90,7 +90,7 @@
       <!-- ============================== ITENS ============================== -->
       <TabItem Header="Itens">
         <Grid RowDefinitions="Auto,Auto,*" Margin="0,4">
-          <Border BorderBrush="#D0D5DD" BorderThickness="1" Padding="6,4" CornerRadius="4">
+          <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
             <StackPanel Spacing="3" IsEnabled="{Binding PodeEditar}">
               <Grid ColumnDefinitions="1.3*,2.6*,0.8*,0.9*,1.1*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Produto (código, descrição ou GTIN)" /><TextBox Name="CampoProduto" Text="{Binding Item.Produto}" /></StackPanel>
@@ -118,7 +118,7 @@
             <Button Classes="mini accent" Content="Adicionar item" Command="{Binding AdicionarItemCommand}" IsEnabled="{Binding PodeEditar}" />
             <Button Classes="mini" Content="Atualizar item selecionado" Command="{Binding AtualizarItemCommand}" IsEnabled="{Binding PodeEditar}" />
             <Button Classes="mini" Content="Remover item selecionado" Command="{Binding RemoverItemCommand}" IsEnabled="{Binding PodeEditar}" />
-            <TextBlock Text="Os tributos do item ficam na aba Tributos." FontSize="11" Foreground="#5A6478" VerticalAlignment="Center" />
+            <TextBlock Text="Os tributos do item ficam na aba Tributos." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
           </StackPanel>
           <DataGrid Grid.Row="2" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Itens}" SelectedItem="{Binding ItemSelecionado, Mode=OneWay}" SelectionChanged="AoSelecionarItem" IsReadOnly="True" AutoGenerateColumns="False">
             <DataGrid.Columns>
@@ -206,7 +206,7 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="4" Margin="0,4">
             <TextBlock Text="Escolha a forma de pagamento (Cadastros › Formas de pagamento) e as duplicatas são geradas pelos prazos dela, a partir da emissão. Sem forma e sem parcelas, a nota nova gera uma duplicata à vista (Cadastros › Parâmetros). Para parcelar à mão, informe a quantidade, o primeiro vencimento e o intervalo e use Gerar parcelas."
-                       FontSize="11" Foreground="#5A6478" TextWrapping="Wrap" />
+                       FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
               <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Forma de pagamento" />
                 <ComboBox ItemsSource="{Binding FormasPagamento}" SelectedItem="{Binding FormaPagamento}" DisplayMemberBinding="{ReflectionBinding Texto}" MinWidth="280" /></StackPanel>
@@ -235,7 +235,7 @@
       <TabItem Header="Escrituração">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="4" Margin="0,4" IsEnabled="{Binding PodeEditarEscrituracao}">
-            <TextBlock Text="CFOP de entrada, produto vinculado, centro de custo, contas e observações. Nas notas importadas de XML é só aqui que se altera a nota." FontSize="11" Foreground="#5A6478" TextWrapping="Wrap" />
+            <TextBlock Text="CFOP de entrada, produto vinculado, centro de custo, contas e observações. Nas notas importadas de XML é só aqui que se altera a nota." FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,*,*,2*">
               <StackPanel Classes="campo" IsVisible="{Binding MostraCentro}"><TextBlock Classes="rot" Text="Centro de custo (nota)" /><ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroDocumento}" HorizontalAlignment="Stretch" /></StackPanel>
               <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Conta de débito (código; vazio = regra)" /><TextBox Text="{Binding ContaDebito}" /></StackPanel>

@@ -13,7 +13,7 @@
     </Style>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,10,0,2" />
     </Style>
     <Style Selector="TabControl#AbasEmpresa > TabItem">
@@ -23,7 +23,7 @@
     </Style>
     <Style Selector="TextBlock.empresa-aba">
       <Setter Property="FontSize" Value="12" />
-      <Setter Property="Foreground" Value="#44506A" />
+      <Setter Property="Foreground" Value="{DynamicResource TxSutil}" />
       <Setter Property="Margin" Value="8,6,8,0" />
     </Style>
   </UserControl.Styles>
@@ -36,7 +36,7 @@
       <StackPanel Spacing="6" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,12,8">
         <StackPanel Orientation="Horizontal" Spacing="12">
           <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
-          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="#44506A" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Bottom" Margin="0,0,0,2" />
         </StackPanel>
 
         <TextBlock Classes="secao" Text="Identificação" />
@@ -72,7 +72,7 @@
           <CalendarDatePicker Grid.Row="6" Grid.Column="1" SelectedDate="{Binding InicioAtividades}" IsEnabled="{Binding EmEdicao}" Width="180"
                               HorizontalAlignment="Left" />
           <StackPanel Grid.Row="7" Grid.Column="1" Spacing="2">
-            <TextBlock Text="{Binding OrigemDados}" FontSize="11" Foreground="#1B6E3A" TextWrapping="Wrap"
+            <TextBlock Text="{Binding OrigemDados}" FontSize="11" Foreground="{DynamicResource TxOk}" TextWrapping="Wrap"
                        IsVisible="{Binding OrigemDados, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <TextBlock Text="{Binding Aviso}" Classes="erro" FontWeight="SemiBold"
                        IsVisible="{Binding Aviso, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -147,9 +147,9 @@
           <DataTemplate x:DataType="seg:EmpresaPermitida">
             <StackPanel>
               <TextBlock FontSize="12" TextWrapping="Wrap">
-                <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" Foreground="#1F3A5F" /><Run Text="  " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
+                <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" /><Run Text="  " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
               </TextBlock>
-              <TextBlock FontSize="11" Foreground="Gray" Text="{Binding CnpjFormatado, Mode=OneWay, StringFormat='CNPJ {0}'}" />
+              <TextBlock FontSize="11" Opacity="0.7" Text="{Binding CnpjFormatado, Mode=OneWay, StringFormat='CNPJ {0}'}" />
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>
@@ -175,7 +175,7 @@
         <ScrollViewer Grid.Row="1">
           <StackPanel Spacing="6" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,12,8">
             <TextBlock Classes="titulo" Text="Contabilidade da empresa" />
-            <TextBlock Text="{Binding EmpresaSelecionadaRotulo}" FontSize="12" Foreground="#44506A" IsVisible="{Binding !EmInclusao}" />
+            <TextBlock Text="{Binding EmpresaSelecionadaRotulo}" FontSize="12" Foreground="{DynamicResource TxSutil}" IsVisible="{Binding !EmInclusao}" />
 
             <TextBlock Classes="secao" Text="Plano de contas" />
             <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
@@ -187,11 +187,11 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
               <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
-                <TextBlock Text="{Binding ModeloSelecionado.Descricao}" FontSize="11" Foreground="#44506A" TextWrapping="Wrap"
+                <TextBlock Text="{Binding ModeloSelecionado.Descricao}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                            IsVisible="{Binding ModeloSelecionado, Converter={x:Static ObjectConverters.IsNotNull}}" />
                 <TextBlock Text="{Binding ModeloSelecionado.Base, StringFormat='Base normativa: {0}'}" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                            IsVisible="{Binding ModeloSelecionado, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                <TextBlock Text="{Binding PlanoAtual}" FontSize="11" Foreground="#1B6E3A" TextWrapping="Wrap" IsVisible="{Binding !EmInclusao}" />
+                <TextBlock Text="{Binding PlanoAtual}" FontSize="11" Foreground="{DynamicResource TxOk}" TextWrapping="Wrap" IsVisible="{Binding !EmInclusao}" />
               </StackPanel>
               <CheckBox Grid.Row="2" Grid.Column="1" Content="Criar o plano de contas ao cadastrar a empresa" IsChecked="{Binding ImportarPlanoModelo}"
                         IsVisible="{Binding EmInclusao}" />

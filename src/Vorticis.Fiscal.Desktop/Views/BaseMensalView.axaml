@@ -14,7 +14,7 @@
         <Button Content="Carregar" Command="{Binding CarregarCommand}" Classes="accent" />
         <Button Content="Salvar alterações" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeManter}" />
       </StackPanel>
-      <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
+      <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                  Text="Receita bruta e folha de pagamento (salários, pró-labore e encargos) de cada mês: base do RBT12 e do Fator R do Simples Nacional. Informe os meses anteriores ao uso do sistema; as receitas apuradas aqui entram sozinhas (origem Apuração)." />
       <c:MensagensView />
     </StackPanel>

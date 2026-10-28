@@ -12,7 +12,7 @@
         <Button Content="Reabrir mês" Command="{Binding ReabrirCommand}" IsEnabled="{Binding PodeManter}" />
       </StackPanel>
       <TextBlock Text="{Binding Regime}" FontWeight="SemiBold" />
-      <TextBlock FontSize="11" Foreground="#44506A" TextWrapping="Wrap"
+      <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                  Text="Feche o mês depois de escriturar as notas e apurar os impostos. Com o mês fechado, as notas com data de entrada/saída no mês não podem ser incluídas, alteradas nem excluídas (inclusive por importação de XML); a contabilização continua permitida." />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />

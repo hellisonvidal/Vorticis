@@ -13,7 +13,7 @@
         <RadioButton GroupName="parcela" Content="1ª parcela (novembro)" IsChecked="{Binding !SegundaParcela}" />
         <RadioButton GroupName="parcela" Content="2ª parcela (dezembro)" IsChecked="{Binding SegundaParcela}" />
         <Button Content="Calcular" Command="{Binding CalcularCommand}" Classes="accent" IsEnabled="{Binding PodeCalcular}" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <Button Content="Recibo do selecionado (PDF)" Command="{Binding ReciboCommand}" IsEnabled="{Binding PodeRelatorios}" />
         <Button Content="Recibos de todos (PDF)" Command="{Binding HoleritesCommand}" IsEnabled="{Binding PodeRelatorios}" />
       </StackPanel>

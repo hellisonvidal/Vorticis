@@ -18,7 +18,7 @@
         <Button Name="BotaoConsultar" Content="Consultar" Command="{Binding ConsultarSelecionadoCommand}" ToolTip.Tip="Abre o lançamento selecionado somente para leitura" />
         <Button Name="BotaoExcluir" Content="Excluir" Command="{Binding ExcluirSelecionadoCommand}" IsVisible="{Binding PodeExcluir}" ToolTip.Tip="Exclui o lançamento selecionado, após confirmação" />
         <Button Name="BotaoEstornarGrade" Content="Estornar" Command="{Binding EstornarCommand}" IsVisible="{Binding PodeEstornar}" />
-        <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" Margin="8,0,0,0"
+        <TextBlock Text="Lançamentos efetuados" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" Margin="8,0,0,0"
                    ToolTip.Tip="Duplo clique ou Enter num lançamento para abri-lo" />
         <CalendarDatePicker SelectedDate="{Binding ListaInicio}" Width="128" />
         <TextBlock Text="a" VerticalAlignment="Center" />

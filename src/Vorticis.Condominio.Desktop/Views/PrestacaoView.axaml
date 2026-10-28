@@ -15,7 +15,7 @@
         <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="180" />
         </DataGrid.Columns>
       </DataGrid>
-      <TextBlock Grid.Row="1" Text="{Binding Situacao}" FontWeight="SemiBold" Foreground="#881337" Margin="0,8,0,4" />
+      <TextBlock Grid.Row="1" Text="{Binding Situacao}" FontWeight="SemiBold" Foreground="{DynamicResource TxRosa}" Margin="0,8,0,4" />
       <DataGrid Grid.Row="2" ItemsSource="{Binding Inadimplentes}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
         <DataGridTextColumn Header="Inadimplência (unidade – responsável – competência)" Binding="{ReflectionBinding Descricao}" Width="*" />

@@ -41,7 +41,7 @@
             <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
           </StackPanel>
         </StackPanel>
-        <Rectangle Height="1" Fill="#D0D5DD" Margin="0,4" />
+        <Rectangle Height="1" Fill="{DynamicResource Linha}" Margin="0,4" />
         <CheckBox Content="Incluir lista de presença (para assinatura dos condôminos)" IsChecked="{Binding ListaPresenca}" />
         <Button Content="Gerar ata (PDF)" Classes="accent" Command="{Binding GerarAtaCommand}" />
         <c:MensagensView />

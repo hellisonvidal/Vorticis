@@ -9,7 +9,7 @@
         <TextBlock Text="Competência" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
       </StackPanel>
-      <TextBlock FontSize="11" Foreground="#44506A" TextWrapping="Wrap" Text="{Binding Orientacao}" />
+      <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" Text="{Binding Orientacao}" />
       <WrapPanel IsEnabled="{Binding PodeManter}">
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Imposto" FontSize="12" />

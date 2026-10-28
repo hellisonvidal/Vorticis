@@ -339,6 +339,53 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.True(ok);
     }
 
+    /// <summary>Tema de cores (Claro, Escuro, Automático): vale para todos os layouts, é gravado por usuário e troca a variante de tema do Avalonia.</summary>
+    [Fact]
+    public async Task Tema_de_cores_fica_gravado_por_usuario_e_troca_a_variante_do_Avalonia()
+    {
+        SuiteViewModel.ArquivoLayout = ArquivoTemporario();
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(() =>
+        {
+            var app = Avalonia.Application.Current!;
+            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+            Assert.Equal(TemaSuite.Claro, suite.Tema);                                  // padrão
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Light, app.RequestedThemeVariant);
+            const long ana = 201, beto = 202;
+            suite.UsarPreferenciasDe(ana);
+            suite.EscolherTemaCommand.Execute(TemaSuite.Escuro);
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, app.RequestedThemeVariant);
+            suite.UsarPreferenciasDe(beto);                                              // sem arquivo ainda: vale a última escolha do computador
+            suite.Tema = TemaSuite.Automatico;
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Default, app.RequestedThemeVariant);
+
+            var outra = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));    // nova abertura do programa
+            Assert.Equal(TemaSuite.Automatico, outra.Tema);                              // o computador lembra a última escolha
+            outra.UsarPreferenciasDe(ana);
+            Assert.Equal(TemaSuite.Escuro, outra.Tema);
+            Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, app.RequestedThemeVariant);
+            outra.UsarPreferenciasDe(beto);
+            Assert.Equal(TemaSuite.Automatico, outra.Tema);
+
+            // o tema vale em qualquer layout (as cores vêm dos recursos do tema, não dos layouts)
+            outra.Tema = TemaSuite.Escuro;
+            foreach (var l in Enum.GetValues<LayoutSuite>())
+            {
+                outra.EscolherLayoutCommand.Execute(l);
+                Assert.Equal(TemaSuite.Escuro, outra.Tema);
+            }
+            // os recursos de cor existem nas duas variantes, com valores diferentes
+            foreach (var chave in new[] { "TxTitulo", "TxForte", "TxSutil", "Linha", "FundoCartao", "FundoSuave", "TxErro", "TxOk", "Marca" })
+            {
+                Assert.True(app.TryGetResource(chave, Avalonia.Styling.ThemeVariant.Light, out var claro), chave);
+                Assert.True(app.TryGetResource(chave, Avalonia.Styling.ThemeVariant.Dark, out var escuro), chave);
+                Assert.NotEqual(((Avalonia.Media.ISolidColorBrush)claro!).Color, ((Avalonia.Media.ISolidColorBrush)escuro!).Color);
+            }
+            outra.Tema = TemaSuite.Claro;
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
     /// <summary>Layout E: clicar de verdade (mouse) num botão da faixa e num item de menu suspenso da faixa abre a tela correspondente.</summary>
     [Fact]
     public async Task Faixa_de_opcoes_abre_a_tela_ao_clicar_no_botao_e_no_item_do_menu_suspenso()
@@ -513,14 +560,20 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             suite.Trocar(M("Contábil"));
             Dispatcher.UIThread.RunJobs();
 
+            var prefixo = "";
             void Foto(string nome)
             {
                 for (var i = 0; i < 3; i++) Dispatcher.UIThread.RunJobs();
                 var quadro = janela.CaptureRenderedFrame();
                 Assert.NotNull(quadro);
-                if (pasta is not null) quadro.Save(Path.Combine(pasta, nome + ".png"));
+                if (pasta is not null) quadro.Save(Path.Combine(pasta, prefixo + nome + ".png"));
             }
 
+            foreach (var tema in new[] { TemaSuite.Claro, TemaSuite.Escuro })
+            {
+            suite.Tema = tema;
+            prefixo = tema == TemaSuite.Escuro ? "escuro_" : "claro_";
+            Dispatcher.UIThread.RunJobs();
             suite.LateralFixa = false; suite.FaixaFixa = true;
             suite.Layout = LayoutSuite.Abas; Foto("layout_A_abas");
             suite.FaixaFixa = false; Foto("layout_A_abas_ocultas"); suite.FaixaFixa = true;
@@ -553,8 +606,10 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             for (var i = 0; i < 3; i++) Dispatcher.UIThread.RunJobs();
             var q = tela.CaptureRenderedFrame();
             Assert.NotNull(q);
-            if (pasta is not null) q.Save(Path.Combine(pasta, "seletor.png"));
+            if (pasta is not null) q.Save(Path.Combine(pasta, prefixo + "seletor.png"));
             tela.Close();
+            }
+            suite.Tema = TemaSuite.Claro;
             janela.Close();
             return true;
         }, ct));

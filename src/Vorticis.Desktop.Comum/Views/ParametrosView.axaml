@@ -13,9 +13,9 @@
       <ItemsControl ItemsSource="{Binding Grupos}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:GrupoParametros">
-            <Border BorderBrush="#D0D7E2" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,8">
               <StackPanel Spacing="6">
-                <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="#1F3A5F" />
+                <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
                 <TextBlock Text="{Binding Ajuda}" TextWrapping="Wrap" FontSize="11" Foreground="Gray" />
                 <ItemsControl ItemsSource="{Binding Campos}">
                   <ItemsControl.ItemTemplate>

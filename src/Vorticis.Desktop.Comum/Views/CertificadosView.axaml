@@ -11,14 +11,14 @@
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="Repositório dos certificados usados na comunicação com órgãos públicos (Receita Federal, SEFAZ, Junta Comercial). A1: o arquivo .pfx é guardado no banco como foi importado, protegido pela própria senha (a senha não é gravada). A3: token ou cartão — só o registro; o certificado continua no dispositivo." />
       <TextBlock Text="Somente o administrador acessa os certificados digitais." Classes="erro" IsVisible="{Binding !PodeAlterar}" />
-      <TextBlock Text="{Binding AvisoVencimento}" Foreground="#9A5B00" FontWeight="SemiBold" TextWrapping="Wrap"
+      <TextBlock Text="{Binding AvisoVencimento}" Foreground="{DynamicResource TxAviso}" FontWeight="SemiBold" TextWrapping="Wrap"
                  IsVisible="{Binding AvisoVencimento, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </StackPanel>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,16,*" Margin="0,10" IsEnabled="{Binding PodeAlterar}">
-      <Border BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+      <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10">
         <StackPanel Spacing="6">
-          <TextBlock Text="Importar certificado A1 (.pfx / .p12)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock Text="Importar certificado A1 (.pfx / .p12)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
             <TextBox Text="{Binding Arquivo}" Watermark="Arquivo do certificado" IsReadOnly="True" />
             <Button Grid.Column="1" Content="Escolher..." Click="AoEscolherArquivo" />
@@ -31,17 +31,17 @@
             <Button Content="Conferir" Command="{Binding ConferirCommand}" />
             <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
           </StackPanel>
-          <TextBlock Text="{Binding Conferencia}" FontSize="11" Foreground="#1B6E3A" TextWrapping="Wrap"
+          <TextBlock Text="{Binding Conferencia}" FontSize="11" Foreground="{DynamicResource TxOk}" TextWrapping="Wrap"
                      IsVisible="{Binding Conferencia, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
       </Border>
-      <Border Grid.Column="2" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="10">
+      <Border Grid.Column="2" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10">
         <StackPanel Spacing="6">
-          <TextBlock Text="Certificados instalados no Windows" FontWeight="SemiBold" Foreground="#1F3A5F" />
+          <TextBlock Text="Certificados instalados no Windows" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
           <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" IsVisible="{Binding !RepositorioWindowsDisponivel}"
                      Text="Disponível somente no Windows. Neste sistema, use o arquivo A1 (.pfx)." />
           <Button Content="Ler certificados instalados no Windows" Command="{Binding LerInstaladosCommand}" />
-          <TextBlock Text="A3 (token / cartão): apenas o registro" FontSize="11" Foreground="#44506A" />
+          <TextBlock Text="A3 (token / cartão): apenas o registro" FontSize="11" Foreground="{DynamicResource TxSutil}" />
           <ComboBox ItemsSource="{Binding Instalados}" SelectedItem="{Binding InstaladoSelecionado}" HorizontalAlignment="Stretch"
                     PlaceholderText="Só certificados A3 (chave no token/cartão)">
             <ComboBox.ItemTemplate>
@@ -53,7 +53,7 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <Button Content="Registrar A3" Command="{Binding RegistrarA3Command}" />
-          <TextBlock Text="A1 instalado (chave exportável): importar para o Vorticis" FontSize="11" Foreground="#44506A" Margin="0,6,0,0" />
+          <TextBlock Text="A1 instalado (chave exportável): importar para o Vorticis" FontSize="11" Foreground="{DynamicResource TxSutil}" Margin="0,6,0,0" />
           <ComboBox ItemsSource="{Binding InstaladosA1}" SelectedItem="{Binding InstaladoA1Selecionado}" HorizontalAlignment="Stretch"
                     PlaceholderText="Certificados A1 do repositório do Windows">
             <ComboBox.ItemTemplate>

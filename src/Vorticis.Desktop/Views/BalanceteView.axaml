@@ -15,7 +15,7 @@
       <CheckBox Content="Detalhar participantes" IsChecked="{Binding DetalharParticipantes}"
                 ToolTip.Tip="Plano com participantes: mostra, abaixo de cada conta, o saldo de cada cliente/fornecedor (a conta continua com a soma)" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />
     </StackPanel>
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding Totais}" FontWeight="SemiBold" Margin="0,6,0,0" />

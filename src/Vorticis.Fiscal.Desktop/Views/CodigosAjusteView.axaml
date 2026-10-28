@@ -5,7 +5,7 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Códigos de ajuste da apuração" />
-      <TextBlock FontSize="11" Foreground="#44506A" TextWrapping="Wrap"
+      <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                  Text="Cadastre os códigos da tabela 5.1.1 da sua UF que a empresa usa (8 posições: UF + 0 para ICMS próprio ou 1 para ICMS-ST + tipo + sequência) e os do IPI (3 posições). Eles aparecem para escolha nas telas de ajustes." />
       <WrapPanel IsEnabled="{Binding PodeManter}">
         <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Imposto" FontSize="12" /><ComboBox ItemsSource="{x:Static vm:CodigosAjusteViewModel.Impostos}" SelectedIndex="{Binding Imposto}" Width="110" /></StackPanel>

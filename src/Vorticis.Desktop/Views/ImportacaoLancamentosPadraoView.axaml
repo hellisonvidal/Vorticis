@@ -10,7 +10,7 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,6,0,0" />
     </Style>
     <Style Selector="TextBlock.dica">
@@ -21,7 +21,7 @@
   </UserControl.Styles>
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" MaxWidth="1000" HorizontalAlignment="Left">
-      <TextBlock Classes="dica" FontSize="12" Foreground="#44506A"
+      <TextBlock Classes="dica" FontSize="12" Foreground="{DynamicResource TxSutil}"
                  Text="Importe lançamentos já prontos (de outro sistema ou digitados numa planilha) no layout padrão do Vorticis: uma linha por partida, agrupadas pelo número do lançamento. Aceita Excel (.xlsx) ou CSV separado por ponto e vírgula." />
       <TextBlock FontFamily="Consolas, Menlo, monospace" FontSize="12" Text="{x:Static vm:ImportacaoLancamentosPadraoViewModel.Colunas}" />
       <TextBlock Classes="dica" Text="LANCAMENTO: número que agrupa as partidas · DATA: dd/mm/aaaa · CONTA: código analítico · DC: D ou C · VALOR: 1.500,00 · CENTRO_CUSTO e DOCUMENTO são opcionais." />

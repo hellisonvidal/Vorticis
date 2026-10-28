@@ -27,7 +27,7 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <Border Grid.Column="2" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="6" Padding="16" IsVisible="{Binding TemSelecionada}">
+      <Border Grid.Column="2" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="6" Padding="16" IsVisible="{Binding TemSelecionada}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
             <Button Content="‹ Etapa anterior" Command="{Binding AnteriorCommand}" />
@@ -43,7 +43,7 @@
               </Border>
               <TextBlock Text="{Binding Selecionada.Titulo}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock Text="{Binding Selecionada.E.Explicacao}" TextWrapping="Wrap" Foreground="#334155" />
+            <TextBlock Text="{Binding Selecionada.E.Explicacao}" TextWrapping="Wrap" Foreground="{DynamicResource TxForte}" />
             <TextBlock Text="O que foi encontrado:" FontWeight="SemiBold" Margin="0,6,0,0" />
             <ScrollViewer MaxHeight="420">
               <ItemsControl Name="PendenciasEtapa" ItemsSource="{Binding Pendencias}">

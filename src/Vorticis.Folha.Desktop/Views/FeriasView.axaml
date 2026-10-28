@@ -10,11 +10,11 @@
     <ScrollViewer Grid.Row="1">
       <StackPanel Spacing="6">
         <TextBlock Text="Seu perfil não permite calcular férias." Classes="erro" IsVisible="{Binding !PodeCalcular}" />
-        <TextBlock Text="Funcionário" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Funcionário" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <ComboBox ItemsSource="{Binding Funcionarios}" SelectedItem="{Binding Funcionario}" HorizontalAlignment="Stretch">
           <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Funcionario"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
         </ComboBox>
-        <TextBlock Text="Períodos aquisitivos" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Períodos aquisitivos" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <DataGrid ItemsSource="{Binding Saldos}" SelectedItem="{Binding SaldoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False" Height="130">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Período aquisitivo" Binding="{ReflectionBinding Periodo}" Width="*" />
@@ -43,7 +43,7 @@
     </ScrollViewer>
     <DockPanel Grid.Row="1" Grid.Column="2">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-        <TextBlock Text="Férias calculadas" FontWeight="SemiBold" Foreground="#1F3A5F" VerticalAlignment="Center" />
+        <TextBlock Text="Férias calculadas" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" />
         <Button Content="Recibo (PDF)" Command="{Binding ReciboCommand}" IsEnabled="{Binding PodeRelatorios}" />
         <Button Content="Cancelar férias" Command="{Binding CancelarCommand}" IsEnabled="{Binding PodeCalcular}" />
       </StackPanel>

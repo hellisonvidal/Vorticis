@@ -22,7 +22,7 @@
     </TabItem>
     <TabItem Header="Registro de acessos" IsEnabled="{Binding PodeAdministrar}">
       <DockPanel Margin="8">
-        <TextBlock DockPanel.Dock="Top" FontSize="12" Foreground="#44506A" Margin="0,0,0,8" TextWrapping="Wrap"
+        <TextBlock DockPanel.Dock="Top" FontSize="12" Foreground="{DynamicResource TxSutil}" Margin="0,0,0,8" TextWrapping="Wrap"
                    Text="Últimas tentativas de entrada no sistema (com sucesso e recusadas). Após 5 tentativas erradas o usuário fica bloqueado por 15 minutos." />
         <DataGrid ItemsSource="{Binding Registros}" IsReadOnly="True" AutoGenerateColumns="False">
           <DataGrid.Columns>

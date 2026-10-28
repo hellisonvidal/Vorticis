@@ -9,7 +9,7 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Regras de contabilização das notas fiscais" />
-      <TextBlock FontSize="12" Foreground="#44506A" TextWrapping="Wrap"
+      <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
                  Text="Cada regra indica as contas de débito e de crédito para um CFOP (código completo, prefixo como 51 ou 6, ou NFSE para serviços), opcionalmente por cliente/fornecedor; as abas Entradas e Saídas separam o sentido. Vale a regra mais específica (cliente/fornecedor, depois CFOP completo, depois prefixo); no empate, a que estiver primeiro na lista (use Subir e Descer). O valor lançado é o valor contábil dos itens (produtos − desconto + frete + IPI + ICMS-ST)." />
       <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
         <TextBlock Text="CFOP" VerticalAlignment="Center" />

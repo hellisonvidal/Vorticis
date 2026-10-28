@@ -27,7 +27,7 @@
         <TextBox Text="{Binding CsllRetidaTexto}" Width="110" />
         <TextBlock Text="Outras deduções do IRPJ" VerticalAlignment="Center" />
         <TextBox Text="{Binding OutrasDeducoesTexto}" Width="110" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="Gray" />
@@ -36,7 +36,7 @@
     </StackPanel>
     <Grid ColumnDefinitions="560,12,*">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Receita bruta do trimestre por atividade (edite o valor)" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock DockPanel.Dock="Top" Text="Receita bruta do trimestre por atividade (edite o valor)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Receitas}" AutoGenerateColumns="False" CanUserSortColumns="False">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Atividade" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />

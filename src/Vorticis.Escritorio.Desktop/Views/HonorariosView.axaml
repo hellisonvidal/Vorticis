@@ -2,7 +2,7 @@
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.HonorariosView" x:DataType="vm:HonorariosViewModel">
   <DockPanel Margin="8">
-    <Border DockPanel.Dock="Top" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
+    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
       <StackPanel Spacing="6">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <TextBlock Classes="titulo" Text="Honorário do cliente" VerticalAlignment="Center" />

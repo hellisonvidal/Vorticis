@@ -7,13 +7,13 @@
   <ScrollViewer>
     <StackPanel Spacing="10" MaxWidth="640" HorizontalAlignment="Left" Margin="8">
       <TextBlock Classes="titulo" Text="Conexão com o banco de dados" />
-      <TextBlock Text="{Binding ConexaoAtual}" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="{Binding ConexaoAtual}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <TextBlock Classes="erro" Text="{Binding Falha, StringFormat='Falha ao conectar: {0}'}" TextWrapping="Wrap"
                  IsVisible="{Binding Falha, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-      <TextBlock Text="{Binding AvisoLogin}" TextWrapping="Wrap" FontSize="12" Foreground="#8A5A00" />
+      <TextBlock Text="{Binding AvisoLogin}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxAviso}" />
 
       <!-- Configuração automática -->
-      <Border BorderBrush="#1F3A5F" BorderThickness="2" CornerRadius="4" Padding="12" Background="#F3F7FC">
+      <Border BorderBrush="#1F3A5F" BorderThickness="2" CornerRadius="4" Padding="12" Background="{DynamicResource FundoSuave}">
         <StackPanel Spacing="8">
           <TextBlock FontWeight="SemiBold" Text="Configuração automática do banco de dados (recomendado)" />
           <TextBlock TextWrapping="Wrap" FontSize="12"
@@ -37,7 +37,7 @@
       </Border>
 
       <!-- Banco local -->
-      <Border BorderBrush="#C8D3E6" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding BancoLocalDisponivel}">
+      <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding BancoLocalDisponivel}">
         <StackPanel Spacing="8">
           <RadioButton GroupName="ModoBanco" IsChecked="{Binding UsarBancoLocal}" FontWeight="SemiBold"
                        Content="Banco de dados local do Vorticis (recomendado)" />
@@ -54,13 +54,13 @@
             <TextBlock Grid.Row="3" Classes="rotulo" Text="Confirme a nova senha" VerticalAlignment="Center" />
             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ConfirmacaoSenhaLocal}" PasswordChar="{Binding CaractereSenha}" />
           </Grid>
-          <TextBlock FontSize="12" Foreground="#1B6E3A" Text="Em uso neste momento." IsVisible="{Binding UsandoBancoLocal}" />
+          <TextBlock FontSize="12" Foreground="{DynamicResource TxOk}" Text="Em uso neste momento." IsVisible="{Binding UsandoBancoLocal}" />
         </StackPanel>
       </Border>
 
       <!-- Servidor (avançado) -->
       <Expander Header="Avançado: usar um servidor PostgreSQL externo (rede ou nuvem)" IsExpanded="{Binding ServidorExpandido}">
-      <Border BorderBrush="#C8D3E6" BorderThickness="1" CornerRadius="4" Padding="12">
+      <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12">
         <StackPanel Spacing="8">
           <RadioButton GroupName="ModoBanco" IsChecked="{Binding EditandoServidor}" FontWeight="SemiBold" IsVisible="{Binding BancoLocalDisponivel}"
                        Content="Servidor PostgreSQL (rede ou nuvem)" />

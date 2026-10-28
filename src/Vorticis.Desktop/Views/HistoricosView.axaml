@@ -21,7 +21,7 @@
       </DataGrid>
     </DockPanel>
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6">
-      <TextBlock Text="Histórico" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Histórico" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto" RowSpacing="6">
         <TextBlock Classes="rotulo" Text="Código" />
         <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
@@ -29,7 +29,7 @@
         <TextBox Grid.Row="1" Grid.Column="1" Name="TextoHistorico" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" TextWrapping="Wrap"
                  Watermark="ex.: Pagamento da NF {DOCUMENTO} de {PARTICIPANTE}" MinHeight="60" AcceptsReturn="False" />
       </Grid>
-      <TextBlock Text="Variáveis de preenchimento automático" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,6,0,0" />
+      <TextBlock Text="Variáveis de preenchimento automático" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                  Text="No lançamento, ao escolher o histórico, cada variável é trocada pelos dados da linha. As que não puderem ser resolvidas ficam {entre chaves} para você completar. Clique para inserir no texto (em edição)." />
       <ItemsControl ItemsSource="{Binding Variaveis}">

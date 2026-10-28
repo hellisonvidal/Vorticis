@@ -3,9 +3,78 @@
         xmlns:v="using:Vorticis.Desktop.Comum.Views">
   <!-- Tema e estilos comuns a todos os executáveis da suíte (incluídos em App.axaml de cada módulo) -->
   <Styles.Resources>
+  <ResourceDictionary>
+    <!-- Cores semânticas do tema: telas e controles usam {DynamicResource ...} destas chaves, nunca cores fixas, para o tema escuro funcionar -->
+    <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="TxTitulo" Color="#1F3A5F" />
+      <SolidColorBrush x:Key="TxForte" Color="#1E293B" />
+      <SolidColorBrush x:Key="TxSutil" Color="#44506A" />
+      <SolidColorBrush x:Key="Linha" Color="#D0D5DD" />
+      <SolidColorBrush x:Key="FundoCartao" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="FundoSuave" Color="#F1F5F9" />
+      <SolidColorBrush x:Key="FundoPagina" Color="#F4F6FA" />
+      <SolidColorBrush x:Key="Realce" Color="#EEF4FF" />
+      <SolidColorBrush x:Key="TxErro" Color="#B3261E" />
+      <SolidColorBrush x:Key="TxOk" Color="#1B6E3A" />
+      <SolidColorBrush x:Key="TxAviso" Color="#7A4B00" />
+      <SolidColorBrush x:Key="FundoAviso" Color="#FFF7E0" />
+      <SolidColorBrush x:Key="BordaAviso" Color="#E0B84C" />
+      <SolidColorBrush x:Key="FundoErro" Color="#FDF3F2" />
+      <SolidColorBrush x:Key="TxErroForte" Color="#7F1D1D" />
+      <SolidColorBrush x:Key="BordaErro" Color="#E0A3A0" />
+      <SolidColorBrush x:Key="Hover" Color="#EDF1F7" />
+      <SolidColorBrush x:Key="Pressionado" Color="#E1E8F2" />
+      <SolidColorBrush x:Key="Selecionado" Color="#E6EEF9" />
+      <SolidColorBrush x:Key="SelecionadoHover" Color="#DCE8F7" />
+      <SolidColorBrush x:Key="Flutuante" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="BordaForte" Color="#CBD5E1" />
+      <Color x:Key="CorInicioA">#F7F9FC</Color>
+      <Color x:Key="CorInicioB">#E6ECF4</Color>
+      <SolidColorBrush x:Key="TxRoxo" Color="#4C1D95" />
+      <SolidColorBrush x:Key="TxVerdeEscuro" Color="#134E4A" />
+      <SolidColorBrush x:Key="TxRosa" Color="#881337" />
+      <SolidColorBrush x:Key="FundoJanela" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="Marca" Color="#0F2A47" />
+      <SolidColorBrush x:Key="MarcaHover" Color="#17406B" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="TxTitulo" Color="#BFD3F2" />
+      <SolidColorBrush x:Key="TxForte" Color="#E6EBF3" />
+      <SolidColorBrush x:Key="TxSutil" Color="#A9B6CA" />
+      <SolidColorBrush x:Key="Linha" Color="#3A4659" />
+      <SolidColorBrush x:Key="FundoCartao" Color="#1B2230" />
+      <SolidColorBrush x:Key="FundoSuave" Color="#232C3B" />
+      <SolidColorBrush x:Key="FundoPagina" Color="#141A25" />
+      <SolidColorBrush x:Key="Realce" Color="#1E3250" />
+      <SolidColorBrush x:Key="TxErro" Color="#FF8A80" />
+      <SolidColorBrush x:Key="TxOk" Color="#6FD39A" />
+      <SolidColorBrush x:Key="TxAviso" Color="#F2C779" />
+      <SolidColorBrush x:Key="FundoAviso" Color="#3A2F14" />
+      <SolidColorBrush x:Key="BordaAviso" Color="#7A6322" />
+      <SolidColorBrush x:Key="FundoErro" Color="#3A1E1E" />
+      <SolidColorBrush x:Key="TxErroForte" Color="#F3B6B2" />
+      <SolidColorBrush x:Key="BordaErro" Color="#7A3B38" />
+      <SolidColorBrush x:Key="Hover" Color="#2A3446" />
+      <SolidColorBrush x:Key="Pressionado" Color="#323E54" />
+      <SolidColorBrush x:Key="Selecionado" Color="#233A5E" />
+      <SolidColorBrush x:Key="SelecionadoHover" Color="#2B4670" />
+      <SolidColorBrush x:Key="Flutuante" Color="#1F2735" />
+      <SolidColorBrush x:Key="BordaForte" Color="#475569" />
+      <Color x:Key="CorInicioA">#171E2B</Color>
+      <Color x:Key="CorInicioB">#0F141D</Color>
+      <SolidColorBrush x:Key="TxRoxo" Color="#C4B5FD" />
+      <SolidColorBrush x:Key="TxVerdeEscuro" Color="#7ADBD1" />
+      <SolidColorBrush x:Key="TxRosa" Color="#FDA4BA" />
+      <SolidColorBrush x:Key="FundoJanela" Color="#161B26" />
+      <SolidColorBrush x:Key="Marca" Color="#2F6FB5" />
+      <SolidColorBrush x:Key="MarcaHover" Color="#3C82CE" />
+    </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
     <!-- Fonte um pouco menor que o padrão (14) para caber mais informação na tela -->
     <x:Double x:Key="ControlContentThemeFontSize">12.5</x:Double>
     <x:Double x:Key="DataGridFontSize">12.5</x:Double>
+  </ResourceDictionary>
   </Styles.Resources>
   <FluentTheme />
   <StyleInclude Source="avares://Vorticis.Desktop.Comum/SuiteEstilos.axaml" />
@@ -15,11 +84,11 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="TextBlock.erro">
-    <Setter Property="Foreground" Value="#B3261E" />
+    <Setter Property="Foreground" Value="{DynamicResource TxErro}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.ok">
-    <Setter Property="Foreground" Value="#1B6E3A" />
+    <Setter Property="Foreground" Value="{DynamicResource TxOk}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="Window">
@@ -52,7 +121,7 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Border Background="Transparent" Padding="6,0" Cursor="Hand">
-          <Path Width="14" Height="14" Stretch="Uniform" Fill="#44506A" VerticalAlignment="Center"
+          <Path Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource TxSutil}" VerticalAlignment="Center"
                 Data="M3,4 L21,4 L21,22 L3,22 Z M5,9 L5,20 L19,20 L19,9 Z M7,2 L9,2 L9,6 L7,6 Z M15,2 L17,2 L17,6 L15,6 Z" />
         </Border>
       </ControlTemplate>

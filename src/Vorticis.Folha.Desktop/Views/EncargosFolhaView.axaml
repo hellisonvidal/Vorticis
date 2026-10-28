@@ -11,7 +11,7 @@
       <TextBlock Text="Competência" VerticalAlignment="Center" />
       <c:SeletorCompetencia Competencia="{Binding Competencia}" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />
     </StackPanel>
     <c:MensagensView DockPanel.Dock="Bottom" />

@@ -9,19 +9,19 @@
     <v:SuiteNavegacaoView Name="NavFixa" IsVisible="{Binding MostraNavFixa}" />
 
     <!-- faixa de ícones (navegação oculta) -->
-    <Border Name="Rail" Width="60" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,1,0" IsVisible="{Binding MostraRail}">
+    <Border Name="Rail" Width="60" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,1,0" IsVisible="{Binding MostraRail}">
       <DockPanel>
         <Image DockPanel.Dock="Top" Source="avares://Vorticis.Desktop.Comum/Assets/marca-vorticis.png" Width="32" Height="32" Margin="0,14,0,10"
                ToolTip.Tip="{Binding Nome}" />
         <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,12" HorizontalAlignment="Center">
           <Button Classes="su" Padding="9" Command="{Binding AlternarFixaCommand}" ToolTip.Tip="Fixar a navegação (ela fica sempre aberta e empurra as telas)">
-            <PathIcon Data="{x:Static v:Icones.Pin}" Width="18" Height="18" Foreground="#475569" />
+            <PathIcon Data="{x:Static v:Icones.Pin}" Width="18" Height="18" Foreground="{DynamicResource TxSutil}" />
           </Button>
           <v:SuiteEscolhaLayoutView Compacto="True" />
         </StackPanel>
-        <Border DockPanel.Dock="Top" Height="1" Background="#EDF1F7" Margin="12,0,12,8" />
+        <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource FundoSuave}" Margin="12,0,12,8" />
         <Button DockPanel.Dock="Top" Classes="su" Margin="8,0,8,4" Padding="0,9" IsVisible="{Binding EhArvore}" ToolTip.Tip="Buscar uma função (Ctrl+K)">
-          <PathIcon Data="{x:Static v:Icones.Magnify}" Width="20" Height="20" Foreground="#475569" />
+          <PathIcon Data="{x:Static v:Icones.Magnify}" Width="20" Height="20" Foreground="{DynamicResource TxSutil}" />
         </Button>
         <ScrollViewer VerticalScrollBarVisibility="Hidden">
           <ItemsControl ItemsSource="{Binding Modulos}">

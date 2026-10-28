@@ -8,7 +8,7 @@
     <TextBlock Classes="titulo" Text="Configurações gerais" />
     <TextBlock Text="Somente o administrador altera estas configurações." Classes="erro" IsVisible="{Binding !PodeAlterar}" />
     <StackPanel Spacing="8" IsVisible="{Binding PodeAlterar}">
-      <TextBlock Text="Senha de administrador" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <TextBlock Text="Senha de administrador" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
       <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
                  Text="Pedida para restaurar backups e limpar o banco de dados. A senha inicial é VORTICIS — troque-a." />
       <TextBlock Classes="erro" IsVisible="{Binding SenhaPadraoEmUso}"
@@ -21,11 +21,11 @@
       </StackPanel>
     </StackPanel>
 
-    <Border BorderBrush="#E0A3A0" BorderThickness="1" Background="#FDF3F2" CornerRadius="4" Padding="12" Margin="0,16,0,0"
+    <Border BorderBrush="{DynamicResource BordaErro}" BorderThickness="1" Background="{DynamicResource FundoErro}" CornerRadius="4" Padding="12" Margin="0,16,0,0"
             IsVisible="{Binding PodeAlterar}">
       <StackPanel Spacing="8">
-        <TextBlock Text="Limpar banco de dados (NÃO RECOMENDADO)" FontWeight="SemiBold" Foreground="#B3261E" />
-        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#5A2A27"
+        <TextBlock Text="Limpar banco de dados (NÃO RECOMENDADO)" FontWeight="SemiBold" Foreground="{DynamicResource TxErro}" />
+        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxErroForte}"
                    Text="Apaga definitivamente TODAS as empresas e a escrituração (lançamentos, planos, períodos, imobilizado, clientes, fornecedores), contadores, escritórios, tabelas do plano referencial, layouts, usuários e perfis personalizados. Depois de digitar LIMPAR, o sistema pede a senha de administrador; ao final volta à tela de login, como numa instalação nova: só entra o usuário de implantação (vorticis / vorticis), que cadastra o administrador. Use apenas para recomeçar do zero — um backup é gerado antes." />
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Text="Digite LIMPAR para confirmar:" VerticalAlignment="Center" />

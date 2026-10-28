@@ -13,7 +13,7 @@
         <TextBlock Text="a" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
-        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </WrapPanel>
     </StackPanel>

@@ -11,7 +11,7 @@
     </Style>
     <Style Selector="TextBlock.secao">
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#1F3A5F" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
       <Setter Property="Margin" Value="0,10,0,2" />
     </Style>
   </UserControl.Styles>
@@ -23,7 +23,7 @@
       <StackPanel Spacing="6" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,12,8">
         <StackPanel Orientation="Horizontal" Spacing="12">
           <TextBlock Classes="titulo" Text="{Binding TituloFormulario}" />
-          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="#44506A" VerticalAlignment="Bottom" Margin="0,0,0,2" />
+          <TextBlock Text="{Binding NumeroRegistro}" FontSize="14" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Bottom" Margin="0,0,0,2" />
         </StackPanel>
 
         <TextBlock Classes="secao" Text="Identificação" />

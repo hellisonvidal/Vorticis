@@ -32,7 +32,7 @@
     <ScrollViewer Grid.Row="1" Grid.Column="2">
       <StackPanel Spacing="6">
         <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-        <TextBlock Text="Dados do sócio" FontWeight="SemiBold" Foreground="#1F3A5F" />
+        <TextBlock Text="Dados do sócio" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
         <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
         <TextBox Text="{Binding Nome}" Watermark="Nome completo / razão social" />
         <ComboBox ItemsSource="{x:Static vm:OpcaoTipoPessoa.Todas}" SelectedItem="{Binding Tipo}" HorizontalAlignment="Stretch">

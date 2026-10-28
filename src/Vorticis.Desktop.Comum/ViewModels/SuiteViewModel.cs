@@ -8,6 +8,9 @@ using Vorticis.Desktop.Comum.Modulos;
 namespace Vorticis.Desktop.Comum.ViewModels;
 
 /// <summary>Temas de navegação da Suite (o usuário escolhe em Exibir › Layout da Suite ou no botão Layout da barra superior).</summary>
+/// <summary>Tema de cores da Suite (todos os layouts): claro, escuro ou o que o sistema operacional estiver usando.</summary>
+public enum TemaSuite { Claro, Escuro, Automatico }
+
 public enum LayoutSuite
 {
     /// <summary>A: clássico, com a faixa de abas dos módulos (ícone e nome) no topo e os menus do módulo abaixo.</summary>
@@ -128,7 +131,9 @@ public sealed partial class SuiteViewModel : ObservableObject
         _layout = layout ?? LerLayout();
         _lateralFixa = LerFixa();
         _faixaFixa = LerFaixaFixa();
+        _tema = LerTema();
         _carregando = false;
+        AplicarTema(_tema);
         foreach (var m in Modulos)
         {
             if (!ReferenceEquals(m, _principal)) m.Vm.DelegarReinicio = msg => _principal.Vm.ReiniciarDoZeroAsync(msg);   // limpar o banco: recomeça pelo principal
@@ -298,6 +303,33 @@ public sealed partial class SuiteViewModel : ObservableObject
         LateralAberta = false;
         FaixaAberta = false;
     }
+
+    partial void OnTemaChanged(TemaSuite value)
+    {
+        AplicarTema(value);
+        SalvarPreferencias();
+    }
+
+    /// <summary>Tema escolhido (Exibir › Layout da Suite › Tema, ou no seletor de layouts); fica gravado para o usuário.</summary>
+    [ObservableProperty] private TemaSuite _tema;
+
+    public static readonly IReadOnlyList<(TemaSuite Valor, string Nome)> Temas = [(TemaSuite.Claro, "Claro"), (TemaSuite.Escuro, "Escuro"), (TemaSuite.Automatico, "Automático (igual ao sistema)")];
+
+    /// <summary>Variante de tema do Avalonia para o tema escolhido (Default = acompanha o sistema).</summary>
+    public static Avalonia.Styling.ThemeVariant VarianteDe(TemaSuite tema) => tema switch
+    {
+        TemaSuite.Escuro => Avalonia.Styling.ThemeVariant.Dark,
+        TemaSuite.Claro => Avalonia.Styling.ThemeVariant.Light,
+        _ => Avalonia.Styling.ThemeVariant.Default,
+    };
+
+    private static void AplicarTema(TemaSuite tema)
+    {
+        if (Avalonia.Application.Current is { } app) app.RequestedThemeVariant = VarianteDe(tema);
+    }
+
+    [RelayCommand]
+    private void EscolherTema(TemaSuite tema) => Tema = tema;
 
     [RelayCommand]
     private void EscolherLayout(LayoutSuite layout) => Layout = layout;
@@ -502,6 +534,7 @@ public sealed partial class SuiteViewModel : ObservableObject
     public static string ArquivoLayout { get; set; } = Path.Combine(Configuracao.PastaLocal, "suite-layout.txt");
 
     public static string ArquivoFixa => Path.ChangeExtension(ArquivoLayout, null) + "-fixa.txt";
+    public static string ArquivoTema => Path.ChangeExtension(ArquivoLayout, null) + "-tema.txt";
     public static string ArquivoFaixa => Path.ChangeExtension(ArquivoLayout, null) + "-faixa.txt";
 
     /// <summary>Arquivo das preferências do usuário (layout, fixar/ocultar, favoritos, recentes e uso).</summary>
@@ -512,6 +545,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         public LayoutSuite Layout { get; set; } = LayoutSuite.Lateral;
         public bool NavFixa { get; set; }
         public bool FaixaFixa { get; set; } = true;
+        public TemaSuite Tema { get; set; } = TemaSuite.Claro;
         public List<string> Favoritos { get; set; } = [];
         public List<string> Recentes { get; set; } = [];
         public Dictionary<string, int> Usos { get; set; } = [];
@@ -530,6 +564,12 @@ public sealed partial class SuiteViewModel : ObservableObject
     {
         try { return File.Exists(ArquivoFixa) && File.ReadAllText(ArquivoFixa).Trim() == "fixa"; }
         catch (Exception) { return false; }
+    }
+
+    private static TemaSuite LerTema()
+    {
+        try { return File.Exists(ArquivoTema) && Enum.TryParse<TemaSuite>(File.ReadAllText(ArquivoTema).Trim(), out var t) && Enum.IsDefined(t) ? t : TemaSuite.Claro; }
+        catch (Exception) { return TemaSuite.Claro; }
     }
 
     private static bool LerFaixaFixa()
@@ -565,6 +605,7 @@ public sealed partial class SuiteViewModel : ObservableObject
                 _usos.Clear(); foreach (var (k, v) in p.Usos) _usos[k] = v;
                 LateralFixa = p.NavFixa;
                 FaixaFixa = p.FaixaFixa;
+                Tema = Enum.IsDefined(p.Tema) ? p.Tema : TemaSuite.Claro;
                 Layout = Enum.IsDefined(p.Layout) ? p.Layout : LayoutSuite.Lateral;
                 AtualizarIndices();
             }
@@ -580,10 +621,11 @@ public sealed partial class SuiteViewModel : ObservableObject
         GravarTexto(ArquivoLayout, Layout.ToString());
         GravarTexto(ArquivoFixa, LateralFixa ? "fixa" : "recolhe");
         GravarTexto(ArquivoFaixa, FaixaFixa ? "fixa" : "oculta");
+        GravarTexto(ArquivoTema, Tema.ToString());
         if (apenasComputador || UsuarioId is not { } id) return;
         var p = new PreferenciasGravadas
         {
-            Layout = Layout, NavFixa = LateralFixa, FaixaFixa = FaixaFixa,
+            Layout = Layout, NavFixa = LateralFixa, FaixaFixa = FaixaFixa, Tema = Tema,
             Favoritos = [.. _idsFavoritos.Order()], Recentes = [.. _idsRecentes], Usos = new(_usos),
         };
         GravarTexto(ArquivoDoUsuario(id), System.Text.Json.JsonSerializer.Serialize(p));
