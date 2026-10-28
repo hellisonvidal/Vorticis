@@ -8,6 +8,7 @@ using Vorticis.Application.Relatorios;
 using Vorticis.Application.Seguranca;
 using Vorticis.Application.Sistema;
 using Vorticis.Application.Sped;
+using Vorticis.Application.Sped.Importacao;
 using Vorticis.Infra.Sistema;
 using Vorticis.Infra.Cnpj;
 using Vorticis.Infra.Migracoes;
@@ -65,6 +66,8 @@ public sealed class VorticisApp : IAsyncDisposable
         var consultasEcd = new ConsultasEcd(ds);
         Ecd = new ServicoEcd(consultasEcd, repoContabil, Responsaveis, autorizador, AssinadorSped);
         Ecf = new ServicoEcf(new ConsultasEcf(ds, consultasEcd), Ecd, autorizador, AssinadorSped);
+        HistoricoImportacaoSped = new RepositorioHistoricoSped(ds);
+        ImportacaoEcd = new ServicoImportacaoEcd(new RepositorioImportacaoEcd(ds), HistoricoImportacaoSped, autorizador);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Auditoria = new ServicoAuditoria(new RepositorioAuditoria(ds));
         Obrigacoes = new ServicoObrigacoes(new RepositorioObrigacoes(ds), autorizador);
@@ -110,6 +113,10 @@ public sealed class VorticisApp : IAsyncDisposable
     /// <summary>Geração e assinatura do arquivo da ECF (Escrituração Contábil Fiscal).</summary>
     public ServicoEcf Ecf { get; }
     public IAssinadorSped AssinadorSped { get; }
+    /// <summary>Integrações › Importar › Arquivo SPED – ECD.</summary>
+    public ServicoImportacaoEcd ImportacaoEcd { get; }
+    /// <summary>Histórico das importações de arquivos SPED (Contábil e Fiscal).</summary>
+    public IRepositorioHistoricoSped HistoricoImportacaoSped { get; }
     public ServicoBackup Backup { get; }
     public ServicoAuditoria Auditoria { get; }
     public ServicoObrigacoes Obrigacoes { get; }

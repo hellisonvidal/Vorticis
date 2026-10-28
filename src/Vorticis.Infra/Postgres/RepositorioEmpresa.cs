@@ -82,7 +82,7 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
         });
 
     /// <summary>Exercício = ano civil, começando no início das atividades se este cair no próprio ano.</summary>
-    private static async Task<DateOnly> CriarExercicioAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, int ano, CancellationToken ct)
+    internal static async Task<DateOnly> CriarExercicioAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, int ano, CancellationToken ct)
     {
         await using var cmd = new NpgsqlCommand("""
             WITH ex AS (

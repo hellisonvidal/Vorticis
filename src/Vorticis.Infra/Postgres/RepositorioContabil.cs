@@ -199,7 +199,7 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
         return await SituacaoAsync(con, null, empresaId, lancamentoId, ct);
     }
 
-    private static async Task<SituacaoLancamento?> SituacaoAsync(NpgsqlConnection con, NpgsqlTransaction? tx, long empresaId, long lancamentoId, CancellationToken ct)
+    internal static async Task<SituacaoLancamento?> SituacaoAsync(NpgsqlConnection con, NpgsqlTransaction? tx, long empresaId, long lancamentoId, CancellationToken ct)
     {
         long exercicioId; int ano; long? numero, estornoDe; DateOnly data; string status, origem, ind;
         bool encerrado, periodoAberto, ecd; DateOnly? bloqueio;
@@ -243,19 +243,19 @@ public sealed class RepositorioContabil(NpgsqlDataSource ds) : IRepositorioConta
                                       indicador, estornoDe, encerrado, periodoAberto, ecd, bloqueio, conciliado, vinculados);
     }
 
-    private static async Task DeclararManutencaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, CancellationToken ct)
+    internal static async Task DeclararManutencaoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, CancellationToken ct)
     {
         await using var cmd = new NpgsqlCommand("SELECT set_config('vorticis.mantendo_lancamentos', @e, true)", con, tx).Com("e", empresaId.ToString());
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
-    private static async Task AjustarSaldoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long id, int sinal, CancellationToken ct)
+    internal static async Task AjustarSaldoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long id, int sinal, CancellationToken ct)
     {
         await using var cmd = new NpgsqlCommand("SELECT contabil.fn_ajusta_saldo_lancamento(@id, @s)", con, tx).Com("id", id).Com("s", sinal);
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
-    private static async Task AuditarAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long id, string operacao, string sqlJson, CancellationToken ct)
+    internal static async Task AuditarAsync(NpgsqlConnection con, NpgsqlTransaction tx, long empresaId, long id, string operacao, string sqlJson, CancellationToken ct)
     {
         await using var cmd = new NpgsqlCommand(
             $"SELECT core.fn_registrar_evento_auditoria(@e, 'contabil.lancamento', @id, @op, {sqlJson})", con, tx)
