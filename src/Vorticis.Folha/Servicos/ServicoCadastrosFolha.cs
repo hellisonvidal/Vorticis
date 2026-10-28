@@ -239,6 +239,7 @@ public sealed class ServicoCadastrosFolha(IRepositorioCadastrosFolha repositorio
         if (c.DiaPagamento is < 1 or > 31) erros.Add("O dia de pagamento deve estar entre 1 e 31.");
         if (c.AmbienteEsocial is not (1 or 2)) erros.Add("Ambiente do eSocial inválido.");
         if (c.TransmissorEsocial is not ("EMPREGADOR" or "PROCURADOR" or "CONTADOR")) erros.Add("Transmissor do eSocial inválido.");
+        if (c.ModoContabilizacao is not (ConfiguracaoFolha.ModoResumida or ConfiguracaoFolha.ModoEventos)) erros.Add("Modo de contabilização inválido.");
         if (erros.Count > 0) return Resultado.Falha(erros);
         await repositorio.GravarConfiguracaoAsync(empresaId, c, usuarioId, ct);
         return Resultado.Ok();

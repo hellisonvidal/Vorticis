@@ -39,8 +39,12 @@ public sealed record ParametroEmpresa(decimal RatAliquota, decimal Fap, decimal 
 }
 
 /// <summary>Configuração da folha por empresa (folha.configuracao_empresa): dia de pagamento e padrões do eSocial.</summary>
-public sealed record ConfiguracaoFolha(int DiaPagamento = 5, int AmbienteEsocial = 2, string TransmissorEsocial = "EMPREGADOR")
+public sealed record ConfiguracaoFolha(int DiaPagamento = 5, int AmbienteEsocial = 2, string TransmissorEsocial = "EMPREGADOR",
+                                       string ModoContabilizacao = "RESUMIDA", bool DetalharPorFuncionario = false)
 {
+    public const string ModoResumida = "RESUMIDA";
+    public const string ModoEventos = "EVENTOS";
+    public bool PorEventos => ModoContabilizacao == ModoEventos;
     public static readonly ConfiguracaoFolha Padrao = new();
 }
 

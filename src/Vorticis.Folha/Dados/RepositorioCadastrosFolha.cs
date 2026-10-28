@@ -348,10 +348,10 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
 
     public async Task<ConfiguracaoFolha> ObterConfiguracaoAsync(long empresaId, CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT dia_pagamento, esocial_ambiente, esocial_transmissor FROM folha.configuracao_empresa WHERE empresa_id = @e")
+        await using var cmd = ds.CreateCommand("SELECT dia_pagamento, esocial_ambiente, esocial_transmissor, contab_modo, contab_detalha_funcionario FROM folha.configuracao_empresa WHERE empresa_id = @e")
             .Com("e", empresaId);
         await using var r = await cmd.ExecuteReaderAsync(ct);
-        return await r.ReadAsync(ct) ? new ConfiguracaoFolha(r.GetInt16(0), r.GetInt16(1), r.GetString(2)) : ConfiguracaoFolha.Padrao;
+        return await r.ReadAsync(ct) ? new ConfiguracaoFolha(r.GetInt16(0), r.GetInt16(1), r.GetString(2), r.GetString(3), r.GetBoolean(4)) : ConfiguracaoFolha.Padrao;
     }
 
     public Task GravarConfiguracaoAsync(long empresaId, ConfiguracaoFolha c, long usuarioId, CancellationToken ct) => Sql.TraduzirAsync(async () =>
@@ -360,10 +360,12 @@ public sealed class RepositorioCadastrosFolha(NpgsqlDataSource ds) : IRepositori
         await using var tx = await con.BeginTransactionAsync(ct);
         await Sql.DefinirUsuarioAsync(con, tx, usuarioId, ct);
         await using var cmd = new NpgsqlCommand("""
-            INSERT INTO folha.configuracao_empresa (empresa_id, dia_pagamento, esocial_ambiente, esocial_transmissor)
-            VALUES (@e, @d, @a, @t)
-            ON CONFLICT (empresa_id) DO UPDATE SET dia_pagamento = @d, esocial_ambiente = @a, esocial_transmissor = @t, atualizado_em = now()
-            """, con, tx).Com("e", empresaId).Com("d", (short)c.DiaPagamento).Com("a", (short)c.AmbienteEsocial).Com("t", c.TransmissorEsocial);
+            INSERT INTO folha.configuracao_empresa (empresa_id, dia_pagamento, esocial_ambiente, esocial_transmissor, contab_modo, contab_detalha_funcionario)
+            VALUES (@e, @d, @a, @t, @m, @f)
+            ON CONFLICT (empresa_id) DO UPDATE SET dia_pagamento = @d, esocial_ambiente = @a, esocial_transmissor = @t, contab_modo = @m,
+                                                   contab_detalha_funcionario = @f, atualizado_em = now()
+            """, con, tx).Com("e", empresaId).Com("d", (short)c.DiaPagamento).Com("a", (short)c.AmbienteEsocial).Com("t", c.TransmissorEsocial)
+            .Com("m", c.ModoContabilizacao).Com("f", c.DetalharPorFuncionario);
         await cmd.ExecuteNonQueryAsync(ct);
         await tx.CommitAsync(ct);
         return 0;

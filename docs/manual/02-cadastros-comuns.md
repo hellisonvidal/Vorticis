@@ -84,7 +84,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Encargos patronais | RAT, FAP e alíquota de terceiros (FPAS, Simples e responsável continuam em *Cadastros › Funcionários › Parâmetros e tabelas legais*). |
 | Pagamento | Dia de pagamento dos salários. |
 | eSocial | Ambiente e transmissor padrão; a tela *Transmissão* já abre com eles escolhidos. |
-| Contabilização | Atalho para a tela *Contabilização*. |
+| Contabilização | **Modo de contabilização** (Resumida ou Por eventos), **Detalhar por funcionário** e atalhos para *Contabilização*, *Contabilização por eventos* e *Eventos contábeis*. Veja [Contabilização por eventos](06-folha.md#contabilizacao-por-eventos). |
 
 ## Clientes e fornecedores (participantes)
 

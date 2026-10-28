@@ -129,6 +129,37 @@ Se a empresa usa o tipo de contabilização **Em lote** (*Cadastros › Parâmet
 
 Exige também a permissão de incluir lançamentos (e de estornar, para desfazer).
 
+**Modo de contabilização.** Em *Cadastros › Parâmetros › Folha*, grupo **Contabilização**, escolha **Resumida** (um lançamento por competência, como descrito acima) ou **Por eventos** (veja a seção seguinte). Com o modo *Por eventos*, a tela *Contabilização* deixa de contabilizar; use *Contabilização por eventos*. Não é possível contabilizar a mesma competência dos dois jeitos ao mesmo tempo: desfaça um antes de usar o outro.
+
+## Contabilização por eventos
+
+Em vez de um lançamento só para a competência, a folha gera **um lançamento para cada evento** (salários, horas extras, adicionais, férias, 13º, INSS, IRRF, FGTS, encargos patronais, provisões, adiantamentos, rescisões), cada um com o seu histórico, por exemplo *Salários 10/2026* ou *INSS retido 10/2026*.
+
+**Onde ficam:** *Cálculos › Folha › Contabilização por eventos* e *Cálculos › Folha › Eventos contábeis*.
+
+**Antes de começar**
+
+1. Em *Cadastros › Parâmetros › Folha › Contabilização*, escolha o modo **Por eventos**. Marque **Detalhar por funcionário** se quiser uma partida para cada funcionário, com o nome e a matrícula no histórico; desmarcado, o lançamento traz só os totais do evento. Clique em **Gravar**.
+2. Confira as regras de contas em *Cálculos › Folha › Contabilização*: as mesmas regras (rubrica → conta de débito e de crédito, com centro de custo) valem aqui. Quando a regra abre por centro de custo, o lançamento traz uma partida por centro.
+
+**Eventos contábeis (opcional)**
+
+1. Abra *Eventos contábeis*. Cada rubrica sem evento forma um evento próprio, com o nome da rubrica.
+2. Para juntar rubricas num só lançamento, clique em **Novo**, informe o **Código** (ex.: SAL), a **Descrição** (ela vai no histórico, ex.: *Salários*) e as **Rubricas** que somam nele, separadas por vírgula (ex.: `1000, 1001, 1002`; também vale `ENC_FGTS`, `PROV_13` etc.). Clique em **Gravar evento**.
+3. Uma rubrica só pode somar em um evento. **Excluir** devolve as rubricas ao seu evento próprio.
+
+**Contabilizar**
+
+1. Abra *Contabilização por eventos*, escolha a **competência** e o **tipo de cálculo** (folha mensal, férias, 13º salário, rescisões ou provisões) e clique em **Prévia dos eventos**.
+2. A grade mostra cada evento com o **valor**, as **contas** (débito e crédito), o **centro de custo** e a **situação**. Eventos **sem regra** aparecem com aviso (cadastre a regra em *Contabilização*) e não podem ser marcados; os já contabilizados mostram o número do lançamento. Clique num evento para ver as partidas dele embaixo.
+3. Marque ou desmarque os eventos (**Marcar todos** / **Desmarcar todos**) e clique em **Contabilizar selecionados**. Cada evento vira um lançamento no último dia do mês. A competência da folha precisa estar **fechada** (as provisões não exigem). Se algum evento marcado tiver problema, nenhum é contabilizado e a mensagem diz qual.
+4. A soma dos eventos é igual ao total da folha da competência.
+5. Com a empresa em contabilização **Em lote**, o botão registra uma pendência por evento; os lançamentos saem em *Integrações › Exportar › Contabilização em lote*.
+
+**Desfazer**
+
+Marque os eventos já contabilizados e clique em **Desfazer selecionados**: o lançamento de cada um é estornado e o evento pode ser contabilizado de novo. Enquanto houver evento contabilizado, a folha (ou as provisões) da competência não pode ser reaberta nem recalculada.
+
 ## eSocial: assistente de configuração
 
 **Para que serve:** preparar a empresa para o eSocial, conferindo etapa por etapa o que falta antes de gerar e transmitir os eventos. O assistente não grava nada: ele monta os arquivos em memória, confere com o leiaute oficial e mostra o que corrigir.

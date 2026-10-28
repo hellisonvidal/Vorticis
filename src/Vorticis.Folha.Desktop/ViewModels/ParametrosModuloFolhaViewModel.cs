@@ -21,6 +21,8 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
     protected override Permissao PermissaoGravar => Permissao.FolhaParametrosManter;
 
     private static readonly IReadOnlyList<OpcaoParametro> Graus = [new("1", "1% – risco leve"), new("2", "2% – risco médio"), new("3", "3% – risco grave")];
+    private static readonly IReadOnlyList<OpcaoParametro> Modos =
+        [new(ConfiguracaoFolha.ModoResumida, "Resumida (um lançamento por competência)"), new(ConfiguracaoFolha.ModoEventos, "Por eventos (um lançamento por evento)")];
     private static readonly IReadOnlyList<OpcaoParametro> Ambientes = [new("2", "Produção restrita (testes)"), new("1", "PRODUÇÃO (valendo)")];
     private static readonly IReadOnlyList<OpcaoParametro> Transmissores =
         [new("EMPREGADOR", "Empregador (e-CNPJ da empresa)"), new("PROCURADOR", "Contador procurador (procuração eletrônica)"), new("CONTADOR", "Contador / escritório")];
@@ -42,7 +44,14 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
             new("ambiente", "Ambiente padrão", TipoCampoParametro.Escolha, "A tela de transmissão já abre neste ambiente. Teste sempre na produção restrita primeiro.", Ambientes),
             new("transmissor", "Transmissor padrão", TipoCampoParametro.Escolha, "Quem assina e envia os eventos, com o certificado digital correspondente.", Transmissores),
         };
-        Observar([.. enc, .. pag, .. esocial]);
+        var contab = new CampoParametro[]
+        {
+            new("modoContab", "Modo de contabilização", TipoCampoParametro.Escolha,
+                "Resumida: um lançamento por competência (como sempre). Por eventos: um lançamento para cada evento da folha (salários, INSS, FGTS...), cada um com o seu histórico.", Modos),
+            new("detalhaFunc", "Detalhar por funcionário (contabilização por eventos)", TipoCampoParametro.SimNao,
+                "Gera uma partida para cada funcionário, com o nome dele no histórico. Deixe desmarcado para lançar os totais do evento."),
+        };
+        Observar([.. enc, .. pag, .. esocial, .. contab]);
         return
         [
             new("Encargos patronais", "Percentuais usados no cálculo dos encargos e das provisões.", enc,
@@ -50,8 +59,9 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
             new("Pagamento", "Datas padrão da folha.", pag),
             new("eSocial", "Valores que a tela Obrigações › eSocial › Transmissão já abre selecionados.", esocial,
                 [Atalho("Abrir Transmissão do eSocial", FolhaTelas.Transmissao)]),
-            new("Contabilização", "As regras de contabilização da folha (contas e histórico) ficam na própria tela.", [],
-                [Atalho("Abrir Contabilização", FolhaTelas.Contabilizacao)]),
+            new("Contabilização", "Como a folha vira lançamento contábil. As regras (rubrica → contas) ficam na tela de Contabilização.", contab,
+                [Atalho("Abrir Contabilização", FolhaTelas.Contabilizacao), Atalho("Abrir Contabilização por eventos", FolhaTelas.ContabilizacaoEventos),
+                 Atalho("Abrir Eventos contábeis", FolhaTelas.EventosContabeis)]),
         ];
     }
 
@@ -66,6 +76,8 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
         Campo("diaPagamento").Texto = c.DiaPagamento.ToString();
         Campo("ambiente").DefinirEscolha(c.AmbienteEsocial.ToString());
         Campo("transmissor").DefinirEscolha(c.TransmissorEsocial);
+        Campo("modoContab").DefinirEscolha(c.ModoContabilizacao);
+        Campo("detalhaFunc").Marcado = c.DetalharPorFuncionario;
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -78,7 +90,8 @@ public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : Paramet
         var atual = await cad.ObterParametrosAsync(empresa, usuario);
         var r = await cad.GravarParametrosAsync(empresa, atual with { RatAliquota = decimal.Parse(Campo("rat").ValorEscolha ?? "2"), Fap = fap.Value, TerceirosAliquota = terceiros.Value }, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        var g = await cad.GravarConfiguracaoAsync(empresa, new ConfiguracaoFolha(dia, int.Parse(Campo("ambiente").ValorEscolha ?? "2"), Campo("transmissor").ValorEscolha ?? "EMPREGADOR"), usuario);
+        var g = await cad.GravarConfiguracaoAsync(empresa, new ConfiguracaoFolha(dia, int.Parse(Campo("ambiente").ValorEscolha ?? "2"), Campo("transmissor").ValorEscolha ?? "EMPREGADOR",
+                                                                         Campo("modoContab").ValorEscolha ?? ConfiguracaoFolha.ModoResumida, Campo("detalhaFunc").Marcado), usuario);
         if (!g.Sucesso) MostrarResultado(g, "");
     }
 }

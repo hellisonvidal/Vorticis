@@ -1,10 +1,124 @@
 using Npgsql;
+using Vorticis.Folha.Cadastros;
 using Vorticis.Folha.Regras;
 
 namespace Vorticis.Folha.Dados;
 
 public sealed class RepositorioContabilizacaoFolha(NpgsqlDataSource ds) : IRepositorioContabilizacaoFolha
 {
+    public async Task<(string Modo, bool DetalharPorFuncionario)> ObterModoContabilizacaoAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT contab_modo, contab_detalha_funcionario FROM folha.configuracao_empresa WHERE empresa_id = @e").Com("e", empresaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? (r.GetString(0), r.GetBoolean(1)) : (ConfiguracaoFolha.ModoResumida, false);
+    }
+
+    public async Task<IReadOnlyList<EventoContabil>> ListarEventosContabeisAsync(long empresaId, CancellationToken ct)
+    {
+        var chaves = new Dictionary<long, List<string>>();
+        await using (var c1 = ds.CreateCommand("SELECT evento_id, chave FROM folha.evento_contabil_rubrica WHERE empresa_id = @e ORDER BY chave").Com("e", empresaId))
+        await using (var r1 = await c1.ExecuteReaderAsync(ct))
+            while (await r1.ReadAsync(ct))
+            {
+                if (!chaves.TryGetValue(r1.GetInt64(0), out var l)) chaves[r1.GetInt64(0)] = l = [];
+                l.Add(r1.GetString(1));
+            }
+        var res = new List<EventoContabil>();
+        await using var cmd = ds.CreateCommand("SELECT id, codigo, descricao FROM folha.evento_contabil WHERE empresa_id = @e ORDER BY codigo").Com("e", empresaId);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) res.Add(new EventoContabil(r.GetInt64(0), r.GetString(1), r.GetString(2), chaves.GetValueOrDefault(r.GetInt64(0)) ?? []));
+        return res;
+    }
+
+    public Task GravarEventoContabilAsync(long empresaId, EventoContabil e, CancellationToken ct) => Sql.TraduzirAsync(async () =>
+    {
+        await using var con = await ds.OpenConnectionAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        long id;
+        if (e.Id == 0)
+        {
+            await using var ins = new NpgsqlCommand("INSERT INTO folha.evento_contabil (empresa_id, codigo, descricao) VALUES (@e, @c, @d) RETURNING id", con, tx)
+                .Com("e", empresaId).Com("c", e.Codigo).Com("d", e.Descricao);
+            id = (long)(await ins.ExecuteScalarAsync(ct))!;
+        }
+        else
+        {
+            id = e.Id;
+            await using var upd = new NpgsqlCommand("UPDATE folha.evento_contabil SET codigo = @c, descricao = @d WHERE id = @id AND empresa_id = @e", con, tx)
+                .Com("e", empresaId).Com("c", e.Codigo).Com("d", e.Descricao).Com("id", id);
+            await upd.ExecuteNonQueryAsync(ct);
+            await using var del = new NpgsqlCommand("DELETE FROM folha.evento_contabil_rubrica WHERE evento_id = @id", con, tx).Com("id", id);
+            await del.ExecuteNonQueryAsync(ct);
+        }
+        foreach (var chave in e.Chaves)
+        {
+            await using var rub = new NpgsqlCommand("INSERT INTO folha.evento_contabil_rubrica (evento_id, empresa_id, chave) VALUES (@id, @e, @k)", con, tx)
+                .Com("id", id).Com("e", empresaId).Com("k", chave);
+            await rub.ExecuteNonQueryAsync(ct);
+        }
+        await tx.CommitAsync(ct);
+        return 0;
+    });
+
+    public Task ExcluirEventoContabilAsync(long empresaId, long id, CancellationToken ct) => Sql.TraduzirAsync(async () =>
+    {
+        await using var cmd = ds.CreateCommand("DELETE FROM folha.evento_contabil WHERE id = @id AND empresa_id = @e").Com("id", id).Com("e", empresaId);
+        return await cmd.ExecuteNonQueryAsync(ct);
+    });
+
+    public async Task<IReadOnlyList<ContabilizacaoEventoRegistro>> ListarContabilizacoesEventoAsync(long empresaId, DateOnly? competencia, string? tipoCalculo, bool somenteAtivas,
+                                                                                                     CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT id, competencia, tipo_calculo, evento, lancamento_id, numero_lancamento, valor_total, criada_em, desfeita_em
+              FROM folha.contabilizacao_evento
+             WHERE empresa_id = @e AND (@c::date IS NULL OR competencia = @c) AND (@t::text IS NULL OR tipo_calculo = @t) AND (NOT @a OR desfeita_em IS NULL)
+             ORDER BY competencia DESC, id DESC
+            """).Com("e", empresaId).ComData("c", competencia).Com("t", NpgsqlTypes.NpgsqlDbType.Text, tipoCalculo).Com("a", somenteAtivas);
+        var res = new List<ContabilizacaoEventoRegistro>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new ContabilizacaoEventoRegistro(r.GetInt64(0), r.GetFieldValue<DateOnly>(1), r.GetString(2), r.GetString(3), r.GetInt64(4),
+                r.IsDBNull(5) ? null : r.GetInt64(5), r.GetDecimal(6), r.GetFieldValue<DateTimeOffset>(7), r.IsDBNull(8) ? null : r.GetFieldValue<DateTimeOffset>(8)));
+        return res;
+    }
+
+    public async Task<bool> ExisteContabilizacaoEventoAtivaAsync(long empresaId, DateOnly competencia, bool provisao, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT EXISTS (SELECT 1 FROM folha.contabilizacao_evento WHERE empresa_id = @e AND competencia = @c AND desfeita_em IS NULL
+                              AND ((tipo_calculo = 'PROVISAO') = @p))
+            """).Com("e", empresaId).ComData("c", competencia).Com("p", provisao);
+        return (bool)(await cmd.ExecuteScalarAsync(ct))!;
+    }
+
+    public Task<long> RegistrarContabilizacaoEventoAsync(long empresaId, DateOnly competencia, string tipoCalculo, string evento, long lancamentoId, long numero, decimal valor,
+                                                         long usuarioId, CancellationToken ct) => Sql.TraduzirAsync(async () =>
+    {
+        await using var con = await ds.OpenConnectionAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        await Sql.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+        await using var cmd = new NpgsqlCommand("""
+            INSERT INTO folha.contabilizacao_evento (empresa_id, competencia, tipo_calculo, evento, lancamento_id, numero_lancamento, valor_total, criada_por)
+            VALUES (@e, @c, @t, @ev, @l, @n, @v, @u) RETURNING id
+            """, con, tx).Com("e", empresaId).ComData("c", competencia).Com("t", tipoCalculo).Com("ev", evento).Com("l", lancamentoId).Com("n", numero).Com("v", valor).ComId("u", usuarioId);
+        var id = (long)(await cmd.ExecuteScalarAsync(ct))!;
+        await tx.CommitAsync(ct);
+        return id;
+    });
+
+    public Task MarcarEventoDesfeitoAsync(long empresaId, long id, long? estornoId, long usuarioId, CancellationToken ct) => Sql.TraduzirAsync(async () =>
+    {
+        await using var con = await ds.OpenConnectionAsync(ct);
+        await using var tx = await con.BeginTransactionAsync(ct);
+        await Sql.DefinirUsuarioAsync(con, tx, usuarioId, ct);
+        await using var cmd = new NpgsqlCommand("UPDATE folha.contabilizacao_evento SET desfeita_em = now(), desfeita_por = @u, estorno_id = @s WHERE id = @id AND empresa_id = @e",
+            con, tx).Com("id", id).Com("e", empresaId).ComId("u", usuarioId).ComId("s", estornoId);
+        await cmd.ExecuteNonQueryAsync(ct);
+        await tx.CommitAsync(ct);
+        return 0;
+    });
+
     public async Task<IReadOnlyList<RegraContabil>> ListarRegrasAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

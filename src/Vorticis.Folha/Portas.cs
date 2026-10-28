@@ -98,8 +98,28 @@ public sealed record ProvisaoGravada(long FuncionarioId, string Matricula, strin
 public sealed record ContabilizacaoRegistro(long Id, DateOnly Competencia, string Tipo, long LancamentoId, long? NumeroLancamento, decimal ValorTotal,
                                             DateTimeOffset CriadaEm, DateTimeOffset? DesfeitaEm);
 
+/// <summary>Evento contábil: agrupa rubricas (ou códigos especiais ENC_*, PROV_*) que somam num mesmo lançamento.</summary>
+public sealed record EventoContabil(long Id, string Codigo, string Descricao, IReadOnlyList<string> Chaves);
+
+/// <summary>Contabilização de um evento (competência + tipo de cálculo + evento).</summary>
+public sealed record ContabilizacaoEventoRegistro(long Id, DateOnly Competencia, string TipoCalculo, string Evento, long LancamentoId, long? NumeroLancamento,
+                                                  decimal ValorTotal, DateTimeOffset CriadaEm, DateTimeOffset? DesfeitaEm);
+
 public interface IRepositorioContabilizacaoFolha
 {
+    /// <summary>Modo de contabilização da empresa (Parâmetros da Folha) e se detalha por funcionário.</summary>
+    Task<(string Modo, bool DetalharPorFuncionario)> ObterModoContabilizacaoAsync(long empresaId, CancellationToken ct);
+    Task<IReadOnlyList<EventoContabil>> ListarEventosContabeisAsync(long empresaId, CancellationToken ct);
+    Task GravarEventoContabilAsync(long empresaId, EventoContabil e, CancellationToken ct);
+    Task ExcluirEventoContabilAsync(long empresaId, long id, CancellationToken ct);
+    Task<IReadOnlyList<ContabilizacaoEventoRegistro>> ListarContabilizacoesEventoAsync(long empresaId, DateOnly? competencia, string? tipoCalculo, bool somenteAtivas,
+                                                                                       CancellationToken ct);
+    /// <summary>Há evento contabilizado (ativo) na competência? <paramref name="provisao"/>: provisões; senão, folha (mensal, férias, 13º, rescisão).</summary>
+    Task<bool> ExisteContabilizacaoEventoAtivaAsync(long empresaId, DateOnly competencia, bool provisao, CancellationToken ct);
+    Task<long> RegistrarContabilizacaoEventoAsync(long empresaId, DateOnly competencia, string tipoCalculo, string evento, long lancamentoId, long numero, decimal valor,
+                                                  long usuarioId, CancellationToken ct);
+    Task MarcarEventoDesfeitoAsync(long empresaId, long id, long? estornoId, long usuarioId, CancellationToken ct);
+
     Task<IReadOnlyList<RegraContabil>> ListarRegrasAsync(long empresaId, CancellationToken ct);
     Task GravarRegraAsync(long empresaId, RegraContabil r, CancellationToken ct);
     Task ExcluirRegraAsync(long empresaId, long id, CancellationToken ct);

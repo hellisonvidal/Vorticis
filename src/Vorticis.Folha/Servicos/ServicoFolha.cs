@@ -42,6 +42,7 @@ public sealed class ServicoFolha(IRepositorioCadastrosFolha cadastros, IReposito
 
     private async Task<string?> ContabilizadaAsync(long empresaId, DateOnly competencia, CancellationToken ct)
         => await contabilizacao.ObterContabilizacaoAtivaAsync(empresaId, competencia, "FOLHA", ct) is not null
+           || await contabilizacao.ExisteContabilizacaoEventoAtivaAsync(empresaId, competencia, false, ct)
             ? $"A folha de {competencia:MM/yyyy} está contabilizada. Desfaça a contabilização antes."
             : null;
 
@@ -388,7 +389,8 @@ public sealed class ServicoFolha(IRepositorioCadastrosFolha cadastros, IReposito
     {
         if (await autorizador.NegarAsync<ResumoCalculo>(usuarioId, empresaId, Permissao.FolhaCalcular, ct) is { } negado) return negado;
         competencia = Mes(competencia);
-        if (await contabilizacao.ObterContabilizacaoAtivaAsync(empresaId, competencia, "PROVISAO", ct) is not null)
+        if (await contabilizacao.ObterContabilizacaoAtivaAsync(empresaId, competencia, "PROVISAO", ct) is not null
+            || await contabilizacao.ExisteContabilizacaoEventoAtivaAsync(empresaId, competencia, true, ct))
             return Resultado<ResumoCalculo>.Falha($"As provisões de {competencia:MM/yyyy} estão contabilizadas. Desfaça a contabilização antes.");
         var b = await CarregarAsync(empresaId, competencia, ct);
         var provisoes = new List<(long, long?, ProvisaoMensal)>();

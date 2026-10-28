@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.EventosContabeisView"
+             x:DataType="vm:EventosContabeisViewModel">
+  <Grid ColumnDefinitions="*,16,420" Margin="8">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Eventos contábeis" Margin="0,0,0,8" />
+      <DataGrid ItemsSource="{Binding Eventos}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="110" />
+          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="220" />
+          <DataGridTextColumn Header="Rubricas que somam" Binding="{ReflectionBinding Rubricas}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+    <StackPanel Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
+      <TextBlock Text="Evento" FontWeight="SemiBold" Foreground="#1F3A5F" />
+      <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" MaxLength="30" Watermark="Ex.: SAL" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" Watermark="Ex.: Salários (vai no histórico)" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Rubricas" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Rubricas}" AcceptsReturn="True" Height="90" TextWrapping="Wrap" Watermark="Códigos separados por vírgula" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Novo" Command="{Binding NovoCommand}" />
+        <Button Content="Gravar evento" Command="{Binding GravarCommand}" Classes="accent" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+      </StackPanel>
+      <TextBlock Text="{Binding Disponiveis}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Uma rubrica soma em um único evento. Rubricas que não estiverem em nenhum evento formam um evento próprio, com o nome da rubrica. As contas vêm das regras de Cálculos › Folha › Contabilização." />
+      <c:MensagensView />
+    </StackPanel>
+  </Grid>
+</UserControl>

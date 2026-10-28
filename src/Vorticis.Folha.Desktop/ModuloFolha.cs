@@ -47,7 +47,9 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Tela("Rescisões", FolhaTelas.Rescisoes),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
-                ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao)),
+                ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao),
+                ItemMenu.Tela("Contabilização por eventos", FolhaTelas.ContabilizacaoEventos),
+                ItemMenu.Tela("Eventos contábeis", FolhaTelas.EventosContabeis)),
             ItemMenu.Submenu("_Pró-labore",
                 ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore),
                 ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios))),
@@ -125,6 +127,13 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia(nameof(MainViewModel.Contabilizacao), m => new ContabilizacaoFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Contabilizacao, "Cálculos › Folha › Contabilização", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.ContabilizacaoEventos), m => new ContabilizacaoEventosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoLimpar: v => { v.Eventos.Clear(); v.Lancamento.Clear(); v.Total = ""; },
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.ContabilizacaoEventos, "Cálculos › Folha › Contabilização por eventos", m => Pode(m, Permissao.FolhaContabilizar), v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.EventosContabeis), m => new EventosContabeisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.EventosContabeis, "Cálculos › Folha › Eventos contábeis", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.ESocial), m => new ESocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Eventos.Clear(); v.Xml = ""; },

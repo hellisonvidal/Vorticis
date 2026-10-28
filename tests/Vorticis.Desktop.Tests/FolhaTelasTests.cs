@@ -35,7 +35,7 @@ public class FolhaTelasTests(SessaoHeadless headless)
                 (new FolhaMensalView(), vm.FolhaMensal), (new FeriasView(), vm.Ferias), (new DecimoTerceiroView(), vm.Decimo),
                 (new RescisoesView(), vm.Rescisoes), (new ContabilizacaoFolhaView(), vm.Contabilizacao), (new ESocialView(), vm.ESocial),
                 (new ResumoFolhaView(), vm.Resumo), (new EncargosFolhaView(), vm.Encargos), (new ProvisoesFolhaView(), vm.Provisoes),
-                (new AssistenteEsocialView(), vm.AssistenteEsocial),
+                (new AssistenteEsocialView(), vm.AssistenteEsocial), (new ContabilizacaoEventosView(), vm.ContabilizacaoEventos), (new EventosContabeisView(), vm.EventosContabeis),
             ];
             foreach (var (view, contexto) in telas)
             {
@@ -49,7 +49,7 @@ public class FolhaTelasTests(SessaoHeadless headless)
             await Task.Yield();
             return telas.Length;
         }, TestContext.Current.CancellationToken));
-        Assert.Equal(16, total);
+        Assert.Equal(18, total);
     }
 
     [Fact]

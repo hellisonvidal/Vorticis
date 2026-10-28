@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.ContabilizacaoEventosView"
+             x:DataType="vm:ContabilizacaoEventosViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="8">
+    <StackPanel Spacing="6" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Classes="titulo" Text="Contabilização por eventos" VerticalAlignment="Center" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
+        <TextBlock Text="Tipo de cálculo" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{x:Static vm:ContabilizacaoEventosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="220" />
+        <Button Content="Prévia dos eventos" Command="{Binding PreviaCommand}" IsEnabled="{Binding PodeContabilizar}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Marcar todos" Command="{Binding MarcarTodosCommand}" />
+        <Button Content="Desmarcar todos" Command="{Binding DesmarcarTodosCommand}" />
+        <Button Content="Contabilizar selecionados" Command="{Binding ContabilizarCommand}" Classes="accent" IsEnabled="{Binding PodeContabilizar}" />
+        <Button Content="Desfazer selecionados" Command="{Binding DesfazerCommand}" IsEnabled="{Binding PodeContabilizar}" />
+        <TextBlock Text="{Binding Total}" VerticalAlignment="Center" FontWeight="SemiBold" />
+      </StackPanel>
+      <TextBlock Text="{Binding Modo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Eventos}" SelectedItem="{Binding Selecionado}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Marcar" Width="70">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:EventoPreviaLinha">
+              <CheckBox IsChecked="{Binding Marcado}" HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Evento" Binding="{ReflectionBinding Codigo}" IsReadOnly="True" Width="100" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" IsReadOnly="True" Width="*" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" IsReadOnly="True" Width="110" />
+        <DataGridTextColumn Header="Contas (D / C)" Binding="{ReflectionBinding Contas}" IsReadOnly="True" Width="220" />
+        <DataGridTextColumn Header="Centro de custo" Binding="{ReflectionBinding Centros}" IsReadOnly="True" Width="120" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" IsReadOnly="True" Width="260" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <Grid Grid.Row="2" ColumnDefinitions="*,16,*" Margin="0,8,0,0" Height="170">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Partidas do evento selecionado" FontWeight="SemiBold" Foreground="#1F3A5F" Margin="0,0,0,4" />
+        <ListBox ItemsSource="{Binding Lancamento}" FontFamily="Consolas, Menlo, monospace" FontSize="11" />
+      </DockPanel>
+      <c:MensagensView Grid.Column="2" />
+    </Grid>
+  </Grid>
+</UserControl>

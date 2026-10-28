@@ -29,6 +29,8 @@ public static class FolhaTelas
     public const string Rescisoes = "folha.rescisoes";
     public const string Provisoes = "folha.provisoes";
     public const string Contabilizacao = "folha.contabilizacao";
+    public const string ContabilizacaoEventos = "folha.contabilizacao.eventos";
+    public const string EventosContabeis = "folha.eventoscontabeis";
     public const string ESocial = "folha.esocial";
     public const string AssistenteEsocial = "folha.esocial.assistente";
     public const string Transmissao = "folha.esocial.transmissao";

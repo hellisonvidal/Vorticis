@@ -15,7 +15,7 @@ public sealed record PreviaContabilizacao(LancamentoProposto Proposta, decimal T
 /// custo opcional) transformadas em um lançamento contábil pelo <see cref="ServicoLancamento"/> (único ponto de gravação).
 /// Desfazer estorna o lançamento. A folha só é contabilizada com a competência fechada.
 /// </summary>
-public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha repositorio, IRepositorioMovimentoFolha movimento, ServicoLancamento lancamentos,
+public sealed partial class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha repositorio, IRepositorioMovimentoFolha movimento, ServicoLancamento lancamentos,
                                                Autorizador autorizador, ServicoPendencias? pendencias = null)
 {
     public const string TipoFolhaMensal = "FOLHA";
@@ -170,30 +170,46 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
         return Resultado<PreviaContabilizacao>.Ok(new PreviaContabilizacao(proposta, partidas.Where(p => p.DC == IndicadorDC.D).Sum(p => p.Valor), linhas));
     }
 
+    /// <summary>Encargos patronais e FGTS de um cálculo, com o código especial de regra de cada um.</summary>
+    internal static IEnumerable<(string Chave, string Descricao, decimal Valor)> ComponentesEncargos(CalculoGravado c)
+    {
+        var inss = c.EncargosPrevidenciarios;
+        switch (c.Tipo)
+        {
+            case TipoFolha.Ferias:
+                yield return ("ENC_FERIAS_INSS", "Encargos previdenciários sobre férias", inss);
+                yield return ("ENC_FERIAS_FGTS", "FGTS sobre férias", c.Fgts);
+                break;
+            case TipoFolha.Decimo1 or TipoFolha.Decimo2:
+                yield return ("ENC_13_INSS", "Encargos previdenciários sobre 13º salário", inss);
+                yield return ("ENC_13_FGTS", "FGTS sobre 13º salário", c.Fgts);
+                break;
+            default:
+                yield return ("ENC_INSS", "INSS patronal", c.EncInssPatronal);
+                yield return ("ENC_RAT", "RAT/FAP", c.EncRat);
+                yield return ("ENC_TERCEIROS", "Contribuições a terceiros", c.EncTerceiros);
+                yield return ("ENC_FGTS", "FGTS", c.Fgts);
+                break;
+        }
+    }
+
+    internal static IEnumerable<(string Chave, string Descricao, decimal Valor)> ComponentesProvisao(ProvisaoGravada p)
+    {
+        yield return ("PROV_FERIAS", "Provisão de férias + 1/3", p.Ferias);
+        yield return ("PROV_13", "Provisão de 13º salário", p.Decimo);
+        yield return ("PROV_ENC_FERIAS", "Provisão de encargos previdenciários sobre férias", p.EncFeriasInss);
+        yield return ("PROV_FGTS_FERIAS", "Provisão de FGTS sobre férias", p.EncFeriasFgts);
+        yield return ("PROV_ENC_13", "Provisão de encargos previdenciários sobre 13º", p.EncDecimoInss);
+        yield return ("PROV_FGTS_13", "Provisão de FGTS sobre 13º", p.EncDecimoFgts);
+    }
+
     private async Task<Resultado<PreviaContabilizacao>> MontarFolhaAsync(long empresaId, DateOnly competencia, CancellationToken ct)
     {
         var acc = new Acumulador();
         foreach (var c in await movimento.ListarCalculosAsync(empresaId, competencia, null, true, ct))
         {
             foreach (var i in c.Itens.Where(i => i.Tipo is 'P' or 'D')) acc.Somar(i.Codigo, i.Descricao, c.CentroCustoCodigo, i.Valor);
-            var inss = c.EncargosPrevidenciarios;
-            switch (c.Tipo)
-            {
-                case TipoFolha.Ferias:
-                    acc.Somar("ENC_FERIAS_INSS", "Encargos previdenciários sobre férias", c.CentroCustoCodigo, inss);
-                    acc.Somar("ENC_FERIAS_FGTS", "FGTS sobre férias", c.CentroCustoCodigo, c.Fgts);
-                    break;
-                case TipoFolha.Decimo1 or TipoFolha.Decimo2:
-                    acc.Somar("ENC_13_INSS", "Encargos previdenciários sobre 13º salário", c.CentroCustoCodigo, inss);
-                    acc.Somar("ENC_13_FGTS", "FGTS sobre 13º salário", c.CentroCustoCodigo, c.Fgts);
-                    break;
-                default:
-                    acc.Somar("ENC_INSS", "INSS patronal", c.CentroCustoCodigo, c.EncInssPatronal);
-                    acc.Somar("ENC_RAT", "RAT/FAP", c.CentroCustoCodigo, c.EncRat);
-                    acc.Somar("ENC_TERCEIROS", "Contribuições a terceiros", c.CentroCustoCodigo, c.EncTerceiros);
-                    acc.Somar("ENC_FGTS", "FGTS", c.CentroCustoCodigo, c.Fgts);
-                    break;
-            }
+            foreach (var (chave, descricao, valor) in ComponentesEncargos(c)) acc.Somar(chave, descricao, c.CentroCustoCodigo, valor);
         }
         return Montar(empresaId, competencia, "folha", acc, await repositorio.ListarRegrasAsync(empresaId, ct));
     }
@@ -203,12 +219,7 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
         var acc = new Acumulador();
         foreach (var p in await repositorio.ListarProvisoesAsync(empresaId, competencia, ct))
         {
-            acc.Somar("PROV_FERIAS", "Provisão de férias + 1/3", p.CentroCustoCodigo, p.Ferias);
-            acc.Somar("PROV_13", "Provisão de 13º salário", p.CentroCustoCodigo, p.Decimo);
-            acc.Somar("PROV_ENC_FERIAS", "Provisão de encargos previdenciários sobre férias", p.CentroCustoCodigo, p.EncFeriasInss);
-            acc.Somar("PROV_FGTS_FERIAS", "Provisão de FGTS sobre férias", p.CentroCustoCodigo, p.EncFeriasFgts);
-            acc.Somar("PROV_ENC_13", "Provisão de encargos previdenciários sobre 13º", p.CentroCustoCodigo, p.EncDecimoInss);
-            acc.Somar("PROV_FGTS_13", "Provisão de FGTS sobre 13º", p.CentroCustoCodigo, p.EncDecimoFgts);
+            foreach (var (chave, descricao, valor) in ComponentesProvisao(p)) acc.Somar(chave, descricao, p.CentroCustoCodigo, valor);
         }
         return Montar(empresaId, competencia, "provisões", acc, await repositorio.ListarRegrasAsync(empresaId, ct));
     }
@@ -234,6 +245,10 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
         competencia = new DateOnly(competencia.Year, competencia.Month, 1);
         if (await repositorio.ObterContabilizacaoAtivaAsync(empresaId, competencia, tipo, ct) is { } ja)
             return Resultado<LancamentoEfetivado>.Falha($"Já contabilizado em {ja.CriadaEm:dd/MM/yyyy} (lançamento nº {ja.NumeroLancamento}). Desfaça para contabilizar de novo.");
+        if (await repositorio.ExisteContabilizacaoEventoAtivaAsync(empresaId, competencia, tipo == TipoProvisao, ct))
+            return Resultado<LancamentoEfetivado>.Falha("Há eventos desta competência contabilizados em Contabilização por eventos. Desfaça-os antes de contabilizar de forma resumida.");
+        if (!imediato && (await repositorio.ObterModoContabilizacaoAsync(empresaId, ct)).Modo == ConfiguracaoFolha.ModoEventos)
+            return Resultado<LancamentoEfetivado>.Falha("A empresa contabiliza a folha por eventos (Cadastros › Parâmetros › Folha). Use a tela Contabilização por eventos.");
         if (tipo == TipoFolhaMensal && !(await movimento.ObterCompetenciaAsync(empresaId, competencia, ct)).Fechada)
             return Resultado<LancamentoEfetivado>.Falha($"Feche a competência {competencia:MM/yyyy} da folha antes de contabilizar.");
 
@@ -288,17 +303,37 @@ public sealed class ServicoContabilizacaoFolha(IRepositorioContabilizacaoFolha r
 
         public async Task<IReadOnlyList<string>> PreviaAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
         {
+            if (p.Tipo == TipoEvento)
+            {
+                var (tipoCalc, codigo) = ReferenciaEvento(p);
+                var e = await s.PreviaEventosAsync(empresaId, p.Periodo, tipoCalc, usuarioId, ct);
+                if (!e.Sucesso) return e.Erros;
+                return e.Valor.FirstOrDefault(x => x.Codigo == codigo) is { } ev ? [.. ev.Linhas] : [$"Evento {codigo} sem valores em {p.Periodo:MM/yyyy}."];
+            }
             var r = await s.PreviaAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct);
             return r.Sucesso ? r.Valor.Linhas : r.Erros;
         }
 
         public async Task<ResultadoProcessamento> ContabilizarAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
         {
+            if (p.Tipo == TipoEvento)
+            {
+                var (tipoCalc, codigo) = ReferenciaEvento(p);
+                var e = await s.ContabilizarEventosAsync(empresaId, p.Periodo, tipoCalc, [codigo], usuarioId, ct, imediato: true);
+                if (e.Sucesso) return ResultadoProcessamento.Ok(e.Valor[0].LancamentoId);
+                return e.Erros.Any(x => x.Contains("já contabilizado", StringComparison.Ordinal)) ? ResultadoProcessamento.Cancelada("já contabilizada pela folha.") : ResultadoProcessamento.Falha(e.Erros);
+            }
             var r = await s.ContabilizarAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct, imediato: true);
             if (r.Sucesso) return ResultadoProcessamento.Ok(r.Valor.Id);
             return r.Erros.Any(e => e.StartsWith("Já contabilizado", StringComparison.Ordinal)) ? ResultadoProcessamento.Cancelada("já contabilizada pela folha.") : ResultadoProcessamento.Falha(r.Erros);
         }
 
-        public Task<Resultado> DesfazerAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct) => s.DesfazerAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct);
+        public async Task<Resultado> DesfazerAsync(long empresaId, PendenciaContabil p, long usuarioId, CancellationToken ct)
+        {
+            if (p.Tipo != TipoEvento) return await s.DesfazerAsync(empresaId, p.Periodo, p.Tipo, usuarioId, ct);
+            var (tipoCalc, codigo) = ReferenciaEvento(p);
+            var r = await s.DesfazerEventosAsync(empresaId, p.Periodo, tipoCalc, [codigo], usuarioId, ct);
+            return r.Sucesso ? Resultado.Ok() : Resultado.Falha(r.Erros);
+        }
     }
 }

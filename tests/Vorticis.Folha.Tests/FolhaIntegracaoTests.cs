@@ -207,6 +207,80 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
     }
 
     [Fact]
+    public async Task Contabilizacao_por_eventos_um_lancamento_por_evento_detalha_por_funcionario_e_desfaz()
+    {
+        var (empresa, adm) = await PrepararAsync("45123678000108");
+        var folha = db.Folha.Folha;
+        var cad = db.Folha.Cadastros;
+        var contab = db.Folha.Contabilizacao;
+        var competencia = new DateOnly(2026, 10, 1);
+        var centro = await db.App.PlanoContas.IncluirCentroAsync(empresa, "CC1", "Administrativo", "", adm, sintetico: false, ct: Ct);
+        Ok(centro);
+        var maria = (await cad.GravarFuncionarioAsync(empresa, Novo("1", "Maria da Silva", "52998224725", 3000m, centro: centro.Valor), adm, ct: Ct)).Valor;
+        var joao = (await cad.GravarFuncionarioAsync(empresa, Novo("2", "João Souza", "11144477735", 6000m, centro: centro.Valor), adm, ct: Ct)).Valor;
+        Ok(await folha.LancarEventoAsync(empresa, maria, competencia, "1007", 0, 500m, null, adm, Ct));
+        Ok(await folha.CalcularMensalAsync(empresa, competencia, adm, ct: Ct));
+        var calculos = await folha.ListarCalculosAsync(empresa, competencia, TipoFolha.Mensal, adm, comItens: true, ct: Ct);
+        Ok(await contab.GerarRegrasSugeridasAsync(empresa, comProvisoes: true, adm, Ct));
+
+        // Modo resumida (padrão): a contabilização por eventos não é usada
+        Assert.Contains("resumida", (await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", ["1000"], adm, Ct)).Erros[0]);
+        Ok(await cad.GravarConfiguracaoAsync(empresa, new ConfiguracaoFolha(ModoContabilizacao: "EVENTOS"), adm, Ct));
+        Assert.Contains("Feche a competência", (await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", ["1000"], adm, Ct)).Erros[0]);
+        Ok(await folha.FecharAsync(empresa, competencia, adm, Ct));
+
+        // Evento contábil agrupando rubricas: uma rubrica só soma em um evento
+        Ok(await contab.GravarEventoContabilAsync(empresa, new EventoContabil(0, "sal", "Salários", ["1000", "1007"]), adm, Ct));
+        Assert.Contains("já soma no evento SAL", (await contab.GravarEventoContabilAsync(empresa, new EventoContabil(0, "OUT", "Outro", ["1007"]), adm, Ct)).Erros[0]);
+        Assert.Equal("SAL", (await contab.ListarEventosContabeisAsync(empresa, adm, Ct)).Single().Codigo);
+
+        // Prévia: valores conferidos e soma dos eventos = total da folha resumida
+        var previa = await contab.PreviaEventosAsync(empresa, competencia, "MENSAL", adm, Ct);
+        Ok(previa);
+        var sal = previa.Valor.Single(e => e.Codigo == "SAL");
+        Assert.Equal(3000m + 6000m + 500m, sal.Valor);
+        Assert.Equal("Salários 10/2026", sal.Historico);
+        Assert.Contains("CC1", sal.Centros);
+        Assert.All(previa.Valor, e => Assert.True(e.Pronto, e.Situacao));
+        var resumida = await contab.PreviaAsync(empresa, competencia, "FOLHA", adm, Ct);
+        Ok(resumida);
+        Assert.Equal(resumida.Valor.Total, previa.Valor.Sum(e => e.Valor));
+        Assert.Contains(previa.Valor, e => e.Codigo == "2001" && e.Valor == calculos.Sum(c => c.Inss));
+
+        // Contabilizar só os marcados: um lançamento por evento, balanceado, com o histórico do evento
+        Assert.Contains("Marque", (await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", [], adm, Ct)).Erros[0]);
+        var feitos = await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", ["SAL", "2001"], adm, Ct);
+        Ok(feitos);
+        Assert.Equal(2, feitos.Valor.Count);
+        var lSal = feitos.Valor.Single(f => f.Codigo == "SAL");
+        Assert.Equal(sal.Valor, await db.Escalar<decimal>("SELECT SUM(valor) FROM contabil.partida WHERE lancamento_id = @l AND ind_dc = 'D'", ("l", lSal.LancamentoId)));
+        Assert.Equal(sal.Valor, await db.Escalar<decimal>("SELECT SUM(valor) FROM contabil.partida WHERE lancamento_id = @l AND ind_dc = 'C'", ("l", lSal.LancamentoId)));
+        Assert.Equal("Salários 10/2026 (C.C. CC1)", await db.Escalar<string>("SELECT historico FROM contabil.partida WHERE lancamento_id = @l AND ind_dc = 'D' LIMIT 1", ("l", lSal.LancamentoId)));
+        Assert.Contains("já contabilizado", (await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", ["SAL"], adm, Ct)).Erros[0]);
+        Assert.Contains("eventos", (await contab.ContabilizarAsync(empresa, competencia, "FOLHA", adm, Ct, imediato: true)).Erros[0]);
+        Assert.Contains("Desfaça", (await folha.ReabrirAsync(empresa, competencia, adm, Ct)).Erros[0]);
+        var depois = await contab.PreviaEventosAsync(empresa, competencia, "MENSAL", adm, Ct);
+        Assert.Equal(2, depois.Valor.Count(e => e.Contabilizado));
+
+        // Desfazer um evento: estorna e permite contabilizar de novo, agora detalhando por funcionário
+        Ok(await contab.DesfazerEventosAsync(empresa, competencia, "MENSAL", ["SAL"], adm, Ct));
+        Assert.Equal("ESTORNADO", await db.Escalar<string>("SELECT status::text FROM contabil.lancamento WHERE id = @l", ("l", lSal.LancamentoId)));
+        Assert.Contains("não está contabilizado", (await contab.DesfazerEventosAsync(empresa, competencia, "MENSAL", ["SAL"], adm, Ct)).Erros[0]);
+        Ok(await cad.GravarConfiguracaoAsync(empresa, new ConfiguracaoFolha(ModoContabilizacao: "EVENTOS", DetalharPorFuncionario: true), adm, Ct));
+        var detalhado = await contab.PreviaEventosAsync(empresa, competencia, "MENSAL", adm, Ct);
+        Assert.Contains("Maria da Silva", string.Join("|", detalhado.Valor.Single(e => e.Codigo == "SAL").Linhas));
+        Assert.Equal(sal.Valor, detalhado.Valor.Single(e => e.Codigo == "SAL").Valor);
+        var novo = await contab.ContabilizarEventosAsync(empresa, competencia, "MENSAL", ["SAL"], adm, Ct);
+        Ok(novo);
+        Assert.True(await db.Escalar<long>("SELECT COUNT(*) FROM contabil.partida WHERE lancamento_id = @l AND ind_dc = 'D' AND historico LIKE '%Maria da Silva (1)%'", ("l", novo.Valor[0].LancamentoId)) > 0);
+        Assert.True(await db.Escalar<long>("SELECT COUNT(*) FROM contabil.partida WHERE lancamento_id = @l AND historico LIKE '%João Souza (2)%'", ("l", novo.Valor[0].LancamentoId)) > 0);
+
+        // Tudo desfeito: a competência pode ser reaberta
+        Ok(await contab.DesfazerEventosAsync(empresa, competencia, "MENSAL", ["SAL", "2001"], adm, Ct));
+        Ok(await folha.ReabrirAsync(empresa, competencia, adm, Ct));
+    }
+
+    [Fact]
     public async Task Ferias_decimo_terceiro_rescisao_e_provisoes()
     {
         var (empresa, adm) = await PrepararAsync("61695227000193");
