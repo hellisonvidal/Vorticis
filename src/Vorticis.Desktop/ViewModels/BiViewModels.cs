@@ -25,7 +25,7 @@ public static class FormatoBi
     {
         FormatoIndicador.Moeda => "R$ " + Numeros.Moeda(v.Value),
         FormatoIndicador.Percentual => v.Value.ToString("N2", PtBr) + "%",
-        FormatoIndicador.Dias => v.Value.ToString("N0", PtBr) + " dias",
+        FormatoIndicador.Dias => v.Value.ToString("N0", PtBr) + (Math.Round(v.Value) == 1 ? " dia" : " dias"),
         _ => v.Value.ToString("N2", PtBr),
     };
 
@@ -47,7 +47,7 @@ public static class FormatoBi
             texto = atual.Formato switch
             {
                 FormatoIndicador.Percentual => $"{Math.Abs(delta):N2} p.p.",
-                FormatoIndicador.Dias => $"{Math.Abs(delta):N0} dias",
+                FormatoIndicador.Dias => Math.Abs(delta) == 1 ? "1 dia" : $"{Math.Abs(delta):N0} dias",
                 _ => $"{Math.Abs(delta):N2}",
             };
         }
@@ -237,7 +237,7 @@ public sealed partial class CuboBiViewModel(IContexto contexto) : RelatorioViewM
         var rotulo = $"{linhaCubo?.Rotulo ?? "Todas as linhas"} | {colunaCubo?.Rotulo ?? "Todas as colunas"}";
         TituloDetalhe = $"Lançamentos de: {rotulo} ({itens.Count})";
         _detalhe = new TabelaRelatorio("Lançamentos — " + rotulo,
-            [new("Data", TipoColuna.Data), new("Número", TipoColuna.Inteiro), new("Conta"), new("Centro de custo"), new("Participante"), new("D/C"), new("Valor", TipoColuna.Valor), new("Histórico")],
+            [new("Data", TipoColuna.Data), new("Número", TipoColuna.Inteiro), new("Conta", LarguraCm: 6), new("Centro de custo", LarguraCm: 4.5), new("Participante", LarguraCm: 4.5), new("D/C"), new("Valor", TipoColuna.Valor), new("Histórico", LarguraCm: 8)],
             itens.Select(d => new LinhaRelatorio([d.Data, d.Numero, d.Conta, d.Centro, d.Participante, d.DC.ToString(), d.Valor, d.Historico])).ToList());
         TabelaDetalhe = _detalhe;
     }

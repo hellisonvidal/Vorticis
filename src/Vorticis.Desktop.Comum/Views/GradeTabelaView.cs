@@ -46,7 +46,12 @@ public sealed class GradeTabelaView : UserControl
         _grade.Columns.Clear();
         _grade.ItemsSource = null;
         if (t is null) return;
-        var indiceDescricao = Math.Max(0, t.Colunas.ToList().FindIndex(c => c.Titulo == "Descrição"));
+        var indiceDescricao = t.Colunas.ToList().FindIndex(c => c.Titulo == "Descrição");
+        // Sem coluna "Descrição": a primeira coluna de texto (rótulo da linha) fica larga e fixa, para as demais não encolherem.
+        var primeiraFixa = indiceDescricao < 0 && t.Colunas.Count > 0 && t.Colunas[0].Tipo == TipoColuna.Texto;
+        if (indiceDescricao < 0) indiceDescricao = 0;
+        // Colunas com texto longo (fórmula, interpretação) quebram a linha: a altura da linha acompanha o texto.
+        _grade.RowHeight = t.Colunas.Select((c, k) => c.Tipo == TipoColuna.Texto && k != indiceDescricao && c.LarguraCm >= 4.5).Any(x => x) ? double.NaN : 26;
         for (var i = 0; i < t.Colunas.Count; i++)
         {
             var indice = i;
@@ -56,13 +61,15 @@ public sealed class GradeTabelaView : UserControl
             _grade.Columns.Add(new DataGridTemplateColumn
             {
                 Header = new TextBlock { Text = coluna.Titulo, TextWrapping = TextWrapping.Wrap, TextAlignment = numerica ? TextAlignment.Right : TextAlignment.Left },
-                Width = i == indiceDescricao ? new DataGridLength(1, DataGridLengthUnitType.Star) : new DataGridLength(numerica ? 125 : larga ? coluna.LarguraCm * 40 : 110),
-                MinWidth = i == indiceDescricao ? 240 : 70,
+                Width = i == indiceDescricao && primeiraFixa ? new DataGridLength(300)
+                      : i == indiceDescricao ? new DataGridLength(1, DataGridLengthUnitType.Star) : new DataGridLength(numerica ? 125 : larga ? coluna.LarguraCm * 40 : 110),
+                MinWidth = i == indiceDescricao && i == 0 ? 240 : 70,
                 CellTemplate = new FuncDataTemplate<LinhaGrade>((linha, _) => new TextBlock
                 {
                     Text = linha is null ? "" : linha.Valores[indice],
                     FontWeight = linha?.Destaque == true ? FontWeight.SemiBold : FontWeight.Normal,
                     TextWrapping = larga ? TextWrapping.Wrap : TextWrapping.NoWrap,
+                    Width = larga ? coluna.LarguraCm * 40 - 4 : double.NaN,
                     HorizontalAlignment = numerica ? HorizontalAlignment.Right : HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(6, 2),

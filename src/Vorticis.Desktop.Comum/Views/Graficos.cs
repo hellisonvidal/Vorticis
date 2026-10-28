@@ -18,6 +18,8 @@ public abstract class GraficoBase : Control
     private static readonly string[] CategoricasClaro = ["#2563EB", "#E67E22", "#0F9D8A", "#8E44AD", "#D6336C", "#6B7C8C", "#B8920F", "#2E7D32"];
     private static readonly string[] CategoricasEscuro = ["#6EA8FE", "#F5A25D", "#4FD1B8", "#C39BD3", "#F78FB3", "#A9B8C6", "#E6C84F", "#7BC67E"];
 
+    protected GraficoBase() => ActualThemeVariantChanged += (_, _) => InvalidateVisual();
+
     protected bool Escuro => ActualThemeVariant == ThemeVariant.Dark;
     protected Color CorTexto => (TextElement.GetForeground(this) as ISolidColorBrush)?.Color ?? (Escuro ? Colors.White : Color.Parse("#1F2937"));
     protected IBrush Texto => new SolidColorBrush(CorTexto);

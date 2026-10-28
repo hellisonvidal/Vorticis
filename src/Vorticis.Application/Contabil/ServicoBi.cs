@@ -67,7 +67,8 @@ public sealed class ServicoBi(IConsultasContabeis consultas, ServicoFluxos fluxo
         var colunas = new List<ColunaRelatorio> { new("Indicador", LarguraCm: 4.2), new("Fórmula", LarguraCm: 5), new("Como ler", LarguraCm: 6) };
         var tabela = Comparativo.Montar("Análise de indicadores", colunas.ToList(), dados, op with { AnaliseVertical = false },
             "Razões em vezes (1,50 = 1,5 vez), percentuais em %, prazos em dias. Variação dos indicadores em pontos (atual − comparado). Sem valor (—) quando faltam dados para calcular.");
-        return Resultado<TabelaRelatorio>.Ok(tabela);
+        // Os indicadores não são só valores em R$: a variação é na unidade de cada indicador.
+        return Resultado<TabelaRelatorio>.Ok(tabela with { Colunas = tabela.Colunas.Select(c => c.Titulo.StartsWith("Var. R$") ? c with { Titulo = "Variação" + c.Titulo["Var. R$".Length..] } : c).ToList() });
     }
 
     /// <summary>Carrega partidas, plano, centros e participantes do período para o cubo.</summary>
