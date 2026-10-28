@@ -67,7 +67,9 @@ public sealed class VorticisApp : IAsyncDisposable
         Ecd = new ServicoEcd(consultasEcd, repoContabil, Responsaveis, autorizador, AssinadorSped);
         Ecf = new ServicoEcf(new ConsultasEcf(ds, consultasEcd), Ecd, autorizador, AssinadorSped);
         HistoricoImportacaoSped = new RepositorioHistoricoSped(ds);
-        ImportacaoEcd = new ServicoImportacaoEcd(new RepositorioImportacaoEcd(ds), HistoricoImportacaoSped, autorizador);
+        var repoImportacaoEcd = new RepositorioImportacaoEcd(ds);
+        ImportacaoEcd = new ServicoImportacaoEcd(repoImportacaoEcd, HistoricoImportacaoSped, autorizador);
+        ImportacaoEcf = new ServicoImportacaoEcf(new RepositorioImportacaoEcf(ds, repoImportacaoEcd), HistoricoImportacaoSped, autorizador);
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Auditoria = new ServicoAuditoria(new RepositorioAuditoria(ds));
         Obrigacoes = new ServicoObrigacoes(new RepositorioObrigacoes(ds), autorizador);
@@ -115,6 +117,8 @@ public sealed class VorticisApp : IAsyncDisposable
     public IAssinadorSped AssinadorSped { get; }
     /// <summary>Integrações › Importar › Arquivo SPED – ECD.</summary>
     public ServicoImportacaoEcd ImportacaoEcd { get; }
+    /// <summary>Integrações › Importar › Arquivo SPED – ECF.</summary>
+    public ServicoImportacaoEcf ImportacaoEcf { get; }
     /// <summary>Histórico das importações de arquivos SPED (Contábil e Fiscal).</summary>
     public IRepositorioHistoricoSped HistoricoImportacaoSped { get; }
     public ServicoBackup Backup { get; }

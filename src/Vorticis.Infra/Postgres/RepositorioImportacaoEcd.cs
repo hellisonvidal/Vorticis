@@ -87,8 +87,16 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
                                    bool ExigeCentro, bool ExigeParticipante, bool Ativa);
     private sealed record DesfazerEcd(List<Anterior>? PlanoAnterior, string? ModeloAnterior);
 
-    public async Task<ResultadoGravacao> ImportarAsync(long empresaId, PlanoImportacaoEcd plano, MetaImportacao meta, bool ignorarComErro, long usuarioId,
-                                                       IProgress<ProgressoImportacao>? progresso, CancellationToken ct)
+    public Task<ResultadoGravacao> ImportarAsync(long empresaId, PlanoImportacaoEcd plano, MetaImportacao meta, bool ignorarComErro, long usuarioId,
+                                                 IProgress<ProgressoImportacao>? progresso, CancellationToken ct)
+        => ImportarNucleoAsync(empresaId, plano, meta, "ECD", plano.Linhas, plano.Ocorrencias, ignorarComErro, usuarioId, progresso, null, ct);
+
+    /// <summary>Etapa extra, dentro da mesma transação, depois do plano e dos lançamentos (usada pela ECF para o e-Lalur, a Parte B e as apurações).</summary>
+    internal delegate Task EtapaExtra(NpgsqlConnection con, NpgsqlTransaction tx, long importacaoId, IReadOnlyDictionary<string, long> idsConta, Action<string, int> soma,
+                                      List<OcorrenciaImportacao> ocorrencias, CancellationToken ct);
+
+    internal async Task<ResultadoGravacao> ImportarNucleoAsync(long empresaId, PlanoImportacaoEcd plano, MetaImportacao meta, string tipoHistorico, IReadOnlyList<LinhaPrevia> linhasPrevia,
+        IReadOnlyList<OcorrenciaImportacao> ocorrenciasPlanejadas, bool ignorarComErro, long usuarioId, IProgress<ProgressoImportacao>? progresso, EtapaExtra? extra, CancellationToken ct)
     {
         var importados = new Dictionary<string, int>();
         void Soma(string reg, int n = 1) => importados[reg] = importados.GetValueOrDefault(reg) + n;
@@ -97,7 +105,7 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
         await using var tx = await con.BeginTransactionAsync(ct);
         await Mapeamentos.DefinirUsuarioAsync(con, tx, usuarioId, ct);
         await using (var c = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtext('vorticis_importacao_sped'), @e::int)", con, tx).Com("e", empresaId)) await c.ExecuteNonQueryAsync(ct);
-        var id = await HistoricoImportacaoSql.AbrirAsync(con, tx, empresaId, "ECD", meta, usuarioId, ct);
+        var id = await HistoricoImportacaoSql.AbrirAsync(con, tx, empresaId, tipoHistorico, meta, usuarioId, ct);
         progresso?.Report(new ProgressoImportacao("Preparando a empresa", 0, 100));
 
         // exercícios que faltam
@@ -156,7 +164,7 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
             novasContas.Add(nid);
         }
         await HistoricoImportacaoSql.ItensAsync(con, tx, id, TConta, novasContas, ct);
-        Soma("I050", novasContas.Count);
+        Soma(tipoHistorico == "ECF" ? "J050" : "I050", novasContas.Count);
 
         // centros de custo e históricos
         var novosCentros = new List<long>();
@@ -255,10 +263,11 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
             }
         }
 
+        if (extra is not null) await extra(con, tx, id, idsConta, Soma, oc, ct);
         progresso?.Report(new ProgressoImportacao("Gravando", 100, 100));
         var gravacao = new ResultadoGravacao(id, importados, oc);
-        var rel = AuxiliarImportacao.Relatorio(id, meta.Arquivo, TipoArquivoSped.Ecd, meta.Modo, plano.Linhas, gravacao, plano.Ocorrencias);
-        await HistoricoImportacaoSql.FecharAsync(con, tx, id, importados.Where(x => x.Key is "I050" or "I100" or "I075" or "I200" or "0150" or "J930").Sum(x => x.Value), rel, desfazer, ct);
+        var rel = AuxiliarImportacao.Relatorio(id, meta.Arquivo, meta.Cabecalho.Tipo, meta.Modo, linhasPrevia, gravacao, ocorrenciasPlanejadas);
+        await HistoricoImportacaoSql.FecharAsync(con, tx, id, importados.Values.Sum(), rel, desfazer, ct);
         await tx.CommitAsync(ct);      // as partidas dobradas são conferidas pelo banco aqui
         return gravacao;
     }
@@ -366,7 +375,10 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
     }
 
     // ------------------------------------------------------------------ desfazer
-    public async Task<RelatorioImportacao> DesfazerAsync(long empresaId, long importacaoId, long usuarioId, CancellationToken ct)
+    public Task<RelatorioImportacao> DesfazerAsync(long empresaId, long importacaoId, long usuarioId, CancellationToken ct)
+        => DesfazerNucleoAsync(empresaId, importacaoId, "ECD", usuarioId, ct);
+
+    internal async Task<RelatorioImportacao> DesfazerNucleoAsync(long empresaId, long importacaoId, string tipoEsperado, long usuarioId, CancellationToken ct)
     {
         await using var con = await ds.OpenConnectionAsync(ct);
         await using var tx = await con.BeginTransactionAsync(ct);
@@ -374,7 +386,7 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
         await RepositorioContabil.DeclararManutencaoAsync(con, tx, empresaId, ct);
         var reg = await HistoricoImportacaoSql.CarregarAsync(con, tx, empresaId, importacaoId, ct, travar: true)
                   ?? throw new ViolacaoRegraException("Importação não encontrada nesta empresa.");
-        if (reg.Tipo != "ECD") throw new ViolacaoRegraException("Esta importação não é de uma ECD.");
+        if (reg.Tipo != tipoEsperado) throw new ViolacaoRegraException($"Esta importação não é de uma {tipoEsperado}.");
         if (reg.Desfeita) throw new ViolacaoRegraException("Esta importação já foi desfeita.");
         var motivos = new List<string>();
         var lancs = await HistoricoImportacaoSql.IdsAsync(con, tx, importacaoId, TLanc, ct);
@@ -411,6 +423,31 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
                 q.Parameters.AddWithValue("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint, lancs.ToArray());
                 var n = (long)(await q.ExecuteScalarAsync(ct))!;
                 if (n > 0) motivos.Add($"{n} lançamento(s) importado(s) já foram usados em {tabela.Replace("fiscal.documento", "notas fiscais contabilizadas").Replace("_", " ")}.");
+            }
+        }
+        var apuracoes = await HistoricoImportacaoSql.IdsAsync(con, tx, importacaoId, "fiscal.apuracao_lucro", ct);
+        if (apuracoes.Count > 0)
+        {
+            await using (var q = new NpgsqlCommand("SELECT count(*) FROM fiscal.apuracao_lucro WHERE id = ANY(@ids) AND lancamento_id IS NOT NULL", con, tx))
+            {
+                q.Parameters.AddWithValue("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint, apuracoes.ToArray());
+                if ((long)(await q.ExecuteScalarAsync(ct))! > 0) motivos.Add("Uma apuração de IRPJ/CSLL importada já foi contabilizada (provisão lançada).");
+            }
+            await using (var q = new NpgsqlCommand("""
+                SELECT n.nspname || '.' || c.relname, a.attname
+                  FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+                  JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = k.conkey[1]
+                 WHERE k.contype = 'f' AND k.confrelid = 'fiscal.apuracao_lucro'::regclass AND array_length(k.conkey, 1) = 1 AND NOT (n.nspname = 'fiscal' AND c.relname = 'lalur_parte_b')
+                """, con, tx))
+            {
+                var usosAp = new List<(string, string)>();
+                await using (var r = await q.ExecuteReaderAsync(ct)) while (await r.ReadAsync(ct)) usosAp.Add((r.GetString(0), r.GetString(1)));
+                foreach (var (tabela, coluna) in usosAp)
+                {
+                    await using var q2 = new NpgsqlCommand($"SELECT count(*) FROM {tabela} WHERE {coluna} = ANY(@ids)", con, tx);
+                    q2.Parameters.AddWithValue("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint, apuracoes.ToArray());
+                    if ((long)(await q2.ExecuteScalarAsync(ct))! > 0) motivos.Add($"Apurações importadas já foram usadas em {tabela.Replace("fiscal.", "").Replace('_', ' ')}.");
+                }
             }
         }
         if (motivos.Count > 0) throw new ViolacaoRegraException(string.Join('\n', motivos.Distinct().Take(15)));
@@ -453,7 +490,7 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
                                                  "Remova esses usos antes de desfazer a importação.");
             }
         }
-        removidos["I050"] = contas.Count;
+        removidos[tipoEsperado == "ECF" ? "J050" : "I050"] = contas.Count;
 
         foreach (var (tabela, reg4, sql) in new[] { (TCentro, "I100", "DELETE FROM contabil.centro_custo WHERE id = ANY(@ids)"), (THist, "I075", "DELETE FROM contabil.historico_padrao WHERE id = ANY(@ids)"),
                                                     (TPart, "0150", "DELETE FROM core.participante WHERE id = ANY(@ids)") })
@@ -473,6 +510,11 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
             removidos[reg4] = ok;
             if (ok < ids.Count) avisos.Add(OcorrenciaImportacao.Aviso(0, reg4, $"{ids.Count - ok} cadastro(s) criado(s) pela importação já estão em uso e foram mantidos."));
         }
+
+        // e-Lalur, Parte B e apurações da ECF
+        removidos["N630"] = await Excluir(con, tx, "DELETE FROM fiscal.apuracao_lucro WHERE id = ANY(@ids)", apuracoes, ct);
+        removidos["M300"] = await Excluir(con, tx, "DELETE FROM fiscal.lalur_lancamento WHERE id = ANY(@ids)", await HistoricoImportacaoSql.IdsAsync(con, tx, importacaoId, "fiscal.lalur_lancamento", ct), ct);
+        removidos["M010"] = await Excluir(con, tx, "DELETE FROM fiscal.lalur_parte_b WHERE id = ANY(@ids)", await HistoricoImportacaoSql.IdsAsync(con, tx, importacaoId, "fiscal.lalur_parte_b", ct), ct);
 
         var vinculos = await HistoricoImportacaoSql.IdsAsync(con, tx, importacaoId, TVinculo, ct);
         if (vinculos.Count > 0) await Excluir(con, tx, "DELETE FROM core.empresa_contabilidade WHERE id = ANY(@ids)", vinculos, ct);
@@ -523,19 +565,20 @@ public sealed class RepositorioImportacaoEcd(NpgsqlDataSource ds) : IRepositorio
         await HistoricoImportacaoSql.MarcarDesfeitaAsync(con, tx, importacaoId, usuarioId, ct);
         await tx.CommitAsync(ct);
         var linhas = removidos.Where(x => x.Value > 0).Select(x => new LinhaRelatorio(x.Key, NomeRegistro(x.Key), x.Value, 0, 0)).ToList();
-        return new RelatorioImportacao(importacaoId, reg.Arquivo, TipoArquivoSped.Ecd.Nome(), reg.Modo, linhas, avisos, Desfeita: true);
+        return new RelatorioImportacao(importacaoId, reg.Arquivo, (tipoEsperado == "ECF" ? TipoArquivoSped.Ecf : TipoArquivoSped.Ecd).Nome(), reg.Modo, linhas, avisos, Desfeita: true);
     }
 
     private static string NomeRegistro(string r) => r switch
     {
-        "I050" => "Contas do plano", "I051" => "Vínculos com o plano referencial", "I075" => "Históricos padronizados", "I100" => "Centros de custo",
+        "I050" or "J050" => "Contas do plano", "N630" => "Apurações do IRPJ/CSLL", "M300" => "Lançamentos do e-Lalur / e-Lacs", "M010" => "Saldos da Parte B", "I051" => "Vínculos com o plano referencial", "I075" => "Históricos padronizados", "I100" => "Centros de custo",
         "I200" => "Lançamentos", "0150" => "Participantes", "J930" => "Contador", _ => r,
     };
 
-    private static async Task Excluir(NpgsqlConnection con, NpgsqlTransaction tx, string sql, IReadOnlyCollection<long> ids, CancellationToken ct)
+    private static async Task<int> Excluir(NpgsqlConnection con, NpgsqlTransaction tx, string sql, IReadOnlyCollection<long> ids, CancellationToken ct)
     {
+        if (ids.Count == 0) return 0;
         await using var c = new NpgsqlCommand(sql, con, tx);
         c.Parameters.AddWithValue("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint, ids.ToArray());
-        await c.ExecuteNonQueryAsync(ct);
+        return await c.ExecuteNonQueryAsync(ct);
     }
 }
