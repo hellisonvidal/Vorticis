@@ -12,41 +12,88 @@ public sealed record OpcaoSped(long Id, string Texto)
     public override string ToString() => Texto;
 }
 
-// ---------------------------------------------------------------------------------------------- ajustes da apuração do ICMS (E111)
+// ---------------------------------------------------------------------------------------------- ajustes da apuração (E111, E220, E530)
 
 public sealed record AjusteLinha(AjusteIcmsEfd A)
 {
+    public string Imposto => ImpostosAjuste.Rotulo(A.Imposto);
     public string Codigo => A.Codigo;
-    public string Tipo => OutrosLancamentosEfd.RotuloTipo(A.Tipo);
+    public string Tipo => A.Imposto == ImpostosAjuste.Ipi ? (A.SentidoEfetivo == 'E' ? "Crédito" : "Débito") : OutrosLancamentosEfd.RotuloTipo(A.Tipo);
     public string Descricao => A.Descricao;
+    public string Documento => A.TemDocumento ? $"{A.DocModelo} {A.DocSerie}/{A.DocNumero} de {A.DocData:dd/MM/yyyy} ({A.DocParticipante!.Nome})" : A.Observacao ?? "";
     public string Valor => Numeros.Moeda(A.Valor);
 }
 
-/// <summary>Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS (registro E111 da EFD ICMS/IPI).</summary>
-public partial class AjustesIcmsViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public sealed record CodigoAjusteLinha(CodigoAjuste C)
 {
+    public string Imposto => ImpostosAjuste.Rotulo(C.Imposto);
+    public string Codigo => C.Codigo;
+    public string Descricao => C.Descricao;
+    public override string ToString() => $"{C.Codigo} – {C.Descricao}";
+}
+
+/// <summary>
+/// Ajustes da apuração do ICMS (E111/E112/E113), do ICMS-ST (E220) e do IPI (E530) de um sentido: entrada (outros créditos e estornos de débito) ou saída
+/// (outros débitos, estornos de crédito, deduções e débitos especiais). Os ajustes entram no Livro de Apuração e na EFD ICMS/IPI da competência.
+/// </summary>
+public abstract partial class AjustesViewModel(IContexto contexto) : ModuloViewModel(contexto)
+{
+    public static IReadOnlyList<string> Impostos { get; } = ["ICMS", "ICMS-ST", "IPI"];
+    private static readonly string[] CodigosImposto = [ImpostosAjuste.Icms, ImpostosAjuste.IcmsSt, ImpostosAjuste.Ipi];
+
+    public abstract char Sentido { get; }
+    public abstract string Titulo { get; }
+    public abstract string Orientacao { get; }
+
     public ObservableCollection<AjusteLinha> Lista { get; } = [];
+    public ObservableCollection<CodigoAjusteLinha> Codigos { get; } = [];
     [ObservableProperty] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private AjusteLinha? _selecionado;
+    [ObservableProperty] private int _imposto;
+    [ObservableProperty] private CodigoAjusteLinha? _codigoCadastrado;
     [ObservableProperty] private string _codigo = "";
     [ObservableProperty] private string _descricao = "";
     [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private string _observacao = "";
+    [ObservableProperty] private string _docParticipante = "";
+    [ObservableProperty] private string _docModelo = "55";
+    [ObservableProperty] private string _docSerie = "";
+    [ObservableProperty] private string _docNumero = "";
+    [ObservableProperty] private DateTime? _docData;
     [ObservableProperty] private string _tipoCodigo = "";
     [ObservableProperty] private string _totais = "";
 
     public bool PodeManter => Contexto.Pode(Permissao.FiscalApurar);
+    public bool EhIcms => Imposto == 0;
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeManter));
 
+    private string ImpostoCodigo => CodigosImposto[Math.Clamp(Imposto, 0, 2)];
+
     partial void OnCompetenciaChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnImpostoChanged(int value)
+    {
+        OnPropertyChanged(nameof(EhIcms));
+        OnCodigoChanged(Codigo);
+        _ = CarregarCodigosAsync();
+    }
+    partial void OnCodigoCadastradoChanged(CodigoAjusteLinha? value)
+    {
+        if (value is null) return;
+        Codigo = value.Codigo;
+        if (string.IsNullOrWhiteSpace(Descricao)) Descricao = value.Descricao;
+    }
     partial void OnCodigoChanged(string value)
     {
         var c = (value ?? "").Trim().ToUpperInvariant();
-        TipoCodigo = c.Length >= 4 && c[2] == '0' && c[3] is >= '0' and <= '5' ? OutrosLancamentosEfd.RotuloTipo((TipoAjusteIcms)(c[3] - '0')) : "";
+        TipoCodigo = Imposto == 2 ? (Sentido == 'E' ? "Crédito do IPI" : "Débito do IPI")
+            : c.Length >= 4 && c[3] is >= '0' and <= '5' ? OutrosLancamentosEfd.RotuloTipo((TipoAjusteIcms)(c[3] - '0')) : "";
     }
     partial void OnSelecionadoChanged(AjusteLinha? value)
     {
         if (value?.A is not { } a) return;
-        (Codigo, Descricao, Valor) = (a.Codigo, a.Descricao, Numeros.Moeda(a.Valor));
+        Imposto = Math.Max(0, Array.IndexOf(CodigosImposto, a.Imposto));
+        (Codigo, Descricao, Valor, Observacao) = (a.Codigo, a.Descricao, Numeros.Moeda(a.Valor), a.Observacao ?? "");
+        (DocParticipante, DocModelo, DocSerie, DocNumero, DocData) = (a.DocParticipante?.Nome ?? "", a.DocModelo ?? "55", a.DocSerie ?? "", a.DocNumero ?? "", a.DocData?.ToDateTime(TimeOnly.MinValue));
     }
 
     private DateOnly Mes => Competencia is { } d ? new DateOnly(d.Year, d.Month, 1) : new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -55,23 +102,56 @@ public partial class AjustesIcmsViewModel(IContexto contexto) : ModuloViewModel(
     {
         var r = await app.Fiscal().OutrosLancamentosEfd.AjustesAsync(empresa, Mes, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Lista.Clear();
-        foreach (var a in r.Valor) Lista.Add(new AjusteLinha(a));
-        Totais = string.Join(" · ", r.Valor.GroupBy(a => a.Tipo).OrderBy(g => g.Key).Select(g => $"{OutrosLancamentosEfd.RotuloTipo(g.Key)}: {Numeros.Moeda(g.Sum(a => a.Valor))}"));
+        var meus = r.Valor.Where(a => a.SentidoEfetivo == Sentido).ToList();
+        lock (Lista)
+        {
+            Lista.Clear();
+            foreach (var a in meus) Lista.Add(new AjusteLinha(a));
+        }
+        Totais = string.Join(" · ", meus.GroupBy(a => (a.Imposto, a.Tipo)).OrderBy(g => g.Key.Imposto).ThenBy(g => g.Key.Tipo)
+            .Select(g => $"{ImpostosAjuste.Rotulo(g.Key.Imposto)} – {OutrosLancamentosEfd.RotuloTipo(g.Key.Tipo)}: {Numeros.Moeda(g.Sum(a => a.Valor))}"));
+        await CarregarCodigosAsync(app, empresa, usuario);
     });
 
+    private Task CarregarCodigosAsync() => ExecutarAsync(async (app, empresa, usuario) => await CarregarCodigosAsync(app, empresa, usuario));
+
+    private async Task CarregarCodigosAsync(Vorticis.Infra.VorticisApp app, long empresa, long usuario)
+    {
+        var c = await app.Fiscal().OutrosLancamentosEfd.CodigosAjusteAsync(empresa, ImpostoCodigo, usuario);
+        lock (Codigos)   // cargas simultâneas (mudança de competência e de imposto) não duplicam a lista
+        {
+            Codigos.Clear();
+            if (c.Sucesso) foreach (var x in c.Valor) Codigos.Add(new CodigoAjusteLinha(x));
+        }
+    }
+
     [RelayCommand]
-    private void Novo() { Selecionado = null; (Codigo, Descricao, Valor) = ("", "", ""); }
+    private void Novo()
+    {
+        Selecionado = null;
+        (Codigo, Descricao, Valor, Observacao, DocParticipante, DocModelo, DocSerie, DocNumero, DocData) = ("", "", "", "", "", "55", "", "", null);
+    }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
+        long? partId = null;
+        if (!string.IsNullOrWhiteSpace(DocParticipante))
+        {
+            var texto = DocParticipante.Trim();
+            var lista = await app.Participantes.ListarAsync(empresa, usuario);
+            var p = lista.FirstOrDefault(x => x.Codigo == texto) ?? lista.FirstOrDefault(x => string.Equals(x.Nome, texto, StringComparison.CurrentCultureIgnoreCase))
+                    ?? lista.FirstOrDefault(x => x.CpfCnpj == new string(texto.Where(char.IsAsciiDigit).ToArray()));
+            if (p is null) { Erros.Add($"Participante \"{texto}\" não encontrado (informe o código, o nome ou o CPF/CNPJ cadastrado)."); return; }
+            partId = p.Id;
+        }
         var r = await app.Fiscal().OutrosLancamentosEfd.GravarAjusteAsync(empresa,
-            new AjusteIcmsEfd(Selecionado?.A.Id ?? 0, Mes, Codigo, Descricao, Numeros.LerValor(Valor) ?? 0), usuario);
+            new AjusteIcmsEfd(Selecionado?.A.Id ?? 0, Mes, Codigo, Descricao, Numeros.LerValor(Valor) ?? 0, ImpostoCodigo, Sentido, Observacao, partId,
+                              DocModelo, DocSerie, DocNumero, DocData is { } dd ? DateOnly.FromDateTime(dd) : null), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Novo();
-        Mensagem = "Ajuste gravado. Ele entra no E111 e no E110 da EFD desta competência.";
+        Mensagem = "Ajuste gravado. Ele entra no Livro de Apuração e na EFD ICMS/IPI desta competência.";
     }, Permissao.FiscalApurar);
 
     [RelayCommand]
@@ -83,6 +163,76 @@ public partial class AjustesIcmsViewModel(IContexto contexto) : ModuloViewModel(
         await CarregarAsync();
         Novo();
         Mensagem = "Ajuste excluído.";
+    }, Permissao.FiscalApurar);
+}
+
+/// <summary>Lançamentos › Ajustes › Ajustes de entrada: outros créditos e estornos de débito (no IPI, créditos).</summary>
+public sealed partial class AjustesEntradaViewModel(IContexto contexto) : AjustesViewModel(contexto)
+{
+    public override char Sentido => 'E';
+    public override string Titulo => "Ajustes de entrada da apuração do ICMS e do IPI";
+    public override string Orientacao => "Ajustes que aumentam o crédito: outros créditos (tipo 2 do código) e estornos de débito (tipo 3). No IPI, créditos. Código da tabela 5.1.1 da UF, ex.: SP020099.";
+}
+
+/// <summary>Lançamentos › Ajustes › Ajustes de saída: outros débitos, estornos de crédito, deduções e débitos especiais (no IPI, débitos).</summary>
+public sealed partial class AjustesSaidaViewModel(IContexto contexto) : AjustesViewModel(contexto)
+{
+    public override char Sentido => 'S';
+    public override string Titulo => "Ajustes de saída da apuração do ICMS e do IPI";
+    public override string Orientacao => "Ajustes que aumentam o débito: outros débitos (tipo 0 do código), estornos de crédito (1), deduções (4) e débitos especiais (5). No IPI, débitos. Código da tabela 5.1.1 da UF, ex.: SP000099.";
+}
+
+/// <summary>Lançamentos › Ajustes › Códigos de ajuste: cadastro simples dos códigos que a empresa usa (tabela 5.1.1 da UF; IPI com 3 posições).</summary>
+public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloViewModel(contexto)
+{
+    public static IReadOnlyList<string> Impostos { get; } = ["ICMS", "ICMS-ST", "IPI"];
+    private static readonly string[] CodigosImposto = [ImpostosAjuste.Icms, ImpostosAjuste.IcmsSt, ImpostosAjuste.Ipi];
+
+    public ObservableCollection<CodigoAjusteLinha> Lista { get; } = [];
+    [ObservableProperty] private int _imposto;
+    [ObservableProperty] private string _codigo = "";
+    [ObservableProperty] private string _descricao = "";
+    [ObservableProperty] private CodigoAjusteLinha? _selecionado;
+
+    public bool PodeManter => Contexto.Pode(Permissao.FiscalApurar);
+    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeManter));
+
+    partial void OnSelecionadoChanged(CodigoAjusteLinha? value)
+    {
+        if (value is null) return;
+        (Imposto, Codigo, Descricao) = (Math.Max(0, Array.IndexOf(CodigosImposto, value.C.Imposto)), value.Codigo, value.Descricao);
+    }
+
+    public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Fiscal().OutrosLancamentosEfd.CodigosAjusteAsync(empresa, null, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Lista.Clear();
+        foreach (var c in r.Valor) Lista.Add(new CodigoAjusteLinha(c));
+    });
+
+    [RelayCommand]
+    private void Novo() { Selecionado = null; (Codigo, Descricao) = ("", ""); }
+
+    [RelayCommand]
+    private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Fiscal().OutrosLancamentosEfd.GravarCodigoAjusteAsync(empresa, new CodigoAjuste(CodigosImposto[Math.Clamp(Imposto, 0, 2)], Codigo, Descricao), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        Novo();
+        Mensagem = "Código gravado.";
+    }, Permissao.FiscalApurar);
+
+    [RelayCommand]
+    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionado is not { } s) { Erros.Add("Selecione o código na lista."); return; }
+        var r = await app.Fiscal().OutrosLancamentosEfd.ExcluirCodigoAjusteAsync(empresa, s.C.Imposto, s.Codigo, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        Novo();
+        Mensagem = "Código excluído.";
     }, Permissao.FiscalApurar);
 }
 

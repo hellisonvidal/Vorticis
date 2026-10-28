@@ -37,6 +37,12 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
 {
     public ObservableCollection<ResultadoImportacaoLinha> Resultados { get; } = [];
 
+    /// <summary>Modelos aceitos nesta tela; null aceita todos (importação em lote).</summary>
+    protected virtual IReadOnlySet<ModeloDocumento>? ModelosAceitos => null;
+    public virtual string Titulo => "Importação de XML de notas fiscais";
+    public virtual string Descricao =>
+        "Importe NF-e e NFC-e (modelos 55 e 65, procNFe), CT-e (modelo 57, procCTe) e NFS-e do padrão nacional (ADN), em arquivos .xml, .zip (com subpastas) ou pastas inteiras (com subpastas). Notas emitidas pela empresa são saídas; notas em que ela é destinatária/tomadora são entradas. Notas de outras empresas são recusadas, chaves já importadas são ignoradas, eventos de cancelamento atualizam a nota e clientes/fornecedores novos são cadastrados. A importação roda em segundo plano e pode ser cancelada.";
+
     [ObservableProperty] private string _pasta = "";
     [ObservableProperty] private bool _incluirSubpastas = true;
     [ObservableProperty] private string _resumo = "";
@@ -74,11 +80,11 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
 
     /// <summary>Importa os .xml e .zip da pasta; com <paramref name="subpastas"/>, de todas as subpastas.</summary>
     public Task ImportarPastaAsync(string pasta, bool subpastas)
-        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarPastaAsync(empresa, pasta, subpastas, usuario, progresso, ct));
+        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarPastaAsync(empresa, pasta, subpastas, usuario, progresso, ct, ModelosAceitos));
 
     /// <summary>Importa os arquivos escolhidos na tela (.xml e .zip).</summary>
     public Task ImportarArquivosAsync(IReadOnlyList<string> caminhos)
-        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarArquivosAsync(empresa, caminhos, usuario, progresso, ct));
+        => ExecutarLoteAsync((svc, empresa, usuario, progresso, ct) => svc.ImportarArquivosAsync(empresa, caminhos, usuario, progresso, ct, ModelosAceitos));
 
     private bool PodeCancelar() => Importando;
 
@@ -230,7 +236,7 @@ public sealed record ItemDocumentoLinha(ItemFiscal Item)
 public partial class DocumentosViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public static IReadOnlyList<string> Operacoes { get; } = ["Todas", "Entradas", "Saídas"];
-    public static IReadOnlyList<string> Modelos { get; } = ["Todos", "NF-e (55)", "NFC-e (65)", "NFS-e"];
+    public static IReadOnlyList<string> Modelos { get; } = ["Todos", "NF-e (55)", "NFC-e (65)", "NFS-e", "CT-e (57)"];
     public static IReadOnlyList<string> Situacoes { get; } = ["Todas", "Autorizadas", "Canceladas", "Denegadas"];
     public static IReadOnlyList<string> Contabilizacoes { get; } = ["Todas", "Contabilizadas", "Não contabilizadas"];
 
@@ -268,7 +274,7 @@ public partial class DocumentosViewModel(IContexto contexto) : ModuloViewModel(c
         var f = new FiltroDocumentos(
             Inicio is { } i ? DateOnly.FromDateTime(i) : null, Fim is { } fi ? DateOnly.FromDateTime(fi) : null,
             Operacao switch { 1 => TipoOperacao.Entrada, 2 => TipoOperacao.Saida, _ => null },
-            Modelo switch { 1 => ModeloDocumento.NFe55, 2 => ModeloDocumento.NFCe65, 3 => ModeloDocumento.NFSe, _ => null },
+            Modelo switch { 1 => ModeloDocumento.NFe55, 2 => ModeloDocumento.NFCe65, 3 => ModeloDocumento.NFSe, 4 => ModeloDocumento.CTe57, _ => null },
             Situacao switch { 1 => SituacaoDocumento.Autorizada, 2 => SituacaoDocumento.Cancelada, 3 => SituacaoDocumento.Denegada, _ => null },
             Texto, Cfop, Contabilizacao switch { 1 => true, 2 => false, _ => null });
         var r = await app.Fiscal().Documentos.ConsultarAsync(empresa, f, usuario);
@@ -352,7 +358,14 @@ public abstract partial class LivroApuracaoViewModel(IContexto contexto) : Relat
     public abstract string Titulo { get; }
     public abstract bool MostrarSaldo { get; }
     protected abstract string Prefixo { get; }
-    protected abstract TabelaRelatorio Montar(LivroApuracao livro);
+    protected virtual TabelaRelatorio Montar(LivroApuracao livro) => throw new NotSupportedException();
+
+    /// <summary>Monta a tabela do mês (os livros usam o cálculo da EFD; os relatórios do SPED Fiscal, <see cref="ApuracaoSped"/>).</summary>
+    protected virtual async Task<Resultado<TabelaRelatorio>> ObterAsync(Vorticis.Infra.VorticisApp app, long empresa, DateOnly competencia, decimal saldo, long usuario)
+    {
+        var r = await app.Fiscal().Efd.LivroApuracaoAsync(empresa, competencia, saldo, usuario);
+        return r.Sucesso ? Resultado<TabelaRelatorio>.Ok(Montar(r.Valor)) : Resultado<TabelaRelatorio>.Falha(r.Erros);
+    }
     protected override string TituloRelatorio => Titulo;
     protected override string Parametros => $"Período: {_competencia:MM/yyyy}";
     protected override string NomeArquivo => $"{Prefixo}_{_competencia:yyyyMM}";
@@ -368,10 +381,10 @@ public abstract partial class LivroApuracaoViewModel(IContexto contexto) : Relat
             !decimal.TryParse(SaldoCredorAnterior.Replace("R$", "").Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out saldo))
         { Falhar("Saldo credor do período anterior inválido."); return; }
         var comp = new DateOnly(ano, Mes + 1, 1);
-        var r = await app.Fiscal().Efd.LivroApuracaoAsync(empresa, comp, saldo, usuario);
+        var r = await ObterAsync(app, empresa, comp, saldo, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
         _competencia = comp;
-        Mostrar(Montar(r.Valor));
+        Mostrar(r.Valor);
         Mensagem = "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
     }, Permissao.FiscalRelatorios);
 }
@@ -390,6 +403,76 @@ public sealed class LivroApuracaoIpiViewModel(IContexto contexto) : LivroApuraca
     public override bool MostrarSaldo => false;
     protected override string Prefixo => "livro_apuracao_ipi";
     protected override TabelaRelatorio Montar(LivroApuracao livro) => TabelasFiscais.LivroApuracaoIpi(livro);
+}
+
+/// <summary>Base dos relatórios de apuração do SPED Fiscal (resumo do ICMS, IPI, ICMS-ST e conferência da EFD), do mês escolhido.</summary>
+public abstract class ApuracaoSpedViewModel(IContexto contexto) : LivroApuracaoViewModel(contexto)
+{
+    protected abstract TabelaRelatorio Montar(ApuracaoSped apuracao);
+
+    protected override async Task<Resultado<TabelaRelatorio>> ObterAsync(Vorticis.Infra.VorticisApp app, long empresa, DateOnly competencia, decimal saldo, long usuario)
+    {
+        var r = await app.Fiscal().Efd.ApuracaoSpedAsync(empresa, competencia, saldo, usuario);
+        return r.Sucesso ? Resultado<TabelaRelatorio>.Ok(Montar(r.Valor)) : Resultado<TabelaRelatorio>.Falha(r.Erros);
+    }
+}
+
+public sealed class ResumoApuracaoIcmsViewModel(IContexto contexto) : ApuracaoSpedViewModel(contexto)
+{
+    public override string Titulo => "Resumo da apuração do ICMS";
+    public override bool MostrarSaldo => true;
+    protected override string Prefixo => "resumo_apuracao_icms";
+    protected override TabelaRelatorio Montar(ApuracaoSped a) => TabelasFiscais.ResumoApuracaoIcms(a);
+}
+
+public sealed class ApuracaoIpiSpedViewModel(IContexto contexto) : ApuracaoSpedViewModel(contexto)
+{
+    public override string Titulo => "Apuração do IPI";
+    public override bool MostrarSaldo => false;
+    protected override string Prefixo => "apuracao_ipi";
+    protected override TabelaRelatorio Montar(ApuracaoSped a) => TabelasFiscais.ApuracaoIpi(a);
+}
+
+public sealed class ApuracaoIcmsStViewModel(IContexto contexto) : ApuracaoSpedViewModel(contexto)
+{
+    public override string Titulo => "Apuração do ICMS-ST";
+    public override bool MostrarSaldo => false;
+    protected override string Prefixo => "apuracao_icms_st";
+    protected override TabelaRelatorio Montar(ApuracaoSped a) => TabelasFiscais.ApuracaoIcmsSt(a);
+}
+
+public sealed class ConferenciaEfdViewModel(IContexto contexto) : ApuracaoSpedViewModel(contexto)
+{
+    public override string Titulo => "Conferência da EFD ICMS/IPI";
+    public override bool MostrarSaldo => true;
+    protected override string Prefixo => "conferencia_efd";
+    protected override TabelaRelatorio Montar(ApuracaoSped a) => TabelasFiscais.ConferenciaEfd(a);
+}
+
+/// <summary>Relatórios › Livros e apuração › Relação de ajustes: ajustes lançados por período e, se quiser, por código.</summary>
+public partial class RelacaoAjustesViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private string _codigo = "";
+
+    protected override string TituloRelatorio => "Relação de ajustes da apuração";
+    protected override string Parametros => $"Período: {_periodo.Ini:MM/yyyy} a {_periodo.Fim:MM/yyyy}{(string.IsNullOrWhiteSpace(Codigo) ? "" : " · Código " + Codigo.Trim().ToUpperInvariant())}";
+    protected override string NomeArquivo => $"relacao_ajustes_{_periodo.Ini:yyyyMM}_{_periodo.Fim:yyyyMM}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, 1, 1));
+        var fim = Data(Fim, ini);
+        var r = await app.Fiscal().Efd.RelacaoAjustesAsync(empresa, ini, fim, Codigo, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (new DateOnly(ini.Year, ini.Month, 1), new DateOnly(fim.Year, fim.Month, 1));
+        Mostrar(TabelasFiscais.RelacaoAjustes(r.Valor, _periodo.Ini, _periodo.Fim));
+        Mensagem = r.Valor.Count == 0 ? "Nenhum ajuste no período." : "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
+    }, Permissao.FiscalRelatorios);
 }
 
 /// <summary>Relatórios › Resumo por CFOP (valor contábil e tributos por CFOP, entradas e saídas).</summary>
@@ -435,4 +518,72 @@ internal static class ExclusaoNotas
             : await contexto.ConfirmarAsync("Excluir nota", $"Excluir a nota {nota.Modelo} {nota.Numero}, {origem}?", "Excluir", "Cancelar");
         return confirmou ? await app.Fiscal().Contabilizacao.ExcluirDocumentosAsync(empresa, [nota.Id], contabilizada, usuario) : null;
     }
+}
+
+/// <summary>Documentos fiscais › Importar NFS-e: só NFS-e (padrão nacional).</summary>
+public partial class ImportacaoNfseViewModel(IContexto contexto) : ImportacaoXmlViewModel(contexto)
+{
+    protected override IReadOnlySet<ModeloDocumento>? ModelosAceitos { get; } = new HashSet<ModeloDocumento> { ModeloDocumento.NFSe };
+    public override string Titulo => "Importar NFS-e";
+    public override string Descricao =>
+        "Importe notas de serviço (NFS-e) do padrão nacional (ADN) em arquivos .xml, .zip ou pastas. Serviço prestado pela empresa é saída; serviço tomado é entrada. " +
+        "Chaves já importadas são ignoradas e eventos de cancelamento atualizam a nota. Arquivos de outros tipos de nota são ignorados: use Integrações › Importação de XML em lote.";
+}
+
+/// <summary>Documentos fiscais › Importar CT-e: só conhecimentos de transporte (modelo 57, procCTe).</summary>
+public partial class ImportacaoCteViewModel(IContexto contexto) : ImportacaoXmlViewModel(contexto)
+{
+    protected override IReadOnlySet<ModeloDocumento>? ModelosAceitos { get; } = new HashSet<ModeloDocumento> { ModeloDocumento.CTe57 };
+    public override string Titulo => "Importar CT-e";
+    public override string Descricao =>
+        "Importe conhecimentos de transporte eletrônicos (modelo 57, procCTe) em arquivos .xml, .zip ou pastas. Se a empresa é a transportadora (emitente), o CT-e é saída; " +
+        "se é a tomadora do serviço, é entrada. O XML fica guardado e as notas entram nos livros e na EFD ICMS/IPI (D100/D190). Chaves já importadas são ignoradas e eventos de cancelamento atualizam o CT-e.";
+}
+
+public sealed class CteLinha(CteConsultado c)
+{
+    public CteConsultado Cte { get; } = c;
+    public long Id => Cte.Documento.Id;
+    public string Data => Cte.Documento.DataLivro.ToString("dd/MM/yyyy");
+    public string Operacao => Cte.Documento.Operacao.Rotulo();
+    public string Numero => $"{Cte.Documento.Serie}/{Cte.Documento.Numero}";
+    public string Emitente => Cte.Documento.Emitente.Nome ?? "";
+    public string Tomador => Cte.Transporte.Tomador.Nome ?? "";
+    public string Remetente => Cte.Transporte.Remetente?.Nome ?? "";
+    public string Destinatario => Cte.Transporte.Destinatario?.Nome ?? "";
+    public string Percurso => $"{Cte.Transporte.UfInicio} → {Cte.Transporte.UfFim}";
+    public string Cfop => Cte.Cfop ?? "";
+    public string Valor => Numeros.Moeda(Cte.Documento.Totais.Total);
+    public string Icms => Numeros.Moeda(Cte.Documento.Totais.Icms);
+    public string Situacao => Cte.Documento.Situacao.Rotulo();
+    public string Chave => Cte.Documento.Chave;
+}
+
+/// <summary>Documentos fiscais › Consulta de CT-e.</summary>
+public partial class ConsultaCteViewModel(IContexto contexto) : ModuloViewModel(contexto)
+{
+    public static IReadOnlyList<string> Operacoes { get; } = ["Entradas e saídas", "Somente entradas (tomador)", "Somente saídas (emitente)"];
+    public ObservableCollection<CteLinha> Lista { get; } = [];
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private int _operacao;
+    [ObservableProperty] private string _texto = "";
+    [ObservableProperty] private string _resumo = "";
+    [ObservableProperty] private CteLinha? _selecionada;
+
+    public void AtualizarPermissoes() { }
+
+    [RelayCommand]
+    public Task ConsultarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var filtro = new FiltroDocumentos(ini, Data(Fim, ini), Operacao switch { 1 => TipoOperacao.Entrada, 2 => TipoOperacao.Saida, _ => null },
+                                          Texto: string.IsNullOrWhiteSpace(Texto) ? null : Texto.Trim());
+        var r = await app.Fiscal().Documentos.ConsultarCtesAsync(empresa, filtro, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Lista.Clear();
+        foreach (var c in r.Valor) Lista.Add(new CteLinha(c));
+        var ativos = r.Valor.Where(c => c.Documento.Situacao == SituacaoDocumento.Autorizada).ToList();
+        Resumo = r.Valor.Count == 0 ? "Nenhum CT-e no período." : $"{r.Valor.Count} CT-e · valor {Numeros.Moeda(ativos.Sum(c => c.Documento.Totais.Total))} · ICMS {Numeros.Moeda(ativos.Sum(c => c.Documento.Totais.Icms))} (autorizados)";
+    });
 }

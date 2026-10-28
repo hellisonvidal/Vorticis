@@ -5,13 +5,19 @@ public sealed record AnaliticoC190(string Cst, string Cfop, decimal Aliquota, de
                                    decimal Reducao, decimal Ipi);
 
 /// <summary>Apuração do ICMS-ST de uma UF (E210): retenção nas saídas e o que recolher.</summary>
-public sealed record ApuracaoStUf(string Uf, decimal Retencao, decimal Recolher, decimal SaldoCredorTransportar);
+public sealed record ApuracaoStUf(string Uf, decimal Retencao, decimal Recolher, decimal SaldoCredorTransportar, decimal AjustesDebitos = 0, decimal AjustesCreditos = 0,
+                                  decimal Deducoes = 0, decimal DebitosEspeciais = 0)
+{
+    /// <summary>Saldo devedor antes das deduções (E210.VL_SLD_DEV_ST_ANTES_DED).</summary>
+    public decimal SaldoAntesDeducoes => Math.Max(0, Retencao + AjustesDebitos - AjustesCreditos);
+}
 
 /// <summary>Linha do E510 (IPI por CFOP e CST).</summary>
 public sealed record LinhaIpi(string Cfop, string Cst, decimal Contabil, decimal Base, decimal Ipi);
 
 /// <summary>Apuração do IPI (E520).</summary>
-public sealed record ApuracaoIpiEfd(IReadOnlyList<LinhaIpi> Linhas, decimal Debitos, decimal Creditos, decimal SaldoDevedor, decimal SaldoCredor);
+public sealed record ApuracaoIpiEfd(IReadOnlyList<LinhaIpi> Linhas, decimal Debitos, decimal Creditos, decimal SaldoDevedor, decimal SaldoCredor,
+                                    decimal OutrosDebitos = 0, decimal OutrosCreditos = 0);
 
 /// <summary>Valores de um CFOP na apuração (livro de apuração): valor contábil, base de cálculo e imposto.</summary>
 public sealed record LinhaApuracaoCfop(string Cfop, decimal Operacao, decimal Base, decimal Imposto);
@@ -77,7 +83,7 @@ public static class CalculoEfdIcms
             Somar(cred, new AnaliticoC190(c.CstIcms, c.Cfop, c.AliqIcms, c.Valor, c.BaseIcms, c.Icms, 0, 0, 0, 0));
         }
         // ajustes da apuração (E111), pelo tipo do código
-        decimal Aj(TipoAjusteIcms t) => (d.Ajustes ?? []).Where(a => a.Tipo == t).Sum(a => a.Valor);
+        decimal Aj(TipoAjusteIcms t) => (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.Icms && a.Tipo == t).Sum(a => a.Valor);
         var ajDeb = Aj(TipoAjusteIcms.OutrosDebitos);
         var estCred = Aj(TipoAjusteIcms.EstornoCreditos);
         var ajCred = Aj(TipoAjusteIcms.OutrosCreditos);
@@ -91,27 +97,41 @@ public static class CalculoEfdIcms
         var recolher = Math.Max(0, apurado - deducoes);
         var transportar = Math.Max(0, -apurado);
 
-        var stUf = st.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k => new ApuracaoStUf(k.Key, k.Value, k.Value, 0)).ToList();
+        // ajustes do ICMS-ST (E220): somam por UF, que é a das duas primeiras posições do código
+        var ajustesSt = (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.IcmsSt).ToList();
+        foreach (var uf in ajustesSt.Select(a => a.Uf)) st.TryAdd(uf, 0m);
+        var stUf = st.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k =>
+        {
+            decimal S(params TipoAjusteIcms[] t) => ajustesSt.Where(a => a.Uf == k.Key && t.Contains(a.Tipo)).Sum(a => a.Valor);
+            var aDeb = S(TipoAjusteIcms.OutrosDebitos, TipoAjusteIcms.EstornoCreditos);
+            var aCred = S(TipoAjusteIcms.OutrosCreditos, TipoAjusteIcms.EstornoDebitos);
+            var apuradoSt = k.Value + aDeb - aCred;
+            var dedSt = Math.Min(S(TipoAjusteIcms.Deducoes), Math.Max(0, apuradoSt));
+            return new ApuracaoStUf(k.Key, k.Value, Math.Max(0, apuradoSt - dedSt), Math.Max(0, -apuradoSt), aDeb, aCred, dedSt, S(TipoAjusteIcms.DebitosEspeciais));
+        }).ToList();
         return new ApuracaoEfdIcms(debitos, creditos, saldoAnterior, apurado, deducoes, recolher, transportar, stUf, ApurarIpi(d, docs),
             [.. deb.Values], [.. cred.Values], ajDeb, estCred, ajCred, estDeb, debEsp);
     }
 
     private static ApuracaoIpiEfd? ApurarIpi(DadosEfdIcms d, List<DocumentoEfd> docs)
     {
-        return d.Opcoes.IndicadorAtividade != '0' ? null : CalcularIpi(docs);
+        return d.Opcoes.IndicadorAtividade != '0' ? null : CalcularIpi(docs, d.Ajustes);
     }
 
     /// <summary>Apuração do IPI (E510/E520) das notas autorizadas, sem considerar o indicador de atividade; o livro de apuração do IPI usa o mesmo cálculo da EFD.</summary>
-    public static ApuracaoIpiEfd? CalcularIpi(IEnumerable<DocumentoEfd> documentos)
+    public static ApuracaoIpiEfd? CalcularIpi(IEnumerable<DocumentoEfd> documentos, IEnumerable<AjusteIcmsEfd>? ajustes = null)
     {
+        var ajIpi = (ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.Ipi).ToList();
+        var outrosDeb = ajIpi.Where(a => a.SentidoEfetivo == 'S').Sum(a => a.Valor);
+        var outrosCred = ajIpi.Where(a => a.SentidoEfetivo == 'E').Sum(a => a.Valor);
         var linhas = Escrituraveis(documentos).Where(x => x.Autorizada).SelectMany(doc => doc.Itens).Where(i => !string.IsNullOrWhiteSpace(i.CstIpi))
             .GroupBy(i => (Cfop: i.CfopNumerico, Cst: CstIpiEscrituracao(i.CstIpi)))
             .OrderBy(g => g.Key.Cfop, StringComparer.Ordinal).ThenBy(g => g.Key.Cst, StringComparer.Ordinal)
             .Select(g => new LinhaIpi(g.Key.Cfop, g.Key.Cst, g.Sum(i => i.ValorContabil), g.Sum(i => i.BcIpi), g.Sum(i => i.Ipi))).ToList();
-        if (linhas.Count == 0) return null;
+        if (linhas.Count == 0 && ajIpi.Count == 0) return null;
         var deb = linhas.Where(l => CamposEfd.CfopSaida(l.Cfop)).Sum(l => l.Ipi);
         var cred = linhas.Where(l => CamposEfd.CfopEntrada(l.Cfop)).Sum(l => l.Ipi);
-        var saldo = deb - cred;
-        return new ApuracaoIpiEfd(linhas, deb, cred, Math.Max(0, saldo), Math.Max(0, -saldo));
+        var saldo = deb + outrosDeb - cred - outrosCred;
+        return new ApuracaoIpiEfd(linhas, deb, cred, Math.Max(0, saldo), Math.Max(0, -saldo), outrosDeb, outrosCred);
     }
 }

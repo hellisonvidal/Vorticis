@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.ConsultaCteView"
+             x:DataType="vm:ConsultaCteViewModel">
+  <!-- Documentos fiscais › Consulta de CT-e -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Consulta de CT-e (conhecimentos de transporte)" />
+      <WrapPanel>
+        <TextBlock Text="Período" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Margin="0,0,6,6" />
+        <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,6" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,14,6" />
+        <ComboBox ItemsSource="{x:Static vm:ConsultaCteViewModel.Operacoes}" SelectedIndex="{Binding Operacao}" Width="210" Margin="0,0,8,6" />
+        <TextBox Text="{Binding Texto}" Watermark="Nº, nome, CNPJ ou chave" Width="220" Margin="0,0,8,6" />
+        <Button Content="Consultar" Command="{Binding ConsultarCommand}" Classes="accent" Margin="0,0,8,6" />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+      <TextBlock Text="{Binding Resumo}" FontWeight="SemiBold" />
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="95" />
+        <DataGridTextColumn Header="Operação" Binding="{ReflectionBinding Operacao}" Width="80" />
+        <DataGridTextColumn Header="Série/Número" Binding="{ReflectionBinding Numero}" Width="95" />
+        <DataGridTextColumn Header="Transportadora (emitente)" Binding="{ReflectionBinding Emitente}" Width="*" MinWidth="150" />
+        <DataGridTextColumn Header="Tomador" Binding="{ReflectionBinding Tomador}" Width="*" MinWidth="150" />
+        <DataGridTextColumn Header="Remetente" Binding="{ReflectionBinding Remetente}" Width="150" />
+        <DataGridTextColumn Header="Destinatário" Binding="{ReflectionBinding Destinatario}" Width="150" />
+        <DataGridTextColumn Header="Percurso" Binding="{ReflectionBinding Percurso}" Width="90" />
+        <DataGridTextColumn Header="CFOP" Binding="{ReflectionBinding Cfop}" Width="65" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="105" />
+        <DataGridTextColumn Header="ICMS" Binding="{ReflectionBinding Icms}" Width="95" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
+        <DataGridTextColumn Header="Chave de acesso" Binding="{ReflectionBinding Chave}" Width="330" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

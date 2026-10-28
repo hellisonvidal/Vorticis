@@ -21,6 +21,8 @@ public interface IRepositorioEfd
     Task<ApuracaoPisCofinsEfd?> ApuracaoPisCofinsAsync(long empresaId, DateOnly competencia, CancellationToken ct);
     /// <summary>Ajustes da apuração do ICMS (E111) da competência.</summary>
     Task<IReadOnlyList<AjusteIcmsEfd>> AjustesIcmsAsync(long empresaId, DateOnly competencia, CancellationToken ct);
+    /// <summary>Ajustes das competências do intervalo (primeiro dia do mês inicial ao do final), em ordem de competência e código.</summary>
+    Task<IReadOnlyList<AjusteIcmsEfd>> AjustesPeriodoAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     /// <summary>Contas de energia, gás, água e comunicação com entrada no período (C500/D500).</summary>
     Task<IReadOnlyList<ContaConsumoEfd>> ContasConsumoAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
     /// <summary>Inventário marcado para ser informado na EFD da competência (bloco H), se houver.</summary>
@@ -127,14 +129,28 @@ public sealed class RepositorioEfd(NpgsqlDataSource ds) : IRepositorioEfd
         return cabecalhos.Select(c => c.Doc with { Itens = itens.GetValueOrDefault(c.Id) ?? [] }).ToList();
     }
 
-    public async Task<IReadOnlyList<AjusteIcmsEfd>> AjustesIcmsAsync(long empresaId, DateOnly competencia, CancellationToken ct)
+    public Task<IReadOnlyList<AjusteIcmsEfd>> AjustesIcmsAsync(long empresaId, DateOnly competencia, CancellationToken ct) =>
+        AjustesPeriodoAsync(empresaId, competencia, competencia, ct);
+
+    public async Task<IReadOnlyList<AjusteIcmsEfd>> AjustesPeriodoAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT id, competencia, codigo, descricao, valor FROM fiscal.efd_ajuste_icms WHERE empresa_id = @e AND competencia = @c ORDER BY codigo, id
-            """).Com("e", empresaId).Com("c", new DateOnly(competencia.Year, competencia.Month, 1));
+            SELECT a.id, a.competencia, a.codigo, a.descricao, a.valor, a.imposto, a.sentido, a.observacao, a.doc_participante_id, a.doc_modelo, a.doc_serie, a.doc_numero, a.doc_data,
+                   p.codigo, p.nome, p.cpf_cnpj, p.inscricao_estadual, p.cod_municipio_ibge, p.uf, p.logradouro, p.numero, p.complemento, p.bairro, p.cod_pais
+              FROM fiscal.efd_ajuste_icms a
+              LEFT JOIN core.participante p ON p.id = a.doc_participante_id
+             WHERE a.empresa_id = @e AND a.competencia BETWEEN @ini AND @fim ORDER BY a.competencia, a.codigo, a.id
+            """).Com("e", empresaId).Com("ini", new DateOnly(inicio.Year, inicio.Month, 1)).Com("fim", new DateOnly(fim.Year, fim.Month, 1));
         var res = new List<AjusteIcmsEfd>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
-        while (await r.ReadAsync(ct)) res.Add(new AjusteIcmsEfd(r.GetInt64(0), r.GetFieldValue<DateOnly>(1), r.GetString(2), r.GetString(3), r.GetDecimal(4)));
+        while (await r.ReadAsync(ct))
+        {
+            ParticipanteEfd? part = r.IsDBNull(13) ? null
+                : new ParticipanteEfd(r.GetString(13), r.GetString(14), r.Texto(15), r.Texto(16), r.Texto(17), r.Texto(18), r.Texto(19), r.Texto(20), r.Texto(21), r.Texto(22),
+                                      r.GetString(23).Trim(), true);
+            res.Add(new AjusteIcmsEfd(r.GetInt64(0), r.GetFieldValue<DateOnly>(1), r.GetString(2).Trim(), r.GetString(3), r.GetDecimal(4), r.GetString(5), r.GetString(6)[0], r.Texto(7),
+                r.LongOuNulo(8), r.Texto(9), r.Texto(10), r.Texto(11), r.IsDBNull(12) ? null : r.GetFieldValue<DateOnly>(12), part));
+        }
         return res;
     }
 

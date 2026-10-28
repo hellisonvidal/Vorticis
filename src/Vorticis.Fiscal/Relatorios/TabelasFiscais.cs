@@ -82,17 +82,18 @@ public static class TabelasFiscais
         var a = livro.Icms;
         var rows = new List<LinhaRelatorio>();
         rows.AddRange(BlocoCfop("1. DÉBITO DO IMPOSTO — saídas e prestações", a.DebitosCfop ?? [], "Total dos débitos por saídas e prestações"));
-        rows.Add(Valor("   Outros débitos", 0));
-        rows.Add(Valor("   Estornos de créditos", 0));
-        rows.Add(L(true, "Total dos débitos", "", null, null, a.Debitos));
+        rows.Add(Valor("   Outros débitos (ajustes de saída)", a.AjustesDebitos));
+        rows.Add(Valor("   Estornos de créditos (ajustes de saída)", a.EstornosCreditos));
+        rows.Add(L(true, "Total dos débitos", "", null, null, a.Debitos + a.AjustesDebitos + a.EstornosCreditos));
         rows.AddRange(BlocoCfop("2. CRÉDITO DO IMPOSTO — entradas e aquisições", a.CreditosCfop ?? [], "Total dos créditos por entradas"));
-        rows.Add(Valor("   Outros créditos", 0));
-        rows.Add(Valor("   Estornos de débitos", 0));
-        rows.Add(L(true, "Total dos créditos", "", null, null, a.Creditos));
+        rows.Add(Valor("   Outros créditos (ajustes de entrada)", a.AjustesCreditos));
+        rows.Add(Valor("   Estornos de débitos (ajustes de entrada)", a.EstornosDebitos));
+        rows.Add(L(true, "Total dos créditos", "", null, null, a.Creditos + a.AjustesCreditos + a.EstornosDebitos));
         rows.Add(L(true, "3. APURAÇÃO DO SALDO", "", null, null, null));
         rows.Add(Valor("   Saldo credor do período anterior", a.SaldoCredorAnterior));
         rows.Add(Valor("   Saldo devedor apurado", Math.Max(0, a.SaldoApurado)));
         rows.Add(Valor("   Deduções", a.Deducoes));
+        if (a.DebitosEspeciais > 0) rows.Add(Valor("   Débitos especiais", a.DebitosEspeciais));
         rows.Add(L(true, "Imposto a recolher", "", null, null, a.Recolher));
         rows.Add(L(true, "Saldo credor a transportar para o período seguinte", "", null, null, a.SaldoCredorTransportar));
         return new TabelaRelatorio($"Livro de Registro de Apuração do ICMS — {livro.Inicio:MM/yyyy}", ColunasApuracao, rows,
@@ -108,19 +109,169 @@ public static class TabelasFiscais
         LinhaApuracaoCfop[] Por(Func<string, bool> f) => [.. linhas.Where(l => f(l.Cfop)).GroupBy(l => l.Cfop)
             .Select(g => new LinhaApuracaoCfop(g.Key, g.Sum(l => l.Contabil), g.Sum(l => l.Base), g.Sum(l => l.Ipi)))];
         rows.AddRange(BlocoCfop("1. SAÍDAS — débito do imposto", Por(CamposEfd.CfopSaida), "Total dos débitos por saídas"));
-        rows.Add(Valor("   Outros débitos", 0));
-        rows.Add(Valor("   Estornos de créditos", 0));
-        rows.Add(L(true, "Total dos débitos", "", null, null, ipi?.Debitos ?? 0));
+        rows.Add(Valor("   Outros débitos (ajustes de saída)", ipi?.OutrosDebitos ?? 0));
+        rows.Add(L(true, "Total dos débitos", "", null, null, (ipi?.Debitos ?? 0) + (ipi?.OutrosDebitos ?? 0)));
         rows.AddRange(BlocoCfop("2. ENTRADAS — crédito do imposto", Por(CamposEfd.CfopEntrada), "Total dos créditos por entradas"));
-        rows.Add(Valor("   Outros créditos", 0));
-        rows.Add(Valor("   Estornos de débitos", 0));
-        rows.Add(L(true, "Total dos créditos", "", null, null, ipi?.Creditos ?? 0));
+        rows.Add(Valor("   Outros créditos (ajustes de entrada)", ipi?.OutrosCreditos ?? 0));
+        rows.Add(L(true, "Total dos créditos", "", null, null, (ipi?.Creditos ?? 0) + (ipi?.OutrosCreditos ?? 0)));
         rows.Add(L(true, "3. APURAÇÃO DO SALDO", "", null, null, null));
         rows.Add(Valor("   Saldo credor do período anterior", 0));
         rows.Add(L(true, "Saldo devedor (imposto a recolher)", "", null, null, ipi?.SaldoDevedor ?? 0));
         rows.Add(L(true, "Saldo credor a transportar para o período seguinte", "", null, null, ipi?.SaldoCredor ?? 0));
         return new TabelaRelatorio($"Livro de Registro de Apuração do IPI — {livro.Inicio:MM/yyyy}", ColunasApuracao, rows,
             "Mesmos valores dos registros E510 e E520 da EFD ICMS/IPI. Só entram os itens com situação tributária de IPI informada.");
+    }
+
+    // ------------------------------------------------------------------ apuração do SPED Fiscal (Relatórios › Livros e apuração)
+
+    private static readonly ColunaRelatorio[] ColunasCampoValor =
+        [new("Campo", LarguraCm: 1.6), new("Descrição"), new("Valor", TipoColuna.Valor)];
+
+    /// <summary>Resumo da apuração do ICMS: um campo do registro E110 por linha, já com os ajustes.</summary>
+    public static TabelaRelatorio ResumoApuracaoIcms(ApuracaoSped a)
+    {
+        var ap = a.Icms;
+        var rows = new List<LinhaRelatorio>
+        {
+            L(false, "02", "Valor total dos débitos por saídas e prestações (VL_TOT_DEBITOS)", ap.Debitos),
+            L(false, "04", "Ajustes a débito — outros débitos (VL_TOT_AJ_DEBITOS)", ap.AjustesDebitos),
+            L(false, "05", "Estornos de créditos (VL_ESTORNOS_CRED)", ap.EstornosCreditos),
+            L(false, "06", "Valor total dos créditos por entradas e aquisições (VL_TOT_CREDITOS)", ap.Creditos),
+            L(false, "08", "Ajustes a crédito — outros créditos (VL_TOT_AJ_CREDITOS)", ap.AjustesCreditos),
+            L(false, "09", "Estornos de débitos (VL_ESTORNOS_DEB)", ap.EstornosDebitos),
+            L(false, "10", "Saldo credor do período anterior (VL_SLD_CREDOR_ANT)", ap.SaldoCredorAnterior),
+            L(true, "11", "Saldo devedor apurado (VL_SLD_APURADO)", Math.Max(0, ap.SaldoApurado)),
+            L(false, "12", "Total de deduções (VL_TOT_DED)", ap.Deducoes),
+            L(true, "13", "ICMS a recolher (VL_ICMS_RECOLHER)", ap.Recolher),
+            L(true, "14", "Saldo credor a transportar (VL_SLD_CREDOR_TRANSPORTAR)", ap.SaldoCredorTransportar),
+            L(false, "15", "Valores recolhidos ou a recolher, extra-apuração (DEB_ESP)", ap.DebitosEspeciais),
+        };
+        return new TabelaRelatorio($"Resumo da apuração do ICMS (E110) — {a.Inicio:MM/yyyy}", ColunasCampoValor, rows,
+            $"{(a.Dados.Ajustes ?? []).Count(x => x.Imposto == ImpostosAjuste.Icms)} ajuste(s) do ICMS próprio considerado(s). Mesmos valores do registro E110 da EFD ICMS/IPI; notas canceladas, denegadas e NFS-e não entram.");
+    }
+
+    private static string TipoDoAjuste(AjusteIcmsEfd x) =>
+        x.Imposto == ImpostosAjuste.Ipi ? (x.SentidoEfetivo == 'E' ? "Crédito" : "Débito") : OutrosLancamentosEfd.RotuloTipo(x.Tipo);
+
+    private static string DocumentoDoAjuste(AjusteIcmsEfd x) =>
+        x.TemDocumento ? $"Doc. {x.DocModelo} {x.DocSerie}/{x.DocNumero} de {x.DocData:dd/MM/yyyy}{(string.IsNullOrWhiteSpace(x.Observacao) ? "" : " — " + x.Observacao)}" : x.Observacao ?? "";
+
+    /// <summary>Relação de ajustes de um intervalo de competências, com total por código.</summary>
+    public static TabelaRelatorio RelacaoAjustes(IReadOnlyList<AjusteIcmsEfd> ajustes, DateOnly inicio, DateOnly fim)
+    {
+        var colunas = new List<ColunaRelatorio>
+        {
+            new("Competência", TipoColuna.Data), new("Imposto", LarguraCm: 1.8), new("Sentido", LarguraCm: 1.8), new("Código", LarguraCm: 2.2), new("Tipo", LarguraCm: 3.4),
+            new("Descrição"), new("Documento / observação"), new("Valor", TipoColuna.Valor),
+        };
+        var rows = ajustes.OrderBy(a => a.Competencia).ThenBy(a => a.Imposto).ThenBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id)
+            .Select(a => L(false, a.Competencia, ImpostosAjuste.Rotulo(a.Imposto), a.SentidoEfetivo == 'E' ? "Entrada" : "Saída", a.Codigo, TipoDoAjuste(a), a.Descricao, DocumentoDoAjuste(a), a.Valor))
+            .ToList();
+        foreach (var g in ajustes.GroupBy(a => (a.Imposto, a.Codigo)).OrderBy(g => g.Key.Imposto).ThenBy(g => g.Key.Codigo, StringComparer.Ordinal))
+            rows.Add(L(true, null, ImpostosAjuste.Rotulo(g.Key.Imposto), "", g.Key.Codigo, "Total do código", $"{g.Count()} lançamento(s)", "", g.Sum(a => a.Valor)));
+        rows.Add(L(true, null, "", "", "", "TOTAL GERAL", $"{ajustes.Count} lançamento(s)", "", ajustes.Sum(a => a.Valor)));
+        return new TabelaRelatorio($"Relação de ajustes da apuração — {inicio:MM/yyyy} a {fim:MM/yyyy}", colunas, rows,
+            "Ajustes do ICMS próprio (E111), do ICMS-ST (E220) e do IPI (E530) lançados em Lançamentos › Ajustes.");
+    }
+
+    private static readonly ColunaRelatorio[] ColunasConferencia =
+    [
+        new("Item"), new("Código", LarguraCm: 2), new("CFOP", LarguraCm: 1.5), new("Alíq. %", TipoColuna.Valor, 1.4), new("Qtde.", TipoColuna.Inteiro, 1.4),
+        new("Valor da operação", TipoColuna.Valor), new("Base ICMS", TipoColuna.Valor), new("ICMS (notas)", TipoColuna.Valor), new("Apuração (E110)", TipoColuna.Valor), new("Situação", LarguraCm: 3.2),
+    ];
+
+    /// <summary>
+    /// Conferência da EFD ICMS/IPI do mês: registros por bloco, C190/D190 por CST, CFOP e alíquota, confronto das notas com o E110 e as pendências da validação.
+    /// O arquivo é gerado só em memória.
+    /// </summary>
+    public static TabelaRelatorio ConferenciaEfd(ApuracaoSped a)
+    {
+        var rows = new List<LinhaRelatorio>();
+        LinhaRelatorio Cab(string t) => L(true, t, "", "", null, null, null, null, null, null, "");
+
+        rows.Add(Cab("1. REGISTROS DO ARQUIVO, POR BLOCO"));
+        foreach (var bloco in a.Arquivo.Registros.GroupBy(r => r.Key[0]).OrderBy(g => g.Key))
+        {
+            rows.Add(L(true, $"Bloco {bloco.Key}", "", "", null, bloco.Sum(r => r.Value), null, null, null, null, ""));
+            foreach (var r in bloco.OrderBy(r => r.Key, StringComparer.Ordinal)) rows.Add(L(false, "   Registro", r.Key, "", null, r.Value, null, null, null, null, ""));
+        }
+        rows.Add(L(true, "Total de linhas do arquivo", "", "", null, a.Arquivo.QuantidadeLinhas, null, null, null, null, ""));
+
+        var docs = CalculoEfdIcms.Escrituraveis(a.Dados.Documentos).Where(d => d.Autorizada).ToList();
+        var analiticos = docs.SelectMany(d => CalculoEfdIcms.Analitico(d).Select(x => (Doc: d, Item: x))).ToList();
+        rows.Add(Cab("2. C190 / D190 POR CST, CFOP E ALÍQUOTA (notas autorizadas)"));
+        foreach (var g in analiticos.GroupBy(x => (x.Item.Cst, x.Item.Cfop, x.Item.Aliquota)).OrderBy(g => g.Key.Cfop, StringComparer.Ordinal).ThenBy(g => g.Key.Cst, StringComparer.Ordinal).ThenBy(g => g.Key.Aliquota))
+            rows.Add(L(false, g.First().Doc.Transporte && g.All(x => x.Doc.Transporte) ? "   D190 (CT-e)" : g.Any(x => x.Doc.Transporte) ? "   C190 e D190" : "   C190", g.Key.Cst, g.Key.Cfop, g.Key.Aliquota, g.Select(x => x.Doc.Id).Distinct().Count(),
+                g.Sum(x => x.Item.Operacao), g.Sum(x => x.Item.BaseIcms), g.Sum(x => x.Item.Icms), null, ""));
+        rows.Add(L(true, "Total dos analíticos", "", "", null, docs.Count, analiticos.Sum(x => x.Item.Operacao), analiticos.Sum(x => x.Item.BaseIcms), analiticos.Sum(x => x.Item.Icms), null, ""));
+
+        string Sit(decimal dif) => Math.Abs(dif) <= 0.01m ? "Confere" : $"DIVERGE ({Numeros(dif)})";
+        var debNotas = analiticos.Where(x => CamposEfd.CfopSaida(x.Item.Cfop)).Sum(x => x.Item.Icms);
+        var credNotas = analiticos.Where(x => CamposEfd.CfopEntrada(x.Item.Cfop)).Sum(x => x.Item.Icms) + (a.Dados.Consumo ?? []).Sum(c => c.Icms);
+        var cabecalho = docs.Sum(d => d.Icms);
+        var itens = docs.Sum(d => d.Itens.Sum(i => i.Icms));
+        rows.Add(Cab("3. NOTAS × APURAÇÃO (E110)"));
+        rows.Add(L(false, "   ICMS das saídas nos analíticos × débitos do E110", "", "", null, null, null, null, debNotas, a.Icms.Debitos, Sit(debNotas - a.Icms.Debitos)));
+        rows.Add(L(false, "   ICMS das entradas (e contas de consumo) nos analíticos × créditos do E110", "", "", null, null, null, null, credNotas, a.Icms.Creditos, Sit(credNotas - a.Icms.Creditos)));
+        rows.Add(L(false, "   ICMS dos cabeçalhos das notas × ICMS dos itens", "", "", null, null, null, null, cabecalho, itens, Sit(cabecalho - itens)));
+        var difSaldo = a.Icms.Debitos + a.Icms.AjustesDebitos + a.Icms.EstornosCreditos - a.Icms.Creditos - a.Icms.AjustesCreditos - a.Icms.EstornosDebitos - a.Icms.SaldoCredorAnterior - a.Icms.SaldoApurado;
+        rows.Add(L(false, "   Saldo apurado recalculado com os ajustes × E110", "", "", null, null, null, null, a.Icms.Debitos + a.Icms.AjustesDebitos + a.Icms.EstornosCreditos - a.Icms.Creditos - a.Icms.AjustesCreditos - a.Icms.EstornosDebitos - a.Icms.SaldoCredorAnterior, a.Icms.SaldoApurado, Sit(difSaldo)));
+
+        rows.Add(Cab("4. DIVERGÊNCIAS E PENDÊNCIAS DA VALIDAÇÃO"));
+        if (a.Pendencias.Count == 0) rows.Add(L(false, "   Nenhuma pendência: o arquivo pode ser gerado.", "", "", null, null, null, null, null, null, ""));
+        foreach (var p in a.Pendencias) rows.Add(L(false, "   " + p.Mensagem, p.Codigo, "", null, null, null, null, null, null, p.Bloqueante ? "Bloqueia a geração" : "Aviso"));
+        return new TabelaRelatorio($"Conferência da EFD ICMS/IPI — {a.Inicio:MM/yyyy}", ColunasConferencia, rows,
+            $"{docs.Count} nota(s) autorizada(s) conferida(s). Arquivo montado só para conferência; para gerar, use Obrigações › SPED › EFD ICMS/IPI.");
+    }
+
+    private static string Numeros(decimal v) => v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+
+    private static readonly ColunaRelatorio[] ColunasIpi =
+        [new("Descrição"), new("CFOP / CST", LarguraCm: 2.2), new("Valor contábil", TipoColuna.Valor), new("Base de cálculo", TipoColuna.Valor), new("IPI", TipoColuna.Valor)];
+
+    /// <summary>Apuração do IPI do mês: E510 por CFOP e CST, E520 e os ajustes (E530).</summary>
+    public static TabelaRelatorio ApuracaoIpi(ApuracaoSped a)
+    {
+        var ipi = a.Ipi;
+        var rows = new List<LinhaRelatorio> { L(true, "1. OPERAÇÕES COM IPI (E510)", "", null, null, null) };
+        foreach (var l in ipi?.Linhas ?? []) rows.Add(L(false, CamposEfd.CfopSaida(l.Cfop) ? "   Saída" : "   Entrada", $"{l.Cfop} / {l.Cst}", l.Contabil, l.Base, l.Ipi));
+        rows.Add(L(true, "2. APURAÇÃO (E520)", "", null, null, null));
+        rows.Add(L(false, "   Débitos por saídas", "", null, null, ipi?.Debitos ?? 0));
+        rows.Add(L(false, "   Outros débitos (ajustes de saída)", "", null, null, ipi?.OutrosDebitos ?? 0));
+        rows.Add(L(false, "   Créditos por entradas", "", null, null, ipi?.Creditos ?? 0));
+        rows.Add(L(false, "   Outros créditos (ajustes de entrada)", "", null, null, ipi?.OutrosCreditos ?? 0));
+        rows.Add(L(true, "   Saldo devedor (IPI a recolher)", "", null, null, ipi?.SaldoDevedor ?? 0));
+        rows.Add(L(true, "   Saldo credor a transportar", "", null, null, ipi?.SaldoCredor ?? 0));
+        rows.Add(L(true, "3. AJUSTES DO IPI (E530)", "", null, null, null));
+        foreach (var x in (a.Dados.Ajustes ?? []).Where(x => x.Imposto == ImpostosAjuste.Ipi))
+            rows.Add(L(false, $"   {(x.SentidoEfetivo == 'E' ? "Crédito" : "Débito")}: {x.Descricao}", x.Codigo, null, null, x.Valor));
+        return new TabelaRelatorio($"Apuração do IPI — {a.Inicio:MM/yyyy}", ColunasIpi, rows,
+            "Só entram os itens com situação tributária do IPI preenchida. Os ajustes saem no E530 da EFD ICMS/IPI.");
+    }
+
+    private static readonly ColunaRelatorio[] ColunasSt = [new("Descrição"), new("UF", LarguraCm: 1.2), new("Código", LarguraCm: 2.2), new("Valor", TipoColuna.Valor)];
+
+    /// <summary>Apuração do ICMS-ST do mês por UF: retenção nas saídas, ajustes (E220), deduções e valor a recolher.</summary>
+    public static TabelaRelatorio ApuracaoIcmsSt(ApuracaoSped a)
+    {
+        var rows = new List<LinhaRelatorio>();
+        foreach (var st in a.Icms.St)
+        {
+            rows.Add(L(true, $"ICMS-ST — UF {st.Uf} (E210)", st.Uf, "", null));
+            rows.Add(L(false, "   Valor retido nas saídas (VL_RETENCAO_ST)", st.Uf, "", st.Retencao));
+            rows.Add(L(false, "   Outros débitos e estornos de crédito ST (VL_OUT_DEB_ST)", st.Uf, "", st.AjustesDebitos));
+            rows.Add(L(false, "   Outros créditos e estornos de débito ST (VL_OUT_CRED_ST)", st.Uf, "", st.AjustesCreditos));
+            rows.Add(L(false, "   Saldo devedor antes das deduções", st.Uf, "", st.SaldoAntesDeducoes));
+            rows.Add(L(false, "   Deduções (VL_DEDUCOES_ST)", st.Uf, "", st.Deducoes));
+            rows.Add(L(true, "   ICMS-ST a recolher (VL_ICMS_RECOL_ST)", st.Uf, "", st.Recolher));
+            rows.Add(L(false, "   Débitos especiais (DEB_ESP_ST)", st.Uf, "", st.DebitosEspeciais));
+            rows.Add(L(true, "   Saldo credor a transportar", st.Uf, "", st.SaldoCredorTransportar));
+            foreach (var x in (a.Dados.Ajustes ?? []).Where(x => x.Imposto == ImpostosAjuste.IcmsSt && x.Uf == st.Uf))
+                rows.Add(L(false, $"   Ajuste (E220): {x.Descricao}", st.Uf, x.Codigo, x.Valor));
+        }
+        if (rows.Count == 0) rows.Add(L(false, "Sem ICMS-ST retido nem ajustes de ICMS-ST no mês.", "", "", null));
+        return new TabelaRelatorio($"Apuração do ICMS-ST — {a.Inicio:MM/yyyy}", ColunasSt, rows,
+            "A retenção é a soma do ICMS-ST das saídas, por UF do destinatário. Os valores são os do registro E210 da EFD ICMS/IPI.");
     }
 
     public static TabelaRelatorio Produtos(IReadOnlyList<Produto> produtos)

@@ -128,10 +128,27 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 .Com("usu", NpgsqlDbType.Bigint, usuarioId))
                 documentoId = (long)(await ins.ExecuteScalarAsync(ct))!;
 
+            if (d.Transporte is { } tr)
+            {
+                await using var cte = new NpgsqlCommand("""
+                    INSERT INTO fiscal.documento_transporte (documento_id, tomador_documento, tomador_nome, tomador_uf, remetente_documento, remetente_nome, remetente_uf,
+                        destinatario_documento, destinatario_nome, destinatario_uf, modal, tipo_cte, municipio_inicio, uf_inicio, cod_municipio_inicio,
+                        municipio_fim, uf_fim, cod_municipio_fim, valor_receber, chaves_nfe)
+                    VALUES (@d, @td, @tn, @tu, @rd, @rn, @ru, @dd, @dn, @du, @modal, @tipo, @mi, @ui, @ci, @mf, @uf, @cf, @vr, @chaves)
+                    """, con, tx)
+                    .Com("d", documentoId).ComTexto("td", tr.Tomador.Documento).ComTexto("tn", Cortar(tr.Tomador.Nome, 150)).ComTexto("tu", tr.Tomador.Uf)
+                    .ComTexto("rd", tr.Remetente?.Documento).ComTexto("rn", Cortar(tr.Remetente?.Nome, 150)).ComTexto("ru", tr.Remetente?.Uf)
+                    .ComTexto("dd", tr.Destinatario?.Documento).ComTexto("dn", Cortar(tr.Destinatario?.Nome, 150)).ComTexto("du", tr.Destinatario?.Uf)
+                    .ComTexto("modal", Cortar(tr.Modal, 2)).Com("tipo", (short)tr.TipoCte).ComTexto("mi", Cortar(tr.MunicipioInicio, 60)).ComTexto("ui", tr.UfInicio)
+                    .ComTexto("ci", Cortar(tr.CodMunicipioInicio, 7)).ComTexto("mf", Cortar(tr.MunicipioFim, 60)).ComTexto("uf", tr.UfFim)
+                    .ComTexto("cf", Cortar(tr.CodMunicipioFim, 7)).Com("vr", tr.ValorReceber).Com("chaves", tr.ChavesNfe.ToArray());
+                await cte.ExecuteNonQueryAsync(ct);
+            }
+
             string? contaDebito = null, contaCredito = null;
             foreach (var i in d.Itens)
             {
-                var produtoId = i.Cfop == Cfop.Servico ? null : await VincularProdutoAsync(con, tx, empresaId, d.Emitente.Documento, ident.Operacao, i, ct);
+                var produtoId = i.Cfop == Cfop.Servico || d.Modelo == ModeloDocumento.CTe57 ? null : await VincularProdutoAsync(con, tx, empresaId, d.Emitente.Documento, ident.Operacao, i, ct);
                 await using var item = new NpgsqlCommand("""
                     INSERT INTO fiscal.documento_item (documento_id, n_item, cod_produto, descricao, ncm, cest, cfop, unidade, quantidade, valor_unitario,
                         valor_produto, valor_desconto, valor_frete, valor_seguro, valor_outras, valor_contabil, cst_icms, origem_mercadoria,
@@ -357,6 +374,30 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
             """;
         cmd.Com("lim", f.Limite);
         return await LerDocumentosAsync(cmd, ct);
+    }
+
+    public async Task<IReadOnlyDictionary<long, (DadosTransporte Dados, string? Cfop)>> ListarTransportesAsync(long empresaId, IReadOnlyCollection<long> documentoIds, CancellationToken ct)
+    {
+        var res = new Dictionary<long, (DadosTransporte, string?)>();
+        if (documentoIds.Count == 0) return res;
+        await using var cmd = ds.CreateCommand("""
+            SELECT t.documento_id, t.tomador_documento, t.tomador_nome, t.tomador_uf, t.remetente_documento, t.remetente_nome, t.remetente_uf,
+                   t.destinatario_documento, t.destinatario_nome, t.destinatario_uf, t.modal, t.tipo_cte, t.municipio_inicio, t.uf_inicio, t.cod_municipio_inicio,
+                   t.municipio_fim, t.uf_fim, t.cod_municipio_fim, t.valor_receber, t.chaves_nfe,
+                   (SELECT COALESCE(i.cfop_escrituracao, i.cfop) FROM fiscal.documento_item i WHERE i.documento_id = t.documento_id ORDER BY i.n_item LIMIT 1)
+              FROM fiscal.documento_transporte t JOIN fiscal.documento d ON d.id = t.documento_id
+             WHERE d.empresa_id = @e AND t.documento_id = ANY(@ids)
+            """).Com("e", empresaId).Com("ids", documentoIds.ToArray());
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+        {
+            var dados = new DadosTransporte(new ParteDocumento(r.Texto(1), r.Texto(2), r.Texto(3)),
+                r.IsDBNull(5) && r.IsDBNull(4) ? null : new ParteDocumento(r.Texto(4), r.Texto(5), r.Texto(6)),
+                r.IsDBNull(8) && r.IsDBNull(7) ? null : new ParteDocumento(r.Texto(7), r.Texto(8), r.Texto(9)),
+                r.Texto(10), r.GetInt16(11), r.Texto(12), r.Texto(13), r.Texto(15), r.Texto(16), r.Texto(14), r.Texto(17), r.GetDecimal(18), r.GetFieldValue<string[]>(19));
+            res[r.GetInt64(0)] = (dados, r.Texto(20));
+        }
+        return res;
     }
 
     private static async Task<IReadOnlyList<DocumentoFiscal>> LerDocumentosAsync(NpgsqlCommand cmd, CancellationToken ct)

@@ -64,7 +64,7 @@ código de receita quando há ICMS/ICMS-ST a recolher. Avisos: Simples Nacional,
 ## Limitações conhecidas
 
 - Contas de energia, gás e água (C500/C590, 40 campos no leiaute 020) e de comunicação (D500/D590) recebidas; inventário cadastrado (H005/H010, com o 0200 dos produtos) na competência escolhida.
-- Sem E112/E113/E115, DIFAL/FCP (E300), controle de crédito do CIAP (G), produção (K) e conhecimentos de transporte (D100).
+- Sem E112/E113/E115, DIFAL/FCP (E300), controle de crédito do CIAP (G), produção (K) e, na EFD-Contribuições, conhecimentos de transporte (D100). Na EFD ICMS/IPI o CT-e (modelo 57) sai em D100/D190.
 - Sem C180/C190/C175 consolidados, devoluções (M220/M620), receitas não tributadas (M400/M800), controle de créditos de períodos anteriores (M110/1100),
   créditos de energia/aluguel/depreciação (F100/F120) e CPRB (P). Devoluções de venda e saldo credor geram aviso.
 - Operações mistas (parte cumulativa, parte não cumulativa, COD_INC_TRIB 3) não são geradas.

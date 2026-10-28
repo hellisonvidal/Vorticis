@@ -44,6 +44,8 @@ public sealed record DocumentoEfd(
 {
     public bool Autorizada => Situacao == "AUTORIZADA";
     public bool Nfse => Modelo == "NFSE";
+    /// <summary>CT-e (modelo 57): vai no D100/D190, não no C100.</summary>
+    public bool Transporte => Modelo == "57";
     public decimal SomaOperacao => Itens.Sum(i => i.ValorContabil);
 }
 

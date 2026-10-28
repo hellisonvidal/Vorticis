@@ -37,6 +37,9 @@ public sealed record GravacaoDocumento(bool Duplicado, long DocumentoId, bool Pa
 public sealed record NotaPreparada(DocumentoLido Documento, TipoOperacao Operacao, ParteDocumento? Contraparte);
 
 /// <summary>Resultado de gravar a nota lida de um XML (pop-up de entrada/saída): id gravado ou da nota que já existia com a mesma chave.</summary>
+/// <summary>CT-e consultado: o documento, os dados do transporte (partes e percurso) e o CFOP da prestação.</summary>
+public sealed record CteConsultado(DocumentoFiscal Documento, DadosTransporte Transporte, string? Cfop);
+
 public sealed record NotaImportada(long DocumentoId, bool JaExistia, string Aviso);
 
 public sealed record CancelamentoRegistrado(bool Encontrado, bool JaCancelado, bool Contabilizado, long DocumentoId, string? Numero);
@@ -64,6 +67,9 @@ public interface IRepositorioDocumentos
 
     Task<IReadOnlyList<DocumentoFiscal>> ListarAsync(long empresaId, FiltroDocumentos filtro, CancellationToken ct);
     Task<IReadOnlyList<ItemFiscal>> ListarItensDoDocumentoAsync(long documentoId, CancellationToken ct);
+
+    /// <summary>Dados de transporte (CT-e) e CFOP do primeiro item dos documentos informados.</summary>
+    Task<IReadOnlyDictionary<long, (DadosTransporte Dados, string? Cfop)>> ListarTransportesAsync(long empresaId, IReadOnlyCollection<long> documentoIds, CancellationToken ct);
 
     /// <summary>Itens de todos os documentos da empresa no período (data do livro), com os dados do documento.</summary>
     Task<IReadOnlyList<LinhaItemFiscal>> ListarItensAsync(long empresaId, DateOnly inicio, DateOnly fim, TipoOperacao? operacao, CancellationToken ct);
@@ -141,7 +147,8 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
     /// por empresa). Se <paramref name="ct"/> for cancelado, o que já foi aceito é mantido e o resultado vem marcado como interrompido.
     /// </summary>
     public async Task<Resultado<ResultadoImportacao>> ImportarAsync(long empresaId, IEnumerable<ArquivoXml> arquivos, long usuarioId,
-                                                                   IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default, int total = 0)
+                                                                   IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default, int total = 0,
+                                                                   IReadOnlySet<ModeloDocumento>? somente = null)
     {
         if (await autorizador.NegarAsync<ResultadoImportacao>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, CancellationToken.None) is { } negado) return negado;
         var empresa = await repositorio.ObterEmpresaAsync(empresaId, CancellationToken.None);   // cancelar antes de começar não é erro: resulta em importação interrompida
@@ -155,7 +162,7 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
             foreach (var arquivo in Expandir(arquivos))
             {
                 if (ct.IsCancellationRequested) { interrompida = true; break; }
-                try { resultados.Add(await ImportarUmAsync(empresa, arquivo, lote, ct)); }
+                try { resultados.Add(await ImportarUmAsync(empresa, arquivo, lote, somente, ct)); }
                 catch (OperationCanceledException) { interrompida = true; break; }
                 if (lote.Gravadas >= TamanhoLote) await lote.FecharAsync();
                 progresso?.Report(new ProgressoImportacao(resultados.Count, Math.Max(total, resultados.Count), arquivo.Nome));
@@ -167,17 +174,19 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
 
     /// <summary>Importa os .xml (e .zip) de uma pasta, opcionalmente com as subpastas (em qualquer profundidade).</summary>
     public Task<Resultado<ResultadoImportacao>> ImportarPastaAsync(long empresaId, string pasta, bool subpastas, long usuarioId,
-                                                                  IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default)
+                                                                  IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default,
+                                                                  IReadOnlySet<ModeloDocumento>? somente = null)
     {
         if (!Directory.Exists(pasta)) return Task.FromResult(Resultado<ResultadoImportacao>.Falha("Pasta não encontrada."));
-        return ImportarArquivosAsync(empresaId, ListarArquivosDaPasta(pasta, subpastas), usuarioId, progresso, ct);
+        return ImportarArquivosAsync(empresaId, ListarArquivosDaPasta(pasta, subpastas), usuarioId, progresso, ct, somente);
     }
 
     public Task<Resultado<ResultadoImportacao>> ImportarArquivosAsync(long empresaId, IEnumerable<string> caminhos, long usuarioId,
-                                                                     IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default)
+                                                                     IProgress<ProgressoImportacao>? progresso = null, CancellationToken ct = default,
+                                                                     IReadOnlySet<ModeloDocumento>? somente = null)
     {
         var lista = caminhos.ToList();
-        return ImportarAsync(empresaId, LerArquivos(lista), usuarioId, progresso, ct, ContarArquivos(lista));
+        return ImportarAsync(empresaId, LerArquivos(lista), usuarioId, progresso, ct, ContarArquivos(lista), somente);
     }
 
     /// <summary>Caminhos dos .xml e .zip de uma pasta (com as subpastas, se pedido), ignorando pastas sem acesso.</summary>
@@ -277,7 +286,7 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
         }
     }
 
-    private async Task<ResultadoArquivo> ImportarUmAsync(EmpresaFiscal empresa, ArquivoXml arquivo, LoteAberto lote, CancellationToken ct)
+    private async Task<ResultadoArquivo> ImportarUmAsync(EmpresaFiscal empresa, ArquivoXml arquivo, LoteAberto lote, IReadOnlySet<ModeloDocumento>? somente, CancellationToken ct)
     {
         if (arquivo.Conteudo.Length == 0) return new(arquivo.Nome, SituacaoImportacao.Erro, "Arquivo vazio ou ilegível.");
         var leitura = LeitorXmlFiscal.Ler(arquivo.Conteudo);
@@ -300,6 +309,10 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
             case LeituraDocumento lido:
             {
                 var doc = lido.Documento;
+                if (somente is not null && !somente.Contains(doc.Modelo))
+                    return new(arquivo.Nome, SituacaoImportacao.Ignorado,
+                        $"O arquivo é {(doc.Modelo == ModeloDocumento.NFSe ? "uma" : "um")} {doc.Modelo.Rotulo()}, que não é aceito nesta tela ({string.Join(" e ", somente.Select(m => m.Rotulo()))}). Use Integrações › Importação de XML em lote.",
+                        doc.Chave, doc.Numero);
                 var ident = IdentificadorOperacao.Identificar(doc, empresa.Cnpjs);
                 if (!ident.Sucesso) return new(arquivo.Nome, SituacaoImportacao.OutraEmpresa, string.Join(" ", ident.Erros), doc.Chave, doc.Numero);
                 try
@@ -332,6 +345,16 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
     {
         if (await autorizador.NegarAsync<IReadOnlyList<DocumentoFiscal>>(usuarioId, empresaId, Permissao.FiscalDocumentosConsultar, ct) is { } negado) return negado;
         return Resultado<IReadOnlyList<DocumentoFiscal>>.Ok(await repositorio.ListarAsync(empresaId, filtro, ct));
+    }
+
+    /// <summary>CT-e do período, com as partes, o percurso e o CFOP; o filtro vale como na consulta de documentos (o modelo é sempre o 57).</summary>
+    public async Task<Resultado<IReadOnlyList<CteConsultado>>> ConsultarCtesAsync(long empresaId, FiltroDocumentos filtro, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<CteConsultado>>(usuarioId, empresaId, Permissao.FiscalDocumentosConsultar, ct) is { } negado) return negado;
+        var docs = await repositorio.ListarAsync(empresaId, filtro with { Modelo = ModeloDocumento.CTe57 }, ct);
+        var transportes = await repositorio.ListarTransportesAsync(empresaId, docs.Select(d => d.Id).ToArray(), ct);
+        return Resultado<IReadOnlyList<CteConsultado>>.Ok(docs.Where(d => transportes.ContainsKey(d.Id))
+            .Select(d => new CteConsultado(d, transportes[d.Id].Dados, transportes[d.Id].Cfop)).ToList());
     }
 
     /// <summary>Nota lida de um XML e identificada para a empresa (entrada ou saída), ainda não gravada: serve para conferir os dados antes de gravar.</summary>

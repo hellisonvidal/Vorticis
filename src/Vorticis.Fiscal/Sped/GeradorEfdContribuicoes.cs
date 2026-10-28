@@ -59,7 +59,8 @@ public static class GeradorEfdContribuicoes
         var o = d.Opcoes;
         var e = d.Empresa;
         var ap = d.Apuracao;
-        var docs = d.Documentos.OrderBy(x => x.EntradaSaida).ThenBy(x => x.Entrada ? 0 : 1).ThenBy(x => x.Modelo).ThenBy(x => x.Serie)
+        // CT-e (modelo 57) não entra nesta escrituração (D100 da EFD-Contribuições não é gerado); ver o manual.
+        var docs = d.Documentos.Where(x => !x.Transporte).OrderBy(x => x.EntradaSaida).ThenBy(x => x.Entrada ? 0 : 1).ThenBy(x => x.Modelo).ThenBy(x => x.Serie)
             .ThenBy(x => long.TryParse(x.Numero, out var n) ? n : 0).ThenBy(x => x.Id).ToList();
         var servicos = docs.Where(x => x.Nfse).ToList();
         var mercadorias = docs.Where(x => !x.Nfse).ToList();

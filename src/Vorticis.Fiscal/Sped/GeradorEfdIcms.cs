@@ -5,7 +5,7 @@ namespace Vorticis.Fiscal.Sped;
 /// <summary>
 /// Gerador da EFD ICMS/IPI (SPED Fiscal), Guia Prático 3.2.x, leiaute 020 (2026): bloco 0 (0000, 0001, 0005, 0100, 0150, 0190, 0200),
 /// C (C100, C170, C190 e C500/C590 das contas de energia, gás e água), D (D500/D590 de comunicação), G e K sem dados,
-/// E (E110, E111 dos ajustes, E116, E210/E250 do ICMS-ST e E500/E510/E520 do IPI), H (inventário H005/H010, ou zerado opcional),
+/// E (E110, E111/E112/E113 dos ajustes, E116, E210/E220/E250 do ICMS-ST e E500/E510/E520/E530 do IPI), H (inventário H005/H010, ou zerado opcional),
 /// 1 (1010) e 9. Ver docs/08-efd.md.
 /// </summary>
 public static class GeradorEfdIcms
@@ -21,6 +21,8 @@ public static class GeradorEfdIcms
         var docs = CalculoEfdIcms.Escrituraveis(d.Documentos).OrderBy(x => x.EntradaSaida).ThenBy(x => x.Entrada ? 0 : 1).ThenBy(x => x.Modelo).ThenBy(x => x.Serie)
             .ThenBy(x => long.TryParse(x.Numero, out var n) ? n : 0).ThenBy(x => x.Id).ToList();
         var ativos = docs.Where(x => x.Autorizada).ToList();
+        var mercadorias = docs.Where(x => !x.Transporte).ToList();
+        var ctes = docs.Where(x => x.Transporte).ToList();
         var w = new EscritorEfd();
 
         // ------------------------------------------------------------------ bloco 0
@@ -33,8 +35,8 @@ public static class GeradorEfdIcms
             w.Reg("0100", CamposEfd.T(c.Nome, 100), CamposEfd.Digitos(c.Cpf), CamposEfd.T(c.Crc, 15), CamposEfd.Digitos(c.CnpjEscritorio), "", "", "", "", "",
                   CamposEfd.Fone(c.Telefone), "", CamposEfd.T(c.Email, 255), e.CodMunicipio);
         var consumo = (d.Consumo ?? []).OrderBy(c => c.Entrada).ThenBy(c => c.Modelo).ThenBy(c => c.Numero).ToList();
-        EscreverCadastros(w, ativos.Select(x => x.Participante).Concat(consumo.Select(c => c.Participante)),
-                          ativos.SelectMany(x => x.Itens).Concat((d.Inventario?.Itens ?? []).Select(ItemDoInventario)));
+        EscreverCadastros(w, ativos.Select(x => x.Participante).Concat(consumo.Select(c => c.Participante)).Concat((d.Ajustes ?? []).Where(a => a.TemDocumento).Select(a => a.DocParticipante)),
+                          ativos.Where(x => !x.Transporte).SelectMany(x => x.Itens).Concat((d.Inventario?.Itens ?? []).Select(ItemDoInventario)));
         w.Fechar();
 
         // ------------------------------------------------------------------ bloco B (apenas DF) — ISS do Distrito Federal, sem dados
@@ -43,8 +45,8 @@ public static class GeradorEfdIcms
         // ------------------------------------------------------------------ bloco C
         var energia = consumo.Where(c => !c.Comunicacao).ToList();
         var comunicacao = consumo.Where(c => c.Comunicacao).ToList();
-        w.Abrir('C', docs.Count > 0 || energia.Count > 0);
-        foreach (var doc in docs)
+        w.Abrir('C', mercadorias.Count > 0 || energia.Count > 0);
+        foreach (var doc in mercadorias)
         {
             EscreverC100(w, d.Empresa.Cnpj, doc);
             if (!doc.Autorizada) continue;
@@ -67,7 +69,8 @@ public static class GeradorEfdIcms
         w.Fechar();
 
         // ------------------------------------------------------------------ bloco D: notas de comunicação e telecomunicação recebidas
-        w.Abrir('D', comunicacao.Count > 0);
+        w.Abrir('D', comunicacao.Count > 0 || ctes.Count > 0);
+        foreach (var doc in ctes) EscreverD100(w, d.Empresa.Cnpj, doc);
         foreach (var cc in comunicacao)
         {
             w.Reg("D500", "0", "1", cc.Participante.Codigo, cc.Modelo, "00", CamposEfd.T(cc.Serie, 4), "", CamposEfd.Digitos(cc.Numero), CamposEfd.D(cc.Emissao),
@@ -85,25 +88,36 @@ public static class GeradorEfdIcms
               "0,00", CamposEfd.V(apuracao.AjustesCreditos), CamposEfd.V(apuracao.EstornosDebitos), CamposEfd.V(apuracao.SaldoCredorAnterior),
               CamposEfd.V(Math.Max(0, apuracao.SaldoApurado)), CamposEfd.V(apuracao.Deducoes), CamposEfd.V(apuracao.Recolher),
               CamposEfd.V(apuracao.SaldoCredorTransportar), CamposEfd.V(apuracao.DebitosEspeciais));
-        foreach (var a in (d.Ajustes ?? []).OrderBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id))
+        foreach (var a in (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.Icms).OrderBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id))
+        {
             w.Reg("E111", a.Codigo, CamposEfd.T(a.Descricao, 255), CamposEfd.V(a.Valor));
+            if (!string.IsNullOrWhiteSpace(a.Observacao)) w.Reg("E112", "", "", "", "", CamposEfd.T(a.Observacao, 255));
+            if (a.TemDocumento)
+                w.Reg("E113", a.DocParticipante!.Codigo, a.DocModelo ?? "55", CamposEfd.T(CamposEfd.Digitos(a.DocSerie), 3), "", CamposEfd.Digitos(a.DocNumero), CamposEfd.D(a.DocData!.Value), "",
+                      CamposEfd.V(a.Valor), "");
+        }
         if (apuracao.TotalObrigacoes > 0)
             w.Reg("E116", "000", CamposEfd.V(apuracao.TotalObrigacoes), CamposEfd.D(CamposEfd.Vencimento(d.Fim, o.DiaVencimento)), CamposEfd.T(o.CodigoReceitaIcms, 20), "", "", "", "",
                   $"{d.Fim.Month:00}{d.Fim.Year}");
         foreach (var st in apuracao.St)
         {
             w.Reg("E200", st.Uf, CamposEfd.D(d.Inicio), CamposEfd.D(d.Fim));
-            w.Reg("E210", "1", "0,00", "0,00", "0,00", "0,00", "0,00", CamposEfd.V(st.Retencao), "0,00", "0,00", CamposEfd.V(st.Retencao), "0,00", CamposEfd.V(st.Recolher),
-                  CamposEfd.V(st.SaldoCredorTransportar), "0,00");
-            if (st.Recolher > 0)
-                w.Reg("E250", "002", CamposEfd.V(st.Recolher), CamposEfd.D(CamposEfd.Vencimento(d.Fim, o.DiaVencimento)), CamposEfd.T(o.CodigoReceitaIcmsSt, 20), "", "", "", "",
+            w.Reg("E210", "1", "0,00", "0,00", "0,00", CamposEfd.V(st.AjustesCreditos), "0,00", CamposEfd.V(st.Retencao), CamposEfd.V(st.AjustesDebitos), "0,00",
+                  CamposEfd.V(st.SaldoAntesDeducoes), CamposEfd.V(st.Deducoes), CamposEfd.V(st.Recolher), CamposEfd.V(st.SaldoCredorTransportar), CamposEfd.V(st.DebitosEspeciais));
+            foreach (var a in (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.IcmsSt && a.Uf == st.Uf).OrderBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id))
+                w.Reg("E220", a.Codigo, CamposEfd.T(a.Descricao, 255), CamposEfd.V(a.Valor));
+            if (st.Recolher + st.DebitosEspeciais > 0)
+                w.Reg("E250", "002", CamposEfd.V(st.Recolher + st.DebitosEspeciais), CamposEfd.D(CamposEfd.Vencimento(d.Fim, o.DiaVencimento)), CamposEfd.T(o.CodigoReceitaIcmsSt, 20), "", "", "", "",
                       $"{d.Fim.Month:00}{d.Fim.Year}");
         }
         if (apuracao.Ipi is { } ipi)
         {
             w.Reg("E500", "0", CamposEfd.D(d.Inicio), CamposEfd.D(d.Fim));
             foreach (var l in ipi.Linhas) w.Reg("E510", l.Cfop, l.Cst, CamposEfd.V(l.Contabil), CamposEfd.V(l.Base), CamposEfd.V(l.Ipi));
-            w.Reg("E520", "0,00", CamposEfd.V(ipi.Debitos), CamposEfd.V(ipi.Creditos), "0,00", "0,00", CamposEfd.V(ipi.SaldoCredor), CamposEfd.V(ipi.SaldoDevedor));
+            w.Reg("E520", "0,00", CamposEfd.V(ipi.Debitos), CamposEfd.V(ipi.Creditos), CamposEfd.V(ipi.OutrosDebitos), CamposEfd.V(ipi.OutrosCreditos), CamposEfd.V(ipi.SaldoCredor),
+                  CamposEfd.V(ipi.SaldoDevedor));
+            foreach (var a in (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.Ipi).OrderBy(a => a.Codigo, StringComparer.Ordinal).ThenBy(a => a.Id))
+                w.Reg("E530", a.SentidoEfetivo == 'E' ? "1" : "0", CamposEfd.V(a.Valor), a.Codigo, "9", CamposEfd.T(a.Observacao, 60), CamposEfd.T(a.Descricao, 255));
         }
         w.Fechar();
 
@@ -186,6 +200,27 @@ public static class GeradorEfdIcms
               CamposEfd.V(doc.Outras), CamposEfd.V(Soma(i => i.BcIcms, doc.BcIcms)), CamposEfd.V(Soma(i => i.Icms, doc.Icms)),
               CamposEfd.V(Soma(i => i.BcIcmsSt, doc.BcIcmsSt)), CamposEfd.V(Soma(i => i.IcmsSt, doc.IcmsSt)), CamposEfd.V(Soma(i => i.Ipi, doc.Ipi)),
               CamposEfd.V(pis ?? Soma(i => i.Pis, doc.Pis)), CamposEfd.V(cofins ?? Soma(i => i.Cofins, doc.Cofins)), "0,00", "0,00");
+    }
+
+    /// <summary>D100 (CT-e) e D190 (analítico por CST, CFOP e alíquota). Cancelado e denegado saem só com a identificação.</summary>
+    private static void EscreverD100(EscritorEfd w, string cnpjEmpresa, DocumentoEfd doc)
+    {
+        var codSit = doc.Situacao switch { "CANCELADA" => "02", "DENEGADA" => "04", _ => "00" };
+        var oper = doc.Entrada ? "0" : "1";
+        var ser = CamposEfd.T(CamposEfd.Digitos(doc.Serie), 3);
+        var num = CamposEfd.Digitos(doc.Numero);
+        if (!doc.Autorizada)
+        {
+            w.Reg("D100", oper, IndEmit(cnpjEmpresa, doc), "", "57", codSit, ser, "", num, doc.Chave, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+            return;
+        }
+        var bc = doc.Itens.Sum(i => i.BcIcms);
+        var icms = doc.Itens.Sum(i => i.Icms);
+        var naoTrib = Math.Max(0, doc.Total - bc);
+        w.Reg("D100", oper, IndEmit(cnpjEmpresa, doc), doc.Participante?.Codigo, "57", codSit, ser, "", num, doc.Chave, CamposEfd.D(doc.Emissao), CamposEfd.D(doc.EntradaSaida),
+              "0", "", CamposEfd.V(doc.Total), "0,00", "9", CamposEfd.V(doc.Total), CamposEfd.V(bc), CamposEfd.V(icms), CamposEfd.V(naoTrib), "", "", "", "");
+        foreach (var a in CalculoEfdIcms.Analitico(doc))
+            w.Reg("D190", a.Cst, a.Cfop, CamposEfd.Aliq(a.Aliquota), CamposEfd.V(a.Operacao), CamposEfd.V(a.BaseIcms), CamposEfd.V(a.Icms), CamposEfd.V(a.Reducao), "");
     }
 
     private static void EscreverC170(EscritorEfd w, ItemEfd i)

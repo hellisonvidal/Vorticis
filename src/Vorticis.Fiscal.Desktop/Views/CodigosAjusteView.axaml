@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:g="using:Vorticis.Fiscal.Desktop.Views" xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.CodigosAjusteView" x:DataType="vm:CodigosAjusteViewModel">
+  <!-- Lançamentos › Ajustes › Códigos de ajuste -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Códigos de ajuste da apuração" />
+      <TextBlock FontSize="11" Foreground="#44506A" TextWrapping="Wrap"
+                 Text="Cadastre os códigos da tabela 5.1.1 da sua UF que a empresa usa (8 posições: UF + 0 para ICMS próprio ou 1 para ICMS-ST + tipo + sequência) e os do IPI (3 posições). Eles aparecem para escolha nas telas de ajustes." />
+      <WrapPanel IsEnabled="{Binding PodeManter}">
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Imposto" FontSize="12" /><ComboBox ItemsSource="{x:Static vm:CodigosAjusteViewModel.Impostos}" SelectedIndex="{Binding Imposto}" Width="110" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Código" FontSize="12" /><TextBox Text="{Binding Codigo}" Width="110" MaxLength="8" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Descrição" FontSize="12" /><TextBox Text="{Binding Descricao}" Width="420" MaxLength="255" /></StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,0,0,6">
+          <Button Content="Novo" Command="{Binding NovoCommand}" />
+          <Button Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+          <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+        </StackPanel>
+      </WrapPanel>
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Imposto" Binding="{ReflectionBinding Imposto}" Width="90" />
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="110" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

@@ -54,16 +54,79 @@ public sealed class ServicoOutrosLancamentosEfd(NpgsqlDataSource ds, Autorizador
     {
         if (await autorizador.VerificarAsync(usuario, empresa, Permissao.FiscalApurar, ct) is { } negado) return Resultado.Falha(negado);
         var codigo = (a.Codigo ?? "").Trim().ToUpperInvariant();
-        if (OutrosLancamentosEfd.ValidarAjuste(codigo, a.Descricao, a.Valor, await UfAsync(empresa, ct)) is { Count: > 0 } erros) return Resultado.Falha(erros);
+        var imposto = a.Imposto;
+        // sem sentido informado, deduz-se pelo tipo do código (ICMS e ICMS-ST); no IPI o sentido é obrigatório
+        char? sentido = a.Sentido;
+        if (sentido is null && imposto != ImpostosAjuste.Ipi && codigo.Length >= 4 && codigo[3] is >= '0' and <= '5')
+            sentido = OutrosLancamentosEfd.TipoDoSentido((TipoAjusteIcms)(codigo[3] - '0'), 'E') ? 'E' : 'S';
+        var erros = OutrosLancamentosEfd.ValidarAjuste(codigo, a.Descricao, a.Valor, await UfAsync(empresa, ct), imposto, sentido).ToList();
+        if (sentido is null) erros.Add("Informe o sentido do ajuste (entrada ou saída).");
+        var temDoc = a.DocParticipanteId is not null || !string.IsNullOrWhiteSpace(a.DocNumero) || a.DocData is not null;
+        if (temDoc)
+        {
+            if (imposto != ImpostosAjuste.Icms) erros.Add("O documento fiscal relacionado (E113) só vale para ajustes do ICMS próprio.");
+            if (a.DocParticipanteId is null) erros.Add("Informe o cliente ou fornecedor do documento relacionado.");
+            if (string.IsNullOrWhiteSpace(a.DocNumero) || !a.DocNumero.Trim().All(char.IsAsciiDigit)) erros.Add("Número do documento relacionado só com dígitos.");
+            if (a.DocData is null) erros.Add("Informe a data do documento relacionado.");
+        }
+        if (erros.Count > 0) return Resultado.Falha(erros);
         var comp = new DateOnly(a.Competencia.Year, a.Competencia.Month, 1);
         return await Tentar(async () =>
         {
             await using var cmd = ds.CreateCommand(a.Id == 0
-                ? "INSERT INTO fiscal.efd_ajuste_icms (empresa_id, competencia, codigo, descricao, valor) VALUES (@e, @c, @cod, @d, @v)"
-                : "UPDATE fiscal.efd_ajuste_icms SET competencia = @c, codigo = @cod, descricao = @d, valor = @v WHERE id = @id AND empresa_id = @e")
-                .Com("e", empresa).Com("c", comp).Com("cod", codigo).Com("d", a.Descricao.Trim()).Com("v", a.Valor).Com("id", a.Id);
+                ? """
+                  INSERT INTO fiscal.efd_ajuste_icms (empresa_id, competencia, codigo, descricao, valor, imposto, sentido, observacao, doc_participante_id, doc_modelo, doc_serie, doc_numero, doc_data)
+                  VALUES (@e, @c, @cod, @d, @v, @imp, @sen, @obs, @dp, @dm, @ds, @dn, @dd)
+                  """
+                : """
+                  UPDATE fiscal.efd_ajuste_icms SET competencia = @c, codigo = @cod, descricao = @d, valor = @v, imposto = @imp, sentido = @sen, observacao = @obs,
+                         doc_participante_id = @dp, doc_modelo = @dm, doc_serie = @ds, doc_numero = @dn, doc_data = @dd
+                   WHERE id = @id AND empresa_id = @e
+                  """)
+                .Com("e", empresa).Com("c", comp).Com("cod", codigo).Com("d", a.Descricao.Trim()).Com("v", a.Valor).Com("id", a.Id).Com("imp", imposto)
+                .Com("sen", NpgsqlTypes.NpgsqlDbType.Char, sentido!.Value.ToString()).ComTexto("obs", string.IsNullOrWhiteSpace(a.Observacao) ? null : a.Observacao.Trim())
+                .Com("dp", NpgsqlTypes.NpgsqlDbType.Bigint, temDoc ? a.DocParticipanteId : null).ComTexto("dm", temDoc ? (string.IsNullOrWhiteSpace(a.DocModelo) ? "55" : a.DocModelo.Trim()) : null)
+                .ComTexto("ds", temDoc ? a.DocSerie?.Trim() : null).ComTexto("dn", temDoc ? a.DocNumero?.Trim() : null)
+                .Com("dd", NpgsqlTypes.NpgsqlDbType.Date, temDoc ? a.DocData : null);
             await cmd.ExecuteNonQueryAsync(ct);
         });
+    }
+
+    // ------------------------------------------------------------------ cadastro de códigos de ajuste
+
+    public async Task<Resultado<IReadOnlyList<CodigoAjuste>>> CodigosAjusteAsync(long empresa, string? imposto, long usuario, CancellationToken ct = default)
+    {
+        if (await NegarVerAsync(usuario, empresa, ct) is { } n) return Resultado<IReadOnlyList<CodigoAjuste>>.Falha(n);
+        await using var cmd = ds.CreateCommand("SELECT imposto, codigo, descricao FROM fiscal.codigo_ajuste WHERE empresa_id = @e AND (@i::text IS NULL OR imposto = @i) ORDER BY imposto, codigo")
+            .Com("e", empresa).ComTexto("i", imposto);
+        var res = new List<CodigoAjuste>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) res.Add(new CodigoAjuste(r.GetString(0), r.GetString(1), r.GetString(2)));
+        return Resultado<IReadOnlyList<CodigoAjuste>>.Ok(res);
+    }
+
+    public async Task<Resultado> GravarCodigoAjusteAsync(long empresa, CodigoAjuste c, long usuario, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuario, empresa, Permissao.FiscalApurar, ct) is { } negado) return Resultado.Falha(negado);
+        var codigo = (c.Codigo ?? "").Trim().ToUpperInvariant();
+        // reaproveita as regras de código do ajuste (valor e descrição fictícios só para a validação do código)
+        var erros = OutrosLancamentosEfd.ValidarAjuste(codigo, c.Descricao, 1m, c.Imposto == ImpostosAjuste.Ipi ? "" : codigo.Length >= 2 ? codigo[..2] : "", c.Imposto);
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        return await Tentar(async () =>
+        {
+            await using var cmd = ds.CreateCommand("""
+                INSERT INTO fiscal.codigo_ajuste (empresa_id, imposto, codigo, descricao) VALUES (@e, @i, @c, @d)
+                ON CONFLICT (empresa_id, imposto, codigo) DO UPDATE SET descricao = EXCLUDED.descricao
+                """).Com("e", empresa).Com("i", c.Imposto).Com("c", codigo).Com("d", c.Descricao.Trim());
+            await cmd.ExecuteNonQueryAsync(ct);
+        });
+    }
+
+    public async Task<Resultado> ExcluirCodigoAjusteAsync(long empresa, string imposto, string codigo, long usuario, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuario, empresa, Permissao.FiscalApurar, ct) is { } negado) return Resultado.Falha(negado);
+        await using var cmd = ds.CreateCommand("DELETE FROM fiscal.codigo_ajuste WHERE empresa_id = @e AND imposto = @i AND codigo = @c").Com("e", empresa).Com("i", imposto).Com("c", codigo.Trim().ToUpperInvariant());
+        return await cmd.ExecuteNonQueryAsync(ct) == 0 ? Resultado.Falha("Código não encontrado.") : Resultado.Ok();
     }
 
     public async Task<Resultado> ExcluirAjusteAsync(long empresa, long id, long usuario, CancellationToken ct = default)

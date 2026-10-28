@@ -4,6 +4,9 @@ namespace Vorticis.Fiscal.Desktop.ViewModels;
 public static class Telas
 {
     public const string ImportacaoXml = "importacaoxml";
+    public const string ImportacaoNfse = "importacaonfse";
+    public const string ImportacaoCte = "importacaocte";
+    public const string ConsultaCte = "consultacte";
     public const string Documentos = "documentosfiscais";
     public const string RegrasContabilizacao = "regrascontabilizacao";
     public const string ContabilizarNotas = "contabilizarnotas";
@@ -13,7 +16,9 @@ public static class Telas
     public const string PisCofins = "apuracaopiscofins";
     public const string BaseMensal = "historicoreceitafolha";
     public const string FechamentoFiscal = "fiscal.fechamento";
-    public const string AjustesIcms = "fiscal.sped.ajustes";
+    public const string AjustesEntrada = "fiscal.ajustes.entrada";
+    public const string AjustesSaida = "fiscal.ajustes.saida";
+    public const string CodigosAjuste = "fiscal.ajustes.codigos";
     public const string ContasConsumo = "fiscal.sped.consumo";
     public const string Inventario = "fiscal.sped.inventario";
     public const string Retencoes = "retencoes";
@@ -24,6 +29,11 @@ public static class Telas
     public const string LivroSaidas = "livrosaidas";
     public const string LivroApuracaoIcms = "livroapuracaoicms";
     public const string LivroApuracaoIpi = "livroapuracaoipi";
+    public const string ResumoApuracaoIcms = "resumoapuracaoicms";
+    public const string RelacaoAjustes = "relacaoajustes";
+    public const string ConferenciaEfd = "conferenciaefd";
+    public const string ApuracaoIpiSped = "apuracaoipisped";
+    public const string ApuracaoIcmsSt = "apuracaoicmsst";
     public const string ResumoCfop = "resumocfop";
     public const string NotaEntrada = "notaentrada";
     public const string NotaSaida = "notasaida";

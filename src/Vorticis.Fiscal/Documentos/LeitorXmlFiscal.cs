@@ -6,7 +6,7 @@ using Vorticis.Domain.Cadastros;
 namespace Vorticis.Fiscal.Documentos;
 
 /// <summary>
-/// Lê o XML de NF-e/NFC-e (modelos 55 e 65: nfeProc ou NFe) e da NFS-e padrão nacional (ADN: elemento NFSe), além dos eventos de
+/// Lê o XML de NF-e/NFC-e (modelos 55 e 65: nfeProc ou NFe), do CT-e (modelo 57: cteProc ou CTe) e da NFS-e padrão nacional (ADN: elemento NFSe), além dos eventos de
 /// cancelamento. Os nomes de elemento são comparados sem o namespace, e o XML é lido sem DTD (proteção contra entidades externas).
 /// Pura: não acessa banco nem arquivos.
 /// </summary>
@@ -40,7 +40,9 @@ public static class LeitorXmlFiscal
             return raiz.Name.LocalName switch
             {
                 "nfeProc" or "NFe" => LerNfe(raiz, xml),
+                "cteProc" or "CTe" => LerCte(raiz, xml),
                 "NFSe" => LerNfse(raiz, xml),
+                "CompNfse" or "Nfse" or "InfNfse" or "ConsultarNfseResposta" or "GerarNfseResposta" => LerNfseAbrasf(raiz, xml),
                 _ => LerEvento(raiz),
             };
         }
@@ -55,11 +57,11 @@ public static class LeitorXmlFiscal
     private static LeituraXml LerEvento(XElement raiz)
     {
         var tipo = Valor(raiz, "tpEvento");
-        var chave = Valor(raiz, "chNFe") ?? Valor(raiz, "chNFSe");
+        var chave = Valor(raiz, "chNFe") ?? Valor(raiz, "chCTe") ?? Valor(raiz, "chNFSe");
         var cancelamento = tipo == "110111" || Desc(raiz, "e101101") is not null;
         if (chave is not null && cancelamento) return new LeituraCancelamento(chave.Trim());
         if (chave is not null) return new LeituraInvalida($"Evento {tipo ?? "desconhecido"} ignorado (só cancelamento altera o documento).");
-        return new LeituraInvalida($"Arquivo não reconhecido como NF-e, NFC-e ou NFS-e nacional (elemento raiz \"{raiz.Name.LocalName}\").");
+        return new LeituraInvalida($"Arquivo não reconhecido como NF-e, NFC-e, CT-e ou NFS-e nacional (elemento raiz \"{raiz.Name.LocalName}\").");
     }
 
     // ------------------------------------------------------------------ NF-e / NFC-e
@@ -155,6 +157,70 @@ public static class LeitorXmlFiscal
             Gtin: Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEAN")) ?? Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEANTrib")));
     }
 
+    // ------------------------------------------------------------------ CT-e (modelo 57)
+
+    private static LeituraXml LerCte(XElement raiz, byte[] xml)
+    {
+        var inf = Desc(raiz, "infCte");
+        if (inf is null) return new LeituraInvalida("CT-e sem o grupo infCte.");
+        var ide = Filho(inf, "ide");
+        var chave = (inf.Attribute("Id")?.Value ?? Valor(raiz, "chCTe") ?? "").Replace("CTe", "").Trim();
+        if (chave.Length != 44 || !chave.All(char.IsAsciiDigit)) return new LeituraInvalida("Chave de acesso do CT-e inválida ou ausente (44 dígitos).");
+        if (Valor(ide, "mod") is { } m && m != "57") return new LeituraInvalida($"Modelo {m} não suportado no CT-e (somente 57).");
+
+        var emit = Filho(inf, "emit");
+        var rem = Filho(inf, "rem");
+        var dest = Filho(inf, "dest");
+        var vPrest = Filho(inf, "vPrest");
+        var valor = Num(Valor(vPrest, "vTPrest"));
+        var receber = Num(Valor(vPrest, "vRec"));
+        var icms = Filho(Filho(Filho(inf, "imp"), "ICMS"), null);   // ICMS00, ICMS20, ICMS45, ICMS60, ICMS90, ICMSOutraUF, ICMSSN
+        var vBc = Num(Valor(icms, "vBC") ?? Valor(icms, "vBCOutraUF"));
+        var vIcms = Num(Valor(icms, "vICMS") ?? Valor(icms, "vICMSOutraUF"));
+        var aliq = Num(Valor(icms, "pICMS") ?? Valor(icms, "pICMSOutraUF"), 4);
+        var cst = Valor(icms, "CST");
+
+        // Tomador: toma3 indica qual das partes é (0 remetente, 1 expedidor, 2 recebedor, 3 destinatário); toma4 traz os dados próprios.
+        ParteDocumento tomador;
+        var toma4 = Filho(ide, "toma4");
+        if (toma4 is not null) tomador = Parte(toma4, "enderToma");
+        else
+        {
+            var grupo = Filho(ide, "toma3") ?? Filho(ide, "toma03");
+            tomador = Valor(grupo, "toma") switch
+            {
+                "1" => Parte(Filho(inf, "exped"), "enderExped"),
+                "2" => Parte(Filho(inf, "receb"), "enderReceb"),
+                "3" => Parte(dest, "enderDest"),
+                _ => Parte(rem, "enderReme"),
+            };
+        }
+
+        var cfop = (Valor(ide, "CFOP") ?? "").Trim();
+        var origem = $"{Valor(ide, "xMunIni")}/{Valor(ide, "UFIni")}";
+        var destino = $"{Valor(ide, "xMunFim")}/{Valor(ide, "UFFim")}";
+        var item = new ItemFiscal(1, null, $"Prestação de serviço de transporte de {origem} a {destino}", null, null, cfop, null, 1, valor, valor, 0, 0, 0, 0, valor,
+            cst, "0", vBc, aliq, vIcms, 0, 0, null, 0, 0, 0, null, 0, 0, 0, null, 0, 0, 0, 0, 0, 0);
+        var totais = new TotaisDocumento(valor, 0, 0, 0, 0, valor, vBc, vIcms, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0);
+
+        var protocolo = Valor(Desc(raiz, "protCTe"), "cStat");
+        var situacao = protocolo switch
+        {
+            "101" or "135" or "151" or "155" => SituacaoDocumento.Cancelada,
+            "110" or "301" or "302" or "303" => SituacaoDocumento.Denegada,
+            _ => SituacaoDocumento.Autorizada,
+        };
+        var emissao = Data(Valor(ide, "dhEmi")) ?? throw new FormatException("Data de emissão ausente.");
+        var chaves = inf.Descendants().Where(e => e.Name.LocalName == "infNFe").Select(e => Valor(e, "chave")).OfType<string>().Where(c => c.Length == 44).Distinct().ToList();
+        var transporte = new DadosTransporte(tomador, rem is null ? null : Parte(rem, "enderReme"), dest is null ? null : Parte(dest, "enderDest"), Valor(ide, "modal"),
+            int.TryParse(Valor(ide, "tpCTe"), out var tp) ? tp : 0, Valor(ide, "xMunIni"), Valor(ide, "UFIni"), Valor(ide, "xMunFim"), Valor(ide, "UFFim"),
+            Valor(ide, "cMunIni"), Valor(ide, "cMunFim"), receber == 0 ? valor : receber, chaves);
+
+        return new LeituraDocumento(new DocumentoLido(
+            ModeloDocumento.CTe57, chave, (Valor(ide, "nCT") ?? "").Trim(), (Valor(ide, "serie") ?? "").Trim(), emissao, null, Valor(ide, "natOp"), situacao, null,
+            Parte(emit, "enderEmit"), tomador, totais, [item], xml, Transporte: transporte));
+    }
+
     // ------------------------------------------------------------------ NFS-e padrão nacional (ADN)
 
     private static LeituraXml LerNfse(XElement raiz, byte[] xml)
@@ -210,6 +276,54 @@ public static class LeitorXmlFiscal
             competencia, Valor(inf, "xTribNac") ?? Valor(cServ, "xDescServ"),
             situacaoCStat is "101" or "135" ? SituacaoDocumento.Cancelada : SituacaoDocumento.Autorizada, null,
             prestador, tomador, totais, [item], xml));
+    }
+
+    /// <summary>
+    /// NFS-e no layout ABRASF (versão 1 e 2, básico): CompNfse/Nfse/InfNfse com prestador, tomador, valores do serviço, ISS e retenções. Não tem chave
+    /// de acesso: a identificação é montada com o CNPJ do prestador, o número e o código de verificação. Só a primeira nota do arquivo é lida.
+    /// </summary>
+    private static LeituraXml LerNfseAbrasf(XElement raiz, byte[] xml)
+    {
+        var inf = Desc(raiz, "InfNfse");
+        if (inf is null) return new LeituraInvalida("NFS-e sem o grupo InfNfse (layout ABRASF).");
+        var numero = (Valor(inf, "Numero") ?? "").Trim();
+        if (numero.Length == 0) return new LeituraInvalida("NFS-e ABRASF sem o número da nota.");
+        var prest = Desc(inf, "PrestadorServico");
+        var idPrest = Desc(prest, "IdentificacaoPrestador");
+        var toma = Desc(inf, "TomadorServico");
+        var idToma = Desc(toma, "IdentificacaoTomador");
+        var servico = Desc(inf, "Servico");
+        var valores = Desc(servico, "Valores") ?? Desc(inf, "Valores");
+
+        string? Doc(XElement? e) => Cnpj.SomenteDigitos(Valor(e, "Cnpj") ?? Valor(e, "CpfCnpj") ?? Valor(e, "Cpf")) is { Length: > 0 } d ? d : null;
+        var docPrest = Doc(idPrest) ?? Doc(prest);
+        var docToma = Doc(idToma) ?? Doc(toma);
+        ParteDocumento Parte(XElement? e, string? doc) => new(doc, Valor(e, "RazaoSocial") ?? Valor(e, "NomeFantasia"), Valor(Desc(e, "Endereco"), "Uf"),
+            Valor(Desc(e, "Endereco"), "CodigoMunicipio"), null, null);
+
+        var vServ = Num(Valor(valores, "ValorServicos"));
+        var desconto = Num(Valor(valores, "DescontoIncondicionado"));
+        var iss = Num(Valor(valores, "ValorIss"));
+        var aliq = Num(Valor(valores, "Aliquota"), 4);
+        if (aliq > 0 && aliq < 1) aliq = Math.Round(aliq * 100m, 4);   // alguns municípios informam 0,05 em vez de 5
+        var bc = Num(Valor(valores, "BaseCalculo"));
+        var retido = Valor(servico, "IssRetido") is "1" || Valor(valores, "IssRetido") is "1";
+        var pis = Num(Valor(valores, "ValorPis"));
+        var cofins = Num(Valor(valores, "ValorCofins"));
+        var emissao = Data(Valor(inf, "DataEmissao")) ?? throw new FormatException("Data de emissão ausente.");
+        var verificador = Valor(inf, "CodigoVerificacao") ?? "";
+        var chave = $"ABRASF{docPrest}{numero}{verificador}";
+        if (chave.Length > 60) chave = chave[..60];
+
+        var item = new ItemFiscal(1, Valor(servico, "ItemListaServico") ?? Valor(servico, "CodigoTributacaoMunicipio"), Valor(servico, "Discriminacao"), null, null,
+            Cfop.Servico, null, 1, vServ, vServ, desconto, 0, 0, 0, Math.Round(vServ - desconto, 2),
+            null, null, 0, 0, 0, 0, 0, null, 0, 0, 0, null, 0, 0, pis, null, 0, 0, cofins, bc, aliq, iss);
+        var totais = new TotaisDocumento(vServ, desconto, 0, 0, 0, vServ, 0, 0, 0, 0, 0, pis, cofins, iss, retido, 0, 0, Num(Valor(valores, "ValorCsll")),
+            Num(Valor(valores, "ValorIr")), Num(Valor(valores, "ValorInss")));
+        var cancelada = Desc(raiz, "NfseCancelamento") is not null || Desc(raiz, "InfPedidoCancelamento") is not null;
+        return new LeituraDocumento(new DocumentoLido(ModeloDocumento.NFSe, chave, numero, "", emissao, Data(Valor(inf, "Competencia")), Valor(servico, "Discriminacao"),
+            cancelada ? SituacaoDocumento.Cancelada : SituacaoDocumento.Autorizada, null, Parte(prest, docPrest), docToma is null && toma is null ? null : Parte(toma, docToma),
+            totais, [item], xml));
     }
 
     private static ParteDocumento ParteNfse(XElement? e, string endereco)

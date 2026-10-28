@@ -16,6 +16,11 @@
     <DataTemplate DataType="vm:LivroSaidasViewModel"><v:LivroFiscalView /></DataTemplate>
     <DataTemplate DataType="vm:LivroApuracaoIcmsViewModel"><v:LivroApuracaoView /></DataTemplate>
     <DataTemplate DataType="vm:LivroApuracaoIpiViewModel"><v:LivroApuracaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ResumoApuracaoIcmsViewModel"><v:LivroApuracaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoIpiSpedViewModel"><v:LivroApuracaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ApuracaoIcmsStViewModel"><v:LivroApuracaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ConferenciaEfdViewModel"><v:LivroApuracaoView /></DataTemplate>
+    <DataTemplate DataType="vm:RelacaoAjustesViewModel"><v:RelacaoAjustesView /></DataTemplate>
     <DataTemplate DataType="vm:NotaEntradaViewModel"><v:DigitacaoDocumentoView /></DataTemplate>
     <DataTemplate DataType="vm:NotaSaidaViewModel"><v:DigitacaoDocumentoView /></DataTemplate>
     <DataTemplate DataType="vm:ProdutosViewModel"><v:ProdutosView /></DataTemplate>
@@ -27,8 +32,13 @@
     <DataTemplate DataType="vm:RelatorioBaixasViewModel"><v:RelatorioBaixasView /></DataTemplate>
     <DataTemplate DataType="vm:RegrasContabilizacaoViewModel"><v:RegrasContabilizacaoView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilizarNotasViewModel"><v:ContabilizarNotasView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoNfseViewModel"><v:ImportacaoXmlView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportacaoCteViewModel"><v:ImportacaoXmlView /></DataTemplate>
+    <DataTemplate DataType="vm:ConsultaCteViewModel"><v:ConsultaCteView /></DataTemplate>
     <DataTemplate DataType="vm:FechamentoFiscalViewModel"><v:FechamentoFiscalView /></DataTemplate>
-    <DataTemplate DataType="vm:AjustesIcmsViewModel"><v:AjustesIcmsView /></DataTemplate>
+    <DataTemplate DataType="vm:AjustesEntradaViewModel"><v:AjustesIcmsView /></DataTemplate>
+    <DataTemplate DataType="vm:AjustesSaidaViewModel"><v:AjustesIcmsView /></DataTemplate>
+    <DataTemplate DataType="vm:CodigosAjusteViewModel"><v:CodigosAjusteView /></DataTemplate>
     <DataTemplate DataType="vm:ContasConsumoViewModel"><v:ContasConsumoView /></DataTemplate>
     <DataTemplate DataType="vm:InventarioViewModel"><v:InventarioView /></DataTemplate>
     <DataTemplate DataType="vm:ApuracaoSimplesViewModel"><v:ApuracaoSimplesView /></DataTemplate>

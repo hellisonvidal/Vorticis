@@ -11,7 +11,7 @@ public sealed record Identificacao(TipoOperacao Operacao, ParteDocumento? Contra
 /// com o do emitente e o do destinatário.
 /// <list type="bullet">
 /// <item>Emitente é a empresa: saída (NF-e com tpNF = 1 e NFS-e prestada); NF-e de entrada própria (tpNF = 0), como a nota de devolução ou de produtor, é entrada.</item>
-/// <item>Destinatário/tomador é a empresa: entrada.</item>
+/// <item>Destinatário/tomador é a empresa: entrada. No CT-e, o emitente é a transportadora (saída para ela) e o "destinatário" é o tomador do serviço (entrada para ele).</item>
 /// <item>Nenhum dos dois: o documento não pertence à empresa e é recusado.</item>
 /// </list>
 /// </summary>
@@ -26,7 +26,7 @@ public static class IdentificadorOperacao
         if (emitente.Length > 0 && meus.Contains(emitente))
         {
             // Nota de entrada emitida pela própria empresa: a contraparte é o remetente, informado como destinatário no XML.
-            return doc.Modelo != ModeloDocumento.NFSe && doc.TipoNf == 0
+            return doc.Modelo is ModeloDocumento.NFe55 or ModeloDocumento.NFCe65 && doc.TipoNf == 0
                 ? Resultado<Identificacao>.Ok(new Identificacao(TipoOperacao.Entrada, doc.Destinatario))
                 : Resultado<Identificacao>.Ok(new Identificacao(TipoOperacao.Saida, doc.Destinatario));
         }

@@ -3,11 +3,32 @@ namespace Vorticis.Fiscal.Sped;
 /// <summary>Natureza do ajuste da apuração do ICMS (4ª posição do código da tabela 5.1.1) e o campo do E110 que ele soma.</summary>
 public enum TipoAjusteIcms { OutrosDebitos = 0, EstornoCreditos = 1, OutrosCreditos = 2, EstornoDebitos = 3, Deducoes = 4, DebitosEspeciais = 5 }
 
-/// <summary>Ajuste da apuração do ICMS próprio (registro E111) lançado na competência.</summary>
-public sealed record AjusteIcmsEfd(long Id, DateOnly Competencia, string Codigo, string Descricao, decimal Valor)
+/// <summary>Imposto a que o ajuste pertence: ICMS próprio (E111), ICMS-ST (E220) ou IPI (E530).</summary>
+public static class ImpostosAjuste
 {
-    public TipoAjusteIcms Tipo => (TipoAjusteIcms)(Codigo[3] - '0');
+    public const string Icms = "ICMS", IcmsSt = "ICMS_ST", Ipi = "IPI";
+    public static string Rotulo(string imposto) => imposto switch { IcmsSt => "ICMS-ST", Ipi => "IPI", _ => "ICMS" };
 }
+
+/// <summary>
+/// Ajuste da apuração lançado na competência: do ICMS próprio (E111), do ICMS-ST (E220) ou do IPI (E530). <paramref name="Sentido"/> é E (entrada: outros créditos
+/// e estornos de débito; no IPI, crédito) ou S (saída: outros débitos, estornos de crédito, deduções e débitos especiais; no IPI, débito). A observação vai no E112 e o
+/// documento fiscal relacionado (participante, modelo, série, número e data) no E113 do ICMS próprio.
+/// </summary>
+public sealed record AjusteIcmsEfd(long Id, DateOnly Competencia, string Codigo, string Descricao, decimal Valor, string Imposto = ImpostosAjuste.Icms, char? Sentido = null,
+                                   string? Observacao = null, long? DocParticipanteId = null, string? DocModelo = null, string? DocSerie = null, string? DocNumero = null,
+                                   DateOnly? DocData = null, ParticipanteEfd? DocParticipante = null)
+{
+    /// <summary>Natureza (4ª posição do código); no IPI, crédito (entrada) ou débito (saída).</summary>
+    public TipoAjusteIcms Tipo => Imposto == ImpostosAjuste.Ipi ? (Sentido == 'E' ? TipoAjusteIcms.OutrosCreditos : TipoAjusteIcms.OutrosDebitos) : (TipoAjusteIcms)(Codigo[3] - '0');
+
+    public char SentidoEfetivo => Sentido ?? (Tipo is TipoAjusteIcms.OutrosCreditos or TipoAjusteIcms.EstornoDebitos ? 'E' : 'S');
+    public bool TemDocumento => DocParticipante is not null && !string.IsNullOrWhiteSpace(DocNumero) && DocData is not null;
+    public string Uf => Codigo[..2];
+}
+
+/// <summary>Código de ajuste cadastrado pela empresa (tabela 5.1.1 da UF; no IPI, 3 posições).</summary>
+public sealed record CodigoAjuste(string Imposto, string Codigo, string Descricao);
 
 /// <summary>Conta de consumo recebida: energia elétrica (06), gás (28), água (29) → C500/C590; comunicação (21) e telecomunicação (22) → D500/D590.</summary>
 public sealed record ContaConsumoEfd(long Id, string Modelo, ParticipanteEfd Participante, string Numero, string Serie, DateOnly Emissao, DateOnly Entrada,
@@ -43,16 +64,41 @@ public static class OutrosLancamentosEfd
         TipoAjusteIcms.EstornoDebitos => "Estorno de débitos", TipoAjusteIcms.Deducoes => "Deduções do imposto apurado", _ => "Débitos especiais",
     };
 
-    /// <summary>Código do ajuste (tabela 5.1.1): UF da empresa + 0 (ICMS próprio) + tipo 0 a 5 + 4 dígitos.</summary>
-    public static IReadOnlyList<string> ValidarAjuste(string? codigo, string? descricao, decimal valor, string ufEmpresa)
+    /// <summary>Tipos de ajuste do ICMS aceitos em cada sentido: entrada (créditos) e saída (débitos, deduções e débitos especiais).</summary>
+    public static bool TipoDoSentido(TipoAjusteIcms t, char sentido) =>
+        sentido == 'E' ? t is TipoAjusteIcms.OutrosCreditos or TipoAjusteIcms.EstornoDebitos : t is not (TipoAjusteIcms.OutrosCreditos or TipoAjusteIcms.EstornoDebitos);
+
+    /// <summary>
+    /// Código do ajuste. ICMS próprio (tabela 5.1.1): UF + 0 + tipo 0 a 5 + 4 dígitos (ex.: SP020099). ICMS-ST: UF + 1 + tipo + 4 dígitos. IPI: 3 posições.
+    /// Em "Ajustes de entrada" só valem outros créditos (2) e estornos de débito (3); em "Ajustes de saída", os demais.
+    /// </summary>
+    public static IReadOnlyList<string> ValidarAjuste(string? codigo, string? descricao, decimal valor, string ufEmpresa, string imposto = ImpostosAjuste.Icms, char? sentido = null)
     {
         var erros = new List<string>();
         var c = (codigo ?? "").Trim().ToUpperInvariant();
-        if (!System.Text.RegularExpressions.Regex.IsMatch(c, "^[A-Z]{2}0[0-5][0-9]{4}$"))
-            erros.Add("Código do ajuste com 8 posições, da tabela 5.1.1 da UF: UF + 0 (ICMS próprio) + tipo (0 a 5) + 4 dígitos. Ex.: SP020099.");
-        else if (c[..2] != ufEmpresa) erros.Add($"O código do ajuste deve começar pela UF da empresa ({ufEmpresa}).");
+        switch (imposto)
+        {
+            case ImpostosAjuste.Ipi:
+                if (!System.Text.RegularExpressions.Regex.IsMatch(c, "^[A-Z0-9]{3}$")) erros.Add("Código do ajuste do IPI com 3 posições (tabela 4.5.4 do Guia Prático da EFD).");
+                break;
+            case ImpostosAjuste.Icms or ImpostosAjuste.IcmsSt:
+                var marca = imposto == ImpostosAjuste.Icms ? "0" : "1";
+                if (!System.Text.RegularExpressions.Regex.IsMatch(c, $"^[A-Z]{{2}}{marca}[0-5][0-9]{{4}}$"))
+                    erros.Add($"Código do ajuste com 8 posições, da tabela 5.1.1 da UF: UF + {marca} ({(imposto == ImpostosAjuste.Icms ? "ICMS próprio" : "ICMS-ST")}) + tipo (0 a 5) + 4 dígitos. Ex.: SP{marca}20099.");
+                else
+                {
+                    if (c[..2] != ufEmpresa && imposto == ImpostosAjuste.Icms) erros.Add($"O código do ajuste deve começar pela UF da empresa ({ufEmpresa}).");
+                    if (sentido is { } s && !TipoDoSentido((TipoAjusteIcms)(c[3] - '0'), s))
+                        erros.Add(s == 'E' ? "Em Ajustes de entrada só valem outros créditos (tipo 2) e estornos de débito (tipo 3)."
+                                           : "Em Ajustes de saída só valem outros débitos (0), estornos de crédito (1), deduções (4) e débitos especiais (5).");
+                }
+                break;
+            default:
+                erros.Add("Imposto do ajuste inválido.");
+                break;
+        }
         if (valor <= 0) erros.Add("Informe o valor do ajuste.");
-        if (string.IsNullOrWhiteSpace(descricao)) erros.Add("Descreva o ajuste (descrição complementar do E111).");
+        if (string.IsNullOrWhiteSpace(descricao)) erros.Add("Descreva o ajuste.");
         return erros;
     }
 

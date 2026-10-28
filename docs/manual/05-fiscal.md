@@ -79,8 +79,8 @@ Se a SEFAZ devolver só o **resumo** da nota, ela ainda não foi manifestada: ap
 
 ## Importação de XML (NF-e, NFC-e, NFS-e)
 
-**Para que serve:** trazer as notas dos arquivos XML, sem digitar.
-**Onde fica:** *Documentos fiscais › Importação de XML* (atalho **Ctrl+I**).
+**Para que serve:** trazer as notas dos arquivos XML, sem digitar, de qualquer tipo ao mesmo tempo.
+**Onde fica:** *Integrações › Importação de XML em lote* (atalho **Ctrl+I**).
 
 ### Um ou mais arquivos
 Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
@@ -91,7 +91,7 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 3. O painel mostra o resultado por arquivo (importado, duplicado, recusado e o motivo). **Exportar resumo (CSV)...** guarda o relatório; **Cancelar importação** interrompe o lote.
 
 ### Regras
-- Aceita NF-e e NFC-e (modelos 55 e 65) e NFS-e no padrão nacional (ADN).
+- Aceita NF-e e NFC-e (modelos 55 e 65), CT-e (modelo 57) e NFS-e no padrão nacional (ADN).
 - O sentido é identificado pelo **CNPJ da empresa** (e dos estabelecimentos): é entrada se a empresa é o destinatário e saída se é o emitente. Notas de terceiros são recusadas.
 - **Duplicidade:** a mesma chave de acesso não é importada duas vezes. Eventos de cancelamento são aplicados, mesmo que cheguem antes da nota.
 - Clientes e fornecedores são criados ou vinculados automaticamente. Com **Completar o cadastro de fornecedores e clientes novos pela consulta do CNPJ (Receita)** marcado (vem marcado), o cadastro criado a partir do XML é completado como no botão *Buscar dados na Receita* do cadastro de clientes e fornecedores: nome fantasia, endereço completo, e-mail, telefone e inscrição estadual que faltarem. Os dados que vieram no XML são mantidos. Na janela da nota (Importar por XML ou por chave), o fornecedor novo aparece com os dados do XML para conferência e é cadastrado só ao gravar a nota.
@@ -100,9 +100,31 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - **Regras fiscais:** nas notas de **entrada**, cada item recebe o CFOP de entrada, o CST e os créditos conforme [Regras fiscais](#regras-fiscais); sem regra, vale a troca padrão (5 para 1, 6 para 2, 7 para 3) e o item fica marcado como *Sem regra* para conferência.
 - **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
 
+## Importar NFS-e
+
+**Para que serve:** trazer só as notas de serviço (NFS-e).
+**Onde fica:** *Documentos fiscais › Importar NFS-e*.
+Funciona como a [importação de XML em lote](#importacao-de-xml-nf-e-nfc-e-nfs-e) (arquivos, .zip ou pasta), mas só aceita NFS-e; arquivos de outro tipo aparecem como *Ignorado* e podem ser importados em *Integrações › Importação de XML em lote*. Serviço prestado pela empresa é **saída**; serviço tomado é **entrada**.
+**Layouts aceitos:** padrão nacional (ADN) e o layout **ABRASF básico** (arquivos com CompNfse/Nfse: prestador, tomador, valor do serviço, ISS e retenções). A nota ABRASF não tem chave de acesso: o sistema usa o CNPJ do prestador, o número e o código de verificação para não importar a mesma nota duas vezes. Se o município usa outro layout, digite a nota em *Lançamentos › Documentos fiscais*.
+
+## Importar CT-e
+
+**Para que serve:** trazer os conhecimentos de transporte eletrônicos (CT-e, modelo 57, arquivo procCTe).
+**Onde fica:** *Documentos fiscais › Importar CT-e*.
+1. Clique em **Importar arquivos...** ou informe a pasta e clique em **Importar pasta**.
+2. O sistema lê a transportadora (emitente), o tomador, o remetente e o destinatário, o percurso, o valor da prestação, o CFOP, o ICMS e a chave de acesso, e guarda o XML.
+3. Se a empresa é o **tomador** do serviço (quem paga o frete), o CT-e é **entrada** (a transportadora vira fornecedor e o ICMS destacado pode ser crédito). Se a empresa é a **transportadora** (emitente), é **saída** (o tomador vira cliente). Se não for nenhuma das duas, o CT-e é recusado.
+4. O CT-e entra nos livros de entradas e saídas, no resumo por CFOP, na contabilização (pelas regras de contabilização) e, na EFD ICMS/IPI, nos registros **D100 e D190** (ICMS destacado nos créditos e débitos da apuração). Eventos de cancelamento atualizam o CT-e.
+**Limitações:** a EFD-Contribuições ainda não traz o CT-e (registro D100 daquela escrituração).
+
+## Consulta de CT-e
+
+**Onde fica:** *Documentos fiscais › Consulta de CT-e*.
+Escolha o período, o sentido (entradas, como tomador, ou saídas, como transportadora) e, se quiser, um texto (número, nome, CNPJ ou chave) e clique em **Consultar**. A lista mostra transportadora, tomador, remetente, destinatário, percurso, CFOP, valor, ICMS e situação, com o total no rodapé.
+
 ## Consulta de documentos
 
-**Onde fica:** *Documentos fiscais › Consulta de documentos* (atalho **Ctrl+D**).
+**Onde fica:** *Documentos fiscais › Consulta de documentos* (atalho **Ctrl+D**). O filtro de modelo inclui CT-e (57).
 Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **Consultar**. Selecione uma nota para ver os itens e tributos. **Excluir selecionado** remove a nota e as suas duplicatas (desfaça antes a contabilização, se houver). Se alguma duplicata da nota já foi baixada, o sistema recusa: estorne as baixas em *Lançamentos › Duplicatas* e exclua depois.
 
 ## Regras de contabilização
@@ -293,18 +315,27 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 ## Livros de apuração do ICMS e do IPI
 
 **Para que serve:** conferir e imprimir a apuração mensal do ICMS e do IPI, com os mesmos valores que vão para a EFD ICMS/IPI.
-**Onde fica:** *Relatórios › Livros › Livro de Apuração do ICMS* e *Livro de Apuração do IPI*.
+**Onde fica:** *Relatórios › Livros e apuração › Livro de Apuração do ICMS* e *Livro de Apuração do IPI*.
 
 1. Escolha o **mês** e o **ano**. No livro do ICMS, informe também o **saldo credor anterior**, se houver.
 2. Clique em **Gerar**: aparecem os débitos pelas saídas e os créditos pelas entradas, separados por CFOP, e o resultado do mês (imposto a recolher ou saldo credor a transportar).
 3. Use **Exportar** para PDF, Excel ou CSV. O PDF sai com o cabeçalho da empresa, como os demais livros.
 
-Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os itens com situação tributária do IPI preenchida. Os outros débitos, outros créditos e estornos lançados em *Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS* entram como na EFD.
+Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os itens com situação tributária do IPI preenchida. Os ajustes lançados em *Lançamentos › Ajustes* (outros débitos, outros créditos, estornos, deduções e débitos especiais) aparecem nas linhas próprias e entram na apuração como na EFD.
+
+## Relatórios de apuração do SPED Fiscal
+
+**Onde ficam:** *Relatórios › Livros e apuração*. Todos escolhem o mês e o ano, têm o botão **Gerar** e exportam em PDF, Excel ou CSV (**Exportar**). Usam os mesmos números da EFD ICMS/IPI, mas não geram nem registram o arquivo.
+- **Resumo da apuração do ICMS:** os campos do registro E110 (débitos, ajustes, estornos, créditos, saldo credor anterior, deduções, ICMS a recolher e saldo credor a transportar), já com os ajustes. Informe o saldo credor anterior, se houver.
+- **Relação de ajustes da apuração:** os ajustes lançados entre dois meses, com filtro opcional por código, o tipo, o documento ou a observação, e o total por código.
+- **Apuração do IPI:** as operações por CFOP e CST (E510), o débito, o crédito, os outros débitos e créditos, o saldo devedor ou credor (E520) e os ajustes (E530).
+- **Apuração do ICMS-ST:** por UF, o valor retido nas saídas, os ajustes (E220), as deduções, o ICMS-ST a recolher e o saldo credor.
+- **Conferência da EFD ICMS/IPI:** quatro partes: (1) quantidade de registros por bloco; (2) C190/D190 por CST, CFOP e alíquota; (3) confronto das notas com o E110 (débitos, créditos, cabeçalho × itens e saldo apurado), marcando *Confere* ou *DIVERGE*; (4) as pendências e avisos da validação. Use antes de gerar o arquivo.
 
 ## SPED EFD ICMS/IPI
 
 **Para que serve:** gerar o arquivo da EFD ICMS/IPI (SPED Fiscal) do mês.
-**Onde fica:** *Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*, ou *Lançamentos › SPED Fiscal › Gerar EFD ICMS/IPI (SPED Fiscal)*.
+**Onde fica:** *Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*.
 
 **Antes de gerar (configuração):** deixe o padrão da empresa em *Cadastros › Parâmetros*, grupo *EFD ICMS/IPI* (perfil, atividade, códigos de receita e dia de vencimento do ICMS): o assistente já abre preenchido. Lance também, se houver, os [outros lançamentos do SPED Fiscal](#outros-lancamentos-do-sped-fiscal).
 
@@ -315,31 +346,39 @@ Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os i
 5. **Passo 5**: **Gerar arquivo**, escolha a pasta e **Salvar arquivo** (`EFD_ICMS_IPI_<CNPJ>_<AAAAMM>.txt`).
 
 No PVA: *Escrituração › Importar* e *Validar*; confira o resumo e então assine e transmita.
-O arquivo traz as notas (bloco C), as contas de consumo (C500 e D500), os ajustes da apuração (E111) e o inventário cadastrado (bloco H) da competência.
-**Limitações:** sem DIFAL, CIAP (bloco G), produção (bloco K) e conhecimentos de transporte (D100).
+O arquivo traz as notas (bloco C), as contas de consumo (C500 e D500), os ajustes da apuração (E111, E112, E113, E220 e E530) e o inventário cadastrado (bloco H) da competência.
+**Limitações:** sem DIFAL, CIAP (bloco G) e produção (bloco K). Os conhecimentos de transporte (CT-e) saem no D100/D190.
 
 ## Outros lançamentos do SPED Fiscal
 
 **Para que serve:** lançar o que a EFD ICMS/IPI pede além das notas de mercadoria.
-**Onde fica:** *Lançamentos › SPED Fiscal*.
+**Onde fica:** *Lançamentos* (contas de consumo, inventário e ajustes).
 
 ### Contas de energia, gás, água e comunicação
-**Onde fica:** *Lançamentos › SPED Fiscal › Contas de energia, gás, água e comunicação*.
+**Onde fica:** *Lançamentos › Contas de energia, gás, água e comunicação*.
 Para as contas recebidas de energia elétrica (modelo 06), gás canalizado (28), água (29) e de comunicação/telecomunicação (21 e 22), que não vêm em XML de NF-e:
 1. Cadastre a concessionária ou operadora em *Cadastros › Fornecedores*.
 2. Clique em **Nova**, escolha o **Modelo**, o **Fornecedor** e informe número, série, emissão, entrada e o **valor da nota**. O CFOP vem sugerido (energia 1253, comunicação 1303, água e gás 1556; altere se a atividade for outra).
 3. Para aproveitar o crédito, informe o **CST** (ex.: 000), a **base** e a **alíquota** do ICMS: o valor do ICMS é calculado. Informe PIS e COFINS, se destacados. **Gravar**.
 A nota sai no C500/C590 (energia, gás, água) ou no D500/D590 (comunicação) da EFD do mês da entrada, e o ICMS entra nos créditos da apuração (E110).
 
-### Ajustes da apuração do ICMS
-**Onde fica:** *Lançamentos › SPED Fiscal › Ajustes da apuração do ICMS*.
+### Ajustes de entrada e de saída
+**Onde fica:** *Lançamentos › Ajustes › Ajustes de entrada* e *Ajustes de saída*.
+Os ajustes corrigem a apuração do mês. **Ajustes de entrada** aumentam o crédito (outros créditos e estornos de débito); **Ajustes de saída** aumentam o débito (outros débitos, estornos de crédito, deduções e débitos especiais). No IPI, entrada é crédito e saída é débito.
 1. Escolha a **Competência**.
-2. Informe o **código do ajuste** da tabela 5.1.1 da sua UF (8 posições, ex.: SP020099). A 4ª posição diz o tipo, mostrado ao lado: 0 outros débitos, 1 estorno de créditos, 2 outros créditos, 3 estorno de débitos, 4 deduções, 5 débitos especiais.
-3. Informe a **descrição** e o **valor** e clique em **Gravar**.
-Cada ajuste vira um E111 e soma no campo certo do E110; o ICMS a recolher (E116) já sai ajustado. As deduções só abatem até o saldo devedor do mês.
+2. Escolha o **Imposto**: ICMS, ICMS-ST ou IPI.
+3. Informe o **código do ajuste** (ou escolha um já cadastrado em *Código cadastrado*). ICMS e ICMS-ST usam a tabela 5.1.1 da sua UF, com 8 posições: UF + 0 (ICMS próprio) ou 1 (ICMS-ST) + tipo + 4 dígitos, como SP020099. O tipo (4ª posição) é mostrado ao lado: 0 outros débitos, 1 estorno de créditos, 2 outros créditos, 3 estorno de débitos, 4 deduções, 5 débitos especiais. O sistema não deixa lançar na tela errada: crédito vai em entrada, débito em saída. O código do IPI tem 3 posições.
+4. Informe a **descrição** e o **valor**. A **observação** vai como informação complementar do ajuste.
+5. Se o ajuste se refere a uma nota, abra *Documento fiscal relacionado* e informe o cliente ou fornecedor, o modelo, a série, o número e a data (só para ICMS).
+6. **Gravar**. **Novo** limpa os campos e **Excluir** apaga o ajuste selecionado.
+Os ajustes entram no [Livro de Apuração do ICMS e do IPI](#livros-de-apuracao-do-icms-e-do-ipi) e na EFD ICMS/IPI: ICMS próprio em E111 (com E112 para a observação e E113 para o documento relacionado), ICMS-ST em E220 e IPI em E530. As deduções só abatem até o saldo devedor do mês.
+
+### Códigos de ajuste
+**Onde fica:** *Lançamentos › Ajustes › Códigos de ajuste*.
+Cadastro simples dos códigos que a empresa usa. Escolha o **Imposto**, informe o **código** e a **descrição** e clique em **Gravar**. Os códigos cadastrados aparecem para escolha nas telas de ajustes de entrada e de saída.
 
 ### Inventário de estoque (bloco H)
-**Onde fica:** *Lançamentos › SPED Fiscal › Inventário de estoque (bloco H)*.
+**Onde fica:** *Lançamentos › Inventário de estoque (bloco H)*.
 1. Clique em **Novo**, informe a **data do inventário** (ex.: 31/12) e a **conta contábil do estoque**. O campo **Informar na EFD de** vem sugerido: o inventário de 31/12 vai na EFD de **fevereiro** do ano seguinte.
 2. Escolha cada **produto** (do cadastro de produtos), clique em **Adicionar item** e informe na grade a **quantidade** e o **valor unitário** (o valor do item é calculado).
 3. **Gravar inventário**. Na EFD da competência escolhida, o bloco H sai com o H005 (data e total) e um H010 por produto; o cadastro do produto entra no 0200.

@@ -13,6 +13,9 @@ public sealed record ResumoItemEfd(string Rotulo, decimal Valor);
 /// <summary>Apuração mensal para os livros de apuração do ICMS e do IPI (o IPI é nulo se não há itens com IPI no mês).</summary>
 public sealed record LivroApuracao(DateOnly Inicio, DateOnly Fim, ApuracaoEfdIcms Icms, ApuracaoIpiEfd? Ipi);
 
+/// <summary>Tudo o que os relatórios de apuração do SPED Fiscal usam de um mês: documentos, ajustes, apuração (E110, E210, E520), o arquivo gerado em memória e as pendências.</summary>
+public sealed record ApuracaoSped(DateOnly Inicio, DateOnly Fim, DadosEfdIcms Dados, ApuracaoEfdIcms Icms, ApuracaoIpiEfd? Ipi, ArquivoGeradoEfd Arquivo, IReadOnlyList<PendenciaEcd> Pendencias);
+
 /// <summary>Resultado da conferência prévia (passo "pendências" do assistente).</summary>
 public sealed record PreviaEfd(TipoEfd Tipo, DateOnly Inicio, DateOnly Fim, IReadOnlyList<PendenciaEcd> Pendencias, int Documentos, IReadOnlyList<ResumoItemEfd> Resumo)
 {
@@ -66,7 +69,34 @@ public sealed class ServicoEfd(IRepositorioEfd repositorio, Autorizador autoriza
         var p = await PrepararIcmsAsync(empresaId, competencia, new OpcoesEfdIcms(SaldoCredorAnterior: saldoCredorAnterior), ct);
         if (!p.Sucesso) return Resultado<LivroApuracao>.Falha(p.Erros);
         var (d, ap, _) = p.Valor;
-        return Resultado<LivroApuracao>.Ok(new LivroApuracao(d.Inicio, d.Fim, ap, CalculoEfdIcms.CalcularIpi(d.Documentos)));
+        return Resultado<LivroApuracao>.Ok(new LivroApuracao(d.Inicio, d.Fim, ap, CalculoEfdIcms.CalcularIpi(d.Documentos, d.Ajustes)));
+    }
+
+    /// <summary>
+    /// Base dos relatórios Resumo da apuração do ICMS, Apuração do IPI e do ICMS-ST e Conferência da EFD: calcula o mês como a EFD (perfil e atividade do cadastro
+    /// de opções) e gera o arquivo só em memória (nada é gravado nem registrado como EFD gerada). Exige a permissão de relatórios fiscais.
+    /// </summary>
+    public async Task<Resultado<ApuracaoSped>> ApuracaoSpedAsync(long empresaId, DateOnly competencia, decimal saldoCredorAnterior, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<ApuracaoSped>(usuarioId, empresaId, Permissao.FiscalRelatorios, ct) is { } negado) return negado;
+        if (saldoCredorAnterior < 0) return Resultado<ApuracaoSped>.Falha("O saldo credor do período anterior não pode ser negativo.");
+        var cfg = await repositorio.ConfiguracaoAsync(empresaId, ct);
+        var opcoes = new OpcoesEfdIcms(cfg.IcmsPerfil, cfg.IcmsIndicadorAtividade, CodigoReceitaIcms: cfg.IcmsCodigoReceita, CodigoReceitaIcmsSt: cfg.IcmsCodigoReceitaSt,
+                                       DiaVencimento: cfg.IcmsDiaVencimento, SaldoCredorAnterior: saldoCredorAnterior);
+        var p = await PrepararIcmsAsync(empresaId, competencia, opcoes, ct);
+        if (!p.Sucesso) return Resultado<ApuracaoSped>.Falha(p.Erros);
+        var (d, ap, pend) = p.Valor;
+        return Resultado<ApuracaoSped>.Ok(new ApuracaoSped(d.Inicio, d.Fim, d, ap, CalculoEfdIcms.CalcularIpi(d.Documentos, d.Ajustes), GeradorEfdIcms.Gerar(d, ap), pend));
+    }
+
+    /// <summary>Ajustes lançados entre os meses informados (inclusive), com filtro opcional por código.</summary>
+    public async Task<Resultado<IReadOnlyList<AjusteIcmsEfd>>> RelacaoAjustesAsync(long empresaId, DateOnly inicio, DateOnly fim, string? codigo, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<AjusteIcmsEfd>>(usuarioId, empresaId, Permissao.FiscalRelatorios, ct) is { } negado) return negado;
+        if (fim < inicio) return Resultado<IReadOnlyList<AjusteIcmsEfd>>.Falha("Mês final anterior ao inicial.");
+        var lista = await repositorio.AjustesPeriodoAsync(empresaId, inicio, fim, ct);
+        var c = codigo?.Trim().ToUpperInvariant();
+        return Resultado<IReadOnlyList<AjusteIcmsEfd>>.Ok(string.IsNullOrEmpty(c) ? lista : lista.Where(a => a.Codigo.StartsWith(c, StringComparison.Ordinal)).ToList());
     }
 
     // ------------------------------------------------------------------------------------------------ EFD ICMS/IPI

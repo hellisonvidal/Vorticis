@@ -1,7 +1,7 @@
 namespace Vorticis.Fiscal.Documentos;
 
 /// <summary>Modelo do documento fiscal eletrônico (coluna fiscal.documento.modelo).</summary>
-public enum ModeloDocumento { NFe55, NFCe65, NFSe }
+public enum ModeloDocumento { NFe55, NFCe65, NFSe, CTe57 }
 
 public enum TipoOperacao { Entrada, Saida }
 
@@ -9,11 +9,11 @@ public enum SituacaoDocumento { Autorizada, Cancelada, Denegada }
 
 public static class ModelosExtensions
 {
-    public static string Codigo(this ModeloDocumento m) => m switch { ModeloDocumento.NFe55 => "55", ModeloDocumento.NFCe65 => "65", _ => "NFSE" };
+    public static string Codigo(this ModeloDocumento m) => m switch { ModeloDocumento.NFe55 => "55", ModeloDocumento.NFCe65 => "65", ModeloDocumento.CTe57 => "57", _ => "NFSE" };
 
-    public static ModeloDocumento ModeloDe(string codigo) => codigo switch { "55" => ModeloDocumento.NFe55, "65" => ModeloDocumento.NFCe65, _ => ModeloDocumento.NFSe };
+    public static ModeloDocumento ModeloDe(string codigo) => codigo switch { "55" => ModeloDocumento.NFe55, "65" => ModeloDocumento.NFCe65, "57" => ModeloDocumento.CTe57, _ => ModeloDocumento.NFSe };
 
-    public static string Rotulo(this ModeloDocumento m) => m switch { ModeloDocumento.NFe55 => "NF-e", ModeloDocumento.NFCe65 => "NFC-e", _ => "NFS-e" };
+    public static string Rotulo(this ModeloDocumento m) => m switch { ModeloDocumento.NFe55 => "NF-e", ModeloDocumento.NFCe65 => "NFC-e", ModeloDocumento.CTe57 => "CT-e", _ => "NFS-e" };
 
     public static string Codigo(this TipoOperacao t) => t == TipoOperacao.Entrada ? "E" : "S";
 
@@ -54,11 +54,19 @@ public sealed record TotaisDocumento(
     decimal BcIcms, decimal Icms, decimal BcIcmsSt, decimal IcmsSt, decimal Ipi, decimal Pis, decimal Cofins, decimal Iss, bool IssRetido,
     decimal RetPis, decimal RetCofins, decimal RetCsll, decimal Irrf, decimal RetPrev);
 
+/// <summary>
+/// Dados próprios do CT-e (modelo 57, procCTe): partes da prestação, percurso, tipo e o valor a receber. No documento, o emitente é a transportadora e
+/// o "destinatário" é o tomador do serviço; o CFOP, o ICMS e o valor da prestação vão no único item.
+/// </summary>
+public sealed record DadosTransporte(
+    ParteDocumento Tomador, ParteDocumento? Remetente, ParteDocumento? Destinatario, string? Modal, int TipoCte, string? MunicipioInicio, string? UfInicio,
+    string? MunicipioFim, string? UfFim, string? CodMunicipioInicio, string? CodMunicipioFim, decimal ValorReceber, IReadOnlyList<string> ChavesNfe);
+
 /// <summary>Documento como lido do XML, ainda sem a identificação de entrada/saída (que depende da empresa).</summary>
 public sealed record DocumentoLido(
     ModeloDocumento Modelo, string Chave, string Numero, string Serie, DateOnly Emissao, DateOnly? EntradaSaida, string? NaturezaOperacao,
     SituacaoDocumento Situacao, int? TipoNf, ParteDocumento Emitente, ParteDocumento? Destinatario, TotaisDocumento Totais,
-    IReadOnlyList<ItemFiscal> Itens, byte[] Xml, IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Duplicatas = null)
+    IReadOnlyList<ItemFiscal> Itens, byte[] Xml, IReadOnlyList<Vorticis.Fiscal.Duplicatas.ParcelaDuplicata>? Duplicatas = null, DadosTransporte? Transporte = null)
 {
     /// <summary>Competência fiscal do livro: data de entrada/saída, ou a emissão se não informada.</summary>
     public DateOnly DataLivro => EntradaSaida ?? Emissao;
@@ -72,7 +80,7 @@ public abstract record LeituraXml;
 
 public sealed record LeituraDocumento(DocumentoLido Documento) : LeituraXml;
 
-/// <summary>Evento de cancelamento (NF-e 110111; NFS-e e101101) da chave informada.</summary>
+/// <summary>Evento de cancelamento (NF-e e CT-e 110111; NFS-e e101101) da chave informada.</summary>
 public sealed record LeituraCancelamento(string Chave) : LeituraXml;
 
 public sealed record LeituraInvalida(string Motivo) : LeituraXml;

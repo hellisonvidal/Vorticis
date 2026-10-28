@@ -31,8 +31,13 @@ public class FiscalViewsTests(SessaoHeadless headless)
             var pares = new (object Vm, UserControl View)[]
             {
                 (new ImportacaoXmlViewModel(ctx), new ImportacaoXmlView()),
+                (new ImportacaoNfseViewModel(ctx), new ImportacaoXmlView()),
+                (new ImportacaoCteViewModel(ctx), new ImportacaoXmlView()),
+                (new ConsultaCteViewModel(ctx), new ConsultaCteView()),
                 (new FechamentoFiscalViewModel(ctx), new FechamentoFiscalView()),
-                (new AjustesIcmsViewModel(ctx), new AjustesIcmsView()),
+                (new AjustesEntradaViewModel(ctx), new AjustesIcmsView()),
+                (new AjustesSaidaViewModel(ctx), new AjustesIcmsView()),
+                (new CodigosAjusteViewModel(ctx), new CodigosAjusteView()),
                 (new ContasConsumoViewModel(ctx), new ContasConsumoView()),
                 (new InventarioViewModel(ctx), new InventarioView()),
                 (new DocumentosViewModel(ctx), new DocumentosView()),

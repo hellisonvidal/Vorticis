@@ -16,7 +16,7 @@ public static class ValidadorEfd
     private static string Exemplos(IReadOnlyList<string> itens, int max = 5) =>
         itens.Count <= max ? string.Join(", ", itens) : $"{string.Join(", ", itens.Take(max))} (e mais {itens.Count - max})";
 
-    private static string Nome(DocumentoEfd d) => $"{(d.Nfse ? "NFS-e" : d.Modelo == "65" ? "NFC-e" : "NF-e")} {d.Numero}/{d.Serie} ({(d.Entrada ? "entrada" : "saída")} de {d.EntradaSaida:dd/MM/yyyy})";
+    private static string Nome(DocumentoEfd d) => $"{(d.Nfse ? "NFS-e" : d.Modelo == "65" ? "NFC-e" : d.Transporte ? "CT-e" : "NF-e")} {d.Numero}/{d.Serie} ({(d.Entrada ? "entrada" : "saída")} de {d.EntradaSaida:dd/MM/yyyy})";
 
     // ------------------------------------------------------------------------------------------------ EFD ICMS/IPI
 
@@ -55,10 +55,10 @@ public static class ValidadorEfd
         if (ap.SaldoCredorAnterior < 0) Add(l, true, "SALDO_NEGATIVO", "O saldo credor do período anterior não pode ser negativo.");
 
         // outros lançamentos (Lançamentos › SPED Fiscal)
-        var deducoesInformadas = (d.Ajustes ?? []).Where(a => a.Tipo == TipoAjusteIcms.Deducoes).Sum(a => a.Valor);
+        var deducoesInformadas = (d.Ajustes ?? []).Where(a => a.Imposto == ImpostosAjuste.Icms && a.Tipo == TipoAjusteIcms.Deducoes).Sum(a => a.Valor);
         if (deducoesInformadas > ap.Deducoes)
             Add(l, false, "DEDUCAO_MAIOR", $"As deduções informadas ({deducoesInformadas:N2}) passam do saldo devedor apurado: só {ap.Deducoes:N2} foram usados no E110.");
-        if ((d.Ajustes ?? []).Any(a => a.Codigo[..2] != e.Uf))
+        if ((d.Ajustes ?? []).Any(a => a.Imposto == ImpostosAjuste.Icms && a.Codigo[..2] != e.Uf))
             Add(l, true, "AJUSTE_UF", "Há ajuste da apuração com código de outra UF: os códigos do E111 começam pela UF da empresa.");
         if (d.Inventario is { } inv)
         {
