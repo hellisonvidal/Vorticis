@@ -33,7 +33,8 @@ public sealed class RepositorioContabilizacao(NpgsqlDataSource ds) : IRepositori
             await using var cmd = g.Id == 0
                 ? ds.CreateCommand("""
                     INSERT INTO fiscal.regra_contabilizacao (empresa_id, prioridade, tipo_operacao, cfop, participante_id, conta_debito_id, conta_credito_id, historico, ativo)
-                    VALUES (@e, @pri, @op, @cfop, @part, @cd, @cc, @hist, @ativo) RETURNING id
+                    VALUES (@e, CASE WHEN @pri > 0 THEN @pri ELSE
+                              (SELECT COALESCE(MAX(x.prioridade), 0) + 10 FROM fiscal.regra_contabilizacao x WHERE x.empresa_id = @e AND x.tipo_operacao IS NOT DISTINCT FROM @op) END, @op, @cfop, @part, @cd, @cc, @hist, @ativo) RETURNING id
                     """)
                 : ds.CreateCommand("""
                     UPDATE fiscal.regra_contabilizacao SET prioridade = @pri, tipo_operacao = @op, cfop = @cfop, participante_id = @part,
@@ -45,6 +46,16 @@ public sealed class RepositorioContabilizacao(NpgsqlDataSource ds) : IRepositori
             if (g.Id != 0) cmd.Com("id", g.Id);
             return await cmd.ExecuteScalarAsync(ct) as long? ?? throw new ViolacaoRegraException("Regra não encontrada.");
         });
+
+    public async Task ReordenarRegrasAsync(long empresaId, TipoOperacao operacao, IReadOnlyList<long> idsEmOrdem, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            UPDATE fiscal.regra_contabilizacao r SET prioridade = t.ordem * 10
+              FROM unnest(@ids) WITH ORDINALITY AS t(id, ordem)
+             WHERE r.id = t.id AND r.empresa_id = @e AND r.tipo_operacao = @op
+            """).Com("e", empresaId).Com("ids", idsEmOrdem.ToArray()).Com("op", NpgsqlDbType.Char, operacao.Codigo());
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
 
     public async Task ExcluirRegraAsync(long empresaId, long regraId, CancellationToken ct)
     {

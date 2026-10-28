@@ -40,7 +40,6 @@
     <DataTemplate DataType="vm:GuiasViewModel"><v:GuiasView /></DataTemplate>
     <DataTemplate DataType="vm:EfdIcmsAssistenteViewModel"><v:EfdAssistenteView /></DataTemplate>
     <DataTemplate DataType="vm:EfdContribuicoesAssistenteViewModel"><v:EfdAssistenteView /></DataTemplate>
-    <DataTemplate DataType="vm:ContasTributosViewModel"><v:ContasTributosView /></DataTemplate>
     <DataTemplate DataType="vm:DuplicatasViewModel"><v:DuplicatasView /></DataTemplate>
     <DataTemplate DataType="vm:ConciliacaoDuplicatasViewModel"><v:ConciliacaoDuplicatasView /></DataTemplate>
     <DataTemplate DataType="vm:RelDuplicatasPagarViewModel"><v:RelatorioDuplicatasView /></DataTemplate>

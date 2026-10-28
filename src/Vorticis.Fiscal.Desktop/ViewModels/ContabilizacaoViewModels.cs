@@ -10,8 +10,6 @@ namespace Vorticis.Fiscal.Desktop.ViewModels;
 
 public sealed record RegraLinha(RegraContabilizacao Regra)
 {
-    public int Prioridade => Regra.Prioridade;
-    public string Operacao => Regra.Operacao?.Rotulo() ?? "Qualquer";
     public string Cfop => Regra.Cfop ?? "Qualquer";
     public string Participante => Regra.ParticipanteNome ?? "Qualquer";
     public string Debito => Regra.ContaDebito;
@@ -21,18 +19,19 @@ public sealed record RegraLinha(RegraContabilizacao Regra)
 }
 
 /// <summary>
-/// Documentos fiscais › Regras de contabilização: por CFOP (código completo ou prefixo, ou NFSE para serviços), sentido e, se quiser, participante,
-/// indicam a conta de débito e a de crédito. Vale a regra mais específica; no empate, a de menor prioridade.
+/// Cadastros › Regras de contabilização, em duas abas (Entradas e Saídas): por CFOP (código completo ou prefixo, ou NFSE para serviços) e, se quiser,
+/// participante, indicam a conta de débito e a de crédito. Vale a regra mais específica (participante, depois CFOP exato, depois prefixo); no empate, a que está
+/// primeiro na lista, que se ajusta com Subir e Descer.
 /// </summary>
 public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
-    public static IReadOnlyList<string> Operacoes { get; } = ["Qualquer", "Entrada", "Saída"];
     public IReadOnlyList<VariavelHistorico> Variaveis => VariaveisHistorico.Todas;
-    public ObservableCollection<RegraLinha> Regras { get; } = [];
+    public ObservableCollection<RegraLinha> RegrasEntrada { get; } = [];
+    public ObservableCollection<RegraLinha> RegrasSaida { get; } = [];
 
+    /// <summary>Aba ativa: 0 = Entradas, 1 = Saídas (define o sentido das regras criadas e listadas).</summary>
+    [ObservableProperty] private int _aba;
     [ObservableProperty] private RegraLinha? _selecionada;
-    [ObservableProperty] private int _prioridade = 100;
-    [ObservableProperty] private int _operacao;
     [ObservableProperty] private string _cfop = "";
     [ObservableProperty] private string _participante = "";
     [ObservableProperty] private string _debito = "";
@@ -41,6 +40,8 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
     [ObservableProperty] private bool _ativa = true;
 
     public bool PodeManter => Contexto.Pode(Permissao.FiscalContabilizar);
+    public TipoOperacao Sentido => Aba == 1 ? TipoOperacao.Saida : TipoOperacao.Entrada;
+    private ObservableCollection<RegraLinha> ListaAtual => Aba == 1 ? RegrasSaida : RegrasEntrada;
 
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeManter));
 
@@ -48,23 +49,33 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
     {
         var r = await app.Fiscal().Contabilizacao.ListarRegrasAsync(empresa, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Regras.Clear();
-        foreach (var x in r.Valor) Regras.Add(new RegraLinha(x));
+        RegrasEntrada.Clear();
+        RegrasSaida.Clear();
+        // Regras antigas sem sentido valem para os dois lados: aparecem nas duas abas até serem regravadas.
+        foreach (var x in r.Valor)
+        {
+            if (x.Operacao != TipoOperacao.Saida) RegrasEntrada.Add(new RegraLinha(x));
+            if (x.Operacao != TipoOperacao.Entrada) RegrasSaida.Add(new RegraLinha(x));
+        }
     });
 
     partial void OnSelecionadaChanged(RegraLinha? value)
     {
         if (value is null) return;
         var r = value.Regra;
-        (Prioridade, Operacao, Cfop, Participante, Debito, Credito, Historico, Ativa) =
-            (r.Prioridade, r.Operacao is null ? 0 : r.Operacao == TipoOperacao.Entrada ? 1 : 2, r.Cfop ?? "", r.ParticipanteNome ?? "", r.ContaDebito, r.ContaCredito, r.Historico, r.Ativo);
+        (Cfop, Participante, Debito, Credito, Historico, Ativa) = (r.Cfop ?? "", r.ParticipanteNome ?? "", r.ContaDebito, r.ContaCredito, r.Historico, r.Ativo);
+    }
+
+    partial void OnAbaChanged(int value)
+    {
+        if (Selecionada is { } s && (value == 1 ? s.Regra.Operacao == TipoOperacao.Entrada : s.Regra.Operacao == TipoOperacao.Saida)) Selecionada = null;
     }
 
     [RelayCommand]
     private void Nova()
     {
         Selecionada = null;
-        (Prioridade, Operacao, Cfop, Participante, Debito, Credito, Historico, Ativa) = (100, 0, "", "", "", "", RegraContabilizacao.HistoricoPadrao, true);
+        (Cfop, Participante, Debito, Credito, Historico, Ativa) = ("", "", "", "", RegraContabilizacao.HistoricoPadrao, true);
         Erros.Clear();
         Mensagem = null;
     }
@@ -83,12 +94,14 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
             if (p is null) { Erros.Add($"Participante \"{texto}\" não encontrado (informe o código, o nome ou o CPF/CNPJ cadastrado)."); return; }
             (participanteId, participanteNome) = (p.Id, p.Nome);
         }
-        var regra = new RegraContabilizacao(Selecionada?.Regra.Id ?? 0, Prioridade, Operacao switch { 1 => TipoOperacao.Entrada, 2 => TipoOperacao.Saida, _ => null },
+        // Prioridade 0 = automática: regra nova vai para o fim da lista do sentido; a editada mantém o lugar.
+        var anterior = Selecionada?.Regra;
+        var regra = new RegraContabilizacao(anterior?.Id ?? 0, anterior?.Prioridade ?? 0, anterior?.Operacao ?? Sentido,
             Cfop, participanteId, participanteNome, Debito, Credito, Historico, Ativa);
         var r = await app.Fiscal().Contabilizacao.GravarRegraAsync(empresa, regra, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Selecionada = Regras.FirstOrDefault(x => x.Regra.Id == r.Valor);
+        Selecionada = ListaAtual.FirstOrDefault(x => x.Regra.Id == r.Valor);
         Mensagem = "Regra gravada.";
     }, Permissao.FiscalContabilizar);
 
@@ -102,6 +115,26 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
         await CarregarAsync();
         Nova();
         Mensagem = "Regra excluída.";
+    }, Permissao.FiscalContabilizar);
+
+    [RelayCommand] private Task SubirAsync() => MoverAsync(-1);
+    [RelayCommand] private Task DescerAsync() => MoverAsync(1);
+
+    /// <summary>Move a regra selecionada uma posição na lista do sentido e grava a nova ordem (a ordem é o desempate entre regras igualmente específicas).</summary>
+    public Task MoverAsync(int delta) => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada is not { } s) { Erros.Add("Selecione uma regra."); return; }
+        var lista = ListaAtual;
+        var i = lista.IndexOf(s);
+        var j = i + delta;
+        if (i < 0 || j < 0 || j >= lista.Count) return;
+        var ids = lista.Select(x => x.Regra.Id).ToList();
+        (ids[i], ids[j]) = (ids[j], ids[i]);
+        var r = await app.Fiscal().Contabilizacao.ReordenarRegrasAsync(empresa, Sentido, ids, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var id = s.Regra.Id;
+        await CarregarAsync();
+        Selecionada = ListaAtual.FirstOrDefault(x => x.Regra.Id == id);
     }, Permissao.FiscalContabilizar);
 }
 

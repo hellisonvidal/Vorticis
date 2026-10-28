@@ -148,11 +148,13 @@ public class ViewModelsFiscaisTests(BancoDeTeste db) : IClassFixture<BancoDeTest
 
             // Regras de contabilização e contabilização pelas telas
             var regras = new RegrasContabilizacaoViewModel(ctx);
+            regras.Aba = 1;   // aba Saídas
             regras.NovaCommand.Execute(null);
             (regras.Cfop, regras.Debito, regras.Credito) = ("5102", "1.1.02.001", "3.1.01.001");
             await regras.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(regras.Erros);
-            Assert.Single(regras.Regras);
+            Assert.Single(regras.RegrasSaida);
+            Assert.Empty(regras.RegrasEntrada);
             var notas = new ContabilizarNotasViewModel(ctx) { Inicio = new DateTime(2026, 3, 1), Fim = new DateTime(2026, 3, 31) };
             await notas.PreVisualizarCommand.ExecuteAsync(null);
             Assert.Equal(3, notas.Pendentes.Count);

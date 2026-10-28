@@ -110,11 +110,13 @@ Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **C
 **Para que serve:** ensinar o sistema em quais contas lançar cada tipo de nota.
 **Onde fica:** *Cadastros › Regras de contabilização*.
 
-1. **Nova**. Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos) e o **sentido** (entrada ou saída).
-2. Informe a **conta de débito** e a **de crédito** e, se quiser, o **participante** e o histórico (aceita as variáveis dos históricos padrão).
-3. **Salvar**.
+A tela tem duas abas: **Entradas** (notas de compra e outras entradas) e **Saídas** (vendas e serviços prestados). Cada aba mostra e grava só as regras do seu sentido; escolha a aba antes de criar a regra.
 
-Vale a regra **mais específica** (participante, CFOP completo, prefixo, geral); em empate, a de maior prioridade.
+1. Na aba desejada, clique em **Nova**. Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos).
+2. Informe a **conta de débito** e a **de crédito** e, se quiser, o **participante** e o histórico (aceita as variáveis dos históricos padrão).
+3. **Salvar**. A regra nova entra no fim da lista da aba.
+
+Vale a regra **mais específica**: a que tem participante vence a que não tem; depois, o CFOP completo vence o prefixo (e o prefixo mais longo vence o mais curto); por último, a regra geral. Se duas regras forem igualmente específicas, vale a que estiver **mais acima na lista**. Para mudar a ordem, selecione a regra e use **Subir** ou **Descer**; a ordem fica gravada. Não há campo de prioridade para digitar.
 
 ## Contabilizar notas fiscais
 
@@ -210,7 +212,7 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
    - Para corrigir, clique no valor na lista e digite o novo; **Remover selecionada** tira uma linha e **Limpar receitas** apaga todas.
 3. O **RBT12** (receita dos 12 meses anteriores) vem do histórico; informe também a *folha 12 meses* para o Fator R (anexo III ou V). Se a empresa é nova, o sistema proporcionaliza.
 4. **Calcular**: mostra alíquota efetiva, valor do DAS e a repartição por tributo, com memória de cálculo.
-5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas dos tributos](#contas-dos-tributos-provisoes)); **Desfazer provisão** estorna.
+5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas das provisões](#contabilizacao-das-provisoes-de-impostos), em Cadastros › Parâmetros); **Desfazer provisão** estorna.
 
 **PGDAS-D:** o Vorticis calcula o DAS, mas a transmissão da declaração continua no portal do Simples Nacional (PGDAS-D). A integração direta exige o contrato do *Integra Contador* do SERPRO (chaves de acesso pagas) e procuração eletrônica; ela ainda não está disponível.
 
@@ -250,10 +252,15 @@ A *Parte B* mostra o razão dos prejuízos e da base negativa. O **código da EC
 **Onde fica:** *Apuração › Histórico de receita e folha*.
 Escolha o ano, **Carregar**, edite a receita bruta e a folha de cada mês anterior ao uso do sistema e **Salvar alterações**. Serve de base para o RBT12 do Simples e o Fator R.
 
-## Contas dos tributos (provisões)
+## Contabilização das provisões de impostos
 
-**Onde fica:** *Apuração › Contas dos tributos (provisões)*.
-Para cada tributo (DAS, IRPJ, CSLL, PIS, COFINS...) informe a **conta de despesa** e a **conta de passivo (a recolher)** e **Salvar**. São usadas por **Contabilizar provisão** nas apurações.
+**Onde fica:** *Cadastros › Parâmetros*, grupo *Contabilização das provisões de impostos*.
+Para cada tributo informe a **conta de débito (despesa)** e a **conta de crédito (imposto a recolher)** e clique em **Salvar**; deixe as duas em branco para remover. São usadas por **Contabilizar provisão** nas apurações.
+
+Só ficam liberados os tributos que a empresa tem, conforme o regime em *Cadastros › Empresas* (Dados cadastrais):
+- **Simples Nacional e MEI:** somente o **DAS**.
+- **Lucro Presumido, Real ou Arbitrado:** **IRPJ, CSLL, PIS e COFINS**; mais **ICMS** (empresa com inscrição estadual, comércio ou indústria), **IPI** (indústria) e **ISS** (atividade de serviços), conforme a inscrição e a atividade (CNAE).
+Um tributo bloqueado que já tenha contas gravadas continua liberado, para você poder corrigir ou limpar. A tela *Contas dos tributos* deixou de existir: as mesmas contas agora são mantidas aqui.
 
 ## Retenções e guias
 
@@ -348,4 +355,4 @@ Antes, faça a [apuração de PIS e COFINS](#pis-e-cofins) do mês. Ambas as tel
 
 ## Contabilização
 
-A integração das notas e das apurações com o Contábil é descrita em [Regras de contabilização](#regras-de-contabilizacao), [Contabilizar notas fiscais](#contabilizar-notas-fiscais) e [Contas dos tributos](#contas-dos-tributos-provisoes).
+A integração das notas e das apurações com o Contábil é descrita em [Regras de contabilização](#regras-de-contabilizacao), [Contabilizar notas fiscais](#contabilizar-notas-fiscais) e [Contabilização das provisões de impostos](#contabilizacao-das-provisoes-de-impostos).

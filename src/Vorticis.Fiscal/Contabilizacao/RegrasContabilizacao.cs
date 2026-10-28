@@ -22,8 +22,9 @@ public sealed record PropostaContabilizacao(DocumentoFiscal Documento, Lancament
 public static class MotorContabilizacao
 {
     /// <summary>
-    /// Regra mais específica que casa com a operação: participante (+4), CFOP completo (+3) ou prefixo (+1 a +2, pelo tamanho) e
-    /// sentido (+1). Empate: menor prioridade, depois menor id. Regras inativas são ignoradas.
+    /// Regra mais específica que casa com a operação: participante (vence qualquer regra sem participante), depois CFOP completo, depois prefixo
+    /// (o mais longo primeiro) e, por fim, a regra com sentido sobre a sem sentido. Empate: a que vem antes na lista (menor prioridade, depois menor id).
+    /// Regras inativas são ignoradas.
     /// </summary>
     public static RegraContabilizacao? Escolher(IEnumerable<RegraContabilizacao> regras, TipoOperacao operacao, string cfop, long? participanteId)
     {
@@ -35,9 +36,9 @@ public static class MotorContabilizacao
             if (!string.IsNullOrWhiteSpace(r.Cfop))
             {
                 if (!Cfop.Casa(r.Cfop.Trim(), cfop)) return -1;
-                pontos += r.Cfop.Trim().Length >= cfop.Length ? 3 : r.Cfop.Trim().Length >= 3 ? 2 : 1;
+                pontos += r.Cfop.Trim().Length >= cfop.Length ? 40 : 10 * Math.Min(r.Cfop.Trim().Length, 3);
             }
-            if (r.ParticipanteId is { } p) { if (p != part) return -1; pontos += 4; }
+            if (r.ParticipanteId is { } p) { if (p != part) return -1; pontos += 100; }
             return pontos;
         }
 

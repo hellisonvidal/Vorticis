@@ -20,7 +20,7 @@
                 <ItemsControl ItemsSource="{Binding Campos}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CampoParametro">
-                      <StackPanel Spacing="2" Margin="0,4,0,0">
+                      <StackPanel Spacing="2" Margin="0,4,0,0" IsEnabled="{Binding Habilitado}">
                         <CheckBox Content="{Binding Rotulo}" IsChecked="{Binding Marcado}" IsVisible="{Binding EhSimNao}"
                                   Name="CampoSimNao" />
                         <StackPanel IsVisible="{Binding !EhSimNao}" Spacing="2">

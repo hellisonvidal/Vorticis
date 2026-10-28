@@ -29,7 +29,29 @@ public interface IRepositorioProvisoes
 public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IRepositorioContabilizacao contas, IRepositorioSimples simples, IRepositorioLucro lucro,
                                      ServicoLancamento lancamentos, Autorizador autorizador)
 {
-    public static readonly IReadOnlyList<string> Tributos = ["DAS", "IRPJ", "CSLL", "PIS", "COFINS"];
+    public static readonly IReadOnlyList<string> Tributos = ["DAS", "IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IPI", "ISS"];
+
+    /// <summary>
+    /// Tributos cuja provisão a empresa pode contabilizar, pelo regime e pelo cadastro: Simples Nacional e MEI recolhem tudo no DAS; Lucro Presumido, Real e
+    /// Arbitrado têm IRPJ, CSLL, PIS e COFINS e, conforme a inscrição estadual e a atividade (CNAE), ICMS (com inscrição), IPI (indústria) e ISS (serviços).
+    /// Imune/isenta e regime não informado: nenhum.
+    /// </summary>
+    public static IReadOnlyList<string> TributosDoRegime(Vorticis.Application.Cadastros.RegimeTributario? regime, string? inscricaoEstadual, string? cnae)
+    {
+        if (regime is Vorticis.Application.Cadastros.RegimeTributario.SimplesNacional or Vorticis.Application.Cadastros.RegimeTributario.MEI) return ["DAS"];
+        if (regime is not (Vorticis.Application.Cadastros.RegimeTributario.LucroPresumido or Vorticis.Application.Cadastros.RegimeTributario.LucroReal
+                           or Vorticis.Application.Cadastros.RegimeTributario.LucroArbitrado)) return [];
+        var lista = new List<string> { "IRPJ", "CSLL", "PIS", "COFINS" };
+        var digitos = new string((cnae ?? "").Where(char.IsAsciiDigit).ToArray());
+        var divisao = digitos.Length >= 2 ? int.Parse(digitos[..2]) : -1;
+        var industria = divisao is >= 10 and <= 33;
+        var comercio = divisao is >= 45 and <= 47;
+        var comIe = !string.IsNullOrWhiteSpace(inscricaoEstadual) && !inscricaoEstadual.Trim().Equals("ISENTO", StringComparison.OrdinalIgnoreCase);
+        if (comIe || industria || comercio) lista.Add("ICMS");
+        if (industria) lista.Add("IPI");
+        if (divisao >= 0 && !industria && !comercio) lista.Add("ISS");
+        return lista;
+    }
 
     public async Task<Resultado<IReadOnlyList<ContaTributo>>> ListarContasAsync(long empresaId, long usuarioId, CancellationToken ct = default)
     {
@@ -78,7 +100,7 @@ public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IReposit
         foreach (var (tributo, valor) in itens.Where(i => i.Valor > 0))
         {
             if (!configuradas.TryGetValue(tributo, out var c))
-                return Resultado<long>.Falha($"Configure as contas de despesa e de passivo do tributo {tributo} em Contas dos tributos.");
+                return Resultado<long>.Falha($"Configure as contas de despesa e de passivo do tributo {tributo} em Cadastros › Parâmetros (Contabilização das provisões de impostos).");
             partidas.Add(new PartidaProposta(c.ContaDespesa, IndicadorDC.D, valor, $"{historico} · {tributo}"));
             partidas.Add(new PartidaProposta(c.ContaPassivo, IndicadorDC.C, valor, $"{historico} · {tributo}"));
         }

@@ -1,4 +1,5 @@
 using Vorticis.Desktop.Comum.ViewModels;
+using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Fiscal.Duplicatas;
 using Vorticis.Fiscal.Sped;
@@ -70,16 +71,24 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             new("historicoPagamento", "Histórico do pagamento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
             new("historicoRecebimento", "Histórico do recebimento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
         };
-        Observar([.. notas, .. duplicatas, .. icms, .. contrib]);
+        var provisoes = new List<CampoParametro>();
+        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
+        {
+            provisoes.Add(new($"provDebito{t}", $"{t} – conta de débito (despesa)", TipoCampoParametro.Conta, t == "DAS" ? "Conta analítica de despesa do tributo; é debitada na provisão da apuração." : null));
+            provisoes.Add(new($"provCredito{t}", $"{t} – conta de crédito (imposto a recolher)", TipoCampoParametro.Conta, t == "DAS" ? "Conta analítica do passivo; é creditada na provisão da apuração." : null));
+        }
+        Observar([.. notas, .. duplicatas, .. icms, .. contrib, .. provisoes]);
         return
         [
             new("Lançamento das notas", "Opções usadas na digitação de notas de entrada e saída.", notas),
             new("Duplicatas e baixas (contas a pagar e a receber)", "Contas contábeis e históricos usados na contabilização das notas com duplicatas e nas baixas. Exige a função de manter duplicatas.", duplicatas),
             new("EFD ICMS/IPI (SPED Fiscal)", "Escolhas que se repetem a cada mês; o assistente já abre preenchido. Exige permissão de gerar SPED.", icms),
             new("EFD-Contribuições (PIS/COFINS)", "Escolhas que se repetem a cada mês na EFD-Contribuições. Exige permissão de gerar SPED.", contrib),
+            new("Contabilização das provisões de impostos",
+                "Contas de débito e de crédito usadas ao contabilizar a provisão de cada tributo apurado. Ficam liberados só os tributos do regime da empresa (Cadastros › Empresas, Dados cadastrais): " +
+                "Simples Nacional, só o DAS; Lucro Presumido ou Real, IRPJ, CSLL, PIS e COFINS, e ICMS, IPI e ISS conforme a inscrição estadual e a atividade. Exige a função de apurar tributos.", provisoes),
             new("Contabilização e tributos", "Tabelas que têm tela própria.", [],
-                [Atalho("Abrir Regras de contabilização", Telas.RegrasContabilizacao), Atalho("Abrir Contas dos tributos", Telas.ContasTributos),
-                 Atalho("Abrir Fechamento do período fiscal", Telas.FechamentoFiscal)]),
+                [Atalho("Abrir Regras de contabilização", Telas.RegrasContabilizacao), Atalho("Abrir Fechamento do período fiscal", Telas.FechamentoFiscal)]),
         ];
     }
 
@@ -106,6 +115,7 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             Campo("historicoPagamento").Texto = x.HistoricoPagamento;
             Campo("historicoRecebimento").Texto = x.HistoricoRecebimento;
         }
+        await CarregarProvisoesAsync(app, empresa, usuario);
         var e = await app.Fiscal().Efd.ConfiguracaoAsync(empresa, usuario);
         var c = e.Sucesso ? e.Valor : new ConfiguracaoEfd();
         Campo("icmsPerfil").DefinirEscolha(c.IcmsPerfil.ToString());
@@ -115,6 +125,48 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         Campo("icmsDia").Texto = c.IcmsDiaVencimento.ToString();
         Campo("contribNatureza").DefinirEscolha(c.ContribNaturezaPj);
         Campo("contribAtividade").DefinirEscolha(c.ContribIndicadorAtividade.ToString());
+    }
+
+    private IReadOnlyList<string> _tributosLiberados = [];
+
+    private async Task CarregarProvisoesAsync(VorticisApp app, long empresa, long usuario)
+    {
+        var detalhe = await app.Empresas.ObterAsync(empresa);
+        _tributosLiberados = Vorticis.Fiscal.Guias.ServicoProvisoes.TributosDoRegime(detalhe?.Regime, detalhe?.InscricaoEstadual, detalhe?.CnaePrincipal);
+        var opcoes = (await app.PlanoContas.ListarAsync(empresa, usuario)).Where(c => c.Analitica && c.Ativa).OrderBy(c => c.Codigo, StringComparer.Ordinal)
+                        .Select(c => new ContaPesquisavel(c.Codigo, c.Descricao, c.CodigoReduzido)).ToList();
+        var podeVer = Contexto.Pode(Permissao.FiscalApurar);
+        var contas = podeVer ? (await app.Fiscal().Provisoes.ListarContasAsync(empresa, usuario)) : null;
+        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
+        {
+            var conta = contas is { Sucesso: true } ? contas.Valor.FirstOrDefault(x => x.Tributo == t) : null;
+            // Tributo fora do regime, mas já configurado, continua liberado para o contador poder corrigir ou limpar.
+            var liberado = podeVer && (_tributosLiberados.Contains(t) || conta is not null);
+            foreach (var (chave, valor) in new[] { ($"provDebito{t}", conta?.ContaDespesa), ($"provCredito{t}", conta?.ContaPassivo) })
+            {
+                var campo = Campo(chave);
+                campo.Contas = opcoes;
+                campo.Texto = valor ?? "";
+                campo.Habilitado = liberado;
+            }
+        }
+    }
+
+    private async Task GravarProvisoesAsync(VorticisApp app, long empresa, long usuario)
+    {
+        if (!Contexto.Pode(Permissao.FiscalApurar)) return;
+        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
+        {
+            var deb = Campo($"provDebito{t}");
+            if (!deb.Habilitado) continue;
+            var d = deb.Texto.Trim();
+            var c = Campo($"provCredito{t}").Texto.Trim();
+            Resultado r;
+            if (d.Length == 0 && c.Length == 0) r = await app.Fiscal().Provisoes.ExcluirContaAsync(empresa, t, usuario);
+            else if (d.Length == 0 || c.Length == 0) { Erros.Add($"{t}: informe as duas contas (débito e crédito) ou deixe as duas em branco."); continue; }
+            else r = await app.Fiscal().Provisoes.GravarContaAsync(empresa, new Vorticis.Fiscal.Guias.ContaTributo(t, d, c), usuario);
+            if (!r.Sucesso) MostrarResultado(r, "");
+        }
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -136,6 +188,8 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
                 Conta("contaDescontoConcedido"), Campo("historicoPagamento").Texto, Campo("historicoRecebimento").Texto), usuario);
             if (!dup.Sucesso) { MostrarResultado(dup, ""); return; }
         }
+        await GravarProvisoesAsync(app, empresa, usuario);
+        if (Erros.Count > 0) return;
         if (!PodeSped) return;
         if (!int.TryParse(Campo("icmsDia").Texto.Trim(), out var dia)) { Erros.Add("Informe o dia de vencimento do ICMS em número (1 a 28)."); return; }
         static string? T(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

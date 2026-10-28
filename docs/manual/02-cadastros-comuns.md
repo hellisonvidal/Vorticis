@@ -75,7 +75,8 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Duplicatas e baixas | Gerar duplicata à vista, dias do vencimento à vista, contas de fornecedores, clientes, juros, multa e descontos, e o histórico dos lançamentos de pagamento e recebimento. |
 | EFD ICMS/IPI | Perfil, atividade, códigos de receita e dia de vencimento do ICMS (o assistente já abre preenchido). |
 | EFD-Contribuições | Natureza da pessoa jurídica e atividade. |
-| Contabilização e tributos | Atalhos para *Regras de contabilização*, *Contas dos tributos* e *Fechamento do período fiscal*. |
+| Contabilização das provisões de impostos | Contas de débito e de crédito de cada tributo (DAS; IRPJ, CSLL, PIS, COFINS; ICMS, IPI, ISS), liberando só os do regime da empresa. |
+| Contabilização e tributos | Atalhos para *Regras de contabilização* e *Fechamento do período fiscal*. |
 
 ### Folha
 | Grupo | O que tem |

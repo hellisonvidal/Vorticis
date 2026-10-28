@@ -128,7 +128,7 @@ public sealed class ServicoLucro(IRepositorioLucro repositorio, IRepositorioDocu
         var receita = LivrosFiscais.ReceitaLiquida(await documentos.ListarItensAsync(empresaId, ini, fim, null, ct));
         var avisos = new List<string>();
         if (despesaTributos == 0)
-            avisos.Add("Contas de despesa de IRPJ/CSLL não configuradas em Contas dos tributos: se o resultado já inclui a provisão do trimestre, ela deve ser lançada como adição.");
+            avisos.Add("Contas de despesa de IRPJ/CSLL não configuradas em Parâmetros (Contabilização das provisões de impostos): se o resultado já inclui a provisão do trimestre, ela deve ser lançada como adição.");
         return Resultado<PreparoReal>.Ok(new PreparoReal(
             new EntradaReal(ano, trimestre, lucroAntes, adIrpj, exIrpj, adCsll, exCsll, saldoIrpj, saldoCsll, irrf, csllRetida, 0, receita), resultado, despesaTributos, avisos));
     }

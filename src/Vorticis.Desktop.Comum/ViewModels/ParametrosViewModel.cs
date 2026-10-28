@@ -32,6 +32,8 @@ public sealed partial class CampoParametro(string chave, string rotulo, TipoCamp
     [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _contas = [];
     public bool TemAjuda => !string.IsNullOrWhiteSpace(Ajuda);
 
+    /// <summary>Falso deixa o campo visível, mas desabilitado (ex.: tributo que o regime da empresa não tem).</summary>
+    [ObservableProperty] private bool _habilitado = true;
     [ObservableProperty] private bool _marcado;
     [ObservableProperty] private string _texto = "";
     [ObservableProperty] private DateTime? _data;

@@ -68,7 +68,6 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.EmBreve("ICMS e IPI"),
             ItemMenu.Separador,
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
-            ItemMenu.Tela("Contas dos tributos (provisões)", Telas.ContasTributos),
             ItemMenu.Separador,
             ItemMenu.Tela("Fechamento do período fiscal", Telas.FechamentoFiscal)),
         ItemMenu.Submenu("_Obrigações",
@@ -162,9 +161,6 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("FechamentoFiscal", m => new FechamentoFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.FechamentoFiscal, "Apuração › Fechamento do período fiscal", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
-        c.Instancia("ContasTributos", m => new ContasTributosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.ContasTributos, "Apuração › Contas dos tributos", m => m.Pode(Permissao.FiscalApurar), v => v.CarregarAsync());
 
         c.Instancia("Retencoes", m => new RetencoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Retencoes, "Obrigações › Retenções", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());

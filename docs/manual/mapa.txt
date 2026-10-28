@@ -95,7 +95,6 @@ apuracaopresumido=05-fiscal.md#lucro-presumido-irpj-e-csll
 apuracaoreal=05-fiscal.md#lucro-real-irpj-csll-e-lalur
 apuracaopiscofins=05-fiscal.md#pis-e-cofins
 historicoreceitafolha=05-fiscal.md#historico-de-receita-e-folha
-contastributos=05-fiscal.md#contas-dos-tributos-provisoes
 fiscal.fechamento=05-fiscal.md#fechamento-do-periodo-fiscal
 retencoes=05-fiscal.md#retencoes-irrf-csrf-inss-iss
 guias=05-fiscal.md#guias-de-recolhimento

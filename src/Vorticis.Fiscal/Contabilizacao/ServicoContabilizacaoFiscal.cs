@@ -16,6 +16,8 @@ public interface IRepositorioContabilizacao
     Task<IReadOnlyList<RegraContabilizacao>> ListarRegrasAsync(long empresaId, CancellationToken ct);
     Task<long> GravarRegraAsync(long empresaId, RegraContabilizacao regra, long contaDebitoId, long contaCreditoId, CancellationToken ct);
     Task ExcluirRegraAsync(long empresaId, long regraId, CancellationToken ct);
+    /// <summary>Renumera a prioridade das regras do sentido na ordem dada (10, 20, 30...).</summary>
+    Task ReordenarRegrasAsync(long empresaId, TipoOperacao operacao, IReadOnlyList<long> idsEmOrdem, CancellationToken ct);
 
     /// <summary>Contas pelo código completo ou reduzido; as não encontradas ficam fora.</summary>
     Task<IReadOnlyDictionary<string, ContaResolvida>> ResolverContasAsync(long empresaId, IEnumerable<string> codigos, CancellationToken ct);
@@ -90,6 +92,14 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
     {
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return Resultado.Falha(negado);
         await repositorio.ExcluirRegraAsync(empresaId, regraId, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>Grava a ordem das regras de um sentido (a mais acima vence o empate entre regras igualmente específicas).</summary>
+    public async Task<Resultado> ReordenarRegrasAsync(long empresaId, TipoOperacao operacao, IReadOnlyList<long> idsEmOrdem, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalContabilizar, ct) is { } negado) return Resultado.Falha(negado);
+        await repositorio.ReordenarRegrasAsync(empresaId, operacao, idsEmOrdem, ct);
         return Resultado.Ok();
     }
 
