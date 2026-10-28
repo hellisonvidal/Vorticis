@@ -4,8 +4,8 @@
   VorticisCondominio — .ico, -256.png e -512.png): a espiral da logo inteira na cor do módulo (o verde vira a
   cor de destaque e o azul-marinho, a cor da barra) com um selo redondo na mesma cor e a sigla do módulo
   (C, F, FP, E, G, CD, FR, VL), para não confundir os sistemas na barra de tarefas.
-  VorticisInstalador.ico — o ícone do instalador (e da Vorticis Suite), diferente de todos: a espiral branca sobre um quadrado
-  azul-marinho arredondado, com uma faixa nas cores dos módulos e uma seta de instalação.
+  VorticisSuite.ico — o ícone do instalador e da Vorticis Suite Empresarial (o módulo completo), diferente de todos: a espiral
+  da logo (verde e azul-marinho) dentro de um anel segmentado nas cores dos seis módulos, sem sigla.
 
 Usa só o símbolo (a espiral à esquerda da logo): o nome VORTICIS fica ilegível nos tamanhos de ícone.
 O fundo branco da logo vira transparente. As cores devem ser as mesmas de IModuloDesktop.CorDestaque e
@@ -115,39 +115,20 @@ def selo(img: Image.Image, cor: str, sigla: str) -> Image.Image:
     return saida
 
 
-# Produtos com instalador próprio -> (fundo, módulos da faixa de cores)
-INSTALADORES = {
-    "VorticisInstalador": (MARINHO_LOGO, ["VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisEscritorio", "VorticisGerencial",
-                                          "VorticisCondominio"]),
-}
-
-
-def instalador(base: Image.Image, fundo: str, modulos: list[str]) -> Image.Image:
-    """Ícone do instalador (e da Suite): espiral branca sobre quadrado escuro, faixa com as cores dos módulos e seta de instalação."""
-    lado = 512
-    img = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+def suite(base: Image.Image) -> Image.Image:
+    """Ícone da Suite Empresarial: espiral original da logo dentro de um anel de seis arcos, um por módulo."""
+    ss, lado = 2, 512
+    img = Image.new("RGBA", (lado * ss, lado * ss), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle((8, 8, lado - 8, lado - 8), radius=96, fill=fundo)
-    # faixa inferior com as cores dos módulos do produto
-    cores = [MODULOS[m][0] for m in modulos]
-    larg = (lado - 16) / len(cores)
-    faixa = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
-    fd = ImageDraw.Draw(faixa)
-    for i, c in enumerate(cores):
-        fd.rectangle((8 + i * larg, lado - 92, 8 + (i + 1) * larg, lado - 8), fill=c)
-    mascara = Image.new("L", (lado, lado), 0)
-    ImageDraw.Draw(mascara).rounded_rectangle((8, 8, lado - 8, lado - 8), radius=96, fill=255)
-    img.paste(faixa, (0, 0), ImageChops.multiply(mascara, faixa.getchannel("A")))
-    # espiral em branco (só o desenho, pela transparência da logo)
-    esp = base.resize((330, 330), Image.LANCZOS)
-    branca = Image.new("RGBA", esp.size, (255, 255, 255, 255))
-    branca.putalpha(esp.getchannel("A"))
-    img.alpha_composite(branca, (40, 40))
-    # seta de instalação (para baixo, sobre uma bandeja) no canto superior direito
-    cx, topo = 395, 70
-    d.rectangle((cx - 22, topo, cx + 22, topo + 120), fill="#FBBF24")
-    d.polygon([(cx - 70, topo + 110), (cx + 70, topo + 110), (cx, topo + 190)], fill="#FBBF24")
-    d.rectangle((cx - 80, topo + 215, cx + 80, topo + 245), fill="#FBBF24")
+    c, raio, esp = lado * ss // 2, 244 * ss, 62 * ss
+    d.ellipse((c - raio + 6 * ss, c - raio + 6 * ss, c + raio - 6 * ss, c + raio - 6 * ss), fill="#FFFFFF")   # disco branco: contraste
+    ordem = ["VorticisContabil", "VorticisFiscal", "VorticisFolha", "VorticisEscritorio", "VorticisGerencial", "VorticisCondominio"]
+    for i, m in enumerate(ordem):
+        ini = -90 + i * 60 + 4
+        d.arc((c - raio, c - raio, c + raio, c + raio), ini, ini + 52, fill=MODULOS[m][0], width=esp)
+    img = img.resize((lado, lado), Image.LANCZOS)
+    esp_img = base.resize((350, 350), Image.LANCZOS)
+    img.alpha_composite(esp_img, ((lado - 350) // 2, (lado - 350) // 2))
     return img
 
 
@@ -162,8 +143,7 @@ def main() -> None:
     for nome, (cor, barra, sigla) in MODULOS.items():
         img = recolorir(base, cor, barra).resize((512, 512), Image.LANCZOS)
         salvar(nome, selo(img, cor, sigla))
-    for nome, (fundo, modulos) in INSTALADORES.items():
-        salvar(nome, instalador(base, fundo, modulos))
+    salvar("VorticisSuite", suite(base))
 
 
 if __name__ == "__main__":

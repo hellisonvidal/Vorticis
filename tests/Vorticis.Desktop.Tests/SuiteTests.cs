@@ -339,6 +339,126 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.True(ok);
     }
 
+    /// <summary>Layout E: clicar de verdade (mouse) num botão da faixa e num item de menu suspenso da faixa abre a tela correspondente.</summary>
+    [Fact]
+    public async Task Faixa_de_opcoes_abre_a_tela_ao_clicar_no_botao_e_no_item_do_menu_suspenso()
+    {
+        BancoDeTeste.ExigirBanco();
+        SuiteViewModel.ArquivoLayout = ArquivoTemporario();
+        var adm = await db.AdminAsync();
+        await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), TestContext.Current.CancellationToken);
+        var ct = TestContext.Current.CancellationToken;
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            ModulosDaSuite.IncluirTelas(Avalonia.Application.Current!);
+            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+            var janela = new MainWindow { Width = 1400, Height = 860 };
+            janela.UsarSuite(suite);
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            await suite.Principal.InicializarAsync(db.ConnectionString);
+            var login = Assert.IsType<LoginViewModel>(suite.Principal.Conteudo);
+            (login.Usuario, login.Senha) = ("admin_teste", "Senha1234");
+            await login.EntrarCommand.ExecuteAsync(null);
+            for (var i = 0; i < 200 && suite.Modulos.Any(m => !m.Vm.Logado); i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            suite.Trocar(suite.Modulos.Single(m => m.Nome == "Contábil"));
+            suite.FaixaFixa = true;
+            suite.Layout = LayoutSuite.Faixa;
+            for (var i = 0; i < 4; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            var contabil = suite.Ativo;
+            var topo = janela.FindDescendantOfType<SuiteTopoView>()!;
+            var fixo = topo.FindControl<ContentControl>("CorpoFixo")!;
+
+            void Clicar(Control alvo)
+            {
+                var topLevel = TopLevel.GetTopLevel(alvo)!;
+                var centro = alvo.TranslatePoint(new Avalonia.Point(alvo.Bounds.Width / 2, alvo.Bounds.Height / 2), topLevel)!.Value;
+                topLevel.MouseMove(centro);
+                topLevel.MouseDown(centro, Avalonia.Input.MouseButton.Left);
+                topLevel.MouseUp(centro, Avalonia.Input.MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            // botão direto da faixa
+            var direto = fixo.GetVisualDescendants().OfType<Button>().First(b => (b.Tag as NoSuite)?.Chave is not null && b.IsEffectivelyVisible);
+            var antes = contabil.Abertas;
+            Clicar(direto);
+            for (var i = 0; i < 5; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            Assert.True(contabil.Abertas > antes, "o clique no botão da faixa não abriu a tela");
+
+            // item de um menu suspenso da faixa
+            var comMenu = fixo.GetVisualDescendants().OfType<Button>().First(b => b.Flyout is MenuFlyout && b.IsEffectivelyVisible);
+            var fly = (MenuFlyout)comMenu.Flyout!;
+            antes = contabil.Abertas;
+            Clicar(comMenu);
+            Assert.True(fly.IsOpen, "o menu suspenso da faixa não abriu");
+            var folha = fly.Items.OfType<MenuItem>().First(i => (i.CommandParameter as NoSuite)?.Chave is not null
+                                                                && !contabil.Vm.JanelasAbertas.Any(j => j.Tela == ((NoSuite)i.CommandParameter!).Chave));
+            var alvo = (NoSuite)folha.CommandParameter!;
+            Clicar(folha);
+            for (var i = 0; i < 5; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            // a função é pedida ao módulo (a tela em si pode exigir empresa; o registro de uso prova que o comando foi executado)
+            Assert.Same(alvo, suite.Recentes.FirstOrDefault());
+            Assert.False(fly.IsOpen, "o menu suspenso deve fechar depois do clique");
+
+            // sem empresa a função não abre, mas o clique agora explica o motivo (antes não fazia nada) e o botão aparece apagado
+            var semEmpresa = contabil.Vm.EmpresaSelecionada is null;
+            if (semEmpresa)
+            {
+                var folhaNo = contabil.Raiz.Filhos.SelectMany(Folhas).FirstOrDefault(n => n.Chave is not null && !contabil.Vm.AbrirCommand.CanExecute(n.Chave));
+                Assert.NotNull(folhaNo);
+                Assert.False(suite.PodeAbrirFuncao(folhaNo));
+                contabil.Vm.Status = "";
+                suite.AbrirFuncaoCommand.Execute(folhaNo);
+                Assert.Contains("não está disponível agora", contabil.Vm.Status);
+            }
+
+            // submenu dentro do menu suspenso da faixa (quando existe): abre ao clicar e o item de dentro executa
+            Button? comSub = null;
+            foreach (var mod in suite.Modulos)
+            {
+                suite.Trocar(mod);
+                for (var i = 0; i < 3; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+                comSub = fixo.GetVisualDescendants().OfType<Button>().Where(b => b.Flyout is MenuFlyout && b.IsEffectivelyVisible)
+                             .FirstOrDefault(b => ((MenuFlyout)b.Flyout!).Items.OfType<MenuItem>().Any(m => m.Items.Count > 0));
+                if (comSub is not null) break;
+            }
+            if (comSub is not null)
+            {
+                var f2 = (MenuFlyout)comSub.Flyout!;
+                Clicar(comSub);
+                var pai = f2.Items.OfType<MenuItem>().First(m => m.Items.Count > 0);
+                Clicar(pai);
+                Assert.True(pai.IsSubMenuOpen, "o submenu da faixa não abriu ao clicar");
+                var filho = pai.Items.OfType<MenuItem>().First(m => (m.CommandParameter as NoSuite)?.Chave is not null);
+                var alvoFilho = (NoSuite)filho.CommandParameter!;
+                Clicar(filho);
+                for (var i = 0; i < 5; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+                Assert.Same(alvoFilho, suite.Recentes.FirstOrDefault());
+            }
+
+            // faixa oculta: passar o mouse nas abas abre a faixa por cima e o clique no botão também abre a tela
+            suite.FaixaFixa = false;
+            for (var i = 0; i < 3; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            var barra = topo.FindControl<Border>("BarraAbas")!;
+            var popup = topo.FindControl<Avalonia.Controls.Primitives.Popup>("CorpoFlutuante")!;
+            var pontoAba = barra.TranslatePoint(new Avalonia.Point(barra.Bounds.Width / 2, 6), janela)!.Value;
+            janela.MouseMove(pontoAba);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(popup.IsOpen, "a faixa oculta não abriu ao passar o mouse nas abas");
+            var corpo = topo.FindControl<ContentControl>("CorpoPopup")!;
+            var outro = corpo.GetVisualDescendants().OfType<Button>().Where(b => (b.Tag as NoSuite)?.Chave is not null && b.IsEffectivelyVisible)
+                             .First(b => !contabil.Vm.JanelasAbertas.Any(j => j.Tela == ((NoSuite)b.Tag!).Chave));
+            var alvoFlutuante = (NoSuite)outro.Tag!;
+            Clicar(outro);
+            for (var i = 0; i < 5; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+            Assert.Same(alvoFlutuante, suite.Recentes.FirstOrDefault());
+            janela.Close();
+            return true;
+        }, ct));
+        Assert.True(ok);
+    }
+
     /// <summary>
     /// Verificação visual: renderiza os cinco layouts (e o seletor) em 1366x768 com dados de exemplo. Com VORTICIS_SCREENSHOTS apontando para uma
     /// pasta, grava os PNGs (layout_A_*.png ... seletor.png) para conferir a olho.

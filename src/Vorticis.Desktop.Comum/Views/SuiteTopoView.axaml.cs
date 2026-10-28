@@ -129,7 +129,7 @@ public partial class SuiteTopoView : UserControl
         {
             Background = Brushes.White,
             BorderBrush = new SolidColorBrush(Color.Parse("#D5DCE6")), BorderThickness = new Thickness(0, 0, 0, 1),
-            Height = 104, MinWidth = flutuante ? 900 : 0,
+            Height = 100, MinWidth = flutuante ? 900 : 0,
             Child = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children = { esquerda, rolagem, direita } },
         };
         if (flutuante)
@@ -152,9 +152,17 @@ public partial class SuiteTopoView : UserControl
         var botoes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
         var icone = categoria.Icone ?? Icones.FolderOutline;
         foreach (var item in visiveis)
-            botoes.Children.Add(item.Chave is not null
-                ? Botao(item.Titulo, IconesSuite.DaFuncao(item.Titulo, icone), modulo, () => suite.AbrirFuncaoCommand.Execute(item), item)
-                : BotaoMenu(item.Titulo, item.Icone ?? icone, modulo, suite, item.Filhos));
+        {
+            Button botao;
+            if (item.Chave is not null)
+            {
+                botao = Botao(item.Titulo, IconesSuite.DaFuncao(item.Titulo, icone), modulo, () => suite.AbrirFuncaoCommand.Execute(item), item);
+                botao.PointerEntered += (_, _) => AtualizarDisponibilidade(suite, botao);
+                AtualizarDisponibilidade(suite, botao);
+            }
+            else botao = BotaoMenu(item.Titulo, item.Icone ?? icone, modulo, suite, item.Filhos);
+            botoes.Children.Add(botao);
+        }
         if (resto.Count > 0) botoes.Children.Add(BotaoMenu("Mais", Icones.FormatListBulleted, modulo, suite, resto));
         return new Grid
         {
@@ -171,13 +179,13 @@ public partial class SuiteTopoView : UserControl
     private static Button Botao(string texto, Geometry icone, ModuloSuite modulo, Action acao, NoSuite? no = null, bool seta = false)
     {
         var linhaIcone = new Grid { HorizontalAlignment = HorizontalAlignment.Center };
-        linhaIcone.Children.Add(new PathIcon { Data = icone, Width = 26, Height = 26, Foreground = modulo.Cor, HorizontalAlignment = HorizontalAlignment.Center });
+        linhaIcone.Children.Add(new PathIcon { Data = icone, Width = 22, Height = 22, Foreground = modulo.Cor, HorizontalAlignment = HorizontalAlignment.Center });
         if (seta)
-            linhaIcone.Children.Add(new PathIcon { Data = Icones.ChevronDown, Width = 10, Height = 10, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Right,
+            linhaIcone.Children.Add(new PathIcon { Data = Icones.ChevronDown, Width = 9, Height = 9, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Right,
                                                    VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, -12, -1) });
         var b = new Button
         {
-            Width = 78, Height = 68, Margin = new Thickness(1, 0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, HorizontalContentAlignment = HorizontalAlignment.Center,
+            Width = 78, Height = 64, Margin = new Thickness(1, 0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, HorizontalContentAlignment = HorizontalAlignment.Center,
             Content = new StackPanel
             {
                 Spacing = 4, Margin = new Thickness(2, 6, 2, 2), HorizontalAlignment = HorizontalAlignment.Center,
@@ -194,15 +202,30 @@ public partial class SuiteTopoView : UserControl
         return b;
     }
 
+    /// <summary>Apaga o botão da faixa quando a função não pode ser aberta agora (sem empresa ou sem permissão); o clique continua explicando o motivo.</summary>
+    private static void AtualizarDisponibilidade(SuiteViewModel suite, Button b)
+    {
+        if (b.Tag is NoSuite { Chave: not null } no) b.Opacity = suite.PodeAbrirFuncao(no) ? 1 : 0.45;
+    }
+
     private Button BotaoMenu(string texto, Geometry icone, ModuloSuite modulo, SuiteViewModel suite, IReadOnlyList<NoSuite> itens)
     {
         var b = Botao(texto, icone, modulo, () => { }, seta: true);
         var fly = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedLeft };
         foreach (var i in itens) fly.Items.Add(ItemDeMenu(suite, i));
-        fly.Opened += (_, _) => _flyoutsAbertos++;
+        fly.Opened += (_, _) => { _flyoutsAbertos++; AtualizarItens(suite, fly.Items.OfType<MenuItem>()); };
         fly.Closed += (_, _) => { _flyoutsAbertos = Math.Max(0, _flyoutsAbertos - 1); suite.FaixaAberta = false; };
         b.Flyout = fly;
         return b;
+    }
+
+    private static void AtualizarItens(SuiteViewModel suite, IEnumerable<MenuItem> itens)
+    {
+        foreach (var i in itens)
+        {
+            if (i.CommandParameter is NoSuite { Chave: not null } no) i.Opacity = suite.PodeAbrirFuncao(no) ? 1 : 0.45;
+            AtualizarItens(suite, i.Items.OfType<MenuItem>());
+        }
     }
 
     /// <summary>Chaves das telas que a faixa fixa oferece (botões e menus "Mais"); usado nos testes de acesso.</summary>

@@ -333,8 +333,18 @@ public sealed partial class SuiteViewModel : ObservableObject
             RegistrarUso(no);
             if (chave == TelasComuns.Sair) no.Modulo.Vm.SairCommand.Execute(null);
             else if (no.Modulo.Vm.AbrirCommand.CanExecute(chave)) no.Modulo.Vm.AbrirCommand.Execute(chave);
+            else
+            {
+                // antes o clique não fazia nada e não dizia por quê (sem empresa selecionada, sem permissão ou função escondida do menu)
+                no.Modulo.Vm.AbrirPorAtalho(chave);
+                if (no.Modulo.Vm.TelaBloqueadaPorMenu(chave)) return;   // AbrirPorAtalho já avisou
+                no.Modulo.Vm.Status = $"A função \"{no.Titulo}\" não está disponível agora. Confira se há uma empresa selecionada (canto superior direito) e se o seu usuário tem permissão para ela.";
+            }
         }
     }
+
+    /// <summary>A função pode ser aberta agora? (faixa de opções: botões e itens ficam apagados quando não podem.)</summary>
+    public bool PodeAbrirFuncao(NoSuite no) => no.Chave is not { } c || c == TelasComuns.Sair || no.Modulo.Vm.AbrirCommand.CanExecute(c);
 
     private void Status(string texto) => Ativo.Vm.Status = texto;
 

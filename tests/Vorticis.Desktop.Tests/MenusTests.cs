@@ -55,10 +55,10 @@ public class MenusTests
                               .Select(f => { Assert.True(f.Exists, f.Name); return File.ReadAllBytes(f.FullName); }).ToList();
         Assert.Equal(modulos.Length, tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))).Distinct().Count());   // ícones diferentes
         // o instalador tem ícone próprio, diferente dos módulos, e as cores do gerador de ícones são as dos módulos
-        var instalador = File.ReadAllBytes(Path.Combine(pasta.FullName, "instalador", "icone", "VorticisInstalador.ico"));
+        var instalador = File.ReadAllBytes(Path.Combine(pasta.FullName, "instalador", "icone", "VorticisSuite.ico"));
         Assert.DoesNotContain(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(instalador)),
                               tamanhos.Select(b => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(b))));
-        Assert.Contains(@"SetupIconFile=icone\VorticisInstalador.ico", File.ReadAllText(Path.Combine(pasta.FullName, "instalador", "Vorticis.iss")));
+        Assert.Contains(@"SetupIconFile=icone\VorticisSuite.ico", File.ReadAllText(Path.Combine(pasta.FullName, "instalador", "Vorticis.iss")));
         var gerador = File.ReadAllText(Path.Combine(pasta.FullName, "instalador", "icone", "gerar_icone.py"));
         Assert.All(modulos, m => Assert.Contains($"\"{m.Modulo.NomeExecutavel}\": (\"{m.Modulo.CorDestaque}\", \"{m.Modulo.CorBarra}\"", gerador));
     }

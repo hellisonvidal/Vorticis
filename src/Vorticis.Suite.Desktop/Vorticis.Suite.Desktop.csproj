@@ -7,7 +7,7 @@
     <Title>Vorticis Suite Empresarial</Title>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <ApplicationIcon>..\..\instalador\icone\VorticisInstalador.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\instalador\icone\VorticisSuite.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorticis.Desktop\Vorticis.Desktop.csproj" />

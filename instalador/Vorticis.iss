@@ -27,7 +27,7 @@ OutputBaseFilename=Setup-Vorticis-{#Versao}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=icone\VorticisInstalador.ico
+SetupIconFile=icone\VorticisSuite.ico
 ; O ícone é copiado para a pasta do programa (não depende de qual módulo foi instalado)
 UninstallDisplayIcon={app}\Vorticis.ico
 UninstallDisplayName=Vorticis
@@ -90,7 +90,7 @@ Source: "icone\VorticisFolha.ico"; DestDir: "{app}"; Flags: ignoreversion; Compo
 Source: "icone\VorticisEscritorio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: escritorio
 Source: "icone\VorticisGerencial.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: erp
 Source: "icone\VorticisCondominio.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: condominio
-Source: "icone\VorticisInstalador.ico"; DestDir: "{app}"; DestName: "VorticisSuite.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio
+Source: "icone\VorticisSuite.ico"; DestDir: "{app}"; DestName: "VorticisSuite.ico"; Flags: ignoreversion; Components: contabil fiscal folha escritorio erp condominio
 
 #ifexist "..\publish\vc_redist.x64.exe"
 ; Microsoft Visual C++ Redistributable 2015-2022 (x64), instalado em silêncio só se ainda não existir (ver InstalarVcRuntime)
