@@ -162,6 +162,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
 
     protected override void MostrarSelecionado()
     {
+        Interlocked.Increment(ref _geracaoAcessos);   // descarta carga antiga em andamento
         LimparAcessos();
         _carregandoSelecao = true;
         if (Selecionado is { } value)
@@ -190,6 +191,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
 
     protected override void PrepararInclusao()
     {
+        Interlocked.Increment(ref _geracaoAcessos);   // descarta carga antiga em andamento
         LimparAcessos();
         _carregandoSelecao = true;
         (Login, NomeEdicao, NovaSenha, AtivoEdicao, PerfilEdicao) = ("", "", "", true, null);
@@ -214,9 +216,14 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
     /// Monta a lista de empresas (todas as cadastradas) com a marca do usuário. Usuário novo (<paramref name="usuarioId"/> nulo):
     /// todas marcadas com o perfil escolhido. O administrador logado vê todas as empresas.
     /// </summary>
+    private int _geracaoAcessos;
+
     public async Task CarregarAcessosAsync(long? usuarioId)
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao) return;
+        // Cargas simultâneas (seleção + gravação): só a mais recente monta a lista; as antigas descartam o resultado,
+        // senão a lista era refeita depois que o usuário já tinha começado a marcar as empresas.
+        var geracao = Interlocked.Increment(ref _geracaoAcessos);
         try
         {
             var perfis = (await app.Perfis.ListarAsync(sessao)).Select(p => new OpcaoPerfil(p.Id, p.Nome, p.Administrador))
@@ -225,6 +232,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
                 ? (await app.Usuarios.ListarAcessosAsync(uid)).ToDictionary(a => a.EmpresaId, a => a.PerfilId)
                 : [];
             var todas = await app.Usuarios.EmpresasPermitidasAsync(sessao);   // administrador: todas
+            if (geracao != _geracaoAcessos) return;
             var padrao = PerfilEdicao is { Administrador: false } pe ? perfis.FirstOrDefault(o => o.Id == pe.Id) : null;
             LimparAcessos();
             foreach (var e in todas)
