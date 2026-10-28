@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.PainelBiView"
+             x:DataType="vm:PainelBiViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="CorBom">#1B7F4B</SolidColorBrush>
+          <SolidColorBrush x:Key="CorRuim">#C0392B</SolidColorBrush>
+          <SolidColorBrush x:Key="CorCartao">#F7F9FC</SolidColorBrush>
+          <SolidColorBrush x:Key="CorBordaCartao">#D0D5DD</SolidColorBrush>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="CorBom">#5FD08F</SolidColorBrush>
+          <SolidColorBrush x:Key="CorRuim">#FF8A80</SolidColorBrush>
+          <SolidColorBrush x:Key="CorCartao">#2B2F36</SolidColorBrush>
+          <SolidColorBrush x:Key="CorBordaCartao">#444B57</SolidColorBrush>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="TextBlock.bom"><Setter Property="Foreground" Value="{DynamicResource CorBom}" /></Style>
+    <Style Selector="TextBlock.ruim"><Setter Property="Foreground" Value="{DynamicResource CorRuim}" /></Style>
+    <Style Selector="Border.cartao"><Setter Property="Background" Value="{DynamicResource CorCartao}" /><Setter Property="BorderBrush" Value="{DynamicResource CorBordaCartao}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Padding" Value="12,10" /></Style>
+  </UserControl.Styles>
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,6">
+      <TextBlock Classes="titulo" Text="Painel de indicadores" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+        <TextBlock Text="a" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Spacing="2">
+      <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="12" Margin="0,0,10,0">
+        <ItemsControl ItemsSource="{Binding Cartoes}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CartaoIndicador">
+              <Border Classes="cartao" Width="228" Margin="0,0,10,10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding Titulo}" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Valor}" FontSize="21" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Variacao}" FontSize="11.5" Classes.bom="{Binding Bom}" Classes.ruim="{Binding Ruim}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Anterior}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+          <Border Classes="cartao" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Receita e lucro — últimos 12 meses" FontWeight="SemiBold" />
+              <c:GraficoLinhas Rotulos="{Binding RotulosMeses}" Series="{Binding SeriesMensais}" Height="250" />
+            </StackPanel>
+          </Border>
+          <Border Classes="cartao" Grid.Row="1" Grid.Column="0" Margin="0,0,5,10">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Custos e despesas por grupo de contas" FontWeight="SemiBold" />
+              <c:GraficoBarras Itens="{Binding DespesasGrupo}" Height="250" />
+            </StackPanel>
+          </Border>
+          <Border Classes="cartao" Grid.Row="1" Grid.Column="1" Margin="5,0,0,10">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Custos e despesas por centro de custo" FontWeight="SemiBold" />
+              <c:GraficoRosca Itens="{Binding CustosCentro}" Height="250" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Border Classes="cartao" Margin="0,0,0,10">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Do faturamento ao lucro líquido (cascata do resultado)" FontWeight="SemiBold" />
+            <c:GraficoCascata Itens="{Binding Cascata}" Height="260" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

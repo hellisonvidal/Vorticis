@@ -59,6 +59,7 @@ public sealed class VorticisApp : IAsyncDisposable
         Assinaturas = new ServicoAssinaturas(Responsaveis);
         Fluxos = new ServicoFluxos(Consultas, new RepositorioClassificacao(ds), autorizador);
         Comparativos = new ServicoComparativos(Relatorios, Demonstracoes, Gerenciais, Fluxos);
+        Bi = new ServicoBi(Consultas, Fluxos, autorizador);
         Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas, Fluxos);
         AssinadorSped = new AssinadorSpedCms();
         var consultasEcd = new ConsultasEcd(ds);
@@ -100,6 +101,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoFluxos Fluxos { get; }
     /// <summary>Opção "Comparativo" dos relatórios contábeis.</summary>
     public ServicoComparativos Comparativos { get; }
+    public ServicoBi Bi { get; }
     public ServicoAssinaturas Assinaturas { get; }
     public ServicoLivros Livros { get; }
     /// <summary>Geração e assinatura do arquivo da ECD (SPED Contábil).</summary>

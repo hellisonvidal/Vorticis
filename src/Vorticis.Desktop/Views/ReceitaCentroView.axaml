@@ -27,6 +27,12 @@
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" Text="Receita mês a mês por centro, com a participação no total e a margem (receita − custos − despesas) de cada centro." />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid Name="Grade" ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" />
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+        <DataGrid Name="Grade" ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" />
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

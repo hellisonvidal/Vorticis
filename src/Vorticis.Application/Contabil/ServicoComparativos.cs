@@ -100,4 +100,62 @@ public sealed class ServicoComparativos(ServicoRelatorios relatorios, ServicoDem
             (IReadOnlyList<LinhaCentroConta> l) => (l.Select(x => Cd($"{x.Tipo}|{x.Codigo}|{x.Descricao}", x.Codigo, x.Descricao, x.Saldo,
                                                                     x.Tipo is TipoLinhaGerencial.Grupo or TipoLinhaGerencial.Total, x.Recuo)).ToList(), null),
             "Saldo = débitos − créditos (positivo = devedor).");
+
+    private static readonly IReadOnlyList<ColunaRelatorio> CodigoDescricaoMedida = [new("Código", LarguraCm: 2.6), new("Descrição"), new("Medida", LarguraCm: 3.2)];
+
+    /// <summary>Receita por centro de custo: receita, custos e despesas e margem de cada centro, em cada período.</summary>
+    public Task<Resultado<TabelaRelatorio>> ReceitaCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, long? centroId, int nivel, OpcoesComparativo op, long usuarioId, CancellationToken ct = default) =>
+        MontarAsync(TabelasGerenciais.TituloReceitaCentro, CodigoDescricaoMedida, Comparativo.Periodos(inicio, fim, op), op,
+            p => gerenciais.ReceitaPorCentroAsync(empresaId, new FiltroReceitaCentro(p.Inicio, p.Fim, centroId, nivel), usuarioId, ct),
+            (ReceitaPorCentro r) =>
+            {
+                var l = new List<LinhaComparavel>();
+                foreach (var x in r.Linhas)
+                {
+                    var d = x.Tipo is TipoLinhaGerencial.Grupo or TipoLinhaGerencial.Total;
+                    var k = $"{x.Tipo}|{x.Codigo}|{x.Descricao}|";
+                    l.Add(new(k + "R", [x.Codigo, x.Descricao, "Receita"], x.Receita, d, x.Recuo));
+                    l.Add(new(k + "C", [x.Codigo, x.Descricao, "Custos e despesas"], x.CustosDespesas, d, x.Recuo));
+                    l.Add(new(k + "M", [x.Codigo, x.Descricao, "Margem"], x.Margem, true, x.Recuo));
+                }
+                return (l, null);
+            },
+            "Margem = receita − custos − despesas. Os centros sintéticos somam os analíticos abaixo deles.");
+
+    /// <summary>Orçado x realizado (modo acumulado) de cada período; períodos que cruzam anos somam o orçamento de cada ano.</summary>
+    public Task<Resultado<TabelaRelatorio>> OrcadoRealizadoAsync(long empresaId, DateOnly inicio, DateOnly fim, long? centroId, string? prefixo, bool ignorarCentro,
+        OpcoesComparativo op, long usuarioId, CancellationToken ct = default) =>
+        MontarAsync(TabelasGerenciais.TituloOrcadoRealizado, CodigoDescricaoMedida, Comparativo.Periodos(inicio, fim, op), op,
+            async p =>
+            {
+                var todas = new List<LinhaOrcadoRealizado>();
+                for (var ano = p.Inicio.Year; ano <= p.Fim.Year; ano++)
+                {
+                    var mi = ano == p.Inicio.Year ? p.Inicio.Month : 1;
+                    var mf = ano == p.Fim.Year ? p.Fim.Month : 12;
+                    var r = await gerenciais.OrcadoRealizadoAsync(empresaId, new FiltroOrcadoRealizado(ano, mi, mf, centroId, prefixo, false, ignorarCentro), usuarioId, ct);
+                    if (!r.Sucesso) return Resultado<IReadOnlyList<LinhaOrcadoRealizado>>.Falha(r.Erros.ToList());
+                    todas.AddRange(r.Valor);
+                }
+                IReadOnlyList<LinhaOrcadoRealizado> somadas = todas
+                    .GroupBy(l => (l.Tipo, l.Codigo, l.Descricao, l.Centro))
+                    .Select(g => new LinhaOrcadoRealizado(g.Key.Tipo, g.Key.Codigo, g.Key.Descricao, g.Key.Centro, null, g.Sum(x => x.Orcado), g.Sum(x => x.Realizado),
+                                                          g.Sum(x => x.Orcado), g.Sum(x => x.Realizado)))
+                    .ToList();
+                return Resultado<IReadOnlyList<LinhaOrcadoRealizado>>.Ok(somadas);
+            },
+            (IReadOnlyList<LinhaOrcadoRealizado> l) =>
+            {
+                var res = new List<LinhaComparavel>();
+                foreach (var x in l)
+                {
+                    var d = x.Tipo is TipoLinhaGerencial.Grupo or TipoLinhaGerencial.Total;
+                    var k = $"{x.Tipo}|{x.Codigo}|{x.Descricao}|{x.Centro}|";
+                    var desc = x.Centro.Length > 0 ? $"{x.Descricao} — {x.Centro}" : x.Descricao;
+                    res.Add(new(k + "O", [x.Codigo, desc, "Orçado"], x.Orcado, d));
+                    res.Add(new(k + "R", [x.Codigo, desc, "Realizado"], x.Realizado, d));
+                }
+                return (res, null);
+            },
+            "Valores na natureza da conta, somando os meses do período. Compara o orçado e o realizado de cada período.");
 }

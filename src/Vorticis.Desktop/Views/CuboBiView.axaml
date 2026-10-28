@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.CuboBiView"
+             x:DataType="vm:CuboBiViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,6">
+      <TextBlock Classes="titulo" Text="Cubo — tabela dinâmica" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+        <TextBlock Text="a" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+        <TextBlock Text="Linhas" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding DimensoesLinha}" SelectedItem="{Binding Linha}" DisplayMemberBinding="{ReflectionBinding Texto}" Width="170" />
+        <TextBlock Text="Colunas" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding DimensoesColuna}" SelectedItem="{Binding Coluna}" DisplayMemberBinding="{ReflectionBinding Texto}" Width="150" />
+        <TextBlock Text="Somar" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding Medidas}" SelectedItem="{Binding Medida}" DisplayMemberBinding="{ReflectionBinding Texto}" Width="250" />
+        <TextBox Text="{Binding ContaPrefixo}" Watermark="Conta ou grupo (ex.: 4.2)" Width="170" />
+        <CheckBox Content="Só contas de resultado" IsChecked="{Binding SoResultado}" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Spacing="2">
+      <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+    <Grid RowDefinitions="3*,Auto,2*">
+      <c:GradeTabelaView Name="GradeCubo" Grid.Row="0" Tabela="{Binding TabelaTela}" />
+      <TextBlock Grid.Row="1" Text="{Binding TituloDetalhe}" FontWeight="SemiBold" Margin="0,8,0,4" IsVisible="{Binding TemDetalhe}" />
+      <c:GradeTabelaView Grid.Row="2" Tabela="{Binding TabelaDetalhe}" IsVisible="{Binding TemDetalhe}" />
+    </Grid>
+  </DockPanel>
+</UserControl>

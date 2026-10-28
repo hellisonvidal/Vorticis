@@ -43,6 +43,10 @@ public static class Telas
     public const string Orcamento = "gerencial.orcamento";
     public const string RelacaoCustos = "gerencial.custos";
     public const string ReceitaCentro = "gerencial.receitacentro";
+    public const string BiPainel = "bi.painel";
+    public const string BiAnalise = "bi.analise";
+    public const string BiCubo = "bi.cubo";
+    public const string BiExportar = "bi.exportar";
     public const string Termos = "termos";
     public const string Bens = "bens";
     public const string GruposDepreciacao = "gruposdepreciacao";

@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.ExportarBiView"
+             x:DataType="vm:ExportarBiViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="8" Spacing="10" MaxWidth="820" HorizontalAlignment="Left">
+      <TextBlock Classes="titulo" Text="Exportar dados para BI" />
+      <TextBlock TextWrapping="Wrap" Text="Grava os lançamentos (partidas) e as tabelas de apoio — plano de contas, centros de custo, participantes e calendário — em arquivos prontos para o Power BI ou o Excel." />
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Período" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+        <TextBlock Text="a" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Formato" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding Formatos}" SelectedIndex="{Binding Formato}" Width="260" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Pasta de destino" />
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="Escolher pasta..." Margin="8,0,0,0" Click="EscolherPasta" />
+          <TextBox Text="{Binding Pasta}" />
+        </DockPanel>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Content="Exportar dados para BI" Command="{Binding ExportarCommand}" Classes="accent" IsEnabled="{Binding PodeExportar}" />
+        <TextBlock Text="Seu perfil não permite exportar relatórios." Foreground="#B3261E" VerticalAlignment="Center" IsVisible="{Binding !PodeExportar}" />
+      </StackPanel>
+      <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

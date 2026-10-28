@@ -88,6 +88,12 @@ public interface IConsultasContabeis
 
     /// <summary>Partidas do período com os dados do lançamento, para detalhar o relatório por centro de custo.</summary>
     Task<IReadOnlyList<DetalheCentro>> ObterDetalhesCentroAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+
+    /// <summary>Partidas do período (sem rascunhos nem encerramento) com centro de custo e participante, para o cubo e a exportação para BI.</summary>
+    Task<IReadOnlyList<PartidaBi>> ObterPartidasBiAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct);
+
+    /// <summary>Participantes (clientes, fornecedores...) da empresa.</summary>
+    Task<IReadOnlyList<ParticipanteBi>> ObterParticipantesAsync(long empresaId, CancellationToken ct);
 }
 
 /// <summary>Persistência do orçamento anual.</summary>

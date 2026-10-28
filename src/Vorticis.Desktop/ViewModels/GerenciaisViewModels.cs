@@ -139,6 +139,12 @@ public sealed partial class ReceitaCentroViewModel(IContexto contexto) : Gerenci
     {
         var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, 1, 1));
         var fim = Data(Fim, ini);
+        if (await TentarComparativoAsync(ini, fim, false, op => app.Comparativos.ReceitaCentroAsync(empresa, ini, fim, CentroId, NivelMaximo, op, usuario)))
+        {
+            DefinirParametros($"Período: {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}{TextoCentro}");
+            Resumo = "";
+            return;
+        }
         var r = await app.Gerenciais.ReceitaPorCentroAsync(empresa, new(ini, fim, CentroId, NivelMaximo), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Exibir(TabelasGerenciais.ReceitaCentro(r.Valor), $"Período: {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}{TextoCentro}");
@@ -165,6 +171,18 @@ public sealed partial class OrcadoRealizadoViewModel(IContexto contexto) : Geren
         var mi = (int)(MesInicial ?? 1);
         var mf = (int)(MesFinal ?? 12);
         if (mi < 1 || mf > 12 || mf < mi) { Erros.Add("Informe meses de 1 a 12, com o mês final igual ou posterior ao inicial."); return; }
+        if (!Mensal)
+        {
+            var ini = new DateOnly(ano, mi, 1);
+            var fim = new DateOnly(ano, mf, DateTime.DaysInMonth(ano, mf));
+            if (await TentarComparativoAsync(ini, fim, false, op => app.Comparativos.OrcadoRealizadoAsync(empresa, ini, fim, CentroId, Prefixo, IgnorarCentro, op, usuario)))
+            {
+                DefinirParametros($"Ano {ano}, meses {mi:00} a {mf:00}{TextoCentro}{TextoConta}");
+                Resumo = "";
+                return;
+            }
+        }
+        else TabelaComparativa = null;
         var r = await app.Gerenciais.OrcadoRealizadoAsync(empresa, new(ano, mi, mf, CentroId, Prefixo, Mensal, IgnorarCentro), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Exibir(TabelasGerenciais.OrcadoRealizado(r.Valor, Mensal), $"Ano {ano}, meses {mi:00} a {mf:00}{TextoCentro}{TextoConta}");

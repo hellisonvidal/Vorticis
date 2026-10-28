@@ -96,6 +96,12 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Orçamento", Telas.Orcamento),
                 ItemMenu.Tela("Relação de custos", Telas.RelacaoCustos),
                 ItemMenu.Tela("Receita por centro de custo", Telas.ReceitaCentro)).SoCom(RecursoGerencial),
+            ItemMenu.Submenu("_BI",
+                ItemMenu.Tela("Painel de indicadores", Telas.BiPainel),
+                ItemMenu.Tela("Análise de indicadores", Telas.BiAnalise),
+                ItemMenu.Tela("Cubo (tabela dinâmica)", Telas.BiCubo),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Exportar dados para BI", Telas.BiExportar)),
             ItemMenu.Submenu("_Depreciação",
                 ItemMenu.Tela("Relação de bens", Telas.RelacaoBens),
                 ItemMenu.Tela("Valor depreciado", Telas.ValorDepreciado),
@@ -242,6 +248,14 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia(nameof(MainViewModel.OrcadoRealizado), m => new OrcadoRealizadoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
             .Tela(Telas.OrcadoRealizado, "Relatórios › Gerenciais › Orçado x Realizado", m => m.Pode(Permissao.RelatorioDemonstracoes), v => v.CarregarCentrosAsync());
+        c.Instancia(nameof(MainViewModel.BiPainel), m => new PainelBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.BiPainel, "Relatórios › BI › Painel de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.BiAnalise), m => new AnaliseIndicadoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.BiAnalise, "Relatórios › BI › Análise de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.BiCubo), m => new CuboBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.BiCubo, "Relatórios › BI › Cubo (tabela dinâmica)", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.BiExportar), m => new ExportarBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.BiExportar, "Relatórios › BI › Exportar dados para BI", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.Orcamento), m => new OrcamentoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
             .Tela(Telas.Orcamento, "Relatórios › Gerenciais › Orçamento",

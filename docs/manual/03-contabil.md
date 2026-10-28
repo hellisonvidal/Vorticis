@@ -320,14 +320,14 @@ Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não r
 4. A coluna *Sugestão automática* mostra o que o programa sugeriu. **Restaurar sugestão automática** volta tudo para ela na tela. Clique em **Salvar classificação** para gravar; só as mudanças ficam registradas. Salvar exige a permissão de manter o plano de contas.
 
 ### Comparativo
-Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA) e a *Contabilização por centro de custo* têm a opção **Comparativo**, logo acima da grade:
+Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA) e os relatórios gerenciais *Contabilização por centro de custo*, *Receita por centro de custo* e *Orçado x Realizado* têm a opção **Comparativo**, logo acima da grade:
 
 1. Marque **Comparativo**. Escolha **Período anterior** (o período de mesma duração logo antes; para um mês, o mês anterior) e/ou **Mesmo período do ano anterior**.
 2. Se quiser, marque até **3 outros períodos**: em cada linha marque *Usar*, escolha *Mês*, *Trimestre*, *Ano* ou *Intervalo* e informe a data (em Mês, Trimestre e Ano, qualquer data dentro do período; no Intervalo, as datas inicial e final).
 3. Escolha as colunas extras: **Variação em R$** (período atual menos o período comparado), **Variação em %** (variação dividida pelo valor comparado) e, nos relatórios que têm um total de referência (Balanço, DRE e EBITDA), a **Análise vertical (%)**, que mostra cada linha como % do total do ativo ou da receita.
 4. Clique em **Gerar**. O relatório mostra uma coluna para o período atual e uma para cada período comparado; PDF, Excel e CSV saem exatamente como a tela (o PDF sai em paisagem). Desmarque **Comparativo** e gere de novo para voltar ao relatório normal.
 
-Observações: no **Balanço** só importa a data final (as colunas são saldos em cada data). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). No **Razão** o comparativo resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** o comparativo usa a coluna *Total*. Quando uma linha não existe em um dos períodos, o valor aparece zerado e a variação % fica em branco.
+Observações: no **Balanço** só importa a data final (as colunas são saldos em cada data). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). Na **Receita por centro de custo** cada centro mostra três linhas por período: *Receita*, *Custos e despesas* e *Margem*. No **Orçado x Realizado** cada conta mostra o *Orçado* e o *Realizado* de cada período, somando os meses (a opção **Mês a mês** não tem comparativo; desmarque-a para comparar). No **Razão** o comparativo resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** o comparativo usa a coluna *Total*. Quando uma linha não existe em um dos períodos, o valor aparece zerado e a variação % fica em branco.
 
 ## Relatórios gerenciais
 
@@ -357,7 +357,7 @@ Digite os valores como positivos, na natureza da conta: a receita e a despesa or
 1. Informe o **ano** e o **mês inicial e final** (1 a 12).
 2. Se quiser, filtre por **centro** ou por **conta ou grupo**. Marque **Somar os centros** para ver uma linha por conta, sem separar por centro.
 3. Marque **Mês a mês** para ver uma linha por mês com o acumulado; sem essa opção, o relatório mostra o total dos meses escolhidos.
-4. Clique em **Gerar**. As colunas são *Orçado*, *Realizado*, *Diferença* (realizado − orçado) e *%* (realizado ÷ orçado). No total do período aparecem ainda as receitas, os custos e despesas e o resultado.
+4. Clique em **Gerar**. As colunas são *Orçado*, *Realizado*, *Diferença* (realizado − orçado) e *%* (realizado ÷ orçado). No total do período aparecem ainda as receitas, os custos e despesas e o resultado. Para comparar o orçado e o realizado de períodos diferentes, marque **Comparativo** (sem a opção *Mês a mês*; veja [Comparativo](#comparativo)).
 
 ### Relação de custos
 *Relatórios › Gerenciais › Relação de custos*: lista os custos e despesas (contas de resultado de natureza devedora, inclusive deduções da receita) do período, com a **participação %** de cada linha no total.
@@ -367,7 +367,52 @@ Digite os valores como positivos, na natureza da conta: a receita e a despesa or
 4. Clique em **Gerar**.
 
 ### Receita por centro de custo
-*Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**.
+*Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**. Para comparar com outros períodos, marque **Comparativo** (veja [Comparativo](#comparativo)).
+
+## Relatórios BI
+
+*Relatórios › BI* reúne as ferramentas de análise da empresa ativa: o painel com gráficos, a tabela de indicadores, o cubo (tabela dinâmica) e a exportação dos dados para o Power BI ou o Excel. Todas usam a mesma permissão dos relatórios de demonstrações; a exportação para arquivos pede também a permissão de exportar relatórios.
+
+### Painel de indicadores
+*Relatórios › BI › Painel de indicadores*: uma visão rápida do período.
+1. Informe o **período** (data inicial e final) e clique em **Gerar**.
+2. Os **cartões** mostram o valor de cada indicador e a variação em relação ao **período anterior** (o período de mesma duração logo antes). A variação aparece em verde quando melhorou e em vermelho quando piorou (por exemplo, despesa maior é ruim e lucro maior é bom); o sinal ▲ ou ▼ mostra se subiu ou caiu. Aparecem: receita líquida, custos e despesas, lucro líquido, EBITDA, margens, liquidez corrente, seca e geral, endividamento, ROE, ROA, giro do ativo e os prazos médios de recebimento, pagamento e estocagem (estes só quando a empresa tem contas de clientes, fornecedores e estoques com saldo).
+3. Os **gráficos** mostram a receita e o lucro mês a mês nos últimos 12 meses (até o mês da data final), os custos e despesas por grupo de contas, a composição dos custos e despesas por centro de custo e a **cascata do resultado**, que parte da receita bruta e mostra, passo a passo, o que a diminui até chegar ao lucro líquido.
+4. Use **PDF**, **Excel** ou **CSV** para levar a tabela de indicadores com o período e o período anterior.
+
+Os indicadores de liquidez, endividamento, ROE, ROA e giro usam o Balanço na data final do período; o programa reconhece o ativo e o passivo circulante e não circulante pelos nomes dos grupos do plano de contas (por exemplo, "Ativo Circulante"). Se algum indicador aparecer como "—", falta informação para calcular (por exemplo, não há dívidas de curto prazo para dividir).
+
+### Análise de indicadores
+*Relatórios › BI › Análise de indicadores*: a tabela completa dos indicadores, com a **fórmula** e uma explicação curta de **como ler** cada um (liquidez, estrutura de capital, rentabilidade e prazos).
+1. Informe o período e clique em **Gerar**.
+2. Para comparar períodos, marque **Comparativo** e escolha o período anterior, o mesmo período do ano anterior ou até 3 outros períodos (veja [Comparativo](#comparativo)). A tabela ganha uma coluna por período e a variação em pontos.
+3. Exporte em PDF, Excel ou CSV.
+
+### Cubo (tabela dinâmica)
+*Relatórios › BI › Cubo (tabela dinâmica)*: monte você mesmo uma tabela de totais, como no Excel.
+1. Informe o **período**.
+2. Em **Linhas**, escolha o que fica de cima para baixo: *Conta*, *Grupo de contas*, *Centro de custo*, *Participante* ou *Mês*.
+3. Em **Colunas**, escolha *Mês*, *Trimestre*, *Ano*, *Centro de custo* ou *(nenhuma)* (só o total).
+4. Em **Somar**, escolha *Saldo (débitos − créditos)*, *Resultado (créditos − débitos)*, *Débitos* ou *Créditos*. Para ver receitas com valor positivo, use *Resultado*.
+5. Se quiser, digite uma **conta ou grupo** (ex.: 4.2) ou marque **Só contas de resultado**. Clique em **Gerar**.
+6. **Clique numa célula** para ver embaixo os lançamentos que formam aquele valor (data, número, conta, centro de custo, participante, débito/crédito, valor e histórico). Clicar no nome da linha lista todos os lançamentos da linha; clicar no *Total geral* lista todos.
+7. **PDF**, **Excel** e **CSV** exportam o cubo; se houver lançamentos listados, eles vão junto no PDF e no Excel (em outra aba).
+
+O cubo não considera rascunhos nem lançamentos de encerramento do exercício.
+
+### Exportar dados para BI
+*Relatórios › BI › Exportar dados para BI*: grava os dados da empresa em arquivos prontos para o Power BI, o Excel ou outra ferramenta de BI.
+1. Informe o **período** (por padrão, desde o início do ano passado até hoje).
+2. Escolha o **formato**: *CSV (um arquivo por tabela)*, *Excel (uma pasta de trabalho)* ou *CSV e Excel*.
+3. Clique em **Escolher pasta...** (ou digite o caminho) e em **Exportar dados para BI**. Essa opção exige a permissão de exportar relatórios.
+
+O programa grava na pasta: `fato_partidas` (uma linha por partida de lançamento, com o valor e o valor com sinal: débito positivo e crédito negativo), `dim_plano_contas`, `dim_centro_custo`, `dim_participante`, `dim_calendario` (um dia por linha, com ano, trimestre, mês e dia da semana) e um arquivo `leia-me.txt` com a lista de colunas. Os CSV usam vírgula entre as colunas, ponto nos decimais e datas no formato AAAA-MM-DD, para abrir igual em qualquer computador.
+
+**Como importar no Power BI:**
+1. No Power BI Desktop, clique em *Obter dados* › *Texto/CSV* (ou *Pasta*, para trazer todos de uma vez) e escolha os arquivos `.csv` (ou *Pasta de Trabalho do Excel*, se exportou o Excel).
+2. Em *Transformar dados*, confira se as datas viraram *Data* e os valores *Número decimal*, e clique em *Fechar e aplicar*.
+3. Na aba *Modelo*, ligue as tabelas (muitos para um): `fato_partidas[id_conta]` a `dim_plano_contas[id_conta]`, `fato_partidas[id_centro_custo]` a `dim_centro_custo[id_centro_custo]`, `fato_partidas[id_participante]` a `dim_participante[id_participante]` e `fato_partidas[data]` a `dim_calendario[data]`.
+4. Crie os gráficos usando a soma de `valor_assinado` (para receitas, multiplique por −1) e os campos das tabelas de apoio (grupo da conta, centro de custo, mês, trimestre).
 
 ## Relatórios de depreciação
 

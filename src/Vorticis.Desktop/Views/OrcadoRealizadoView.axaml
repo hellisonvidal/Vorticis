@@ -31,6 +31,12 @@
       <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" Text="Compara o orçamento (Relatórios › Gerenciais › Orçamento) com o que foi contabilizado. Diferença = realizado − orçado." />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid Name="Grade" ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" />
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+        <DataGrid Name="Grade" ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" />
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

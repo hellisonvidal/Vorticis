@@ -42,6 +42,10 @@
     <DataTemplate DataType="vm:CentroCustoRelatorioViewModel"><v:CentroCustoRelatorioView /></DataTemplate>
     <DataTemplate DataType="vm:RelacaoCustosViewModel"><v:RelacaoCustosView /></DataTemplate>
     <DataTemplate DataType="vm:ReceitaCentroViewModel"><v:ReceitaCentroView /></DataTemplate>
+    <DataTemplate DataType="vm:PainelBiViewModel"><v:PainelBiView /></DataTemplate>
+    <DataTemplate DataType="vm:AnaliseIndicadoresViewModel"><v:AnaliseIndicadoresView /></DataTemplate>
+    <DataTemplate DataType="vm:CuboBiViewModel"><v:CuboBiView /></DataTemplate>
+    <DataTemplate DataType="vm:ExportarBiViewModel"><v:ExportarBiView /></DataTemplate>
     <DataTemplate DataType="vm:RelatorioDepreciacaoViewModel"><v:RelatorioDepreciacaoView /></DataTemplate>
     <DataTemplate DataType="vm:OrcadoRealizadoViewModel"><v:OrcadoRealizadoView /></DataTemplate>
     <DataTemplate DataType="vm:OrcamentoViewModel"><v:OrcamentoView /></DataTemplate>

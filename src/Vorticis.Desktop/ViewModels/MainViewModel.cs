@@ -35,6 +35,10 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public RelacaoCustosViewModel RelacaoCustos => Instancia<RelacaoCustosViewModel>();
     public ReceitaCentroViewModel ReceitaCentro => Instancia<ReceitaCentroViewModel>();
     public OrcadoRealizadoViewModel OrcadoRealizado => Instancia<OrcadoRealizadoViewModel>();
+    public PainelBiViewModel BiPainel => Instancia<PainelBiViewModel>();
+    public AnaliseIndicadoresViewModel BiAnalise => Instancia<AnaliseIndicadoresViewModel>();
+    public CuboBiViewModel BiCubo => Instancia<CuboBiViewModel>();
+    public ExportarBiViewModel BiExportar => Instancia<ExportarBiViewModel>();
     public OrcamentoViewModel Orcamento => Instancia<OrcamentoViewModel>();
     public TermosViewModel Termos => Instancia<TermosViewModel>();
     public BensViewModel Bens => Instancia<BensViewModel>();

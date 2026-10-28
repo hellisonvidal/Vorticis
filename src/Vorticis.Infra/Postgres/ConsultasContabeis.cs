@@ -208,4 +208,32 @@ public sealed class ConsultasContabeis(NpgsqlDataSource ds) : IConsultasContabei
             res.Add(new DetalheCentro(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetInt64(3), Mapeamentos.DC(r.GetString(4)), r.GetDecimal(5), r.GetString(6)));
         return res;
     }
+
+    public async Task<IReadOnlyList<PartidaBi>> ObterPartidasBiAsync(long empresaId, DateOnly inicio, DateOnly fim, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT l.id, COALESCE(l.numero, 0), l.data_lancamento, p.conta_id, COALESCE(p.centro_custo_id, 0), COALESCE(p.participante_id, 0),
+                   p.ind_dc::text, p.valor, COALESCE(p.historico, '')
+              FROM contabil.partida p
+              JOIN contabil.lancamento l ON l.id = p.lancamento_id
+             WHERE l.empresa_id = @e AND l.status <> 'RASCUNHO' AND l.ind_lcto IS DISTINCT FROM 'E'
+               AND l.data_lancamento BETWEEN @ini AND @fim
+             ORDER BY l.data_lancamento, l.numero, p.id
+            """).Com("e", empresaId).Com("ini", inicio).Com("fim", fim);
+        var res = new List<PartidaBi>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            res.Add(new PartidaBi(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetInt64(3), r.GetInt64(4), r.GetInt64(5),
+                                  Mapeamentos.DC(r.GetString(6)), r.GetDecimal(7), r.GetString(8)));
+        return res;
+    }
+
+    public async Task<IReadOnlyList<ParticipanteBi>> ObterParticipantesAsync(long empresaId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT id, codigo, nome FROM core.participante WHERE empresa_id = @e ORDER BY codigo").Com("e", empresaId);
+        var res = new List<ParticipanteBi>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) res.Add(new ParticipanteBi(r.GetInt64(0), r.GetString(1), r.GetString(2)));
+        return res;
+    }
 }
