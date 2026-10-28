@@ -28,8 +28,54 @@ public sealed record BemImobilizado(
 /// <summary>Linha do cálculo de uma competência: a quota (se houver) ou o motivo de não depreciar.</summary>
 public sealed record ItemDepreciacao(BemImobilizado Bem, GrupoBem Grupo, QuotaDepreciacao? Quota, string Situacao);
 
+/// <summary>
+/// Item de nota fiscal de ENTRADA que é bem do ativo imobilizado e ainda precisa virar bem no cadastro (Imobilizado › Bens a cadastrar das notas).
+/// <see cref="Motivo"/>: CFOP, TIPO_ITEM (produto tipo 08), REGRA_FISCAL ou CONTA (regra que debita conta de bem).
+/// </summary>
+public sealed record BemACadastrar(
+    long Id, long DocumentoId, int NItem, string Descricao, decimal Valor, DateOnly DataAquisicao, DateOnly InicioUso, string? CodigoFornecedor,
+    string? Fornecedor, string Nota, string Serie, string? Chave, string? Cfop, string? Ncm, string? ContaSugerida, string Motivo, string Situacao,
+    long? BemId, long? GrupoSugeridoId = null)
+{
+    public const string Pendente = "PENDENTE", Cadastrado = "CADASTRADO", Descartado = "DESCARTADO";
+
+    public string MotivoTexto => Motivo switch
+    {
+        "CFOP" => $"CFOP {Cfop} (compra para o ativo)", "TIPO_ITEM" => "produto do tipo ativo imobilizado", "REGRA_FISCAL" => "regra fiscal de imobilizado",
+        _ => "regra de contabilização com conta de bem",
+    };
+    public string NotaTexto => string.IsNullOrEmpty(Serie) ? Nota : $"{Nota}/{Serie}";
+}
+
+/// <summary>Sugestão do grupo de bens (regra de depreciação) para um item de nota: pela conta da regra e, na falta dela, pelo NCM.</summary>
+public static class SugestaoGrupoBem
+{
+    private static readonly (string Prefixo, string Grupo)[] PorNcm =
+    [
+        ("8471", "08"), ("8703", "05"), ("8704", "06"), ("8711", "06"), ("8701", "07"), ("8517", "10"), ("8205", "09"), ("8207", "09"),
+        ("94", "04"), ("84", "03"), ("85", "03"),
+    ];
+
+    public static GrupoBem? Sugerir(IEnumerable<GrupoBem> grupos, string? conta, string? ncm)
+    {
+        var lista = grupos as IReadOnlyList<GrupoBem> ?? grupos.ToList();
+        if (!string.IsNullOrWhiteSpace(conta) && lista.FirstOrDefault(g => g.ContaBem == conta.Trim()) is { } porConta) return porConta;
+        var n = new string((ncm ?? "").Where(char.IsAsciiDigit).ToArray());
+        foreach (var (prefixo, codigo) in PorNcm)
+            if (n.StartsWith(prefixo, StringComparison.Ordinal) && lista.FirstOrDefault(g => g.Codigo == codigo) is { } g) return g;
+        return null;
+    }
+}
+
 public interface IRepositorioImobilizado
 {
+    /// <summary>Itens de nota de entrada que são bens (situação nula = todas); ids/documentos nulos = sem filtro.</summary>
+    Task<IReadOnlyList<BemACadastrar>> ListarBensACadastrarAsync(long empresaId, string? situacao, IReadOnlyCollection<long>? ids,
+                                                                 IReadOnlyCollection<long>? documentoIds, IReadOnlyCollection<string>? chaves,
+                                                                 CancellationToken ct);
+    /// <summary>Resolve uma pendência ainda aberta (cadastrada ou descartada). False = já estava resolvida ou não existe.</summary>
+    Task<bool> ResolverBemACadastrarAsync(long empresaId, long id, string situacao, long? bemId, long usuarioId, CancellationToken ct);
+
     Task<IReadOnlyList<GrupoBem>> ListarGruposAsync(CancellationToken ct);
     Task<long> GravarGrupoAsync(GrupoBem grupo, CancellationToken ct);
     Task ExcluirGrupoAsync(long id, CancellationToken ct);
@@ -97,6 +143,45 @@ public sealed class ServicoImobilizado(IRepositorioImobilizado repositorio, IRep
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso
             ? (await repositorio.ListarBensAsync(empresaId, ct)).OrderBy(b => b.Codigo).ToList()
             : [];
+
+    // ------------------------------------------------------------------ bens a cadastrar (itens das notas de entrada)
+
+    /// <summary>Pendências de bens das notas de entrada, com o grupo sugerido. Padrão: só as que ainda esperam cadastro.</summary>
+    public async Task<IReadOnlyList<BemACadastrar>> ListarBensACadastrarAsync(long empresaId, long usuarioId, bool somentePendentes = true,
+                                                                              IReadOnlyCollection<long>? ids = null, IReadOnlyCollection<long>? documentoIds = null,
+                                                                              IReadOnlyCollection<string>? chaves = null, CancellationToken ct = default)
+    {
+        if (!(await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso) return [];
+        var lista = await repositorio.ListarBensACadastrarAsync(empresaId, somentePendentes ? BemACadastrar.Pendente : null, ids, documentoIds, chaves, ct);
+        if (lista.Count == 0) return lista;
+        var grupos = await repositorio.ListarGruposAsync(ct);
+        return lista.Select(b => b with { GrupoSugeridoId = SugestaoGrupoBem.Sugerir(grupos, b.ContaSugerida, b.Ncm)?.Id }).ToList();
+    }
+
+    /// <summary>Grava o bem preparado a partir do item da nota e o vincula a ele; o mesmo item não vira dois bens.</summary>
+    public async Task<Resultado<long>> GravarBemDaNotaAsync(long empresaId, long pendenciaId, BemImobilizado bem, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return negado;
+        var p = (await repositorio.ListarBensACadastrarAsync(empresaId, null, [pendenciaId], null, null, ct)).FirstOrDefault();
+        if (p is null) return Resultado<long>.Falha("Item da nota não encontrado entre os bens a cadastrar.");
+        if (p.Situacao != BemACadastrar.Pendente) return Resultado<long>.Falha("Este item da nota já foi tratado (bem cadastrado ou descartado).");
+        var r = await GravarBemAsync(empresaId, bem with { Id = 0 }, usuarioId, ct);
+        if (!r.Sucesso) return r;
+        if (!await repositorio.ResolverBemACadastrarAsync(empresaId, pendenciaId, BemACadastrar.Cadastrado, r.Valor, usuarioId, ct))
+        {
+            await repositorio.ExcluirBemAsync(r.Valor, ct);   // outro usuário resolveu o item no meio do caminho
+            return Resultado<long>.Falha("Este item da nota acabou de ser tratado por outro usuário; o bem não foi cadastrado.");
+        }
+        return r;
+    }
+
+    /// <summary>Descarta o item (não é bem do imobilizado, ou será cadastrado de outra forma).</summary>
+    public async Task<Resultado> DescartarBemACadastrarAsync(long empresaId, long pendenciaId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return Resultado.Falha(negado);
+        return await repositorio.ResolverBemACadastrarAsync(empresaId, pendenciaId, BemACadastrar.Descartado, null, usuarioId, ct)
+            ? Resultado.Ok() : Resultado.Falha("Item não encontrado ou já tratado.");
+    }
 
     public static int ProximoCodigo(IEnumerable<BemImobilizado> bens) => Vorticis.Domain.Comum.Sequencia.MenorLivre(bens.Select(b => b.Codigo));
 

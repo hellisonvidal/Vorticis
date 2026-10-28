@@ -42,6 +42,7 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public OrcamentoViewModel Orcamento => Instancia<OrcamentoViewModel>();
     public TermosViewModel Termos => Instancia<TermosViewModel>();
     public BensViewModel Bens => Instancia<BensViewModel>();
+    public BensACadastrarViewModel BensACadastrar => Instancia<BensACadastrarViewModel>();
     public GruposDepreciacaoViewModel GruposDepreciacao => Instancia<GruposDepreciacaoViewModel>();
     public DepreciacaoViewModel Depreciacao => Instancia<DepreciacaoViewModel>();
     public ConciliacaoViewModel Conciliacao => Instancia<ConciliacaoViewModel>();

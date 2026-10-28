@@ -40,6 +40,12 @@
         <Button Content="Ver prévia" Command="{Binding VerPreviaCommand}" />
         <Button Content="Contabilizar selecionadas" Classes="accent" Command="{Binding ContabilizarCommand}" />
       </WrapPanel>
+      <Border IsVisible="{Binding TemBensPendentes}" Background="#EAF2FF" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding BensPendentes}" TextWrapping="Wrap" Foreground="#1F3A5F" />
+          <Button Content="Cadastrar bens das notas" Command="{Binding CadastrarBensDasNotasCommand}" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
       <ItemsControl ItemsSource="{Binding Previa}">
         <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontFamily="Consolas, Menlo, monospace" FontSize="12" /></DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>

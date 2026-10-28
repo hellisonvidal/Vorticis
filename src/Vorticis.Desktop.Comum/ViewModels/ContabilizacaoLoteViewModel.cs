@@ -51,6 +51,11 @@ public sealed partial class ContabilizacaoLoteViewModel(IContexto contexto) : Mo
     [ObservableProperty] private LinhaLote? _loteSelecionado;
     [ObservableProperty] private string _modoTexto = "";
     [ObservableProperty] private string _totais = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemBensPendentes))] private string _bensPendentes = "";
+    private List<long> _idsBensPendentes = [];
+
+    /// <summary>Há itens de notas de entrada que são bens do imobilizado esperando cadastro (Imobilizado › Bens a cadastrar das notas).</summary>
+    public bool TemBensPendentes => BensPendentes.Length > 0;
 
     public bool PodeAcessar => Contexto.EmpresaId is not null;
 
@@ -75,6 +80,7 @@ public sealed partial class ContabilizacaoLoteViewModel(IContexto contexto) : Mo
         foreach (var g in lista.Valor.GroupBy(p => (p.Periodo.Year, p.Periodo.Month, p.Origem)).OrderBy(g => g.Key))
             Resumo.Add($"{g.Key.Month:00}/{g.Key.Year} - {OrigensPendencia.Nome(g.Key.Origem)}: {g.Count()} pendência(s), {Numeros.Moeda(g.Sum(p => p.Valor))}");
         Totais = lista.Valor.Count == 0 ? "Nenhuma pendência de contabilização." : $"{lista.Valor.Count} pendência(s), total {Numeros.Moeda(lista.Valor.Sum(p => p.Valor))}.";
+        await AtualizarBensPendentesAsync(app, empresa, usuario);
         var lotes = await app.Pendencias.ListarLotesAsync(empresa, usuario);
         if (lotes.Sucesso)
         {
@@ -82,6 +88,24 @@ public sealed partial class ContabilizacaoLoteViewModel(IContexto contexto) : Mo
             foreach (var l in lotes.Valor) Lotes.Add(new LinhaLote(l));
         }
     });
+
+    private async Task AtualizarBensPendentesAsync(VorticisApp app, long empresa, long usuario)
+    {
+        var bens = await app.Imobilizado.ListarBensACadastrarAsync(empresa, usuario);
+        _idsBensPendentes = [.. bens.Select(b => b.Id)];
+        BensPendentes = bens.Count == 0 ? ""
+            : $"{bens.Count} item(ns) de notas de entrada são bens do ativo imobilizado e esperam cadastro ({Numeros.Moeda(bens.Sum(b => b.Valor))}). " +
+              "Clique em Cadastrar bens das notas para abrir o Cadastro de bens já preenchido, um item de cada vez.";
+    }
+
+    /// <summary>Abre o Cadastro de bens (Contábil) preenchido com os itens de notas pendentes.</summary>
+    [RelayCommand]
+    private void CadastrarBensDasNotas()
+    {
+        Erros.Clear();
+        if (!BensDasNotas.AbrirCadastro(Contexto, _idsBensPendentes))
+            Erros.Add("O Cadastro de bens (Contábil) não está disponível para o seu perfil neste programa. Os itens continuam em Imobilizado › Bens a cadastrar das notas.");
+    }
 
     [RelayCommand]
     private void MarcarTodas()
@@ -115,6 +139,9 @@ public sealed partial class ContabilizacaoLoteViewModel(IContexto contexto) : Mo
         var ids = Marcadas();
         if (ids.Count == 0) { Erros.Clear(); Erros.Add("Marque as pendências que deseja contabilizar."); return; }
         if (!await Contexto.ConfirmarAsync("Contabilizar selecionadas", $"Gerar os lançamentos contábeis de {ids.Count} pendência(s)?", "Contabilizar", "Cancelar")) return;
+        // notas fiscais do lote: os itens de imobilizado delas pedem o cadastro de bens
+        var notas = Pendencias.Where(l => l.Marcada && l.P.Origem == OrigensPendencia.Fiscal && l.P.Tipo == "NOTA" && long.TryParse(l.P.Referencia, out _))
+                              .Select(l => long.Parse(l.P.Referencia)).ToList();
         await ExecutarAsync(async (app, empresa, usuario) =>
         {
             var r = await app.Pendencias.ContabilizarAsync(empresa, ids, usuario);
@@ -122,6 +149,12 @@ public sealed partial class ContabilizacaoLoteViewModel(IContexto contexto) : Mo
             await ConsultarAsync();
             foreach (var f in r.Valor.Falhas) foreach (var e in f.Erros) Erros.Add($"{f.Descricao}: {e}");
             Mensagem = r.Valor.LoteId is { } lote ? $"Lote {lote}: {r.Valor.Resumo}" : r.Valor.Resumo;
+            if (notas.Count == 0) return;
+            var bens = await app.Imobilizado.ListarBensACadastrarAsync(empresa, usuario, true, null, notas);
+            if (bens.Count == 0) return;
+            Mensagem += BensDasNotas.AbrirCadastro(Contexto, bens.Select(b => b.Id))
+                ? $" {bens.Count} item(ns) das notas são bens do imobilizado: o Cadastro de bens foi aberto já preenchido."
+                : $" {bens.Count} item(ns) das notas são bens do imobilizado e continuam em Imobilizado › Bens a cadastrar das notas.";
         });
     }
 

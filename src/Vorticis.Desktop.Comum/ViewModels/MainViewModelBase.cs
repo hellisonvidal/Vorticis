@@ -664,6 +664,22 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                 ? def.Pode(this)
                 : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios or TelasComuns.Manual or TelasComuns.ManualContextual);
 
+    /// <summary>
+    /// Suite: procura a tela em outro módulo da mesma janela (tela, abrir): com <c>abrir</c> falso só diz se existe e se o usuário pode abri-la;
+    /// com verdadeiro troca para o módulo e abre. Nulo fora da Suite (executável de um módulo só).
+    /// </summary>
+    public Func<string, bool, bool>? OutroModulo { get; set; }
+
+    /// <summary>A tela é deste módulo (e o usuário pode abri-la) ou de outro módulo da Suite?</summary>
+    public bool PodeAbrirNestaJanela(string tela) => PodeAbrir(tela) || (!ConheceTela(tela) && OutroModulo?.Invoke(tela, false) == true);
+
+    /// <summary>Abre a tela neste módulo ou, na Suite, no módulo que a tem. False = não está disponível.</summary>
+    public bool AbrirNestaJanela(string tela)
+    {
+        if (PodeAbrir(tela)) { Abrir(tela); return true; }
+        return !ConheceTela(tela) && OutroModulo?.Invoke(tela, true) == true;
+    }
+
     /// <summary>A chave pertence a uma tela registrada (comum ou do módulo)?</summary>
     public bool ConheceTela(string chave) => _catalogo.Telas.ContainsKey(chave);
 

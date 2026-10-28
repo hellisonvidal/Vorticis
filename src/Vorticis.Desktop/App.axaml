@@ -29,6 +29,7 @@
     <DataTemplate DataType="vm:ImportacaoLancamentosPadraoViewModel"><v:ImportacaoLancamentosPadraoView /></DataTemplate>
     <DataTemplate DataType="vm:HistoricosViewModel"><v:HistoricosView /></DataTemplate>
     <DataTemplate DataType="vm:BensViewModel"><v:BensView /></DataTemplate>
+    <DataTemplate DataType="vm:BensACadastrarViewModel"><v:BensACadastrarView /></DataTemplate>
     <DataTemplate DataType="vm:ConciliacaoViewModel"><v:ConciliacaoView /></DataTemplate>
     <DataTemplate DataType="vm:DiferencasSaldosViewModel"><v:DiferencasSaldosView /></DataTemplate>
     <DataTemplate DataType="vm:GruposDepreciacaoViewModel"><v:GruposDepreciacaoView /></DataTemplate>

@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.BensACadastrarView"
+             x:DataType="vm:BensACadastrarViewModel">
+  <!-- Imobilizado › Bens a cadastrar das notas (itens de notas de entrada que são ativo imobilizado) -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Bens a cadastrar das notas" />
+      <TextBlock Text="Itens de notas de entrada que são bens do ativo imobilizado (CFOP de ativo, produto do tipo ativo imobilizado ou regra de bens). Marque e clique em Cadastrar para abrir o Cadastro de bens já preenchido, ou em Descartar se o item não é bem."
+                 TextWrapping="Wrap" Foreground="#44506A" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Marcar todos" Command="{Binding MarcarTodasCommand}" />
+        <Button Content="Desmarcar todos" Command="{Binding DesmarcarTodasCommand}" />
+        <Button Content="Cadastrar" Command="{Binding CadastrarCommand}" Classes="accent" IsEnabled="{Binding PodeManter}" />
+        <Button Content="Descartar" Command="{Binding DescartarCommand}" IsEnabled="{Binding PodeManter}" />
+        <Button Content="Atualizar" Command="{Binding AtualizarCommand}" />
+        <CheckBox Content="Mostrar também os já tratados" IsChecked="{Binding MostrarTratados}" VerticalAlignment="Center" />
+      </StackPanel>
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Resumo}" FontWeight="SemiBold" Margin="0,6,0,0" />
+    <DataGrid ItemsSource="{Binding Linhas}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Marcar" Binding="{ReflectionBinding Marcada}" Width="70" />
+        <DataGridTextColumn Header="Nota" Binding="{ReflectionBinding Nota}" IsReadOnly="True" Width="90" />
+        <DataGridTextColumn Header="Fornecedor" Binding="{ReflectionBinding Fornecedor}" IsReadOnly="True" Width="*" MinWidth="120" />
+        <DataGridTextColumn Header="Item" Binding="{ReflectionBinding Descricao}" IsReadOnly="True" Width="2*" MinWidth="150" />
+        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" IsReadOnly="True" Width="90" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" IsReadOnly="True" Width="100" />
+        <DataGridTextColumn Header="Por quê" Binding="{ReflectionBinding Motivo}" IsReadOnly="True" Width="*" MinWidth="120" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" IsReadOnly="True" Width="100" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

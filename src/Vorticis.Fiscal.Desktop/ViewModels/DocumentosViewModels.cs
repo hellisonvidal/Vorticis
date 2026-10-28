@@ -158,6 +158,9 @@ public partial class ImportacaoXmlViewModel(IContexto contexto) : ModuloViewMode
         if (datas.Count == 0) return;
         var online = await app.Fiscal().Contabilizacao.ContabilizarSeOnlineAsync(empresa, datas.Min(), datas.Max(), null, usuario);
         if (online is not null) Resumo += TextoContabilizacaoOnline(online);
+        var chaves = r.Arquivos.Where(a => a.Situacao == SituacaoImportacao.Importado && a.Operacao == TipoOperacao.Entrada && a.Chave is not null)
+                               .Select(a => a.Chave!).ToList();
+        Resumo += await Vorticis.Desktop.Comum.ViewModels.BensDasNotas.AposGravarNotasAsync(Contexto, app, empresa, usuario, chaves: chaves);
     }
 
     /// <summary>Texto do resultado da contabilização on-line (vazio quando ela está desligada).</summary>

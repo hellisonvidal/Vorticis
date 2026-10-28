@@ -54,7 +54,7 @@ A nota tem abas na mesma janela: **Nota**, **Itens**, **Tributos**, **Parcelas**
 4. Aba **Parcelas**: escolha a **Forma de pagamento** ([cadastro](02-cadastros-comuns.md#formas-de-pagamento)) e as duplicatas são geradas pelos prazos dela, contados da emissão, sobre o total da nota. Se mudar os itens depois, clique em **Gerar pela forma** para refazer. Para parcelar à mão, informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas** (a última recebe a diferença de centavos; a soma tem de bater com o valor da nota). **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
 5. Aba **Escrituração**: centro de custo, contas de débito e crédito e observações (veja abaixo, nas notas importadas).
 6. Confira o **total informado** (aba Nota): precisa bater com a soma dos itens; em branco, vale a soma. Clique em **Gravar nota**.
-7. Nota de entrada com itens de **ativo imobilizado** (CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406): ao gravar a nota nova, o sistema pergunta se quer cadastrar os bens. Respondendo **Cadastrar os bens**, abre a tela [Bens do imobilizado da nota](#bens-do-imobilizado-da-nota). Depois, o botão **Cadastrar bens do imobilizado** abre a mesma tela.
+7. Nota de entrada com itens de **ativo imobilizado** (CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406, produto do tipo *08 – Ativo imobilizado* ou regra de bens): ao gravar a nota, o sistema prepara o cadastro dos bens no Contábil. Com a contabilização **On-line**, o *Cadastro de bens* abre já preenchido para você conferir e salvar (pode cancelar: o item fica na lista *Imobilizado › Bens a cadastrar das notas*). Com a contabilização **Em lote**, o item só fica na lista e é oferecido na *Contabilização em lote*. Se o Contábil não estiver instalado/aberto, o sistema só registra e avisa. O botão **Cadastrar bens do imobilizado** reabre o cadastro com os itens ainda pendentes da nota. Vale também para notas importadas por XML, por chave ou em lote. Veja [Bens a cadastrar das notas](03-contabil.md#bens-a-cadastrar-das-notas).
 
 **Campos bloqueados?** Uma faixa no topo da janela explica o motivo:
 - *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
@@ -133,18 +133,6 @@ Em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, escolha como as n
 Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (entrada) ou de **clientes** (saída) em *Cadastros › Parâmetros*, essa conta passa a ser a contrapartida da nota: o fornecedor é creditado na compra e o cliente debitado na venda, com o código do fornecedor/cliente na partida. Uma regra específica daquele participante, ou as contas digitadas na própria nota, têm preferência.
 
 **Erro comum:** nota sem regra aplicável ou período contábil fechado ficam sem contabilizar, com a mensagem na coluna *Situação*.
-
-## Bens do imobilizado da nota
-
-**Para que serve:** levar as compras de ativo imobilizado da nota de entrada direto para o cadastro de bens do Contábil (*Imobilizado › Cadastro de bens*), sem digitar de novo.
-**Onde fica:** abre sozinha ao gravar a nota de entrada com CFOP de imobilizado (ou pelo botão **Cadastrar bens do imobilizado** na digitação).
-
-1. Cada item da nota vira uma linha, com a **descrição** e o **valor** do item. A nota, o fornecedor, a **data de aquisição** (emissão) e o **início do uso** (data de entrada) já vêm preenchidos.
-2. Escolha o **grupo** de cada bem (regra de depreciação). A **vida útil** fiscal e as **contas** (do bem, da depreciação acumulada e da despesa) vêm do grupo e podem ser trocadas.
-3. Informe, se quiser, a **plaqueta** e a **localização**. Desmarque **Cadastrar** nos itens que não são bens.
-4. Clique em **Cadastrar no imobilizado**. A coluna **Situação** mostra *Cadastrado* ou o que falta corrigir.
-
-O cadastro exige a permissão de lançamentos do Contábil. Os bens aparecem no Contábil e entram na depreciação mensal.
 
 ## Fechamento do período fiscal
 

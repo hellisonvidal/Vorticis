@@ -51,6 +51,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Reorganizar saldos", Telas.ReorganizarSaldos))),
         ItemMenu.Submenu("I_mobilizado",
             ItemMenu.Tela("Cadastro de bens", Telas.Bens),
+            ItemMenu.Tela("Bens a cadastrar das notas", Telas.BensACadastrar),
             ItemMenu.Tela("Regras de depreciação (grupos)", Telas.GruposDepreciacao),
             ItemMenu.Separador,
             ItemMenu.Tela("Cálculo e lançamento da depreciação", Telas.Depreciacao)),
@@ -183,6 +184,9 @@ public sealed class ModuloContabil : IModuloDesktop
 
         c.Instancia(nameof(MainViewModel.Bens), m => new BensViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Bens, "Imobilizado › Cadastro de bens", ComAcesso, v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.BensACadastrar), m => new BensACadastrarViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.BensACadastrar, "Imobilizado › Bens a cadastrar das notas", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.GruposDepreciacao), m => new GruposDepreciacaoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.GruposDepreciacao, "Imobilizado › Regras de depreciação", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Depreciacao), m => new DepreciacaoViewModel(m))

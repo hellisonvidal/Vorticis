@@ -28,7 +28,6 @@ public static class Telas
     public const string ResumoCfop = "resumocfop";
     public const string NotaEntrada = "notaentrada";
     public const string NotaSaida = "notasaida";
-    public const string BensDaNota = "bensdanota";
     public const string Produtos = "produtos";
     public const string RegrasFiscais = "regrasfiscais";
     public const string RelProdutos = "relprodutos";

@@ -49,6 +49,41 @@ public sealed class RepositorioImobilizado(NpgsqlDataSource ds) : IRepositorioIm
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
+    public async Task<IReadOnlyList<BemACadastrar>> ListarBensACadastrarAsync(long empresaId, string? situacao, IReadOnlyCollection<long>? ids,
+                                                                              IReadOnlyCollection<long>? documentoIds, IReadOnlyCollection<string>? chaves,
+                                                                              CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            SELECT a.id, a.documento_id, a.n_item, a.descricao, a.valor, a.data_aquisicao, a.data_inicio_uso, f.codigo, f.nome, a.numero_nota, a.serie,
+                   a.chave_acesso, a.cfop, a.ncm, a.conta_sugerida, a.motivo, a.situacao, a.bem_id
+              FROM imobilizado.bem_a_cadastrar a
+              LEFT JOIN core.participante f ON f.id = a.fornecedor_id
+             WHERE a.empresa_id = @e AND (@s::text IS NULL OR a.situacao = @s)
+               AND (@ids::bigint[] IS NULL OR a.id = ANY(@ids)) AND (@docs::bigint[] IS NULL OR a.documento_id = ANY(@docs)) AND (@chaves::text[] IS NULL OR a.chave_acesso = ANY(@chaves))
+             ORDER BY a.data_inicio_uso, a.documento_id, a.n_item
+            """).Com("e", empresaId).ComTexto("s", situacao)
+              .Com("ids", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Bigint, ids?.ToArray())
+              .Com("docs", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Bigint, documentoIds?.ToArray())
+              .Com("chaves", NpgsqlTypes.NpgsqlDbType.Array | NpgsqlTypes.NpgsqlDbType.Text, chaves?.ToArray());
+        var res = new List<BemACadastrar>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        string? T(int i) => r.IsDBNull(i) ? null : r.GetString(i);
+        while (await r.ReadAsync(ct))
+            res.Add(new BemACadastrar(r.GetInt64(0), r.GetInt64(1), r.GetInt32(2), r.GetString(3), r.GetDecimal(4), r.GetFieldValue<DateOnly>(5),
+                r.GetFieldValue<DateOnly>(6), T(7), T(8), r.GetString(9), r.GetString(10), T(11), T(12), T(13), T(14), r.GetString(15), r.GetString(16),
+                r.IsDBNull(17) ? null : r.GetInt64(17)));
+        return res;
+    }
+
+    public async Task<bool> ResolverBemACadastrarAsync(long empresaId, long id, string situacao, long? bemId, long usuarioId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("""
+            UPDATE imobilizado.bem_a_cadastrar SET situacao = @s, bem_id = @b, resolvido_em = now(), resolvido_por = @u
+             WHERE id = @id AND empresa_id = @e AND situacao = 'PENDENTE'
+            """).Com("s", situacao).Com("b", NpgsqlTypes.NpgsqlDbType.Bigint, bemId).Com("u", usuarioId).Com("id", id).Com("e", empresaId);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+    }
+
     public async Task<IReadOnlyList<BemImobilizado>> ListarBensAsync(long empresaId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""

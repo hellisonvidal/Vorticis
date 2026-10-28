@@ -125,8 +125,6 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("NotaSaida", m => new NotaSaidaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.NotaSaida, "Lançamentos › Documentos fiscais › Saída", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());
-        c.Instancia("BensDaNota", m => new BensDaNotaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.BensDaNota, "Lançamentos › Bens do imobilizado da nota", m => m.Pode(Permissao.FiscalDocumentosImportar), v => v.CarregarAsync());
         c.Instancia("Duplicatas", m => new DuplicatasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.Duplicatas, "Lançamentos › Duplicatas", m => m.Pode(Permissao.FiscalDocumentosConsultar), v => v.CarregarAsync());

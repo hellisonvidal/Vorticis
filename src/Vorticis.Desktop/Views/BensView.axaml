@@ -7,7 +7,12 @@
              x:Class="Vorticis.Desktop.Views.BensView"
              x:DataType="vm:BensViewModel">
   <Grid ColumnDefinitions="*,16,430" RowDefinitions="Auto,*,Auto" Margin="8">
-    <c:BarraCadastroView Grid.ColumnSpan="3" Margin="0,0,0,8" />
+    <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,8" Spacing="6">
+      <c:BarraCadastroView />
+      <Border IsVisible="{Binding TemAvisoNota}" Background="#EAF2FF" BorderBrush="#9DB8E8" BorderThickness="1" CornerRadius="4" Padding="8">
+        <TextBlock Text="{Binding AvisoNota}" TextWrapping="Wrap" Foreground="#1F3A5F" />
+      </Border>
+    </StackPanel>
     <DockPanel Grid.Row="1" IsEnabled="{Binding !EmEdicao}">
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
         <TextBlock Classes="titulo" Text="Bens do imobilizado" VerticalAlignment="Center" />

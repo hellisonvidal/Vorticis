@@ -731,7 +731,6 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         var part = await ResolverParticipanteAsync(app, empresa, usuario);
         if (part is null) return;
         _participanteId = part.Value.Id;
-        var notaNova = _documentoId == 0;
         var totais = CalcularTotais();
         if (Numeros.LerValor(TotalInformado) is { } informado) totais = totais with { Total = informado };   // total conferido com a soma dos itens
         var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
@@ -751,33 +750,23 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         SelecionarSemCarregar(Lista.FirstOrDefault(d => d.Id == r.Valor));   // sem recarregar: a carga atrasada apagaria a mensagem de gravação
         DigitacaoAberta = false;                                            // gravou: o pop-up fecha e a grade já está atualizada
         Mensagem = "Nota gravada." + ImportacaoXmlViewModel.TextoContabilizacaoOnline(online);
-        if (notaNova && CfopImobilizado.Itens(Operacao, doc.Itens).Count > 0
-            && await Contexto.ConfirmarAsync("Ativo imobilizado",
-                   "A nota tem itens com CFOP de ativo imobilizado. Cadastrar agora os bens no imobilizado do Contábil (já preenchidos com a nota, o fornecedor, a data e o valor)?",
-                   "Cadastrar os bens", "Agora não"))
-            AbrirBensDoImobilizado(doc, part.Value.Codigo, part.Value.Nome);
+        // itens de ativo imobilizado: abre o cadastro de bens (on-line) ou registra a pendência (em lote)
+        if (doc.Operacao == TipoOperacao.Entrada)
+            Mensagem += await Vorticis.Desktop.Comum.ViewModels.BensDasNotas.AposGravarNotasAsync(Contexto, app, empresa, usuario, [r.Valor]);
     }, Permissao.FiscalDocumentosImportar);
 
-    /// <summary>Há itens de imobilizado na nota de entrada em edição (habilita "Cadastrar bens do imobilizado").</summary>
-    public bool TemItensImobilizado => CfopImobilizado.Itens(Operacao, Itens.Select(i => i.Item)).Count > 0;
+    /// <summary>Nota de entrada já gravada com itens de ativo imobilizado (habilita "Cadastrar bens do imobilizado").</summary>
+    public bool TemItensImobilizado => _documentoId != 0 && CfopImobilizado.Itens(Operacao, Itens.Select(i => i.Item)).Count > 0;
 
-    private void AbrirBensDoImobilizado(DocumentoDigitado doc, string? codigoFornecedor, string fornecedor)
-    {
-        if (Contexto is not Vorticis.Desktop.Comum.ViewModels.MainViewModelBase m || !m.ConheceTela(Telas.BensDaNota)) return;
-        PendenciaImobilizado.Entregar(Contexto, new PendenciaImobilizado($"{doc.Numero}", codigoFornecedor, fornecedor, doc.Emissao, doc.DataLivro,
-            CfopImobilizado.Itens(doc.Operacao, doc.Itens)));
-        Contexto.AbrirTela(Telas.BensDaNota);
-    }
-
+    /// <summary>Reabre o cadastro de bens (Contábil) com os itens desta nota que ainda estão em "Bens a cadastrar das notas".</summary>
     [RelayCommand]
     private Task CadastrarBensImobilizadoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var itens = CfopImobilizado.Itens(Operacao, Itens.Select(i => i.Item));
-        if (itens.Count == 0) { Erros.Add("A nota não tem itens com CFOP de ativo imobilizado (1.551, 2.551, 3.551, 1.406 ou 2.406)."); return; }
-        var doc = new DocumentoDigitado(_documentoId, Operacao, ModelosValores[Math.Clamp(Modelo, 0, 2)], Serie, Numero, Chave, Data(Emissao, default), Data(DataLivro, default),
-            Natureza, _participanteId, null, CalcularTotais(), itens);
-        var fornecedor = _participanteId == 0 ? null : (await app.Participantes.ListarAsync(empresa, usuario)).FirstOrDefault(p => p.Id == _participanteId);
-        AbrirBensDoImobilizado(doc, fornecedor?.Codigo, fornecedor?.Nome ?? Participante);
+        var pendentes = await app.Imobilizado.ListarBensACadastrarAsync(empresa, usuario, true, null, [_documentoId]);
+        if (pendentes.Count == 0) { Mensagem = "Esta nota não tem bens pendentes: todos já foram cadastrados ou descartados (Contábil › Imobilizado › Bens a cadastrar das notas)."; return; }
+        Mensagem = Vorticis.Desktop.Comum.ViewModels.BensDasNotas.AbrirCadastro(Contexto, pendentes.Select(p => p.Id))
+            ? $"Cadastro de bens aberto com {pendentes.Count} item(ns) da nota."
+            : "O cadastro de bens é do Contábil, que não está disponível neste programa ou perfil: os itens continuam em Imobilizado › Bens a cadastrar das notas.";
     });
 
     private static string? Texto(string? t) => string.IsNullOrWhiteSpace(t) ? null : t.Trim();
@@ -1092,6 +1081,8 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
             : "";
         Mensagem = $"{origemTexto} {r.Valor.Aviso} Nota importada: confira a escrituração e clique em \"Gravar escrituração\" se alterar algo.{regraAviso}";
         if (!DigitacaoAberta) DigitacaoAberta = true;
+        if (Operacao == TipoOperacao.Entrada)
+            Mensagem += await Vorticis.Desktop.Comum.ViewModels.BensDasNotas.AposGravarNotasAsync(Contexto, app, empresa, usuario, [gravada.Id]);
     }
 
     /// <summary>Registra a "Ciência da operação" (manifestação do destinatário), que libera o XML completo na SEFAZ.</summary>

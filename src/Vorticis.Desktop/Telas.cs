@@ -48,7 +48,8 @@ public static class Telas
     public const string BiCubo = "bi.cubo";
     public const string BiExportar = "bi.exportar";
     public const string Termos = "termos";
-    public const string Bens = "bens";
+    public const string Bens = Vorticis.Desktop.Comum.ViewModels.BensDasNotas.TelaCadastroBens;
+    public const string BensACadastrar = Vorticis.Desktop.Comum.ViewModels.BensDasNotas.TelaBensACadastrar;
     public const string GruposDepreciacao = "gruposdepreciacao";
     public const string Depreciacao = "depreciacao";
     public const string Conciliacao = "conciliacao";

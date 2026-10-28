@@ -192,6 +192,8 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 
 **O que gera pendência no modo Em lote:** a gravação ou importação de notas fiscais, a baixa de duplicatas (a baixa é registrada e o saldo da duplicata diminui na hora; só o lançamento contábil espera), o botão **Contabilizar** da folha e das provisões da folha. As provisões de tributos (Simples, IRPJ/CSLL, PIS/COFINS) continuam sendo lançadas na hora. Se a baixa for estornada antes de entrar em um lote, a pendência dela é cancelada sozinha.
 
+**Bens do imobilizado:** se alguma nota do lote tem item de ativo imobilizado, a tela mostra um aviso azul com o botão **Cadastrar bens das notas** (abre o Cadastro de bens já preenchido, um item de cada vez). Ao contabilizar notas com esses itens, o Cadastro de bens abre sozinho. Veja [Bens a cadastrar das notas](#bens-a-cadastrar-das-notas).
+
 **Dica:** o programa que processa cada origem precisa estar instalado.
 
 ## Conciliação automática
@@ -246,6 +248,25 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 5. Se o bem já vinha depreciado, preencha **Já depreciado** (depreciação acumulada antes do Vorticis).
 6. Confirme as contas do bem, da depreciação acumulada e da despesa. **Salvar**.
 7. Para dar baixa: informe a **data** e o **motivo** (venda, perda, doação...).
+
+**Bem que vem de uma nota fiscal:** quando o Cadastro de bens abre sozinho a partir de uma nota de compra (veja [Bens a cadastrar das notas](#bens-a-cadastrar-das-notas)), aparece uma faixa azul no alto e o bem já vem preenchido: descrição, valor, data da nota, início do uso (data de entrada), nota fiscal/série, fornecedor e, quando o sistema reconhece o tipo de bem, o **grupo** com a vida útil e as contas. Confira, escolha o grupo se estiver em branco e clique em **Salvar**: o bem fica ligado ao item da nota e o sistema abre o próximo item, se houver. **Cancelar** deixa o item esperando na lista *Bens a cadastrar das notas*.
+
+### Bens a cadastrar das notas
+**Para que serve:** não esquecer de cadastrar como bem o que foi comprado para o ativo imobilizado. Toda nota fiscal de **entrada** (digitada, importada por XML, por chave ou em lote) que tenha item de ativo imobilizado deixa esse item registrado aqui. Conta como ativo imobilizado o item com **CFOP 1.551, 2.551, 3.551, 1.406 ou 2.406**, o produto cadastrado com tipo **08 – Ativo imobilizado**, ou o item cuja regra fiscal ou regra de contabilização lança em conta de bens do imobilizado.
+**Onde fica:** *Imobilizado › Bens a cadastrar das notas*.
+
+**O que acontece ao gravar a nota:**
+- Empresa com contabilização **On-line**: ao gravar ou importar a nota, o **Cadastro de bens** abre sozinho, já preenchido com o primeiro item (os outros vêm em seguida). Você confere e clica em **Salvar**, ou em **Cancelar** para deixar para depois.
+- Empresa com contabilização **Em lote**: o item só fica registrado nesta lista. Ao usar a [Contabilização em lote](#contabilizacao-em-lote), a tela avisa que há bens esperando e abre o Cadastro de bens preenchido para as notas contabilizadas.
+- Fiscal em programa separado, sem o Contábil aberto: o sistema só registra o item e avisa. Depois, abra o Contábil e use esta lista.
+
+**Como usar a lista:**
+1. A lista mostra nota, fornecedor, item, data, valor e o motivo de ser bem. Marque os itens (ou **Marcar todos**).
+2. **Cadastrar** abre o Cadastro de bens preenchido, um item de cada vez.
+3. **Descartar** tira da lista o que não é bem (pede confirmação).
+4. **Mostrar também os já tratados** inclui os itens já cadastrados ou descartados.
+
+Um item vira bem uma vez só: reprocessar ou regravar a nota não cria outro. Se você excluir o bem, o item volta para a lista. É preciso ter a permissão de lançamentos do Contábil para cadastrar ou descartar.
 
 ### Cálculo e lançamento da depreciação
 **Onde fica:** *Imobilizado › Cálculo e lançamento da depreciação*.
