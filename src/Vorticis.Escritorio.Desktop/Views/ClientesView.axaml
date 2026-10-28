@@ -92,6 +92,8 @@
             <CheckBox Content="Condomínio" IsChecked="{Binding ModCondominio}" />
             <CheckBox Content="Gerencial" IsChecked="{Binding ModGerencial}" />
           </StackPanel>
+          <TextBlock Classes="secao" Text="Logo da empresa" FontWeight="SemiBold" Margin="0,8,0,0" />
+          <StackPanel IsEnabled="{Binding EmEdicao}"><c:LogoEmpresaView DataContext="{Binding Logo}" /></StackPanel>
           <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                      Text="Para cadastrar nos módulos, preencha na aba Dados cadastrais o CNPJ, o regime, a natureza jurídica, o CNAE, o município IBGE, a UF e o início das atividades (o botão Buscar na Receita traz quase tudo). Com Contabilidade marcada, o plano de contas modelo é importado. Desmarcar um módulo aqui não apaga nada no módulo." />
         </StackPanel>

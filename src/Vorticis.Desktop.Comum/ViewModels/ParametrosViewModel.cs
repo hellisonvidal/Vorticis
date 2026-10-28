@@ -8,7 +8,7 @@ using Vorticis.Infra;
 
 namespace Vorticis.Desktop.Comum.ViewModels;
 
-public enum TipoCampoParametro { SimNao, Texto, Data, Escolha }
+public enum TipoCampoParametro { SimNao, Texto, Data, Escolha, Conta }
 
 public sealed record OpcaoParametro(string Valor, string Texto);
 
@@ -26,6 +26,10 @@ public sealed partial class CampoParametro(string chave, string rotulo, TipoCamp
     public bool EhTexto => Tipo == TipoCampoParametro.Texto;
     public bool EhData => Tipo == TipoCampoParametro.Data;
     public bool EhEscolha => Tipo == TipoCampoParametro.Escolha;
+    public bool EhConta => Tipo == TipoCampoParametro.Conta;
+
+    /// <summary>Contas do plano da empresa oferecidas na caixa de pesquisa (campos do tipo Conta).</summary>
+    [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _contas = [];
     public bool TemAjuda => !string.IsNullOrWhiteSpace(Ajuda);
 
     [ObservableProperty] private bool _marcado;

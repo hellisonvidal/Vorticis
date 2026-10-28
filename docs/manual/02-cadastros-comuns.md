@@ -16,7 +16,10 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 4. Preencha o **NIRE** (11 dígitos), endereço e contatos.
 5. Em **Módulos**, marque onde a empresa será usada (Contábil, Fiscal, Folha de Pagamento). A lista de empresas no topo de cada programa mostra só as empresas ativas naquele módulo.
 6. Em **Escrituração**, escolha o **regime tributário** (tem histórico por ano; é definido na inclusão) e o primeiro exercício.
-7. **Salvar**.
+7. Em **Logo da empresa** (opcional), clique em **Carregar logo...** e escolha uma imagem PNG ou JPG. O sistema reduz a imagem sozinho (no máximo 600 pontos e 512 KB) e mostra a prévia; **Remover logo** apaga. Marque **Usar a logo nos relatórios** para que ela apareça, à esquerda, no cabeçalho de todos os relatórios e livros em PDF da empresa; desmarcada, a logo fica guardada mas não é impressa.
+8. **Salvar**. Antes de gravar uma empresa nova o sistema pergunta em quais módulos ela ficará ativa e avisa: *"Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?"*. Só grava se você confirmar em **Cadastrar**.
+
+**Código da empresa:** cada empresa recebe um número de sequência (exemplo: *Cód. 0005*) que é o mesmo em todos os módulos e em todas as telas (cadastro de empresas, clientes do Escritório, Condomínio e Suite). Ele aparece ao lado do título do cadastro e na mensagem depois de salvar.
 
 ### Abas da empresa
 - **Dados cadastrais**: tudo acima.
@@ -35,7 +38,7 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 | Usar estorno de lançamentos | Ligado (padrão): lançamentos gravados são corrigidos por estorno. Desligado: não há estorno; **Editar** altera o próprio lançamento e **Excluir** o remove (sempre com registro na Auditoria). Veja o tópico Lançamentos. |
 | Plano com participantes | Clientes e fornecedores ficam dentro das contas contábeis (veja [Participantes](#clientes-e-fornecedores-participantes)). |
 | Grande porte, apuração do IRPJ, regime de caixa | Informações usadas na ECD e nas apurações. |
-| Contas do encerramento | Apuração do resultado, lucros e prejuízos acumulados, usadas como padrão em *Encerramento do exercício*. |
+| Contas do encerramento | Apuração do resultado, lucros e prejuízos acumulados, usadas como padrão em *Encerramento do exercício*. Cada campo tem uma caixa de pesquisa (código, reduzido ou nome) com as contas do plano da empresa. Ao salvar, o sistema confere se a conta existe, está na máscara do plano, é analítica e é do grupo certo (resultado para a apuração; patrimônio líquido para lucros e prejuízos) e avisa em linguagem simples o que corrigir. |
 
 ### Regras e cuidados
 - **Excluir uma empresa apaga toda a escrituração dela** (lançamentos, plano, períodos, sócios, acessos). O sistema avisa e **gera um backup automático antes**, informando onde ficou.
@@ -62,7 +65,7 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Centros de custo e contabilidade gerencial | Usar centros de custo; **Contabilidade gerencial**: ligado, aparece o menu *Relatórios › Gerenciais*; desligado, ele fica escondido. |
 | Participantes | Plano de contas com participantes. |
 | Tipo de contabilização | **On-line** (o lançamento sai na hora, o padrão) ou **Em lote** (os módulos geram pendências e você contabiliza em *Integrações › Exportar › Contabilização em lote*). Veja [Contabilização em lote](03-contabil.md#contabilizacao-em-lote). |
-| Encerramento do exercício | Contas de apuração do resultado, de lucros e de prejuízos acumulados. |
+| Encerramento do exercício | Contas de apuração do resultado, de lucros e de prejuízos acumulados, cada uma com caixa de pesquisa (código, reduzido ou nome) das contas do plano da empresa. Ao salvar, o sistema avisa se a conta não existe, não está na máscara, é sintética ou é do grupo errado. |
 | SPED Contábil (ECD) e ECF | Empresa de grande porte. |
 
 ### Fiscal

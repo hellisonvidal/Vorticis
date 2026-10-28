@@ -151,6 +151,16 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
 
     protected virtual Task AoSelecionarAsync(PessoaEscritorio? p) => Task.CompletedTask;
 
+    /// <summary>Logo da empresa vinculada ao cliente (cadastro único de empresas, usado no cabeçalho dos relatórios).</summary>
+    public Vorticis.Desktop.Comum.ViewModels.LogoEmpresaEditor Logo { get; } = new();
+
+    protected async Task CarregarLogoAsync(long? empresaVinculada)
+    {
+        Vorticis.Application.Cadastros.LogoEmpresa? logo = null;
+        if (empresaVinculada is { } id && Contexto.App is { } app) logo = await app.Empresas.ObterLogoAsync(id);
+        Logo.Carregar(logo);
+    }
+
     protected override void MostrarSelecionado()
     {
         var p = Selecionado?.P;
@@ -167,8 +177,8 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
                                               m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Folha));
         (ModCondominio, ModGerencial) = (m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Condominio), m.HasFlag(Vorticis.Application.Cadastros.ModulosEmpresa.Erp));
         SituacaoModulos = p?.EmpresaVinculadaId is null
-            ? "Marque os módulos do contrato: ao gravar, o cliente é cadastrado como empresa nesses módulos (só o administrador)."
-            : "Cliente já cadastrado como empresa nos módulos marcados. Marque outros para incluí-lo neles também.";
+            ? "Marque os módulos do contrato: ao gravar, o cliente é cadastrado como empresa nesses módulos, com o mesmo código em todos eles (só o administrador)."
+            : $"Cliente já cadastrado como empresa nos módulos marcados (código {p.EmpresaVinculadaId:0000}, o mesmo em todos os módulos). Marque outros para incluí-lo neles também.";
         OrigemDados = "";
     }
 
@@ -186,6 +196,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
     protected override void PrepararInclusao()
     {
         Selecionado = null;
+        Logo.Carregar(null);
         MostrarSelecionado();
         Codigo = Sequencia.MenorLivre(_todos.Select(p => p.Codigo)).ToString();
     }
@@ -224,6 +235,10 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
         {
             if (!int.TryParse(Codigo.Trim(), out var cod)) { Erros.Add("Informe o código (número)."); return; }
             var anterior = inclusao ? null : Selecionado?.P;
+            // Cliente novo nos módulos vira empresa compartilhada: exige confirmação antes de gravar.
+            if (clientes && ModulosMarcados() != Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum && anterior?.EmpresaVinculadaId is null
+                && !await Contexto.ConfirmarAsync("Cadastrar esta empresa em quais módulos?", Vorticis.Application.Cadastros.MensagensEmpresa.AvisoCompartilhado, "Continuar", "Cancelar"))
+            { Erros.Add("Cadastro cancelado."); return; }
             var p = new PessoaEscritorio(anterior?.Id ?? 0, cod, clientes || OutroPapel, !clientes || OutroPapel, Nome, Documento, Regime, Contato, Email, Telefone, Endereco,
                                          Municipio, Uf, Ativo, Observacao, NomeFantasia, NaturezaJuridica, Cnae, InscricaoEstadual,
                                          InicioAtividades is { } ini ? DateOnly.FromDateTime(ini) : null, Cep, Logradouro, Numero, Complemento, Bairro, CodMunicipioIbge,
@@ -236,8 +251,16 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
             Modo = ModoCadastro.Consulta;
             await CarregarAsync();
             Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
+                        if (clientes && Logo.Alterado && Selecionado?.P.EmpresaVinculadaId is { } empId)
+            {
+                var salva = await app.Empresas.SalvarLogoAsync(empId, Logo.Logo);
+                if (!salva.Sucesso) foreach (var e in salva.Erros) Erros.Add(e);
+                else { Logo.Carregar(Logo.Logo); await Contexto.AtualizarLogoRelatoriosAsync(); }
+            }
+            else if (clientes && Logo.Alterado) Erros.Add("A logo só pode ser gravada depois que o cliente for cadastrado como empresa: marque ao menos um módulo e salve de novo.");
             Mensagem = (inclusao ? "Cadastro incluído." : "Cadastro alterado.")
-                       + (p.Modulos != Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum ? " Empresa cadastrada/atualizada nos módulos marcados." : "");
+                       + (p.Modulos != Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum ? " Empresa cadastrada/atualizada nos módulos marcados."
+                          + (Selecionado?.P.EmpresaVinculadaId is { } eid ? " " + Vorticis.Application.Cadastros.MensagensEmpresa.CodigoUnico(eid) : "") : "");
         }, Permissao.EscritorioTarefas);
         return ok;
     }
@@ -272,7 +295,11 @@ public sealed partial class ClientesEscritorioViewModel : PessoasViewModel
         Honorarios.AtualizarPermissoes();
     }
 
-    protected override Task AoSelecionarAsync(PessoaEscritorio? p) => Honorarios.MostrarClienteAsync(p?.Id);
+    protected override async Task AoSelecionarAsync(PessoaEscritorio? p)
+    {
+        await CarregarLogoAsync(p?.EmpresaVinculadaId);
+        await Honorarios.MostrarClienteAsync(p?.Id);
+    }
 }
 
 /// <summary>Cadastros › Fornecedores: fornecedores do escritório (cadastro próprio).</summary>

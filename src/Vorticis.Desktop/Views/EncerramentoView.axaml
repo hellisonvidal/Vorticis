@@ -14,11 +14,11 @@
         <TextBlock Text="Exercício" VerticalAlignment="Center" />
         <NumericUpDown Grid.Column="1" Value="{Binding Ano}" Minimum="2000" Maximum="2100" FormatString="0" Width="130" HorizontalAlignment="Left" />
         <TextBlock Grid.Row="1" Text="Conta de apuração do resultado" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ContaApuracao}" Width="200" HorizontalAlignment="Left" />
+        <c:CaixaContaPlano Grid.Row="1" Grid.Column="1" Text="{Binding ContaApuracao}" ItemsSource="{Binding OpcoesApuracao}" Width="340" HorizontalAlignment="Left" />
         <TextBlock Grid.Row="2" Text="Lucros acumulados" VerticalAlignment="Center" />
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContaLucros}" Width="200" HorizontalAlignment="Left" />
+        <c:CaixaContaPlano Grid.Row="2" Grid.Column="1" Text="{Binding ContaLucros}" ItemsSource="{Binding OpcoesPatrimonio}" Width="340" HorizontalAlignment="Left" />
         <TextBlock Grid.Row="3" Text="Prejuízos acumulados" VerticalAlignment="Center" />
-        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContaPrejuizos}" Width="200" HorizontalAlignment="Left" />
+        <c:CaixaContaPlano Grid.Row="3" Grid.Column="1" Text="{Binding ContaPrejuizos}" ItemsSource="{Binding OpcoesPatrimonio}" Width="340" HorizontalAlignment="Left" />
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button Content="Calcular prévia" Command="{Binding PreverCommand}" />

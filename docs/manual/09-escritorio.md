@@ -30,8 +30,10 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 
 ### Módulos do contrato
 1. Na aba **Módulos do contrato**, marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**.
-2. **Gravar**. O cliente é cadastrado como empresa nesses módulos, com os dados da aba Dados cadastrais (com Contabilidade marcada, o plano de contas modelo é importado). Se já existir empresa com o mesmo CNPJ, ela é atualizada e passa a aparecer também nos módulos marcados.
+2. **Gravar**. Se o cliente ainda não é empresa, o sistema avisa: *"Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?"* — confirme em **Continuar**. O cliente é cadastrado como empresa nesses módulos, com o mesmo código (sequência) em todos eles — o código aparece na própria aba e na mensagem depois de gravar, com os dados da aba Dados cadastrais (com Contabilidade marcada, o plano de contas modelo é importado). Se já existir empresa com o mesmo CNPJ, ela é atualizada e passa a aparecer também nos módulos marcados.
 3. Para isso, a aba Dados cadastrais precisa ter CNPJ, regime, natureza jurídica, CNAE, município IBGE, UF e início das atividades; o botão **Buscar na Receita** traz quase tudo. Só o **administrador** cadastra empresas nos módulos.
+
+Nesta aba também fica o campo **Logo da empresa** (**Carregar logo...**, **Remover logo** e **Usar a logo nos relatórios**), igual ao de *Cadastros › Empresas*; a logo só é gravada quando o cliente já é empresa (marque um módulo e grave).
 
 Desmarcar um módulo aqui não apaga nada no módulo: para tirar a empresa de um módulo, use o cadastro de empresas.
 

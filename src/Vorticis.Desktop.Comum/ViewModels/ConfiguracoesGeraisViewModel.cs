@@ -86,7 +86,7 @@ public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloVi
             var r = await app.ConfiguracoesGerais.LimparBancoAsync(sessao, ConfirmacaoLimpeza, senha);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ConfirmacaoLimpeza = "";
-            await Contexto.ReiniciarParaLoginAsync(
+            await Contexto.ReiniciarDoZeroAsync(
                 $"Banco de dados limpo ({r.Valor} empresa(s) excluída(s)). Entre com o usuário {ServicoUsuarios.LoginImplantacao} " +
                 $"e a senha {ServicoUsuarios.SenhaImplantacao} para cadastrar o administrador." + (copia is null ? "" : $" Backup anterior à limpeza: {copia}"));
         }

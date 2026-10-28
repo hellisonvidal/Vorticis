@@ -131,6 +131,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         _carregando = false;
         foreach (var m in Modulos)
         {
+            if (!ReferenceEquals(m, _principal)) m.Vm.DelegarReinicio = msg => _principal.Vm.ReiniciarDoZeroAsync(msg);   // limpar o banco: recomeça pelo principal
             m.Vm.PerguntarAtivacaoAoEntrar = false;   // na Suite cada módulo mostra as empresas dele, sem perguntar
             m.Vm.SessaoPronta += async (_, _) => await PropagarSessaoAsync(m.Vm);
             m.Vm.PropertyChanged += (_, e) =>

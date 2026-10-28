@@ -227,10 +227,8 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         {
             var plano = await repositorio.ListarAsync(empresaId, ct);
             if (plano.Count > 0)
-                foreach (var (rotulo, codigo) in new[] { ("apuração do resultado", cfg.ContaApuracao), ("lucros ou superávit acumulados", cfg.ContaLucros),
-                                                         ("prejuízos ou déficit acumulados", cfg.ContaPrejuizos) })
-                    if (codigo is not null && !plano.Any(c => c.Codigo == codigo && c.Analitica))
-                        erros.Add($"A conta de {rotulo} ({codigo}) não existe no plano ou não é analítica.");
+                erros.AddRange(ConferenciaContasEncerramento.Conferir(new ContasEncerramento(cfg.ContaApuracao ?? "", cfg.ContaLucros ?? "", cfg.ContaPrejuizos ?? ""),
+                                                                      ConferenciaContasEncerramento.MascaraSeguidaPeloPlano(cfg.MascaraPlano, plano.Select(c => c.Codigo)), CodigoNoPlano(plano), aceitarVazias: true));
         }
         if (erros.Count > 0) return Resultado.Falha(erros);
         var atual = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
@@ -241,6 +239,24 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
         }
         await repositorio.SalvarConfiguracaoAsync(empresaId, cfg with { ModeloPlano = atual.ModeloPlano }, ct);
         return Resultado.Ok();
+    }
+
+    private static Func<string, ContaConferida?> CodigoNoPlano(IReadOnlyList<ContaDetalhe> plano)
+        => codigo => plano.FirstOrDefault(c => c.Codigo == codigo) is { } c ? new ContaConferida(c.Analitica, c.CodNat) : null;
+
+    /// <summary>
+    /// Confere as contas de encerramento contra o plano da empresa (existência, máscara, analítica e natureza). Devolve os avisos em
+    /// linguagem simples; lista vazia = tudo certo. Chamada antes de calcular a prévia ou executar o encerramento.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ConferirContasEncerramentoAsync(long empresaId, ContasEncerramento contas, long usuarioId, CancellationToken ct = default)
+    {
+        if (!(await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso) return ["Sem acesso a esta empresa."];
+        var plano = await repositorio.ListarAsync(empresaId, ct);
+        if (plano.Count == 0) return ["O plano de contas desta empresa está vazio. Cadastre ou importe o plano antes de encerrar o exercício."];
+        var cfg = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
+        return ConferenciaContasEncerramento.Conferir(new ContasEncerramento((contas.Apuracao ?? "").Trim(), (contas.LucrosAcumulados ?? "").Trim(),
+                                                                             (contas.PrejuizosAcumulados ?? "").Trim()),
+            ConferenciaContasEncerramento.MascaraSeguidaPeloPlano(cfg.MascaraPlano, plano.Select(c => c.Codigo)), CodigoNoPlano(plano));
     }
 
     // ------------------------------------------------------------------ importação e máscara

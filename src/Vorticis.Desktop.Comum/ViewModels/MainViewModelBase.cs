@@ -32,6 +32,11 @@ public interface IContexto
     /// <summary>Reconecta ao banco e volta à tela de login, mostrando a mensagem (após restaurar ou limpar o banco).</summary>
     Task ReiniciarParaLoginAsync(string mensagem);
     /// <summary>
+    /// Depois de limpar o banco: fecha todas as telas, encerra a sessão, esquece a empresa ativa e o login salvo e volta à tela de entrada
+    /// de uma instalação nova (usuário e senha de implantação), sem precisar reiniciar o programa.
+    /// </summary>
+    Task ReiniciarDoZeroAsync(string mensagem) => ReiniciarParaLoginAsync(mensagem);
+    /// <summary>
     /// "Cadastrar esta empresa em quais módulos?": o módulo atual vem marcado e obrigatório. Devolve null se o usuário cancelar.
     /// </summary>
     Task<ModulosEmpresa?> EscolherModulosAsync(ModulosEmpresa inicial);
@@ -54,6 +59,8 @@ public interface IContexto
     Task AtualizarSituacaoPeriodoAsync() => Task.CompletedTask;
     /// <summary>Relê os recursos ligados nos parâmetros (mostra ou esconde os menus que dependem deles), após gravar os parâmetros.</summary>
     Task AtualizarRecursosAsync() => Task.CompletedTask;
+    /// <summary>Relê a logo da empresa ativa (cabeçalho dos relatórios), após gravar o cadastro da empresa.</summary>
+    Task AtualizarLogoRelatoriosAsync() => Task.CompletedTask;
 }
 
 /// <summary>Telas comuns a todos os módulos. A chave é o CommandParameter do item de menu.</summary>
@@ -594,6 +601,20 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         Status = $"Sessão encerrada. Conectado a {Configuracao.Descrever(_connectionString)}.";
     }
 
+    /// <summary>A logo da empresa ativa vai para o cabeçalho dos PDFs, se a empresa tem logo e "Usar a logo nos relatórios" está marcado.</summary>
+    public async Task AtualizarLogoRelatoriosAsync()
+    {
+        try
+        {
+            var logo = App is not null && EmpresaSelecionada is { } e ? await App.Empresas.ObterLogoAsync(e.Id) : null;
+            Vorticis.Application.Relatorios.LogoRelatorios.Atual = logo is { UsarNosRelatorios: true } ? logo.Imagem : null;
+        }
+        catch (Exception)
+        {
+            Vorticis.Application.Relatorios.LogoRelatorios.Atual = null;
+        }
+    }
+
     public async Task RecarregarEmpresasAsync(long? selecionar = null)
     {
         if (App is null || Sessao is null) return;
@@ -807,7 +828,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         var opcoes = ModulosEmpresaExtensoes.Individuais
             .Select(m => (Modulo: m, Opcao: new OpcaoConfirmacao(m.Nome(), inicial.HasFlag(m), obrigatoria: m == atual))).ToList();
         var pedido = new PedidoConfirmacao("Cadastrar esta empresa em quais módulos?",
-                                           "Os cadastros (empresa, participantes, sócios, contadores etc.) são únicos e compartilhados; escolha em quais módulos a empresa ficará ativa.",
+                                           MensagensEmpresa.AvisoCompartilhado + "\n\nEscolha em quais módulos a empresa ficará ativa; o código (sequência numérica) é o mesmo em todos eles.",
                                            "Cadastrar", "Cancelar") { Opcoes = [.. opcoes.Select(o => o.Opcao)] };
         Confirmacao = pedido;
         if (!await pedido.Resposta) return null;
@@ -844,6 +865,22 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         return pedido.Resposta;
     }
 
+    /// <summary>Suite: os módulos que não fazem a conexão pedem o reinício ao principal (dono da conexão e do login).</summary>
+    public Func<string, Task>? DelegarReinicio { get; set; }
+
+    public async Task ReiniciarDoZeroAsync(string mensagem)
+    {
+        if (DelegarReinicio is { } delegar) { await delegar(mensagem); return; }
+        Confirmacao?.Responder(false);
+        Confirmacao = null;
+        LoginSalvo.Esquecer();
+        Vorticis.Application.Relatorios.LogoRelatorios.Atual = null;
+        await InicializarAsync(_connectionString, _consultaCnpj, _consultaIe);   // Sair(): fecha as telas, a sessão e a empresa ativa
+        Perfis.ConfiguracaoInicial = false;
+        Login.EsquecerUsuario();
+        Login.Mensagem = mensagem;
+    }
+
     public async Task ReiniciarParaLoginAsync(string mensagem)
     {
         await InicializarAsync(_connectionString, _consultaCnpj, _consultaIe);
@@ -878,6 +915,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             await AtualizarPermissoesAsync();
             await AtualizarRecursosAsync();
             await AtualizarSituacaoPeriodoAsync();
+            await AtualizarLogoRelatoriosAsync();
             foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null))
                 await def.AoTrocarEmpresa!(_instancias[def.Nome], InstanciaAtiva(def.Nome));
         });

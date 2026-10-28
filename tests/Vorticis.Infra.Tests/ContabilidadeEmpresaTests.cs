@@ -65,7 +65,7 @@ public class ContabilidadeEmpresaTests(BancoDeTeste db) : IClassFixture<BancoDeT
         var inexistente = await svc.SalvarConfiguracaoAsync(empresa, cfg with { ContaLucros = "9.9.9.999" }, new DateOnly(2020, 1, 1), adm, ct);
         Assert.Contains("não existe no plano", inexistente.Erros[0]);
         var sintetica = await svc.SalvarConfiguracaoAsync(empresa, cfg with { ContaLucros = "2.3.03" }, new DateOnly(2020, 1, 1), adm, ct);
-        Assert.Contains("não é analítica", sintetica.Erros[0]);
+        Assert.Contains("sintética", sintetica.Erros[0]);
         Assert.Contains("anterior ao início", (await svc.SalvarConfiguracaoAsync(empresa, cfg with { InicioEscrituracao = new DateOnly(2019, 1, 1) },
                                                                               new DateOnly(2020, 1, 1), adm, ct)).Erros[0]);
         Assert.True((await svc.SalvarConfiguracaoAsync(empresa, cfg with { GrandePorte = true, UsaCentroCusto = true, ContaPrejuizos = "2.3.03.001" },

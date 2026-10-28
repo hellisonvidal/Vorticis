@@ -226,8 +226,8 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 **Onde fica:** *Lançamentos › Fechamentos › Encerramento do exercício*.
 
 1. Escolha o **exercício**.
-2. Confira a **conta de apuração do resultado** e as contas de **lucros** e **prejuízos acumulados** (vêm da aba Contabilidade da empresa).
-3. **Calcular prévia** para ver os valores.
+2. Confira a **conta de apuração do resultado** e as contas de **lucros** e **prejuízos acumulados** (vêm da aba Contabilidade da empresa). Ao lado de cada campo há uma **caixa de pesquisa**: digite parte do código, o número reduzido ou parte do nome e escolha a conta na lista. Só aparecem contas analíticas do plano desta empresa (de resultado para a apuração; de patrimônio líquido para lucros e prejuízos).
+3. **Calcular prévia** para ver os valores. Antes de calcular (e antes de encerrar) o sistema confere as três contas: se alguma não existe no plano da empresa, não está na máscara do plano, é sintética (agrupadora) ou é de outro grupo (por exemplo, uma conta do Ativo), aparece o aviso *"Corrija as contas do encerramento antes de continuar"* com o motivo de cada conta, e nada é gravado. Corrija com a caixa de pesquisa e tente de novo.
 4. **Encerrar exercício**. Os lançamentos saem como tipo "E" (exigido pela ECD).
 5. Para ajustar algo depois, use **Desfazer o encerramento**, informe o motivo (obrigatório) e confirme: os dois lançamentos são estornados.
 

@@ -64,6 +64,13 @@ public partial class LoginViewModel(MainViewModelBase main) : ModuloViewModel(ma
         if (salvo.Senha is { } senha) (Senha, _senhaVeioSalva) = (senha, true);
     }
 
+    /// <summary>Esquece o usuário digitado ou salvo (instalação nova: só vale o acesso de implantação).</summary>
+    public void EsquecerUsuario()
+    {
+        (Usuario, SalvarLogin) = ("", false);
+        Limpar();
+    }
+
     public void Limpar()
     {
         (Senha, Confirmacao) = ("", "");

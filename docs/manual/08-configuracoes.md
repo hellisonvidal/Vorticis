@@ -31,7 +31,7 @@ Usada para confirmar restauração de backup e limpeza do banco. Informe a senha
 Apaga **todas** as empresas, cadastros, usuários e perfis personalizados. Gera um backup antes.
 1. Digite **LIMPAR** e confirme.
 2. Informe a senha de administrador.
-3. O programa volta à tela de login como numa instalação nova: só entra `vorticis` / `vorticis`, para cadastrar o administrador.
+3. O programa volta sozinho à tela de entrada, como numa instalação nova, **sem precisar fechar e abrir de novo**: todas as telas abertas são fechadas, o usuário, a empresa ativa e o login salvo neste computador são esquecidos. Só entra `vorticis` / `vorticis`, que abre o cadastro do administrador; depois de cadastrá-lo, entre com ele para definir os perfis de acesso e recomeçar a configuração do zero.
 
 ## Conexão com o banco de dados
 

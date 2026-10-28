@@ -23,6 +23,7 @@ public class ModulosDialogoTests(SessaoHeadless headless)
             Dispatcher.UIThread.RunJobs();
             var dialogo = Assert.Single(janela.OwnedWindows);
             Assert.Equal("Cadastrar esta empresa em quais módulos?", dialogo.Title);
+            Assert.Contains("Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?", vm.Confirmacao!.Mensagem);
 
             var caixas = dialogo.GetVisualDescendants().OfType<CheckBox>().ToList();
             Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio"], caixas.Select(c => c.Content as string));

@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.LogoEmpresaView"
+             x:DataType="vm:LogoEmpresaEditor">
+  <!-- Logo da empresa: prévia, carregar, remover e "Usar a logo nos relatórios" -->
+  <StackPanel Spacing="6">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <Border Width="160" Height="80" BorderBrush="#B8C2D4" BorderThickness="1" Background="White" CornerRadius="3">
+        <Panel>
+          <Image Source="{Binding Previa}" Stretch="Uniform" Margin="4" />
+          <TextBlock Text="Sem logo" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     IsVisible="{Binding !TemLogo}" />
+        </Panel>
+      </Border>
+      <StackPanel Spacing="6" VerticalAlignment="Center">
+        <Button Name="CarregarLogo" Content="Carregar logo..." MinWidth="150" HorizontalContentAlignment="Center"
+                ToolTip.Tip="Escolha uma imagem PNG ou JPG. Ela é reduzida automaticamente (no máximo 600 pixels e 512 KB)." />
+        <Button Content="Remover logo" Command="{Binding RemoverCommand}" MinWidth="150" HorizontalContentAlignment="Center" IsEnabled="{Binding TemLogo}" />
+      </StackPanel>
+    </StackPanel>
+    <CheckBox Content="Usar a logo nos relatórios" IsChecked="{Binding UsarNosRelatorios}" IsEnabled="{Binding TemLogo}"
+              ToolTip.Tip="Marcada, a logo aparece no cabeçalho de todos os relatórios e livros em PDF desta empresa." />
+    <TextBlock Text="{Binding Situacao}" FontSize="11" Foreground="Gray" />
+    <TextBlock Text="{Binding Erro}" Classes="erro" TextWrapping="Wrap" IsVisible="{Binding Erro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+  </StackPanel>
+</UserControl>

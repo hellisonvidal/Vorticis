@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Contabil;
+using Vorticis.Desktop.Comum.ViewModels;
 using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
@@ -17,6 +18,9 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     [ObservableProperty] private string _previa = "";
     [ObservableProperty] private bool _encerrado;
     [ObservableProperty] private string _motivo = "";
+    /// <summary>Contas do plano da empresa para a caixa de pesquisa (apuração = resultado; lucros e prejuízos = patrimônio líquido).</summary>
+    [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _opcoesApuracao = [];
+    [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _opcoesPatrimonio = [];
 
     /// <summary>Contas de apuração e de lucros/prejuízos configuradas na empresa (Cadastros › Empresas › Contabilidade); sem configuração, as do modelo básico.</summary>
     public async Task CarregarAsync()
@@ -25,7 +29,9 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
         var geracao = NovaGeracao();
         _contasCarregadas = false;
         var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
+        var opcoes = OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(empresa, sessao.Id));
         if (!EhAtual(geracao)) return;
+        (OpcoesApuracao, OpcoesPatrimonio) = (opcoes.Apuracao, opcoes.Patrimonio);
         AplicarContas(cfg);
         (Previa, Encerrado) = ("", false);
     }
@@ -42,6 +48,16 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     private ContasEncerramento Contas => new(ContaApuracao.Trim(), ContaLucros.Trim(), ContaPrejuizos.Trim());
     private int AnoInt => (int)(Ano ?? DateTime.Today.Year);
 
+    /// <summary>Aviso antes de executar: as três contas precisam existir no plano da empresa, estar na máscara, ser analíticas e da natureza certa.</summary>
+    private async Task<bool> ContasConferidasAsync(Vorticis.Infra.VorticisApp app, long empresa, long usuario)
+    {
+        var avisos = await app.PlanoContas.ConferirContasEncerramentoAsync(empresa, Contas, usuario);
+        if (avisos.Count == 0) return true;
+        Erros.Add("Corrija as contas do encerramento antes de continuar:");
+        foreach (var a in avisos) Erros.Add(a);
+        return false;
+    }
+
     [RelayCommand]
     private Task PreverAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
@@ -49,6 +65,7 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
         Previa = "";
         // a carga interrompida acima não chegou a trazer as contas da empresa: busca-as agora (senão valeriam as do modelo)
         if (!_contasCarregadas) AplicarContas(await app.PlanoContas.ObterConfiguracaoAsync(empresa, usuario));
+        if (!await ContasConferidasAsync(app, empresa, usuario)) return;
         var r = await app.Encerramento.PreverAsync(empresa, AnoInt, Contas, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var p = r.Valor;
@@ -66,6 +83,7 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     [RelayCommand]
     private Task EncerrarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
+        if (!await ContasConferidasAsync(app, empresa, usuario)) return;
         var r = await app.Encerramento.EncerrarAsync(empresa, AnoInt, Contas, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await PreverAsync();

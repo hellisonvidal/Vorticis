@@ -232,4 +232,26 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
         while (await r.ReadAsync(ct)) res.Add(new EmpresaResumo(r.GetInt64(0), r.GetString(1), r.GetString(2)));
         return res;
     }
+
+    public async Task<LogoEmpresa?> ObterLogoAsync(long id, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT imagem, usar_nos_relatorios FROM core.empresa_logo WHERE empresa_id = @e").Com("e", id);
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        return await r.ReadAsync(ct) ? new LogoEmpresa(r.GetFieldValue<byte[]>(0), r.GetBoolean(1)) : null;
+    }
+
+    public async Task SalvarLogoAsync(long id, LogoEmpresa? logo, CancellationToken ct)
+    {
+        if (logo is null)
+        {
+            await using var del = ds.CreateCommand("DELETE FROM core.empresa_logo WHERE empresa_id = @e").Com("e", id);
+            await del.ExecuteNonQueryAsync(ct);
+            return;
+        }
+        await using var cmd = ds.CreateCommand("""
+            INSERT INTO core.empresa_logo (empresa_id, imagem, usar_nos_relatorios) VALUES (@e, @i, @u)
+            ON CONFLICT (empresa_id) DO UPDATE SET imagem = EXCLUDED.imagem, usar_nos_relatorios = EXCLUDED.usar_nos_relatorios, atualizado_em = now()
+            """).Com("e", id).Com("i", logo.Imagem).Com("u", logo.UsarNosRelatorios);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
 }

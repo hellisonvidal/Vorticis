@@ -21,9 +21,13 @@ public sealed record PreviaEncerramento(int Ano, DateOnly Data, decimal Receitas
 /// </summary>
 public sealed class ServicoEncerramento(IRepositorioContabil repositorio, IConsultasContabeis consultas, Autorizador autorizador)
 {
+    private static ContasEncerramento Normalizar(ContasEncerramento c)
+        => new((c.Apuracao ?? "").Trim(), (c.LucrosAcumulados ?? "").Trim(), (c.PrejuizosAcumulados ?? "").Trim());
+
     public async Task<Resultado<PreviaEncerramento>> PreverAsync(long empresaId, int ano, ContasEncerramento contas, long usuarioId,
                                                                 CancellationToken ct = default)
     {
+        contas = Normalizar(contas);
         if (await autorizador.NegarAsync<PreviaEncerramento>(usuarioId, empresaId, Permissao.ExercicioEncerrar, ct) is { } negado) return negado;
         var dados = await CarregarAsync(empresaId, ano, contas, ct);
         if (!dados.Sucesso) return Resultado<PreviaEncerramento>.Falha(dados.Erros);
@@ -37,6 +41,7 @@ public sealed class ServicoEncerramento(IRepositorioContabil repositorio, IConsu
     public async Task<Resultado<IReadOnlyList<LancamentoEfetivado>>> EncerrarAsync(long empresaId, int ano, ContasEncerramento contas, long usuarioId,
                                                                                   CancellationToken ct = default)
     {
+        contas = Normalizar(contas);
         if (await autorizador.NegarAsync<IReadOnlyList<LancamentoEfetivado>>(usuarioId, empresaId, Permissao.ExercicioEncerrar, ct) is { } negado) return negado;
         var dados = await CarregarAsync(empresaId, ano, contas, ct);
         if (!dados.Sucesso) return Resultado<IReadOnlyList<LancamentoEfetivado>>.Falha(dados.Erros);
@@ -101,18 +106,10 @@ public sealed class ServicoEncerramento(IRepositorioContabil repositorio, IConsu
         var periodo = await repositorio.ObterPeriodoAsync(empresaId, new DateOnly(ano, 12, 31), ct);
         if (periodo is null) return Resultado<Dados>.Falha($"Exercício {ano} não cadastrado.");
 
-        var codigos = new[] { contas.Apuracao, contas.LucrosAcumulados, contas.PrejuizosAcumulados };
+        var codigos = new[] { contas.Apuracao, contas.LucrosAcumulados, contas.PrejuizosAcumulados }.Select(c => (c ?? "").Trim()).Where(c => c.Length > 0).Distinct().ToArray();
         var info = await repositorio.ObterContasAsync(empresaId, codigos, ct);
-        var erros = new List<string>();
-        void Exigir(string codigo, string papel, params string[] naturezas)
-        {
-            if (!info.TryGetValue(codigo, out var c)) erros.Add($"Conta de {papel} {codigo} não existe no plano.");
-            else if (!c.Analitica) erros.Add($"A conta de {papel} {codigo} precisa ser analítica.");
-            else if (!naturezas.Contains(c.CodNat)) erros.Add($"A conta de {papel} {codigo} tem natureza {c.CodNat}; esperado {string.Join(" ou ", naturezas)}.");
-        }
-        Exigir(contas.Apuracao, "apuração do resultado", "04");
-        Exigir(contas.LucrosAcumulados, "lucros acumulados", "03");
-        Exigir(contas.PrejuizosAcumulados, "prejuízos acumulados", "03");
+        var erros = ConferenciaContasEncerramento.Conferir(contas, null,
+            codigo => info.TryGetValue(codigo.Trim(), out var c) ? new ContaConferida(c.Analitica, c.CodNat ?? "") : null);
         if (erros.Count > 0) return Resultado<Dados>.Falha(erros);
 
         var plano = await consultas.ObterPlanoAsync(empresaId, ct);

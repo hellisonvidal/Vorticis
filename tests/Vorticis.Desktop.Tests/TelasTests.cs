@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vorticis.Application.Cadastros;
 using Vorticis.Domain.Seguranca;
+using Vorticis.Desktop.Comum.ViewModels;
 using Vorticis.Desktop.ViewModels;
 using Vorticis.Desktop.Views;
 using Vorticis.Infra.Cnpj;
@@ -915,6 +916,24 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             vm.AbrirCommand.Execute(Telas.Encerramento);
             var enc = vm.Encerramento;
             enc.Ano = 2026;
+            await enc.CarregarAsync();
+            // contas escolhidas pela pesquisa: só analíticas de resultado (apuração) e de patrimônio líquido (lucros/prejuízos)
+            Assert.Contains(enc.OpcoesApuracao, c => c.Codigo == "5.1.01.001");
+            Assert.DoesNotContain(enc.OpcoesApuracao, c => c.Codigo.StartsWith("2."));
+            Assert.Contains(enc.OpcoesPatrimonio, c => c.Codigo == "2.3.03.001");
+            Assert.Single(enc.OpcoesApuracao, c => ContaPesquisavel.Combina(c, "5.1.01.001"));
+            Assert.Contains(enc.OpcoesPatrimonio, c => ContaPesquisavel.Combina(c, "lucros"));
+            // conta que não está no plano: aviso em português antes de calcular ou encerrar, sem erro técnico
+            var contaOk = enc.ContaLucros;
+            enc.ContaLucros = "9.9.9.999";
+            await enc.PreverCommand.ExecuteAsync(null);
+            Assert.Contains("Corrija as contas do encerramento antes de continuar:", enc.Erros);
+            Assert.Contains(enc.Erros, e => e.Contains("lucros acumulados (9.9.9.999) não existe no plano"));
+            Assert.Equal("", enc.Previa);
+            await enc.EncerrarCommand.ExecuteAsync(null);
+            Assert.Contains(enc.Erros, e => e.Contains("não existe no plano"));
+            Assert.False(enc.Encerrado);
+            enc.ContaLucros = contaOk;
             await enc.PreverCommand.ExecuteAsync(null);
             Assert.Contains("LUCRO DO EXERCÍCIO: 1.500,00", enc.Previa);
             await enc.EncerrarCommand.ExecuteAsync(null);

@@ -37,6 +37,13 @@ public static class ModulosEmpresaExtensoes
 
 public enum RegimeTributario { MEI, SimplesNacional, LucroPresumido, LucroReal, LucroArbitrado, ImuneIsenta }
 
+/// <summary>Textos fixos do cadastro compartilhado de empresas.</summary>
+public static class MensagensEmpresa
+{
+    public const string AvisoCompartilhado = "Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?";
+    public static string CodigoUnico(long id) => $"Código da empresa em todos os módulos: {id:0000}.";
+}
+
 public sealed record NovaEmpresa(
     string Cnpj,
     string RazaoSocial,
@@ -179,6 +186,9 @@ public interface IRepositorioEmpresa
     Task AtualizarInscricaoEstadualAsync(long id, string? inscricao, CancellationToken ct);
     /// <summary>Exclui a empresa do banco com tudo o que pertence a ela. Retorna quantos lançamentos foram apagados.</summary>
     Task<int> ExcluirAsync(long id, CancellationToken ct);
+    Task<LogoEmpresa?> ObterLogoAsync(long id, CancellationToken ct);
+    /// <summary>Grava a logo da empresa; imagem nula remove a logo.</summary>
+    Task SalvarLogoAsync(long id, LogoEmpresa? logo, CancellationToken ct);
 }
 
 public interface IFontePlanoModelo
@@ -302,6 +312,17 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
     /// Exclusão física: apaga a empresa e todos os seus dados (lançamentos, plano de contas, períodos, sócios, acessos),
     /// liberando o CNPJ para um novo cadastro. Retorna o número de lançamentos apagados.
     /// </summary>
+    public Task<LogoEmpresa?> ObterLogoAsync(long id, CancellationToken ct = default) => repositorio.ObterLogoAsync(id, ct);
+
+    /// <summary>Grava a logo (PNG/JPG até 512 KB) e a opção de usá-la nos relatórios; <c>null</c> remove a logo.</summary>
+    public async Task<Resultado> SalvarLogoAsync(long id, LogoEmpresa? logo, CancellationToken ct = default)
+    {
+        if (await repositorio.ObterAsync(id, ct) is null) return Resultado.Falha("Empresa não encontrada.");
+        if (logo is not null && LogoEmpresa.Validar(logo.Imagem) is { } erro) return Resultado.Falha(erro);
+        await repositorio.SalvarLogoAsync(id, logo, ct);
+        return Resultado.Ok();
+    }
+
     public async Task<Resultado<int>> ExcluirAsync(long id, CancellationToken ct = default)
     {
         if (await repositorio.ObterAsync(id, ct) is null) return Resultado<int>.Falha("Empresa não encontrada.");

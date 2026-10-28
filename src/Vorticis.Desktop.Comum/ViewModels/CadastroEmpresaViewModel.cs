@@ -37,6 +37,13 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 
     public MainViewModelBase Main => main;
 
+    /// <summary>Contas do plano da empresa para a pesquisa nos campos de encerramento (vazio enquanto a empresa não tem plano).</summary>
+    [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _opcoesApuracao = [];
+    [ObservableProperty] private IReadOnlyList<ContaPesquisavel> _opcoesPatrimonio = [];
+
+    /// <summary>Logo da empresa (carregar, prévia, remover e "Usar a logo nos relatórios").</summary>
+    public LogoEmpresaEditor Logo { get; } = new();
+
     /// <summary>Abas: 0 = dados cadastrais, 1 = sócios, 2 = contadores (da empresa selecionada), 3 = contabilidade, 4 = síndico (só no Condomínio).</summary>
     [ObservableProperty] private int _abaSelecionada;
 
@@ -208,7 +215,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     protected override string NomeRegistro => "empresa";
 
     /// <summary>Código sequencial da empresa (atribuído na inclusão).</summary>
-    public string NumeroRegistro => EmInclusao ? "Cód. (automático)" : _carregada is { } e ? $"Cód. {e.Id:0000}" : "";
+    public string NumeroRegistro => EmInclusao ? "Cód. automático (o mesmo em todos os módulos)" : _carregada is { } e ? $"Cód. {e.Id:0000} (o mesmo em todos os módulos)" : "";
     protected override string? DescricaoSelecionado => _carregada is null ? null : $"{_carregada.RazaoSocial} ({Domain.Cadastros.Cnpj.Formatar(_carregada.Cnpj)})";
     public override bool PodeManter => main.Pode(Permissao.AdministrarSistema);
 
@@ -230,6 +237,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     protected override void PrepararInclusao()
     {
         LimparFormulario();
+        Logo.Carregar(null);
+        (OpcoesApuracao, OpcoesPatrimonio) = ([], []);
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
         // Condomínio é outro tipo de cadastro: só vem marcado quando a empresa é incluída pelo próprio módulo Condomínio.
@@ -250,14 +259,23 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         EmpresaDetalhe? d = null;
         ConfiguracaoContabil? cfg = null;
         var usa = false;
+        LogoEmpresa? logo = null;
+        OpcoesContasEncerramento? opcoes = null;
         if (main.App is { } app && main.EmpresaSelecionada is { } sel && PodeManter)
         {
             d = await app.Empresas.ObterAsync(sel.Id);
+            logo = await app.Empresas.ObterLogoAsync(sel.Id);
             usa = await app.Participantes.UsaParticipantesAsync(sel.Id);
-            if (main.Sessao is { } sessao) cfg = await app.PlanoContas.ObterConfiguracaoAsync(sel.Id, sessao.Id);
+            if (main.Sessao is { } sessao)
+            {
+                cfg = await app.PlanoContas.ObterConfiguracaoAsync(sel.Id, sessao.Id);
+                opcoes = OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(sel.Id, sessao.Id));
+            }
         }
         if (!EhAtual(geracao) || EmEdicao) return;
         UsaParticipantes = usa;
+        (OpcoesApuracao, OpcoesPatrimonio) = (opcoes?.Apuracao ?? [], opcoes?.Patrimonio ?? []);
+        Logo.Carregar(logo);
         _carregada = d;
         if (d is null) LimparFormulario();
         else
@@ -298,6 +316,19 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         }
     }
 
+    /// <summary>Grava a logo (se mudou) e atualiza a logo usada nos relatórios quando é a da empresa ativa.</summary>
+    private async Task<bool> SalvarLogoAsync(Infra.VorticisApp app, long empresaId)
+    {
+        if (Logo.Alterado)
+        {
+            var l = await app.Empresas.SalvarLogoAsync(empresaId, Logo.Logo);
+            if (!l.Sucesso) { MostrarResultado(l, ""); return false; }
+            Logo.Carregar(Logo.Logo);
+        }
+        await main.AtualizarLogoRelatoriosAsync();
+        return true;
+    }
+
     private ComplementoEmpresa Complementos(DadosCnpj? origem) =>
         new(Cep, Logradouro, Numero, Complemento, Bairro, Municipio, Email, Telefone, origem?.SituacaoCadastral, origem?.Fonte, origem?.ConsultadoEm);
 
@@ -318,9 +349,10 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             NaturezaJuridica.Trim(), Cnae, Uf.Trim(), MunicipioIbge.Trim(),
             DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), Regime, (int)(AnoExercicio ?? DateTime.Today.Year),
             ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario(), modulos));
-        MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos.");
+        MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos. {MensagensEmpresa.CodigoUnico(r.Valor)}");
         if (!r.Sucesso) return false;
         if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);
+        if (!await SalvarLogoAsync(app, r.Valor)) return false;
         var socios = origem?.QuadroSocietario ?? [];
         if (socios.Count > 0 && main.Sessao is { } sessao
             && await app.Responsaveis.IncluirDoQsaAsync(r.Valor, socios, origem!.Fonte, sessao.Id) is { Sucesso: true, Valor: > 0 } incl)
@@ -340,6 +372,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         MostrarResultado(r, "Alterações da empresa salvas.");
         if (!r.Sucesso) return false;
         if (main.Sessao is { } sess && !await SalvarContabilidadeAsync(app, atual.Id, sess.Id)) return false;
+        if (!await SalvarLogoAsync(app, atual.Id)) return false;
         if (main.Sessao is { } sessao && UsaParticipantes != await app.Participantes.UsaParticipantesAsync(atual.Id))
         {
             var p = await app.Participantes.DefinirUsaParticipantesAsync(atual.Id, UsaParticipantes, sessao.Id);

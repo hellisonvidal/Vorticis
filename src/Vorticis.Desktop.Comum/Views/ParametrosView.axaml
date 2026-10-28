@@ -26,6 +26,7 @@
                         <StackPanel IsVisible="{Binding !EhSimNao}" Spacing="2">
                           <TextBlock Text="{Binding Rotulo}" />
                           <TextBox Text="{Binding Texto}" Width="260" HorizontalAlignment="Left" IsVisible="{Binding EhTexto}" />
+                          <v:CaixaContaPlano Text="{Binding Texto}" ItemsSource="{Binding Contas}" Width="320" HorizontalAlignment="Left" IsVisible="{Binding EhConta}" />
                           <CalendarDatePicker SelectedDate="{Binding Data}" Width="180" HorizontalAlignment="Left" IsVisible="{Binding EhData}" />
                           <ComboBox ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Escolha}" Width="320" HorizontalAlignment="Left"
                                     IsVisible="{Binding EhEscolha}">

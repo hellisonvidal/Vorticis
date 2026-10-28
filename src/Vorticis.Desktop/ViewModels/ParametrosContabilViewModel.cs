@@ -42,9 +42,10 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         };
         var enc = new CampoParametro[]
         {
-            new("contaApuracao", "Conta de apuração do resultado", TipoCampoParametro.Texto, "Código da conta analítica, por exemplo 2.3.03.001."),
-            new("contaLucros", "Conta de lucros ou superávit acumulados", TipoCampoParametro.Texto),
-            new("contaPrejuizos", "Conta de prejuízos ou déficit acumulados", TipoCampoParametro.Texto),
+            new("contaApuracao", "Conta de apuração do resultado", TipoCampoParametro.Conta,
+                "Conta analítica de resultado do plano da empresa. Digite o código, o reduzido ou parte do nome e escolha na lista."),
+            new("contaLucros", "Conta de lucros ou superávit acumulados", TipoCampoParametro.Conta, "Conta analítica do patrimônio líquido."),
+            new("contaPrejuizos", "Conta de prejuízos ou déficit acumulados", TipoCampoParametro.Conta, "Conta analítica do patrimônio líquido."),
         };
         var sped = new CampoParametro[]
         {
@@ -82,6 +83,8 @@ public sealed class ParametrosContabilViewModel(IContexto contexto) : Parametros
         Campo("usaCentroCusto").Marcado = c.UsaCentroCusto;
         Campo("usaGerencial").Marcado = c.UsaGerencial;
         Campo("usaParticipantes").Marcado = usaPart;
+        var opcoes = OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(empresa, usuario));
+        (Campo("contaApuracao").Contas, Campo("contaLucros").Contas, Campo("contaPrejuizos").Contas) = (opcoes.Apuracao, opcoes.Patrimonio, opcoes.Patrimonio);
         Campo("contaApuracao").Texto = c.ContaApuracao ?? "";
         Campo("contaLucros").Texto = c.ContaLucros ?? "";
         Campo("contaPrejuizos").Texto = c.ContaPrejuizos ?? "";

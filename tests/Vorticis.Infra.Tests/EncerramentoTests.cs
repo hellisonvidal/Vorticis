@@ -76,7 +76,7 @@ public class EncerramentoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         await Lancar(empresa, adm, new(2026, 2, 1), "4.2.02.001", "1.1.01.001", 1_000m);
 
         Assert.Contains(((await db.App.Encerramento.EncerrarAsync(empresa, 2026, new ContasEncerramento(Apuracao: "1.1.01.001"), adm, ct)).Erros),
-                        e => e.Contains("natureza 01"));
+                        e => e.Contains("grupo Ativo"));
         Assert.True((await db.App.Encerramento.EncerrarAsync(empresa, 2026, new ContasEncerramento(), adm, ct)).Sucesso);
         var bal = (await db.App.Relatorios.BalanceteAsync(empresa, new(2026, 1, 1), new(2026, 12, 31), adm, ct: ct)).Valor;
         Assert.Equal(1_000m, bal.Single(l => l.Codigo == "2.3.03.002").SaldoFinal);   // prejuízos acumulados (devedor)
