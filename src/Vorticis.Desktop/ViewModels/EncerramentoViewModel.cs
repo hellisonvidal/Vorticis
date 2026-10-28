@@ -28,6 +28,7 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var geracao = NovaGeracao();
         _contasCarregadas = false;
+        if (_empresaCarregada != empresa) (_empresaCarregada, _contasEditadas) = (empresa, false);
         var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
         var opcoes = OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(empresa, sessao.Id));
         if (!EhAtual(geracao)) return;
@@ -37,12 +38,23 @@ public partial class EncerramentoViewModel(IContexto contexto) : ModuloViewModel
     }
 
     private bool _contasCarregadas;
+    // Contas digitadas ou escolhidas pelo usuário nesta empresa: uma carga da tela que termine depois não as sobrescreve.
+    private bool _contasEditadas, _aplicandoContas;
+    private long? _empresaCarregada;
+
+    partial void OnContaApuracaoChanged(string value) => MarcarEdicao();
+    partial void OnContaLucrosChanged(string value) => MarcarEdicao();
+    partial void OnContaPrejuizosChanged(string value) => MarcarEdicao();
+    private void MarcarEdicao() { if (!_aplicandoContas) _contasEditadas = true; }
 
     private void AplicarContas(Vorticis.Application.Cadastros.ConfiguracaoContabil cfg)
     {
+        _contasCarregadas = true;
+        if (_contasEditadas) return;
+        _aplicandoContas = true;
         (ContaApuracao, ContaLucros, ContaPrejuizos) =
             (cfg.ContaApuracao ?? Padrao.Apuracao, cfg.ContaLucros ?? Padrao.LucrosAcumulados, cfg.ContaPrejuizos ?? Padrao.PrejuizosAcumulados);
-        _contasCarregadas = true;
+        _aplicandoContas = false;
     }
 
     private ContasEncerramento Contas => new(ContaApuracao.Trim(), ContaLucros.Trim(), ContaPrejuizos.Trim());
