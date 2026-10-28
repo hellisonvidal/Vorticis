@@ -1,0 +1,231 @@
+using Avalonia.Media;
+using Vorticis.Desktop.Comum.Modulos;
+
+namespace Vorticis.Desktop.Comum.Views;
+
+/// <summary>
+/// Ícone de cada item dos menus dos módulos (Contábil, Fiscal, Folha, Gerencial, Escritório, Condomínio): um desenho diferente por função
+/// (plano de contas, lançamento, balancete, DRE, notas de entrada e saída, férias, eSocial...), do conjunto Material Design Icons do casco.
+/// Itens fora da tabela ficam sem ícone, para o menu nunca repetir desenhos. As funções são identificadas pela chave da tela; os
+/// submenus, pelo caminho "menu &gt; submenu" sem acentos e em minúsculas. O teste MenusTests garante que nenhum menu repete ícone.
+/// </summary>
+public static class IconesMenu
+{
+    private static readonly Dictionary<string, string> Funcoes = new()
+    {
+        ["empresas"] = "Domain",
+        ["contabilidade"] = "AccountTie",
+        ["clientes"] = "AccountMultiple",
+        ["fornecedores"] = "TruckDelivery",
+        ["produtos"] = "PackageVariantClosed",
+        ["parametros"] = "Tune",
+        ["menus"] = "MenuOpen",
+        ["formaspagamento"] = "CreditCardOutline",
+        ["contasbancarias"] = "Bank",
+        ["certificados"] = "CertificateOutline",
+        ["usuarios"] = "ShieldAccount",
+        ["conexao"] = "DatabaseCog",
+        ["backup"] = "BackupRestore",
+        ["configuracoesgerais"] = "CogOutline",
+        ["sair"] = "Logout",
+        ["inicio"] = "Home",
+        ["manual"] = "HelpCircleOutline",
+        ["licenca"] = "KeyVariant",
+        ["sobre"] = "InformationOutline",
+        ["obrigacoes"] = "CalendarAlert",
+        ["planocontas"] = "FileTree",
+        ["centroscusto"] = "Sitemap",
+        ["historicos"] = "TextBoxOutline",
+        ["bloqueiolancamentos"] = "LockOutline",
+        ["lancamento"] = "NotebookEditOutline",
+        ["saldosiniciais"] = "FlagOutline",
+        ["importarlancamentos"] = "FileImportOutline",
+        ["reorganizarlancamentos"] = "SortVariant",
+        ["conciliacao"] = "CheckAll",
+        ["periodos"] = "CalendarLock",
+        ["encerramento"] = "FlagCheckered",
+        ["reorganizarsaldos"] = "SortNumericVariant",
+        ["bens"] = "ToolboxOutline",
+        ["bensacadastrar"] = "ClipboardPlusOutline",
+        ["gruposdepreciacao"] = "FormatListGroup",
+        ["depreciacao"] = "TrendingDown",
+        ["consultasaldos"] = "TableSearch",
+        ["consultalancamentos"] = "FileSearchOutline",
+        ["diferencassaldos"] = "ScaleUnbalanced",
+        ["importarplanilhas"] = "FileExcelOutline",
+        ["importarextratos"] = "BankTransferIn",
+        ["importarplano"] = "FileDownloadOutline",
+        ["importacaoreferencial"] = "DatabaseImportOutline",
+        ["mapeamentoreferencial"] = "LinkVariant",
+        ["exportarlancamentos"] = "FileExportOutline",
+        ["contabilizacaolote"] = "PlaylistCheck",
+        ["ecd"] = "BookLockOutline",
+        ["ecf"] = "FileCertificateOutline",
+        ["livrospdf"] = "BookMultipleOutline",
+        ["termos"] = "FileSign",
+        ["diario"] = "BookOpenVariant",
+        ["razao"] = "BookOpenPageVariant",
+        ["balancete"] = "TableLarge",
+        ["balanco"] = "ScaleBalance",
+        ["dre"] = "ChartWaterfall",
+        ["dmpl"] = "ChartAreaspline",
+        ["dlpa"] = "ChartBarStacked",
+        ["dfc"] = "ChartTimelineVariant",
+        ["ebitda"] = "ChartBellCurve",
+        ["classificacao.dfc"] = "TagMultipleOutline",
+        ["gerencial.centrocusto"] = "SitemapOutline",
+        ["gerencial.orcadorealizado"] = "ChartBoxOutline",
+        ["gerencial.orcamento"] = "Calculator",
+        ["gerencial.custos"] = "CashMinus",
+        ["gerencial.receitacentro"] = "CashPlus",
+        ["bi.painel"] = "ViewDashboardOutline",
+        ["bi.analise"] = "ChartLine",
+        ["bi.cubo"] = "CubeOutline",
+        ["bi.exportar"] = "DatabaseExportOutline",
+        ["relacaobens"] = "ClipboardListOutline",
+        ["valordepreciado"] = "ArrowDownBoldCircleOutline",
+        ["valorresidual"] = "ArrowCollapseDown",
+        ["depreciacaoporgrupo"] = "ChartPie",
+        ["regrasfiscais"] = "Gavel",
+        ["regrascontabilizacao"] = "CogTransferOutline",
+        ["notaentrada"] = "ArrowDownBoldBoxOutline",
+        ["notasaida"] = "ArrowUpBoldBoxOutline",
+        ["duplicatas"] = "ReceiptTextClockOutline",
+        ["conciliacaoduplicatas"] = "CashCheck",
+        ["fiscal.ajustes.entrada"] = "TableArrowLeft",
+        ["fiscal.ajustes.saida"] = "TableArrowRight",
+        ["fiscal.ajustes.codigos"] = "FormatListNumbered",
+        ["fiscal.sped.consumo"] = "LightningBolt",
+        ["fiscal.sped.inventario"] = "Warehouse",
+        ["documentosfiscais"] = "FileDocumentMultipleOutline",
+        ["contabilizarnotas"] = "ReceiptTextCheckOutline",
+        ["importacaonfse"] = "FileDocumentArrowRightOutline",
+        ["importacaocte"] = "TruckFast",
+        ["consultacte"] = "TruckCheckOutline",
+        ["importacaoxml"] = "Xml",
+        ["apuracaosimples"] = "AlphaSBoxOutline",
+        ["apuracaopresumido"] = "PercentOutline",
+        ["apuracaoreal"] = "FileTableOutline",
+        ["apuracaopiscofins"] = "AlphaPBoxOutline",
+        ["historicoreceitafolha"] = "History",
+        ["fiscal.fechamento"] = "CalendarCheckOutline",
+        ["retencoes"] = "CashLockOpen",
+        ["guias"] = "BarcodeScan",
+        ["efdicmsipi"] = "FileCogOutline",
+        ["efdcontribuicoes"] = "FileChartOutline",
+        ["livroentradas"] = "BookArrowDownOutline",
+        ["livrosaidas"] = "BookArrowUpOutline",
+        ["livroapuracaoicms"] = "BookMinusMultiple",
+        ["livroapuracaoipi"] = "BookSettingsOutline",
+        ["resumoapuracaoicms"] = "TextBoxCheckOutline",
+        ["relacaoajustes"] = "FormatListCheckbox",
+        ["apuracaoipisped"] = "Factory",
+        ["apuracaoicmsst"] = "SwapHorizontalBold",
+        ["conferenciaefd"] = "ClipboardCheckOutline",
+        ["resumovendas"] = "CartArrowUp",
+        ["resumocompras"] = "CartArrowDown",
+        ["resumocfop"] = "FormatListNumberedRtl",
+        ["relduplicatasapagar"] = "CashFast",
+        ["relduplicatasareceber"] = "CashRefund",
+        ["relposicaoduplicatas"] = "CalendarClock",
+        ["relrecebimentos"] = "HandCoinOutline",
+        ["relpagamentos"] = "CashRemove",
+        ["relprodutos"] = "PackageVariant",
+        ["relitensnotas"] = "ReceiptTextOutline",
+        ["folha.funcionarios"] = "AccountGroup",
+        ["folha.cargos"] = "BadgeAccountOutline",
+        ["folha.departamentos"] = "OfficeBuildingOutline",
+        ["folha.rubricas"] = "FormatListBulletedType",
+        ["folha.parametros"] = "TableCog",
+        ["folha.eventos"] = "CalendarEdit",
+        ["folha.mensal"] = "CalculatorVariant",
+        ["folha.ferias"] = "Beach",
+        ["folha.decimo"] = "GiftOutline",
+        ["folha.rescisoes"] = "AccountArrowRightOutline",
+        ["folha.provisoes"] = "PiggyBankOutline",
+        ["folha.contabilizacao"] = "BookArrowRightOutline",
+        ["folha.contabilizacao.eventos"] = "BookCheckOutline",
+        ["folha.eventoscontabeis"] = "BookEditOutline",
+        ["folha.prolabore"] = "AccountCashOutline",
+        ["socios"] = "AccountTieOutline",
+        ["folha.esocial.assistente"] = "AutoFix",
+        ["folha.esocial"] = "FileXmlBox",
+        ["folha.esocial.transmissao"] = "CloudUploadOutline",
+        ["folha.holerites"] = "ReceiptText",
+        ["folha.resumo"] = "ChartBox",
+        ["folha.encargos"] = "BankOutline",
+        ["escritorio.clientes"] = "AccountBoxMultipleOutline",
+        ["escritorio.fornecedores"] = "TruckOutline",
+        ["escritorio.tarefas"] = "ClipboardCheckMultipleOutline",
+        ["escritorio.protocolos"] = "FolderArrowLeftRightOutline",
+        ["escritorio.contratos"] = "HandshakeOutline",
+        ["escritorio.carteira"] = "BriefcaseAccountOutline",
+        ["escritorio.rel.honorarios"] = "CashRegister",
+        ["erp.pedidos.venda"] = "CartOutline",
+        ["erp.pedidos.compra"] = "CartPlus",
+        ["erp.estoque"] = "PackageVariantClosedCheck",
+        ["contaspagar"] = "ReceiptTextArrowRightOutline",
+        ["contasreceber"] = "ReceiptTextArrowLeftOutline",
+        ["erp.monitor.notas"] = "MonitorEye",
+        ["erp.monitor.cobrancas"] = "BellRingOutline",
+        ["erp.painel"] = "ViewDashboard",
+        ["condominio.unidades"] = "HomeGroup",
+        ["condominio.reservas"] = "CalendarStarOutline",
+        ["condominio.taxas"] = "PercentCircleOutline",
+        ["condominio.cobrancas"] = "CashClock",
+        ["condominio.despesas"] = "CreditCardMinusOutline",
+        ["condominio.rateio"] = "ChartDonut",
+        ["condominio.ocorrencias"] = "AlertCircleOutline",
+        ["condominio.prestacao"] = "ClipboardTextOutline",
+        ["condominio.atas"] = "FileDocumentEditOutline",
+    };
+
+    private static readonly Dictionary<string, string> Submenus = new()
+    {
+        ["lancamentos > contabeis"] = "BriefcaseOutline",
+        ["lancamentos > conciliacoes"] = "CheckboxMarkedCircleOutline",
+        ["lancamentos > fechamentos"] = "ArchiveLockOutline",
+        ["lancamentos > documentos fiscais"] = "FileDocumentOutline",
+        ["lancamentos > ajustes"] = "TuneVariant",
+        ["integracoes > importar"] = "Import",
+        ["integracoes > exportar"] = "Export",
+        ["relatorios > contabeis"] = "BookOpenPageVariantOutline",
+        ["relatorios > gerenciais"] = "ChartBoxMultipleOutline",
+        ["relatorios > bi"] = "ChartBubble",
+        ["relatorios > depreciacao"] = "ChartLineVariant",
+        ["obrigacoes > sped"] = "FileCodeOutline",
+        ["relatorios > livros e apuracao"] = "Bookshelf",
+        ["relatorios > resumos"] = "TextBoxMultipleOutline",
+        ["relatorios > duplicatas"] = "ReceiptTextSendOutline",
+        ["relatorios > financeiro"] = "CashMultiple",
+        ["calculos > folha"] = "CalendarMonthOutline",
+        ["calculos > pro-labore"] = "AccountStarOutline",
+        ["obrigacoes > esocial"] = "ShieldCheckOutline",
+        ["cadastros > funcionarios"] = "AccountGroupOutline",
+        ["configuracoes > banco de dados"] = "DatabaseOutline",
+    };
+
+    /// <summary>Ícone da função pela chave da tela; null quando não há desenho próprio.</summary>
+    public static Geometry? DaChave(string? chave) => chave is not null && Funcoes.TryGetValue(chave, out var nome) ? Icones.Obter(nome) : null;
+
+    /// <summary>
+    /// Ícone de um item do menu: categoria de topo (Cadastros, Lançamentos...) pelo título; submenu aninhado pelo caminho; função pela chave.
+    /// <paramref name="pai"/> é o título do menu que contém o item (null no topo).
+    /// </summary>
+    public static Geometry? Do(ItemMenu item, string? pai)
+    {
+        if (item.EhSeparador) return null;
+        if (item.Filhos is not null)
+        {
+            if (pai is null) return IconesSuite.DaCategoria(item.Titulo);
+            return Submenus.TryGetValue(Chave(pai) + " > " + Chave(item.Titulo), out var nome) ? Icones.Obter(nome) : null;
+        }
+        return DaChave(item.Chave);
+    }
+
+    /// <summary>Título sem sublinhado de atalho, sem acentos e em minúsculas ("_Relatórios" vira "relatorios").</summary>
+    internal static string Chave(string titulo) => ViewModels.SuiteViewModel.Normalizar(titulo.Replace("_", ""));
+
+    /// <summary>Todas as chaves e caminhos conhecidos (usado pelo teste de diversidade).</summary>
+    internal static IEnumerable<string> NomesDeIcone() => Funcoes.Values.Concat(Submenus.Values);
+}

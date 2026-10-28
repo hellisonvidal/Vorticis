@@ -153,7 +153,7 @@ public partial class SuiteTopoView : UserControl
             Button botao;
             if (item.Chave is not null)
             {
-                botao = Botao(item.Titulo, IconesSuite.DaFuncao(item.Titulo, icone), modulo, () => suite.AbrirFuncaoCommand.Execute(item), item);
+                botao = Botao(item.Titulo, IconesMenu.DaChave(item.Chave) ?? IconesSuite.DaFuncao(item.Titulo, icone), modulo, () => suite.AbrirFuncaoCommand.Execute(item), item);
                 botao.PointerEntered += (_, _) => AtualizarDisponibilidade(suite, botao);
                 AtualizarDisponibilidade(suite, botao);
             }

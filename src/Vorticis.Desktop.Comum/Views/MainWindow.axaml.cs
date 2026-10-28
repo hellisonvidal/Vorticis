@@ -449,12 +449,12 @@ public partial class MainWindow : Window
         foreach (var (item, recurso) in _itensComRecurso) item.IsVisible = vm.RecursoAtivo(recurso);
     }
 
-    private Control CriarItem(MainViewModelBase vm, ItemMenu item)
+    private Control CriarItem(MainViewModelBase vm, ItemMenu item, string? pai = null)
     {
         if (item.EhSeparador) return new Separator();
         var menu = new MenuItem { Header = item.Titulo, IsEnabled = item.Habilitado };
-        // ícone à esquerda das categorias (Cadastros, Lançamentos, Relatórios...) e dos itens de topo
-        if (item.Filhos is not null) menu.Icon = IconesSuite.IconeDe(IconesSuite.DaCategoria(item.Titulo), 16);
+        // ícone à esquerda de cada item (um desenho diferente por função; itens sem desenho próprio ficam sem ícone)
+        if (IconesMenu.Do(item, pai) is { } icone) menu.Icon = IconesSuite.IconeDe(icone, 16);
         if (item.Recurso is { } recurso)
         {
             _itensComRecurso.Add((menu, recurso));
@@ -462,7 +462,7 @@ public partial class MainWindow : Window
         }
         if (item.Atalho is { } atalho) menu.InputGesture = KeyGesture.Parse(atalho);   // só indicativo no Avalonia
         if (item.Filhos is { } filhos)
-            foreach (var filho in filhos) menu.Items.Add(CriarItem(vm, filho));
+            foreach (var filho in filhos) menu.Items.Add(CriarItem(vm, filho, item.Titulo));
         else if (item.Chave == TelasComuns.Sair)
             menu.Command = vm.SairCommand;
         else if (item.Chave is { } chave)

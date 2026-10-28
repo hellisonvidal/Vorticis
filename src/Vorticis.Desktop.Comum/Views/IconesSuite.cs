@@ -24,6 +24,10 @@ public static class IconesSuite
         var t = Vorticis.Desktop.Comum.ViewModels.SuiteViewModel.Normalizar(titulo.Replace("_", ""));
         bool Tem(params string[] partes) => partes.Any(t.Contains);
         if (Tem("cadastro")) return Icones.FolderAccount;
+        if (Tem("imobiliz")) return Icones.Sofa;
+        if (Tem("estoque")) return Icones.Warehouse;
+        if (Tem("faturamento")) return Icones.FileSendOutline;
+        if (Tem("compras")) return Icones.Cart;
         if (Tem("lancamento")) return Icones.PencilPlusOutline;
         if (Tem("consulta")) return Icones.Magnify;
         if (Tem("relatorio", "resumo", "gerenciais")) return Icones.FileChart;
@@ -33,13 +37,13 @@ public static class IconesSuite
         if (Tem("ajuda", "manual")) return Icones.HelpCircle;
         if (Tem("livro")) return Icones.BookOpenPageVariant;
         if (Tem("document", "notas")) return Icones.ReceiptText;
-        if (Tem("financ", "duplicata", "faturamento", "pro-labore", "prolabore", "compras")) return Icones.Cash;
+        if (Tem("financ", "duplicata", "pro-labore", "prolabore")) return Icones.Cash;
         if (Tem("apura", "calculo", "deprecia")) return Icones.CalculatorVariantOutline;
         if (Tem("fechamento", "concilia")) return Icones.CheckCircle;
-        if (Tem("monitor")) return Icones.ViewDashboard;
+        if (Tem("monitor")) return Icones.MonitorDashboard;
         if (Tem("organiza")) return Icones.FileTree;
         if (Tem("administra", "banco de dados")) return Icones.ApplicationCogOutline;
-        if (Tem("estoque", "imobilizado", "contabeis")) return Icones.BriefcaseOutline;
+        if (Tem("contabeis")) return Icones.BriefcaseOutline;
         if (Tem("funcionario", "folha")) return Icones.AccountGroup;
         return Icones.FolderOutline;
     }

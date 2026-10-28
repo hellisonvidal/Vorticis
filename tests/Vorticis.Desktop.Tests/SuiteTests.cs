@@ -386,6 +386,41 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.True(ok);
     }
 
+    /// <summary>Os ícones dos menus não se repetem: cada item de um módulo tem um desenho próprio (ou nenhum), e as funções reais têm ícone.</summary>
+    [Fact]
+    public async Task Menus_dos_modulos_tem_um_icone_diferente_por_item()
+    {
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(() =>
+        {
+        Vorticis.Desktop.Comum.ViewModels.MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(), new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            var vistos = new Dictionary<Avalonia.Media.Geometry, string>();
+            var semIcone = new List<string>();
+            var chaves = new HashSet<string>();
+            void Visitar(IEnumerable<Vorticis.Desktop.Comum.Modulos.ItemMenu> itens, string? pai)
+            {
+                foreach (var i in itens.Where(x => !x.EhSeparador))
+                {
+                    var caminho = $"{pai} > {i.Titulo}";
+                    if (Vorticis.Desktop.Comum.Views.IconesMenu.Do(i, pai) is { } g)
+                    {
+                        if (i.Chave is not null && !chaves.Add(i.Chave)) { if (i.Filhos is not null) Visitar(i.Filhos, i.Titulo); continue; }   // a mesma tela em dois caminhos tem o mesmo ícone
+                        Assert.True(vistos.TryAdd(g, caminho), $"{vm.Modulo.Nome}: ícone repetido em \"{caminho}\" e \"{(vistos.TryGetValue(g, out var outro) ? outro : "")}\"");
+                    }
+                    else if (i.Chave is not null) semIcone.Add(caminho);
+                    if (i.Filhos is not null) Visitar(i.Filhos, i.Titulo);
+                }
+            }
+            Visitar(vm.Menus, null);
+            Assert.True(semIcone.Count == 0, $"{vm.Modulo.Nome}: funções sem ícone próprio: {string.Join("; ", semIcone)}");
+            Assert.True(vistos.Count > 20, vm.Modulo.Nome);
+        }
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
     /// <summary>Layout E: clicar de verdade (mouse) num botão da faixa e num item de menu suspenso da faixa abre a tela correspondente.</summary>
     [Fact]
     public async Task Faixa_de_opcoes_abre_a_tela_ao_clicar_no_botao_e_no_item_do_menu_suspenso()
@@ -596,6 +631,29 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             suite.Layout = LayoutSuite.Faixa; Foto("layout_E_faixa");
             suite.FaixaFixa = false; Foto("layout_E_faixa_recolhida"); suite.FaixaFixa = true;
             suite.Trocar(M("Folha")); Foto("layout_E_faixa_folha"); suite.Trocar(M("Contábil"));
+
+            // menus abertos de cada módulo (ícones dos itens)
+            suite.Layout = LayoutSuite.Abas;
+            foreach (var mod in suite.Modulos)
+            {
+                suite.Trocar(mod);
+                Dispatcher.UIThread.RunJobs();
+                var menu = janela.FindControl<Menu>("MenuPrincipal")!;
+                var topos = menu.Items.OfType<MenuItem>().Where(t => t.IsVisible && t.Items.Count > 1).ToList();
+                string Cab(MenuItem t) => ((t.Header as string) ?? "").Replace("_", "");
+                foreach (var (alvo, sufixo) in new[] { (topos.FirstOrDefault(t => Cab(t) is "Lançamentos" or "Cálculos" or "Faturamento" or "Financeiro" or "Organização") ?? topos.Skip(1).FirstOrDefault(), "a"),
+                                                       (topos.FirstOrDefault(t => Cab(t) == "Relatórios"), "b") })
+                {
+                    if (alvo is null) continue;
+                    alvo.IsSubMenuOpen = true;
+                    for (var i = 0; i < 4; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); }
+                    var sub = alvo.Items.OfType<MenuItem>().FirstOrDefault(x => x.Items.Count > 1);
+                    if (sub is not null) { sub.IsSubMenuOpen = true; for (var i = 0; i < 4; i++) { await Task.Delay(20, ct); Dispatcher.UIThread.RunJobs(); } }
+                    Foto($"menu_{mod.Nome}_{sufixo}");
+                    alvo.IsSubMenuOpen = false;
+                    Dispatcher.UIThread.RunJobs();
+                }
+            }
 
             // seletor de layouts (em cima da janela, como o botão Layout o abre)
             suite.Layout = LayoutSuite.Lateral;

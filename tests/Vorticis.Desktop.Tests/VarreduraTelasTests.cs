@@ -228,7 +228,7 @@ public class VarreduraTelasTests(BancoDeTeste db, SessaoHeadless headless) : ICl
         SuiteViewModel.ArquivoLayout = Path.Combine(Path.GetTempPath(), $"suite-layout-{Guid.NewGuid():N}.txt");
         var adm = await db.AdminAsync();
         await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), ct);
-        var empresa = await db.CriarEmpresaAsync("11444777000161");
+        var empresa = await db.CriarEmpresaAsync("55667788000186");
         await SemearAsync(empresa, adm, ct);
         var falhas = new List<string>();
         await ForaDaSessao(headless.Sessao.Dispatch(async () =>

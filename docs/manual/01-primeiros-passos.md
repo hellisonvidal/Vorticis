@@ -31,7 +31,7 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
    No layout E a faixa de opções substitui a barra de menus: a empresa ativa, o seu nome e o botão **Exibir** ficam na linha das abas, e as setas nas pontas da faixa mostram os grupos que não cabem na tela. Com a navegação da esquerda **fixa** (B e C), a barra de cima mantém só **Exibir** e **Ajuda**, porque as demais funções já estão na lateral. A barra de funções abertas só aparece quando há alguma função aberta.
 
-Nos demais layouts, os menus de cima (Cadastros, Lançamentos…) continuam à mostra, com o ícone de cada categoria, e todas as funções continuam acessíveis em qualquer layout.
+Nos demais layouts, os menus de cima (Cadastros, Lançamentos…) continuam à mostra, com o ícone de cada categoria e um desenho diferente à esquerda de cada função (plano de contas, balancete, notas de entrada e saída, férias, eSocial…) para você achar o que procura de relance, e todas as funções continuam acessíveis em qualquer layout.
 
    **Tema de cores (claro, escuro ou automático).** Na mesma janelinha do botão **Layout**, na linha **Tema de cores**, escolha **Claro**, **Escuro** ou **Automático**. O escuro descansa a vista em ambientes com pouca luz e vale para todos os layouts (A a E), para os menus, as telas de cadastro, as listas, os gráficos e o manual; o **Automático** acompanha o tema do Windows. A troca é imediata e fica gravada para o seu usuário. Também dá para trocar em *Exibir › Layout da Suite › Tema de cores*.
 
