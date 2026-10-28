@@ -14,6 +14,8 @@
     <DataTemplate DataType="vm:ReservasViewModel"><v:ReservasView /></DataTemplate>
     <DataTemplate DataType="vm:OcorrenciasViewModel"><v:OcorrenciasView /></DataTemplate>
     <DataTemplate DataType="vm:PrestacaoViewModel"><v:PrestacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:RateioViewModel"><v:RateioView /></DataTemplate>
+    <DataTemplate DataType="vm:AtasAssembleiaViewModel"><v:AtasAssembleiaView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>
     <StyleInclude Source="avares://Vorticis.Desktop.Comum/Estilos.axaml" />

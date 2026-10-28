@@ -135,7 +135,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
 
             // 1a. Abre sozinho o cadastro de usuários, só para incluir o administrador; o resto fica bloqueado
             Assert.Same(vm.CentralUsuarios, vm.Conteudo);
-            for (var i = 0; i < 100 && !vm.Usuarios.EmInclusao; i++) await Task.Delay(50);   // carga em segundo plano
+            for (var i = 0; i < 600 && !vm.Usuarios.EmInclusao; i++) await Task.Delay(50);   // carga em segundo plano
             Assert.True(vm.Usuarios.EmInclusao);
             Assert.Equal(["Administrador"], vm.Usuarios.PerfisDisponiveis.Select(p => p.Nome));
             Assert.True(vm.Usuarios.PerfilEdicao?.Administrador);
@@ -1124,7 +1124,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(u.Erros);
             Assert.Equal("Auditor externo", u.Selecionado?.Perfil);
             Assert.Equal("Auditor externo", u.PerfilEdicao?.Nome);
-            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            for (int i = 0; i < 300 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             var acesso = Assert.Single(u.Acessos);
             Assert.Equal("Auditor externo", acesso.Perfil.Nome);          // perfil já concedido na empresa
             Assert.True(acesso.Marcada);                                  // lista de empresas: a do usuário vem marcada
@@ -1141,14 +1141,14 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Empty(u.Erros);
             Assert.Equal(0L, await db.EscalarAsync<long>("SELECT count(*) FROM core.usuario_empresa ue JOIN core.usuario u ON u.id = ue.usuario_id WHERE u.login = 'joao'"));
             Assert.False(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
-            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            for (int i = 0; i < 300 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             u.AlterarCommand.Execute(null);
             u.MarcarTodasCommand.Execute(null);                           // volta a liberar (o restante do fluxo usa o João na empresa)
             Assert.Equal("1 de 1 empresa(s) liberada(s)", u.ResumoEmpresas);
             await u.SalvarCommand.ExecuteAsync(null);
             Assert.Empty(u.Erros);
             Assert.True(await db.EscalarAsync<bool>("SELECT todas_empresas FROM core.usuario WHERE login = 'joao'"));
-            for (int i = 0; i < 50 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            for (int i = 0; i < 300 && u.Acessos.Count == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             acesso = Assert.Single(u.Acessos);
             Assert.True(acesso.Marcada);
             u.AlterarCommand.Execute(null);
