@@ -20,11 +20,17 @@
       <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid ItemsSource="{Binding Dre}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
-        <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
-      </DataGrid.Columns>
-    </DataGrid>
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+            <DataGrid ItemsSource="{Binding Dre}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+                <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
+              </DataGrid.Columns>
+            </DataGrid>
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

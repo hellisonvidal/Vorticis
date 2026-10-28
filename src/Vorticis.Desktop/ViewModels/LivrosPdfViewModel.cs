@@ -85,6 +85,7 @@ public partial class LivrosPdfViewModel(IContexto contexto) : LivroBaseViewModel
     [ObservableProperty] private bool _incluirDre = true;
     [ObservableProperty] private bool _incluirDmpl = true;
     [ObservableProperty] private bool _incluirDlpa = true;
+    [ObservableProperty] private bool _incluirDfc;
     [ObservableProperty] private bool _incluirTermoEncerramento = true;
     [ObservableProperty] private bool _assinaturaResponsavel = true;
     [ObservableProperty] private bool _assinaturaContador = true;
@@ -96,7 +97,7 @@ public partial class LivrosPdfViewModel(IContexto contexto) : LivroBaseViewModel
 
     public OpcoesLivro Opcoes() => new(IncluirTermoAbertura, IncluirDiario, IncluirRazao, IncluirBalancete, IncluirBalanco, IncluirDre,
                                        IncluirDmpl, IncluirDlpa, IncluirTermoEncerramento,
-                                       new OpcoesAssinatura(AssinaturaResponsavel, AssinaturaContador));
+                                       new OpcoesAssinatura(AssinaturaResponsavel, AssinaturaContador), IncluirDfc);
 
     [RelayCommand]
     private Task GerarLivroAsync() => ExecutarAsync(async (app, empresa, usuario) =>

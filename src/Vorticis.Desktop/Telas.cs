@@ -35,6 +35,9 @@ public static class Telas
     public const string ExportarLancamentos = "exportarlancamentos";
     public const string Dmpl = "dmpl";
     public const string Dlpa = "dlpa";
+    public const string Dfc = "dfc";
+    public const string Ebitda = "ebitda";
+    public const string ClassificacaoDfc = "classificacao.dfc";
     public const string CentroCustoRelatorio = "gerencial.centrocusto";
     public const string OrcadoRealizado = "gerencial.orcadorealizado";
     public const string Orcamento = "gerencial.orcamento";

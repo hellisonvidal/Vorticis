@@ -57,7 +57,9 @@ public sealed class VorticisApp : IAsyncDisposable
         Responsaveis = new ServicoResponsaveis(new RepositorioResponsaveis(ds), RepositorioEmpresas, autorizador, consultaCnpj);
         Demonstracoes = new ServicoDemonstracoes(Consultas, autorizador);
         Assinaturas = new ServicoAssinaturas(Responsaveis);
-        Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas);
+        Fluxos = new ServicoFluxos(Consultas, new RepositorioClassificacao(ds), autorizador);
+        Comparativos = new ServicoComparativos(Relatorios, Demonstracoes, Gerenciais, Fluxos);
+        Livros = new ServicoLivros(Relatorios, Demonstracoes, Consultas, RepositorioEmpresas, autorizador, new GeradorPdf(), Assinaturas, Fluxos);
         AssinadorSped = new AssinadorSpedCms();
         var consultasEcd = new ConsultasEcd(ds);
         Ecd = new ServicoEcd(consultasEcd, repoContabil, Responsaveis, autorizador, AssinadorSped);
@@ -94,6 +96,10 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoPlanoReferencial PlanoReferencial { get; }
     public ServicoResponsaveis Responsaveis { get; }
     public ServicoDemonstracoes Demonstracoes { get; }
+    /// <summary>DFC, EBITDA e a classificação das contas que alimenta os dois.</summary>
+    public ServicoFluxos Fluxos { get; }
+    /// <summary>Opção "Comparativo" dos relatórios contábeis.</summary>
+    public ServicoComparativos Comparativos { get; }
     public ServicoAssinaturas Assinaturas { get; }
     public ServicoLivros Livros { get; }
     /// <summary>Geração e assinatura do arquivo da ECD (SPED Contábil).</summary>

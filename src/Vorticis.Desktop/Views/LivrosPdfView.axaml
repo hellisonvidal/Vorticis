@@ -25,6 +25,7 @@
         <CheckBox Content="DRE" IsChecked="{Binding IncluirDre}" Width="230" />
         <CheckBox Content="DMPL" IsChecked="{Binding IncluirDmpl}" Width="230" />
         <CheckBox Content="DLPA" IsChecked="{Binding IncluirDlpa}" Width="230" />
+        <CheckBox Content="DFC (fluxos de caixa)" IsChecked="{Binding IncluirDfc}" Width="230" />
         <CheckBox Content="Termo de encerramento" IsChecked="{Binding IncluirTermoEncerramento}" Width="230" />
         <CheckBox Content="Assinatura do sócio/responsável" IsChecked="{Binding AssinaturaResponsavel}" Width="230" />
         <CheckBox Content="Assinatura do contador" IsChecked="{Binding AssinaturaContador}" Width="230" />

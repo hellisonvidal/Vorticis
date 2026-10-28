@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.ComparativoView"
+             x:DataType="vm:ComparativoViewModel">
+  <!-- Opção "Comparativo" de todos os relatórios contábeis: períodos comparados, variação (R$ e %) e análise vertical. -->
+  <StackPanel Spacing="4" Margin="0,0,0,6">
+    <CheckBox Content="Comparativo" IsChecked="{Binding Ativo}" FontWeight="SemiBold" />
+    <Border IsVisible="{Binding Ativo}" BorderBrush="#D0D5DD" BorderThickness="1" CornerRadius="4" Padding="8">
+      <StackPanel Spacing="6">
+        <WrapPanel>
+          <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,14,4" /></Style></WrapPanel.Styles>
+          <CheckBox Content="Período anterior" IsChecked="{Binding PeriodoAnterior}" />
+          <CheckBox Content="Mesmo período do ano anterior" IsChecked="{Binding MesmoPeriodoAnoAnterior}" />
+          <CheckBox Content="Variação em R$" IsChecked="{Binding VariacaoAbsoluta}" />
+          <CheckBox Content="Variação em %" IsChecked="{Binding VariacaoPercentual}" />
+          <CheckBox Content="Análise vertical (%)" IsChecked="{Binding AnaliseVertical}" IsVisible="{Binding PodeAnaliseVertical}" />
+        </WrapPanel>
+        <TextBlock Text="Outros períodos (até 3). Em Mês, Trimestre e Ano, escolha qualquer data dentro do período." FontSize="11" Foreground="Gray" />
+        <ItemsControl ItemsSource="{Binding Escolhas}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:EscolhaPeriodo">
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,3">
+                <CheckBox Content="Usar" IsChecked="{Binding Usar}" Width="64" />
+                <ComboBox ItemsSource="{x:Static vm:ComparativoViewModel.Tipos}" SelectedIndex="{Binding Tipo}" Width="130" />
+                <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+                <TextBlock Text="a" VerticalAlignment="Center" IsVisible="{Binding EhIntervalo}" />
+                <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" IsVisible="{Binding EhIntervalo}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Vorticis.Application.Relatorios;
+using Vorticis.Domain.Comum;
 using Vorticis.Domain.Contabil;
+using Vorticis.Infra;
 using Vorticis.Domain.Seguranca;
 
 namespace Vorticis.Desktop.ViewModels;
@@ -21,8 +23,13 @@ public abstract partial class MutacoesBaseViewModel(IContexto contexto) : Relato
     [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 31);
     [ObservableProperty] private string _resumo = "";
 
-    protected override string Parametros => Ultima is { } d ? $"Período: {d.Inicio:dd/MM/yyyy} a {d.Fim:dd/MM/yyyy}" : "";
-    protected string Sufixo => Ultima is { } d ? $"_{d.Inicio:yyyyMMdd}_{d.Fim:yyyyMMdd}" : "";
+    private (DateOnly Ini, DateOnly Fim)? _periodo;
+
+    protected override string Parametros => _periodo is { } d ? $"Período: {d.Ini:dd/MM/yyyy} a {d.Fim:dd/MM/yyyy}" : "";
+    protected string Sufixo => _periodo is { } d ? $"_{d.Ini:yyyyMMdd}_{d.Fim:yyyyMMdd}" : "";
+
+    /// <summary>Comparativo da demonstração (DMPL ou DLPA) com os períodos escolhidos.</summary>
+    protected abstract Task<Resultado<TabelaRelatorio>> CompararAsync(VorticisApp app, long empresa, long usuario, DateOnly inicio, DateOnly fim, OpcoesComparativo op);
 
     /// <summary>Preenche as grades da tela a partir da apuração e devolve o resumo.</summary>
     protected abstract string Preencher(DemonstracaoMutacoes d);
@@ -31,7 +38,10 @@ public abstract partial class MutacoesBaseViewModel(IContexto contexto) : Relato
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, 1, 1));
-        var r = await app.Demonstracoes.MutacoesAsync(empresa, ini, Data(Fim, ini), usuario);
+        var fim = Data(Fim, ini);
+        _periodo = (ini, fim);
+        if (await TentarComparativoAsync(ini, fim, false, op => CompararAsync(app, empresa, usuario, ini, fim, op))) return;
+        var r = await app.Demonstracoes.MutacoesAsync(empresa, ini, fim, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Ultima = r.Valor;
         Resumo = Preencher(r.Valor);
@@ -53,6 +63,8 @@ public sealed partial class DmplViewModel(IContexto contexto) : MutacoesBaseView
     protected override bool Paisagem => true;
 
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() => Ultima is { } d ? [TabelasMutacoes.Dmpl(d, Resumo)] : [];
+    protected override Task<Resultado<TabelaRelatorio>> CompararAsync(VorticisApp app, long empresa, long usuario, DateOnly inicio, DateOnly fim, OpcoesComparativo op) =>
+        app.Comparativos.DmplAsync(empresa, inicio, fim, op, usuario);
 
     protected override string Preencher(DemonstracaoMutacoes d)
     {
@@ -73,6 +85,8 @@ public sealed class DlpaViewModel(IContexto contexto) : MutacoesBaseViewModel(co
     protected override string NomeArquivo => "dlpa" + Sufixo;
 
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() => Ultima is { } d ? [TabelasMutacoes.Dlpa(d)] : [];
+    protected override Task<Resultado<TabelaRelatorio>> CompararAsync(VorticisApp app, long empresa, long usuario, DateOnly inicio, DateOnly fim, OpcoesComparativo op) =>
+        app.Comparativos.DlpaAsync(empresa, inicio, fim, op, usuario);
 
     protected override string Preencher(DemonstracaoMutacoes d)
     {

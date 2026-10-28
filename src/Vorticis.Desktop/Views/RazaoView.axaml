@@ -30,16 +30,22 @@
     </StackPanel>
     <TextBlock DockPanel.Dock="Top" Text="{Binding Cabecalho}" FontWeight="SemiBold" Margin="0,0,0,6" />
     <c:MensagensView DockPanel.Dock="Bottom" />
-    <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="115" />
-        <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
-        <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
-        <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding Debito}" Width="130" />
-        <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="130" />
-        <DataGridTextColumn Header="Saldo" Binding="{ReflectionBinding Saldo}" Width="150" />
-        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
-      </DataGrid.Columns>
-    </DataGrid>
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+            <DataGrid ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Data" Binding="{ReflectionBinding Data}" Width="115" />
+                <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
+                <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+                <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding Debito}" Width="130" />
+                <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="130" />
+                <DataGridTextColumn Header="Saldo" Binding="{ReflectionBinding Saldo}" Width="150" />
+                <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
+              </DataGrid.Columns>
+            </DataGrid>
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

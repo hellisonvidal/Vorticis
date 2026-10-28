@@ -36,6 +36,7 @@ public partial class BalancoViewModel(IContexto contexto) : RelatorioViewModel(c
     protected override string TituloRelatorio => "Balanço Patrimonial";
     protected override string Parametros => $"Balanço em {_data:dd/MM/yyyy}";
     protected override string NomeArquivo => $"balanco_patrimonial_{_data:yyyyMMdd}";
+    protected override bool SuportaAnaliseVertical => true;
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() =>
         [TabelasDemonstracao.Tabela("Ativo", Ativo), TabelasDemonstracao.Tabela("Passivo e PL", PassivoPl, Resumo)];
 
@@ -52,6 +53,8 @@ public partial class BalancoViewModel(IContexto contexto) : RelatorioViewModel(c
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var data = Data(Data31, DateOnly.FromDateTime(DateTime.Today));
+        _data = data;
+        if (await TentarComparativoAsync(data, data, true, op => app.Comparativos.BalancoAsync(empresa, data, Nivel, op, usuario))) return;
         var bp = await app.Demonstracoes.BalancoAsync(empresa, data, Nivel, usuario);
         if (!bp.Sucesso) { MostrarResultado(bp, ""); return; }
         TabelasDemonstracao.Substituir(Ativo, bp.Valor.Ativo);
@@ -72,6 +75,7 @@ public partial class DreViewModel(IContexto contexto) : RelatorioViewModel(conte
     protected override string TituloRelatorio => "Demonstração do Resultado do Exercício";
     protected override string Parametros => $"DRE de {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
     protected override string NomeArquivo => $"dre_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+    protected override bool SuportaAnaliseVertical => true;
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() => [TabelasDemonstracao.Tabela("DRE", Dre, Resumo)];
 
     public static IReadOnlyList<short> Niveis => BalancoViewModel.Niveis;
@@ -88,6 +92,8 @@ public partial class DreViewModel(IContexto contexto) : RelatorioViewModel(conte
     {
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
         var fim = Data(Fim, ini);
+        _periodo = (ini, fim);
+        if (await TentarComparativoAsync(ini, fim, false, op => app.Comparativos.DreAsync(empresa, ini, fim, Nivel, op, usuario))) return;
         var dre = await app.Demonstracoes.DreAsync(empresa, ini, fim, Nivel, usuario);
         if (!dre.Sucesso) { MostrarResultado(dre, ""); return; }
         TabelasDemonstracao.Substituir(Dre, dre.Valor.Linhas);

@@ -21,6 +21,12 @@
                  Text="Modelo do CPC 26 (NBC TG 26): colunas por componente do PL (capital, reservas de capital, reservas de lucros, ajustes de avaliação patrimonial e lucros ou prejuízos acumulados). As contas do PL são enquadradas nas colunas pela descrição; as mutações vêm dos lançamentos do período, classificadas pela contrapartida. O resultado do exercício é o da DRE e o saldo final confere com o Balanço." />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid Name="GradeDmpl" ItemsSource="{Binding Dmpl}" IsReadOnly="True" AutoGenerateColumns="False" />
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+            <DataGrid Name="GradeDmpl" ItemsSource="{Binding Dmpl}" IsReadOnly="True" AutoGenerateColumns="False" />
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

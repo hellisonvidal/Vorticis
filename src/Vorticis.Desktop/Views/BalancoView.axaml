@@ -21,21 +21,27 @@
                  Text="Estrutura conforme o plano de contas da empresa. O enquadramento nas linhas da Lei 6.404 depende do mapeamento ao plano referencial." />
       <c:MensagensView />
     </StackPanel>
-    <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,*">
-      <TextBlock Text="ATIVO" FontWeight="SemiBold" Foreground="#1F3A5F" />
-      <TextBlock Grid.Column="2" Text="PASSIVO E PATRIMÔNIO LÍQUIDO" FontWeight="SemiBold" Foreground="#1F3A5F" />
-      <DataGrid Grid.Row="1" ItemsSource="{Binding Ativo}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
-        <DataGrid.Columns>
-          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
-          <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
-        </DataGrid.Columns>
-      </DataGrid>
-      <DataGrid Grid.Row="1" Grid.Column="2" ItemsSource="{Binding PassivoPl}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
-        <DataGrid.Columns>
-          <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
-          <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
-        </DataGrid.Columns>
-      </DataGrid>
-    </Grid>
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+            <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,*">
+              <TextBlock Text="ATIVO" FontWeight="SemiBold" Foreground="#1F3A5F" />
+              <TextBlock Grid.Column="2" Text="PASSIVO E PATRIMÔNIO LÍQUIDO" FontWeight="SemiBold" Foreground="#1F3A5F" />
+              <DataGrid Grid.Row="1" ItemsSource="{Binding Ativo}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+                  <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
+                </DataGrid.Columns>
+              </DataGrid>
+              <DataGrid Grid.Row="1" Grid.Column="2" ItemsSource="{Binding PassivoPl}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+                  <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="130" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.EbitdaView"
+             x:DataType="vm:EbitdaViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,4">
+      <TextBlock Classes="titulo" Text="EBITDA (LAJIDA)" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+        <TextBlock Text="a" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+        <ComboBox ItemsSource="{Binding Modos}" SelectedIndex="{Binding Modo}" Width="230" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="#D0D5DD" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+    </StackPanel>
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Spacing="2">
+      <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+    <c:GradeTabelaView Tabela="{Binding TabelaExibida}" />
+  </DockPanel>
+</UserControl>

@@ -36,6 +36,9 @@
     <DataTemplate DataType="vm:ExportacaoLancamentosViewModel"><v:ExportacaoLancamentosView /></DataTemplate>
     <DataTemplate DataType="vm:DmplViewModel"><v:DmplView /></DataTemplate>
     <DataTemplate DataType="vm:DlpaViewModel"><v:DlpaView /></DataTemplate>
+    <DataTemplate DataType="vm:DfcViewModel"><v:DfcView /></DataTemplate>
+    <DataTemplate DataType="vm:EbitdaViewModel"><v:EbitdaView /></DataTemplate>
+    <DataTemplate DataType="vm:ClassificacaoDfcViewModel"><v:ClassificacaoDfcView /></DataTemplate>
     <DataTemplate DataType="vm:CentroCustoRelatorioViewModel"><v:CentroCustoRelatorioView /></DataTemplate>
     <DataTemplate DataType="vm:RelacaoCustosViewModel"><v:RelacaoCustosView /></DataTemplate>
     <DataTemplate DataType="vm:ReceitaCentroViewModel"><v:ReceitaCentroView /></DataTemplate>

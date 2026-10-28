@@ -41,6 +41,8 @@ public partial class BalanceteViewModel(IContexto contexto) : RelatorioViewModel
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var ini = Data(Inicio, DateOnly.FromDateTime(DateTime.Today));
+        _periodo = (ini, Data(Fim, ini));
+        if (await TentarComparativoAsync(ini, _periodo.Fim, false, op => app.Comparativos.BalanceteAsync(empresa, ini, _periodo.Fim, op, IncluirZeradas, usuario))) return;
         var r = await app.Relatorios.BalanceteAsync(empresa, ini, Data(Fim, ini), usuario, IncluirZeradas);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         _ultimo = r.Valor;
@@ -143,8 +145,8 @@ public partial class RazaoViewModel(IContexto contexto) : RelatorioViewModel(con
     }
 
     protected override string TituloRelatorio => "Livro Razão";
-    protected override string Parametros => $"Conta {_razao?.Codigo} - {_razao?.Descricao} | Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
-    protected override string NomeArquivo => $"razao_{_razao?.Codigo}_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+    protected override string Parametros => $"Conta {_razao?.Codigo ?? Conta} - {_razao?.Descricao} | Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"razao_{_razao?.Codigo ?? Conta}_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -156,6 +158,10 @@ public partial class RazaoViewModel(IContexto contexto) : RelatorioViewModel(con
         // Aceita também o código reduzido.
         var conta = _todasContas.FirstOrDefault(c => c.Reduzido?.ToString() == Conta.Trim())?.Codigo ?? Conta.Trim();
         var geracao = NovaGeracao();
+        _periodo = (ini, Data(Fim, ini));
+        _razao = null;
+        if (await TentarComparativoAsync(ini, _periodo.Fim, false, op => app.Comparativos.RazaoResumidoAsync(empresa, conta, ini, _periodo.Fim, op, usuario)))
+            return;
         var r = await app.Relatorios.RazaoAsync(empresa, conta, ini, Data(Fim, ini), usuario);
         if (!EhAtual(geracao)) return;                                   // outra consulta começou depois desta
         Linhas.Clear();

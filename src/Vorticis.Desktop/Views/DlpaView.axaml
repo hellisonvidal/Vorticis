@@ -21,11 +21,17 @@
                  Text="Lei 6.404/76, art. 186: saldo do início do período, ajustes de exercícios anteriores, reversões de reservas, lucro líquido do exercício, transferências para reservas, dividendos e saldo final. O lucro líquido é o da DRE e o saldo final confere com o Balanço." />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid ItemsSource="{Binding Dlpa}" IsReadOnly="True" AutoGenerateColumns="False" MaxWidth="760" HorizontalAlignment="Left">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
-        <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="160" />
-      </DataGrid.Columns>
-    </DataGrid>
+    <c:ComparativoView DockPanel.Dock="Top" DataContext="{Binding Comparacao}" />
+    <Panel>
+      <Panel IsVisible="{Binding MostraNormal}">
+            <DataGrid ItemsSource="{Binding Dlpa}" IsReadOnly="True" AutoGenerateColumns="False" MaxWidth="760" HorizontalAlignment="Left">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+                <DataGridTextColumn Header="R$" Binding="{ReflectionBinding Valor}" Width="160" />
+              </DataGrid.Columns>
+            </DataGrid>
+      </Panel>
+      <c:GradeTabelaView Tabela="{Binding TabelaComparativa}" IsVisible="{Binding MostraComparativo}" />
+    </Panel>
   </DockPanel>
 </UserControl>

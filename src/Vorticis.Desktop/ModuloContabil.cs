@@ -85,7 +85,11 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Balanço Patrimonial", Telas.Balanco),
                 ItemMenu.Tela("Demonstração do Resultado (DRE)", Telas.Dre),
                 ItemMenu.Tela("DMPL (mutações do patrimônio líquido)", Telas.Dmpl),
-                ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa)),
+                ItemMenu.Tela("DLPA (lucros ou prejuízos acumulados)", Telas.Dlpa),
+                ItemMenu.Tela("DFC (fluxos de caixa)", Telas.Dfc),
+                ItemMenu.Tela("EBITDA (LAJIDA)", Telas.Ebitda),
+                ItemMenu.Separador,
+                ItemMenu.Tela("Classificação da DFC e do EBITDA", Telas.ClassificacaoDfc)),
             ItemMenu.Submenu("_Gerenciais",
                 ItemMenu.Tela("Contabilização por centro de custo", Telas.CentroCustoRelatorio),
                 ItemMenu.Tela("Orçado x Realizado", Telas.OrcadoRealizado),
@@ -218,6 +222,13 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.Dmpl, "Relatórios › Contábeis › DMPL", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.Dlpa), m => new DlpaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.Dlpa, "Relatórios › Contábeis › DLPA", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.Dfc), m => new DfcViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.Dfc, "Relatórios › Contábeis › DFC", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.Ebitda), m => new EbitdaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.Ebitda, "Relatórios › Contábeis › EBITDA", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.ClassificacaoDfc), m => new ClassificacaoDfcViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
+            .Tela(Telas.ClassificacaoDfc, "Relatórios › Contábeis › Classificação da DFC e do EBITDA", m => m.Pode(Permissao.RelatorioDemonstracoes), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.CentroCustoRelatorio), m => new CentroCustoRelatorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarCentrosAsync() : Task.CompletedTask, aoLimpar: v => v.Linhas.Clear())
             .Tela(Telas.CentroCustoRelatorio, "Relatórios › Gerenciais › Contabilização por centro de custo", m => m.Pode(Permissao.RelatorioBalancete),

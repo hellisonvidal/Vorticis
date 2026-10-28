@@ -46,6 +46,8 @@ public abstract partial class GerencialBaseViewModel(IContexto contexto) : Relat
     protected string TextoCentro => Centro is { Id: not null } c ? $" | Centro: {c.Texto}" : "";
     protected string TextoConta => Prefixo is { } p ? $" | Conta: {p}" : "";
 
+    protected void DefinirParametros(string parametros) => _parametros = parametros;
+
     protected void Exibir(TabelaRelatorio tabela, string parametros)
     {
         _ultima = tabela;
@@ -87,6 +89,12 @@ public sealed partial class CentroCustoRelatorioViewModel(IContexto contexto) : 
     {
         var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, 1, 1));
         var fim = Data(Fim, ini);
+        if (await TentarComparativoAsync(ini, fim, false, op => app.Comparativos.CentroCustoAsync(empresa, ini, fim, CentroId, Prefixo, NivelMaximo, op, usuario)))
+        {
+            DefinirParametros($"Período: {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}{TextoCentro}{TextoConta}");
+            Resumo = "";
+            return;
+        }
         var r = await app.Gerenciais.PorCentroCustoAsync(empresa, new(ini, fim, CentroId, Prefixo, NivelMaximo, Detalhar), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Exibir(TabelasGerenciais.CentroCusto(r.Valor), $"Período: {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}{TextoCentro}{TextoConta}");

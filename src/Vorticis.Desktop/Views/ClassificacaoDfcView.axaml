@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.ClassificacaoDfcView"
+             x:DataType="vm:ClassificacaoDfcViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Classificação da DFC e do EBITDA" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBox Text="{Binding Filtro}" Watermark="Filtrar por código, nome ou classe" Width="300" />
+        <Button Content="Restaurar sugestão automática" Command="{Binding RestaurarSugestaoCommand}" IsEnabled="{Binding PodeManter}" />
+        <Button Content="Salvar classificação" Command="{Binding SalvarCommand}" Classes="accent" IsEnabled="{Binding PodeManter}" />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Spacing="2" Margin="0,6,0,0">
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Contas do balanço: escolha se o dinheiro da conta é Caixa, atividade Operacional, de Investimento ou de Financiamento. Contas de resultado: escolha Receita, Dedução, Custo ou despesa, Depreciação, Resultado financeiro ou IR e CSLL. Marque Não recorrente nas receitas e despesas eventuais para o EBITDA ajustado. A sugestão sai do nome da conta, da natureza e do plano referencial; o que você mudar fica gravado." />
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding Linhas}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Conta" Binding="{ReflectionBinding Codigo}" Width="130" IsReadOnly="True" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="90" IsReadOnly="True" />
+        <DataGridTemplateColumn Header="Classe" Width="290">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:LinhaClassificacaoEdicao">
+              <ComboBox ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Classe}" DisplayMemberBinding="{ReflectionBinding Nome}" HorizontalAlignment="Stretch" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Não recorrente" Width="130">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:LinhaClassificacaoEdicao">
+              <CheckBox IsChecked="{Binding NaoRecorrente}" IsEnabled="{Binding PodeNaoRecorrente}" HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Sugestão automática" Binding="{ReflectionBinding TextoSugestao}" Width="250" IsReadOnly="True" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

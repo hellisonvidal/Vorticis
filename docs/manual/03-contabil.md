@@ -291,6 +291,44 @@ Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**. E
 ### DLPA
 *Relatórios › Contábeis › DLPA*: demonstração de lucros ou prejuízos acumulados (Lei 6.404, art. 186). Informe o período e **Gerar**.
 
+### DFC
+*Relatórios › Contábeis › DFC*: Demonstração dos Fluxos de Caixa (CPC 03), que mostra de onde veio e para onde foi o dinheiro da empresa no período.
+
+1. Informe o **período**, escolha o **método** (*Método indireto* ou *Método direto*) e o **nível** de detalhe, e clique em **Gerar**.
+2. No **método indireto** a demonstração parte do lucro líquido do período, soma a depreciação e as demais despesas que não saíram do caixa e acerta as variações de ativos e passivos operacionais (por exemplo, clientes a receber e fornecedores a pagar). No **método direto** aparecem os recebimentos e pagamentos do período e, abaixo, a conciliação do lucro com o caixa das operações.
+3. A demonstração tem três blocos: **Atividades operacionais**, **Atividades de investimento** (compra e venda de bens, participações) e **Atividades de financiamento** (empréstimos, capital, distribuição de lucros). No fim aparecem o aumento ou a redução de caixa, o caixa no início e o caixa no fim do período.
+4. Embaixo da tela o programa avisa se o caixa **confere com o Balanço Patrimonial** nas duas datas. Se aparecer o aviso de que não confere, alguma conta está sem a classificação certa: ajuste em [Classificação da DFC e do EBITDA](#classificacao-da-dfc-e-do-ebitda) e gere de novo.
+5. Exporte em PDF, Excel ou CSV. Para incluir a DFC no PDF do livro, marque **DFC (fluxos de caixa)** no [Livro Contábil Completo](#livro-contabil-completo). A DFC não vai no arquivo da ECD, porque o leiaute do SPED Contábil não tem registro próprio para ela.
+
+Para comparar com outros períodos, marque **Comparativo** (veja [Comparativo](#comparativo)).
+
+### EBITDA
+*Relatórios › Contábeis › EBITDA* (também chamado LAJIDA: lucro antes de juros, impostos sobre o lucro, depreciação e amortização). Escolha a visão e clique em **Gerar**:
+
+- **Demonstração do período**: parte da receita bruta, tira as deduções (receita líquida), tira custos e despesas e a depreciação (lucro operacional), soma a depreciação de volta e chega ao **EBITDA**. Em seguida mostra o **EBITDA ajustado**, que retira as receitas e despesas que você marcou como *não recorrentes*, e as **margens** (EBITDA dividido pela receita líquida). No fim há a conciliação com o lucro líquido da DRE.
+- **Mensal**: um quadro com os doze meses do ano da data inicial e o total do ano (receita líquida, lucro operacional, EBITDA, margem e EBITDA ajustado).
+- **Por centro de custo**: uma linha para cada centro de custo, com as partidas sem centro em *Sem centro de custo*, e o total.
+
+Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não recorrentes se define em [Classificação da DFC e do EBITDA](#classificacao-da-dfc-e-do-ebitda). A demonstração do período aceita **Comparativo** e **Análise vertical** (cada linha como % da receita líquida).
+
+### Classificação da DFC e do EBITDA
+*Relatórios › Contábeis › Classificação da DFC e do EBITDA*: diz ao programa como tratar cada conta na DFC e no EBITDA. O programa já traz uma **sugestão automática**, feita pelo nome da conta, pela natureza e pelo plano referencial, então muitas vezes não é preciso mexer em nada.
+
+1. Contas do **balanço**: escolha *Caixa e equivalentes*, *Atividade operacional*, *Atividade de investimento*, *Atividade de financiamento* ou *Contrapartida de ajuste (sem caixa)* (usada, por exemplo, na depreciação acumulada).
+2. Contas de **resultado**: escolha *Receita*, *Dedução da receita*, *Custo ou despesa operacional*, *Depreciação, amortização e exaustão*, *Resultado financeiro* ou *IR e CSLL*.
+3. Marque **Não recorrente** nas receitas e despesas eventuais (ganho na venda de um bem, multa, indenização) para que o EBITDA ajustado as desconsidere.
+4. A coluna *Sugestão automática* mostra o que o programa sugeriu. **Restaurar sugestão automática** volta tudo para ela na tela. Clique em **Salvar classificação** para gravar; só as mudanças ficam registradas. Salvar exige a permissão de manter o plano de contas.
+
+### Comparativo
+Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA) e a *Contabilização por centro de custo* têm a opção **Comparativo**, logo acima da grade:
+
+1. Marque **Comparativo**. Escolha **Período anterior** (o período de mesma duração logo antes; para um mês, o mês anterior) e/ou **Mesmo período do ano anterior**.
+2. Se quiser, marque até **3 outros períodos**: em cada linha marque *Usar*, escolha *Mês*, *Trimestre*, *Ano* ou *Intervalo* e informe a data (em Mês, Trimestre e Ano, qualquer data dentro do período; no Intervalo, as datas inicial e final).
+3. Escolha as colunas extras: **Variação em R$** (período atual menos o período comparado), **Variação em %** (variação dividida pelo valor comparado) e, nos relatórios que têm um total de referência (Balanço, DRE e EBITDA), a **Análise vertical (%)**, que mostra cada linha como % do total do ativo ou da receita.
+4. Clique em **Gerar**. O relatório mostra uma coluna para o período atual e uma para cada período comparado; PDF, Excel e CSV saem exatamente como a tela (o PDF sai em paisagem). Desmarque **Comparativo** e gere de novo para voltar ao relatório normal.
+
+Observações: no **Balanço** só importa a data final (as colunas são saldos em cada data). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). No **Razão** o comparativo resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** o comparativo usa a coluna *Total*. Quando uma linha não existe em um dos períodos, o valor aparece zerado e a variação % fica em branco.
+
 ## Relatórios gerenciais
 
 O menu só aparece quando o parâmetro **Contabilidade gerencial** está ligado em *Cadastros › Parâmetros* (grupo *Centros de custo e contabilidade gerencial*). Ao ligar ou desligar e salvar, o menu muda na hora.
@@ -298,7 +336,7 @@ O menu só aparece quando o parâmetro **Contabilidade gerencial** está ligado 
 *Relatórios › Gerenciais* reúne relatórios para acompanhar custos, receitas e metas por centro de custo. Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**, com as mesmas opções de assinatura dos relatórios contábeis (veja [Assinaturas](#assinaturas) e [PDF assinado](#pdf-assinado)). Os lançamentos de encerramento do exercício não entram. Os centros de custo vêm do cadastro [Centros de custo](#centros-de-custo): cada centro sintético mostra a soma dos centros analíticos abaixo dele.
 
 ### Contabilização por centro de custo
-*Relatórios › Gerenciais › Contabilização por centro de custo*: mostra, para cada centro de custo, os débitos, créditos e o saldo do período e, abaixo, as contas com movimento.
+*Relatórios › Gerenciais › Contabilização por centro de custo*: mostra, para cada centro de custo, os débitos, créditos e o saldo do período e, abaixo, as contas com movimento. Marque **Comparativo** para comparar o saldo com outros períodos (veja [Comparativo](#comparativo)); nesse modo o detalhe dos lançamentos não é mostrado.
 1. Informe o período (datas inicial e final).
 2. Se quiser, escolha um **centro** (o relatório mostra ele e os centros abaixo dele), digite uma **conta ou grupo** (por exemplo, 4.2 mostra só as contas que começam com 4.2) e o **nível do centro** (1 mostra só os centros de topo, com as contas somadas; 0 mostra todos).
 3. Marque **Detalhar lançamentos** para ver cada lançamento (data, número e histórico) abaixo da conta.
@@ -348,7 +386,7 @@ Escolha o grupo (ou *Todos os grupos*), marque **Incluir bens baixados** se quis
 **Onde fica:** *Relatórios › Contábeis › Livro Contábil Completo*.
 
 1. Informe o **período** e o **número do livro**.
-2. Marque o que entra: termo de abertura, Diário, Razão, Balancete, Balanço, DRE, DMPL, DLPA e termo de encerramento.
+2. Marque o que entra: termo de abertura, Diário, Razão, Balancete, Balanço, DRE, DMPL, DLPA, DFC (desmarcada de início) e termo de encerramento.
 3. Marque as **assinaturas** (sócio/responsável e contador). O representante legal e o contador vêm dos cadastros; confira nome, CPF e CRC.
 4. O **NIRE** vem do cadastro da empresa (somente leitura; aparece aviso se estiver vazio). Os dados de **arquivamento dos atos** são opcionais.
 5. Para assinar o PDF com certificado digital, marque **Assinar digitalmente o PDF** (veja [PDF assinado](#pdf-assinado)).

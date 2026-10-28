@@ -969,6 +969,50 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             dlpa.ExportarPdfCommand.Execute(null);
             Assert.Empty(dlpa.Erros);
 
+            // Relatórios › Contábeis › DFC, EBITDA, Classificação da DFC e do EBITDA e a opção Comparativo
+            vm.AbrirCommand.Execute(Telas.Dfc);
+            var dfc = vm.Dfc;
+            (dfc.Inicio, dfc.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await dfc.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(dfc.Erros);
+            Assert.NotNull(dfc.TabelaExibida);
+            Foto(janela, "08b4_dfc");
+            dfc.ExportarPdfCommand.Execute(null);
+            Assert.Empty(dfc.Erros);
+            dfc.Metodo = 1;
+            await dfc.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(dfc.Erros);
+            vm.AbrirCommand.Execute(Telas.Ebitda);
+            var ebitda = vm.Ebitda;
+            (ebitda.Inicio, ebitda.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            await ebitda.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(ebitda.Erros);
+            Foto(janela, "08b5_ebitda");
+            ebitda.Modo = 1;
+            await ebitda.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(ebitda.Erros);
+            ebitda.Modo = 2;
+            await ebitda.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(ebitda.Erros);
+            vm.AbrirCommand.Execute(Telas.ClassificacaoDfc);
+            await vm.ClassificacaoDfc.CarregarAsync();
+            Assert.Empty(vm.ClassificacaoDfc.Erros);
+            Assert.NotEmpty(vm.ClassificacaoDfc.Linhas);
+            Foto(janela, "08b6_classificacao_dfc");
+            vm.AbrirCommand.Execute(Telas.Dre);
+            var dreComparada = vm.Dre;
+            (dreComparada.Inicio, dreComparada.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            dreComparada.Comparacao.Ativo = true;
+            dreComparada.Comparacao.AnaliseVertical = true;
+            await dreComparada.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(dreComparada.Erros);
+            Assert.NotNull(dreComparada.TabelaComparativa);
+            Assert.Contains(dreComparada.TabelaComparativa!.Colunas, c => c.Titulo.StartsWith("Var. %"));
+            Foto(janela, "08b7_dre_comparativo");
+            dreComparada.ExportarPdfCommand.Execute(null);
+            Assert.Empty(dreComparada.Erros);
+            dreComparada.Comparacao.Ativo = false;
+
             // Cadastros › Empresas, aba Sócios: os do QSA vieram no cadastro da empresa; completa CPF e indica o representante legal
             vm.AbrirCommand.Execute(Telas.Empresas);
             Assert.True(vm.Empresas.TemEmpresaSelecionada);

@@ -15,10 +15,10 @@ public sealed record DadosTermos(int NumeroLivro, string RepresentanteNome, stri
 /// <summary>O que entra no Livro Contábil Completo (a ordem no PDF é a da declaração) e quais assinaturas fecham o livro.</summary>
 public sealed record OpcoesLivro(bool TermoAbertura = true, bool Diario = true, bool Razao = true, bool Balancete = true, bool Balanco = true,
                                  bool Dre = true, bool Dmpl = true, bool Dlpa = true, bool TermoEncerramento = true,
-                                 OpcoesAssinatura? Assinaturas = null)
+                                 OpcoesAssinatura? Assinaturas = null, bool Dfc = false)
 {
     public bool TemTermos => TermoAbertura || TermoEncerramento;
-    public bool TemConteudo => Diario || Razao || Balancete || Balanco || Dre || Dmpl || Dlpa;
+    public bool TemConteudo => Diario || Razao || Balancete || Balanco || Dre || Dmpl || Dlpa || Dfc;
 
     /// <summary>Itens com conteúdo, por extenso (vai no texto dos termos).</summary>
     public string Descricao()
@@ -31,6 +31,7 @@ public sealed record OpcoesLivro(bool TermoAbertura = true, bool Diario = true, 
         if (Dre) itens.Add("DRE");
         if (Dmpl) itens.Add("DMPL");
         if (Dlpa) itens.Add("DLPA");
+        if (Dfc) itens.Add("DFC");
         return itens.Count switch { 0 => "", 1 => itens[0], _ => string.Join(", ", itens.Take(itens.Count - 1)) + " e " + itens[^1] };
     }
 }
@@ -44,7 +45,8 @@ public enum TipoTermo { Abertura, Encerramento }
 /// assinaturas do representante legal e do contador. Livro em papel ou PDF não substitui a ECD para quem é obrigado a ela.
 /// </summary>
 public sealed class ServicoLivros(ServicoRelatorios relatorios, ServicoDemonstracoes demonstracoes, IConsultasContabeis consultas,
-                                  IRepositorioEmpresa empresas, Autorizador autorizador, IGeradorPdf gerador, ServicoAssinaturas assinaturas)
+                                  IRepositorioEmpresa empresas, Autorizador autorizador, IGeradorPdf gerador, ServicoAssinaturas assinaturas,
+                                  ServicoFluxos? fluxos = null)
 {
     public const string NomeDiario = "LIVRO DIÁRIO";
     public const string NomeLivroContabil = "LIVRO CONTÁBIL";
@@ -193,6 +195,13 @@ public sealed class ServicoLivros(ServicoRelatorios relatorios, ServicoDemonstra
             if (!mut.Sucesso) return Resultado<ArquivoGerado>.Falha(mut.Erros);
             if (opcoes.Dmpl) Parte(BlocosDe(TabelasMutacoes.Dmpl(mut.Valor)));
             if (opcoes.Dlpa) Parte(BlocosDe(TabelasMutacoes.Dlpa(mut.Valor)));
+        }
+        if (opcoes.Dfc)
+        {
+            if (fluxos is null) return Resultado<ArquivoGerado>.Falha("A DFC não está disponível nesta instalação.");
+            var dfc = await fluxos.DfcAsync(empresaId, inicio, fim, false, 3, usuarioId, ct);
+            if (!dfc.Sucesso) return Resultado<ArquivoGerado>.Falha(dfc.Erros);
+            Parte(BlocosDe(TabelasFluxos.Dfc(dfc.Valor)));
         }
 
         IReadOnlyList<string>? blocoAssinaturas = null;
