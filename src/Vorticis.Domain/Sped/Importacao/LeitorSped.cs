@@ -85,6 +85,7 @@ public static class LeitorSped
         var viu9999 = false;
         var linhaNum = 0;
         var inicio = 0;
+        var fimConteudo = conteudo.Length;       // posição depois do 9999: o hash ignora o bloco de assinatura
         while (inicio < texto.Length)
         {
             var fim = texto.IndexOf('\n', inicio);
@@ -113,7 +114,7 @@ public static class LeitorSped
             }
             registros.Add(new RegistroSped(linhaNum, nome, partes[2..^1]));
             contagem[nome] = contagem.GetValueOrDefault(nome) + 1;
-            if (nome == "9999") viu9999 = true;
+            if (nome == "9999") { viu9999 = true; fimConteudo = inicio; }
         }
         if (registros.Count == 0)
             oc.Add(OcorrenciaImportacao.Erro(1, "", "O arquivo está vazio ou não é um arquivo SPED em texto."));
@@ -135,7 +136,7 @@ public static class LeitorSped
         }
         return new ArquivoSped
         {
-            Registros = registros, Tipo = Identificar(registros), Sha256 = Convert.ToHexString(SHA256.HashData(conteudo)).ToLowerInvariant(),
+            Registros = registros, Tipo = Identificar(registros), Sha256 = Convert.ToHexString(SHA256.HashData(conteudo.AsSpan(0, Math.Min(fimConteudo, conteudo.Length)))).ToLowerInvariant(),
             Assinado = assinado, Ocorrencias = oc, Contagem = contagem,
         };
     }

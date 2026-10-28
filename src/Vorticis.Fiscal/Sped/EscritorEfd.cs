@@ -27,6 +27,8 @@ internal sealed class EscritorEfd
 
     public void Reg(string registro, params string?[] campos)
     {
+        // o 0000 é sempre o primeiro registro do arquivo, antes da abertura do bloco 0 (0001)
+        if (registro == "0000" && _atual.Count > 0) { _atual.Insert(0, FormatoSped.Linha(registro, campos)); _contagem[registro] = 1; _ordemRegistros.Insert(0, registro); return; }
         _atual.Add(FormatoSped.Linha(registro, campos));
         if (!_contagem.TryAdd(registro, 1)) _contagem[registro]++;
         else _ordemRegistros.Add(registro);

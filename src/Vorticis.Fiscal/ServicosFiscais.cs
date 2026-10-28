@@ -10,6 +10,9 @@ using Vorticis.Fiscal.Postgres;
 using Vorticis.Fiscal.Retencoes;
 using Vorticis.Fiscal.Simples;
 using Vorticis.Fiscal.Sped;
+using Vorticis.Fiscal.Sped.Importacao;
+using Vorticis.Application.Sped.Importacao;
+using Vorticis.Domain.Sped.Importacao;
 using Vorticis.Infra;
 
 namespace Vorticis.Fiscal;
@@ -57,6 +60,9 @@ public sealed class ServicosFiscais
         DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
         Planejamento = new Planejamento.ServicoPlanejamento(ds, repoSimples, Parametros, autorizador);
+        var repoImportacaoEfd = new RepositorioImportacaoEfd(ds);
+        ImportacaoEfdIcms = new ServicoImportacaoEfd(TipoArquivoSped.EfdIcmsIpi, repoImportacaoEfd, app.HistoricoImportacaoSped, autorizador);
+        ImportacaoEfdContribuicoes = new ServicoImportacaoEfd(TipoArquivoSped.EfdContribuicoes, repoImportacaoEfd, app.HistoricoImportacaoSped, autorizador);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
 
@@ -80,6 +86,10 @@ public sealed class ServicosFiscais
     public Dctf.ServicoDctfWeb DctfWeb { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }
     public ServicoEfd Efd { get; }
+    /// <summary>Integrações › Importar › Arquivo SPED – EFD ICMS/IPI.</summary>
+    public ServicoImportacaoEfd ImportacaoEfdIcms { get; }
+    /// <summary>Integrações › Importar › Arquivo SPED – EFD-Contribuições.</summary>
+    public ServicoImportacaoEfd ImportacaoEfdContribuicoes { get; }
     public Sefaz.ServicoImportacaoChave ImportacaoChave { get; }
 }
 

@@ -101,6 +101,12 @@ public static class HistoricoImportacaoSql
             await using var r = await q.ExecuteReaderAsync(ct);
             if (await r.ReadAsync(ct)) return (r.GetInt64(0), r.GetString(1), false);
         }
+        else
+        {
+            await using var q = Cmd(con, tx, "SELECT id, codigo FROM core.participante WHERE empresa_id = @e AND cpf_cnpj IS NULL AND upper(nome) = upper(@n) ORDER BY id LIMIT 1", ("e", empresaId), ("n", nome.Trim()));
+            await using var r = await q.ExecuteReaderAsync(ct);
+            if (await r.ReadAsync(ct)) return (r.GetInt64(0), r.GetString(1), false);
+        }
         string codigo;
         await using (var q = Cmd(con, tx, "SELECT core.fn_proximo_participante(@e)::text", ("e", empresaId)))
             codigo = (string)(await q.ExecuteScalarAsync(ct))!;

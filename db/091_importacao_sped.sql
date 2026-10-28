@@ -1,5 +1,5 @@
 -- =============================================================================
--- Vorticis — Migração 081: importação de arquivos SPED (ECD, ECF, EFD ICMS/IPI e EFD-Contribuições)
+-- Vorticis — Migração 091: importação de arquivos SPED (ECD, ECF, EFD ICMS/IPI e EFD-Contribuições)
 --   * core.importacao_sped: histórico de cada importação (arquivo, período, opção, resumo e relatório) e a situação
 --     (IMPORTADA ou DESFEITA); "desfazer" guarda em `desfazer` o que a importação substituiu, para devolver.
 --   * core.importacao_sped_item: tudo o que a importação criou (tabela e id), para a opção "Desfazer importação".
