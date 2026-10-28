@@ -44,6 +44,7 @@
     <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
     <!-- A cor da barra e a faixa de destaque identificam o módulo (IModuloDesktop.CorBarra / CorDestaque); o nome dele fica só no título -->
     <StackPanel Name="BlocoMenus" DockPanel.Dock="Top">
+    <StackPanel Name="BarraMenuWrap">
     <Border BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
     <Border Background="{Binding PincelBarra}" Padding="4,0,8,0">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
@@ -68,11 +69,12 @@
       </Grid>
     </Border>
     </Border>
+    </StackPanel>
 
     <!-- Faixa fixa logo abaixo dos menus (sempre visível depois de entrar, para as janelas das funções nunca a cobrirem):
          à esquerda, as funções abertas (clicar traz para a frente, ✕ fecha); à direita, na Folha, a competência e a situação dela -->
     <Border Name="BarraFuncoes" Background="#EEF1F5" BorderBrush="#D0D5DD" BorderThickness="0,0,0,1" Padding="8,3"
-            MinHeight="34" IsVisible="{Binding Logado}">
+            MinHeight="34" IsVisible="False">
       <Grid ColumnDefinitions="*,Auto">
         <ItemsControl Name="FuncoesAbertas" ItemsSource="{Binding JanelasAbertas}" VerticalAlignment="Center">
           <ItemsControl.ItemsPanel>

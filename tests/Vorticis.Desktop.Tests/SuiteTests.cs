@@ -277,7 +277,14 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
                 Assert.Contains(janela.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>(), b => b.IsEffectivelyVisible);   // o botão Layout está em todos
                 // o menu do módulo (todas as funções) continua à mostra em qualquer layout
                 var menu = janela.FindControl<Menu>("MenuPrincipal")!;
-                Assert.Equal(Chaves(M("Contábil").Vm).Count(c => c != TelasComuns.Sair), ChavesDoMenu(menu.Items).Count());
+                if (layout != LayoutSuite.Faixa)
+                    Assert.Equal(Chaves(M("Contábil").Vm).Count(c => c != TelasComuns.Sair), ChavesDoMenu(menu.Items).Count());
+                else
+                {
+                    Assert.False(janela.FindControl<StackPanel>("BarraMenuWrap")!.IsVisible);   // a faixa substitui a barra de menus
+                    Assert.True(topo.FindControl<Button>("BotaoExibir")!.IsVisible);
+                }
+                if (layout != LayoutSuite.Faixa) Assert.True(janela.FindControl<StackPanel>("BarraMenuWrap")!.IsVisible);
                 if (layout == LayoutSuite.Faixa)
                 {
                     // faixa de opções: todas as funções do módulo estão em algum botão ou no "Mais"
@@ -292,6 +299,18 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
                     Assert.True(topo.FindControl<ContentControl>("CorpoFixo")!.IsVisible);
                 }
             }
+
+            // navegação fixa à esquerda: a barra de cima fica só com Exibir e Ajuda (as funções estão na lateral)
+            suite.Layout = LayoutSuite.Lateral;
+            suite.LateralFixa = true;
+            Dispatcher.UIThread.RunJobs();
+            var visiveis = janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>().Where(m => m.IsVisible).Select(m => m.Header as string).ToList();
+            Assert.Equal(["E_xibir", "_Ajuda"], visiveis);
+            Assert.Equal(Chaves(M("Contábil").Vm).ToHashSet(), M("Contábil").Linhas.Where(n => n.EhFuncao).Select(n => n.Chave!).ToHashSet());
+            suite.LateralFixa = false;
+            Dispatcher.UIThread.RunJobs();
+            // a barra de funções abertas só aparece com função aberta
+            Assert.Equal(M("Contábil").Vm.JanelasAbertas.Count > 0, janela.FindControl<Border>("BarraFuncoes")!.IsVisible);
 
             // painel D: abrir um módulo pelo cartão sai do painel
             suite.TrocarCommand.Execute(M("Fiscal"));

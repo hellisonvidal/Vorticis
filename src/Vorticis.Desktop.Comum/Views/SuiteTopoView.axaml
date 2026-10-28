@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views" xmlns:seg="using:Vorticis.Application.Seguranca"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteTopoView" x:DataType="vm:SuiteViewModel">
   <!-- Suite, parte de cima: A e E = abas dos módulos (E com a faixa de opções embaixo); D = painel inicial e módulo atual -->
   <StackPanel>
@@ -7,11 +7,30 @@
     <Border Name="BarraAbas" Background="#E9EEF5" BorderBrush="#D5DCE6" BorderThickness="0,0,0,1" Padding="10,6,10,0" IsVisible="{Binding MostraAbas}">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="8,0,0,6">
+          <!-- E: empresa ativa, usuário e Exibir no lugar da barra de menus clássica -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,6,0" VerticalAlignment="Center" IsVisible="{Binding EhFaixa}">
+            <TextBlock Text="{Binding Ativo.Vm.RotuloEmpresaAtiva}" Classes="su-sub" FontSize="12" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Ativo.Vm.EmpresasPermitidas}" SelectedItem="{Binding Ativo.Vm.EmpresaSelecionada}" MinWidth="130" MaxWidth="230"
+                      MinHeight="26" Padding="8,1" FontSize="12" PlaceholderText="Nenhuma empresa" CornerRadius="8">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="seg:EmpresaPermitida">
+                  <TextBlock><Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" – " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" /></TextBlock>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{Binding UsuarioRotulo}" FontSize="12" Foreground="#334155" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" />
+            <Button Name="BotaoExibir" Classes="su" Padding="9,6" Click="AbrirExibir">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <PathIcon Data="{x:Static v:Icones.ViewGridOutline}" Width="15" Height="15" Foreground="#475569" />
+                <TextBlock Text="Exibir" FontSize="12" Foreground="#475569" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
           <Button Name="BotaoFaixa" Classes="su" Padding="9,6" Command="{Binding AlternarFaixaCommand}"
                   ToolTip.Tip="Fixar: a faixa fica sempre à mostra. Ocultar: só os títulos das abas ficam à mostra e a faixa abre por cima ao passar o mouse">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <PathIcon Data="{Binding IconeFixarFaixa}" Width="15" Height="15" Foreground="#475569" />
-              <TextBlock Text="{Binding TextoFixarFaixa}" FontSize="12" Foreground="#475569" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding TextoFixarFaixa}" FontSize="12" Foreground="#475569" VerticalAlignment="Center" IsVisible="{Binding EhAbas}" />
             </StackPanel>
           </Button>
           <v:SuiteEscolhaLayoutView />

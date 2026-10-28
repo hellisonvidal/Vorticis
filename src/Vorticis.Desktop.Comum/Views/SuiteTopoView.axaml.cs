@@ -39,6 +39,16 @@ public partial class SuiteTopoView : UserControl
         CorpoPopup.PointerExited += (_, _) => _recolher.Start();
     }
 
+    /// <summary>Layout E: abre Exibir (layout, módulos) no lugar da barra de menus clássica.</summary>
+    private void AbrirExibir(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_suite is null || VisualRoot is not MainWindow janela || sender is not Button b) return;
+        var menu = janela.MenuExibir(_suite);
+        var itens = menu.Items.Cast<object>().ToList();
+        menu.Items.Clear();
+        new MenuFlyout { ItemsSource = itens, Placement = PlacementMode.BottomEdgeAlignedRight }.ShowAt(b);
+    }
+
     private bool MenuAberto() => _flyoutsAbertos > 0;
     private int _flyoutsAbertos;
 
@@ -94,12 +104,33 @@ public partial class SuiteTopoView : UserControl
             grupos.Children.Add(CriarGrupo(suite, modulo, categoria));
             grupos.Children.Add(new Border { Width = 1, Background = Linha, Margin = new Thickness(4, 4, 4, 16) });
         }
+        var rolagem = new ScrollViewer { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, Content = grupos };
+        Button Seta(Geometry g, int sentido)
+        {
+            var b = new Button { Classes = { "su" }, Width = 26, Margin = new Thickness(2, 6), Content = new PathIcon { Data = g, Width = 16, Height = 16, Foreground = Sutil, HorizontalAlignment = HorizontalAlignment.Center } };
+            b.Click += (_, _) => rolagem.Offset = new Vector(Math.Clamp(rolagem.Offset.X + sentido * 320, 0, Math.Max(0, rolagem.Extent.Width - rolagem.Viewport.Width)), 0);
+            return b;
+        }
+        var esquerda = Seta(Icones.ChevronLeft, -1);
+        var direita = Seta(Icones.ChevronRight, 1);
+        Grid.SetColumn(direita, 2); Grid.SetColumn(rolagem, 1);
+        void Setas()
+        {
+            esquerda.IsVisible = rolagem.Offset.X > 0.5;
+            direita.IsVisible = rolagem.Offset.X + rolagem.Viewport.Width < rolagem.Extent.Width - 0.5;
+        }
+        rolagem.ScrollChanged += (_, _) => Setas();
+        rolagem.PointerWheelChanged += (_, e) =>
+        {
+            rolagem.Offset = new Vector(Math.Clamp(rolagem.Offset.X - e.Delta.Y * 80, 0, Math.Max(0, rolagem.Extent.Width - rolagem.Viewport.Width)), 0);
+            e.Handled = true;
+        };
         var corpo = new Border
         {
             Background = Brushes.White,
             BorderBrush = new SolidColorBrush(Color.Parse("#D5DCE6")), BorderThickness = new Thickness(0, 0, 0, 1),
             Height = 104, MinWidth = flutuante ? 900 : 0,
-            Child = new ScrollViewer { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, Content = grupos },
+            Child = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children = { esquerda, rolagem, direita } },
         };
         if (flutuante)
         {
@@ -146,14 +177,14 @@ public partial class SuiteTopoView : UserControl
                                                    VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, -12, -1) });
         var b = new Button
         {
-            Width = 84, Height = 68, Margin = new Thickness(1, 0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, HorizontalContentAlignment = HorizontalAlignment.Center,
+            Width = 78, Height = 68, Margin = new Thickness(1, 0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, HorizontalContentAlignment = HorizontalAlignment.Center,
             Content = new StackPanel
             {
                 Spacing = 4, Margin = new Thickness(2, 6, 2, 2), HorizontalAlignment = HorizontalAlignment.Center,
                 Children =
                 {
                     linhaIcone,
-                    new TextBlock { Text = texto, FontSize = 11.5, Foreground = Texto, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxWidth = 80, MaxHeight = 32 },
+                    new TextBlock { Text = texto, FontSize = 11.5, Foreground = Texto, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxWidth = 74, MaxHeight = 32 },
                 },
             },
         };

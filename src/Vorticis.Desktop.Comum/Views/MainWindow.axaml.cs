@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         suite.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
-            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); }
+            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
         };
         DataContext = suite.Ativo.Vm;
         AtualizarPainel();
@@ -180,6 +180,17 @@ public partial class MainWindow : Window
             _fechandoPorCodigo.Add(w);
             w.Close();
         }
+        AtualizarBarras();
+    }
+
+    /// <summary>
+    /// A barra de funções abertas só aparece quando há função aberta (ou período de trabalho a mostrar); no layout E a faixa de opções
+    /// substitui a barra de menus clássica (empresa, usuário e Exibir passam para a linha das abas).
+    /// </summary>
+    private void AtualizarBarras()
+    {
+        BarraFuncoes.IsVisible = _vm is { Logado: true } v && (v.JanelasAbertas.Count > 0 || v.UsaPeriodo);
+        BarraMenuWrap.IsVisible = Suite?.EhFaixa != true;
     }
 
     private void AbrirJanela(FuncaoAberta f, MainViewModelBase dono)
@@ -343,6 +354,7 @@ public partial class MainWindow : Window
     /// <summary>Ao entrar ou sair do sistema, volta a maximizar (caso o usuário tenha restaurado o tamanho).</summary>
     private void AoMudarVm(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(MainViewModelBase.Logado) or nameof(MainViewModelBase.UsaPeriodo)) AtualizarBarras();
         if (e.PropertyName == nameof(MainViewModelBase.Logado)) WindowState = WindowState.Maximized;
         if (e.PropertyName == nameof(MainViewModelBase.FuncaoAtiva)) TrazerParaFrente(_vm?.FuncaoAtiva);
         if (e.PropertyName == nameof(MainViewModelBase.Confirmacao)) MostrarConfirmacao(_vm?.Confirmacao);
@@ -368,6 +380,10 @@ public partial class MainWindow : Window
         if (Suite is { } suite)
         {
             MenuPrincipal.Items.Insert(MenuPrincipal.Items.Count - 1, MenuExibir(suite));
+            // com a navegação da esquerda fixa, os menus do módulo já estão nela: na barra ficam só Exibir e Ajuda
+            if (suite.MostraNavFixa)
+                foreach (var m in MenuPrincipal.Items.OfType<MenuItem>().Where(m => (m.Header as string) is not ("E_xibir" or "_Ajuda")))
+                    m.IsVisible = false;
             // o layout também fica em Configurações, onde se procura por ajustes
             if (MenuPrincipal.Items.OfType<MenuItem>().FirstOrDefault(m => (m.Header as string) == "Con_figurações") is { } config)
             {
@@ -407,7 +423,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Suite: Exibir › layout (A a E) e ir para outro módulo (Ctrl+1, Ctrl+2...).</summary>
-    private MenuItem MenuExibir(SuiteViewModel suite)
+    internal MenuItem MenuExibir(SuiteViewModel suite)
     {
         var exibir = new MenuItem { Header = "E_xibir", Icon = IconesSuite.IconeDe(Icones.ViewGridOutline) };
         exibir.Items.Add(MenuLayout(suite));

@@ -128,9 +128,10 @@
                   <Grid ColumnDefinitions="52,*,Auto" Margin="0,3">
                     <TextBlock Text="{Binding Vencimento}" FontWeight="SemiBold" Foreground="#0F172A" />
                     <TextBlock Grid.Column="1" Text="{Binding Nome}" Foreground="#334155" TextTrimming="CharacterEllipsis" />
-                    <Border Grid.Column="2" CornerRadius="9" Padding="8,1" Background="{Binding Cor}">
-                      <TextBlock Text="{Binding Situacao}" FontSize="10.5" Foreground="#1F2937" />
-                    </Border>
+                    <Panel Grid.Column="2">
+                      <Border CornerRadius="9" Background="{Binding Cor}" Opacity="0.22" />
+                      <TextBlock Text="{Binding Situacao}" FontSize="10.5" FontWeight="SemiBold" Foreground="#1F2937" Margin="8,1" />
+                    </Panel>
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
