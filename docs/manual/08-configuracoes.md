@@ -28,10 +28,10 @@ Menu *Configurações*. As telas de backup, configurações gerais e conexão s�
 Usada para confirmar restauração de backup e limpeza do banco. Informe a senha atual, a nova e a confirmação e clique em **Alterar senha**. Troque a senha padrão (`VORTICIS`) logo no início.
 
 ### Limpar banco de dados (não recomendado)
-Apaga **todas** as empresas, cadastros, usuários e perfis personalizados. Gera um backup antes.
+Recomeça o sistema **do zero**: apaga **todas** as empresas com tudo o que é delas (notas, duplicatas, mesmo as baixadas, lançamentos, folha, pedidos, condomínio, escritório, mesmo nos períodos fechados), os contadores, os escritórios, os certificados, todos os usuários, os perfis personalizados, as preferências de menu e as configurações gravadas. Só a pasta de backup continua a mesma. Gera um backup antes.
 1. Digite **LIMPAR** e confirme.
 2. Informe a senha de administrador.
-3. O programa volta sozinho à tela de entrada, como numa instalação nova, **sem precisar fechar e abrir de novo**: todas as telas abertas são fechadas, o usuário, a empresa ativa e o login salvo neste computador são esquecidos. Só entra `vorticis` / `vorticis`, que abre o cadastro do administrador; depois de cadastrá-lo, entre com ele para definir os perfis de acesso e recomeçar a configuração do zero.
+3. O programa volta sozinho à tela de entrada, como numa instalação nova, **sem precisar fechar e abrir de novo**: todas as telas abertas são fechadas, o usuário, a empresa ativa e o login salvo neste computador são esquecidos. Só entra `vorticis` / `vorticis`, que abre o cadastro do administrador; depois de cadastrá-lo, entre com ele: o sistema pede de novo todos os cadastros, como no primeiro uso (perfis de acesso, o escritório, as empresas ou clientes e os demais cadastros de cada módulo).
 
 ## Conexão com o banco de dados
 
