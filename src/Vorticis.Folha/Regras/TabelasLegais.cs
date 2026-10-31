@@ -1,3 +1,4 @@
+using Vorticis.Domain.Comum;
 using System.Text.Json;
 
 namespace Vorticis.Folha.Regras;
@@ -87,4 +88,48 @@ public sealed record TabelasLegais(TabelaInss Inss, TabelaIrrf Irrf, TabelaSalar
     private sealed record DtoSalarioFamilia(decimal LimiteRemuneracao, decimal Cota);
     private sealed record DtoValor(decimal Valor);
     private sealed record DtoFgts(decimal Aliquota, decimal AliquotaAprendiz, decimal MultaSemJustaCausa, decimal MultaAcordo);
+}
+
+/// <summary>Cadastros › Tabelas da previdência social: as tabelas legais da folha vigentes na competência, para consulta e impressão.</summary>
+public static class TabelasPrevidencia
+{
+    public const string Titulo = "Tabelas da previdência social";
+
+    public static Vorticis.Application.Relatorios.TabelaRelatorio Montar(DateOnly competencia, IReadOnlyList<ParametroLegal> parametros)
+    {
+        var t = TabelasLegais.Em(competencia, parametros);
+        string Pct(decimal v) => $"{Formato.Num(v)}%";
+        string Vig(string chave) => parametros.Where(p => p.Chave == chave && p.VigenciaInicio <= competencia && (p.VigenciaFim is null || p.VigenciaFim >= competencia))
+                                              .OrderByDescending(p => p.VigenciaInicio).Select(p => $"desde {p.VigenciaInicio:dd/MM/yyyy}").FirstOrDefault() ?? "";
+        var linhas = new List<Vorticis.Application.Relatorios.LinhaRelatorio>();
+        void L(string tabela, string item, string valor, bool destaque = false) => linhas.Add(new([tabela, item, valor], destaque));
+        decimal anterior = 0;
+        for (var i = 0; i < t.Inss.Faixas.Count; i++)
+        {
+            var f = t.Inss.Faixas[i];
+            L(i == 0 ? $"INSS do empregado ({Vig(TabelasLegais.ChaveInss)})" : "", $"{i + 1}ª faixa: de {Formato.Moeda(anterior == 0 ? 0 : anterior + 0.01m)} a {Formato.Moeda(f.Ate)}", Pct(f.Aliquota), i == 0);
+            anterior = f.Ate;
+        }
+        L("", "Teto do salário de contribuição", Formato.Moeda(t.Inss.Teto));
+        L($"Salário-família ({Vig(TabelasLegais.ChaveSalarioFamilia)})", "Remuneração até", Formato.Moeda(t.SalarioFamilia.LimiteRemuneracao), true);
+        L("", "Cota por filho ou equiparado", Formato.Moeda(t.SalarioFamilia.Cota));
+        L($"Salário mínimo ({Vig(TabelasLegais.ChaveSalarioMinimo)})", "Valor mensal", Formato.Moeda(t.SalarioMinimo), true);
+        L($"FGTS ({Vig(TabelasLegais.ChaveFgts)})", "Depósito mensal", Pct(t.Fgts.Aliquota), true);
+        L("", "Depósito do aprendiz", Pct(t.Fgts.AliquotaAprendiz));
+        L("", "Multa na dispensa sem justa causa", Pct(t.Fgts.MultaSemJustaCausa));
+        L("", "Multa na rescisão por acordo", Pct(t.Fgts.MultaAcordo));
+        for (var i = 0; i < t.Irrf.Faixas.Count; i++)
+        {
+            var f = t.Irrf.Faixas[i];
+            L(i == 0 ? $"IRRF mensal ({Vig(TabelasLegais.ChaveIrrf)})" : "", f.Ate is { } ate ? $"Até {Formato.Moeda(ate)}" : "Acima da faixa anterior",
+              f.Aliquota == 0 ? "isento" : $"{Pct(f.Aliquota)} (deduzir {Formato.Moeda(f.Deduzir)})", i == 0);
+        }
+        L("", "Dedução por dependente", Formato.Moeda(t.Irrf.DeducaoDependente));
+        L("", "Desconto simplificado", Formato.Moeda(t.Irrf.DescontoSimplificado));
+        var fundamentos = parametros.Where(p => TabelasLegais.Chaves.Contains(p.Chave) && p.VigenciaInicio <= competencia && (p.VigenciaFim is null || p.VigenciaFim >= competencia))
+                                    .Select(p => p.Fundamento).Where(f => !string.IsNullOrWhiteSpace(f)).Distinct();
+        return new(Titulo, [new("Tabela", Vorticis.Application.Relatorios.TipoColuna.Texto, 6), new("Item", Vorticis.Application.Relatorios.TipoColuna.Texto, 8),
+                            new("Valor", Vorticis.Application.Relatorios.TipoColuna.Texto, 4)], linhas,
+                   $"Vigentes em {competencia:MM/yyyy}. As tabelas são atualizadas com o programa (parâmetros legais) e usadas em todos os cálculos da folha. Fundamento: {string.Join("; ", fundamentos)}.");
+    }
 }

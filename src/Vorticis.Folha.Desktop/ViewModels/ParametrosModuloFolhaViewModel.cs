@@ -9,7 +9,7 @@ namespace Vorticis.Folha.Desktop.ViewModels;
 
 /// <summary>
 /// Cadastros › Parâmetros (Folha): encargos patronais, dia de pagamento e padrões do eSocial da empresa ativa. Os encargos usam a mesma
-/// gravação de Funcionários › Parâmetros e tabelas legais (que também guarda FPAS, Simples e responsável); o restante fica em
+/// gravação de Tabelas legais › Parâmetros e tabelas legais (que também guarda FPAS, Simples e responsável); o restante fica em
 /// folha.configuracao_empresa. A contabilização tem tela própria e aparece como atalho.
 /// </summary>
 public sealed class ParametrosModuloFolhaViewModel(IContexto contexto) : ParametrosViewModel(contexto)

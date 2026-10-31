@@ -22,13 +22,32 @@ Passo a passo:
 ## Parâmetros e tabelas legais
 
 **Para que serve:** informar os encargos da empresa e consultar as tabelas de INSS, IRRF, salário mínimo etc.
-**Onde fica:** *Cadastros › Funcionários › Parâmetros e tabelas legais*.
+**Onde fica:** *Cadastros › Tabelas legais › Parâmetros e tabelas legais*.
 
 1. Preencha **RAT**, **FAP**, **terceiros (%)**, **FPAS**, a opção pelo Simples Nacional e a **classificação tributária** (tabela 8 do eSocial; 99 = pessoas jurídicas em geral).
 2. Informe o **responsável pelo fechamento (S-1299)**: CPF, e-mail e telefone.
 3. **Gravar parâmetros**.
 
 As *tabelas legais por vigência* são exibidas para conferência (valores de 2025 e 2026 já carregados).
+
+## Tabelas da previdência social
+
+**Para que serve:** consultar e imprimir as tabelas legais que a folha usa na competência: faixas do **INSS do empregado** e o **teto**, **salário-família** (limite de remuneração e cota), **salário mínimo**, **FGTS** (depósito mensal, aprendiz e multas) e **IRRF** mensal (faixas, dedução por dependente e desconto simplificado).
+**Onde fica:** *Cadastros › Tabelas legais › Tabelas da previdência social*.
+
+1. Escolha a **Competência** e clique em **Consultar**. Aparecem as tabelas vigentes no mês, com a data de início de cada uma e o fundamento legal no rodapé.
+2. Use **PDF**, **Excel** ou **CSV** para guardar ou imprimir.
+
+As tabelas vêm dos parâmetros legais do programa e são atualizadas com as novas versões; todos os cálculos (folha, férias, 13º, rescisões, pró-labore) usam a tabela vigente na competência.
+
+## Cadastros da folha
+
+O menu *Cadastros* da Folha reúne:
+- **Funcionários**: cadastro de funcionários, cargos, departamentos e rubricas (eventos).
+- **Sócios (pró-labore)**: os sócios da empresa (o mesmo cadastro de *Cadastros › Empresas*, aba Sócios), usados no [pró-labore](#pro-labore-dos-socios).
+- **Contábeis**: [eventos contábeis](#contabilizacao-por-eventos) e centros de custo (o mesmo cadastro do Contábil e do Fiscal).
+- **Tabelas legais**: as [tabelas da previdência social](#tabelas-da-previdencia-social) e os [parâmetros e tabelas legais](#parametros-e-tabelas-legais).
+- **Contadores**: o cadastro comum de contadores (responsável pela escrituração e procurações).
 
 ## Cargos
 
@@ -135,7 +154,7 @@ Exige também a permissão de incluir lançamentos (e de estornar, para desfazer
 
 Em vez de um lançamento só para a competência, a folha gera **um lançamento para cada evento** (salários, horas extras, adicionais, férias, 13º, INSS, IRRF, FGTS, encargos patronais, provisões, adiantamentos, rescisões), cada um com o seu histórico, por exemplo *Salários 10/2026* ou *INSS retido 10/2026*.
 
-**Onde ficam:** *Cálculos › Folha › Contabilização por eventos* e *Cálculos › Folha › Eventos contábeis*.
+**Onde ficam:** *Cálculos › Folha › Contabilização por eventos* e *Cadastros › Contábeis › Eventos contábeis*.
 
 **Antes de começar**
 
@@ -214,7 +233,7 @@ O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de p
 
 **Onde fica:** *Cálculos › Pró-labore › Sócios e cálculo do pró-labore*.
 
-Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*, ou *Cálculos › Pró-labore › Sócios (cadastro da empresa)*). Só aparecem sócios pessoa física.
+Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*, ou *Cadastros › Sócios (pró-labore)*). Só aparecem sócios pessoa física.
 
 1. Selecione o sócio na lista.
 2. Marque **Retira pró-labore** se ele recebe pró-labore (desmarque se não recebe).
@@ -225,7 +244,7 @@ Os sócios vêm do cadastro da empresa (*Cadastros › Empresas › aba Sócios*
 7. Com a competência **ABERTA**, clique em **Calcular pró-labore**. Para cada sócio que retira aparecem bruto, **INSS (11%)**, **IRRF**, **líquido** e **CPP patronal** (20%; no Simples Nacional, exceto anexo IV, a CPP já está no DAS e aparece zero), com a memória de cálculo.
 8. **Excluir cálculo** apaga o cálculo da competência (só com a competência aberta).
 
-As alíquotas vêm das tabelas legais (*Cadastros › Funcionários › Parâmetros e tabelas legais*, chave FOLHA_PRO_LABORE). Pró-labore não tem FGTS.
+As alíquotas vêm das tabelas legais (*Cadastros › Tabelas legais › Parâmetros e tabelas legais*, chave FOLHA_PRO_LABORE). Pró-labore não tem FGTS.
 
 ## Relatórios da folha
 

@@ -37,6 +37,7 @@ public static class FolhaTelas
     public const string Resumo = "folha.resumo";
     public const string Encargos = "folha.encargos";
     public const string ProLabore = "folha.prolabore";
+    public const string TabelasPrevidencia = "folha.tabelasprevidencia";
 }
 
 internal static class FolhaExtensoes

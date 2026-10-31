@@ -142,6 +142,7 @@ public static class IconesMenu
         ["folha.departamentos"] = "OfficeBuildingOutline",
         ["folha.rubricas"] = "FormatListBulletedType",
         ["folha.parametros"] = "TableCog",
+        ["folha.tabelasprevidencia"] = "Gavel",
         ["folha.eventos"] = "CalendarEdit",
         ["folha.mensal"] = "CalculatorVariant",
         ["folha.ferias"] = "Beach",
@@ -210,6 +211,8 @@ public static class IconesMenu
         ["cadastros > funcionarios"] = "AccountGroupOutline",
         ["configuracoes > banco de dados"] = "DatabaseOutline",
         ["configuracoes > configuracoes gerais"] = "WrenchOutline",
+        ["cadastros > contabeis"] = "FileCertificateOutline",
+        ["cadastros > tabelas legais"] = "BookOpenVariant",
     };
 
     /// <summary>Ícone da função pela chave da tela; null quando não há desenho próprio.</summary>

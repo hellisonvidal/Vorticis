@@ -31,8 +31,13 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("Cadastro de funcionários", FolhaTelas.Funcionarios),
             ItemMenu.Tela("Cargos", FolhaTelas.Cargos),
             ItemMenu.Tela("Departamentos", FolhaTelas.Departamentos),
-            ItemMenu.Tela("Rubricas (eventos)", FolhaTelas.Rubricas),
-            ItemMenu.Separador,
+            ItemMenu.Tela("Rubricas (eventos)", FolhaTelas.Rubricas)),
+        ItemMenu.Tela("Sócios (pró-labore)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios),
+        ItemMenu.Submenu("Contábeis",
+            ItemMenu.Tela("Eventos contábeis", FolhaTelas.EventosContabeis),
+            ItemMenu.Tela("Centros de custo", Vorticis.Desktop.Comum.ViewModels.TelasComuns.CentrosCusto)),
+        ItemMenu.Submenu("Tabelas legais",
+            ItemMenu.Tela("Tabelas da previdência social", FolhaTelas.TabelasPrevidencia),
             ItemMenu.Tela("Parâmetros e tabelas legais", FolhaTelas.Parametros)),
     ];
 
@@ -48,11 +53,9 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Separador,
                 ItemMenu.Tela("Provisões de férias e 13º", FolhaTelas.Provisoes),
                 ItemMenu.Tela("Contabilização", FolhaTelas.Contabilizacao),
-                ItemMenu.Tela("Contabilização por eventos", FolhaTelas.ContabilizacaoEventos),
-                ItemMenu.Tela("Eventos contábeis", FolhaTelas.EventosContabeis)),
+                ItemMenu.Tela("Contabilização por eventos", FolhaTelas.ContabilizacaoEventos)),
             ItemMenu.Submenu("_Pró-labore",
-                ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore),
-                ItemMenu.Tela("Sócios (cadastro da empresa)", Vorticis.Desktop.Comum.ViewModels.TelasComuns.Socios))),
+                ItemMenu.Tela("Sócios e cálculo do pró-labore", FolhaTelas.ProLabore))),
         ItemMenu.Submenu("_Obrigações",
             ItemMenu.Submenu("eSocial",
                 ItemMenu.Tela("Assistente de configuração", FolhaTelas.AssistenteEsocial),
@@ -99,9 +102,11 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia("ParametrosModulo", m => new ParametrosModuloFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
+        c.Instancia("TabelasPrevidencia", m => new TabelasPrevidenciaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.TabelasPrevidencia, "Cadastros › Tabelas legais › Tabelas da previdência social", Ver, v => v.GerarCommand.ExecuteAsync(null));
         c.Instancia(nameof(MainViewModel.Parametros), m => new ParametrosFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.Parametros, "Cadastros › Funcionários › Parâmetros e tabelas legais", Ver, v => v.CarregarAsync());
+            .Tela(FolhaTelas.Parametros, "Cadastros › Tabelas legais › Parâmetros e tabelas legais", Ver, v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Eventos), m => new EventosVariaveisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
@@ -133,7 +138,7 @@ public sealed class ModuloFolha : IModuloDesktop
             .Tela(FolhaTelas.ContabilizacaoEventos, "Cálculos › Folha › Contabilização por eventos", m => Pode(m, Permissao.FolhaContabilizar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.EventosContabeis), m => new EventosContabeisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(FolhaTelas.EventosContabeis, "Cálculos › Folha › Eventos contábeis", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
+            .Tela(FolhaTelas.EventosContabeis, "Cadastros › Contábeis › Eventos contábeis", m => Pode(m, Permissao.FolhaContabilizar, Permissao.FolhaParametrosManter), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.ESocial), m => new ESocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Eventos.Clear(); v.Xml = ""; },

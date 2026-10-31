@@ -92,3 +92,19 @@ public partial class ProvisoesFolhaViewModel(IContexto contexto) : RelatorioFolh
         Mensagem = $"Provisões calculadas para {r.Valor.Calculados} funcionário(s): {Vorticis.Domain.Comum.Formato.Moeda(r.Valor.Liquido)} com encargos.";
     }, Permissao.FolhaCalcular);
 }
+
+/// <summary>Cadastros › Tabelas legais › Tabelas da previdência social: INSS, teto, salário-família, salário mínimo, FGTS e IRRF vigentes na competência.</summary>
+public partial class TabelasPrevidenciaViewModel(IContexto contexto) : RelatorioFolhaBase(contexto)
+{
+    protected override string TituloRelatorio => Vorticis.Folha.Regras.TabelasPrevidencia.Titulo;
+    protected override string NomeArquivo => $"tabelas_previdencia_{CompGerada:yyyyMM}";
+    protected override bool Paisagem => false;
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var legais = await app.Folha().Cadastros.ListarTabelasLegaisAsync(empresa, usuario);
+        try { Mostrar([Vorticis.Folha.Regras.TabelasPrevidencia.Montar(Comp, legais)]); }
+        catch (InvalidOperationException ex) { Limpar(); Erros.Add(ex.Message); }
+    });
+}

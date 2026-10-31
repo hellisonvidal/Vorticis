@@ -22,6 +22,22 @@ public class MenusTests
     }
 
     [Fact]
+    public void Folha_tem_socios_contabeis_e_tabelas_da_previdencia_em_Cadastros()
+    {
+        var vm = new Vorticis.Folha.Desktop.MainViewModel();
+        var cad = vm.Menus[0].Filhos!;
+        Assert.Contains(cad, i => i.Chave == TelasComuns.Socios);
+        Assert.Contains(cad, i => i.Chave == TelasComuns.Contabilidade);                      // contadores
+        var contabeis = Assert.Single(cad, i => i.Titulo == "Contábeis");
+        Assert.Equal([Vorticis.Folha.Desktop.ViewModels.FolhaTelas.EventosContabeis, TelasComuns.CentrosCusto], contabeis.Filhos!.Select(i => i.Chave));
+        var tabelas = Assert.Single(cad, i => i.Titulo == "Tabelas legais");
+        Assert.Equal([Vorticis.Folha.Desktop.ViewModels.FolhaTelas.TabelasPrevidencia, Vorticis.Folha.Desktop.ViewModels.FolhaTelas.Parametros], tabelas.Filhos!.Select(i => i.Chave));
+        Assert.Single(Folhas(vm.Menus), i => i.Chave == TelasComuns.Socios);                  // saiu de Cálculos › Pró-labore
+        Assert.Single(Folhas(vm.Menus), i => i.Chave == Vorticis.Folha.Desktop.ViewModels.FolhaTelas.EventosContabeis);
+        Assert.True(vm.ConheceTela(Vorticis.Folha.Desktop.ViewModels.FolhaTelas.TabelasPrevidencia));
+    }
+
+    [Fact]
     public void Fiscal_tem_planejamento_tributario_em_Apuracao_e_em_Relatorios()
     {
         var vm = new Vorticis.Fiscal.Desktop.MainViewModel();

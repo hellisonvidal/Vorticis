@@ -140,6 +140,7 @@ folha.cargos=06-folha.md#cargos
 folha.departamentos=06-folha.md#departamentos-lotacoes
 folha.rubricas=06-folha.md#rubricas-eventos
 folha.parametros=06-folha.md#parametros-e-tabelas-legais
+folha.tabelasprevidencia=06-folha.md#tabelas-da-previdencia-social
 folha.eventos=06-folha.md#eventos-variaveis
 folha.mensal=06-folha.md#calculo-da-folha-mensal
 folha.holerites=06-folha.md#relatorios-da-folha

@@ -110,7 +110,7 @@ public sealed record EventoContabilLinha(Vorticis.Folha.EventoContabil E)
     public string Rubricas => string.Join(", ", E.Chaves);
 }
 
-/// <summary>Cálculos › Folha › Eventos contábeis: agrupa rubricas (e códigos ENC_*, PROV_*) em eventos; cada evento vira um lançamento na contabilização por eventos.</summary>
+/// <summary>Cadastros › Contábeis › Eventos contábeis: agrupa rubricas (e códigos ENC_*, PROV_*) em eventos; cada evento vira um lançamento na contabilização por eventos.</summary>
 public partial class EventosContabeisViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<EventoContabilLinha> Eventos { get; } = [];
