@@ -11,7 +11,6 @@
     <DataTemplate DataType="vm:TarefasViewModel"><v:TarefasView /></DataTemplate>
     <DataTemplate DataType="vm:ProtocolosViewModel"><v:ProtocolosView /></DataTemplate>
     <DataTemplate DataType="vm:ClientesEscritorioViewModel"><v:ClientesView /></DataTemplate>
-    <DataTemplate DataType="vm:FornecedoresEscritorioViewModel"><v:FornecedoresView /></DataTemplate>
     <DataTemplate DataType="vm:ContratosViewModel"><v:ContratosView /></DataTemplate>
     <DataTemplate DataType="vm:RelatorioEscritorioViewModel"><v:RelatorioEscritorioView /></DataTemplate>
   </Application.DataTemplates>

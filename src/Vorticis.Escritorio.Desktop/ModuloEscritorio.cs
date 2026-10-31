@@ -5,8 +5,8 @@ using Vorticis.Escritorio.Desktop.ViewModels;
 namespace Vorticis.Escritorio.Desktop;
 
 /// <summary>
-/// Módulo Escritório: gerenciador do escritório contábil, com cadastros próprios (clientes e fornecedores do escritório); o cliente
-/// pode ser cadastrado como empresa nos módulos do contrato. A empresa ativa é o próprio escritório. Permissões ESCRITORIO_* conferidas nos serviços.
+/// Módulo Escritório: só a gestão do próprio escritório contábil. Os clientes cadastrados aqui são as empresas usadas nos demais
+/// módulos (cadastradas neles pelos módulos do contrato). A empresa ativa é o próprio escritório, mostrado no topo como "Clientes". Permissões ESCRITORIO_* conferidas nos serviços.
 /// </summary>
 public sealed class ModuloEscritorio : IModuloDesktop
 {
@@ -22,9 +22,9 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public bool UsaClientesFornecedores => false;
     public bool UsaCalendarioObrigacoes => false;
 
-    /// <summary>Cadastros: Escritório (o cadastro de empresas, aqui só os escritórios), Clientes e Fornecedores.</summary>
+    /// <summary>Cadastros: Escritório (o cadastro de empresas, aqui só os escritórios) e Clientes; o escolhido no topo aparece como "Clientes:".</summary>
     public string RotuloEmpresas => "Escritório";
-    public string RotuloEmpresaAtiva => "Escritório";
+    public string RotuloEmpresaAtiva => "Clientes";
 
     /// <summary>Usuários, controle de acesso e banco de dados (conexão, backup, restauração, limpeza) da suíte ficam no Escritório.</summary>
     public bool GerenciaSistema => true;
@@ -32,7 +32,6 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public IReadOnlyList<ItemMenu> ItensCadastros { get; } =
     [
         ItemMenu.Tela("Clientes", EscritorioTelas.Clientes),
-        ItemMenu.Tela("Fornecedores", EscritorioTelas.Fornecedores),
     ];
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
@@ -67,10 +66,6 @@ public sealed class ModuloEscritorio : IModuloDesktop
         c.Instancia("ClientesEscritorio", m => new ClientesEscritorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(EscritorioTelas.Clientes, "Cadastros › Clientes",
-                  m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
-        c.Instancia("FornecedoresEscritorio", m => new FornecedoresEscritorioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(EscritorioTelas.Fornecedores, "Cadastros › Fornecedores",
                   m => Pode(m, Permissao.EscritorioTarefas, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
         c.Instancia("Contratos", m => new ContratosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)

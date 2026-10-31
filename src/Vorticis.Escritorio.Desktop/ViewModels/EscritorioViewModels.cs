@@ -16,7 +16,6 @@ public static class EscritorioTelas
     public const string Tarefas = "escritorio.tarefas";
     public const string Protocolos = "escritorio.protocolos";
     public const string Clientes = "escritorio.clientes";
-    public const string Fornecedores = "escritorio.fornecedores";
     public const string Contratos = "escritorio.contratos";
     public const string RelHonorarios = "escritorio.rel.honorarios";
 }
@@ -59,7 +58,7 @@ public sealed record PessoaLinha(PessoaEscritorio P)
 }
 
 /// <summary>
-/// Cadastro próprio do Escritório, separado em Cadastros › Clientes e Cadastros › Fornecedores (a mesma pessoa pode ser os dois).
+/// Cadastro próprio do Escritório (Cadastros › Clientes); a marca de fornecedor de cadastros antigos é preservada ao gravar.
 /// O cliente tem os dados do cadastro de empresas (importados pela consulta do CNPJ), os módulos do contrato (com algum marcado, a
 /// empresa é cadastrada nos demais módulos) e a aba Honorários e cobranças.
 /// </summary>
@@ -302,8 +301,6 @@ public sealed partial class ClientesEscritorioViewModel : PessoasViewModel
     }
 }
 
-/// <summary>Cadastros › Fornecedores: fornecedores do escritório (cadastro próprio).</summary>
-public sealed class FornecedoresEscritorioViewModel(IContexto contexto) : PessoasViewModel(contexto, false);
 
 // ---------------------------------------------------------------------------------------------- carteira
 
@@ -711,7 +708,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(co
 {
     public ObservableCollection<ContratoLinha> Lista { get; } = [];
     public ObservableCollection<Opcao<long?>> Partes { get; } = [];
-    public static IReadOnlyList<Opcao<ModeloContrato>> Modelos { get; } = [new(ModeloContrato.Cliente, "Cliente: prestação de serviços contábeis"), new(ModeloContrato.Fornecedor, "Fornecedor: fornecimento ao escritório")];
+    public static IReadOnlyList<Opcao<ModeloContrato>> Modelos { get; } = [new(ModeloContrato.Cliente, "Cliente: prestação de serviços contábeis")];
     public static IReadOnlyList<Opcao<Periodicidade>> Periodicidades { get; } = [.. Enum.GetValues<Periodicidade>().Select(p => new Opcao<Periodicidade>(p, p.Rotulo()))];
     public static IReadOnlyList<string> Indices => HonorariosViewModel.Indices;
     private IReadOnlyList<PessoaEscritorio> _pessoas = [];
@@ -931,9 +928,8 @@ public sealed class ParametrosViewModelEscritorio(IContexto contexto) : Parametr
     protected override IReadOnlyList<GrupoParametros> MontarGrupos() =>
     [
         new("Clientes", "Cadastro dos clientes, módulos do contrato e honorários.", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
-        new("Fornecedores", "Fornecedores do escritório.", [], [Atalho("Abrir Fornecedores", EscritorioTelas.Fornecedores)]),
         new("Honorários", "Valor, vencimento e reajuste de cada cliente (aba Honorários e cobranças do cliente).", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
-        new("Contratos", "Contratos com clientes e fornecedores.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
+        new("Contratos", "Contratos de prestação de serviços com os clientes.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
         new("Tarefas", "Prazos, responsáveis e recorrência.", [], [Atalho("Abrir Tarefas e prazos", EscritorioTelas.Tarefas)]),
     ];
 

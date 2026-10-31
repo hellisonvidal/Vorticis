@@ -310,10 +310,7 @@ public class MenusTests
     {
         var main = new Vorticis.Escritorio.Desktop.MainViewModel();
         var cli = new Vorticis.Escritorio.Desktop.ViewModels.ClientesEscritorioViewModel(main);
-        var forn = new Vorticis.Escritorio.Desktop.ViewModels.FornecedoresEscritorioViewModel(main);
         Assert.True(cli.ModoClientes);
-        Assert.False(forn.ModoClientes);
-        Assert.Equal("Também é fornecedor do escritório", cli.TextoOutroPapel);
         Assert.True(cli.Honorarios.EmbutidoNoCliente);
         Assert.False(cli.Honorarios.EscolheCliente);                 // o cliente é o do cadastro, sem caixa de escolha
         Assert.Equal(["Simples Nacional", "Lucro Presumido", "Lucro Real", "MEI", "Lucro Arbitrado", "Imune/isenta"],
@@ -332,12 +329,14 @@ public class MenusTests
     {
         var vm = new Vorticis.Escritorio.Desktop.MainViewModel();
         var cadastros = Folhas(vm.Menus[0].Filhos!).Select(i => i.Chave).ToList();
-        // Cadastros: Escritório (primeiro: o cadastro de empresas, aqui só os escritórios), Clientes e Fornecedores separados
+        // Cadastros: Escritório (primeiro: o cadastro de empresas, aqui só os escritórios) e Clientes; sem fornecedores (o módulo é só do escritório)
         Assert.Equal(TelasComuns.Empresas, cadastros[0]);
         Assert.Equal("Escritório", vm.Menus[0].Filhos![0].Titulo);
-        Assert.Equal("Escritório:", vm.RotuloEmpresaAtiva);
+        Assert.Equal("Clientes:", vm.RotuloEmpresaAtiva);
         Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Clientes, cadastros);
-        Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Fornecedores, cadastros);
+        Assert.Equal(["Escritório", "Clientes"], vm.Menus[0].Filhos!.Where(i => i.Chave is not null && i.Chave != TelasComuns.Parametros && i.Chave != TelasComuns.Menus).Select(i => i.Titulo));
+        Assert.False(vm.ConheceTela("escritorio.fornecedores"));
+        Assert.Equal([Vorticis.Escritorio.ModeloContrato.Cliente], Vorticis.Escritorio.Desktop.ViewModels.ContratosViewModel.Modelos.Select(m => m.Valor));
         Assert.Equal("Empresa:", new Vorticis.Fiscal.Desktop.MainViewModel().RotuloEmpresaAtiva);
         foreach (var compartilhado in new[] { TelasComuns.Contabilidade, TelasComuns.Clientes, TelasComuns.Fornecedores, TelasComuns.Socios })
             Assert.DoesNotContain(compartilhado, cadastros);

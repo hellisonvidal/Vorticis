@@ -1,6 +1,6 @@
 # Escritório
 
-Módulo **Vorticis Escritório** (ícone azul): o gerenciador do escritório contábil. Os clientes e fornecedores do escritório são cadastrados aqui; o cliente pode ser levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Escritório:**, é o **próprio escritório**.
+Módulo **Vorticis Escritório** (ícone azul): o gerenciador **do próprio escritório contábil**. As empresas usadas nos demais módulos são os **clientes** cadastrados aqui: o cliente é levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Clientes:**, é o **próprio escritório**, dono das tarefas, protocolos, honorários e contratos. O Escritório não tem cadastro de fornecedores.
 
 Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
 
@@ -25,7 +25,7 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 ### Dados cadastrais
 1. Clique em **Incluir**; o código é sugerido.
 2. Digite o **CNPJ/CPF** e clique em **Buscar na Receita**: razão social, nome fantasia, natureza jurídica, CNAE, início das atividades, endereço, município (com o código IBGE), e-mail e telefone são preenchidos, como no cadastro de empresas. O regime vem sugerido quando o cliente é do Simples ou MEI; nos demais, escolha **Regime tributário**.
-3. Complete o que faltar (contato, inscrição estadual, observação). Marque **Também é fornecedor do escritório** se ele também vende para o escritório.
+3. Complete o que faltar (contato, inscrição estadual, observação).
 4. **Gravar**. Cliente com tarefas, honorários, protocolos ou contratos não pode ser excluído: desmarque **Ativo**.
 
 ### Módulos do contrato
@@ -39,15 +39,6 @@ Desmarcar um módulo aqui não apaga nada no módulo: para tirar a empresa de um
 
 ### Honorários e cobranças
 Aba **Honorários e cobranças** do cliente selecionado (veja [Honorários e cobranças](#honorarios-e-cobrancas)): o honorário mostrado e gravado é o do cliente da lista, e as cobranças listadas são só as dele, de todos os meses.
-
-## Fornecedores
-
-**Para que serve:** cadastrar de quem o escritório compra (cadastro próprio, não aparece nos demais módulos).
-**Onde fica:** *Cadastros › Fornecedores*.
-
-1. Clique em **Incluir**; o código é sugerido.
-2. Informe o **nome**, o **CNPJ/CPF** (conferido) e, se quiser, contato, e-mail, telefone, endereço, município e UF. Marque **Também é cliente do escritório** quando for o caso (ele passa a aparecer também em Clientes).
-3. **Gravar**.
 
 ## Carteira de clientes
 
@@ -78,10 +69,10 @@ Use a lista no topo para ver as tarefas de um cliente ou de todos, e **Só as em
 
 ## Gerador de contratos
 
-**Para que serve:** montar o contrato de prestação de serviços contábeis com o cliente, ou o contrato de fornecimento com o fornecedor, já com os dados das partes, e exportar em PDF (com assinatura digital, se quiser) ou em Word.
+**Para que serve:** montar o contrato de prestação de serviços contábeis com o cliente, já com os dados das partes, e exportar em PDF (com assinatura digital, se quiser) ou em Word.
 **Onde fica:** *Relatórios › Gerador de contratos*.
 
-1. **Novo contrato** e escolha o **Tipo**: *Cliente* (o cliente é o contratante e o escritório, o contratado) ou *Fornecedor* (o escritório é o contratante).
+1. **Novo contrato**: o **Tipo** é *Cliente* (o cliente é o contratante e o escritório, o contratado).
 2. Escolha a **Parte** (do cadastro próprio do escritório), confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*), o **dia** do vencimento, a **vigência** (sem fim = prazo indeterminado), o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
 3. **Gerar texto**: o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
 4. **Gravar**: o contrato recebe o próximo número do escritório.
@@ -120,4 +111,4 @@ A lista mostra as cobranças do cliente de todos os meses; marque **Só em abert
 
 ## Parâmetros
 
-*Cadastros › Parâmetros* traz atalhos para o cadastro de clientes e fornecedores, os honorários, o gerador de contratos e as tarefas.
+*Cadastros › Parâmetros* traz atalhos para o cadastro de clientes, os honorários, o gerador de contratos e as tarefas.

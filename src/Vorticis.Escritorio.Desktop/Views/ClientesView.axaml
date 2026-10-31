@@ -74,8 +74,7 @@
               <TextBox Grid.Row="14" Grid.Column="1" Text="{Binding Telefone}" />
               <TextBlock Grid.Row="15" Classes="rotulo" Text="Observação" />
               <TextBox Grid.Row="15" Grid.Column="1" Text="{Binding Observacao}" />
-              <CheckBox Grid.Row="16" Grid.Column="1" Content="{Binding TextoOutroPapel}" IsChecked="{Binding OutroPapel}" />
-              <CheckBox Grid.Row="17" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
+              <CheckBox Grid.Row="16" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
             </Grid>
             <TextBlock Text="{Binding OrigemDados}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
             <c:MensagensView />
