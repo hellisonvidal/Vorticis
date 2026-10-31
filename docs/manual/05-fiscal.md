@@ -167,7 +167,7 @@ Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (e
 2. Selecione o mês e clique em **Fechar mês**. Se houver notas não contabilizadas, o aviso aparece antes de confirmar.
 3. Com o mês fechado, as notas com data de entrada/saída no mês **não podem ser incluídas, alteradas nem excluídas** (digitação, importação de XML ou pela chave). A contabilização das notas continua permitida.
 4. Para corrigir algo, selecione o mês e clique em **Reabrir mês**. Mês com a DCTFWeb já transmitida não reabre: desfaça antes o registro da transmissão em [DCTFWeb (MIT)](#dctfweb-mit).
-5. Com o mês fechado, prepare a DCTFWeb do mês em *Obrigações › DCTFWeb (MIT)*.
+5. Com o mês fechado, prepare a DCTFWeb do mês em *Apuração › Obrigações › DCTFWeb (MIT)*.
 
 **Atenção:** empresa do Simples Nacional não usa este fechamento (o período é encerrado pela apuração do DAS). O regime vem do cadastro da empresa.
 
@@ -307,14 +307,14 @@ Um tributo bloqueado que já tenha contas gravadas continua liberado, para você
 ## Retenções e guias
 
 ### Retenções (IRRF, CSRF, INSS, ISS)
-**Onde fica:** *Obrigações › Retenções (IRRF, CSRF, INSS, ISS)*.
+**Onde fica:** *Apuração › Obrigações › Retenções (IRRF, CSRF, INSS, ISS)*.
 1. Escolha o período e **Consultar**.
 2. **Gerar das notas** cria as retenções (sofridas e efetuadas) a partir dos documentos.
 3. Para lançar à mão, use *Nova retenção (lançamento manual)*: tributo, sentido, base de cálculo, valor retido e código da receita, e **Incluir**.
 4. **Excluir selecionada** apaga uma retenção.
 
 ### Guias de recolhimento
-**Onde fica:** *Obrigações › Guias de recolhimento*.
+**Onde fica:** *Apuração › Obrigações › Guias de recolhimento*.
 1. Escolha as competências e **Consultar**.
 2. **Gerar guias** cria DAS, DARF (com código de receita), DCTFWeb/GPS do INSS (informativo) e ISS a partir das apurações e retenções.
 3. Selecione a guia e **Marcar como paga** (ou **Reabrir**). Guias manuais: *Nova guia (manual)* e **Excluir (manual)**.
@@ -324,9 +324,9 @@ Guias com vencimento próximo aparecem no calendário de obrigações e na tela 
 ### DCTFWeb (MIT)
 
 **Para que serve:** preparar a DCTFWeb do mês com os débitos dos tributos federais apurados (IRPJ, CSLL, PIS, COFINS e DARF lançados à mão), que são informados pelo **MIT** (Módulo de Inclusão de Tributos), e guardar o recibo da transmissão. Só depois da apuração encerrada.
-**Onde fica:** *Obrigações › DCTFWeb (MIT)* (empresas do Lucro Presumido ou Real).
+**Onde fica:** *Apuração › Obrigações › DCTFWeb (MIT)* (empresas do Lucro Presumido ou Real).
 
-1. Faça as apurações do mês e gere as guias em *Obrigações › Guias de recolhimento*.
+1. Faça as apurações do mês e gere as guias em *Apuração › Obrigações › Guias de recolhimento*.
 2. Encerre o mês em *Apuração › Fechamento do período fiscal*. Enquanto o mês estiver aberto, a declaração não pode ser preparada (a lista mostra *Apuração em aberto: feche o mês antes*).
 3. Escolha o **Ano**, clique no mês na lista e em **Conferir débitos** para ver o que vai para a declaração, sem gravar.
 4. **Preparar declaração** grava os débitos do mês: um por tributo e código de receita, com o total. Mês sem débitos fica como declaração *sem movimento*. As retenções (IRRF, CSRF, INSS retido) e o INSS da folha aparecem só para conferência, porque chegam à DCTFWeb pela EFD-Reinf e pelo eSocial.
@@ -370,7 +370,7 @@ Notas canceladas, denegadas e NFS-e não entram. No livro do IPI só entram os i
 ## SPED EFD ICMS/IPI
 
 **Para que serve:** gerar o arquivo da EFD ICMS/IPI (SPED Fiscal) do mês.
-**Onde fica:** *Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*.
+**Onde fica:** *Apuração › Obrigações › SPED › EFD ICMS/IPI (SPED Fiscal)*.
 
 **Antes de gerar (configuração):** deixe o padrão da empresa em *Cadastros › Parâmetros*, grupo *EFD ICMS/IPI* (perfil, atividade, códigos de receita e dia de vencimento do ICMS): o assistente já abre preenchido. Lance também, se houver, os [outros lançamentos do SPED Fiscal](#outros-lancamentos-do-sped-fiscal).
 
@@ -420,7 +420,7 @@ Cadastro simples dos códigos que a empresa usa. Escolha o **Imposto**, informe 
 
 ## SPED EFD-Contribuições
 
-**Onde fica:** *Obrigações › SPED › EFD-Contribuições (PIS/COFINS)*. Mesmo assistente de cinco passos.
+**Onde fica:** *Apuração › Obrigações › SPED › EFD-Contribuições (PIS/COFINS)*. Mesmo assistente de cinco passos.
 
 1. No passo 1 informe a **natureza da pessoa jurídica**, a **atividade preponderante** e, para retificadora, o recibo da escrituração anterior. Salve as opções como padrão.
 2. Siga os passos 2 a 5 como na EFD ICMS/IPI (arquivo `EFD_CONTRIBUICOES_<CNPJ>_<AAAAMM>.txt`).

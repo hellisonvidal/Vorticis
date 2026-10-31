@@ -73,15 +73,16 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
             ItemMenu.Tela("Planejamento tributário", Telas.Planejamento),
             ItemMenu.Separador,
-            ItemMenu.Tela("Fechamento do período fiscal", Telas.FechamentoFiscal)),
-        ItemMenu.Submenu("_Obrigações",
-            ItemMenu.Tela("Retenções (IRRF, CSRF, INSS, ISS)", Telas.Retencoes),
-            ItemMenu.Tela("Guias de recolhimento", Telas.Guias),
-            ItemMenu.Tela("DCTFWeb (MIT)", Telas.DctfWeb),
+            ItemMenu.Tela("Fechamento do período fiscal", Telas.FechamentoFiscal),
             ItemMenu.Separador,
-            ItemMenu.Submenu("SPED",
-                ItemMenu.Tela("EFD ICMS/IPI (SPED Fiscal)", Telas.EfdIcms),
-                ItemMenu.Tela("EFD-Contribuições (PIS/COFINS)", Telas.EfdContribuicoes))),
+            ItemMenu.Submenu("_Obrigações",
+                ItemMenu.Tela("Retenções (IRRF, CSRF, INSS, ISS)", Telas.Retencoes),
+                ItemMenu.Tela("Guias de recolhimento", Telas.Guias),
+                ItemMenu.Tela("DCTFWeb (MIT)", Telas.DctfWeb),
+                ItemMenu.Separador,
+                ItemMenu.Submenu("SPED",
+                    ItemMenu.Tela("EFD ICMS/IPI (SPED Fiscal)", Telas.EfdIcms),
+                    ItemMenu.Tela("EFD-Contribuições (PIS/COFINS)", Telas.EfdContribuicoes)))),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Submenu("_Livros e apuração",
                 ItemMenu.Tela("Livro de Registro de Entradas", Telas.LivroEntradas),
@@ -168,7 +169,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("DctfWeb", m => new DctfWebViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.DctfWeb, "Obrigações › DCTFWeb (MIT)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());
+            .Tela(Telas.DctfWeb, "Apuração › Obrigações › DCTFWeb (MIT)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());
         c.Instancia("Planejamento", m => new PlanejamentoTributarioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.Planejamento, "Apuração › Planejamento tributário", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());
@@ -197,16 +198,16 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.FechamentoFiscal, "Apuração › Fechamento do período fiscal", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
 
         c.Instancia("Retencoes", m => new RetencoesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.Retencoes, "Obrigações › Retenções", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
+            .Tela(Telas.Retencoes, "Apuração › Obrigações › Retenções", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
         c.Instancia("Guias", m => new GuiasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.Guias, "Obrigações › Guias de recolhimento", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
+            .Tela(Telas.Guias, "Apuração › Obrigações › Guias de recolhimento", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalRetencoesManter), v => v.ConsultarAsync());
 
         c.Instancia("EfdIcms", m => new EfdIcmsAssistenteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.EfdIcms, "Obrigações › SPED › EFD ICMS/IPI", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
+            .Tela(Telas.EfdIcms, "Apuração › Obrigações › SPED › EFD ICMS/IPI", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
         c.Instancia("EfdContribuicoes", m => new EfdContribuicoesAssistenteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.EfdContribuicoes, "Obrigações › SPED › EFD-Contribuições", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
+            .Tela(Telas.EfdContribuicoes, "Apuração › Obrigações › SPED › EFD-Contribuições", m => m.Pode(Permissao.FiscalSpedGerar), v => v.CarregarAsync());
 
         c.Instancia("LivroEntradas", m => new LivroEntradasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.LivroEntradas, "Relatórios › Livros e apuração › Livro de Registro de Entradas", m => m.Pode(Permissao.FiscalRelatorios));

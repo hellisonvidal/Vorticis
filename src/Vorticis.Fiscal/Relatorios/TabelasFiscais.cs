@@ -221,7 +221,7 @@ public static class TabelasFiscais
         if (a.Pendencias.Count == 0) rows.Add(L(false, "   Nenhuma pendência: o arquivo pode ser gerado.", "", "", null, null, null, null, null, null, ""));
         foreach (var p in a.Pendencias) rows.Add(L(false, "   " + p.Mensagem, p.Codigo, "", null, null, null, null, null, null, p.Bloqueante ? "Bloqueia a geração" : "Aviso"));
         return new TabelaRelatorio($"Conferência da EFD ICMS/IPI — {a.Inicio:MM/yyyy}", ColunasConferencia, rows,
-            $"{docs.Count} nota(s) autorizada(s) conferida(s). Arquivo montado só para conferência; para gerar, use Obrigações › SPED › EFD ICMS/IPI.");
+            $"{docs.Count} nota(s) autorizada(s) conferida(s). Arquivo montado só para conferência; para gerar, use Apuração › Obrigações › SPED › EFD ICMS/IPI.");
     }
 
     private static string Numeros(decimal v) => v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));

@@ -197,6 +197,7 @@ public static class IconesMenu
         ["relatorios > bi"] = "ChartBubble",
         ["relatorios > depreciacao"] = "ChartLineVariant",
         ["obrigacoes > sped"] = "FileCodeOutline",
+        ["apuracao > obrigacoes"] = "BellOutline",
         ["relatorios > livros e apuracao"] = "Bookshelf",
         ["relatorios > resumos"] = "TextBoxMultipleOutline",
         ["relatorios > duplicatas"] = "ReceiptTextSendOutline",

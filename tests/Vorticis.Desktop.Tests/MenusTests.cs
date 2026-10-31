@@ -131,13 +131,17 @@ public class MenusTests
         Assert.DoesNotContain(contabil.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
         var consultas = Assert.Single(contabil.Menus, m => m.Titulo.Replace("_", "") == "Consultas");
         Assert.Contains(Folhas(consultas.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        MainViewModelBase[] outros = [new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel()];
-        foreach (var vm in outros)
-        {
-            Assert.DoesNotContain(vm.Menus, m => m.Titulo.Contains("genda"));
-            var obrig = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
-            Assert.Contains(Folhas(obrig.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
-        }
+        var folha = new Vorticis.Folha.Desktop.MainViewModel();
+        var obrigFolha = Assert.Single(folha.Menus, m => m.Titulo.Replace("_", "") == "Obrigações");
+        Assert.Contains(Folhas(obrigFolha.Filhos!), i => i.Chave == TelasComuns.Obrigacoes);
+        // Fiscal: Obrigações é submenu de Apuração, com o calendário no início; não há menu Obrigações no topo
+        var fiscal = new Vorticis.Fiscal.Desktop.MainViewModel();
+        Assert.DoesNotContain(fiscal.Menus, m => m.Titulo.Replace("_", "") == "Obrigações" || m.Titulo.Contains("genda"));
+        var apuracao = Assert.Single(fiscal.Menus, m => m.Titulo == "_Apuração");
+        var obrig = Assert.Single(apuracao.Filhos!, m => m.Titulo.Replace("_", "") == "Obrigações");
+        Assert.Equal(TelasComuns.Obrigacoes, obrig.Filhos![0].Chave);
+        Assert.Contains(Folhas(obrig.Filhos), i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.DctfWeb);
+        Assert.Single(Folhas(fiscal.Menus), i => i.Chave == TelasComuns.Obrigacoes);
         // o ERP (rotina da empresa, não do escritório contábil), o Condomínio não têm calendário de obrigações
         foreach (var sem in new MainViewModelBase[] { new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel() })
         {

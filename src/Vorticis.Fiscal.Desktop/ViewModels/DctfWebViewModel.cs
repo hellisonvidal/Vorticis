@@ -54,7 +54,7 @@ public partial class DctfWebViewModel(IContexto contexto) : RelatorioFiscalViewM
         foreach (var x in d.Informativos) linhas.Add(new LinhaRelatorio([x.Tributo, x.CodigoReceita, x.Descricao, x.Valor]));
         return new TabelaRelatorio($"DCTFWeb {d.Competencia:MM/yyyy} · débitos do MIT",
             [new("Tributo", TipoColuna.Texto, 2.5), new("Código", TipoColuna.Texto, 2), new("Descrição", TipoColuna.Texto, 8), new("Valor", TipoColuna.Valor, 3)], linhas,
-            "Os débitos do MIT saem das guias DARF das apurações (Obrigações › Guias de recolhimento). As linhas \"pela EFD-Reinf\" e \"pelo eSocial\" chegam à DCTFWeb sozinhas: só conferência.");
+            "Os débitos do MIT saem das guias DARF das apurações (Apuração › Obrigações › Guias de recolhimento). As linhas \"pela EFD-Reinf\" e \"pelo eSocial\" chegam à DCTFWeb sozinhas: só conferência.");
     }
 
     private Task Exibir(Func<VorticisApp, long, long, DateOnly, Task<Vorticis.Domain.Comum.Resultado<DeclaracaoDctf>>> obter, string mensagem) =>

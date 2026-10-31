@@ -298,6 +298,27 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         yield return ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair);
     }
 
+    /// <summary>Põe o calendário no início do primeiro submenu "Obrigações" (no topo ou um nível abaixo). False se não houver.</summary>
+    private static bool ComCalendario(List<ItemMenu> itens, ItemMenu calendario)
+    {
+        for (var i = 0; i < itens.Count; i++)
+        {
+            if (itens[i].Filhos is not { } filhos) continue;
+            if (itens[i].Titulo.Replace("_", "") == "Obrigações")
+            {
+                itens[i] = itens[i] with { Filhos = [calendario, ItemMenu.Separador, .. filhos] };
+                return true;
+            }
+            var sub = filhos.ToList();
+            if (sub.Any(f => f.Filhos is not null && f.Titulo.Replace("_", "") == "Obrigações") && ComCalendario(sub, calendario))
+            {
+                itens[i] = itens[i] with { Filhos = sub };
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Menus do casco em volta dos do módulo.</summary>
     private IReadOnlyList<ItemMenu> MontarMenus()
     {
@@ -314,14 +335,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         // sem nenhum dos dois, o casco cria o menu "Obrigações".
         var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);
         var menusModulo = Modulo.Menus.ToList();
-        var posObrig = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Obrigações");
         var posConsultas = menusModulo.FindIndex(m => m.Titulo.Replace("_", "") == "Consultas");
         if (!Modulo.UsaCalendarioObrigacoes) { }
-        else if (posObrig >= 0)
-        {
-            var o = menusModulo[posObrig];
-            menusModulo[posObrig] = o with { Filhos = [calendario, ItemMenu.Separador, .. o.Filhos ?? []] };
-        }
+        else if (ComCalendario(menusModulo, calendario)) { }   // submenu "Obrigações" no topo ou dentro de outro menu (Fiscal: Apuração › Obrigações)
         else if (posConsultas >= 0)
         {
             var c = menusModulo[posConsultas];
