@@ -128,7 +128,7 @@ public abstract partial class MainViewModelBase
     private void AvisarTelaOculta(string tela)
     {
         var titulo = _catalogo.Telas.TryGetValue(tela, out var def) && !string.IsNullOrWhiteSpace(def.Titulo) ? def.Titulo : tela;
-        Status = $"A função \"{titulo}\" está oculta nas suas preferências de menu. Para usá-la, marque-a de novo em Cadastros › Menus do programa.";
+        Status = $"A função \"{titulo}\" está oculta nas suas preferências de menu. Para usá-la, marque-a de novo em {CaminhoMenusDoPrograma}.";
     }
 
     /// <summary>Atalho de teclado ou chamada direta: abre a tela ou, se ela foi escondida do menu, avisa na barra de status.</summary>

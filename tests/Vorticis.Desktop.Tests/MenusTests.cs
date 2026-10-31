@@ -204,7 +204,7 @@ public class MenusTests
         foreach (var vm in modulos)
         {
             var cadastros = vm.Menus[0];
-            Assert.Contains(cadastros.Filhos!, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);
+            Assert.Contains(cadastros.Filhos!, i => i.Titulo == "Parâmetros" && (i.Chave == TelasComuns.Parametros || i.Filhos?.Any(f => f.Chave == TelasComuns.Parametros) == true));
             Assert.True(vm.ConheceTela(TelasComuns.Parametros));
         }
     }

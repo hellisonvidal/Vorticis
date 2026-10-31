@@ -71,6 +71,12 @@ public interface IModuloDesktop
     bool UsaCadastrosComuns => true;
 
     /// <summary>
+    /// Cadastros › Parâmetros vira um submenu com os parâmetros do módulo e os Menus do programa (o Escritório); nos demais,
+    /// Menus do programa fica logo abaixo de Parâmetros, em Cadastros.
+    /// </summary>
+    bool MenusNosParametros => false;
+
+    /// <summary>
     /// Recursos ligados nos parâmetros da empresa ativa (ex.: "gerencial" no Contábil): os itens de menu marcados com
     /// <see cref="ItemMenu.SoCom"/> só aparecem quando o recurso está na lista.
     /// </summary>

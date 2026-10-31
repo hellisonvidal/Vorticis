@@ -21,6 +21,7 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public bool UsaCadastrosComuns => false;
     public bool UsaClientesFornecedores => false;
     public bool UsaCalendarioObrigacoes => false;
+    public bool MenusNosParametros => true;
 
     /// <summary>Cadastros: Escritório (o cadastro de empresas, aqui só os escritórios) e Clientes; o escolhido no topo aparece como "Clientes:".</summary>
     public string RotuloEmpresas => "Escritório";

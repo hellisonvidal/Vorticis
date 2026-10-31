@@ -35,6 +35,21 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
     }
 
     [Fact]
+    public void No_Escritorio_Menus_do_programa_fica_dentro_de_Parametros()
+    {
+        var vm = new Vorticis.Escritorio.Desktop.MainViewModel();
+        var cadastros = vm.Menus[0].Filhos!;
+        Assert.DoesNotContain(cadastros, i => i.Chave == TelasComuns.Menus || i.Chave == TelasComuns.Parametros);
+        var parametros = Assert.Single(cadastros, i => i.Titulo == "Parâmetros" && i.Filhos is not null);
+        Assert.Equal([("Parâmetros do Escritório", TelasComuns.Parametros), ("Menus do programa", TelasComuns.Menus)],
+                     parametros.Filhos!.Select(i => (i.Titulo, i.Chave!)));
+        Assert.Equal("Cadastros › Parâmetros › Menus do programa", vm.CaminhoMenusDoPrograma);
+        Assert.Contains(vm.ArvoreDeMenus().Single(n => n.Titulo == "Cadastros").Filhos, n => n.Titulo == "Parâmetros" && n.Essencial);
+        var tela = new Vorticis.Escritorio.Desktop.ViewModels.ParametrosViewModelEscritorio(vm);
+        Assert.Contains(tela.Grupos, g => g.Titulo == "Menus do programa");
+    }
+
+    [Fact]
     public void Cadastros_tem_Parametros_e_Menus_do_programa_e_a_contabilizacao_em_lote_so_com_a_empresa_em_lote()
     {
         var vm = new Vorticis.Desktop.ViewModels.MainViewModel();

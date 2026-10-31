@@ -165,6 +165,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public FormasPagamentoViewModel FormasPagamento => Instancia<FormasPagamentoViewModel>();
     public ConexaoViewModel Conexao => Instancia<ConexaoViewModel>();
     public PreferenciasMenuViewModel MenusDoPrograma => Instancia<PreferenciasMenuViewModel>();
+
+    /// <summary>Onde fica a tela Menus do programa (no Escritório, dentro de Parâmetros).</summary>
+    public string CaminhoMenusDoPrograma => Modulo.MenusNosParametros ? "Cadastros › Parâmetros › Menus do programa" : "Cadastros › Menus do programa";
     public ContabilizacaoLoteViewModel ContabilizacaoLote => Instancia<ContabilizacaoLoteViewModel>();
     public InicioViewModel Inicio => Instancia<InicioViewModel>();
     public CadastroEmpresaViewModel Empresas => Instancia<CadastroEmpresaViewModel>();
@@ -202,7 +205,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
         c.Instancia(nameof(MenusDoPrograma), m => new PreferenciasMenuViewModel(m),
                     aoTrocarEmpresa: (v, ativa) => { if (ativa) v.Carregar(); return Task.CompletedTask; })
-            .Tela(TelasComuns.Menus, "Cadastros › Menus do programa", ComAcesso, v => { v.Carregar(); return Task.CompletedTask; });
+            .Tela(TelasComuns.Menus, CaminhoMenusDoPrograma, ComAcesso, v => { v.Carregar(); return Task.CompletedTask; });
 
         c.Instancia(nameof(ContabilizacaoLote), m => new ContabilizacaoLoteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
@@ -303,7 +306,10 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (Modulo.UsaCadastrosComuns && Modulo.UsaClientesFornecedores)
             cadastros.AddRange([ItemMenu.Tela("Clientes", TelasComuns.Clientes), ItemMenu.Tela("Fornecedores", TelasComuns.Fornecedores)]);
         if (Modulo.ItensCadastros.Count > 0) cadastros.AddRange(Modulo.ItensCadastros.Prepend(ItemMenu.Separador));
-        cadastros.AddRange([ItemMenu.Separador, ItemMenu.Tela("Parâmetros", TelasComuns.Parametros), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)]);
+        cadastros.Add(ItemMenu.Separador);
+        if (Modulo.MenusNosParametros)
+            cadastros.Add(ItemMenu.Submenu("Parâmetros", ItemMenu.Tela($"Parâmetros do {Modulo.NomeCurto}", TelasComuns.Parametros), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)));
+        else cadastros.AddRange([ItemMenu.Tela("Parâmetros", TelasComuns.Parametros), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)]);
         // O calendário de obrigações fica em "Obrigações", se o módulo tem esse menu; senão, em "Consultas";
         // sem nenhum dos dois, o casco cria o menu "Obrigações".
         var calendario = ItemMenu.Tela("Calendário de obrigações", TelasComuns.Obrigacoes);

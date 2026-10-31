@@ -171,7 +171,7 @@ No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF,
 
 **Para que serve:** deixar o menu só com o que você usa no dia a dia.
 
-**Onde fica:** *Cadastros › Menus do programa* (em todos os módulos).
+**Onde fica:** *Cadastros › Menus do programa* (em todos os módulos; no Escritório, dentro de *Cadastros › Parâmetros › Menus do programa*).
 
 **Como usar:**
 1. Abra *Cadastros › Menus do programa*. Aparece a lista dos menus e itens, em árvore, com uma caixa de marcação em cada um.

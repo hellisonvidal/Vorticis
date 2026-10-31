@@ -931,6 +931,8 @@ public sealed class ParametrosViewModelEscritorio(IContexto contexto) : Parametr
         new("Honorários", "Valor, vencimento e reajuste de cada cliente (aba Honorários e cobranças do cliente).", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
         new("Contratos", "Contratos de prestação de serviços com os clientes.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
         new("Tarefas", "Prazos, responsáveis e recorrência.", [], [Atalho("Abrir Tarefas e prazos", EscritorioTelas.Tarefas)]),
+        new("Menus do programa", "Escolha os itens de menu que cada usuário vê (ou que o administrador esconde para todos).", [],
+            [Atalho("Abrir Menus do programa", TelasComuns.Menus)]),
     ];
 
     protected override Task CarregarValoresAsync(VorticisApp app, long empresa, long usuario) => Task.CompletedTask;

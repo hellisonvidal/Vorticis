@@ -111,4 +111,4 @@ A lista mostra as cobranças do cliente de todos os meses; marque **Só em abert
 
 ## Parâmetros
 
-*Cadastros › Parâmetros* traz atalhos para o cadastro de clientes, os honorários, o gerador de contratos e as tarefas.
+*Cadastros › Parâmetros* é um submenu com **Parâmetros do Escritório** e **Menus do programa** (a escolha dos itens de menu que cada usuário vê; veja [Menus do programa](02-cadastros-comuns.md#menus-do-programa)). Os Parâmetros do Escritório trazem atalhos para o cadastro de clientes, os honorários, o gerador de contratos e as tarefas.
