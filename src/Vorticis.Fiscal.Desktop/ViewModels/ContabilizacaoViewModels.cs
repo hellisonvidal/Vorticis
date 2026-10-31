@@ -43,10 +43,29 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
     public TipoOperacao Sentido => Aba == 1 ? TipoOperacao.Saida : TipoOperacao.Entrada;
     private ObservableCollection<RegraLinha> ListaAtual => Aba == 1 ? RegrasSaida : RegrasEntrada;
 
-    public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeManter));
+    /// <summary>Aba Provisões de impostos (contas das provisões de cada tributo).</summary>
+    public ProvisoesImpostosViewModel Provisoes { get; } = new(contexto);
 
-    public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    /// <summary>Aba Duplicatas e baixas (duplicata à vista, contas e históricos das baixas).</summary>
+    public DuplicatasBaixasViewModel Duplicatas { get; } = new(contexto);
+
+    public void AtualizarPermissoes()
     {
+        OnPropertyChanged(nameof(PodeManter));
+        Provisoes.AtualizarPermissoes();
+        Duplicatas.AtualizarPermissoes();
+    }
+
+    public async Task CarregarAsync()
+    {
+        await CarregarRegrasAsync();
+        await Provisoes.CarregarAsync();
+        await Duplicatas.CarregarAsync();
+    }
+
+    private Task CarregarRegrasAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (!PodeManter) return;
         var r = await app.Fiscal().Contabilizacao.ListarRegrasAsync(empresa, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         RegrasEntrada.Clear();

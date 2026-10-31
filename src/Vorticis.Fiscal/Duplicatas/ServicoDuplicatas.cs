@@ -180,7 +180,7 @@ public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, Servic
         var pagar = d.Tipo == TipoDuplicata.Pagar;
         string? Exigir(string? conta, string rotulo)
         {
-            if (string.IsNullOrWhiteSpace(conta)) erros.Add($"Informe a conta de {rotulo} em Cadastros › Parâmetros (Parâmetros do Fiscal).");
+            if (string.IsNullOrWhiteSpace(conta)) erros.Add($"Informe a conta de {rotulo} em Cadastros › Regras de contabilização, aba Duplicatas e baixas.");
             return conta;
         }
         var contaPart = Exigir(cfg.ContaParticipante(d.Tipo), pagar ? "fornecedores" : "clientes");
@@ -403,7 +403,7 @@ public sealed class ServicoDuplicatas(IRepositorioDuplicatas repositorio, Servic
         var cfg = await repositorio.ObterConfiguracaoAsync(empresaId, ct);
         var contaPart = cfg.ContaParticipante(d.Tipo);
         if (string.IsNullOrWhiteSpace(contaPart))
-            return Resultado<long>.Falha($"Informe a conta de {(d.Tipo == TipoDuplicata.Pagar ? "fornecedores" : "clientes")} em Cadastros › Parâmetros (Parâmetros do Fiscal).");
+            return Resultado<long>.Falha($"Informe a conta de {(d.Tipo == TipoDuplicata.Pagar ? "fornecedores" : "clientes")} em Cadastros › Regras de contabilização, aba Duplicatas e baixas.");
         var baixa = new NovaBaixa(duplicataId, m.Data, d.Saldo, 0, 0, 0, m.ContaBanco);
 
         try

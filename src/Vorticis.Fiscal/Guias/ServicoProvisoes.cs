@@ -100,7 +100,7 @@ public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IReposit
         foreach (var (tributo, valor) in itens.Where(i => i.Valor > 0))
         {
             if (!configuradas.TryGetValue(tributo, out var c))
-                return Resultado<long>.Falha($"Configure as contas de despesa e de passivo do tributo {tributo} em Cadastros › Parâmetros (Contabilização das provisões de impostos).");
+                return Resultado<long>.Falha($"Configure as contas de despesa e de passivo do tributo {tributo} em Cadastros › Regras de contabilização, aba Provisões de impostos.");
             partidas.Add(new PartidaProposta(c.ContaDespesa, IndicadorDC.D, valor, $"{historico} · {tributo}"));
             partidas.Add(new PartidaProposta(c.ContaPassivo, IndicadorDC.C, valor, $"{historico} · {tributo}"));
         }

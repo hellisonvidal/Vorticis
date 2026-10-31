@@ -134,7 +134,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.Documentos, "Documentos fiscais › Consulta de documentos", m => m.Pode(Permissao.FiscalDocumentosConsultar));
         c.Instancia("RegrasContabilizacao", m => new RegrasContabilizacaoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.RegrasContabilizacao, "Cadastros › Regras de contabilização", m => m.Pode(Permissao.FiscalContabilizar), v => v.CarregarAsync());
+            .Tela(Telas.RegrasContabilizacao, "Cadastros › Regras de contabilização",
+                  m => m.Pode(Permissao.FiscalContabilizar) || m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalDuplicatasManter), v => v.CarregarAsync());
         c.Instancia("ContabilizarNotas", m => new ContabilizarNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ContabilizarNotas, "Documentos fiscais › Contabilizar notas fiscais", m => m.Pode(Permissao.FiscalContabilizar));
 

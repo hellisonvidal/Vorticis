@@ -5,7 +5,9 @@
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.RegrasContabilizacaoView"
              x:DataType="vm:RegrasContabilizacaoViewModel">
-  <!-- Documentos fiscais › Regras de contabilização -->
+  <!-- Cadastros › Regras de contabilização: regras das notas, provisões de impostos e duplicatas e baixas -->
+  <TabControl Margin="4">
+   <TabItem Header="Regras das notas">
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Regras de contabilização das notas fiscais" />
@@ -62,4 +64,12 @@
       </TabItem>
     </TabControl>
   </DockPanel>
+   </TabItem>
+   <TabItem Header="Provisões de impostos">
+     <c:ParametrosView DataContext="{Binding Provisoes}" />
+   </TabItem>
+   <TabItem Header="Duplicatas e baixas">
+     <c:ParametrosView DataContext="{Binding Duplicatas}" />
+   </TabItem>
+  </TabControl>
 </UserControl>

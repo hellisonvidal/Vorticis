@@ -72,11 +72,9 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 | Grupo | O que tem |
 |---|---|
 | Lançamento das notas | Informar centro de custo nos itens das notas; **Contabilizar as notas on-line** (ao gravar ou importar) ou em lote (pela função *Contabilizar notas fiscais*, que só aparece neste caso). |
-| Duplicatas e baixas | Gerar duplicata à vista, dias do vencimento à vista, contas de fornecedores, clientes, juros, multa e descontos, e o histórico dos lançamentos de pagamento e recebimento. |
 | EFD ICMS/IPI | Perfil, atividade, códigos de receita e dia de vencimento do ICMS (o assistente já abre preenchido). |
 | EFD-Contribuições | Natureza da pessoa jurídica e atividade. |
-| Contabilização das provisões de impostos | Contas de débito e de crédito de cada tributo (DAS; IRPJ, CSLL, PIS, COFINS; ICMS, IPI, ISS), liberando só os do regime da empresa. |
-| Contabilização e tributos | Atalhos para *Regras de contabilização* e *Fechamento do período fiscal*. |
+| Contabilização e tributos | Atalhos para *Regras de contabilização* (que tem as abas *Provisões de impostos* e *Duplicatas e baixas*) e *Fechamento do período fiscal*. |
 
 ### Folha
 | Grupo | O que tem |

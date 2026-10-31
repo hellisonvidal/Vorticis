@@ -53,41 +53,13 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             new("contribNatureza", "Natureza da pessoa jurídica", TipoCampoParametro.Escolha, null, NaturezasPj),
             new("contribAtividade", "Atividade (PIS/COFINS)", TipoCampoParametro.Escolha, null, AtividadesContrib),
         };
-        var duplicatas = new CampoParametro[]
-        {
-            new("dupAVista", "Gerar duplicata à vista nas notas sem cobrança", TipoCampoParametro.SimNao,
-                "Nota sem parcelas (cobrança) no XML, ou digitada sem parcelas, gera uma duplicata única. NFC-e só gera se o XML trouxer cobrança."),
-            new("dupAVistaDias", "Dias até o vencimento da duplicata à vista", TipoCampoParametro.Texto, "0 = vence na data de emissão."),
-            new("contaFornecedores", "Conta de fornecedores", TipoCampoParametro.Texto,
-                "Código da conta analítica. É a contrapartida das notas de entrada com duplicatas e a conta debitada no pagamento."),
-            new("contaClientes", "Conta de clientes", TipoCampoParametro.Texto,
-                "Código da conta analítica. É a contrapartida das notas de saída com duplicatas e a conta creditada no recebimento."),
-            new("contaJurosPagos", "Juros pagos (despesa)", TipoCampoParametro.Texto),
-            new("contaMultaPaga", "Multa paga (despesa)", TipoCampoParametro.Texto),
-            new("contaDescontoObtido", "Descontos obtidos (receita)", TipoCampoParametro.Texto),
-            new("contaJurosRecebidos", "Juros recebidos (receita)", TipoCampoParametro.Texto),
-            new("contaMultaRecebida", "Multa recebida (receita)", TipoCampoParametro.Texto),
-            new("contaDescontoConcedido", "Descontos concedidos (despesa)", TipoCampoParametro.Texto),
-            new("historicoPagamento", "Histórico do pagamento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
-            new("historicoRecebimento", "Histórico do recebimento", TipoCampoParametro.Texto, "Pode usar {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}."),
-        };
-        var provisoes = new List<CampoParametro>();
-        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
-        {
-            provisoes.Add(new($"provDebito{t}", $"{t} – conta de débito (despesa)", TipoCampoParametro.Conta, t == "DAS" ? "Conta analítica de despesa do tributo; é debitada na provisão da apuração." : null));
-            provisoes.Add(new($"provCredito{t}", $"{t} – conta de crédito (imposto a recolher)", TipoCampoParametro.Conta, t == "DAS" ? "Conta analítica do passivo; é creditada na provisão da apuração." : null));
-        }
-        Observar([.. notas, .. duplicatas, .. icms, .. contrib, .. provisoes]);
+        Observar([.. notas, .. icms, .. contrib]);
         return
         [
             new("Lançamento das notas", "Opções usadas na digitação de notas de entrada e saída.", notas),
-            new("Duplicatas e baixas (contas a pagar e a receber)", "Contas contábeis e históricos usados na contabilização das notas com duplicatas e nas baixas. Exige a função de manter duplicatas.", duplicatas),
             new("EFD ICMS/IPI (SPED Fiscal)", "Escolhas que se repetem a cada mês; o assistente já abre preenchido. Exige permissão de gerar SPED.", icms),
             new("EFD-Contribuições (PIS/COFINS)", "Escolhas que se repetem a cada mês na EFD-Contribuições. Exige permissão de gerar SPED.", contrib),
-            new("Contabilização das provisões de impostos",
-                "Contas de débito e de crédito usadas ao contabilizar a provisão de cada tributo apurado. Ficam liberados só os tributos do regime da empresa (Cadastros › Empresas, Dados cadastrais): " +
-                "Simples Nacional, só o DAS; Lucro Presumido ou Real, IRPJ, CSLL, PIS e COFINS, e ICMS, IPI e ISS conforme a inscrição estadual e a atividade. Exige a função de apurar tributos.", provisoes),
-            new("Contabilização e tributos", "Tabelas que têm tela própria.", [],
+            new("Contabilização e tributos", "As regras de contabilização, as contas das provisões de impostos e as das duplicatas e baixas ficam nas abas da tela Regras de contabilização.", [],
                 [Atalho("Abrir Regras de contabilização", Telas.RegrasContabilizacao), Atalho("Abrir Fechamento do período fiscal", Telas.FechamentoFiscal)]),
         ];
     }
@@ -98,24 +70,6 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         if (f.Sucesso) Campo("usaCentroCusto").Marcado = f.Valor.UsaCentroCusto;
         var online = await app.Fiscal().Contabilizacao.ContabilizacaoOnlineAsync(empresa, usuario);
         if (online.Sucesso) Campo("contabilizacaoOnline").Marcado = online.Valor;
-        var d = await app.Fiscal().Duplicatas.ObterConfiguracaoAsync(empresa, usuario);
-        if (d.Sucesso)
-        {
-            var x = d.Valor;
-            Campo("dupAVista").Marcado = x.GerarAVista;
-            Campo("dupAVistaDias").Texto = x.AVistaDias.ToString();
-            Campo("contaFornecedores").Texto = x.ContaFornecedores ?? "";
-            Campo("contaClientes").Texto = x.ContaClientes ?? "";
-            Campo("contaJurosPagos").Texto = x.ContaJurosPagos ?? "";
-            Campo("contaMultaPaga").Texto = x.ContaMultaPaga ?? "";
-            Campo("contaDescontoObtido").Texto = x.ContaDescontoObtido ?? "";
-            Campo("contaJurosRecebidos").Texto = x.ContaJurosRecebidos ?? "";
-            Campo("contaMultaRecebida").Texto = x.ContaMultaRecebida ?? "";
-            Campo("contaDescontoConcedido").Texto = x.ContaDescontoConcedido ?? "";
-            Campo("historicoPagamento").Texto = x.HistoricoPagamento;
-            Campo("historicoRecebimento").Texto = x.HistoricoRecebimento;
-        }
-        await CarregarProvisoesAsync(app, empresa, usuario);
         var e = await app.Fiscal().Efd.ConfiguracaoAsync(empresa, usuario);
         var c = e.Sucesso ? e.Valor : new ConfiguracaoEfd();
         Campo("icmsPerfil").DefinirEscolha(c.IcmsPerfil.ToString());
@@ -125,48 +79,6 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
         Campo("icmsDia").Texto = c.IcmsDiaVencimento.ToString();
         Campo("contribNatureza").DefinirEscolha(c.ContribNaturezaPj);
         Campo("contribAtividade").DefinirEscolha(c.ContribIndicadorAtividade.ToString());
-    }
-
-    private IReadOnlyList<string> _tributosLiberados = [];
-
-    private async Task CarregarProvisoesAsync(VorticisApp app, long empresa, long usuario)
-    {
-        var detalhe = await app.Empresas.ObterAsync(empresa);
-        _tributosLiberados = Vorticis.Fiscal.Guias.ServicoProvisoes.TributosDoRegime(detalhe?.Regime, detalhe?.InscricaoEstadual, detalhe?.CnaePrincipal);
-        var opcoes = (await app.PlanoContas.ListarAsync(empresa, usuario)).Where(c => c.Analitica && c.Ativa).OrderBy(c => c.Codigo, StringComparer.Ordinal)
-                        .Select(c => new ContaPesquisavel(c.Codigo, c.Descricao, c.CodigoReduzido)).ToList();
-        var podeVer = Contexto.Pode(Permissao.FiscalApurar);
-        var contas = podeVer ? (await app.Fiscal().Provisoes.ListarContasAsync(empresa, usuario)) : null;
-        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
-        {
-            var conta = contas is { Sucesso: true } ? contas.Valor.FirstOrDefault(x => x.Tributo == t) : null;
-            // Tributo fora do regime, mas já configurado, continua liberado para o contador poder corrigir ou limpar.
-            var liberado = podeVer && (_tributosLiberados.Contains(t) || conta is not null);
-            foreach (var (chave, valor) in new[] { ($"provDebito{t}", conta?.ContaDespesa), ($"provCredito{t}", conta?.ContaPassivo) })
-            {
-                var campo = Campo(chave);
-                campo.Contas = opcoes;
-                campo.Texto = valor ?? "";
-                campo.Habilitado = liberado;
-            }
-        }
-    }
-
-    private async Task GravarProvisoesAsync(VorticisApp app, long empresa, long usuario)
-    {
-        if (!Contexto.Pode(Permissao.FiscalApurar)) return;
-        foreach (var t in Vorticis.Fiscal.Guias.ServicoProvisoes.Tributos)
-        {
-            var deb = Campo($"provDebito{t}");
-            if (!deb.Habilitado) continue;
-            var d = deb.Texto.Trim();
-            var c = Campo($"provCredito{t}").Texto.Trim();
-            Resultado r;
-            if (d.Length == 0 && c.Length == 0) r = await app.Fiscal().Provisoes.ExcluirContaAsync(empresa, t, usuario);
-            else if (d.Length == 0 || c.Length == 0) { Erros.Add($"{t}: informe as duas contas (débito e crédito) ou deixe as duas em branco."); continue; }
-            else r = await app.Fiscal().Provisoes.GravarContaAsync(empresa, new Vorticis.Fiscal.Guias.ContaTributo(t, d, c), usuario);
-            if (!r.Sucesso) MostrarResultado(r, "");
-        }
     }
 
     protected override async Task GravarValoresAsync(VorticisApp app, long empresa, long usuario)
@@ -179,17 +91,6 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
             if (!o.Sucesso) { MostrarResultado(o, ""); return; }
             await Contexto.AtualizarRecursosAsync();   // mostra ou esconde o menu Contabilizar notas fiscais
         }
-        if (Contexto.Pode(Permissao.FiscalDuplicatasManter))
-        {
-            if (!int.TryParse(Campo("dupAVistaDias").Texto.Trim(), out var diasAVista)) { Erros.Add("Informe os dias até o vencimento da duplicata à vista em número (0 a 365)."); return; }
-            string? Conta(string chave) => Campo(chave).Texto;
-            var dup = await app.Fiscal().Duplicatas.GravarConfiguracaoAsync(empresa, new ConfiguracaoDuplicatas(Campo("dupAVista").Marcado, diasAVista, Conta("contaFornecedores"),
-                Conta("contaClientes"), Conta("contaJurosPagos"), Conta("contaMultaPaga"), Conta("contaDescontoObtido"), Conta("contaJurosRecebidos"), Conta("contaMultaRecebida"),
-                Conta("contaDescontoConcedido"), Campo("historicoPagamento").Texto, Campo("historicoRecebimento").Texto), usuario);
-            if (!dup.Sucesso) { MostrarResultado(dup, ""); return; }
-        }
-        await GravarProvisoesAsync(app, empresa, usuario);
-        if (Erros.Count > 0) return;
         if (!PodeSped) return;
         if (!int.TryParse(Campo("icmsDia").Texto.Trim(), out var dia)) { Erros.Add("Informe o dia de vencimento do ICMS em número (1 a 28)."); return; }
         static string? T(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

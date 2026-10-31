@@ -89,8 +89,11 @@ public class RegrasEParametrosTests(BancoDeTeste db) : IClassFixture<BancoDeTest
         var ct = TestContext.Current.CancellationToken;
         var empresa = await db.CriarEmpresaAsync("22333444000181");   // Lucro Presumido, comércio (CNAE 4751201)
         var adm = await db.AdminAsync();
-        var vm = new ParametrosFiscalViewModel(new ContextoDeTeste(db.App, adm, empresa));
-        await vm.CarregarAsync();
+        var regras = new RegrasContabilizacaoViewModel(new ContextoDeTeste(db.App, adm, empresa));
+        await regras.CarregarAsync();
+        var vm = regras.Provisoes;                                          // aba Provisões de impostos das Regras de contabilização
+        Assert.DoesNotContain(new ParametrosFiscalViewModel(new ContextoDeTeste(db.App, adm, empresa)).Grupos.SelectMany(g => g.Campos), c => c.Chave.StartsWith("prov") || c.Chave.StartsWith("dup"));
+        Assert.Contains(regras.Duplicatas.Grupos.SelectMany(g => g.Campos), c => c.Chave == "contaFornecedores");
         var campos = vm.Grupos.SelectMany(g => g.Campos).ToDictionary(c => c.Chave);
         Assert.False(campos["provDebitoDAS"].Habilitado);
         Assert.True(campos["provDebitoIRPJ"].Habilitado);

@@ -98,7 +98,7 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 - **Nota de outra empresa:** se o XML não for da empresa selecionada (o CNPJ dela não é o do emitente nem o do destinatário), a nota não é importada e aparece na lista como *Outra empresa*, com os CNPJs do emitente e do destinatário. Escolha a empresa certa no topo e importe de novo.
 - Se acontecer um erro inesperado, o programa mostra o aviso, grava os detalhes em `%LOCALAPPDATA%\VorticisEmpresarial\logs\erros.log` e continua aberto.
 - **Regras fiscais:** nas notas de **entrada**, cada item recebe o CFOP de entrada, o CST e os créditos conforme [Regras fiscais](#regras-fiscais); sem regra, vale a troca padrão (5 para 1, 6 para 2, 7 para 3) e o item fica marcado como *Sem regra* para conferência.
-- **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Parâmetros*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
+- **Duplicatas:** a cobrança da NF-e (parcelas com número, vencimento e valor) vira duplicatas a pagar (nota de entrada) ou a receber (nota de saída). Nota sem cobrança gera uma duplicata *à vista*, vencendo na emissão (os dias são configuráveis, e é possível desligar em *Cadastros › Regras de contabilização*, aba *Duplicatas e baixas*). NFC-e só gera duplicata se trouxer cobrança. Se a nota for cancelada, as duplicatas ainda abertas também são canceladas.
 
 ## Importar NFS-e
 
@@ -132,7 +132,12 @@ Filtre por período, CFOP e texto (número, nome, CNPJ ou chave) e clique em **C
 **Para que serve:** ensinar o sistema em quais contas lançar cada tipo de nota.
 **Onde fica:** *Cadastros › Regras de contabilização*.
 
-A tela tem duas abas: **Entradas** (notas de compra e outras entradas) e **Saídas** (vendas e serviços prestados). Cada aba mostra e grava só as regras do seu sentido; escolha a aba antes de criar a regra.
+A tela tem três abas:
+- **Regras das notas**, com as abas **Entradas** (notas de compra e outras entradas) e **Saídas** (vendas e serviços prestados). Cada uma mostra e grava só as regras do seu sentido; escolha a aba antes de criar a regra.
+- **Provisões de impostos**: as contas das provisões de cada tributo (veja [Contabilização das provisões de impostos](#contabilizacao-das-provisoes-de-impostos)).
+- **Duplicatas e baixas**: duplicata à vista, contas e históricos das baixas (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
+
+Cada aba pede a sua permissão: as regras, a de contabilizar; as provisões, a de apurar tributos; as duplicatas, a de manter duplicatas.
 
 1. Na aba desejada, clique em **Nova**. Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos).
 2. Informe a **conta de débito** e a **de crédito** e, se quiser, o **participante** e o histórico (aceita as variáveis dos históricos padrão).
@@ -154,7 +159,7 @@ Em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, escolha como as n
 2. Marque as notas e clique em **Contabilizar marcadas**. São gerados os lançamentos no Contábil (documento = número da nota).
 3. Para desfazer, marque as notas em *Notas contabilizadas no período* e clique em **Desfazer contabilização das marcadas**: o lançamento é estornado e a nota volta a pendente.
 
-Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (entrada) ou de **clientes** (saída) em *Cadastros › Parâmetros*, essa conta passa a ser a contrapartida da nota: o fornecedor é creditado na compra e o cliente debitado na venda, com o código do fornecedor/cliente na partida. Uma regra específica daquele participante, ou as contas digitadas na própria nota, têm preferência.
+Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (entrada) ou de **clientes** (saída) em *Cadastros › Regras de contabilização* (aba *Duplicatas e baixas*), essa conta passa a ser a contrapartida da nota: o fornecedor é creditado na compra e o cliente debitado na venda, com o código do fornecedor/cliente na partida. Uma regra específica daquele participante, ou as contas digitadas na própria nota, têm preferência.
 
 **Erro comum:** nota sem regra aplicável ou período contábil fechado ficam sem contabilizar, com a mensagem na coluna *Situação*.
 
@@ -176,7 +181,7 @@ Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (e
 **Para que serve:** controlar o que a empresa tem a pagar aos fornecedores e a receber dos clientes, parcela por parcela, e gerar a contabilização do pagamento e do recebimento. As duplicatas nascem das notas (importadas ou digitadas) e também podem ser lançadas à mão.
 **Onde fica:** *Lançamentos › Duplicatas (contas a pagar e a receber)*.
 
-**Antes de usar:** em *Cadastros › Parâmetros*, grupo *Duplicatas e baixas*, informe os códigos das contas contábeis analíticas: fornecedores, clientes, juros pagos, multa paga, descontos obtidos, juros recebidos, multa recebida e descontos concedidos. As de juros, multa e desconto só são exigidas quando você usar esses valores numa baixa. Também ali você escolhe se a nota sem cobrança gera duplicata à vista e o texto do histórico dos lançamentos (aceita {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}).
+**Antes de usar:** em *Cadastros › Regras de contabilização*, aba *Duplicatas e baixas*, informe os códigos das contas contábeis analíticas: fornecedores, clientes, juros pagos, multa paga, descontos obtidos, juros recebidos, multa recebida e descontos concedidos. As de juros, multa e desconto só são exigidas quando você usar esses valores numa baixa. Também ali você escolhe se a nota sem cobrança gera duplicata à vista e o texto do histórico dos lançamentos (aceita {DOCUMENTO}, {PARTICIPANTE}, {DATA} e {VALOR}).
 
 ### Consultar
 1. Escolha *A pagar e a receber*, *A pagar* ou *A receber*, o período de **vencimento**, o fornecedor/cliente (nome, código ou CNPJ) e a **situação**. Marque **Somente vencidas** para ver só as que passaram do vencimento.
@@ -199,7 +204,7 @@ Situações: **Aberta** (sem baixa), **Parcial** (parte já paga ou recebida), *
 Selecione a duplicata, escolha a baixa na lista *Baixas da duplicata selecionada* e clique em **Estornar baixa selecionada**. O lançamento contábil é estornado e o valor volta ao saldo. Se o período contábil estiver fechado, o estorno é recusado: reabra o período e tente de novo.
 
 **Dicas e erros comuns:**
-- "Informe a conta de fornecedores em Cadastros › Parâmetros": falta configurar a conta antes da primeira baixa.
+- "Informe a conta de fornecedores em Cadastros › Regras de contabilização, aba Duplicatas e baixas": falta configurar a conta antes da primeira baixa.
 - O valor da baixa não pode passar do saldo; duplicata liquidada ou cancelada não recebe baixa.
 - Perfis: quem tem a função de *manter duplicatas* inclui e altera; só quem tem a de *baixar duplicatas* baixa, estorna e concilia (Administrador e Contador; o Assistente só mantém).
 
@@ -235,7 +240,7 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
    - Para corrigir, clique no valor na lista e digite o novo; **Remover selecionada** tira uma linha e **Limpar receitas** apaga todas.
 3. O **RBT12** (receita dos 12 meses anteriores) vem do histórico; informe também a *folha 12 meses* para o Fator R (anexo III ou V). Se a empresa é nova, o sistema proporcionaliza.
 4. **Calcular**: mostra alíquota efetiva, valor do DAS e a repartição por tributo, com memória de cálculo.
-5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas das provisões](#contabilizacao-das-provisoes-de-impostos), em Cadastros › Parâmetros); **Desfazer provisão** estorna.
+5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas das provisões](#contabilizacao-das-provisoes-de-impostos), em Cadastros › Regras de contabilização, aba Provisões de impostos); **Desfazer provisão** estorna.
 
 **PGDAS-D:** o Vorticis calcula o DAS, mas a transmissão da declaração continua no portal do Simples Nacional (PGDAS-D). A integração direta exige o contrato do *Integra Contador* do SERPRO (chaves de acesso pagas) e procuração eletrônica; ela ainda não está disponível.
 
@@ -296,7 +301,7 @@ As tabelas, alíquotas e limites vêm dos parâmetros legais vigentes no ano. É
 
 ## Contabilização das provisões de impostos
 
-**Onde fica:** *Cadastros › Parâmetros*, grupo *Contabilização das provisões de impostos*.
+**Onde fica:** *Cadastros › Regras de contabilização*, aba *Provisões de impostos*.
 Para cada tributo informe a **conta de débito (despesa)** e a **conta de crédito (imposto a recolher)** e clique em **Salvar**; deixe as duas em branco para remover. São usadas por **Contabilizar provisão** nas apurações.
 
 Só ficam liberados os tributos que a empresa tem, conforme o regime em *Cadastros › Empresas* (Dados cadastrais):

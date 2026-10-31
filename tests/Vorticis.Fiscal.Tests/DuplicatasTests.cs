@@ -344,9 +344,9 @@ public class DuplicatasIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         var banco = "1.1.01.002";
         var abril = new DateOnly(2026, 4, 12);
 
-        // sem as contas dos Parâmetros não há baixa
+        // sem as contas da aba Duplicatas e baixas (Regras de contabilização) não há baixa
         var semConta = await dup.BaixarAsync(empresa, new NovaBaixa(pagar.Id, abril, 400m, 0, 0, 0, banco), adm, ct);
-        Assert.Contains("Parâmetros do Fiscal", semConta.Erros[0]);
+        Assert.Contains("aba Duplicatas e baixas", semConta.Erros[0]);
         Assert.True((await dup.GravarConfiguracaoAsync(empresa, Contas(), adm, ct)).Sucesso);
 
         // validações
