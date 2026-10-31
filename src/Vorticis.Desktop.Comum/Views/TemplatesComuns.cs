@@ -29,6 +29,7 @@ public sealed class TemplatesComuns : IDataTemplate
         [typeof(CertificadosViewModel)] = () => new CertificadosView(),
         [typeof(ConfiguracoesGeraisViewModel)] = () => new ConfiguracoesGeraisView(),
         [typeof(PreferenciasViewModel)] = () => new PreferenciasView(),
+        [typeof(DicasViewModel)] = () => new DicasView(),
         [typeof(CentrosCustoViewModel)] = () => new CentrosCustoView(),
         [typeof(BackupViewModel)] = () => new BackupView(),
         [typeof(ObrigacoesViewModel)] = () => new ObrigacoesView(),

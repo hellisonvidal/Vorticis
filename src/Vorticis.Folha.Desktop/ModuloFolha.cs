@@ -72,6 +72,17 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("Provisões", FolhaTelas.Provisoes)),
     ];
 
+    /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
+    public IReadOnlyList<Dica> Dicas { get; } =
+    [
+        new("Folha", "Feche a competência depois de conferir", "Feche a folha do mês depois de conferir os holerites: a competência fechada não recalcula por engano e libera a guia do FGTS Digital.", FolhaTelas.FolhaMensal),
+        new("Folha", "Assistente do eSocial", "Antes da primeira transmissão, rode Obrigações › eSocial › Assistente de configuração: ele aponta cada pendência e a tela para corrigir.", FolhaTelas.AssistenteEsocial),
+        new("Folha", "FGTS Digital vence no dia 20", "A guia do FGTS Digital vence no dia 20 do mês seguinte (antecipa se não for dia útil). Confira o demonstrativo antes de emitir a guia no portal.", FolhaTelas.FgtsDigital),
+        new("Folha", "Tabelas da previdência à mão", "Cadastros › Tabelas legais › Tabelas da previdência social mostra as faixas do INSS, o teto, o salário-família e o FGTS da competência, prontas para imprimir.", FolhaTelas.TabelasPrevidencia),
+        new("Folha", "Pró-labore não tem FGTS", "O pró-labore do sócio paga INSS de contribuinte individual (11%, até o teto) e o patronal fora do Simples; não há FGTS nem 13º.", FolhaTelas.ProLabore),
+        new("Folha", "Provisões todo mês", "Calcule as provisões de férias e 13º todo mês: a contabilidade fica com o passivo certo e o custo da folha não salta em dezembro.", FolhaTelas.Provisoes),
+    ];
+
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
     [
         new("Ctrl+F", FolhaTelas.FolhaMensal, "Cálculo da folha mensal"),

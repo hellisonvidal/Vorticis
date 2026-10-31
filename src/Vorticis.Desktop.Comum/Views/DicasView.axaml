@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.DicasView"
+             x:DataType="vm:DicasViewModel">
+  <!-- Ajuda › Dicas -->
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,10">
+      <TextBlock Classes="titulo" Text="Dicas" />
+      <Border Background="{DynamicResource FundoAviso}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="6" Padding="12"
+              IsVisible="{Binding DoDia, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Dica do dia" FontSize="11" Foreground="Gray" />
+          <TextBlock Text="{Binding DoDia.Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+          <TextBlock Text="{Binding DoDia.Texto}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button Content="Abrir a função" Command="{Binding AbrirCommand}" CommandParameter="{Binding DoDia}" IsVisible="{Binding DoDia.PodeAbrir}" />
+            <Button Content="Outra dica" Command="{Binding OutraDicaCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBox Text="{Binding Busca}" Watermark="Procurar nas dicas" Width="280" />
+        <ComboBox ItemsSource="{Binding Areas}" SelectedItem="{Binding Area}" Width="200" />
+      </StackPanel>
+    </StackPanel>
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Lista}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DicaLinha">
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="0,8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Area}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Texto}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="Abrir a função" VerticalAlignment="Center" Margin="12,0,0,0" IsVisible="{Binding PodeAbrir}"
+                        Command="{Binding $parent[ItemsControl].((vm:DicasViewModel)DataContext).AbrirCommand}" CommandParameter="{Binding}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

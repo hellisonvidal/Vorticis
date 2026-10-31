@@ -110,6 +110,18 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Resumo por grupo", Telas.DepreciacaoPorGrupo))),
     ];
 
+    /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
+    public IReadOnlyList<Dica> Dicas { get; } =
+    [
+        new("Contábil", "Lançamento só pelo teclado", "Na tela de lançamento, Enter passa para o próximo campo e, no último, grava a partida. Digite o código reduzido da conta para ganhar tempo.", Telas.Lancamento),
+        new("Contábil", "Feche os meses já conferidos", "Em Lançamentos › Fechamentos › Períodos, feche os meses entregues: lançamentos com data em mês fechado ficam bloqueados até a reabertura.", Telas.Periodos),
+        new("Contábil", "Confira o balancete antes de fechar", "Gere o Balancete do mês e procure saldos invertidos (caixa credor, fornecedor devedor): quase sempre é lançamento trocado.", Telas.Balancete),
+        new("Contábil", "Saldo de uma conta em segundos", "Consultas › Saldos mostra o saldo de qualquer conta numa data sem gerar relatório.", Telas.ConsultaSaldos),
+        new("Contábil", "Encerramento do exercício", "O encerramento transfere o resultado para lucros ou prejuízos acumulados; faça depois de conferir a DRE e antes de gerar a ECD.", Telas.Encerramento),
+        new("Contábil", "Centros de custo valem no Fiscal e na Folha", "O cadastro de centros de custo é o mesmo nos três módulos: notas e folha contabilizadas por centro aparecem nos relatórios gerenciais.", Telas.CentrosCusto),
+        new("Contábil", "Compare períodos em qualquer relatório", "Marque Comparativo nos relatórios contábeis para ver o mesmo relatório lado a lado com outros meses ou anos e a variação em %."),
+    ];
+
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
     [
         new("Ctrl+L", Telas.Lancamento, "Lançamento contábil"),

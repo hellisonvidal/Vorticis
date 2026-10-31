@@ -70,6 +70,9 @@ public interface IModuloDesktop
     /// </summary>
     bool UsaCadastrosComuns => true;
 
+    /// <summary>Dicas do módulo em Ajuda › Dicas (as gerais vêm do casco, em <see cref="DicasGerais"/>).</summary>
+    IReadOnlyList<Dica> Dicas => [];
+
     /// <summary>
     /// Recursos ligados nos parâmetros da empresa ativa (ex.: "gerencial" no Contábil): os itens de menu marcados com
     /// <see cref="ItemMenu.SoCom"/> só aparecem quando o recurso está na lista.

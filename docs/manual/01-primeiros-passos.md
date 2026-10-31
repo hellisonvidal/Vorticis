@@ -84,6 +84,15 @@ Um perfil é um conjunto de funções liberadas (lançar, estornar, fechar perí
 
 Usados para assinar arquivos (ECD, ECF, SPED) e transmitir o eSocial. A tela fica em *Configurações › Certificados digitais* e é exclusiva do administrador. Veja [Certificados digitais](08-configuracoes.md#certificados-digitais).
 
+## Dicas
+
+**Para que serve:** um auxiliar dentro do sistema, com dicas práticas da área do módulo aberto: dicas contábeis no Contábil, fiscais no Fiscal, de folha na Folha, e assim por diante, mais as dicas gerais do programa.
+**Onde fica:** *Ajuda › Dicas*, em todos os módulos.
+
+1. No alto aparece a **Dica do dia** (muda a cada dia); **Outra dica** passa para a seguinte.
+2. Abaixo estão todas as dicas. Digite em **Procurar nas dicas** para filtrar pelo texto ou escolha a área (*Geral*, *Contábil*, *Fiscal*...).
+3. Quando a dica fala de uma função, o botão **Abrir a função** leva direto à tela.
+
 ## Filtros nas listas
 
 Toda tela que mostra uma **lista de registros** (cadastros, consultas, lançamentos, notas, duplicatas, funcionários, eventos etc.) tem, logo acima da lista, a barra de localização. Ela funciona em todos os módulos do mesmo jeito e age só sobre as linhas que já estão na tela: não busca de novo no banco. Os filtros próprios da tela (período, empresa, situação) continuam valendo; a barra serve para refinar o resultado. Telas de digitação (itens da nota, partidas do lançamento, orçamento mês a mês) não têm a barra.

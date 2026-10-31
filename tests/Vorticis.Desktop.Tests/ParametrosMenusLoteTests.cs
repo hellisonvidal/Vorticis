@@ -81,6 +81,33 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
     }
 
     [Fact]
+    public void Ajuda_tem_Dicas_do_modulo_e_gerais_que_abrem_telas_conhecidas()
+    {
+        MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(),
+                                      new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            Assert.Contains(Folhas(vm.Menus.Single(m => m.Titulo == "_Ajuda").Filhos!), i => i.Chave == TelasComuns.Dicas);
+            Assert.True(vm.Modulo.Dicas.Count >= 5, vm.Modulo.Nome);
+            Assert.All(vm.Modulo.Dicas, d => Assert.Equal(vm.Modulo.NomeCurto, d.Area));
+            var tela = Assert.IsType<DicasViewModel>(vm.ViewModelDaTela(TelasComuns.Dicas));
+            tela.Carregar();
+            Assert.Equal(vm.Modulo.Dicas.Count + DicasGerais.Todas.Count, tela.Lista.Count);
+            Assert.Equal(vm.Modulo.NomeCurto, tela.Lista[0].Area);                       // as do módulo primeiro
+            Assert.All(DicasViewModel.DoModulo(vm.Modulo).Where(d => d.Tela is not null), d => Assert.True(vm.ConheceTela(d.Tela!), $"{vm.Modulo.Nome}: {d.Titulo} → {d.Tela}"));
+            Assert.NotNull(tela.DoDia);
+            tela.Area = vm.Modulo.NomeCurto;
+            Assert.Equal(vm.Modulo.Dicas.Count, tela.Lista.Count);
+            tela.Area = DicasViewModel.TodasAreas;
+            tela.Busca = "backup";
+            Assert.Contains(tela.Lista, l => l.Titulo.Contains("Backup"));
+            var antes = tela.DoDia!.Titulo;
+            tela.OutraDicaCommand.Execute(null);
+            Assert.NotEqual(antes, tela.DoDia!.Titulo);
+        }
+    }
+
+    [Fact]
     public void Menus_do_programa_fica_em_Configuracoes_e_sai_de_Cadastros_em_todos_os_modulos()
     {
         MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(),
@@ -259,7 +286,9 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
             menus.Carregar();
             var janela = new Window { Width = 1100, Height = 800 };
             var pref = Assert.IsType<PreferenciasViewModel>(vm.ViewModelDaTela(TelasComuns.Preferencias));
-            foreach (object t in new object[] { menus, vm.ContabilizacaoLote, pref })
+            var dicas = Assert.IsType<DicasViewModel>(vm.ViewModelDaTela(TelasComuns.Dicas));
+            dicas.Carregar();
+            foreach (object t in new object[] { menus, vm.ContabilizacaoLote, pref, dicas })
             {
                 var view = Avalonia.Application.Current!.DataTemplates.First(d => d.Match(t)).Build(t)!;
                 view.DataContext = t;

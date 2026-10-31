@@ -21,6 +21,7 @@ public static class IconesMenu
         ["parametros"] = "Tune",
         ["menus"] = "MenuOpen",
         ["preferencias"] = "PaletteSwatchOutline",
+        ["dicas"] = "LightbulbOutline",
         ["formaspagamento"] = "CreditCardOutline",
         ["contasbancarias"] = "Bank",
         ["certificados"] = "CertificateOutline",

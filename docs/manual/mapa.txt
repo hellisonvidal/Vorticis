@@ -21,6 +21,7 @@ conexao=08-configuracoes.md#conexao-com-o-banco-de-dados
 backup=08-configuracoes.md#backup-e-restauracao
 configuracoesgerais=08-configuracoes.md#senha-do-administrador-e-limpeza-do-banco
 preferencias=08-configuracoes.md#preferencias
+dicas=01-primeiros-passos.md#dicas
 certificados=08-configuracoes.md#certificados-digitais
 obrigacoes=07-obrigacoes.md#calendario-de-obrigacoes
 parametros=02-cadastros-comuns.md#parametros

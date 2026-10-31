@@ -63,6 +63,16 @@ public sealed class ModuloErp : IModuloDesktop
                 ItemMenu.Tela("Relatório de pagamentos", F.Telas.RelPagamentos))),
     ];
 
+    /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
+    public IReadOnlyList<Dica> Dicas { get; } =
+    [
+        new("Gerencial", "Comece pelo Painel do empresário", "O Painel do empresário (Ctrl+P) mostra no mês as vendas e compras, o que há a receber e a pagar, o estoque, os produtos abaixo do mínimo e o fluxo previsto das próximas semanas.", ErpTelas.Painel),
+        new("Gerencial", "Monitor de notas", "O Monitor de notas fiscais aponta notas canceladas, não contabilizadas e sem duplicatas antes do fechamento.", ErpTelas.MonitorNotas),
+        new("Gerencial", "Cobranças por faixa de atraso", "O Monitor de cobranças separa o que vence, o que venceu e os maiores atrasos: comece a cobrança pelos maiores.", ErpTelas.MonitorCobrancas),
+        new("Gerencial", "Corrija o pedido enquanto está em aberto", "O pedido só pode ser alterado ou cancelado enquanto estiver Em aberto; depois de concluído, fica travado.", ErpTelas.PedidosVenda),
+        new("Gerencial", "Estoque pelas movimentações", "O saldo do estoque vem das entradas e saídas registradas; confira o estoque antes do inventário do bloco H.", ErpTelas.Estoque),
+    ];
+
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
     [
         new("Ctrl+P", ErpTelas.Painel, "Painel do empresário"),

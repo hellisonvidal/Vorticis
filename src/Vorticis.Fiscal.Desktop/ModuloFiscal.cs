@@ -116,6 +116,18 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Itens das notas fiscais", Telas.RelItensNotas)),
     ];
 
+    /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
+    public IReadOnlyList<Dica> Dicas { get; } =
+    [
+        new("Fiscal", "Importe os XML em lote", "Integrações › Importação de XML em lote lê uma pasta inteira de NF-e, NFC-e, NFS-e e CT-e; o que já foi importado é ignorado.", Telas.ImportacaoXml),
+        new("Fiscal", "Regra por prefixo de CFOP", "Nas Regras de contabilização, uma regra com o prefixo 51 vale para todos os CFOP 51xx; crie regras específicas só para as exceções.", Telas.RegrasContabilizacao),
+        new("Fiscal", "Feche o período depois de apurar", "Apuração › Fechamento do período fiscal trava as notas do mês; a DCTFWeb do mês só é preparada com o período fechado.", Telas.FechamentoFiscal),
+        new("Fiscal", "DCTFWeb com o recibo guardado", "Depois de transmitir a DCTFWeb no e-CAC, registre o recibo em Apuração › Obrigações › DCTFWeb: o mês transmitido não reabre por engano.", Telas.DctfWeb),
+        new("Fiscal", "Planeje o regime antes de janeiro", "A opção pelo Simples Nacional vai até o último dia útil de janeiro e o regime do Lucro Presumido é definido no primeiro pagamento do ano: simule antes em Apuração › Planejamento tributário.", Telas.Planejamento),
+        new("Fiscal", "Fator R decide o anexo", "Nos serviços sujeitos ao Fator R, folha dos 12 meses de 28% ou mais da receita leva ao Anexo III (mais barato); abaixo disso, Anexo V.", Telas.Simples),
+        new("Fiscal", "Histórico de receita e folha", "Para empresas que começaram a usar o sistema no meio do ano, informe a receita e a folha dos meses anteriores: o RBT12 e o Fator R dependem disso.", Telas.BaseMensal),
+    ];
+
     public IReadOnlyList<AtalhoTela> Atalhos { get; } =
     [
         new("Ctrl+I", Telas.ImportacaoXml, "Importação de XML"),

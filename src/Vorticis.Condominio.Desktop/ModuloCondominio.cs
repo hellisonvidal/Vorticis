@@ -42,6 +42,16 @@ public sealed class ModuloCondominio : IModuloDesktop
             ItemMenu.Tela("Atas de Assembleia", CondominioTelas.Atas)),
     ];
 
+    /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
+    public IReadOnlyList<Dica> Dicas { get; } =
+    [
+        new("Condomínio", "Rateio pela fração ideal", "Em Rateio entre unidades, a despesa é dividida pela fração ideal de cada unidade e lançada direto nas cobranças.", CondominioTelas.Rateio),
+        new("Condomínio", "Cobranças com Ctrl+B", "Ctrl+B abre as cobranças e recebimentos; dê baixa no dia do crédito para a inadimplência ficar certa.", CondominioTelas.Cobrancas),
+        new("Condomínio", "Ata com lista de presença", "A ata da assembleia sai em PDF com a lista de presença e as assinaturas, pronta para registro.", CondominioTelas.Atas),
+        new("Condomínio", "Prestação de contas mensal", "Só as despesas pagas entram na prestação de contas do mês: informe Pago em ao quitar cada despesa.", CondominioTelas.Prestacao),
+        new("Condomínio", "Reservas sem conflito", "Cada área comum aceita uma reserva por dia: o sistema avisa se a data já estiver ocupada.", CondominioTelas.Reservas),
+    ];
+
     public IReadOnlyList<AtalhoTela> Atalhos { get; } = [new("Ctrl+B", CondominioTelas.Cobrancas, "Cobranças e recebimentos")];
 
     private static bool Pode(MainViewModelBase m, params Permissao[] p) => m.TemAcessoNaEmpresa && p.Any(m.Pode);
