@@ -15,7 +15,7 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 **Para que serve:** cadastrar o próprio escritório contábil (o contador), que é o escolhido no topo da tela.
 **Onde fica:** *Cadastros › Escritório* (primeiro item do menu).
 
-É o mesmo cadastro de empresas dos outros módulos: digite o **CNPJ**, clique em **Buscar na Receita**, confira os dados e grave com o módulo **Escritório** marcado. Só os escritórios aparecem na escolha do topo; os clientes ficam nos módulos que contrataram.
+É o mesmo cadastro de empresas dos outros módulos: digite o **CNPJ**, clique em **Buscar na Receita**, confira os dados e grave com o módulo **Escritório** marcado. Só os escritórios aparecem na escolha do topo; os clientes ficam nos módulos que contrataram. O escritório recebe o código **9999** e não ocupa a numeração das empresas: o primeiro cliente levado aos módulos fica com o código **0001**, o segundo com 0002, e assim por diante.
 
 ## Clientes
 
