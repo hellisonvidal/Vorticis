@@ -29,6 +29,7 @@
     <DataTemplate DataType="vm:ResumoFolhaViewModel"><v:ResumoFolhaView /></DataTemplate>
     <DataTemplate DataType="vm:EncargosFolhaViewModel"><v:EncargosFolhaView /></DataTemplate>
     <DataTemplate DataType="vm:TabelasPrevidenciaViewModel"><v:TabelasPrevidenciaView /></DataTemplate>
+    <DataTemplate DataType="vm:FgtsDigitalViewModel"><v:FgtsDigitalView /></DataTemplate>
     <DataTemplate DataType="vm:ProvisoesFolhaViewModel"><v:ProvisoesFolhaView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>

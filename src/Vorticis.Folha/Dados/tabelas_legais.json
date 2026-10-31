@@ -192,5 +192,15 @@
    "aliquotaPatronal": 20.0
   },
   "fundamento": "Lei nº 8.212/1991, art. 21, § 2º (11% do contribuinte individual) e art. 22, III (20% patronal sobre a remuneração do contribuinte individual)"
+ },
+ {
+  "chave": "FOLHA_FGTS_DIGITAL",
+  "vigenciaInicio": "2024-03-01",
+  "vigenciaFim": null,
+  "valor": {
+   "diaVencimento": 20,
+   "antecipaParaDiaUtil": true
+  },
+  "fundamento": "Lei 8.036/1990, art. 15 (redação da Lei 14.438/2022): recolhimento até o dia 20 do mês seguinte, antecipado se não houver expediente bancário; FGTS Digital desde a competência 03/2024"
  }
 ]

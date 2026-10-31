@@ -62,7 +62,7 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Separador,
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
                 ItemMenu.Tela("Transmissão", FolhaTelas.Transmissao)),
-            ItemMenu.EmBreve("FGTS (GFD)"),
+            ItemMenu.Tela("FGTS Digital", FolhaTelas.FgtsDigital),
             ItemMenu.EmBreve("DCTFWeb e INSS"),
             ItemMenu.EmBreve("RAIS e DIRF")),
         ItemMenu.Submenu("_Relatórios",
@@ -102,6 +102,8 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia("ParametrosModulo", m => new ParametrosModuloFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
+        c.Instancia("FgtsDigital", m => new FgtsDigitalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.FgtsDigital, "Obrigações › FGTS Digital", Ver, v => v.GerarCommand.ExecuteAsync(null));
         c.Instancia("TabelasPrevidencia", m => new TabelasPrevidenciaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.TabelasPrevidencia, "Cadastros › Tabelas legais › Tabelas da previdência social", Ver, v => v.GerarCommand.ExecuteAsync(null));
         c.Instancia(nameof(MainViewModel.Parametros), m => new ParametrosFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),

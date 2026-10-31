@@ -143,6 +143,7 @@ public static class IconesMenu
         ["folha.rubricas"] = "FormatListBulletedType",
         ["folha.parametros"] = "TableCog",
         ["folha.tabelasprevidencia"] = "Gavel",
+        ["folha.fgtsdigital"] = "HandCoinOutline",
         ["folha.eventos"] = "CalendarEdit",
         ["folha.mensal"] = "CalculatorVariant",
         ["folha.ferias"] = "Beach",

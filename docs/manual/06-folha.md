@@ -225,6 +225,21 @@ As etapas:
 
 A tela traz um painel **Passo a passo** com o roteiro.
 
+## FGTS Digital
+
+**Para que serve:** conferir o FGTS da competência calculado pela folha e controlar a guia do **FGTS Digital** (GFD) e o pagamento.
+**Onde fica:** *Obrigações › FGTS Digital*.
+
+Como funciona o FGTS Digital: as remunerações e o FGTS de cada trabalhador chegam ao governo pelos eventos do **eSocial** (folha e fechamento, em *Obrigações › eSocial*). A guia é emitida no **portal do FGTS Digital** (com o certificado digital ou a conta gov.br, inclusive por procuração), não por este programa.
+
+1. Calcule e confira a folha da competência e transmita os eventos do eSocial.
+2. Em *Obrigações › FGTS Digital*, escolha a **Competência** e clique em **Consultar**: a tabela mostra a base e o FGTS de cada trabalhador (8%; 2% para aprendiz), o total e o **vencimento** (dia 20 do mês seguinte, antecipado para o dia útil anterior). Exporte em PDF, Excel ou CSV para conferir com a guia.
+3. **Feche a competência** da folha. Antes disso a guia não pode ser registrada.
+4. Emita a guia no portal do FGTS Digital, copie o identificador e clique em **Registrar guia** (o valor registrado é o total do demonstrativo).
+5. Depois de pagar, informe **Pago em** e **Valor pago** e clique em **Registrar pagamento**.
+
+**Excluir guia** apaga o registro de uma guia ainda não paga (para registrar outra). A linha de situação acima da tabela mostra o que falta fazer. Registrar e excluir pedem a permissão de calcular a folha.
+
 ## Procuração e procurador
 
 O Vorticis não outorga procuração: ela é feita no **e-CAC** (ou módulo de procurações do eSocial) para o CPF/CNPJ do certificado, com os perfis dos eventos e prazo vigente. No sistema, marque o contador como procurador em *Cadastros › Contadores* (seção **Procuração eletrônica**, abrangência **eSocial**, com a vigência) e escolha **procurador** em *Transmitir com*.

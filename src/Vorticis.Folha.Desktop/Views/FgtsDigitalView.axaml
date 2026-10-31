@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Folha.Desktop.Views"
+             x:Class="Vorticis.Folha.Desktop.Views.FgtsDigitalView"
+             x:DataType="vm:FgtsDigitalViewModel">
+  <!-- Obrigações › FGTS Digital -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Classes="titulo" Text="FGTS Digital" VerticalAlignment="Center" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
+        <Button Content="Consultar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Text="Identificador da guia" VerticalAlignment="Center" />
+        <TextBox Text="{Binding Identificador}" Width="200" MaxLength="40" />
+        <Button Content="Registrar guia" Command="{Binding RegistrarGuiaCommand}" IsEnabled="{Binding PodeRegistrar}" />
+        <TextBlock Text="Pago em" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding DataPagamento}" Width="140" />
+        <TextBlock Text="Valor pago" VerticalAlignment="Center" />
+        <TextBox Text="{Binding ValorPagoTexto}" Width="110" />
+        <Button Content="Registrar pagamento" Command="{Binding RegistrarPagamentoCommand}" IsEnabled="{Binding PodeRegistrar}" />
+        <Button Content="Excluir guia" Command="{Binding ExcluirGuiaCommand}" IsEnabled="{Binding PodeRegistrar}" />
+      </WrapPanel>
+      <TextBlock Text="{Binding Situacao}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" TextWrapping="Wrap" />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Tabela.Rodape}" Margin="0,6,0,0" TextWrapping="Wrap" />
+    <v:TabelaRelatorioGrid Tabela="{Binding Tabela}" />
+  </DockPanel>
+</UserControl>

@@ -108,3 +108,63 @@ public partial class TabelasPrevidenciaViewModel(IContexto contexto) : Relatorio
         catch (InvalidOperationException ex) { Limpar(); Erros.Add(ex.Message); }
     });
 }
+
+/// <summary>
+/// Obrigações › FGTS Digital: demonstrativo do FGTS da competência (por trabalhador, dos cálculos da folha) para conferir com a guia emitida
+/// no portal do FGTS Digital; registro da guia (com a competência fechada) e do pagamento.
+/// </summary>
+public partial class FgtsDigitalViewModel(IContexto contexto) : RelatorioFolhaBase(contexto)
+{
+    [ObservableProperty] private string _situacao = "";
+    [ObservableProperty] private string _identificador = "";
+    [ObservableProperty] private DateTime? _dataPagamento = DateTime.Today;
+    [ObservableProperty] private string _valorPagoTexto = "";
+
+    public bool PodeRegistrar => Contexto.Pode(Permissao.FolhaCalcular);
+    public void AtualizarPermissoes() { OnPropertyChanged(nameof(PodeRegistrar)); AtualizarPermissoesExportacao(); }
+
+    protected override string TituloRelatorio => "FGTS Digital";
+    protected override string NomeArquivo => $"fgts_digital_{CompGerada:yyyyMM}";
+    protected override bool Paisagem => false;
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Folha().FgtsDigital.DemonstrativoAsync(empresa, Comp, usuario);
+        if (!r.Sucesso) { Limpar(); MostrarResultado(r, ""); return; }
+        var d = r.Valor!;
+        Mostrar([d.Tabela()]);
+        Situacao = d.Situacao;
+        Identificador = d.Guia?.Identificador ?? "";
+        ValorPagoTexto = Numeros.Moeda(d.Guia?.ValorPago ?? d.Guia?.Valor ?? d.Total);
+    });
+
+    [RelayCommand]
+    private Task RegistrarGuiaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Folha().FgtsDigital.RegistrarGuiaAsync(empresa, Comp, Identificador, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await GerarAsync();
+        Mensagem = "Guia do FGTS Digital registrada.";
+    }, Permissao.FolhaCalcular);
+
+    [RelayCommand]
+    private Task RegistrarPagamentoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (FolhaExtensoes.Data(DataPagamento) is not { } data) { Erros.Add("Informe a data do pagamento."); return; }
+        var r = await app.Folha().FgtsDigital.RegistrarPagamentoAsync(empresa, Comp, data, Numeros.LerValor(ValorPagoTexto) ?? 0, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await GerarAsync();
+        Mensagem = "Pagamento do FGTS registrado.";
+    }, Permissao.FolhaCalcular);
+
+    [RelayCommand]
+    private Task ExcluirGuiaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (!await Contexto.ConfirmarAsync("Excluir guia", "Excluir o registro da guia do FGTS Digital desta competência?", "Excluir", "Cancelar")) return;
+        var r = await app.Folha().FgtsDigital.ExcluirGuiaAsync(empresa, Comp, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await GerarAsync();
+        Mensagem = "Registro da guia excluído.";
+    }, Permissao.FolhaCalcular);
+}
