@@ -35,27 +35,27 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
     }
 
     [Fact]
-    public void No_Escritorio_Menus_do_programa_fica_dentro_de_Parametros()
+    public void Menus_do_programa_fica_em_Configuracoes_e_sai_de_Cadastros_em_todos_os_modulos()
     {
-        var vm = new Vorticis.Escritorio.Desktop.MainViewModel();
-        var cadastros = vm.Menus[0].Filhos!;
-        Assert.DoesNotContain(cadastros, i => i.Chave == TelasComuns.Menus || i.Chave == TelasComuns.Parametros);
-        var parametros = Assert.Single(cadastros, i => i.Titulo == "Parâmetros" && i.Filhos is not null);
-        Assert.Equal([("Parâmetros do Escritório", TelasComuns.Parametros), ("Menus do programa", TelasComuns.Menus)],
-                     parametros.Filhos!.Select(i => (i.Titulo, i.Chave!)));
-        Assert.Equal("Cadastros › Parâmetros › Menus do programa", vm.CaminhoMenusDoPrograma);
-        Assert.Contains(vm.ArvoreDeMenus().Single(n => n.Titulo == "Cadastros").Filhos, n => n.Titulo == "Parâmetros" && n.Essencial);
-        var tela = new Vorticis.Escritorio.Desktop.ViewModels.ParametrosViewModelEscritorio(vm);
-        Assert.Contains(tela.Grupos, g => g.Titulo == "Menus do programa");
+        MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(),
+                                      new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            Assert.DoesNotContain(Folhas(vm.Menus[0].Filhos!), i => i.Chave == TelasComuns.Menus);
+            Assert.Single(Folhas(vm.Menus.Single(m => m.Titulo == "Con_figurações").Filhos!), i => i.Chave == TelasComuns.Menus);
+            Assert.Single(vm.Menus[0].Filhos!, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);
+            Assert.Equal("Configurações › Menus do programa", vm.CaminhoMenusDoPrograma);
+        }
+        var esc = new Vorticis.Escritorio.Desktop.ViewModels.ParametrosViewModelEscritorio(new Vorticis.Escritorio.Desktop.MainViewModel());
+        Assert.Contains(esc.Grupos, g => g.Titulo == "Menus do programa");
     }
 
     [Fact]
-    public void Cadastros_tem_Parametros_e_Menus_do_programa_e_a_contabilizacao_em_lote_so_com_a_empresa_em_lote()
+    public void Cadastros_tem_Parametros_e_a_contabilizacao_em_lote_so_com_a_empresa_em_lote()
     {
         var vm = new Vorticis.Desktop.ViewModels.MainViewModel();
         var cadastros = vm.Menus[0].Filhos!;
         Assert.Single(cadastros, i => i.Titulo == "Parâmetros" && i.Chave == TelasComuns.Parametros);
-        Assert.Single(cadastros, i => i.Titulo == "Menus do programa" && i.Chave == TelasComuns.Menus);
         Assert.True(MainViewModelBase.ChaveEssencial(TelasComuns.Menus));
         var item = Folhas(vm.Menus).Single(i => i.Chave == TelasComuns.ContabilizacaoLote);
         Assert.Equal(MainViewModelBase.RecursoContabilizacaoLote, item.Recurso);
@@ -169,7 +169,7 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
                 vm.Status = "";
                 vm.AbrirPorAtalho(chaveEscondida);
                 Assert.Contains("oculta", vm.Status);
-                Assert.Contains("Cadastros › Menus do programa", vm.Status);
+                Assert.Contains("Configurações › Menus do programa", vm.Status);
                 vm.Status = "";
                 vm.AbrirTela(chaveEscondida);
                 Assert.Contains("oculta", vm.Status);

@@ -171,10 +171,10 @@ No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF,
 
 **Para que serve:** deixar o menu só com o que você usa no dia a dia.
 
-**Onde fica:** *Cadastros › Menus do programa* (em todos os módulos; no Escritório, dentro de *Cadastros › Parâmetros › Menus do programa*).
+**Onde fica:** *Configurações › Menus do programa* (em todos os módulos).
 
 **Como usar:**
-1. Abra *Cadastros › Menus do programa*. Aparece a lista dos menus e itens, em árvore, com uma caixa de marcação em cada um.
+1. Abra *Configurações › Menus do programa*. Aparece a lista dos menus e itens, em árvore, com uma caixa de marcação em cada um.
 2. **Desmarque** o que não quer ver. Desmarcar um menu esconde também tudo o que está dentro dele; marcar um item mostra de novo o menu que o contém. **Mostrar todos** marca tudo.
 3. Clique em **Salvar**. O menu muda na hora.
 
