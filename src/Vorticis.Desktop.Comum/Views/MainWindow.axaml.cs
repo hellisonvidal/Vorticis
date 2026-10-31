@@ -146,7 +146,7 @@ public partial class MainWindow : Window
     /// <summary>Pergunta antes de fechar o programa; só fecha de fato se o usuário confirmar.</summary>
     private async void AoFechar(object? sender, WindowClosingEventArgs e)
     {
-        if (_fechamentoConfirmado || _vm is null) return;
+        if (_fechamentoConfirmado || _vm is null || !PreferenciasGerais.Atual.ConfirmarAoFechar) return;
         e.Cancel = true;
         if (_vm.Confirmacao is not null) return;                          // já há uma pergunta aberta
         if (await _vm.ConfirmarAsync($"Fechar o {(Suite is null ? _vm.Modulo.Nome : Suite.Nome)}", "Deseja realmente fechar o sistema?", "Fechar", "Continuar trabalhando"))

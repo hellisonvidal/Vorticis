@@ -85,6 +85,7 @@ public static class TelasComuns
     /// <summary>Configurações › Menus do programa: o usuário escolhe os itens de menu que quer ver (preferências por usuário).</summary>
     public const string Menus = "menus";
     public const string ConfiguracoesGerais = "configuracoesgerais";
+    public const string Preferencias = "preferencias";
     /// <summary>Integrações › Exportar › Contabilização em lote (pendências dos módulos quando a empresa contabiliza em lote).</summary>
     public const string ContabilizacaoLote = "contabilizacaolote";
     public const string Certificados = "certificados";
@@ -250,7 +251,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia(nameof(Backup), m => new BackupViewModel(m))
             .Tela(TelasComuns.Backup, "Configurações › Backup e restauração", Admin, v => v.CarregarAsync());
         c.Instancia(nameof(ConfiguracoesGerais), m => new ConfiguracoesGeraisViewModel(m))
-            .Tela(TelasComuns.ConfiguracoesGerais, "Configurações › Configurações gerais", Admin, v => v.CarregarAsync());
+            .Tela(TelasComuns.ConfiguracoesGerais, "Configurações › Senha do administrador e limpeza do banco", Admin, v => v.CarregarAsync());
+        c.Instancia("Preferencias", m => new PreferenciasViewModel(m))
+            .Tela(TelasComuns.Preferencias, "Configurações › Configurações gerais › Preferências", _ => true, v => { v.Carregar(); return Task.CompletedTask; });
         c.Instancia(nameof(Certificados), m => new CertificadosViewModel(m))
             .Tela(TelasComuns.Certificados, "Configurações › Certificados digitais", m => m.Sessao?.Administrador == true, v => v.CarregarAsync());
         c.Instancia(nameof(Licenca), m => new LicencaViewModel(m))
@@ -279,7 +282,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             ItemMenu.Tela(Modulo.GerenciaSistema ? "Usuários e controle de acesso" : "Usuários", TelasComuns.Usuarios),
             ItemMenu.Tela("Conexão com o banco de dados", TelasComuns.Conexao),
             ItemMenu.Tela("Backup e restauração", TelasComuns.Backup),
-            ItemMenu.Tela(Modulo.GerenciaSistema ? "Senha do administrador e limpeza do banco" : "Configurações gerais", TelasComuns.ConfiguracoesGerais),
+            ItemMenu.Tela("Senha do administrador e limpeza do banco", TelasComuns.ConfiguracoesGerais),
         };
         if (Modulo.GerenciaSistema)
         {
@@ -294,7 +297,10 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
             foreach (var i in sistema[..3]) yield return i;
         }
-        yield return ItemMenu.Tela("Menus do programa", TelasComuns.Menus);
+        yield return ItemMenu.Submenu("Configurações _gerais",
+            ItemMenu.Tela("Preferências", TelasComuns.Preferencias),
+            ItemMenu.Tela("Menus do programa", TelasComuns.Menus),
+            ItemMenu.Tela($"Parâmetros do {Modulo.NomeCurto}", TelasComuns.Parametros));
         yield return ItemMenu.Separador;
         yield return ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair);
     }

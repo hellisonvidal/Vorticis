@@ -5,7 +5,7 @@
              x:Class="Vorticis.Desktop.Comum.Views.ConfiguracoesGeraisView"
              x:DataType="vm:ConfiguracoesGeraisViewModel">
   <StackPanel Margin="12" Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
-    <TextBlock Classes="titulo" Text="Configurações gerais" />
+    <TextBlock Classes="titulo" Text="Senha do administrador e limpeza do banco" />
     <TextBlock Text="Somente o administrador altera estas configurações." Classes="erro" IsVisible="{Binding !PodeAlterar}" />
     <StackPanel Spacing="8" IsVisible="{Binding PodeAlterar}">
       <TextBlock Text="Senha de administrador" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />

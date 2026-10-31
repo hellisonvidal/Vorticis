@@ -35,6 +35,52 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
     }
 
     [Fact]
+    public async Task Configuracoes_gerais_em_todos_os_modulos_com_preferencias_menus_e_parametros()
+    {
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(() => { PreferenciasConfere(); return Task.FromResult(true); }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
+    private static void PreferenciasConfere()
+    {
+        MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(),
+                                      new Vorticis.Escritorio.Desktop.MainViewModel(), new Vorticis.Erp.Desktop.MainViewModel(), new Vorticis.Condominio.Desktop.MainViewModel()];
+        foreach (var vm in modulos)
+        {
+            var gerais = Assert.Single(vm.Menus.Single(m => m.Titulo == "Con_figurações").Filhos!, i => i.Titulo == "Configurações _gerais");
+            Assert.Equal([TelasComuns.Preferencias, TelasComuns.Menus, TelasComuns.Parametros], gerais.Filhos!.Select(i => i.Chave));
+            Assert.Equal($"Parâmetros do {vm.Modulo.NomeCurto}", gerais.Filhos![2].Titulo);
+            Assert.True(vm.ConheceTela(TelasComuns.Preferencias));
+        }
+        var anterior = (PreferenciasGerais.Arquivo, SuiteViewModel.ArquivoLayout);
+        var pasta = Directory.CreateTempSubdirectory("vorticis-pref").FullName;
+        try
+        {
+            (PreferenciasGerais.Arquivo, SuiteViewModel.ArquivoLayout) = (Path.Combine(pasta, "preferencias.json"), Path.Combine(pasta, "suite-layout.txt"));
+            Assert.Equal(new Preferencias(true, 15), PreferenciasGerais.Atual);                   // sem arquivo: padrão
+            var tela = new PreferenciasViewModel(modulos[0]);
+            tela.Carregar();
+            (tela.ConfirmarAoFechar, tela.DiasVencimentos, tela.Tema) = (false, 0, 1);
+            tela.GravarCommand.Execute(null);
+            Assert.Contains("entre 1 e 90", tela.Erros[0]);
+            tela.DiasVencimentos = 30;
+            tela.GravarCommand.Execute(null);
+            Assert.Empty(tela.Erros);
+            Assert.Equal(new Preferencias(false, 30), PreferenciasGerais.Atual);
+            Assert.Equal(TemaSuite.Escuro, PreferenciasGerais.Tema);
+            var outra = new PreferenciasViewModel(modulos[1]);
+            outra.Carregar();
+            Assert.Equal((false, 30, 1), (outra.ConfirmarAoFechar, outra.DiasVencimentos, outra.Tema));
+        }
+        finally
+        {
+            PreferenciasGerais.GravarTema(TemaSuite.Claro);
+            (PreferenciasGerais.Arquivo, SuiteViewModel.ArquivoLayout) = anterior;
+            Directory.Delete(pasta, true);
+        }
+    }
+
+    [Fact]
     public void Menus_do_programa_fica_em_Configuracoes_e_sai_de_Cadastros_em_todos_os_modulos()
     {
         MainViewModelBase[] modulos = [new Vorticis.Desktop.ViewModels.MainViewModel(), new Vorticis.Fiscal.Desktop.MainViewModel(), new Vorticis.Folha.Desktop.MainViewModel(),
@@ -212,7 +258,8 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
             var menus = Assert.IsType<PreferenciasMenuViewModel>(vm.ViewModelDaTela(TelasComuns.Menus));
             menus.Carregar();
             var janela = new Window { Width = 1100, Height = 800 };
-            foreach (object t in new object[] { menus, vm.ContabilizacaoLote })
+            var pref = Assert.IsType<PreferenciasViewModel>(vm.ViewModelDaTela(TelasComuns.Preferencias));
+            foreach (object t in new object[] { menus, vm.ContabilizacaoLote, pref })
             {
                 var view = Avalonia.Application.Current!.DataTemplates.First(d => d.Match(t)).Build(t)!;
                 view.DataContext = t;

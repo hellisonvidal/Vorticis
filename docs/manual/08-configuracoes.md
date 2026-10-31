@@ -1,8 +1,8 @@
 # Configurações
 
-Menu *Configurações*. As telas de backup, configurações gerais e conexão são exclusivas do administrador.
+Menu *Configurações*. As telas de backup, senha do administrador e limpeza do banco e conexão são exclusivas do administrador. Em todos os módulos, o menu termina com o submenu **Configurações gerais** (veja abaixo).
 
-**Com o Vorticis Escritório instalado**, os usuários, os perfis de acesso e as funções do banco de dados (conexão, backup, restauração, senha do administrador e limpeza) ficam **só no Escritório**: *Configurações › Usuários e controle de acesso* e *Configurações › Banco de dados*. Nos outros módulos, o menu Configurações mostra apenas **Certificados digitais** e **Sair**. Sem o Escritório, cada módulo continua com essas funções no menu Configurações, como descrito abaixo.
+**Com o Vorticis Escritório instalado**, os usuários, os perfis de acesso e as funções do banco de dados (conexão, backup, restauração, senha do administrador e limpeza) ficam **só no Escritório**: *Configurações › Usuários e controle de acesso* e *Configurações › Banco de dados*. Nos outros módulos, o menu Configurações mostra apenas **Certificados digitais**, **Configurações gerais** e **Sair**. Sem o Escritório, cada módulo continua com essas funções no menu Configurações, como descrito abaixo.
 
 ## Backup e restauração
 
@@ -15,14 +15,27 @@ Menu *Configurações*. As telas de backup, configurações gerais e conexão s�
 
 ### Restaurar
 1. Selecione o arquivo e clique em **Restaurar backup selecionado...**.
-2. Informe a **senha de administrador** (padrão `VORTICIS`, alterável em Configurações gerais).
+2. Informe a **senha de administrador** (padrão `VORTICIS`, alterável em *Senha do administrador e limpeza do banco*).
 3. O sistema faz antes um **backup de segurança** do estado atual e encerra todas as sessões.
 
 **Excluir backup selecionado** apaga o arquivo (com confirmação). **Dica:** copie os backups também para outro disco ou nuvem; um backup na mesma máquina não protege contra defeito do computador.
 
 ## Configurações gerais
 
-**Onde fica:** *Configurações › Configurações gerais* (no Escritório: *Configurações › Banco de dados › Senha do administrador e limpeza do banco*).
+**Onde fica:** *Configurações › Configurações gerais*, em todos os módulos. Reúne:
+- **Preferências**: o jeito de trabalhar neste computador (veja abaixo).
+- **Menus do programa**: os itens de menu que cada usuário vê (veja [Menus do programa](02-cadastros-comuns.md#menus-do-programa)).
+- **Parâmetros do módulo** (*Parâmetros do Contábil*, *do Fiscal*...): a mesma tela de *Cadastros › Parâmetros*.
+
+### Preferências
+1. **Tema de cores**: *Claro*, *Escuro* ou *Automático (igual ao sistema)*. Vale na hora, na Suite e nos módulos abertos sozinhos.
+2. **Perguntar antes de fechar o programa**: desmarcado, o programa fecha sem a pergunta *Deseja realmente fechar o sistema?*.
+3. **Vencimentos na tela inicial (próximos dias)**: quantos dias à frente a tela inicial mostra as obrigações a vencer (de 1 a 90; o padrão é 15).
+4. Clique em **Gravar**. As preferências valem para este computador, em todos os módulos.
+
+## Senha do administrador e limpeza do banco
+
+**Onde fica:** *Configurações › Senha do administrador e limpeza do banco* (no Escritório: *Configurações › Banco de dados › Senha do administrador e limpeza do banco*).
 
 ### Senha de administrador
 Usada para confirmar restauração de backup e limpeza do banco. Informe a senha atual, a nova e a confirmação e clique em **Alterar senha**. Troque a senha padrão (`VORTICIS`) logo no início.

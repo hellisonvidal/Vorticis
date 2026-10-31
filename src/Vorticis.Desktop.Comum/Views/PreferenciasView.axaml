@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.PreferenciasView"
+             x:DataType="vm:PreferenciasViewModel">
+  <!-- Configurações › Configurações gerais › Preferências -->
+  <StackPanel Margin="12" Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
+    <TextBlock Classes="titulo" Text="Preferências" />
+    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray" Text="Valem para este computador, em todos os módulos do Vorticis." />
+    <Grid ColumnDefinitions="300,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+      <TextBlock Classes="rotulo" Text="Tema de cores" />
+      <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:PreferenciasViewModel.Temas}" SelectedIndex="{Binding Tema}" Width="260" />
+      <TextBlock Grid.Row="1" Classes="rotulo" Text="Perguntar antes de fechar o programa" />
+      <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding ConfirmarAoFechar}" />
+      <TextBlock Grid.Row="2" Classes="rotulo" Text="Vencimentos na tela inicial (próximos dias)" />
+      <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding DiasVencimentos}" Minimum="{Binding DiasMinimo}" Maximum="{Binding DiasMaximo}"
+                     FormatString="0" Width="120" HorizontalAlignment="Left" />
+    </Grid>
+    <Button Content="Gravar" Command="{Binding GravarCommand}" Classes="accent" />
+    <v:MensagensView />
+  </StackPanel>
+</UserControl>

@@ -94,7 +94,7 @@ public class MenusTests
             MainViewModelBase.EscritorioInstalado = () => true;
             var contabil = new MainViewModel();
             Assert.True(contabil.SistemaCentralizadoNoEscritorio);
-            Assert.Equal([TelasComuns.Certificados, TelasComuns.Menus, TelasComuns.Sair], Config(contabil));
+            Assert.Equal([TelasComuns.Certificados, TelasComuns.Preferencias, TelasComuns.Menus, TelasComuns.Parametros, TelasComuns.Sair], Config(contabil));
             var esc = new Vorticis.Escritorio.Desktop.MainViewModel();
             Assert.False(esc.SistemaCentralizadoNoEscritorio);
             var menuEsc = Assert.Single(esc.Menus, m => m.Titulo == "Con_figurações").Filhos!;

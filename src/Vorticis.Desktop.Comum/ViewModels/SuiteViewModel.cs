@@ -304,8 +304,11 @@ public sealed partial class SuiteViewModel : ObservableObject
         FaixaAberta = false;
     }
 
+    private bool _temaMudou;
+
     partial void OnTemaChanged(TemaSuite value)
     {
+        _temaMudou = true;
         AplicarTema(value);
         SalvarPreferencias();
     }
@@ -621,7 +624,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         GravarTexto(ArquivoLayout, Layout.ToString());
         GravarTexto(ArquivoFixa, LateralFixa ? "fixa" : "recolhe");
         GravarTexto(ArquivoFaixa, FaixaFixa ? "fixa" : "oculta");
-        GravarTexto(ArquivoTema, Tema.ToString());
+        if (_temaMudou) { GravarTexto(ArquivoTema, Tema.ToString()); _temaMudou = false; }   // Configurações gerais › Preferências também grava o tema
         if (apenasComputador || UsuarioId is not { } id) return;
         var p = new PreferenciasGravadas
         {

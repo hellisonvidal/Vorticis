@@ -20,6 +20,7 @@ public static class IconesMenu
         ["produtos"] = "PackageVariantClosed",
         ["parametros"] = "Tune",
         ["menus"] = "MenuOpen",
+        ["preferencias"] = "PaletteSwatchOutline",
         ["formaspagamento"] = "CreditCardOutline",
         ["contasbancarias"] = "Bank",
         ["certificados"] = "CertificateOutline",
@@ -207,6 +208,7 @@ public static class IconesMenu
         ["obrigacoes > esocial"] = "ShieldCheckOutline",
         ["cadastros > funcionarios"] = "AccountGroupOutline",
         ["configuracoes > banco de dados"] = "DatabaseOutline",
+        ["configuracoes > configuracoes gerais"] = "WrenchOutline",
     };
 
     /// <summary>Ícone da função pela chave da tela; null quando não há desenho próprio.</summary>

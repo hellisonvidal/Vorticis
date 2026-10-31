@@ -5,7 +5,7 @@ using Vorticis.Application.Sistema;
 
 namespace Vorticis.Desktop.Comum.ViewModels;
 
-/// <summary>Configurações › Configurações gerais (administrador): senha de administrador e limpeza do banco.</summary>
+/// <summary>Configurações › Senha do administrador e limpeza do banco (administrador): senha de administrador e limpeza do banco.</summary>
 public partial class ConfiguracoesGeraisViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public bool PodeAlterar => Contexto.Sessao?.Administrador == true;

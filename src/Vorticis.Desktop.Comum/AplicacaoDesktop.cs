@@ -21,6 +21,7 @@ public abstract class AppBase : Avalonia.Application
     {
         CultureInfo.DefaultThreadCurrentCulture = Formato.PtBr;
         CultureInfo.DefaultThreadCurrentUICulture = Formato.PtBr;
+        RequestedThemeVariant = ViewModels.SuiteViewModel.VarianteDe(PreferenciasGerais.Tema);   // Configurações gerais › Preferências
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
