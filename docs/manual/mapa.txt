@@ -103,6 +103,7 @@ relplanejamentotributario=05-fiscal.md#planejamento-tributario
 fiscal.fechamento=05-fiscal.md#fechamento-do-periodo-fiscal
 retencoes=05-fiscal.md#retencoes-irrf-csrf-inss-iss
 guias=05-fiscal.md#guias-de-recolhimento
+dctfweb=05-fiscal.md#dctfweb-mit
 efdicmsipi=05-fiscal.md#sped-efd-icms-ipi
 fiscal.sped.consumo=05-fiscal.md#contas-de-energia-gas-agua-e-comunicacao
 fiscal.ajustes.entrada=05-fiscal.md#ajustes-de-entrada-e-de-saida

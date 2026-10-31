@@ -13,6 +13,7 @@
     <DataTemplate DataType="vm:ImportacaoXmlViewModel"><v:ImportacaoXmlView /></DataTemplate>
     <DataTemplate DataType="vm:PlanejamentoTributarioViewModel"><v:PlanejamentoTributarioView /></DataTemplate>
     <DataTemplate DataType="vm:RelPlanejamentoViewModel"><v:RelPlanejamentoView /></DataTemplate>
+    <DataTemplate DataType="vm:DctfWebViewModel"><v:DctfWebView /></DataTemplate>
     <DataTemplate DataType="vm:DocumentosViewModel"><v:DocumentosView /></DataTemplate>
     <DataTemplate DataType="vm:LivroEntradasViewModel"><v:LivroFiscalView /></DataTemplate>
     <DataTemplate DataType="vm:LivroSaidasViewModel"><v:LivroFiscalView /></DataTemplate>

@@ -47,10 +47,12 @@ public sealed class ServicosFiscais
         Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
-        Guias = new ServicoGuias(new RepositorioGuias(ds), repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
+        var repoGuias = new RepositorioGuias(ds);
+        Guias = new ServicoGuias(repoGuias, repoSimples, repoLucro, repoRetencoes, Retencoes, autorizador);
         ImportacaoChave = new Sefaz.ServicoImportacaoChave(ds, Documentos, autorizador);
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
+        DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
         Planejamento = new Planejamento.ServicoPlanejamento(ds, repoSimples, Parametros, autorizador);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
@@ -71,6 +73,7 @@ public sealed class ServicosFiscais
     public ServicoProvisoes Provisoes { get; }
     public Planejamento.ServicoPlanejamento Planejamento { get; }
     public Fechamento.ServicoFechamentoFiscal Fechamento { get; }
+    public Dctf.ServicoDctfWeb DctfWeb { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }
     public ServicoEfd Efd { get; }
     public Sefaz.ServicoImportacaoChave ImportacaoChave { get; }

@@ -113,6 +113,7 @@ public static class IconesMenu
         ["fiscal.fechamento"] = "CalendarCheckOutline",
         ["retencoes"] = "CashLockOpen",
         ["guias"] = "BarcodeScan",
+        ["dctfweb"] = "FileDelimitedOutline",
         ["efdicmsipi"] = "FileCogOutline",
         ["efdcontribuicoes"] = "FileChartOutline",
         ["livroentradas"] = "BookArrowDownOutline",

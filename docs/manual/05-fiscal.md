@@ -166,7 +166,8 @@ Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (e
 1. Escolha o **Ano**. A lista mostra os 12 meses: situação (aberto/fechado), quantas notas há, quantas ainda **não foram contabilizadas** e quando e por quem o mês foi fechado.
 2. Selecione o mês e clique em **Fechar mês**. Se houver notas não contabilizadas, o aviso aparece antes de confirmar.
 3. Com o mês fechado, as notas com data de entrada/saída no mês **não podem ser incluídas, alteradas nem excluídas** (digitação, importação de XML ou pela chave). A contabilização das notas continua permitida.
-4. Para corrigir algo, selecione o mês e clique em **Reabrir mês**.
+4. Para corrigir algo, selecione o mês e clique em **Reabrir mês**. Mês com a DCTFWeb já transmitida não reabre: desfaça antes o registro da transmissão em [DCTFWeb (MIT)](#dctfweb-mit).
+5. Com o mês fechado, prepare a DCTFWeb do mês em *Obrigações › DCTFWeb (MIT)*.
 
 **Atenção:** empresa do Simples Nacional não usa este fechamento (o período é encerrado pela apuração do DAS). O regime vem do cadastro da empresa.
 
@@ -319,6 +320,20 @@ Um tributo bloqueado que já tenha contas gravadas continua liberado, para você
 3. Selecione a guia e **Marcar como paga** (ou **Reabrir**). Guias manuais: *Nova guia (manual)* e **Excluir (manual)**.
 
 Guias com vencimento próximo aparecem no calendário de obrigações e na tela inicial.
+
+### DCTFWeb (MIT)
+
+**Para que serve:** preparar a DCTFWeb do mês com os débitos dos tributos federais apurados (IRPJ, CSLL, PIS, COFINS e DARF lançados à mão), que são informados pelo **MIT** (Módulo de Inclusão de Tributos), e guardar o recibo da transmissão. Só depois da apuração encerrada.
+**Onde fica:** *Obrigações › DCTFWeb (MIT)* (empresas do Lucro Presumido ou Real).
+
+1. Faça as apurações do mês e gere as guias em *Obrigações › Guias de recolhimento*.
+2. Encerre o mês em *Apuração › Fechamento do período fiscal*. Enquanto o mês estiver aberto, a declaração não pode ser preparada (a lista mostra *Apuração em aberto: feche o mês antes*).
+3. Escolha o **Ano**, clique no mês na lista e em **Conferir débitos** para ver o que vai para a declaração, sem gravar.
+4. **Preparar declaração** grava os débitos do mês: um por tributo e código de receita, com o total. Mês sem débitos fica como declaração *sem movimento*. As retenções (IRRF, CSRF, INSS retido) e o INSS da folha aparecem só para conferência, porque chegam à DCTFWeb pela EFD-Reinf e pelo eSocial.
+5. Exporte a tabela (PDF, Excel ou CSV), lance os débitos no MIT da DCTFWeb no e-CAC e transmita com o certificado digital.
+6. De volta aqui, informe o **Recibo da transmissão** e a data em **Transmitida em** e clique em **Registrar transmissão**.
+
+Mês com a DCTFWeb transmitida não pode ser reaberto no fechamento do período fiscal. Para retificar: **Desfazer transmissão**, reabra o mês, corrija, prepare de novo, transmita a retificadora e registre o novo recibo. A transmissão é feita no portal da Receita (e-CAC): o envio direto pelo sistema depende da contratação do serviço Integra Contador (SERPRO).
 
 ## Relatórios fiscais
 

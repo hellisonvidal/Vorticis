@@ -16,6 +16,7 @@ public static class Telas
     public const string PisCofins = "apuracaopiscofins";
     public const string BaseMensal = "historicoreceitafolha";
     public const string Planejamento = "planejamentotributario";
+    public const string DctfWeb = "dctfweb";
     public const string RelPlanejamento = "relplanejamentotributario";
     public const string FechamentoFiscal = "fiscal.fechamento";
     public const string AjustesEntrada = "fiscal.ajustes.entrada";

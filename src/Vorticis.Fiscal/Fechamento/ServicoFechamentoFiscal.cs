@@ -73,6 +73,13 @@ public sealed class ServicoFechamentoFiscal(NpgsqlDataSource ds, Autorizador aut
         if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.FiscalApurar, ct) is { } negado) return Resultado.Falha(negado);
         await using var cmd = ds.CreateCommand("DELETE FROM fiscal.periodo_fechado WHERE empresa_id = @e AND competencia = @c")
             .Com("e", empresaId).Com("c", new DateOnly(competencia.Year, competencia.Month, 1));
-        return await cmd.ExecuteNonQueryAsync(ct) == 0 ? Resultado.Falha("O mês não está fechado.") : Resultado.Ok();
+        try
+        {
+            return await cmd.ExecuteNonQueryAsync(ct) == 0 ? Resultado.Falha("O mês não está fechado.") : Resultado.Ok();
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.CheckViolation)
+        {
+            return Resultado.Falha(ex.MessageText);   // DCTFWeb do mês já transmitida
+        }
     }
 }
