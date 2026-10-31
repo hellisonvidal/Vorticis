@@ -167,9 +167,6 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia(nameof(MainViewModel.PlanoContas), m => new PlanoContasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.PlanoContas, "Cadastros › Plano de contas", ComAcesso, v => v.CarregarAsync());
-        c.Instancia(nameof(MainViewModel.CentrosCusto), m => new CentrosCustoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.CentrosCusto, "Cadastros › Centros de custo", ComAcesso, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.Historicos), m => new HistoricosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Historicos, "Cadastros › Históricos", ComAcesso, v => v.CarregarAsync());
 

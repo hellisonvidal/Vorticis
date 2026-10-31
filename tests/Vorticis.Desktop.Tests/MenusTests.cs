@@ -27,6 +27,11 @@ public class MenusTests
         var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
         Folhas(vm.Menus.Single(m => m.Titulo == "_Apuração").Filhos!).Single(i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.Planejamento);
         Folhas(vm.Menus.Single(m => m.Titulo == "_Relatórios").Filhos!).Single(i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.Planejamento);
+        // centros de custo: o mesmo cadastro do Contábil, em Cadastros dos dois módulos
+        Assert.Contains(Folhas(vm.Menus[0].Filhos!), i => i.Chave == TelasComuns.CentrosCusto);
+        Assert.Contains(Folhas(new MainViewModel().Menus[0].Filhos!), i => i.Chave == TelasComuns.CentrosCusto);
+        Assert.IsType<CentrosCustoViewModel>(vm.ViewModelDaTela(TelasComuns.CentrosCusto));
+        Folhas(vm.Menus.Single(m => m.Titulo == "_Relatórios").Filhos!).Single(i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.NotasPorCentro);
         var tela = new Vorticis.Fiscal.Desktop.ViewModels.PlanejamentoTributarioViewModel(vm) { Ano = 2027 };
         Assert.True(tela.SemDados);                                                  // sem receita: a tela pede os dados
         Assert.Contains("Informe a receita bruta prevista", Vorticis.Fiscal.Desktop.ViewModels.PlanejamentoTributarioViewModel.Orientacao);
@@ -209,7 +214,7 @@ public class MenusTests
         var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
         var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
         var resumos = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Resumos");
-        Assert.Equal(["Resumo de vendas", "Resumo de compras", "Resumo por CFOP"], resumos.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Resumo de vendas", "Resumo de compras", "Resumo por CFOP", "Notas por centro de custo"], resumos.Filhos!.Select(i => i.Titulo));
     }
 
     [Fact]

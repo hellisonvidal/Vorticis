@@ -145,6 +145,18 @@ Cada aba pede a sua permissão: as regras, a de contabilizar; as provisões, a d
 
 Vale a regra **mais específica**: a que tem participante vence a que não tem; depois, o CFOP completo vence o prefixo (e o prefixo mais longo vence o mais curto); por último, a regra geral. Se duas regras forem igualmente específicas, vale a que estiver **mais acima na lista**. Para mudar a ordem, selecione a regra e use **Subir** ou **Descer**; a ordem fica gravada. Não há campo de prioridade para digitar.
 
+## Centros de custo
+
+**Para que serve:** separar as compras e as vendas por área da empresa (filial, loja, obra, departamento) e levar essa separação para a contabilidade.
+**Onde fica:** *Cadastros › Centros de custo* (o **mesmo cadastro** do Contábil: o centro incluído aqui aparece lá, e vice-versa).
+
+1. Ligue **Usar centros de custo** no cadastro da empresa (*Cadastros › Empresas*, aba *Contabilidade*) e, em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, **Informar centro de custo nos itens das notas**.
+2. Cadastre os centros em *Cadastros › Centros de custo* (veja como em [Centros de custo do Contábil](03-contabil.md#centros-de-custo)).
+3. Na nota, aba **Escrituração**, escolha o centro de custo da nota ou de cada item. O do item vale; sem ele, vale o da nota.
+4. Ao contabilizar, as partidas saem separadas por centro de custo. No Contábil, o resultado aparece em *Relatórios › Gerenciais › Contabilização por centro de custo* e nos demais relatórios gerenciais.
+
+**Relatório:** *Relatórios › Resumos › Notas por centro de custo* mostra, no período, as notas e o valor das entradas e das saídas de cada centro (as sem centro aparecem em *Sem centro de custo*) e quanto já foi contabilizado. Informe o período e **Gerar**; exporta em PDF, Excel e CSV.
+
 ## Contabilizar notas fiscais
 
 **Onde fica:** *Documentos fiscais › Contabilizar notas fiscais* (só aparece com a contabilização **em lote**).

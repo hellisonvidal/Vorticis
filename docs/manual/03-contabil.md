@@ -32,6 +32,8 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 
 ## Centros de custo
 
+O cadastro é o mesmo do Fiscal (*Cadastros › Centros de custo* nos dois módulos): as notas fiscais com centro de custo são contabilizadas nele (veja [Centros de custo no Fiscal](05-fiscal.md#centros-de-custo)).
+
 **Onde fica:** *Cadastros › Centros de custo*. Só é usado se a empresa ligou "Usar centros de custo" (aba Contabilidade); a máscara também é definida lá.
 
 1. **Incluir**: código (obrigatório nos níveis 2 ou mais, conforme a máscara), descrição e superior.

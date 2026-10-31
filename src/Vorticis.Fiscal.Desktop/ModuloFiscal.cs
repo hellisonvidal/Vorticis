@@ -35,6 +35,7 @@ public sealed class ModuloFiscal : IModuloDesktop
         ItemMenu.Tela("Produtos", Telas.Produtos),
         ItemMenu.Tela("Regras fiscais", Telas.RegrasFiscais),
         ItemMenu.Tela("Regras de contabilização", Telas.RegrasContabilizacao),
+        ItemMenu.Tela("Centros de custo", Vorticis.Desktop.Comum.ViewModels.TelasComuns.CentrosCusto),
         ItemMenu.Tela("Formas de pagamento", Vorticis.Desktop.Comum.ViewModels.TelasComuns.FormasPagamento),
         ItemMenu.Tela("Contas bancárias", Vorticis.Desktop.Comum.ViewModels.TelasComuns.ContasBancarias),
     ];
@@ -98,7 +99,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Submenu("_Resumos",
                 ItemMenu.Tela("Resumo de vendas", Telas.ResumoVendas),
                 ItemMenu.Tela("Resumo de compras", Telas.ResumoCompras),
-                ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop)),
+                ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
+                ItemMenu.Tela("Notas por centro de custo", Telas.NotasPorCentro)),
             ItemMenu.Separador,
             ItemMenu.Submenu("_Duplicatas",
                 ItemMenu.Tela("Duplicatas a pagar", Telas.RelDuplicatasPagar),
@@ -168,6 +170,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.Real, "Apuração › Lucro Real", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("PisCofins", m => new ApuracaoPisCofinsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
+        c.Instancia("NotasPorCentro", m => new NotasPorCentroViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.NotasPorCentro, "Relatórios › Resumos › Notas por centro de custo", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("DctfWeb", m => new DctfWebViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.DctfWeb, "Apuração › Obrigações › DCTFWeb (MIT)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());

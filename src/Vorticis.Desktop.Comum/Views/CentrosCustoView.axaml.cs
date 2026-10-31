@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace Vorticis.Desktop.Views;
+namespace Vorticis.Desktop.Comum.Views;
 
 public partial class CentrosCustoView : UserControl
 {

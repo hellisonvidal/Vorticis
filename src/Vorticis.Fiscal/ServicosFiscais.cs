@@ -52,6 +52,7 @@ public sealed class ServicosFiscais
         ImportacaoChave = new Sefaz.ServicoImportacaoChave(ds, Documentos, autorizador);
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
+        NotasPorCentro = new ServicoNotasPorCentro(ds, autorizador);
         DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
         Planejamento = new Planejamento.ServicoPlanejamento(ds, repoSimples, Parametros, autorizador);
@@ -73,6 +74,7 @@ public sealed class ServicosFiscais
     public ServicoProvisoes Provisoes { get; }
     public Planejamento.ServicoPlanejamento Planejamento { get; }
     public Fechamento.ServicoFechamentoFiscal Fechamento { get; }
+    public ServicoNotasPorCentro NotasPorCentro { get; }
     public Dctf.ServicoDctfWeb DctfWeb { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }
     public ServicoEfd Efd { get; }

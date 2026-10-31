@@ -86,6 +86,8 @@ public static class TelasComuns
     public const string Menus = "menus";
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Preferencias = "preferencias";
+    /// <summary>Centros de custo da empresa: o mesmo cadastro no Contábil e no Fiscal (as notas levam o centro aos lançamentos).</summary>
+    public const string CentrosCusto = "centroscusto";
     /// <summary>Integrações › Exportar › Contabilização em lote (pendências dos módulos quando a empresa contabiliza em lote).</summary>
     public const string ContabilizacaoLote = "contabilizacaolote";
     public const string Certificados = "certificados";
@@ -252,6 +254,9 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.Backup, "Configurações › Backup e restauração", Admin, v => v.CarregarAsync());
         c.Instancia(nameof(ConfiguracoesGerais), m => new ConfiguracoesGeraisViewModel(m))
             .Tela(TelasComuns.ConfiguracoesGerais, "Configurações › Senha do administrador e limpeza do banco", Admin, v => v.CarregarAsync());
+        c.Instancia("CentrosCusto", m => new CentrosCustoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(TelasComuns.CentrosCusto, "Cadastros › Centros de custo", ComAcesso, v => v.CarregarAsync());
         c.Instancia("Preferencias", m => new PreferenciasViewModel(m))
             .Tela(TelasComuns.Preferencias, "Configurações › Configurações gerais › Preferências", _ => true, v => { v.Carregar(); return Task.CompletedTask; });
         c.Instancia(nameof(Certificados), m => new CertificadosViewModel(m))

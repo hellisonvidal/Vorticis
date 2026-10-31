@@ -15,7 +15,7 @@ public static class Telas
     public const string Razao = "razao";
     public const string Diario = "diario";
     public const string PlanoContas = "planocontas";
-    public const string CentrosCusto = "centroscusto";
+    public const string CentrosCusto = Vorticis.Desktop.Comum.ViewModels.TelasComuns.CentrosCusto;
     public const string SaldosIniciais = "saldosiniciais";
     public const string Encerramento = "encerramento";
     public const string Balanco = "balanco";

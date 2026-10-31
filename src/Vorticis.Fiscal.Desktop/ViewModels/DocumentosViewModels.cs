@@ -503,6 +503,33 @@ public partial class ResumoCfopViewModel(IContexto contexto) : RelatorioFiscalVi
     }, Permissao.FiscalRelatorios);
 }
 
+/// <summary>Relatórios › Notas por centro de custo: entradas e saídas do período por centro (o mesmo cadastro do Contábil).</summary>
+public partial class NotasPorCentroViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+
+    protected override string TituloRelatorio => TabelaNotasPorCentro.Titulo;
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"notas_centro_custo_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var fim = Data(Fim, ini);
+        var r = await app.Fiscal().NotasPorCentro.ListarAsync(empresa, ini, fim, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (ini, fim);
+        Mostrar(TabelaNotasPorCentro.Montar(r.Valor!));
+        Mensagem = r.Valor!.Count == 0 ? "Nenhuma nota autorizada no período." :
+            r.Valor.All(l => l.Codigo is null) ? "As notas do período não têm centro de custo: ligue \"Informar centro de custo nos itens das notas\" em Cadastros › Parâmetros e informe o centro na escrituração." :
+            "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
+    }, Permissao.FiscalRelatorios);
+}
+
 /// <summary>Exclusão de notas (digitadas ou importadas) com confirmação; nota contabilizada pede "Desfazer contabilização e excluir".</summary>
 internal static class ExclusaoNotas
 {

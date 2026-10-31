@@ -5,7 +5,7 @@ using Vorticis.Application.Contabil;
 using Vorticis.Domain.Contabil;
 using Vorticis.Domain.Seguranca;
 
-namespace Vorticis.Desktop.ViewModels;
+namespace Vorticis.Desktop.Comum.ViewModels;
 
 public sealed record CentroLinha(CentroCustoDetalhe Centro, string? CodigoPai)
 {
