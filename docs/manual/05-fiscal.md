@@ -283,7 +283,9 @@ Escolha o ano, **Carregar**, edite a receita bruta e a folha de cada mês anteri
 ## Planejamento tributário
 
 **Para que serve:** comparar, com os mesmos números, quanto a empresa pagaria de tributos no ano no **Simples Nacional**, no **Lucro Presumido** e no **Lucro Real**, e ver qual regime tem a menor carga.
-**Onde fica:** *Apuração › Planejamento tributário* (para montar e gravar simulações) e *Relatórios › Planejamento tributário* (para imprimir ou exportar uma simulação gravada).
+**Onde fica:** *Apuração › Planejamento tributário* e *Relatórios › Planejamento tributário* (a mesma tela: monta, compara, grava e exporta).
+
+Ao abrir, a tela já traz a última simulação gravada (comparada na hora). Sem simulação, traz a receita e a folha do ano anterior do *Histórico de receita e folha*; sem histórico, mostra o que é preciso informar. **Comparar** sem nenhuma receita digitada também mostra essa orientação.
 
 1. Escolha o **Ano** e dê uma **Descrição** à simulação (ex.: *Cenário base*, *Com nova filial*).
 2. Na grade, digite a **receita bruta prevista para o ano** em cada tipo de receita (comércio, indústria, serviços de cada anexo, transporte de cargas). A coluna **Paga** mostra se o tipo paga ICMS ou ISS.
@@ -348,7 +350,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 - **Resumos** (*Relatórios › Resumos*):
   - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
   - **Resumo por CFOP**: totais por CFOP e sentido.
-- **Planejamento tributário**: o comparativo Simples × Presumido × Real de uma simulação gravada; veja [Planejamento tributário](#planejamento-tributario).
+- **Planejamento tributário**: informe os dados do ano e compare Simples × Presumido × Real, com exportação; veja [Planejamento tributário](#planejamento-tributario).
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
 - **Duplicatas a pagar**, **Duplicatas a receber** e **Posição por vencimento**: veja [Relatórios de duplicatas](#relatorios-de-duplicatas).
 

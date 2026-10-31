@@ -62,10 +62,29 @@ public partial class PlanejamentoTributarioViewModel(IContexto contexto) : Relat
         OnPropertyChanged(nameof(PodeGravar));
     }
 
+    /// <summary>Sem receita digitada, a tela pede os dados.</summary>
+    public bool SemDados => Receitas.All(r => V(r.ValorTexto) == 0);
+
+    public const string Orientacao = "Informe a receita bruta prevista para o ano em cada tipo de receita (grade à esquerda), a folha, os custos e despesas, as compras com crédito e os percentuais de ICMS e ISS; depois clique em Comparar. Trazer do histórico preenche a receita e a folha do ano anterior.";
+
+    /// <summary>
+    /// Ao abrir: encargo padrão, simulações gravadas e, sem nada digitado, a última simulação do ano (comparada na hora) ou a receita e a
+    /// folha do ano anterior, com a orientação do que falta informar.
+    /// </summary>
     public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (string.IsNullOrWhiteSpace(EncargosTexto)) EncargosTexto = (await app.Fiscal().Planejamento.EncargoPadraoAsync(Ano)).ToString("0.##", Formato.PtBr);
         await RecarregarSimulacoesAsync(app, empresa, usuario);
+        if (!SemDados) return;
+        if (Simulacoes.FirstOrDefault() is { } ultima) { Simulacao = ultima; return; }
+        var mov = await app.Fiscal().Planejamento.MovimentoAsync(empresa, Ano - 1, usuario);
+        if (mov.Sucesso && mov.Valor!.Meses > 0)
+        {
+            Receitas[0].ValorTexto = Numeros.Moeda(mov.Valor.Receita);
+            FolhaTexto = Numeros.Moeda(mov.Valor.Folha);
+            Mensagem = $"Receita e folha de {Ano - 1} trazidas do histórico ({mov.Valor.Meses} meses) em \"{Receitas[0].Descricao}\". Separe a receita por tipo, complete os demais dados e clique em Comparar.";
+        }
+        else Mensagem = Orientacao;
     });
 
     private async Task RecarregarSimulacoesAsync(VorticisApp app, long empresa, long usuario)
@@ -85,6 +104,7 @@ public partial class PlanejamentoTributarioViewModel(IContexto contexto) : Relat
     [RelayCommand]
     private Task CompararAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
+        if (SemDados) { Limpar(); Conclusao = ""; Erros.Add(Orientacao); return; }
         var r = await app.Fiscal().Planejamento.CompararAsync(empresa, Entrada(), usuario);
         if (!r.Sucesso) { Limpar(); Conclusao = ""; MostrarResultado(r, ""); return; }
         _calculada = $"Ano {Ano} · {Descricao}";
@@ -127,37 +147,5 @@ public partial class PlanejamentoTributarioViewModel(IContexto contexto) : Relat
         destino.ValorTexto = Numeros.Moeda(r.Valor.Receita);
         FolhaTexto = Numeros.Moeda(r.Valor.Folha);
         Mensagem = $"Receita de {Ano - 1} ({r.Valor.Meses} meses) em \"{destino.Descricao}\" e folha do ano. Separe a receita por tipo, se houver mais de um, e clique em Comparar.";
-    });
-}
-
-/// <summary>Relatórios › Planejamento tributário: o comparativo de uma simulação gravada, para imprimir ou exportar.</summary>
-public partial class RelPlanejamentoViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
-{
-    public ObservableCollection<SimulacaoPlanejamento> Simulacoes { get; } = [];
-    [ObservableProperty] private SimulacaoPlanejamento? _simulacao;
-
-    protected override string TituloRelatorio => TabelasPlanejamento.Titulo;
-    protected override string Parametros => Simulacao is { } s ? $"Ano {s.Ano} · {s.Descricao}" : "";
-    protected override string NomeArquivo => $"planejamento_tributario_{Simulacao?.Ano}";
-    protected override bool Paisagem => false;
-
-    public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        var r = await app.Fiscal().Planejamento.ListarAsync(empresa, usuario);
-        Simulacoes.Clear();
-        foreach (var s in r.Valor ?? []) Simulacoes.Add(s);
-        if (r.Valor is { Count: 0 }) Mensagem = "Nenhuma simulação gravada: monte e grave uma em Apuração › Planejamento tributário.";
-        Simulacao ??= Simulacoes.FirstOrDefault();
-    });
-
-    partial void OnSimulacaoChanged(SimulacaoPlanejamento? value) => _ = GerarAsync();
-
-    [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Simulacao is not { } s) { Limpar(); return; }
-        var r = await app.Fiscal().Planejamento.CompararAsync(empresa, s.Dados, usuario);
-        if (!r.Sucesso) { Limpar(); MostrarResultado(r, ""); return; }
-        Mostrar(TabelasPlanejamento.Tabelas(r.Valor!, s.Descricao));
     });
 }

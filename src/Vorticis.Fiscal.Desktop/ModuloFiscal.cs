@@ -108,7 +108,7 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Relatório de recebimentos", Telas.RelRecebimentos),
                 ItemMenu.Tela("Relatório de pagamentos", Telas.RelPagamentos)),
             ItemMenu.Separador,
-            ItemMenu.Tela("Planejamento tributário", Telas.RelPlanejamento),
+            ItemMenu.Tela("Planejamento tributário", Telas.Planejamento),
             ItemMenu.Separador,
             ItemMenu.Tela("Produtos cadastrados", Telas.RelProdutos),
             ItemMenu.Tela("Itens das notas fiscais", Telas.RelItensNotas)),
@@ -174,9 +174,6 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("Planejamento", m => new PlanejamentoTributarioViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.Planejamento, "Apuração › Planejamento tributário", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());
-        c.Instancia("RelPlanejamento", m => new RelPlanejamentoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
-                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
-            .Tela(Telas.RelPlanejamento, "Relatórios › Planejamento tributário", m => m.Pode(Permissao.FiscalRelatorios) || m.Pode(Permissao.FiscalApurar), v => v.CarregarAsync());
         c.Instancia("BaseMensal", m => new BaseMensalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.BaseMensal, "Apuração › Histórico de receita e folha", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRetencoesManter), v => v.CarregarAsync());
         c.Instancia("AjustesEntrada", m => new AjustesEntradaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
