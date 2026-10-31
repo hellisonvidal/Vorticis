@@ -58,6 +58,8 @@ public class FiscalViewsTests(SessaoHeadless headless)
                 (new ApuracaoPresumidoViewModel(ctx), new ApuracaoPresumidoView()),
                 (new ApuracaoRealViewModel(ctx), new ApuracaoRealView()),
                 (new ApuracaoPisCofinsViewModel(ctx), new ApuracaoPisCofinsView()),
+                (new PlanejamentoTributarioViewModel(ctx), new PlanejamentoTributarioView()),
+                (new RelPlanejamentoViewModel(ctx), new RelPlanejamentoView()),
                 (new RetencoesViewModel(ctx), new RetencoesView()),
                 (new GuiasViewModel(ctx), new GuiasView()),
             };

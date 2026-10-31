@@ -1,0 +1,6 @@
+{
+  "vigencia_inicio": "2014-01-01",
+  "fundamento": "Lei 9.718/1998 art. 13 (limite do Lucro Presumido, redação da Lei 12.814/2013); Lei 8.212/1991 art. 22, I (contribuição previdenciária patronal); LC 123/2006 art. 18, § 5º-C (CPP fora do DAS no Anexo IV)",
+  "limite_presumido_anual": 78000000,
+  "cpp_aliquota": 20
+}

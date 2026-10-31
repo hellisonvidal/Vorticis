@@ -274,6 +274,25 @@ A *Parte B* mostra o razão dos prejuízos e da base negativa. O **código da EC
 **Onde fica:** *Apuração › Histórico de receita e folha*.
 Escolha o ano, **Carregar**, edite a receita bruta e a folha de cada mês anterior ao uso do sistema e **Salvar alterações**. Serve de base para o RBT12 do Simples e o Fator R.
 
+## Planejamento tributário
+
+**Para que serve:** comparar, com os mesmos números, quanto a empresa pagaria de tributos no ano no **Simples Nacional**, no **Lucro Presumido** e no **Lucro Real**, e ver qual regime tem a menor carga.
+**Onde fica:** *Apuração › Planejamento tributário* (para montar e gravar simulações) e *Relatórios › Planejamento tributário* (para imprimir ou exportar uma simulação gravada).
+
+1. Escolha o **Ano** e dê uma **Descrição** à simulação (ex.: *Cenário base*, *Com nova filial*).
+2. Na grade, digite a **receita bruta prevista para o ano** em cada tipo de receita (comércio, indústria, serviços de cada anexo, transporte de cargas). A coluna **Paga** mostra se o tipo paga ICMS ou ISS.
+   - **Trazer do histórico** busca a receita e a folha do ano anterior em *Apuração › Histórico de receita e folha*; depois, separe a receita por tipo, se houver mais de um.
+3. Informe a **Folha do ano** (salários e pró-labore), os **Encargos patronais sobre a folha (%)** (vem 20%, a contribuição patronal; some o RAT e os terceiros da empresa), os **Custos e despesas** (tudo o que reduz o lucro, sem a folha e sem os tributos), as **Compras com crédito de PIS/COFINS** e os percentuais de **ICMS** efetivo sobre as vendas e de **ISS** sobre os serviços.
+4. Clique em **Comparar**. A tabela mostra, para cada regime, IRPJ, CSLL, PIS, COFINS, INSS patronal, IPI, ICMS e ISS do ano, o total e o percentual sobre a receita. Acima dela aparece o regime de **menor carga** e a economia em relação ao segundo melhor.
+5. **Gravar simulação** guarda os dados (a de mesma descrição e ano é substituída). Em **Simulações gravadas** você abre uma simulação de novo; **Excluir simulação** apaga a escolhida.
+
+Como cada regime é calculado:
+- **Simples Nacional:** DAS de um mês médio (receita ÷ 12, com a receita do ano como RBT12 e a folha para o Fator R) × 12. No **Anexo IV** o INSS patronal é pago fora do DAS; acima do sublimite, o ICMS e o ISS também. Receita acima de R$ 4,8 milhões: *não permitido*.
+- **Lucro Presumido:** IRPJ e CSLL trimestrais pelos percentuais de presunção de cada atividade; PIS 0,65% e COFINS 3%. Receita acima de R$ 78 milhões: *não permitido* (a empresa é obrigada ao Lucro Real).
+- **Lucro Real:** lucro = receita − custos e despesas − folha − encargos − PIS/COFINS − ICMS − ISS; IRPJ e CSLL trimestrais; PIS 1,65% e COFINS 7,6% com crédito sobre as compras. Sem lucro, não há IRPJ nem CSLL.
+
+As tabelas, alíquotas e limites vêm dos parâmetros legais vigentes no ano. É uma **estimativa** para apoiar a decisão: não considera retenções, incentivos, substituição tributária, produtos monofásicos nem as adições e exclusões do LALUR. Montar a simulação pede a permissão de apurar tributos ou de relatórios fiscais; gravar e excluir, a de apurar.
+
 ## Contabilização das provisões de impostos
 
 **Onde fica:** *Cadastros › Parâmetros*, grupo *Contabilização das provisões de impostos*.
@@ -309,6 +328,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 - **Resumos** (*Relatórios › Resumos*):
   - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
   - **Resumo por CFOP**: totais por CFOP e sentido.
+- **Planejamento tributário**: o comparativo Simples × Presumido × Real de uma simulação gravada; veja [Planejamento tributário](#planejamento-tributario).
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
 - **Duplicatas a pagar**, **Duplicatas a receber** e **Posição por vencimento**: veja [Relatórios de duplicatas](#relatorios-de-duplicatas).
 

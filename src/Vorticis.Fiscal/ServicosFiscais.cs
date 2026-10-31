@@ -52,6 +52,7 @@ public sealed class ServicosFiscais
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
+        Planejamento = new Planejamento.ServicoPlanejamento(ds, repoSimples, Parametros, autorizador);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
     }
 
@@ -68,6 +69,7 @@ public sealed class ServicosFiscais
     public ServicoRetencoes Retencoes { get; }
     public ServicoGuias Guias { get; }
     public ServicoProvisoes Provisoes { get; }
+    public Planejamento.ServicoPlanejamento Planejamento { get; }
     public Fechamento.ServicoFechamentoFiscal Fechamento { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }
     public ServicoEfd Efd { get; }

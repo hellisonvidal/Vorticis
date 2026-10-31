@@ -108,6 +108,8 @@ public static class IconesMenu
         ["apuracaoreal"] = "FileTableOutline",
         ["apuracaopiscofins"] = "AlphaPBoxOutline",
         ["historicoreceitafolha"] = "History",
+        ["planejamentotributario"] = "PuzzleOutline",
+        ["relplanejamentotributario"] = "ViewGridOutline",
         ["fiscal.fechamento"] = "CalendarCheckOutline",
         ["retencoes"] = "CashLockOpen",
         ["guias"] = "BarcodeScan",

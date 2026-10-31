@@ -22,6 +22,27 @@ public class MenusTests
     }
 
     [Fact]
+    public void Fiscal_tem_planejamento_tributario_em_Apuracao_e_em_Relatorios()
+    {
+        var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
+        Folhas(vm.Menus.Single(m => m.Titulo == "_Apuração").Filhos!).Single(i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.Planejamento);
+        Folhas(vm.Menus.Single(m => m.Titulo == "_Relatórios").Filhos!).Single(i => i.Chave == Vorticis.Fiscal.Desktop.ViewModels.Telas.RelPlanejamento);
+        var tela = new Vorticis.Fiscal.Desktop.ViewModels.PlanejamentoTributarioViewModel(vm) { Ano = 2027 };
+        tela.Receitas[0].ValorTexto = "1.200.000,00";
+        tela.Receitas[3].ValorTexto = "300000";
+        (tela.FolhaTexto, tela.EncargosTexto, tela.IcmsTexto, tela.IssTexto) = ("120.000,00", "27,8", "5", "2,5");
+        var e = tela.Entrada();
+        Assert.Equal(1_500_000m, e.ReceitaTotal);
+        Assert.Equal((120_000m, 27.8m, 5m, 2.5m), (e.Folha, e.EncargosPercentual, e.AliquotaIcms, e.AliquotaIss));
+        Assert.Equal(Vorticis.Fiscal.Planejamento.TipoReceitaPlanejamento.ServicosFatorR, e.Receitas[1].Tipo);
+        var outra = new Vorticis.Fiscal.Desktop.ViewModels.PlanejamentoTributarioViewModel(vm);
+        outra.Preencher(new Vorticis.Fiscal.Planejamento.SimulacaoPlanejamento(1, 2027, "Cenário base", e, DateTimeOffset.Now));
+        Assert.Equal(e, outra.Entrada() with { Receitas = e.Receitas });
+        Assert.Equal(e.Receitas, outra.Entrada().Receitas);
+        Assert.Equal("2027 · Cenário base", new Vorticis.Fiscal.Planejamento.SimulacaoPlanejamento(1, 2027, "Cenário base", e, DateTimeOffset.Now).ToString());
+    }
+
+    [Fact]
     public void Fiscal_tem_menu_comum_e_itens_em_breve_desabilitados()
     {
         MainViewModelBase vm = new Vorticis.Fiscal.Desktop.MainViewModel();

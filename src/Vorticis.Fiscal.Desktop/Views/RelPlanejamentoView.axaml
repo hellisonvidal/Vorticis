@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.RelPlanejamentoView"
+             x:DataType="vm:RelPlanejamentoViewModel">
+  <!-- Relatórios › Planejamento tributário -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Classes="titulo" Text="Planejamento tributário" VerticalAlignment="Center" />
+        <TextBlock Text="Simulação" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding Simulacoes}" SelectedItem="{Binding Simulacao}" Width="260" PlaceholderText="(escolha a simulação)" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <c:MensagensView />
+    </StackPanel>
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

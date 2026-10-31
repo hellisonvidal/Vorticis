@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.PlanejamentoTributarioView"
+             x:DataType="vm:PlanejamentoTributarioViewModel">
+  <!-- Apuração › Planejamento tributário -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Classes="titulo" Text="Planejamento tributário" VerticalAlignment="Center" />
+        <TextBlock Text="Ano" VerticalAlignment="Center" />
+        <NumericUpDown Value="{Binding Ano}" Minimum="2000" Maximum="2100" FormatString="0" Width="120" />
+        <TextBlock Text="Descrição" VerticalAlignment="Center" />
+        <TextBox Text="{Binding Descricao}" Width="200" MaxLength="80" />
+        <Button Content="Comparar" Command="{Binding CompararCommand}" Classes="accent" />
+        <Button Content="Gravar simulação" Command="{Binding GravarCommand}" IsEnabled="{Binding PodeGravar}" />
+        <Button Content="Trazer do histórico" Command="{Binding TrazerHistoricoCommand}" ToolTip.Tip="Receita e folha do ano anterior (Apuração › Histórico de receita e folha)" />
+        <TextBlock Text="Simulações gravadas" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding Simulacoes}" SelectedItem="{Binding Simulacao}" Width="230" PlaceholderText="(escolha para abrir)" />
+        <Button Content="Excluir simulação" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeGravar}" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <c:MensagensView />
+      <TextBlock Text="{Binding Conclusao}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" TextWrapping="Wrap"
+                 IsVisible="{Binding Conclusao, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+    <Grid ColumnDefinitions="560,12,*">
+      <ScrollViewer>
+        <StackPanel Spacing="6">
+          <TextBlock Text="Receita bruta prevista para o ano, por tipo" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+          <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Receitas}" AutoGenerateColumns="False" CanUserSortColumns="False" Height="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Tipo de receita" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />
+              <DataGridTextColumn Header="Paga" Binding="{ReflectionBinding Tributacao}" Width="60" IsReadOnly="True" />
+              <DataGridTextColumn Header="Receita do ano" Binding="{ReflectionBinding ValorTexto}" Width="130" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Grid ColumnDefinitions="300,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+            <TextBlock Grid.Row="0" Classes="rotulo" Text="Folha do ano (salários e pró-labore)" />
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FolhaTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="Encargos patronais sobre a folha (%)" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EncargosTexto}" Width="80" HorizontalAlignment="Left" ToolTip.Tip="INSS patronal, RAT e terceiros (fora do Simples)" />
+            <TextBlock Grid.Row="2" Classes="rotulo" Text="Custos e despesas (sem folha e tributos)" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CustosTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBlock Grid.Row="3" Classes="rotulo" Text="Compras com crédito de PIS/COFINS" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ComprasTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBlock Grid.Row="4" Classes="rotulo" Text="ICMS efetivo sobre as vendas (%)" />
+            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding IcmsTexto}" Width="80" HorizontalAlignment="Left" />
+            <TextBlock Grid.Row="5" Classes="rotulo" Text="ISS sobre os serviços (%)" />
+            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding IssTexto}" Width="80" HorizontalAlignment="Left" />
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Column="2">
+        <ItemsControl ItemsSource="{Binding Exibidas}" />
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</UserControl>

@@ -11,6 +11,8 @@
     <!-- Telas do módulo Fiscal -->
     <DataTemplate DataType="vm:TabelaExibida"><v:TabelaExibidaView /></DataTemplate>
     <DataTemplate DataType="vm:ImportacaoXmlViewModel"><v:ImportacaoXmlView /></DataTemplate>
+    <DataTemplate DataType="vm:PlanejamentoTributarioViewModel"><v:PlanejamentoTributarioView /></DataTemplate>
+    <DataTemplate DataType="vm:RelPlanejamentoViewModel"><v:RelPlanejamentoView /></DataTemplate>
     <DataTemplate DataType="vm:DocumentosViewModel"><v:DocumentosView /></DataTemplate>
     <DataTemplate DataType="vm:LivroEntradasViewModel"><v:LivroFiscalView /></DataTemplate>
     <DataTemplate DataType="vm:LivroSaidasViewModel"><v:LivroFiscalView /></DataTemplate>

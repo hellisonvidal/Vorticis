@@ -8,6 +8,7 @@ public static class ChavesParametro
     public const string SimplesNacional = "SIMPLES_NACIONAL";
     public const string LucroPresumidoReal = "LUCRO_PRESUMIDO_REAL";
     public const string Retencoes = "RETENCOES_GUIAS";
+    public const string Planejamento = "PLANEJAMENTO_TRIBUTARIO";
 }
 
 /// <summary>Leitura dos parâmetros legais vigentes em uma data (tabelas, alíquotas, códigos de receita).</summary>
