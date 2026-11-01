@@ -8,7 +8,7 @@ using Vorticis.Desktop.Comum.ViewModels;
 
 namespace Vorticis.Desktop.Comum.Views;
 
-/// <summary>Seletor dos dez visuais da Suite, com a miniatura de cada um; a troca é imediata e fica gravada para o usuário.</summary>
+/// <summary>Seletor dos cinco visuais da Suite, com a miniatura de cada um; a troca é imediata e fica gravada para o usuário.</summary>
 public sealed class SuiteSeletorView : UserControl
 {
     private readonly Dictionary<VisualSuite, (Button Botao, Border Marca)> _cartoes = [];

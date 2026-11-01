@@ -1,8 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteEscolhaLayoutView" x:DataType="vm:SuiteViewModel">
-  <!-- Botão discreto "Visual": abre o seletor com a miniatura dos 10 visuais (também em Exibir › Visual da Suite) -->
-  <Button Name="BotaoLayout" Classes="su" Padding="9,6" ToolTip.Tip="Visual da Suite: escolher entre os 10 visuais">
+  <!-- Botão discreto "Visual": abre o seletor com a miniatura dos 5 visuais (também em Exibir › Visual da Suite) -->
+  <Button Name="BotaoLayout" Classes="su" Padding="9,6" ToolTip.Tip="Visual da Suite: escolher entre os 5 visuais">
     <StackPanel Orientation="Horizontal" Spacing="6">
       <PathIcon Data="{x:Static v:Icones.ViewDashboard}" Width="17" Height="17" Foreground="{DynamicResource TxSutil}" />
       <TextBlock Name="RotuloLayout" Text="Visual" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />

@@ -80,7 +80,7 @@ public partial class MainWindow : Window
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
             if (e.PropertyName == nameof(SuiteViewModel.MostraBuscaCentral)) AtualizarBusca();
-            if (e.PropertyName is nameof(SuiteViewModel.MenusNaBusca) or nameof(SuiteViewModel.MostraTeclas)) AtualizarBarras();
+            if (e.PropertyName is nameof(SuiteViewModel.MenusNaBusca)) AtualizarBarras();
             if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.Visual) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) or nameof(SuiteViewModel.Tema) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
         };
         DataContext = suite.Ativo.Vm;
@@ -89,7 +89,7 @@ public partial class MainWindow : Window
         AtualizarBarras();
     }
 
-    /// <summary>Busca central (visual 9 e Ctrl+K): fica sobre a área de trabalho; as janelas das funções continuam por cima dela.</summary>
+    /// <summary>Busca central (visual 5 e Ctrl+K): fica sobre a área de trabalho; as janelas das funções continuam por cima dela.</summary>
     private void AtualizarBusca()
     {
         var busca = Suite?.MostraBuscaCentral == true;
@@ -204,7 +204,6 @@ public partial class MainWindow : Window
     {
         BarraFuncoes.IsVisible = _vm is { Logado: true } v && (v.JanelasAbertas.Count > 0 || v.UsaPeriodo);
         BarraMenuWrap.IsVisible = Suite is null || (!Suite.EhFaixa && (!Suite.EhBusca || Suite.MenusNaBusca));
-        BarraTeclas.IsVisible = Suite?.MostraTeclas == true && _vm is { Logado: true };
     }
 
     private void AbrirJanela(FuncaoAberta f, MainViewModelBase dono)
@@ -430,7 +429,7 @@ public partial class MainWindow : Window
         layout.Items.Add(new Separator());
         layout.Items.Add(new MenuItem
         {
-            Header = (suite.LateralFixa ? "●  " : "     ") + "Menu à esquerda fixo (visuais 2, 7 e 8); desmarcado, fica oculto e abre ao passar o mouse",
+            Header = (suite.LateralFixa ? "●  " : "     ") + "Menu à esquerda fixo (visual 2); desmarcado, fica oculto e abre ao passar o mouse",
             Command = suite.AlternarFixaCommand, Icon = IconesSuite.IconeDe(suite.IconeFixar),
         });
         layout.Items.Add(new MenuItem
@@ -500,7 +499,7 @@ public partial class MainWindow : Window
                 Gesture = KeyGesture.Parse("Ctrl+K"),
                 Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
                 {
-                    // a árvore (visual 8) tem a busca própria; nos demais, a busca central (a do visual 9) abre por cima
+                    // a moldura em árvore tem a busca própria; nos demais, a busca central (a do visual 5) abre por cima
                     if (suite.EhArvore) Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FocarBusca());
                     else if (suite.EhBusca) SuiteBusca.FindDescendantOfType<SuiteBuscaView>()?.Focar();
                     else suite.BuscaRapidaAberta = true;

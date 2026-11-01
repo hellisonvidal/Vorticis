@@ -28,13 +28,12 @@ public enum LayoutSuite
 }
 
 /// <summary>
-/// Os dez visuais que o usuário escolhe (Exibir › Visual da Suite ou o botão Visual). Cada um combina uma moldura (<see cref="LayoutSuite"/>)
-/// com detalhes de tela: barra lateral fixa ou oculta, barra de comandos, caminho da tela, lista à esquerda nos cadastros,
-/// densidade alta com tema escuro e as teclas de atalho no rodapé.
+/// Os cinco visuais que o usuário escolhe (Exibir › Visual da Suite ou o botão Visual); cada um é uma moldura (<see cref="LayoutSuite"/>).
+/// Os números ficam os da versão 1.0.1 (gravados nas preferências); os visuais retirados viram o mais parecido (<see cref="SuiteViewModel.Normalizar"/>).
 /// </summary>
 public enum VisualSuite
 {
-    Classico, BarraLateral, Comandos, ListaFicha, Faixa, Mosaico, Trilho, Paineis, Busca, AltaDensidade,
+    Classico = 0, BarraLateral = 1, Faixa = 4, Mosaico = 5, Busca = 8,
 }
 
 /// <summary>Uma das opções do seletor de visuais (número, nome, descrição e a miniatura em Assets/Visuais).</summary>
@@ -81,9 +80,6 @@ public sealed partial class ModuloSuite(MainViewModelBase vm) : ObservableObject
 
     /// <summary>Funções mais usadas pelo usuário neste módulo; completa com os atalhos de teclado do módulo (cartão do painel D).</summary>
     [ObservableProperty] private IReadOnlyList<NoSuite> _atalhos = [];
-
-    /// <summary>Até oito funções mais usadas no módulo (barra de comandos do visual 3).</summary>
-    [ObservableProperty] private IReadOnlyList<NoSuite> _comandos = [];
 
     /// <summary>Funções abertas no módulo (selo no ícone).</summary>
     public int Abertas => Vm.JanelasAbertas.Count;
@@ -156,7 +152,6 @@ public sealed partial class SuiteViewModel : ObservableObject
         _tema = LerTema();
         _carregando = false;
         AplicarTema(_tema);
-        Views.EstilosVisuais.Aplicar(Compacta, ListaEsquerda);
         foreach (var m in Modulos)
         {
             if (!ReferenceEquals(m, _principal)) m.Vm.DelegarReinicio = msg => _principal.Vm.ReiniciarDoZeroAsync(msg);   // limpar o banco: recomeça pelo principal
@@ -199,47 +194,45 @@ public sealed partial class SuiteViewModel : ObservableObject
 
     [ObservableProperty] private ModuloSuite _ativo;
 
-    // ------------------------------------------------------------------ os dez visuais
+    // ------------------------------------------------------------------ os cinco visuais
 
-    /// <summary>Visual escolhido; ao escolher, ajusta a moldura (layout) e os detalhes de tela dele.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NomeVisual), nameof(Compacta), nameof(ListaEsquerda), nameof(MostraCaminho), nameof(MostraTeclas), nameof(MostraComandos))]
-    private VisualSuite _visual = VisualSuite.Classico;
+    /// <summary>Visual escolhido; ao escolher, ajusta a moldura (layout) dele.</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(NomeVisual))] private VisualSuite _visual = VisualSuite.Classico;
 
-    /// <summary>10 – Alta densidade: letras e linhas menores em todas as telas.</summary>
-    public bool Compacta => Visual == VisualSuite.AltaDensidade;
-    /// <summary>4 – Lista e ficha: nos cadastros a lista fica à esquerda e a ficha à direita.</summary>
-    public bool ListaEsquerda => Visual == VisualSuite.ListaFicha;
-    /// <summary>3 e 4: o caminho da tela em uso (Módulo › Menu › Função) logo abaixo das abas.</summary>
-    public bool MostraCaminho => Visual is VisualSuite.ListaFicha or VisualSuite.Comandos;
-    /// <summary>10: as teclas de atalho do módulo no rodapé.</summary>
-    public bool MostraTeclas => Visual == VisualSuite.AltaDensidade;
-    /// <summary>3 – Barra de comandos: as funções mais usadas e os favoritos do módulo como botões, sempre no mesmo lugar.</summary>
-    public bool MostraComandos => Visual == VisualSuite.Comandos;
     public string NomeVisual => Visuais.First(v => v.Valor == Visual) is var o ? $"{o.Numero} – {o.Nome}" : "";
 
-    /// <summary>Os dez visuais, na ordem e com os nomes do manual.</summary>
+    /// <summary>Os cinco visuais, na ordem e com os nomes do manual.</summary>
     public static IReadOnlyList<OpcaoVisual> Visuais { get; } =
     [
         new(VisualSuite.Classico, 1, "Clássico renovado", "O menu de sempre no topo, as abas dos módulos acima e as funções abertas logo abaixo (padrão)."),
-        new(VisualSuite.BarraLateral, 2, "Barra lateral", "Coluna fixa à esquerda com os módulos e as funções do módulo em uso agrupadas."),
-        new(VisualSuite.Comandos, 3, "Barra de comandos", "Abas dos módulos e uma barra com as funções que você mais usa, sempre no mesmo lugar."),
-        new(VisualSuite.ListaFicha, 4, "Lista e ficha", "Nos cadastros, a lista com busca à esquerda e a ficha à direita; caminho da tela no alto."),
-        new(VisualSuite.Faixa, 5, "Faixa de opções", "Botões grandes agrupados por categoria (Cadastros, Lançamentos…), como no Office."),
-        new(VisualSuite.Mosaico, 6, "Início em mosaico", "Um cartão por módulo com atalhos, favoritos e próximos vencimentos."),
-        new(VisualSuite.Trilho, 7, "Trilho compacto", "Só os ícones dos módulos à esquerda; o menu abre por cima ao passar o mouse."),
-        new(VisualSuite.Paineis, 8, "Área em painéis", "Painel fixo com a busca, as funções abertas, favoritos, recentes e a árvore de todos os módulos."),
-        new(VisualSuite.Busca, 9, "Busca primeiro", "Moldura mínima: digite o que quer fazer no centro da tela (Ctrl+K); menus no botão Menus."),
-        new(VisualSuite.AltaDensidade, 10, "Alta densidade", "Tema escuro, letras menores, mais linhas por tela e as teclas de atalho no rodapé."),
+        new(VisualSuite.BarraLateral, 2, "Barra lateral", "Coluna à esquerda com os módulos e as funções do módulo em uso agrupadas."),
+        new(VisualSuite.Faixa, 3, "Faixa de opções", "Botões grandes agrupados por categoria (Cadastros, Lançamentos…), como no Office."),
+        new(VisualSuite.Mosaico, 4, "Início em mosaico", "Um cartão por módulo com atalhos, favoritos e próximos vencimentos."),
+        new(VisualSuite.Busca, 5, "Busca primeiro", "Moldura mínima: digite o que quer fazer no centro da tela (Ctrl+K); menus no botão Menus."),
     ];
+
+    /// <summary>Visual gravado por versões anteriores (inclusive os retirados na 1.0.2): o equivalente entre os cinco.</summary>
+    public static VisualSuite Normalizar(int gravado) => gravado switch
+    {
+        1 or 6 or 7 => VisualSuite.BarraLateral,   // barra lateral, trilho compacto, área em painéis
+        4 => VisualSuite.Faixa,
+        5 => VisualSuite.Mosaico,
+        8 => VisualSuite.Busca,
+        _ => VisualSuite.Classico,                 // clássico, barra de comandos, lista e ficha, alta densidade
+    };
+
+    /// <summary>Nomes gravados pela 1.0.1 para os visuais que saíram, com o número de então.</summary>
+    private static readonly Dictionary<string, int> VisuaisRetirados = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Comandos"] = 2, ["ListaFicha"] = 3, ["Trilho"] = 6, ["Paineis"] = 7, ["AltaDensidade"] = 9,
+    };
 
     /// <summary>Moldura de cada visual.</summary>
     public static LayoutSuite LayoutDe(VisualSuite v) => v switch
     {
-        VisualSuite.BarraLateral or VisualSuite.Trilho => LayoutSuite.Lateral,
+        VisualSuite.BarraLateral => LayoutSuite.Lateral,
         VisualSuite.Faixa => LayoutSuite.Faixa,
         VisualSuite.Mosaico => LayoutSuite.Painel,
-        VisualSuite.Paineis => LayoutSuite.Arvore,
         VisualSuite.Busca => LayoutSuite.Busca,
         _ => LayoutSuite.Abas,
     };
@@ -247,8 +240,7 @@ public sealed partial class SuiteViewModel : ObservableObject
     /// <summary>Visual equivalente a uma moldura escolhida diretamente (preferências antigas, Exibir › moldura).</summary>
     public static VisualSuite VisualDe(LayoutSuite l, bool lateralFixa) => l switch
     {
-        LayoutSuite.Lateral => lateralFixa ? VisualSuite.BarraLateral : VisualSuite.Trilho,
-        LayoutSuite.Arvore => VisualSuite.Paineis,
+        LayoutSuite.Lateral or LayoutSuite.Arvore => VisualSuite.BarraLateral,
         LayoutSuite.Painel => VisualSuite.Mosaico,
         LayoutSuite.Faixa => VisualSuite.Faixa,
         LayoutSuite.Busca => VisualSuite.Busca,
@@ -259,33 +251,30 @@ public sealed partial class SuiteViewModel : ObservableObject
 
     partial void OnVisualChanged(VisualSuite value)
     {
-        if (_aplicandoVisual) { Views.EstilosVisuais.Aplicar(Compacta, ListaEsquerda); return; }   // veio da troca de moldura
+        if (_aplicandoVisual) return;   // veio da troca de moldura
         _aplicandoVisual = true;
         try
         {
             Layout = LayoutDe(value);
-            if (value is VisualSuite.BarraLateral or VisualSuite.Paineis) LateralFixa = true;
-            else if (value == VisualSuite.Trilho) LateralFixa = false;
-            if (value is VisualSuite.Classico or VisualSuite.Comandos or VisualSuite.ListaFicha or VisualSuite.Faixa or VisualSuite.AltaDensidade) FaixaFixa = true;
-            if (value == VisualSuite.AltaDensidade && !_carregando) Tema = TemaSuite.Escuro;
+            if (value == VisualSuite.BarraLateral) LateralFixa = true;
+            if (value is VisualSuite.Classico or VisualSuite.Faixa) FaixaFixa = true;
             MenusNaBusca = false;
         }
         finally { _aplicandoVisual = false; }
-        Views.EstilosVisuais.Aplicar(Compacta, ListaEsquerda);
         SalvarPreferencias();
     }
 
     [RelayCommand]
-    private void EscolherVisual(VisualSuite visual) => Visual = visual;
+    private void EscolherVisual(VisualSuite visual) => Visual = Enum.IsDefined(visual) ? visual : Normalizar((int)visual);
 
     // ------------------------------------------------------------------ 9 – Busca primeiro
 
     public bool EhBusca => Layout == LayoutSuite.Busca;
-    /// <summary>No visual 9 os menus do módulo ficam escondidos; o botão Menus mostra e esconde.</summary>
+    /// <summary>No visual 5 os menus do módulo ficam escondidos; o botão Menus mostra e esconde.</summary>
     [ObservableProperty] private bool _menusNaBusca;
     public bool MostraBuscaCentral => Logado && (EhBusca || BuscaRapidaAberta);
 
-    /// <summary>Ctrl+K nos visuais sem busca própria: a mesma busca do visual 9 abre por cima da área de trabalho.</summary>
+    /// <summary>Ctrl+K nos visuais sem busca própria: a mesma busca do visual 5 abre por cima da área de trabalho.</summary>
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostraBuscaCentral))] private bool _buscaRapidaAberta;
 
     [RelayCommand]
@@ -294,7 +283,7 @@ public sealed partial class SuiteViewModel : ObservableObject
     [RelayCommand]
     private void AlternarMenusNaBusca() => MenusNaBusca = !MenusNaBusca;
 
-    /// <summary>Busca central do visual 9: Enter abre o primeiro resultado.</summary>
+    /// <summary>Busca central do visual 5: Enter abre o primeiro resultado.</summary>
     [RelayCommand]
     private void AbrirPrimeiroResultado()
     {
@@ -379,7 +368,6 @@ public sealed partial class SuiteViewModel : ObservableObject
     [
         new(LayoutSuite.Abas, "A", "Clássico com abas", "Uma aba com ícone para cada módulo no topo e os menus do módulo logo abaixo."),
         new(LayoutSuite.Lateral, "B", "Barra lateral (padrão)", "Coluna de ícones à esquerda que abre com os nomes e as funções do módulo agrupadas."),
-        new(LayoutSuite.Arvore, "C", "Árvore com busca", "Todos os módulos e funções numa árvore, com busca, favoritos e recentes."),
         new(LayoutSuite.Painel, "D", "Painel inicial", "Cartões grandes por módulo, atalhos das funções mais usadas e próximos vencimentos."),
         new(LayoutSuite.Faixa, "E", "Faixa de opções", "Abas por módulo e botões grandes agrupados por categoria, como no Office."),
         new(LayoutSuite.Busca, "F", "Busca primeiro", "Moldura mínima com a busca no centro da tela; os menus abrem pelo botão Menus."),
@@ -561,7 +549,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         foreach (var id in _idsRecentes) if (_porId.TryGetValue(id, out var n)) Recentes.Add(n);
         OnPropertyChanged(nameof(TemFavoritos));
         OnPropertyChanged(nameof(TemRecentes));
-        foreach (var m in Modulos.Where(m => m.Raiz is not null)) (m.Atalhos, m.Comandos) = (CalcularAtalhos(m, 4), CalcularAtalhos(m, 8));
+        foreach (var m in Modulos.Where(m => m.Raiz is not null)) m.Atalhos = CalcularAtalhos(m, 4);
     }
 
     private static NoSuite? MontarNo(ModuloSuite m, ItemMenu item, string caminho, int nivel)
@@ -703,7 +691,11 @@ public sealed partial class SuiteViewModel : ObservableObject
     {
         try
         {
-            if (File.Exists(ArquivoVisual) && Enum.TryParse<VisualSuite>(File.ReadAllText(ArquivoVisual).Trim(), out var v) && Enum.IsDefined(v)) return v;
+            if (File.Exists(ArquivoVisual) && File.ReadAllText(ArquivoVisual).Trim() is var texto && texto.Length > 0)
+            {
+                if (Enum.TryParse<VisualSuite>(texto, out var v) && Enum.IsDefined(v)) return v;
+                if (VisuaisRetirados.TryGetValue(texto, out var n)) return Normalizar(n);   // visual da 1.0.1 que saiu
+            }
             if (File.Exists(ArquivoLayout) && Enum.TryParse<LayoutSuite>(File.ReadAllText(ArquivoLayout).Trim(), out var l) && Enum.IsDefined(l)) return VisualDe(l, LerFixa());
         }
         catch (Exception) { /* arquivo ilegível: padrão */ }
@@ -756,11 +748,10 @@ public sealed partial class SuiteViewModel : ObservableObject
                 LateralFixa = p.NavFixa;
                 FaixaFixa = p.FaixaFixa;
                 Tema = Enum.IsDefined(p.Tema) ? p.Tema : TemaSuite.Claro;
-                var visual = p.Visual is { } pv && Enum.IsDefined(pv) ? pv : VisualDe(Enum.IsDefined(p.Layout) ? p.Layout : LayoutSuite.Abas, p.NavFixa);
+                var visual = p.Visual is { } pv ? (Enum.IsDefined(pv) ? pv : Normalizar((int)pv)) : VisualDe(Enum.IsDefined(p.Layout) ? p.Layout : LayoutSuite.Abas, p.NavFixa);
                 _aplicandoVisual = true;
                 try { Visual = visual; Layout = LayoutDe(visual); }
                 finally { _aplicandoVisual = false; }
-                Views.EstilosVisuais.Aplicar(Compacta, ListaEsquerda);
                 AtualizarIndices();
             }
             finally { _carregando = false; }

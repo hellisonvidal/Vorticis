@@ -38,14 +38,13 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.Equal(["CD", "C", "E", "F", "FP", "G"], suite.Modulos.Select(m => m.Sigla));
         Assert.All(modulos, m => Assert.False(m.PerguntarAtivacaoAoEntrar));
 
-        suite.Layout = LayoutSuite.Arvore;                            // a escolha fica gravada para a próxima abertura
-        Assert.Equal(LayoutSuite.Arvore, SuiteViewModel.LerLayout());
-        Assert.Equal(LayoutSuite.Arvore, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
+        suite.Layout = LayoutSuite.Painel;                            // a escolha fica gravada para a próxima abertura
+        Assert.Equal(LayoutSuite.Painel, SuiteViewModel.LerLayout());
+        Assert.Equal(LayoutSuite.Painel, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
         suite.Layout = LayoutSuite.Faixa;                             // E, a faixa de opções, também é gravada
         Assert.Equal(LayoutSuite.Faixa, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
-        suite.Layout = LayoutSuite.Arvore;
-        Assert.Equal(6, SuiteViewModel.Opcoes.Count);
-        Assert.Equal(Enum.GetValues<LayoutSuite>(), SuiteViewModel.Opcoes.Select(o => o.Valor));
+        Assert.Equal(5, SuiteViewModel.Opcoes.Count);                // cinco molduras (a árvore saiu junto com o visual Área em painéis)
+        Assert.DoesNotContain(LayoutSuite.Arvore, SuiteViewModel.Opcoes.Select(o => o.Valor));
 
         Assert.Equal(6, suite.Arvore.Count);
         suite.Busca = "ferias";                                       // sem acento e sem maiúscula
@@ -72,8 +71,8 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     {
         SuiteViewModel.ArquivoLayout = ArquivoTemporario();
         var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
-        suite.Layout = LayoutSuite.Lateral;                // barra lateral (visual 7, trilho compacto)
-        Assert.Equal(VisualSuite.Trilho, suite.Visual);
+        suite.Layout = LayoutSuite.Lateral;                // moldura lateral (visual 2), aqui com a barra oculta
+        Assert.Equal(VisualSuite.BarraLateral, suite.Visual);
         // oculto por padrão: só a faixa de ícones; a navegação abre por cima ao passar o mouse e fecha ao escolher
         Assert.False(suite.LateralFixa);
         Assert.True(suite.MostraRail);
@@ -110,7 +109,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         var folha = suite.Arvore.SelectMany(n => n.Filhos).Count();
         Assert.True(folha > 0);
         suite.UsarPreferenciasDe(beto);                    // sem arquivo ainda: vale a última escolha do computador
-        suite.Layout = LayoutSuite.Arvore;
+        suite.Layout = LayoutSuite.Busca;
         suite.LateralFixa = false;
         suite.FaixaFixa = true;
         var no = fiscal.Raiz.Filhos.SelectMany(Folhas).First();
@@ -124,14 +123,14 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         Assert.False(outra.FaixaFixa);
         Assert.Empty(outra.Favoritos);
         outra.UsarPreferenciasDe(beto);
-        Assert.Equal(LayoutSuite.Arvore, outra.Layout);
+        Assert.Equal(LayoutSuite.Busca, outra.Layout);
         Assert.False(outra.LateralFixa);
         Assert.True(outra.FaixaFixa);
         Assert.Contains(outra.Favoritos, f => f.Id == no.Id);
         Assert.True(File.Exists(SuiteViewModel.ArquivoDoUsuario(ana)));
 
         // troca imediata entre os cinco layouts (flags coerentes)
-        foreach (var l in Enum.GetValues<LayoutSuite>())
+        foreach (var l in SuiteViewModel.Opcoes.Select(o => o.Valor))
         {
             outra.EscolherLayoutCommand.Execute(l);
             Assert.Equal(l, outra.Layout);
