@@ -48,10 +48,10 @@
 
 
     <TabControl Name="Abas" Grid.Row="3">
-      <!-- ============================== NOTA ============================== -->
+      <!-- ============================== NOTA (cabeçalho e itens) ============================== -->
       <TabItem Header="Nota">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="6" Margin="0,4">
+        <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="0,4">
+          <StackPanel Spacing="6">
             <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
               <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="3" IsEnabled="{Binding PodeEditar}">
                 <StackPanel Grid.Row="0" Grid.Column="0" Classes="campo"><TextBlock Classes="rot" Text="Modelo" />
@@ -77,20 +77,8 @@
                 <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Inscrição estadual" /><TextBox Text="{Binding NovoIe}" /></StackPanel>
               </Grid>
             </Border>
-            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4" IsEnabled="{Binding PodeEditar}">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Total informado (confere com os itens)" /><TextBox Text="{Binding TotalInformado}" Width="200" /></StackPanel>
-                <TextBlock Text="Deixe em branco para usar a soma dos itens." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
-              </StackPanel>
-            </Border>
           </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-      <!-- ============================== ITENS ============================== -->
-      <TabItem Header="Itens">
-        <Grid RowDefinitions="Auto,Auto,*" Margin="0,4">
-          <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
+          <Border Grid.Row="1" Margin="0,6,0,0" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
             <StackPanel Spacing="3" IsEnabled="{Binding PodeEditar}">
               <Grid ColumnDefinitions="1.3*,2.6*,0.8*,0.9*,1.1*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Produto (código, descrição ou GTIN)" /><TextBox Name="CampoProduto" Text="{Binding Item.Produto}" /></StackPanel>
@@ -114,13 +102,16 @@
               </UniformGrid>
             </StackPanel>
           </Border>
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,4">
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,4">
             <Button Classes="mini accent" Content="Adicionar item" Command="{Binding AdicionarItemCommand}" IsEnabled="{Binding PodeEditar}" />
             <Button Classes="mini" Content="Atualizar item selecionado" Command="{Binding AtualizarItemCommand}" IsEnabled="{Binding PodeEditar}" />
             <Button Classes="mini" Content="Remover item selecionado" Command="{Binding RemoverItemCommand}" IsEnabled="{Binding PodeEditar}" />
-            <TextBlock Text="Os tributos do item ficam na aba Tributos." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+            <TextBlock Text="Tributos do item na aba Tributos." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+            <Border Width="1" Background="{DynamicResource Linha}" Margin="6,2" />
+            <TextBlock Text="Total informado" FontSize="12" VerticalAlignment="Center" />
+            <TextBox Text="{Binding TotalInformado}" Width="130" IsEnabled="{Binding PodeEditar}" ToolTip.Tip="Confere com a soma dos itens; em branco, vale a soma." />
           </StackPanel>
-          <DataGrid Grid.Row="2" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Itens}" SelectedItem="{Binding ItemSelecionado, Mode=OneWay}" SelectionChanged="AoSelecionarItem" IsReadOnly="True" AutoGenerateColumns="False">
+          <DataGrid Grid.Row="3" MinHeight="120" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Itens}" SelectedItem="{Binding ItemSelecionado, Mode=OneWay}" SelectionChanged="AoSelecionarItem" IsReadOnly="True" AutoGenerateColumns="False">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Item" Binding="{ReflectionBinding N}" Width="65" />
               <DataGridTextColumn Header="Produto" Binding="{ReflectionBinding Produto}" Width="85" />
@@ -243,7 +234,7 @@
               <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Observações" /><TextBox Text="{Binding Observacoes}" AcceptsReturn="True" MaxHeight="60" TextWrapping="Wrap" /></StackPanel>
             </Grid>
             <StackPanel IsVisible="{Binding Importada}" Spacing="3">
-              <TextBlock Classes="grupo" Text="Item selecionado (escolha na aba Itens)" />
+              <TextBlock Classes="grupo" Text="Item selecionado (escolha na lista da aba Nota)" />
               <WrapPanel IsVisible="{Binding EhEntrada}" Margin="4,0">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN de escrituração" /><TextBox Text="{Binding Item.CstIcms}" Width="110" /></StackPanel>
                 <CheckBox Content="Credita ICMS" IsChecked="{Binding EscCreditaIcms}" VerticalAlignment="Bottom" Margin="8,0,0,0" />

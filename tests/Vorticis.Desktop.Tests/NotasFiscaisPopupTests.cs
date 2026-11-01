@@ -109,7 +109,7 @@ public class NotasFiscaisPopupTests(BancoDeTeste db, SessaoHeadless headless) : 
             popup.UpdateLayout(); Dispatcher.UIThread.RunJobs();
             var conteudo = (NotaDigitacaoView)popup.Content!;
             var abas = conteudo.GetVisualDescendants().OfType<TabControl>().First();
-            Confere(abas.Items.OfType<TabItem>().Select(t => t.Header?.ToString()).SequenceEqual(["Nota", "Itens", "Tributos", "Parcelas", "Escrituração"]),
+            Confere(abas.Items.OfType<TabItem>().Select(t => t.Header?.ToString()).SequenceEqual(["Nota", "Tributos", "Parcelas", "Escrituração"]),
                     "abas: " + string.Join(",", abas.Items.OfType<TabItem>().Select(t => t.Header)));
             Confere(popup.Width <= 1366 && popup.Height <= 768, $"pop-up maior que 1366x768: {popup.Width}x{popup.Height}");
             var gravar = conteudo.GetVisualDescendants().OfType<Button>().First(b => b.Name == "BotaoGravar");
@@ -140,8 +140,8 @@ public class NotasFiscaisPopupTests(BancoDeTeste db, SessaoHeadless headless) : 
             vm.GerarParcelasCommand.Execute(null);
             Confere(vm.Parcelas.Count == 2 && vm.Parcelas.Sum(x => x.Valor) == 20m, "parcelas devem somar o total da nota");
 
-            abas.SelectedIndex = 1; Foto(popup, "nota_popup_aba_itens");
-            abas.SelectedIndex = 2; vm.ItemSelecionado = vm.Itens[0]; Foto(popup, "nota_popup_aba_tributos");
+            Foto(popup, "nota_popup_aba_nota_com_itens");          // os itens ficam na própria aba Nota
+            abas.SelectedIndex = 1; vm.ItemSelecionado = vm.Itens[0]; Foto(popup, "nota_popup_aba_tributos");
             abas.SelectedIndex = 0;
             // ---- gravar: fecha o pop-up e atualiza a grade
             await vm.SalvarCommand.ExecuteAsync(null);

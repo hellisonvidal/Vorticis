@@ -5,7 +5,7 @@ using Vorticis.Fiscal.Desktop.ViewModels;
 
 namespace Vorticis.Fiscal.Desktop.Views;
 
-/// <summary>Conteúdo do pop-up de digitação da nota: abas Nota, Itens, Tributos, Parcelas e Escrituração.</summary>
+/// <summary>Conteúdo do pop-up de digitação da nota: abas Nota (cabeçalho e itens), Tributos, Parcelas e Escrituração.</summary>
 public partial class NotaDigitacaoView : UserControl
 {
     /// <summary>Quem hospeda o pop-up trata o fechamento (com a pergunta de descartar); sem hospedeiro, só cancela a digitação.</summary>
