@@ -7,6 +7,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Vorticis.Desktop.Comum;
 using Vorticis.Desktop.Comum.Views;
 using E = Vorticis.Escritorio.Desktop;
 using R = Vorticis.Erp.Desktop;
@@ -132,6 +133,59 @@ public class FiltroListasTests(SessaoHeadless headless)
         var barra = FiltroGrade.ObterBarra(grade)!;
         Assert.NotNull(barra);
         return (janela, grade, barra, itens);
+    }
+
+    [Fact]
+    public void Exportar_lista_leva_so_as_colunas_visiveis_com_o_tipo_de_cada_uma()
+    {
+        var leitores = Leitores();
+        leitores[4] = new LeitorColuna("Ativo", o => ((Linha)o).Ativo) { Visivel = () => false };   // coluna oculta fica de fora
+        var t = ExportacaoLista.Montar("Funcionários", leitores, Dados.Take(2));
+        Assert.Equal(["Código", "Nome", "Valor", "Data", "Situação"], t.Colunas.Select(c => c.Titulo));
+        Assert.Equal(Vorticis.Application.Relatorios.TipoColuna.Valor, t.Colunas[2].Tipo);
+        Assert.Equal(Vorticis.Application.Relatorios.TipoColuna.Data, t.Colunas[3].Tipo);
+        Assert.Equal(250.50m, t.Linhas[1].Valores[2]);
+        Assert.Equal(new DateOnly(2024, 2, 15), t.Linhas[1].Valores[3]);
+        Assert.Equal("2 registros", t.Rodape);
+        var csv = System.Text.Encoding.UTF8.GetString(Vorticis.Application.Relatorios.ExportacaoRelatorio.Csv(t));
+        Assert.Contains("Maria Souza", csv);
+        Assert.Contains("250,50", csv);
+    }
+
+    [Fact]
+    public async Task Exportar_da_barra_grava_so_as_linhas_filtradas()
+    {
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            var pasta = Directory.CreateTempSubdirectory("lista").FullName;
+            var (anterior, abrir) = (ArquivosGerados.Pasta, ArquivosGerados.AbrirAposGerar);
+            (ArquivosGerados.Pasta, ArquivosGerados.AbrirAposGerar) = (pasta, false);
+            var (janela, grade, barra, _) = Montar();
+            try
+            {
+                Assert.NotNull(Achar<Button>(janela, "BotaoExportarLista").Flyout);
+                Achar<TextBox>(janela, "BuscaRapida").Text = "souza";
+                Dispatcher.UIThread.RunJobs();
+                barra.Exportar(FormatoLista.Csv);
+                var csv = File.ReadAllText(barra.UltimaExportacao!);
+                Assert.Contains("Maria Souza", csv);
+                Assert.DoesNotContain("João", csv);                                    // filtrada pela busca
+                barra.Exportar(FormatoLista.Excel);
+                Assert.EndsWith(".xlsx", barra.UltimaExportacao);
+                Assert.Equal(2, Vorticis.Infra.Relatorios.ExportadorExcel.Ler(File.ReadAllBytes(barra.UltimaExportacao!)).Count);
+                barra.Exportar(FormatoLista.Pdf);
+                Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(barra.UltimaExportacao!), 0, 4));
+                Assert.StartsWith("Exportado:", Achar<TextBlock>(janela, "ContadorFiltro").Text);
+            }
+            finally
+            {
+                (ArquivosGerados.Pasta, ArquivosGerados.AbrirAposGerar) = (anterior, abrir);
+                janela.Close();
+            }
+            await Task.Yield();
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
     }
 
     [Fact]

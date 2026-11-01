@@ -129,6 +129,14 @@ Toda tela que mostra uma **lista de registros** (cadastros, consultas, lançamen
 3. Com **vários termos separados por espaço**, a linha precisa ter todos: *maria souza* mostra só as linhas que têm *maria* e *souza*.
 4. **Esc** dentro da caixa apaga a busca.
 
+### Exportar a lista
+O botão **Exportar**, na mesma barra, grava o que está na lista naquele momento: as **colunas visíveis**, só as **linhas que passaram pela busca e pelos filtros** e na **ordem** em que estão (se você clicou num cabeçalho para ordenar, vale essa ordem).
+1. Clique em **Exportar** e escolha **Excel (.xlsx)**, **CSV (.csv)** ou **PDF (.pdf)**.
+2. O arquivo é salvo na pasta de relatórios (*Documentos › Vorticis Contabil › Relatorios*) e abre sozinho. Ao lado da barra aparece onde ele ficou.
+3. O PDF sai com a empresa, a data e quem emitiu no cabeçalho, e o total de registros no fim.
+
+Excel e CSV seguem a permissão **Exportar relatórios para planilha** do perfil do usuário, como nos relatórios.
+
 ### Filtros por coluna
 1. Clique em **Filtros**. Abre um painel com um quadro para cada coluna.
 2. Colunas de texto: escolha **Contém**, **Começa com** ou **É igual a** e digite o texto.

@@ -235,6 +235,16 @@ public sealed class BarraFiltro : StackPanel
         _botaoFiltros.Click += (_, _) => AlternarPainel();
         _botaoLimpar = new Button { Name = "BotaoLimparFiltros", Content = "Limpar filtros", Padding = new Thickness(10, 3), IsVisible = false };
         _botaoLimpar.Click += (_, _) => Limpar();
+        var exportar = new Button { Name = "BotaoExportarLista", Content = "Exportar", Padding = new Thickness(10, 3) };
+        ToolTip.SetTip(exportar, "Exporta o que está na lista (colunas visíveis, com a busca e os filtros) para Excel, CSV ou PDF.");
+        var menu = new MenuFlyout();
+        foreach (var (rotulo, formato) in new[] { ("Excel (.xlsx)", FormatoLista.Excel), ("CSV (.csv)", FormatoLista.Csv), ("PDF (.pdf)", FormatoLista.Pdf) })
+        {
+            var item = new MenuItem { Header = rotulo };
+            item.Click += (_, _) => Exportar(formato);
+            menu.Items.Add(item);
+        }
+        exportar.Flyout = menu;
         _contador = new TextBlock { Name = "ContadorFiltro", VerticalAlignment = VerticalAlignment.Center, };
         _contador.TextoRecurso("TxSutil");
 
@@ -242,6 +252,7 @@ public sealed class BarraFiltro : StackPanel
         linha.Children.Add(_busca);
         linha.Children.Add(_botaoFiltros);
         linha.Children.Add(_botaoLimpar);
+        linha.Children.Add(exportar);
         linha.Children.Add(_contador);
         Children.Add(linha);
 
@@ -299,6 +310,21 @@ public sealed class BarraFiltro : StackPanel
         if (!string.IsNullOrEmpty(_busca.Text)) _busca.Text = "";
         if (_painel.IsVisible) ConstruirPainel();
         Aplicar();
+    }
+
+    /// <summary>Último arquivo exportado pela barra (mostrado ao lado do contador).</summary>
+    public string? UltimaExportacao { get; private set; }
+
+    public void Exportar(FormatoLista formato)
+    {
+        try
+        {
+            var (conteudo, erro) = ExportacaoLista.Gerar(Grade, formato);
+            if (conteudo is null) { _contador.Text = erro; return; }
+            UltimaExportacao = ArquivosGerados.Salvar($"{ExportacaoLista.TituloDe(Grade)} {DateTime.Now:yyyy-MM-dd HHmmss}{ExportacaoLista.Extensao(formato)}", conteudo);
+            _contador.Text = $"Exportado: {UltimaExportacao}";
+        }
+        catch (Exception ex) { _contador.Text = $"Não foi possível exportar: {ex.Message}"; }
     }
 
     public void FocarBusca()
