@@ -113,6 +113,21 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
+    public Task GravarDadosPessoaisAsync(long usuarioId, DadosPessoaisUsuario d, CancellationToken ct)
+        => Mapeamentos.TraduzirErrosAsync(async () =>
+        {
+            static object? N(string v) => v.Length == 0 ? null : v;
+            await using var cmd = ds.CreateCommand("""
+                    UPDATE core.usuario SET cpf = @cpf, telefone = @tel, celular = @cel, email = @em, data_admissao = @adm,
+                           cargo = @car, departamento = @dep, observacao = @obs
+                     WHERE id = @id
+                    """)
+                .Com("cpf", N(d.Cpf)).Com("tel", N(d.Telefone)).Com("cel", N(d.Celular)).Com("em", N(d.Email))
+                .Com("adm", NpgsqlTypes.NpgsqlDbType.Date, d.Admissao).Com("car", N(d.Cargo)).Com("dep", N(d.Departamento))
+                .Com("obs", N(d.Observacao)).Com("id", usuarioId);
+            return await cmd.ExecuteNonQueryAsync(ct);
+        });
+
     public async Task<PerfilDoUsuario?> ObterPerfilAsync(long perfilId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("SELECT id, nome, administrador FROM core.perfil WHERE id = @id").Com("id", perfilId);
@@ -198,7 +213,8 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
     public async Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("""
-            SELECT u.id, u.login, u.nome, u.administrador, u.ativo, u.ultimo_acesso, u.perfil_id, p.nome
+            SELECT u.id, u.login, u.nome, u.administrador, u.ativo, u.ultimo_acesso, u.perfil_id, p.nome,
+                   u.cpf, u.telefone, u.celular, u.email, u.data_admissao, u.cargo, u.departamento, u.observacao
               FROM core.usuario u LEFT JOIN core.perfil p ON p.id = u.perfil_id
              ORDER BY u.nome
             """);
@@ -207,8 +223,11 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
         while (await r.ReadAsync(ct))
             res.Add(new UsuarioResumo(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetBoolean(3), r.GetBoolean(4),
                                       r.IsDBNull(5) ? null : r.GetFieldValue<DateTimeOffset>(5),
-                                      r.IsDBNull(6) ? null : r.GetInt64(6), r.IsDBNull(7) ? null : r.GetString(7)));
+                                      r.IsDBNull(6) ? null : r.GetInt64(6), r.IsDBNull(7) ? null : r.GetString(7),
+                                      new DadosPessoaisUsuario(T(8), T(9), T(10), T(11), r.IsDBNull(12) ? null : r.GetFieldValue<DateOnly>(12),
+                                                               T(13), T(14), T(15))));
         return res;
+        string T(int i) => r.IsDBNull(i) ? "" : r.GetString(i).Trim();
     }
 
     public Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct)

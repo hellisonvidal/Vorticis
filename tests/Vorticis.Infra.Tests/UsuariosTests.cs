@@ -82,6 +82,35 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public async Task Guarda_os_dados_pessoais_e_de_contato_do_usuario_e_confere_cpf_email_e_admissao()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = Servico(new RelogioFixo(new DateTimeOffset(2026, 10, 16, 12, 0, 0, TimeSpan.Zero)));
+        var perfil = await db.PerfilIdAsync("Consulta");
+        var dados = new DadosPessoaisUsuario(" 529.982.247-25 ", "(11) 3333-4444", "(11) 98888-7777", " ana@escritorio.com.br ",
+                                             new DateOnly(2024, 3, 1), "Analista fiscal", "Fiscal", "Trabalha à tarde");
+        var r = await svc.CriarUsuarioAsync(Admin, "ana.dados", "Ana", "Inicial123", perfil, ct, dados: dados);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var lida = (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Dados!;
+        Assert.Equal(dados.Normalizado(), lida);
+        Assert.Equal("52998224725", lida.Cpf);
+        Assert.Equal("ana@escritorio.com.br", lida.Email);
+
+        // dados inválidos não gravam nada
+        Assert.Contains("CPF do usuário inválido.", (await svc.CriarUsuarioAsync(Admin, "beto.dados", "Beto", "Inicial123", perfil, ct,
+                                                                               dados: new DadosPessoaisUsuario(Cpf: "111.111.111-11"))).Erros);
+        var errado = await svc.AlterarUsuarioAsync(Admin, r.Valor, "Ana", perfil, true, ct,
+                                                   new DadosPessoaisUsuario(Email: "ana@semdominio", Admissao: new DateOnly(2027, 1, 1)));
+        Assert.Equal(["E-mail do usuário inválido.", "A data de admissão não pode ser futura."], errado.Erros);
+        Assert.Equal("Analista fiscal", (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Dados!.Cargo);
+
+        // alterar com os campos vazios limpa
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Ana", perfil, true, ct, DadosPessoaisUsuario.Vazio)).Sucesso);
+        Assert.Equal(DadosPessoaisUsuario.Vazio, (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Dados);
+    }
+
+    [Fact]
     public async Task Bloqueia_apos_cinco_tentativas_e_libera_apos_quinze_minutos()
     {
         BancoDeTeste.ExigirBanco();

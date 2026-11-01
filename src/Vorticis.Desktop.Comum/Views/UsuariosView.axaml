@@ -19,6 +19,9 @@
           <DataGridTextColumn Header="Nº" Binding="{ReflectionBinding Numero}" Width="70" />
           <DataGridTextColumn Header="Login" Binding="{ReflectionBinding Login}" Width="140" />
           <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" />
+          <DataGridTextColumn Header="Cargo" Binding="{ReflectionBinding Cargo}" Width="130" />
+          <DataGridTextColumn Header="E-mail" Binding="{ReflectionBinding Email}" Width="180" />
+          <DataGridTextColumn Header="Telefone" Binding="{ReflectionBinding Telefone}" Width="120" />
           <DataGridTextColumn Header="Perfil" Binding="{ReflectionBinding Perfil}" Width="150" />
           <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
           <DataGridTextColumn Header="Último acesso" Binding="{ReflectionBinding UltimoAcesso}" Width="140" />
@@ -42,6 +45,27 @@
                     PlaceholderText="Escolha o perfil" HorizontalAlignment="Stretch" IsEnabled="{Binding EmEdicao}" />
           <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DescricaoPerfil}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
           <CheckBox Grid.Row="5" Grid.Column="1" Content="Ativo" IsChecked="{Binding AtivoEdicao}" IsEnabled="{Binding EmAlteracao}" />
+        </Grid>
+
+        <TextBlock Text="Dados pessoais e contato" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,8,0,0" />
+        <Grid Name="DadosPessoais" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+          <TextBlock Classes="rotulo" Text="CPF" />
+          <TextBox Grid.Column="1" Text="{Binding Cpf}" Width="150" HorizontalAlignment="Left" Watermark="000.000.000-00" v:Mascara.Tipo="Cpf" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="E-mail" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Email}" MaxLength="150" Watermark="nome@escritorio.com.br" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Telefone / celular" />
+          <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <TextBox Text="{Binding Telefone}" Width="140" MaxLength="20" Watermark="Telefone" />
+            <TextBox Text="{Binding Celular}" Width="140" MaxLength="20" Watermark="Celular" />
+          </StackPanel>
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Admissão" />
+          <CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding Admissao}" Width="150" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Cargo" />
+          <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Cargo}" MaxLength="80" Watermark="Ex.: Analista fiscal" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Departamento" />
+          <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Departamento}" MaxLength="80" Watermark="Ex.: Fiscal, Pessoal, Contábil" />
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="Observação" />
+          <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding ObservacaoUsuario}" MaxLength="500" AcceptsReturn="True" TextWrapping="Wrap" Height="54" />
         </Grid>
 
         <StackPanel Spacing="6" IsVisible="{Binding MostrarAcessos}">

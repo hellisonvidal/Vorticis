@@ -8,7 +8,36 @@ public sealed record CredenciaisUsuario(long Id, string Login, string Nome, stri
 
 /// <param name="PerfilId">Perfil do usuário (vale para todas as empresas; o acesso por empresa admite exceções).</param>
 public sealed record UsuarioResumo(long Id, string Login, string Nome, bool Administrador, bool Ativo, DateTimeOffset? UltimoAcesso,
-                                   long? PerfilId = null, string? Perfil = null);
+                                   long? PerfilId = null, string? Perfil = null, DadosPessoaisUsuario? Dados = null);
+
+/// <summary>Dados pessoais e de contato do usuário (Configurações › Usuários); todos opcionais. CPF só com os 11 dígitos.</summary>
+public sealed record DadosPessoaisUsuario(string Cpf = "", string Telefone = "", string Celular = "", string Email = "", DateOnly? Admissao = null,
+                                          string Cargo = "", string Departamento = "", string Observacao = "")
+{
+    public static readonly DadosPessoaisUsuario Vazio = new();
+
+    /// <summary>Confere o que foi informado: CPF válido, e-mail com @ e domínio, admissão não futura e tamanhos.</summary>
+    public List<string> Validar(DateOnly hoje)
+    {
+        var erros = new List<string>();
+        var cpf = Domain.Cadastros.Cnpj.SomenteDigitos(Cpf);
+        if (cpf.Length > 0 && !Domain.Cadastros.Cpf.Valido(cpf)) erros.Add("CPF do usuário inválido.");
+        var email = Email.Trim();
+        if (email.Length > 0 && (email.Length > 150 || email.Count(c => c == '@') != 1 || email.IndexOf('@') == 0
+                                 || email[(email.IndexOf('@') + 1)..] is var dom && (!dom.Contains('.') || dom.StartsWith('.') || dom.EndsWith('.'))
+                                 || email.Any(char.IsWhiteSpace)))
+            erros.Add("E-mail do usuário inválido.");
+        if (Admissao is { } a && a > hoje) erros.Add("A data de admissão não pode ser futura.");
+        if (Telefone.Trim().Length > 20 || Celular.Trim().Length > 20) erros.Add("Telefone com no máximo 20 caracteres.");
+        if (Cargo.Trim().Length > 80 || Departamento.Trim().Length > 80) erros.Add("Cargo e departamento com no máximo 80 caracteres.");
+        if (Observacao.Trim().Length > 500) erros.Add("Observação com no máximo 500 caracteres.");
+        return erros;
+    }
+
+    /// <summary>Sem espaços nas pontas e CPF só com dígitos.</summary>
+    public DadosPessoaisUsuario Normalizado() => new(Domain.Cadastros.Cnpj.SomenteDigitos(Cpf), Telefone.Trim(), Celular.Trim(), Email.Trim(),
+                                                    Admissao, Cargo.Trim(), Departamento.Trim(), Observacao.Trim());
+}
 
 public sealed record PerfilDoUsuario(long Id, string Nome, bool Administrador);
 
@@ -52,6 +81,8 @@ public interface IRepositorioUsuarios
     Task RegistrarSucessoAsync(long usuarioId, string login, string? novoHash, string? estacao, CancellationToken ct);
     Task AlterarSenhaAsync(long usuarioId, string senhaHash, bool deveTrocarSenha, CancellationToken ct);
     Task AlterarAsync(long usuarioId, string nome, bool administrador, long perfilId, bool ativo, CancellationToken ct);
+    /// <summary>Grava os dados pessoais e de contato (já validados e normalizados).</summary>
+    Task GravarDadosPessoaisAsync(long usuarioId, DadosPessoaisUsuario dados, CancellationToken ct);
     Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct);
     /// <param name="perfilId">Perfil a atribuir; nulo revoga o acesso.</param>
     Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct);
@@ -163,10 +194,12 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     /// enquanto o banco não tiver nenhum usuário.
     /// </summary>
     public async Task<Resultado<long>> CriarUsuarioAsync(SessaoUsuario admin, string login, string nome, string senhaInicial,
-                                                        long? perfilId, CancellationToken ct = default, IReadOnlyCollection<long>? empresaIds = null)
+                                                        long? perfilId, CancellationToken ct = default, IReadOnlyCollection<long>? empresaIds = null,
+                                                        DadosPessoaisUsuario? dados = null)
     {
         if (!admin.Administrador && !admin.Implantacao) return Resultado<long>.Falha("Somente administradores podem cadastrar usuários.");
         var erros = ValidarNovo(login, nome, senhaInicial, senhaInicial);
+        erros.AddRange((dados ?? DadosPessoaisUsuario.Vazio).Validar(DateOnly.FromDateTime(_relogio.GetLocalNow().DateTime)));
         var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
         if (perfil is null) erros.Add("Informe o perfil do usuário.");
         if (admin.Implantacao)
@@ -180,6 +213,7 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         var id = await repositorio.CriarAsync(login.Trim(), nome.Trim(), Senha.GerarHash(senhaInicial), perfil!.Administrador, perfil.Id,
                                               deveTrocarSenha: !admin.Implantacao, somenteSeNaoHouverUsuarios: admin.Implantacao, ct);
         if (id is null) return Resultado<long>.Falha("A implantação já foi concluída: existe usuário cadastrado. Entre com o login do administrador.");
+        if (dados is not null) await repositorio.GravarDadosPessoaisAsync(id.Value, dados.Normalizado(), ct);
         if (!perfil.Administrador)
         {
             if (empresaIds is null) await repositorio.AtribuirPerfilEmTodasEmpresasAsync(id.Value, perfil.Id, ct);
@@ -201,10 +235,11 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     /// <summary>Altera nome, perfil e situação. O perfil Administrador concede (e os demais retiram) a administração do sistema.</summary>
     public async Task<Resultado> AlterarUsuarioAsync(SessaoUsuario admin, long usuarioId, string nome, long? perfilId, bool ativo,
-                                                    CancellationToken ct = default)
+                                                    CancellationToken ct = default, DadosPessoaisUsuario? dados = null)
     {
         if (!admin.Administrador) return Resultado.Falha("Somente administradores podem alterar usuários.");
         if (string.IsNullOrWhiteSpace(nome)) return Resultado.Falha("Informe o nome.");
+        if (dados?.Validar(DateOnly.FromDateTime(_relogio.GetLocalNow().DateTime)) is { Count: > 0 } errosDados) return Resultado.Falha(errosDados);
         var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
         if (perfil is null) return Resultado.Falha("Informe o perfil do usuário.");
         if (usuarioId == admin.Id && (!perfil.Administrador || !ativo))
@@ -212,6 +247,7 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         try
         {
             await repositorio.AlterarAsync(usuarioId, nome.Trim(), perfil.Administrador, perfil.Id, ativo, ct);
+            if (dados is not null) await repositorio.GravarDadosPessoaisAsync(usuarioId, dados.Normalizado(), ct);
             return Resultado.Ok();
         }
         catch (ViolacaoRegraException ex)

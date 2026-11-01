@@ -74,8 +74,9 @@ Em instalação nova não existe nenhum usuário. Por isso:
 1. Aba *Usuários* › **Incluir**.
 2. Informe login, nome e **senha inicial** (o usuário troca no primeiro acesso).
 3. Escolha o **perfil** (obrigatório).
-4. Em **Empresas que o usuário pode acessar**, marque as empresas (busque por nome, código ou CNPJ; *Marcar todas* e *Desmarcar todas* valem para as listadas). Usuário novo vem com todas marcadas e passa a receber também as empresas cadastradas depois; ao desmarcar alguma, isso deixa de valer. Dá para ter um perfil diferente por empresa.
-5. **Salvar**.
+4. Em **Dados pessoais e contato** (opcionais), informe **CPF**, **e-mail**, **telefone** e **celular**, a data de **admissão** no escritório, o **cargo**, o **departamento** e uma **observação**. O sistema confere se o CPF é válido, se o e-mail tem o formato nome@dominio e se a admissão não é uma data futura. Cargo, e-mail e telefone aparecem na lista de usuários.
+5. Em **Empresas que o usuário pode acessar**, marque as empresas (busque por nome, código ou CNPJ; *Marcar todas* e *Desmarcar todas* valem para as listadas). Usuário novo vem com todas marcadas e passa a receber também as empresas cadastradas depois; ao desmarcar alguma, isso deixa de valer. Dá para ter um perfil diferente por empresa.
+6. **Salvar**.
 
 Para esquecimentos use **Redefinir senha** (gera senha temporária). Excluir um usuário mantém o histórico de lançamentos, sem o vínculo com ele; ninguém exclui o próprio usuário.
 

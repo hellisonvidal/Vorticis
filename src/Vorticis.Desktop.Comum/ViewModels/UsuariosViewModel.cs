@@ -14,6 +14,9 @@ public sealed record UsuarioLinha(UsuarioResumo Usuario)
     public string Perfil => Usuario.Perfil ?? (Usuario.Administrador ? "Administrador" : "(definir perfil)");
     public string Situacao => Usuario.Ativo ? "Ativo" : "Inativo";
     public string UltimoAcesso => Usuario.UltimoAcesso?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "nunca";
+    public string Cargo => Usuario.Dados?.Cargo ?? "";
+    public string Email => Usuario.Dados?.Email ?? "";
+    public string Telefone => Usuario.Dados is { } d ? (d.Celular.Length > 0 ? d.Celular : d.Telefone) : "";
 }
 
 public sealed record OpcaoPerfil(long? Id, string Nome, bool Administrador = false);
@@ -70,6 +73,27 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
     [ObservableProperty] private bool _ativoEdicao = true;
     [ObservableProperty] private string _senhaTemporaria = "";
     [ObservableProperty] private string _filtroEmpresas = "";
+    // dados pessoais e de contato
+    [ObservableProperty] private string _cpf = "";
+    [ObservableProperty] private string _telefone = "";
+    [ObservableProperty] private string _celular = "";
+    [ObservableProperty] private string _email = "";
+    [ObservableProperty] private DateTime? _admissao;
+    [ObservableProperty] private string _cargo = "";
+    [ObservableProperty] private string _departamento = "";
+    [ObservableProperty] private string _observacaoUsuario = "";
+
+    /// <summary>Os dados pessoais digitados na tela.</summary>
+    public DadosPessoaisUsuario DadosPessoais => new(Cpf, Telefone, Celular, Email, Admissao is { } a ? DateOnly.FromDateTime(a) : null,
+                                                     Cargo, Departamento, ObservacaoUsuario);
+
+    private void MostrarDados(DadosPessoaisUsuario? d)
+    {
+        d ??= DadosPessoaisUsuario.Vazio;
+        (Cpf, Telefone, Celular, Email, Cargo, Departamento, ObservacaoUsuario) =
+            (d.Cpf.Length == 11 ? Domain.Cadastros.Cpf.Formatar(d.Cpf) : d.Cpf, d.Telefone, d.Celular, d.Email, d.Cargo, d.Departamento, d.Observacao);
+        Admissao = d.Admissao?.ToDateTime(TimeOnly.MinValue);
+    }
 
     private bool _carregandoSelecao;
 
@@ -169,12 +193,14 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
         {
             (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = (value.Login, value.Nome, value.Usuario.Ativo, "", "");
             PerfilEdicao = PerfisDisponiveis.FirstOrDefault(p => p.Id == value.Usuario.PerfilId);
+            MostrarDados(value.Usuario.Dados);
             _ = CarregarAcessosAsync(value.Usuario.Id);
         }
         else
         {
             (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = ("", "", true, "", "");
             PerfilEdicao = null;
+            MostrarDados(null);
         }
         _carregandoSelecao = false;
         OnPropertyChanged(nameof(MostrarAcessos));
@@ -195,6 +221,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
         LimparAcessos();
         _carregandoSelecao = true;
         (Login, NomeEdicao, NovaSenha, AtivoEdicao, PerfilEdicao) = ("", "", "", true, null);
+        MostrarDados(null);
         _carregandoSelecao = false;
         // novo usuário: todas as empresas já vêm marcadas (o administrador desmarca as que não valem)
         if (!EmImplantacao) _ = CarregarAcessosAsync(null);
@@ -268,7 +295,8 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             {
                 // lista ainda não carregada (ou sem empresas): vale "todas as empresas", como antes da lista existir
                 var empresas = PerfilEdicao is { Administrador: false } && Acessos.Count > 0 ? Acessos.Where(a => a.Marcada).Select(a => a.EmpresaId).ToList() : null;
-                var r = await app.Usuarios.CriarUsuarioAsync(sessao, Login, NomeEdicao, NovaSenha, PerfilEdicao?.Id, empresaIds: empresas);
+                var r = await app.Usuarios.CriarUsuarioAsync(sessao, Login, NomeEdicao, NovaSenha, PerfilEdicao?.Id, empresaIds: empresas,
+                                                             dados: DadosPessoais);
                 MostrarResultado(r, $"Usuário {Login.Trim()} criado com o perfil {PerfilEdicao?.Nome}. Ele deverá trocar a senha no primeiro acesso.");
                 if (!r.Sucesso) return;
                 ok = true;
@@ -287,7 +315,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             }
             if (Selecionado is null) return;
             var id = Selecionado.Usuario.Id;
-            var alt = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao);
+            var alt = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao, dados: DadosPessoais);
             if (!alt.Sucesso) { MostrarResultado(alt, ""); return; }
             var mudancas = Acessos.Where(a => MostrarAcessos && a.PerfilFinal != a.Original).ToList();
             if (mudancas.Count > 0)
