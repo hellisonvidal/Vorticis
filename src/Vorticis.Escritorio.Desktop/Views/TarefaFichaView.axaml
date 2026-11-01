@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.TarefaFichaView" x:DataType="vm:TarefasViewModel">
+  <!-- Ficha da tarefa (janela aberta pela tela Tarefas e prazos) -->
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Linha}" Padding="16,10">
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <Button Name="FichaGravar" Content="Gravar" Classes="accent" MinWidth="96" Command="{Binding GravarCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Content="Concluir" MinWidth="96" Command="{Binding ConcluirCommand}" IsEnabled="{Binding PodeEditar}" IsVisible="{Binding TarefaGravada}" />
+        <Button Content="Excluir" MinWidth="96" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" IsVisible="{Binding TarefaGravada}" />
+        <Button Name="FichaFechar" Content="Fechar" MinWidth="96" Command="{Binding FecharFichaCommand}" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer Padding="16,12">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsEnabled="{Binding PodeEditar}">
+          <TextBlock Classes="rotulo" Text="Cliente" />
+          <ComboBox Grid.Column="1" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" HorizontalAlignment="Stretch" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Tarefa" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Titulo}" MaxLength="150" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Vencimento" />
+          <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding Vencimento}" Width="150" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Responsável" />
+          <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Responsaveis}" SelectedItem="{Binding Responsavel}" HorizontalAlignment="Stretch" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Prioridade" />
+          <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Prioridades}" SelectedItem="{Binding Prioridade}" Width="200" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Situação" />
+          <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="200" />
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="Repetir" />
+          <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{x:Static vm:TarefasViewModel.Recorrencias}" SelectedItem="{Binding Recorrencia}" Width="200" />
+          <TextBlock Grid.Row="7" Classes="rotulo" Text="Detalhes" />
+          <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Descricao}" AcceptsReturn="True" Height="110" TextWrapping="Wrap" />
+        </Grid>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

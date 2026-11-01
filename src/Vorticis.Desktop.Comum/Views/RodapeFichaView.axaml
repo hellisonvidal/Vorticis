@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.RodapeFichaView"
+             x:DataType="vm:CadastroViewModel">
+  <!-- Rodapé da ficha em janela: em consulta Alterar e Fechar; em edição Salvar e Cancelar -->
+  <Border Classes="rodapeFicha" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Linha}" Padding="16,10">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Left" Text="{Binding SituacaoCadastro}" FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <Button Name="FichaAlterar" Command="{Binding AlterarCommand}" IsVisible="{Binding EmConsulta}" MinWidth="96" HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{x:Static v:Icones.Editar}" Width="14" Height="14" /><TextBlock Text="Alterar" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Name="FichaFechar" Command="{Binding FecharFichaCommand}" IsVisible="{Binding EmConsulta}" MinWidth="96" HorizontalContentAlignment="Center" Content="Fechar" />
+        <Button Name="FichaSalvar" Command="{Binding SalvarCommand}" IsVisible="{Binding EmEdicao}" Classes="accent" MinWidth="96" HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{x:Static v:Icones.Salvar}" Width="14" Height="14" /><TextBlock Text="Salvar" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button Name="FichaCancelar" Command="{Binding CancelarCommand}" IsVisible="{Binding EmEdicao}" MinWidth="96" HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{x:Static v:Icones.Cancelar}" Width="14" Height="14" /><TextBlock Text="Cancelar" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</UserControl>

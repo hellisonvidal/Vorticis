@@ -10,8 +10,40 @@ public enum ModoCadastro { Consulta, Inclusao, Alteracao }
 /// Em consulta o formulário mostra o registro selecionado (somente leitura); Incluir limpa o formulário para um
 /// registro novo; Alterar libera a edição do selecionado; Excluir pede confirmação.
 /// </summary>
-public abstract partial class CadastroViewModel(IContexto contexto) : ModuloViewModel(contexto), IAlteracoesPendentes
+public abstract partial class CadastroViewModel(IContexto contexto) : ModuloViewModel(contexto), IAlteracoesPendentes, IComFicha
 {
+    /// <summary>
+    /// A ficha abre numa janela por cima da lista (<see cref="IComFicha"/>): Incluir e Alterar abrem a janela; Salvar e Cancelar a
+    /// fecham; duplo clique (ou Enter) na lista abre a ficha só para consulta. Falso: a ficha fica ao lado da lista, na própria tela.
+    /// </summary>
+    protected virtual bool FichaEmJanela => false;
+
+    [ObservableProperty] private bool _fichaAberta;
+
+    public virtual string TituloFicha => EmInclusao ? $"Incluir {NomeRegistro}" : DescricaoSelecionado is { } d ? $"{Primeira(NomeRegistro)}: {d}" : Primeira(NomeRegistro);
+
+    private static string Primeira(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    /// <summary>Abre a ficha do registro selecionado (consulta; Alterar na própria ficha).</summary>
+    [RelayCommand(CanExecute = nameof(PodeAbrirFicha))]
+    private void AbrirFicha()
+    {
+        if (!FichaEmJanela || !TemRegistroSelecionado || EmEdicao) return;
+        Erros.Clear();
+        Mensagem = null;
+        FichaAberta = true;
+        OnPropertyChanged(nameof(TituloFicha));
+    }
+
+    private bool PodeAbrirFicha() => FichaEmJanela && TemRegistroSelecionado && !EmEdicao;
+
+    [RelayCommand]
+    public void FecharFicha()
+    {
+        if (EmEdicao) Cancelar();
+        FichaAberta = false;
+    }
+
     public bool TemAlteracoesPendentes => EmEdicao;
 
     [ObservableProperty]
@@ -106,6 +138,8 @@ public abstract partial class CadastroViewModel(IContexto contexto) : ModuloView
 
     partial void OnModoChanged(ModoCadastro value)
     {
+        if (FichaEmJanela) FichaAberta = value != ModoCadastro.Consulta;
+        OnPropertyChanged(nameof(TituloFicha));
         AtualizarBarra();
         AoMudarModo();
     }
@@ -126,5 +160,6 @@ public abstract partial class CadastroViewModel(IContexto contexto) : ModuloView
         ExcluirCommand.NotifyCanExecuteChanged();
         SalvarCommand.NotifyCanExecuteChanged();
         CancelarCommand.NotifyCanExecuteChanged();
+        AbrirFichaCommand.NotifyCanExecuteChanged();
     }
 }

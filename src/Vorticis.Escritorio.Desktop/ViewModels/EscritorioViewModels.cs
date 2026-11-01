@@ -55,6 +55,10 @@ public sealed record PessoaLinha(PessoaEscritorio P)
     public string Papel => P.Papel;
     public string Contato => string.Join(" · ", new[] { P.Contato, P.Telefone, P.Email }.Where(x => !string.IsNullOrWhiteSpace(x)));
     public string Situacao => P.Ativo ? "Ativo" : "Inativo";
+    public string Fantasia => P.NomeFantasia ?? "";
+    public string Regime => P.Regime ?? "";
+    public string Cidade => P.Municipio is { Length: > 0 } m ? (P.Uf is { Length: > 0 } uf ? $"{m}/{uf}" : m) : "";
+    public string Modulos => P.Modulos == Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum ? "" : Vorticis.Application.Cadastros.ModulosEmpresaExtensoes.Nome(P.Modulos);
 }
 
 /// <summary>
@@ -288,6 +292,9 @@ public sealed partial class ClientesEscritorioViewModel : PessoasViewModel
 
     public HonorariosViewModel Honorarios { get; }
 
+    /// <summary>A tela mostra a lista de clientes; a ficha (dados, módulos, honorários) abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public override void AtualizarPermissoes()
     {
         base.AtualizarPermissoes();
@@ -357,8 +364,32 @@ public sealed record TarefaLinha(Tarefa T)
 }
 
 /// <summary>Escritório › Tarefas e prazos: tarefas do escritório (de um cliente ou internas), com responsável, prioridade e recorrência.</summary>
-public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(contexto), IComFicha
 {
+    /// <summary>A tela mostra a lista de tarefas; a ficha da tarefa abre em janela (Nova tarefa, Abrir, duplo clique ou Enter).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha))] private bool _fichaAberta;
+
+    public string TituloFicha => Selecionada is { } t ? $"Tarefa: {t.Titulo}" : "Nova tarefa";
+
+    /// <summary>A ficha é de uma tarefa já gravada (mostra Concluir e Excluir).</summary>
+    public bool TarefaGravada => Selecionada is not null;
+
+    [RelayCommand]
+    private void Abrir()
+    {
+        if (Selecionada is null) { Erros.Add("Selecione a tarefa na lista."); return; }
+        (Mensagem, FichaAberta) = (null, true);
+        Erros.Clear();
+    }
+
+    /// <summary>Fechar sem gravar: a ficha volta ao que está gravado.</summary>
+    [RelayCommand]
+    public void FecharFicha()
+    {
+        FichaAberta = false;
+        Mostrar(Selecionada);
+    }
+
     public ObservableCollection<TarefaLinha> Lista { get; } = [];
     public ObservableCollection<Opcao<long?>> Responsaveis { get; } = [];
     public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
@@ -371,7 +402,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
 
     [ObservableProperty] private Opcao<long?>? _filtroCliente;
     [ObservableProperty] private bool _somenteAbertas = true;
-    [ObservableProperty] private TarefaLinha? _selecionada;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(TarefaGravada))] private TarefaLinha? _selecionada;
     [ObservableProperty] private Opcao<long?>? _cliente;
     [ObservableProperty] private string _titulo = "";
     [ObservableProperty] private string _descricao = "";
@@ -388,7 +419,9 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
     partial void OnFiltroClienteChanged(Opcao<long?>? value) { if (!_carregando) _ = CarregarAsync(); }
     partial void OnSomenteAbertasChanged(bool value) => _ = CarregarAsync();
 
-    partial void OnSelecionadaChanged(TarefaLinha? value)
+    partial void OnSelecionadaChanged(TarefaLinha? value) => Mostrar(value);
+
+    private void Mostrar(TarefaLinha? value)
     {
         if (value?.T is not { } t) return;
         (Titulo, Descricao, Vencimento) = (t.Titulo, t.Descricao ?? "", Ext.Dt(t.Vencimento));
@@ -437,6 +470,8 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         Cliente = Clientes.FirstOrDefault(c => c.Valor == FiltroCliente?.Valor) ?? Clientes.FirstOrDefault();
         Responsavel = Responsaveis.FirstOrDefault(r => r.Valor == Contexto.Sessao?.Id) ?? Responsaveis.FirstOrDefault();
         Mensagem = "Preencha a tarefa e clique em Gravar.";
+        Erros.Clear();
+        FichaAberta = true;
     }
 
     [RelayCommand]
@@ -446,6 +481,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
                            Ext.Dia(Vencimento), Responsavel?.Valor, Prioridade?.Valor ?? 2, Situacao?.Valor ?? SituacaoTarefa.Pendente, Recorrencia?.Valor ?? Escritorio.Recorrencia.Nenhuma);
         var r = await app.Escritorio().GravarTarefaAsync(t, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        FichaAberta = false;
         await CarregarAsync();
         Selecionada = Lista.FirstOrDefault(l => l.T.Id == r.Valor);
         Mensagem = "Tarefa gravada.";
@@ -457,6 +493,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         if (Selecionada?.T is not { } t) { Erros.Add("Selecione a tarefa na lista."); return; }
         var r = await app.Escritorio().ConcluirTarefaAsync(t, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        FichaAberta = false;
         await CarregarAsync();
         Mensagem = r.Valor is null ? "Tarefa concluída." : "Tarefa concluída; a próxima ocorrência foi criada.";
     }, Permissao.EscritorioTarefas);
@@ -468,6 +505,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         if (!await Contexto.ConfirmarAsync("Excluir tarefa", $"Excluir a tarefa \"{t.Titulo}\"?")) return;
         var r = await app.Escritorio().ExcluirTarefaAsync(empresa, t.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        FichaAberta = false;
         Selecionada = null;
         await CarregarAsync();
         Mensagem = "Tarefa excluída.";
@@ -488,8 +526,25 @@ public sealed record ProtocoloLinha(Protocolo P)
 }
 
 /// <summary>Escritório › Protocolo de documentos: entregas e recebimentos de documentos dos clientes do escritório, numerados.</summary>
-public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(contexto), IComFicha
 {
+    /// <summary>A tela mostra os protocolos registrados; Registrar protocolo abre a ficha em janela.</summary>
+    [ObservableProperty] private bool _fichaAberta;
+
+    public string TituloFicha => "Registrar protocolo";
+
+    [RelayCommand]
+    private void Novo()
+    {
+        (Documento, Descricao, Pessoa, Data, Tipo) = ("", "", "", DateTime.Today, Tipos[0]);
+        Erros.Clear();
+        Mensagem = null;
+        FichaAberta = true;
+    }
+
+    [RelayCommand]
+    public void FecharFicha() => FichaAberta = false;
+
     public ObservableCollection<ProtocoloLinha> Lista { get; } = [];
     public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
     public static IReadOnlyList<Opcao<TipoProtocolo>> Tipos { get; } = [new(TipoProtocolo.Entrega, "Entrega ao cliente"), new(TipoProtocolo.Recebimento, "Recebido do cliente")];
@@ -526,6 +581,7 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
                                                                            string.IsNullOrWhiteSpace(Descricao) ? null : Descricao, Pessoa), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         (Documento, Descricao, Pessoa) = ("", "", "");
+        FichaAberta = false;
         await CarregarAsync();
         Mensagem = $"Protocolo nº {r.Valor} registrado.";
     }, Permissao.EscritorioTarefas);

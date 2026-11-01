@@ -22,11 +22,16 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 **Para que serve:** cadastrar quem o escritório atende, levar o cliente para os módulos do contrato e controlar os honorários dele.
 **Onde fica:** *Cadastros › Clientes*.
 
+A tela mostra **todos os clientes cadastrados** numa lista (código, razão social, nome fantasia, CNPJ/CPF, regime, município, contato, módulos contratados e situação), com o filtro por código, nome ou documento. A **ficha do cliente** abre numa janela por cima da lista:
+- **Incluir** abre a ficha em branco; **Alterar** abre a do cliente selecionado já liberada para edição;
+- **duplo clique** (ou **Enter**) num cliente, ou o botão **Abrir ficha**, mostra a ficha só para consulta — nela, **Alterar** libera a edição e **Fechar** volta à lista;
+- na edição, **Salvar** grava e fecha a ficha; **Cancelar** (ou fechar a janela, ou **Esc**) desiste do que foi digitado.
+
 ### Dados cadastrais
 1. Clique em **Incluir**; o código é sugerido.
 2. Digite o **CNPJ/CPF** e clique em **Buscar na Receita**: razão social, nome fantasia, natureza jurídica, CNAE, início das atividades, endereço, município (com o código IBGE), e-mail e telefone são preenchidos, como no cadastro de empresas. O regime vem sugerido quando o cliente é do Simples ou MEI; nos demais, escolha **Regime tributário**.
 3. Complete o que faltar (contato, inscrição estadual, observação).
-4. **Gravar**. Cliente com tarefas, honorários, protocolos ou contratos não pode ser excluído: desmarque **Ativo**.
+4. **Salvar**. Cliente com tarefas, honorários, protocolos ou contratos não pode ser excluído: desmarque **Ativo**.
 
 ### Módulos do contrato
 1. Na aba **Módulos do contrato**, marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**.
@@ -54,10 +59,13 @@ A lista mostra código, CNPJ/CPF, nome, regime, tarefas em aberto (e quantas est
 **Para que serve:** controlar o que precisa ser feito para cada cliente, com prazo e responsável.
 **Onde fica:** *Organização › Tarefas e prazos* (atalho **Ctrl+T**).
 
-1. **Nova tarefa**, escolha o **Cliente** (ou deixe *tarefa interna do escritório*), preencha **Tarefa**, **Vencimento**, **Responsável**, **Prioridade**, **Situação** e, se for o caso, **Repetir** (*Todo mês* ou *Todo ano*) e os **Detalhes**.
-2. **Gravar**.
-3. Feita a tarefa, selecione-a e clique em **Concluir**. Se ela se repete, a próxima é criada sozinha com o novo vencimento (mesmo dia do mês seguinte ou do ano seguinte; no mês mais curto, o último dia).
-4. **Excluir** apaga a tarefa (pede confirmação).
+A tela mostra a **lista das tarefas** (vencimento, cliente, tarefa, responsável, prioridade, situação e repetição); a **ficha da tarefa** abre numa janela por cima da lista.
+
+1. **Nova tarefa** abre a ficha: escolha o **Cliente** (ou deixe *tarefa interna do escritório*), preencha **Tarefa**, **Vencimento**, **Responsável**, **Prioridade**, **Situação** e, se for o caso, **Repetir** (*Todo mês* ou *Todo ano*) e os **Detalhes**.
+2. **Gravar**: a tarefa entra na lista e a ficha fecha.
+3. Para ver ou mudar uma tarefa, dê **duplo clique** (ou **Enter**) nela, ou selecione-a e clique em **Abrir**. **Fechar** (ou **Esc**) sai sem gravar.
+4. Feita a tarefa, selecione-a e clique em **Concluir** (na lista ou na ficha). Se ela se repete, a próxima é criada sozinha com o novo vencimento (mesmo dia do mês seguinte ou do ano seguinte; no mês mais curto, o último dia).
+5. **Excluir** apaga a tarefa (pede confirmação).
 
 Use a lista no topo para ver as tarefas de um cliente ou de todos, e **Só as em aberto** para esconder as concluídas e canceladas. Tarefas vencidas e não concluídas aparecem como **ATRASADA**.
 
@@ -66,8 +74,12 @@ Use a lista no topo para ver as tarefas de um cliente ou de todos, e **Só as em
 **Para que serve:** registrar a entrega de documentos ao cliente (guias, livros, relatórios) e o recebimento de documentos dele, com número sequencial.
 **Onde fica:** *Organização › Protocolos de documentos*.
 
-1. Informe **Data**, **Tipo** (*Entrega ao cliente* ou *Recebido do cliente*), **Documento**, **Pessoa** (quem recebeu ou entregou), o **Cliente** e, se quiser, uma **Observação**.
-2. **Registrar protocolo**: o sistema dá o próximo número do escritório e grava quem registrou.
+A tela mostra a **lista dos protocolos** registrados (número, data, cliente, tipo, documento, pessoa e quem registrou).
+
+1. Clique em **Registrar protocolo**: a ficha abre numa janela por cima da lista.
+2. Informe o **Cliente**, a **Data**, o **Tipo** (*Entrega ao cliente* ou *Recebido do cliente*), o **Documento**, a **Pessoa** (quem recebeu ou entregou) e, se quiser, uma **Observação**.
+3. **Registrar**: o sistema dá o próximo número do escritório, grava quem registrou e fecha a ficha. **Cancelar** (ou **Esc**) fecha sem registrar.
+4. Para apagar um protocolo, selecione-o na lista e clique em **Excluir**.
 
 ## Gerador de contratos
 

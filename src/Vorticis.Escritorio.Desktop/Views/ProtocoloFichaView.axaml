@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.ProtocoloFichaView" x:DataType="vm:ProtocolosViewModel">
+  <!-- Ficha do protocolo (janela aberta por Registrar protocolo) -->
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Linha}" Padding="16,10">
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <Button Name="FichaRegistrar" Content="Registrar" Classes="accent" MinWidth="96" Command="{Binding IncluirCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Name="FichaFechar" Content="Cancelar" MinWidth="96" Command="{Binding FecharFichaCommand}" />
+      </StackPanel>
+    </Border>
+    <StackPanel Spacing="8" Margin="16,12">
+      <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Classes="rotulo" Text="Cliente" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Data" />
+        <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Data}" Width="150" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Tipo" />
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{x:Static vm:ProtocolosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="220" />
+        <TextBlock Grid.Row="3" Classes="rotulo" Text="Documento" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Documento}" Watermark="Ex.: Guia DAS 03/2026" />
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Pessoa" />
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Pessoa}" Watermark="Quem recebeu ou entregou" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Observação" />
+        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Descricao}" />
+      </Grid>
+      <c:MensagensView />
+    </StackPanel>
+  </DockPanel>
+</UserControl>
