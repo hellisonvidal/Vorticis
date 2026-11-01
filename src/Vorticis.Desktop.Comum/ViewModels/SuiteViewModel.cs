@@ -211,7 +211,7 @@ public sealed partial class SuiteViewModel : ObservableObject
         new(VisualSuite.Busca, 5, "Busca primeiro", "Moldura mínima: digite o que quer fazer no centro da tela (Ctrl+K); menus no botão Menus."),
     ];
 
-    /// <summary>Visual gravado por versões anteriores (inclusive os retirados na 1.0.2): o equivalente entre os cinco.</summary>
+    /// <summary>Visual gravado por versões anteriores (inclusive os cinco que saíram): o equivalente entre os cinco atuais.</summary>
     public static VisualSuite Normalizar(int gravado) => gravado switch
     {
         1 or 6 or 7 => VisualSuite.BarraLateral,   // barra lateral, trilho compacto, área em painéis

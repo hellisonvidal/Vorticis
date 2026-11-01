@@ -200,8 +200,30 @@ public partial class MainWindow : Window
     /// A barra de funções abertas só aparece quando há função aberta (ou período de trabalho a mostrar); no layout E a faixa de opções
     /// substitui a barra de menus clássica (empresa, usuário e Exibir passam para a linha das abas).
     /// </summary>
+    private bool _moderna;
+
+    /// <summary>
+    /// Módulo aberto sozinho (fora da Suite): cabeçalho com o selo do módulo, a empresa e o usuário, e barra de menus clara com a faixa
+    /// da cor do módulo embaixo. Na Suite a moldura é a do visual escolhido.
+    /// </summary>
+    private void AplicarAparenciaModerna()
+    {
+        var moderna = Suite is null;
+        CabecalhoModulo.IsVisible = moderna && _vm is { Logado: true };
+        EmpresaNaBarra.IsVisible = UsuarioNaBarra.IsVisible = !moderna;
+        if (moderna == _moderna && Classes.Contains("moderna") == moderna) return;
+        _moderna = moderna;
+        Classes.Set("moderna", moderna);
+        if (moderna)
+        {
+            BarraMenu.Bind(Border.BackgroundProperty, BarraMenu.GetResourceObservable("FundoCartao"));
+            FaixaDestaque.BorderThickness = new Thickness(0, 0, 0, 3);
+        }
+    }
+
     private void AtualizarBarras()
     {
+        AplicarAparenciaModerna();
         BarraFuncoes.IsVisible = _vm is { Logado: true } v && (v.JanelasAbertas.Count > 0 || v.UsaPeriodo);
         BarraMenuWrap.IsVisible = Suite is null || (!Suite.EhFaixa && (!Suite.EhBusca || Suite.MenusNaBusca));
     }

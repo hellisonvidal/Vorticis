@@ -137,6 +137,28 @@
   <Style Selector="DataGridColumnHeader TextBlock">
     <Setter Property="ToolTip.Tip" Value="{Binding $self.Text}" />
   </Style>
+  <!-- Aparência moderna em todos os módulos: cantos arredondados, e cabeçalho das listas destacado -->
+  <Style Selector="Button, ToggleButton, RepeatButton">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TextBox, ComboBox, CalendarDatePicker, NumericUpDown, AutoCompleteBox">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TabControl > TabItem">
+    <Setter Property="CornerRadius" Value="6,6,0,0" />
+  </Style>
+  <Style Selector="DataGrid">
+    <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Linha}" />
+    <Setter Property="ColumnHeaderHeight" Value="30" />
+  </Style>
+  <Style Selector="DataGridColumnHeader">
+    <Setter Property="Background" Value="{DynamicResource FundoSuave}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource TxSutil}" />
+  </Style>
+  <Style Selector="Window.ficha">
+    <Setter Property="Background" Value="{DynamicResource FundoJanela}" />
+  </Style>
   <Style Selector="DataGridCell.num TextBlock">
     <Setter Property="HorizontalAlignment" Value="Right" />
     <Setter Property="TextAlignment" Value="Right" />

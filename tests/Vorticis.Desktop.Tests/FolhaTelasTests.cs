@@ -102,7 +102,9 @@ public class FolhaTelasTests(SessaoHeadless headless)
             var barra = (Control)menu.Parent!;
             // fim do último menu x início dos controles da direita (empresa e usuário), na mesma linha
             var fimMenu = menu.Bounds.Left + menu.DesiredSize.Width;
-            var inicioDireita = barra.GetVisualChildren().OfType<Control>().Where(c => c != menu && Grid.GetColumn(c) >= 3).Min(c => c.Bounds.Left);
+            // (no módulo sozinho a empresa e o usuário ficam no cabeçalho de cima: a linha inteira é dos menus)
+            var direita = barra.GetVisualChildren().OfType<Control>().Where(c => c != menu && c.IsVisible && Grid.GetColumn(c) >= 3).ToList();
+            var inicioDireita = direita.Count > 0 ? direita.Min(c => c.Bounds.Left) : barra.Bounds.Width;
             Assert.True(vm.MostraFaixaPeriodo);                       // a competência fica numa faixa própria, abaixo
             // ... na mesma linha das funções abertas (faixa fixa logo abaixo dos menus)
             var faixa = janela.FindControl<Border>("BarraFuncoes")!;

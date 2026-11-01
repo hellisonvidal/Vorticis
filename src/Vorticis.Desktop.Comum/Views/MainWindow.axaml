@@ -36,6 +36,27 @@
       <Setter Property="FontSize" Value="13" />
       <Setter Property="Padding" Value="10,5" />
     </Style>
+    <!-- Módulo sozinho (aparência moderna): barra de menus clara, itens com cantos arredondados e a cor do módulo ao passar o mouse -->
+    <Style Selector="Window.moderna Menu#MenuPrincipal > MenuItem">
+      <Setter Property="Foreground" Value="{DynamicResource TxForte}" />
+      <Setter Property="Padding" Value="7,4" />
+      <Setter Property="Margin" Value="0,4" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Window.moderna Menu#MenuPrincipal > MenuItem:pointerover /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="Window.moderna Border.janela-aberta">
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="6,0" />
+    </Style>
+    <Style Selector="Border.pilula">
+      <Setter Property="Background" Value="{DynamicResource FundoSuave}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Linha}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="6,0" />
+    </Style>
   </Window.Styles>
 
   <DockPanel>
@@ -45,13 +66,50 @@
     <!-- O nome do programa fica só na barra de título da janela. Menus à esquerda; empresa ativa e usuário à direita -->
     <!-- A cor da barra e a faixa de destaque identificam o módulo (IModuloDesktop.CorBarra / CorDestaque); o nome dele fica só no título -->
     <StackPanel Name="BlocoMenus" DockPanel.Dock="Top">
+    <!-- Módulo aberto sozinho (fora da Suite): cabeçalho moderno com o selo do módulo, a empresa e o usuário; o menu fica numa barra clara logo abaixo -->
+    <Border Name="CabecalhoModulo" Background="{DynamicResource FundoCartao}" Padding="14,8,14,8" IsVisible="False">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Border Width="34" Height="34" CornerRadius="9" Background="{Binding PincelDestaque}">
+            <PathIcon Data="{Binding IconeModulo}" Width="19" Height="19" Foreground="White" />
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Modulo.Nome}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+            <TextBlock Text="{Binding Modulo.Subtitulo}" FontSize="11" Foreground="{DynamicResource TxSutil}" />
+          </StackPanel>
+        </StackPanel>
+        <Border Grid.Column="2" Classes="pilula" VerticalAlignment="Center" Margin="0,0,12,0">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding RotuloEmpresaAtiva}" Foreground="{DynamicResource TxSutil}" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0" />
+            <ComboBox Name="EmpresaCabecalho" ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
+                      MinWidth="180" MaxWidth="380" FontSize="12.5" MinHeight="28" Padding="10,2" BorderThickness="0" Background="Transparent"
+                      PlaceholderText="Nenhuma empresa">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="seg:EmpresaPermitida">
+                  <TextBlock>
+                    <Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" – " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" />
+                  </TextBlock>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+        </Border>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" ToolTip.Tip="{Binding UsuarioRotulo}">
+          <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource Realce}">
+            <TextBlock Text="{Binding IniciaisUsuario}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding UsuarioRotulo}" FontSize="12" Foreground="{DynamicResource TxForte}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
     <StackPanel Name="BarraMenuWrap">
-    <Border BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
-    <Border Background="{Binding PincelBarra}" Padding="4,0,8,0">
+    <Border Name="FaixaDestaque" BorderBrush="{Binding PincelDestaque}" BorderThickness="0,0,0,4" IsVisible="{Binding Logado}">
+    <Border Name="BarraMenu" Background="{Binding PincelBarra}" Padding="4,0,8,0">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
         <!-- Os itens vêm do módulo (IModuloDesktop.Menus) e são montados em MainWindow.axaml.cs -->
         <Menu Name="MenuPrincipal" Grid.Column="1" />
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <StackPanel Name="EmpresaNaBarra" Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="{Binding RotuloEmpresaAtiva}" Foreground="#C9D6E8" FontSize="12" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding EmpresasPermitidas}" SelectedItem="{Binding EmpresaSelecionada}"
                     MinWidth="130" MaxWidth="360" FontSize="12" MinHeight="24" Padding="8,1"
@@ -65,7 +123,7 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
         </StackPanel>
-        <TextBlock Grid.Column="4" Text="{Binding UsuarioRotulo}" Foreground="#E3E8F2" FontSize="12"
+        <TextBlock Name="UsuarioNaBarra" Grid.Column="4" Text="{Binding UsuarioRotulo}" Foreground="#E3E8F2" FontSize="12"
                    VerticalAlignment="Center" Margin="12,0,0,0" />
       </Grid>
     </Border>

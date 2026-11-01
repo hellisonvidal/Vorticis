@@ -506,6 +506,14 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     public string UsuarioRotulo => Sessao is null ? "" : $"{Sessao.Nome}{(Sessao.Administrador ? " (administrador)" : "")}";
 
+    /// <summary>Iniciais do usuário (círculo do cabeçalho do módulo).</summary>
+    public string IniciaisUsuario => Sessao?.Nome.Split(' ', StringSplitOptions.RemoveEmptyEntries) is { Length: > 0 } p
+        ? string.Concat(new[] { p[0], p[^1] }.Distinct().Take(2).Select(x => char.ToUpperInvariant(x[0])))
+        : "";
+
+    /// <summary>Ícone do módulo (selo do cabeçalho).</summary>
+    public Avalonia.Media.Geometry IconeModulo => Views.IconesSuite.DoModulo(Modulo.NomeExecutavel);
+
     /// <summary>O usuário tem algum acesso (perfil) na empresa ativa.</summary>
     public bool TemAcessoNaEmpresa => EmpresaSelecionada is not null && _permissoes.TemAcesso;
 
@@ -978,7 +986,11 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     partial void OnLogadoChanged(bool value) => AbrirCommand.NotifyCanExecuteChanged();
 
-    partial void OnSessaoChanged(SessaoUsuario? value) => OnPropertyChanged(nameof(UsuarioRotulo));
+    partial void OnSessaoChanged(SessaoUsuario? value)
+    {
+        OnPropertyChanged(nameof(UsuarioRotulo));
+        OnPropertyChanged(nameof(IniciaisUsuario));
+    }
 
     partial void OnEmpresaSelecionadaChanged(EmpresaPermitida? value)
     {

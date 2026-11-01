@@ -14,6 +14,16 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
 **Dicas:** Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
 
+## A janela de cada módulo
+
+Cada módulo aberto sozinho (Contábil, Fiscal, Folha, Escritório, Gerencial, Condomínio) tem a mesma aparência:
+- **Cabeçalho** no alto, com o selo do módulo na cor dele, o nome e a descrição do módulo; à direita, a **empresa** em uso (clique para trocar) e o **seu usuário**, com as iniciais num círculo.
+- **Barra de menus** clara logo abaixo (Cadastros, Lançamentos, Relatórios…), com uma faixa na cor do módulo embaixo, para saber sempre em que módulo você está.
+- **Funções abertas** em etiquetas arredondadas na faixa seguinte: clique para trazer a tela para a frente e no **✕** para fechar.
+- Botões, campos e listas com cantos arredondados e o cabeçalho das listas em destaque. O tema claro ou escuro segue *Configurações › Configurações gerais › Preferências*.
+
+Na Suite a moldura é a do visual escolhido (veja abaixo).
+
 ## Vorticis Suite Empresarial (todos os módulos numa janela)
 
 **Para que serve:** trabalhar com todos os módulos instalados (Escritório, Contábil, Fiscal, Folha, Condomínio, Gerencial) numa única janela, como se fosse um só programa.
@@ -33,7 +43,7 @@ Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as m
 
    **Ctrl+K (Ir para…)** funciona em todos os visuais: no 5 vai para a busca do centro; nos demais, a mesma busca abre por cima da tela (**Esc** ou **Fechar** volta).
 
-   Quem usava um dos visuais retirados na versão 1.0.2 passa para o mais parecido: *Barra de comandos*, *Lista e ficha* e *Alta densidade* viram o **1 – Clássico renovado**; *Trilho compacto* e *Área em painéis* viram o **2 – Barra lateral**. O tema escuro, se estava em uso, continua.
+   Quem usava um dos visuais que saíram (a Suite tinha dez) passa para o mais parecido: *Barra de comandos*, *Lista e ficha* e *Alta densidade* viram o **1 – Clássico renovado**; *Trilho compacto* e *Área em painéis* viram o **2 – Barra lateral**. O tema escuro, se estava em uso, continua.
 
    **Tema de cores (claro, escuro ou automático).** Na mesma janelinha do botão **Visual**, na linha **Tema de cores**, escolha **Claro**, **Escuro** ou **Automático**. O escuro descansa a vista em ambientes com pouca luz e vale para todos os visuais, para os menus, as telas de cadastro, as listas, os gráficos e o manual; o **Automático** acompanha o tema do Windows. A troca é imediata e fica gravada para o seu usuário. Também dá para trocar em *Exibir › Visual da Suite › Tema de cores*.
 
