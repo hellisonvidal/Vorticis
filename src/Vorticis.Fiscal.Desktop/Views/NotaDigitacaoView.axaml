@@ -61,7 +61,7 @@
                 <StackPanel Grid.Row="0" Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Emissão" /><CalendarDatePicker SelectedDate="{Binding Emissao}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="4" Classes="campo"><TextBlock Classes="rot" Text="{Binding RotuloData}" /><CalendarDatePicker SelectedDate="{Binding DataLivro}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Classes="campo"><TextBlock Classes="rot" Text="{Binding RotuloParticipante}" />
-                  <TextBox Name="CampoParticipante" Text="{Binding Participante}" Watermark="CNPJ/CPF (busca automática), código ou nome" LostFocus="ParticipanteSaiu" /></StackPanel>
+                  <TextBox c:Pesquisa.Fonte="Participante" Name="CampoParticipante" Text="{Binding Participante}" Watermark="CNPJ/CPF (busca automática), código ou nome" LostFocus="ParticipanteSaiu" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Classes="campo"><TextBlock Classes="rot" Text="Natureza da operação" /><TextBox Text="{Binding Natureza}" /></StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Classes="campo"><TextBlock Classes="rot" Text="Chave de acesso (opcional)" /><TextBox Text="{Binding Chave}" /></StackPanel>
                 <Button Grid.Row="2" Grid.Column="0" Classes="mini" Content="Buscar participante" Command="{Binding BuscarParticipanteCommand}" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
@@ -81,7 +81,7 @@
           <Border Grid.Row="1" Margin="0,6,0,0" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Padding="6,4" CornerRadius="4">
             <StackPanel Spacing="3" IsEnabled="{Binding PodeEditar}">
               <Grid ColumnDefinitions="1.3*,2.6*,0.8*,0.9*,1.1*,Auto">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Produto (código, descrição ou GTIN)" /><TextBox Name="CampoProduto" Text="{Binding Item.Produto}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Produto (código, descrição ou GTIN)" /><TextBox c:Pesquisa.Fonte="Produto" Name="CampoProduto" Text="{Binding Item.Produto}" /></StackPanel>
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Descrição" /><TextBox Text="{Binding Item.Descricao}" /></StackPanel>
                 <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Quantidade" /><TextBox Text="{Binding Item.Quantidade}" /></StackPanel>
@@ -229,8 +229,8 @@
             <TextBlock Text="CFOP de entrada, produto vinculado, centro de custo, contas e observações. Nas notas importadas de XML é só aqui que se altera a nota." FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,*,*,2*">
               <StackPanel Classes="campo" IsVisible="{Binding MostraCentro}"><TextBlock Classes="rot" Text="Centro de custo (nota)" /><ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroDocumento}" HorizontalAlignment="Stretch" /></StackPanel>
-              <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Conta de débito (código; vazio = regra)" /><TextBox Text="{Binding ContaDebito}" /></StackPanel>
-              <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="Conta de crédito (código; vazio = regra)" /><TextBox Text="{Binding ContaCredito}" /></StackPanel>
+              <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Conta de débito (código; vazio = regra)" /><TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaDebito}" /></StackPanel>
+              <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="Conta de crédito (código; vazio = regra)" /><TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaCredito}" /></StackPanel>
               <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Observações" /><TextBox Text="{Binding Observacoes}" AcceptsReturn="True" MaxHeight="60" TextWrapping="Wrap" /></StackPanel>
             </Grid>
             <StackPanel IsVisible="{Binding Importada}" Spacing="3">
@@ -244,7 +244,7 @@
               </WrapPanel>
               <Grid ColumnDefinitions="*,2*,*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP de escrituração (ex.: entrada 1.102)" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
-                <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Produto vinculado (código, descrição ou GTIN do cadastro)" /><TextBox Text="{Binding EscProduto}" /></StackPanel>
+                <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Produto vinculado (código, descrição ou GTIN do cadastro)" /><TextBox c:Pesquisa.Fonte="Produto" Text="{Binding EscProduto}" /></StackPanel>
                 <StackPanel Grid.Column="2" Classes="campo" IsVisible="{Binding MostraCentro}"><TextBlock Classes="rot" Text="Centro de custo (item)" /><ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroItem}" HorizontalAlignment="Stretch" /></StackPanel>
                 <Button Grid.Column="3" Classes="mini" Content="Aplicar ao item" Command="{Binding AplicarEscrituracaoItemCommand}" VerticalAlignment="Bottom" Height="26" />
               </Grid>

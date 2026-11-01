@@ -30,7 +30,7 @@
           </StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2">
             <TextBlock Text="Conta contábil do estoque" FontSize="12" />
-            <TextBox Text="{Binding ContaContabil}" Width="150" Watermark="ex.: 1.1.04.001" />
+            <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaContabil}" Width="150" Watermark="ex.: 1.1.04.001" />
           </StackPanel>
         </WrapPanel>
         <StackPanel Orientation="Horizontal" Spacing="6">

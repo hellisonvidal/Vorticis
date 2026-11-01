@@ -35,11 +35,11 @@
           <CheckBox Content="Intangível (amortização)" IsChecked="{Binding Intangivel}" />
         </StackPanel>
         <TextBlock Grid.Row="4" Classes="rotulo" Text="Conta do bem" />
-        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ContaBem}" Watermark="sugestão para novos bens" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="4" Grid.Column="1" Text="{Binding ContaBem}" Watermark="sugestão para novos bens" />
         <TextBlock Grid.Row="5" Classes="rotulo" Text="Deprec. acumulada" />
-        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ContaAcumulada}" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="5" Grid.Column="1" Text="{Binding ContaAcumulada}" />
         <TextBlock Grid.Row="6" Classes="rotulo" Text="Despesa" />
-        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding ContaDespesa}" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="6" Grid.Column="1" Text="{Binding ContaDespesa}" />
         <TextBlock Grid.Row="7" Classes="rotulo" Text="Base legal" />
         <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding BaseLegal}" TextWrapping="Wrap" />
       </Grid>

@@ -16,7 +16,7 @@
       <TextBlock Text="a" VerticalAlignment="Center" />
       <NumericUpDown Value="{Binding MesFinal}" Minimum="1" Maximum="12" FormatString="0" Width="90" />
       <ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding Centro}" DisplayMemberBinding="{ReflectionBinding Texto}" MinWidth="220" />
-      <TextBox Text="{Binding ContaPrefixo}" Watermark="Conta ou grupo (ex.: 4.2)" Width="170" />
+      <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaPrefixo}" Watermark="Conta ou grupo (ex.: 4.2)" Width="170" />
       <CheckBox Content="Mês a mês" IsChecked="{Binding Mensal}" />
       <CheckBox Content="Somar os centros" IsChecked="{Binding IgnorarCentro}" ToolTip.Tip="Mostra uma linha por conta, somando todos os centros de custo" />
       </WrapPanel>

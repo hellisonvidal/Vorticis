@@ -23,7 +23,7 @@
           <StackPanel Spacing="2"><TextBlock Text="Conta" FontSize="12" />
             <TextBox Text="{Binding Conta}" Width="140" Watermark="12345-6" /></StackPanel>
           <StackPanel Spacing="2"><TextBlock Text="Conta contábil" FontSize="12" />
-            <TextBox Text="{Binding ContaContabil}" Width="150" Watermark="1.1.02.001 (opcional)" /></StackPanel>
+            <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaContabil}" Width="150" Watermark="1.1.02.001 (opcional)" /></StackPanel>
           <StackPanel Spacing="2" VerticalAlignment="Bottom"><CheckBox Content="Ativa" IsChecked="{Binding Ativa}" /></StackPanel>
         </WrapPanel>
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"

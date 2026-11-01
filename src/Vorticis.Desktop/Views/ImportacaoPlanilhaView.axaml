@@ -70,11 +70,11 @@
           <TextBlock Classes="rotulo" Text="Conta débito" />
           <ComboBox Grid.Column="1" ItemsSource="{Binding OpcoesColunas}" SelectedItem="{Binding ColunaContaDebito}" HorizontalAlignment="Stretch" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="ou débito fixo" />
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ContaDebitoPadrao}" Watermark="conta usada quando a coluna está vazia" />
+          <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="1" Grid.Column="1" Text="{Binding ContaDebitoPadrao}" Watermark="conta usada quando a coluna está vazia" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Conta crédito" />
           <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding OpcoesColunas}" SelectedItem="{Binding ColunaContaCredito}" HorizontalAlignment="Stretch" />
           <TextBlock Grid.Row="3" Classes="rotulo" Text="ou crédito fixo" />
-          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContaCreditoPadrao}" Watermark="conta usada quando a coluna está vazia" />
+          <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="3" Grid.Column="1" Text="{Binding ContaCreditoPadrao}" Watermark="conta usada quando a coluna está vazia" />
         </Grid>
         <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsVisible="{Binding PorPartida}">
           <TextBlock Classes="rotulo" Text="Nº do lançamento" />
@@ -92,7 +92,7 @@
                    Text="Sem a coluna Nº do lançamento, as partidas são agrupadas até débitos = créditos. Use D/C + Valor, ou as colunas Valor a débito e Valor a crédito." />
         <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Histórico fixo" />
-          <TextBox Grid.Column="1" Text="{Binding HistoricoPadrao}" Watermark="usado quando a coluna está vazia" />
+          <TextBox c:Pesquisa.Fonte="Historico" Grid.Column="1" Text="{Binding HistoricoPadrao}" Watermark="usado quando a coluna está vazia" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Máscara das contas" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MascaraContas}" Watermark="opcional, ex.: 9.9.99.999 (converte 11010001)" />
         </Grid>

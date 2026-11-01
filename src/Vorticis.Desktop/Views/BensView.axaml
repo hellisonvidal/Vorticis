@@ -54,7 +54,7 @@
           <TextBlock Grid.Row="5" Classes="rotulo" Text="NF / fornecedor" />
           <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,6,*">
             <TextBox Text="{Binding NotaFiscal}" Watermark="nota fiscal" />
-            <TextBox Grid.Column="2" Text="{Binding Fornecedor}" Watermark="código do fornecedor" />
+            <TextBox c:Pesquisa.Fonte="ParticipanteCodigo" Grid.Column="2" Text="{Binding Fornecedor}" Watermark="código do fornecedor" />
           </Grid>
           <TextBlock Grid.Row="6" Classes="rotulo" Text="Aquisição / uso" />
           <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Spacing="6">
@@ -92,11 +92,11 @@
         <TextBlock Text="Contas contábeis" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
         <Grid ColumnDefinitions="128,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Conta do bem" />
-          <TextBox Grid.Column="1" Text="{Binding ContaBem}" Watermark="código ou reduzido" />
+          <TextBox c:Pesquisa.Fonte="Conta" Grid.Column="1" Text="{Binding ContaBem}" Watermark="código ou reduzido" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Deprec. acumulada" />
-          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ContaAcumulada}" Watermark="código ou reduzido" />
+          <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="1" Grid.Column="1" Text="{Binding ContaAcumulada}" Watermark="código ou reduzido" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Despesa" />
-          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContaDespesa}" Watermark="código ou reduzido" />
+          <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="2" Grid.Column="1" Text="{Binding ContaDespesa}" Watermark="código ou reduzido" />
         </Grid>
 
         <TextBlock Text="Baixa" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />

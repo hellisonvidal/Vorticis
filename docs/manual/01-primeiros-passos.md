@@ -99,6 +99,12 @@ Em todos os módulos, os campos em que você digita **valores** (valor, preço, 
 - Ao sair do campo (Tab, Enter ou clique em outro campo), o valor aparece com **ponto de milhar e duas casas depois da vírgula**: *1.500,50*.
 - Campo em branco continua em branco.
 
+## Pesquisa dentro dos campos
+Quando você não sabe o código a informar, pesquise sem sair da tela:
+- **Campos de conta, histórico, participante (cliente/fornecedor), centro de custo e produto** têm uma **lupa** dentro do próprio campo. Clique nela (ou tecle **F4** com o campo selecionado) e digite parte do código ou da descrição na caixa que abre: a lista mostra só o que combina (sem diferença de acentos ou maiúsculas; pode digitar várias palavras, como *banco itau*). Use as setas e **Enter** (ou duplo clique) para escolher; o código entra no campo. **Esc** fecha sem escolher.
+- **Listas de escolha com muitas opções** (aquelas que abrem com uma setinha, como rubricas, CFOP, contas bancárias, formas de pagamento) mostram no alto a caixa **Pesquisar na lista**: digite parte do nome e só ficam as opções que combinam; **Enter** escolhe a primeira.
+- A lista da lupa é atualizada a cada minuto; o que você acabou de cadastrar aparece na pesquisa seguinte.
+
 ## Filtros nas listas
 
 Toda tela que mostra uma **lista de registros** (cadastros, consultas, lançamentos, notas, duplicatas, funcionários, eventos etc.) tem, logo acima da lista, a barra de localização. Ela funciona em todos os módulos do mesmo jeito e age só sobre as linhas que já estão na tela: não busca de novo no banco. Os filtros próprios da tela (período, empresa, situação) continuam valendo; a barra serve para refinar o resultado. Telas de digitação (itens da nota, partidas do lançamento, orçamento mês a mês) não têm a barra.

@@ -43,7 +43,7 @@
             <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,6" />
             <CalendarDatePicker SelectedDate="{Binding Fim}" Width="150" Margin="0,0,10,6" />
             <Button Content="Consultar" Command="{Binding ConsultarLancamentosCommand}" Classes="accent" Margin="0,0,16,6" />
-            <TextBox Text="{Binding ContaLancamento}" Watermark="Conta (código ou nome)" Width="200" Margin="0,0,6,6" />
+            <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaLancamento}" Watermark="Conta (código ou nome)" Width="200" Margin="0,0,6,6" />
             <TextBox Text="{Binding TextoHistorico}" Watermark="Texto no histórico" Width="200" Margin="0,0,6,6" />
             <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="Valor (ex.: 1.500,00)" Width="150" Margin="0,0,6,6" />
             <TextBox Text="{Binding Numero}" Watermark="Nº do lançamento" Width="140" Margin="0,0,6,6" />

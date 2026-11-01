@@ -18,7 +18,7 @@
           <TextBlock Text="até" VerticalAlignment="Center" Margin="0,0,6,6" />
           <CalendarDatePicker SelectedDate="{Binding VencimentoFim}" Width="140" Margin="0,0,10,6" />
         </StackPanel>
-        <TextBox Text="{Binding Participante}" Watermark="Fornecedor / cliente" Width="190" Margin="0,0,8,6" />
+        <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding Participante}" Watermark="Fornecedor / cliente" Width="190" Margin="0,0,8,6" />
         <ComboBox ItemsSource="{x:Static vm:RelatorioDuplicatasViewModel.Situacoes}" SelectedIndex="{Binding Situacao}" IsVisible="{Binding MostraSituacao}" Width="120" Margin="0,0,8,6" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,8,6" />
         <c:BarraExportacaoView />

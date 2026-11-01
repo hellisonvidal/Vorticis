@@ -79,17 +79,17 @@
           <TextBox Grid.Row="4" Grid.Column="1" Tag="documento" Text="{Binding Documento}" Width="150" HorizontalAlignment="Left" />
 
           <TextBlock Classes="rot" Grid.Row="5" Text="Histórico padrão" />
-          <TextBox Grid.Row="5" Grid.Column="1" Tag="codhistorico" Text="{Binding CodigoHistorico}" Width="70" HorizontalAlignment="Left"
+          <TextBox c:Pesquisa.Fonte="Historico" Grid.Row="5" Grid.Column="1" Tag="codhistorico" Text="{Binding CodigoHistorico}" Width="70" HorizontalAlignment="Left"
                    ToolTip.Tip="Código do histórico padrão (Cadastros › Históricos)" />
 
           <TextBlock Classes="rot" Grid.Row="6" Text="Histórico" />
           <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Tag="historico" Text="{Binding Historico}" />
 
           <TextBlock Classes="rot" Grid.Row="7" Text="Centro de custo" />
-          <TextBox Grid.Row="7" Grid.Column="1" Tag="centrocusto" Text="{Binding CentroCusto}" Width="100" HorizontalAlignment="Left" />
+          <TextBox c:Pesquisa.Fonte="CentroCusto" Grid.Row="7" Grid.Column="1" Tag="centrocusto" Text="{Binding CentroCusto}" Width="100" HorizontalAlignment="Left" />
 
           <TextBlock Classes="rot" Grid.Row="8" Text="Participante" IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}" />
-          <TextBox Grid.Row="8" Grid.Column="1" Tag="participante" Text="{Binding Participante}" Width="100" HorizontalAlignment="Left"
+          <TextBox c:Pesquisa.Fonte="ParticipanteCodigo" Grid.Row="8" Grid.Column="1" Tag="participante" Text="{Binding Participante}" Width="100" HorizontalAlignment="Left"
                    IsVisible="{Binding $parent[UserControl].((vm:LancamentoViewModel)DataContext).UsaParticipantes}"
                    ToolTip.Tip="Participante (cliente/fornecedor) — plano de contas com participantes" />
           <TextBlock Classes="nome" Grid.Row="8" Grid.Column="2" Text="{Binding NomeParticipante}"

@@ -12,7 +12,7 @@
       <TextBlock Text="O extrato precisa estar importado em Lançamentos › Importação (aba Extratos). Informe a conta contábil do banco do extrato; o programa sugere as duplicatas em aberto que combinam com os movimentos por valor, data próxima do vencimento e número do documento."
                  FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
       <WrapPanel>
-        <TextBox Text="{Binding ContaBanco}" Watermark="Conta do banco (código)" Width="190" Margin="0,0,8,6" />
+        <TextBox fg:Pesquisa.Fonte="Conta" Text="{Binding ContaBanco}" Watermark="Conta do banco (código)" Width="190" Margin="0,0,8,6" />
         <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Margin="0,0,6,6" />
         <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,6" />
         <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,10,6" />

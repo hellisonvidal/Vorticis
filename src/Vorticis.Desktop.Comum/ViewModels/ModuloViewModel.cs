@@ -7,9 +7,10 @@ using Vorticis.Infra;
 namespace Vorticis.Desktop.Comum.ViewModels;
 
 /// <summary>Base dos módulos: acesso ao contexto e exibição padronizada de mensagens e erros.</summary>
-public abstract partial class ModuloViewModel(IContexto contexto) : ObservableObject
+public abstract partial class ModuloViewModel(IContexto contexto) : ObservableObject, Views.IComContexto
 {
     protected IContexto Contexto { get; } = contexto;
+    IContexto Views.IComContexto.Contexto => Contexto;
 
     public ObservableCollection<string> Erros { get; } = [];
 

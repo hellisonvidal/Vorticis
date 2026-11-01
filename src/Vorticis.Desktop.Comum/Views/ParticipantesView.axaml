@@ -75,7 +75,7 @@
         <TextBlock Classes="secao" Text="Contabilidade" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
           <TextBlock Classes="rotulo" Text="Conta contábil" />
-          <TextBox Grid.Column="1" Text="{Binding Conta}" Watermark="código ou reduzido (opcional)" Width="260" HorizontalAlignment="Left" />
+          <TextBox v:Pesquisa.Fonte="Conta" Grid.Column="1" Text="{Binding Conta}" Watermark="código ou reduzido (opcional)" Width="260" HorizontalAlignment="Left" />
           <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
             <CheckBox Content="Participante" IsChecked="{Binding ControleConta}" IsEnabled="{Binding UsaParticipantes}"
                       ToolTip.Tip="Alocado dentro da conta contábil acima: os lançamentos nela informam este participante" />

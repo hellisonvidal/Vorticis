@@ -107,8 +107,9 @@ public static class TelasComuns
 /// Janela principal de qualquer módulo da suíte: conexão com o banco, login, empresa ativa, permissões, navegação
 /// por funções em janelas flutuantes e confirmações. As telas próprias do módulo vêm de <see cref="IModuloDesktop"/>.
 /// </summary>
-public abstract partial class MainViewModelBase : ObservableObject, IContexto, IAsyncDisposable
+public abstract partial class MainViewModelBase : ObservableObject, IContexto, IAsyncDisposable, Views.IComContexto
 {
+    IContexto Views.IComContexto.Contexto => this;
     private string _connectionString = "";
     private string? _telaAtual;
     private string? _telaDaAjuda;

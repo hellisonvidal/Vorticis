@@ -23,7 +23,7 @@
         <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Mostrar" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.Tipos}" SelectedIndex="{Binding TipoFiltro}" Width="170" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Vencimento de" /><CalendarDatePicker SelectedDate="{Binding VencimentoInicio}" Width="135" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="até" /><CalendarDatePicker SelectedDate="{Binding VencimentoFim}" Width="135" /></StackPanel>
-        <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente" /><TextBox Text="{Binding ParticipanteFiltro}" Width="180" /></StackPanel>
+        <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente" /><TextBox fg:Pesquisa.Fonte="Participante" Text="{Binding ParticipanteFiltro}" Width="180" /></StackPanel>
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Situação" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.Situacoes}" SelectedIndex="{Binding SituacaoFiltro}" Width="210" /></StackPanel>
         <CheckBox Content="Somente vencidas" IsChecked="{Binding SomenteVencidas}" VerticalAlignment="Bottom" Margin="0,0,10,4" />
         <Button Classes="mini accent" Content="Consultar" Command="{Binding ConsultarCommand}" VerticalAlignment="Bottom" Margin="0,0,8,4" />
@@ -52,7 +52,7 @@
           <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxAviso}" />
           <WrapPanel IsEnabled="{Binding PodeManter}">
             <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox Text="{Binding FormParticipante}" Width="260" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox fg:Pesquisa.Fonte="Participante" Text="{Binding FormParticipante}" Width="260" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº do documento" /><TextBox Text="{Binding FormDocumento}" Width="120" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Parcela" /><TextBox Text="{Binding FormParcela}" Width="70" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Emissão" /><CalendarDatePicker SelectedDate="{Binding FormEmissao}" Width="135" /></StackPanel>
@@ -78,7 +78,7 @@
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Juros" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaJuros}" Width="90" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Multa" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaMulta}" Width="90" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaDesconto}" Width="90" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Conta do banco ou caixa (código)" /><TextBox Text="{Binding BaixaConta}" Width="170" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Conta do banco ou caixa (código)" /><TextBox fg:Pesquisa.Fonte="Conta" Text="{Binding BaixaConta}" Width="170" /></StackPanel>
           </WrapPanel>
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Button Classes="mini accent" Content="Baixar selecionada" Command="{Binding BaixarCommand}" />

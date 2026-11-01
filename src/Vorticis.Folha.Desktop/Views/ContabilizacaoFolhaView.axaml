@@ -44,9 +44,9 @@
         <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" />
         <TextBlock Grid.Row="2" Classes="rotulo" Text="Conta débito" />
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ContaDebito}" Watermark="Código no plano de contas" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="2" Grid.Column="1" Text="{Binding ContaDebito}" Watermark="Código no plano de contas" />
         <TextBlock Grid.Row="3" Classes="rotulo" Text="Conta crédito" />
-        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContaCredito}" Watermark="Código no plano de contas" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="3" Grid.Column="1" Text="{Binding ContaCredito}" Watermark="Código no plano de contas" />
         <CheckBox Grid.Row="4" Grid.Column="1" Content="Abrir por centro de custo do funcionário" IsChecked="{Binding UsaCentroCusto}" />
         <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:ContabilizacaoFolhaViewModel.Lados}" SelectedItem="{Binding Lado}" HorizontalAlignment="Stretch" />
       </Grid>

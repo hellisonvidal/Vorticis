@@ -137,6 +137,13 @@ public sealed class ModuloFiscal : IModuloDesktop
 
     public void RegistrarTelas(CatalogoTelas c)
     {
+        // Pesquisa dentro do campo Produto (lupa ou F4): produtos ativos da empresa, pelo código, descrição, NCM ou GTIN.
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("Produto", async (ctx, ct) =>
+            ctx.App is { } app && ctx.EmpresaId is { } e && ctx.Sessao is { } s
+            && await app.Fiscal().Produtos.ListarAsync(e, true, null, s.Id, ct) is { Sucesso: true } r
+                ? r.Valor.Select(p => new Vorticis.Desktop.Comum.Views.ItemPesquisa(p.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    p.Descricao + (p.Ncm is { Length: > 0 } n ? $" · NCM {n}" : "") + (p.Gtin is { Length: > 0 } g ? $" · GTIN {g}" : ""))).ToList()
+                : []);
         c.Instancia("ImportacaoXml", m => new ImportacaoXmlViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ImportacaoXml, "Integrações › Importação de XML em lote", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ImportacaoNfse", m => new ImportacaoNfseViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

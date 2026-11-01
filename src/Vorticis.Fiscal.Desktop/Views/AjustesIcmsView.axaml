@@ -42,7 +42,7 @@
       </WrapPanel>
       <Expander Header="Documento fiscal relacionado (E113, só ICMS)" IsEnabled="{Binding PodeManter}">
         <WrapPanel>
-          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Cliente ou fornecedor" FontSize="12" /><TextBox Text="{Binding DocParticipante}" Width="250" Watermark="código, nome ou CNPJ" /></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Cliente ou fornecedor" FontSize="12" /><TextBox c:Pesquisa.Fonte="Participante" Text="{Binding DocParticipante}" Width="250" Watermark="código, nome ou CNPJ" /></StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Modelo" FontSize="12" /><TextBox Text="{Binding DocModelo}" Width="60" MaxLength="2" /></StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Série" FontSize="12" /><TextBox Text="{Binding DocSerie}" Width="60" MaxLength="3" /></StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Número" FontSize="12" /><TextBox Text="{Binding DocNumero}" Width="120" /></StackPanel>

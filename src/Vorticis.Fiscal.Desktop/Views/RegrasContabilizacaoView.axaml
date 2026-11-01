@@ -17,11 +17,11 @@
         <TextBlock Text="CFOP" VerticalAlignment="Center" />
         <TextBox Grid.Column="1" Text="{Binding Cfop}" Watermark="5102, 51, NFSE ou vazio" Width="170" />
         <TextBlock Grid.Row="1" Text="Conta débito" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Debito}" Watermark="ex.: 1.1.02.001" Width="170" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="1" Grid.Column="1" Text="{Binding Debito}" Watermark="ex.: 1.1.02.001" Width="170" />
         <TextBlock Grid.Row="1" Grid.Column="2" Text="Conta crédito" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Credito}" Watermark="ex.: 3.1.01.001" Width="120" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="1" Grid.Column="3" Text="{Binding Credito}" Watermark="ex.: 3.1.01.001" Width="120" />
         <TextBlock Grid.Row="1" Grid.Column="4" Text="Participante" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="5" Text="{Binding Participante}" Watermark="código, nome ou CNPJ (opcional)" Width="240" />
+        <TextBox c:Pesquisa.Fonte="Participante" Grid.Row="1" Grid.Column="5" Text="{Binding Participante}" Watermark="código, nome ou CNPJ (opcional)" Width="240" />
         <TextBlock Grid.Row="2" Text="Histórico" VerticalAlignment="Center" />
         <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Text="{Binding Historico}" />
         <CheckBox Grid.Row="2" Grid.Column="5" Content="Regra ativa" IsChecked="{Binding Ativa}" />

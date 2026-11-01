@@ -21,9 +21,9 @@
         <TextBlock Grid.Row="1" Text="Quando" VerticalAlignment="Center" />
         <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5">
           <TextBox Text="{Binding CfopOrigem}" Watermark="CFOP do emitente" Width="130" Margin="0,0,6,0" />
-          <TextBox Text="{Binding Participante}" Watermark="Fornecedor/cliente (nome ou CNPJ)" Width="240" Margin="0,0,6,0" />
+          <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding Participante}" Watermark="Fornecedor/cliente (nome ou CNPJ)" Width="240" Margin="0,0,6,0" />
           <TextBox Text="{Binding Ncm}" Watermark="NCM ou início" Width="120" Margin="0,0,6,0" />
-          <TextBox Text="{Binding Produto}" Watermark="Produto (código ou descrição)" Width="220" Margin="0,0,6,0" />
+          <TextBox c:Pesquisa.Fonte="Produto" Text="{Binding Produto}" Watermark="Produto (código ou descrição)" Width="220" Margin="0,0,6,0" />
           <TextBox Text="{Binding CstOrigem}" Watermark="CST/CSOSN do XML" Width="130" Margin="0,0,6,0" />
           <ComboBox ItemsSource="{x:Static vm:RegrasFiscaisViewModel.Destinos}" SelectedIndex="{Binding Destino}" Width="150" ToolTip.Tip="Só para regras de saída" />
         </WrapPanel>
@@ -38,8 +38,8 @@
         </WrapPanel>
         <TextBlock Grid.Row="3" Text="Contabilização" VerticalAlignment="Center" />
         <WrapPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="5">
-          <TextBox Text="{Binding ContaDebito}" Watermark="Conta de débito (código)" Width="190" Margin="0,0,6,0" />
-          <TextBox Text="{Binding ContaCredito}" Watermark="Conta de crédito (código)" Width="190" Margin="0,0,14,0" />
+          <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaDebito}" Watermark="Conta de débito (código)" Width="190" Margin="0,0,6,0" />
+          <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaCredito}" Watermark="Conta de crédito (código)" Width="190" Margin="0,0,14,0" />
           <CheckBox Content="Regra ativa" IsChecked="{Binding Ativa}" />
         </WrapPanel>
       </Grid>

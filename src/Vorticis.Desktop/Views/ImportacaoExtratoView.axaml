@@ -76,7 +76,7 @@
       <TextBlock Classes="secao" Text="3. Contas e histórico" />
       <WrapPanel>
         <TextBlock Text="Conta do banco" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding ContaBanco}" Watermark="ex.: 1.1.01.002" Width="140" Margin="0,0,14,6" />
+        <TextBox fg:Pesquisa.Fonte="Conta" Text="{Binding ContaBanco}" Watermark="ex.: 1.1.01.002" Width="140" Margin="0,0,14,6" />
         <TextBlock Text="Contrapartida das entradas" VerticalAlignment="Center" Margin="0,0,6,6" />
         <TextBox Text="{Binding ContrapartidaEntradas}" Watermark="ex.: 1.1.02.001" Width="140" Margin="0,0,14,6" />
         <TextBlock Text="das saídas" VerticalAlignment="Center" Margin="0,0,6,6" />
