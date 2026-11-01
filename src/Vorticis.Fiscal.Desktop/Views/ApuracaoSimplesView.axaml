@@ -18,9 +18,9 @@
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Text="RBT12" VerticalAlignment="Center" />
-        <TextBox Text="{Binding Rbt12Texto}" Width="130" Watermark="automático" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Rbt12Texto}" Width="130" Watermark="automático" />
         <TextBlock Text="Folha 12 meses" VerticalAlignment="Center" />
-        <TextBox Text="{Binding Folha12Texto}" Width="130" Watermark="automático" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Folha12Texto}" Width="130" Watermark="automático" />
         <Button Content="Calcular" Command="{Binding CalcularCommand}" IsEnabled="{Binding PodeApurar}" />
         <Button Content="Salvar apuração" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeApurar}" />
         <Button Content="Contabilizar provisão" Command="{Binding ContabilizarCommand}" IsEnabled="{Binding PodeContabilizar}" />
@@ -41,7 +41,7 @@
             <Grid ColumnDefinitions="*,8,130" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
               <ComboBox ItemsSource="{x:Static vm:ApuracaoSimplesViewModel.RotulosAtividades}" SelectedIndex="{Binding NovaAtividade}" HorizontalAlignment="Stretch"
                         ToolTip.Tip="Atividade (anexo) da receita" />
-              <TextBox Grid.Column="2" Text="{Binding NovoValor}" Watermark="Valor (R$)" />
+              <TextBox c:Mascara.Tipo="Valor" Grid.Column="2" Text="{Binding NovoValor}" Watermark="Valor (R$)" />
               <WrapPanel Grid.Row="1" Grid.ColumnSpan="3">
                 <CheckBox Content="ICMS-ST" IsChecked="{Binding NovaST}" Margin="0,0,10,0" />
                 <CheckBox Content="Monofásico" IsChecked="{Binding NovoMonofasico}" Margin="0,0,10,0" />

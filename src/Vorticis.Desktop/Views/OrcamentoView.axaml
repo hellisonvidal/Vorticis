@@ -14,7 +14,7 @@
         <Button Content="Abrir orçamento do ano" Command="{Binding CarregarOrcamentoCommand}" />
         <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <TextBlock Text="Reajuste (%)" VerticalAlignment="Center" />
-        <NumericUpDown Value="{Binding Percentual}" Minimum="-100" Maximum="1000" FormatString="0.00" Width="120" IsEnabled="{Binding PodeManter}" />
+        <NumericUpDown Value="{Binding Percentual}" Minimum="-100" Maximum="1000" FormatString="N2" Width="120" IsEnabled="{Binding PodeManter}" />
         <Button Content="Copiar orçamento do ano anterior" Command="{Binding CopiarOrcadoCommand}" IsEnabled="{Binding PodeManter}" />
         <Button Content="Copiar realizado do ano anterior" Command="{Binding CopiarRealizadoCommand}" IsEnabled="{Binding PodeManter}" />
       </WrapPanel>

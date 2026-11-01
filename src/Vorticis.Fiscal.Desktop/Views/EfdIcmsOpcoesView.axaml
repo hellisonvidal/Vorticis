@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:cv="using:Vorticis.Desktop.Comum.Views" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.EfdIcmsOpcoesView"
@@ -16,7 +16,7 @@
       <TextBlock Grid.Row="4" Text="Dia de vencimento do ICMS" VerticalAlignment="Center" />
       <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding DiaVencimento}" Minimum="1" Maximum="28" FormatString="0" Width="130" HorizontalAlignment="Left" />
       <TextBlock Grid.Row="5" Text="Saldo credor do mês anterior" VerticalAlignment="Center" />
-      <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding SaldoCredorAnterior}" Width="160" HorizontalAlignment="Left" Watermark="0,00" />
+      <TextBox cv:Mascara.Tipo="Valor" Grid.Row="5" Grid.Column="1" Text="{Binding SaldoCredorAnterior}" Width="160" HorizontalAlignment="Left" Watermark="0,00" />
     </Grid>
     <CheckBox IsChecked="{Binding InventarioZerado}" Content="Gerar o bloco H com inventário zerado (H005 com valor 0,00); senão o bloco H sai sem dados" />
     <Button Content="Salvar estas opções como padrão da empresa" Command="{Binding SalvarConfiguracaoCommand}" HorizontalAlignment="Left" />

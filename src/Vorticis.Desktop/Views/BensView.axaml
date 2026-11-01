@@ -64,8 +64,8 @@
           </StackPanel>
           <TextBlock Grid.Row="7" Classes="rotulo" Text="Custo / residual" />
           <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,6,*">
-            <TextBox Text="{Binding Valor}" Watermark="valor de aquisição" TextAlignment="Right" />
-            <TextBox Grid.Column="2" Text="{Binding Residual}" Watermark="valor residual" TextAlignment="Right" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="valor de aquisição" TextAlignment="Right" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Column="2" Text="{Binding Residual}" Watermark="valor residual" TextAlignment="Right" />
           </Grid>
         </Grid>
 
@@ -85,7 +85,7 @@
           <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Depreciar a partir da data de aquisição, proporcional aos dias" IsChecked="{Binding ProRataDia}"
                     ToolTip.Tip="O primeiro mês deprecia só os dias desde a aquisição (inclusive); a fração que falta é lançada no mês seguinte ao fim da vida útil. Na baixa, deprecia os dias até a véspera." />
           <TextBlock Grid.Row="3" Classes="rotulo" Text="Já depreciado" />
-          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DepreciacaoAnterior}" Width="140" HorizontalAlignment="Left" TextAlignment="Right"
+          <TextBox c:Mascara.Tipo="Valor" Grid.Row="3" Grid.Column="1" Text="{Binding DepreciacaoAnterior}" Width="140" HorizontalAlignment="Left" TextAlignment="Right"
                    ToolTip.Tip="Depreciação acumulada antes de usar o Vorticis (implantação)" />
         </Grid>
 

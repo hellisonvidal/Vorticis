@@ -25,7 +25,7 @@
         <TextBlock Text="Pago em" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding DataPagamento}" Width="140" />
         <TextBlock Text="Valor pago" VerticalAlignment="Center" />
-        <TextBox Text="{Binding ValorPagoTexto}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorPagoTexto}" Width="110" />
         <Button Content="Registrar pagamento" Command="{Binding RegistrarPagamentoCommand}" IsEnabled="{Binding PodeRegistrar}" />
         <Button Content="Excluir guia" Command="{Binding ExcluirGuiaCommand}" IsEnabled="{Binding PodeRegistrar}" />
       </WrapPanel>

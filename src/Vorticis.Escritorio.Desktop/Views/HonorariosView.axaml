@@ -11,7 +11,7 @@
         <TextBlock Text="{Binding SituacaoContrato}" FontSize="12" />
         <WrapPanel ItemSpacing="0" LineSpacing="6">
           <TextBlock Text="Valor mensal" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <TextBox Text="{Binding Valor}" Width="120" Margin="0,0,12,0" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" Margin="0,0,12,0" />
           <TextBlock Text="Dia do vencimento" VerticalAlignment="Center" Margin="0,0,6,0" />
           <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="110" Margin="0,0,12,0" />
           <TextBlock Text="Início" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -37,7 +37,7 @@
         <TextBlock Text="Recebido em" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding DataRecebimento}" Width="130" />
         <TextBlock Text="Valor" VerticalAlignment="Center" />
-        <TextBox Text="{Binding ValorRecebido}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorRecebido}" Width="110" />
         <Button Content="Receber" Classes="accent" Command="{Binding ReceberCommand}" />
         <Button Content="Reabrir" Command="{Binding ReabrirCommand}" />
         <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" />

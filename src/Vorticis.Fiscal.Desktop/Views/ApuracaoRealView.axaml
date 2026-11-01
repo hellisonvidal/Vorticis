@@ -20,19 +20,19 @@
       </StackPanel>
       <WrapPanel>
         <TextBlock Text="Lucro contábil" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding LucroContabilTexto}" Width="115" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding LucroContabilTexto}" Width="115" Margin="0,0,12,6" />
         <TextBlock Text="Prejuízo fiscal a compensar" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding SaldoPrejuizoTexto}" Width="115" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoPrejuizoTexto}" Width="115" Margin="0,0,12,6" />
         <TextBlock Text="Base negativa CSLL" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding SaldoBaseNegativaTexto}" Width="115" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoBaseNegativaTexto}" Width="115" Margin="0,0,12,6" />
         <TextBlock Text="IRRF" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding IrrfTexto}" Width="100" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding IrrfTexto}" Width="100" Margin="0,0,12,6" />
         <TextBlock Text="CSLL retida" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding CsllRetidaTexto}" Width="100" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding CsllRetidaTexto}" Width="100" Margin="0,0,12,6" />
         <TextBlock Text="Outras deduções" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding OutrasDeducoesTexto}" Width="100" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding OutrasDeducoesTexto}" Width="100" Margin="0,0,12,6" />
         <TextBlock Text="Receita bruta" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding ReceitaTexto}" Width="115" Margin="0,0,12,6" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ReceitaTexto}" Width="115" Margin="0,0,12,6" />
         <c:BarraExportacaoView />
       </WrapPanel>
       <TextBlock Text="{Binding ContabilTexto}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
@@ -48,7 +48,7 @@
               <ComboBox ItemsSource="{x:Static vm:ApuracaoRealViewModel.Tributos}" SelectedIndex="{Binding LalurTributo}" Width="130" Margin="0,0,6,4" />
               <ComboBox ItemsSource="{x:Static vm:ApuracaoRealViewModel.Tipos}" SelectedIndex="{Binding LalurTipo}" Width="100" Margin="0,0,6,4" />
               <TextBox Text="{Binding LalurDescricao}" Watermark="Descrição" Width="200" Margin="0,0,6,4" />
-              <TextBox Text="{Binding LalurValor}" Watermark="Valor" Width="100" Margin="0,0,6,4" />
+              <TextBox c:Mascara.Tipo="Valor" Text="{Binding LalurValor}" Watermark="Valor" Width="100" Margin="0,0,6,4" />
               <TextBox Text="{Binding LalurCodigoEcf}" Watermark="Cód. ECF" Width="90" Margin="0,0,6,4" />
             </WrapPanel>
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -73,9 +73,9 @@
         <DockPanel Grid.Row="2">
           <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
             <TextBlock Text="Saldo inicial IRPJ" VerticalAlignment="Center" />
-            <TextBox Text="{Binding SaldoInicialIrpj}" Width="110" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoInicialIrpj}" Width="110" />
             <TextBlock Text="CSLL" VerticalAlignment="Center" />
-            <TextBox Text="{Binding SaldoInicialCsll}" Width="110" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoInicialCsll}" Width="110" />
             <Button Content="Gravar saldos iniciais" Command="{Binding DefinirSaldosIniciaisCommand}" IsEnabled="{Binding PodeManterLalur}" />
           </StackPanel>
           <DockPanel>

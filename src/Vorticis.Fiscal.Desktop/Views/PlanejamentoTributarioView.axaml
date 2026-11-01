@@ -41,17 +41,17 @@
           </DataGrid>
           <Grid ColumnDefinitions="300,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
             <TextBlock Grid.Row="0" Classes="rotulo" Text="Folha do ano (salários e pró-labore)" />
-            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FolhaTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="0" Grid.Column="1" Text="{Binding FolhaTexto}" Width="140" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="1" Classes="rotulo" Text="Encargos patronais sobre a folha (%)" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EncargosTexto}" Width="80" HorizontalAlignment="Left" ToolTip.Tip="INSS patronal, RAT e terceiros (fora do Simples)" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="1" Grid.Column="1" Text="{Binding EncargosTexto}" Width="80" HorizontalAlignment="Left" ToolTip.Tip="INSS patronal, RAT e terceiros (fora do Simples)" />
             <TextBlock Grid.Row="2" Classes="rotulo" Text="Custos e despesas (sem folha e tributos)" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CustosTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="2" Grid.Column="1" Text="{Binding CustosTexto}" Width="140" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="3" Classes="rotulo" Text="Compras com crédito de PIS/COFINS" />
-            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ComprasTexto}" Width="140" HorizontalAlignment="Left" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="3" Grid.Column="1" Text="{Binding ComprasTexto}" Width="140" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="4" Classes="rotulo" Text="ICMS efetivo sobre as vendas (%)" />
-            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding IcmsTexto}" Width="80" HorizontalAlignment="Left" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="4" Grid.Column="1" Text="{Binding IcmsTexto}" Width="80" HorizontalAlignment="Left" />
             <TextBlock Grid.Row="5" Classes="rotulo" Text="ISS sobre os serviços (%)" />
-            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding IssTexto}" Width="80" HorizontalAlignment="Left" />
+            <TextBox c:Mascara.Tipo="Valor" Grid.Row="5" Grid.Column="1" Text="{Binding IssTexto}" Width="80" HorizontalAlignment="Left" />
           </Grid>
         </StackPanel>
       </ScrollViewer>

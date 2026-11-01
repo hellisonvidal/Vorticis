@@ -11,7 +11,7 @@
         <TextBox Text="{Binding NomeArea}" Watermark="Nome (ex.: Salão de festas)" />
         <StackPanel Orientation="Horizontal" Spacing="6">
           <NumericUpDown Value="{Binding Capacidade}" Minimum="0" FormatString="0" Width="130" Watermark="Capacidade" />
-          <TextBox Text="{Binding TaxaReserva}" Watermark="Taxa da reserva" Width="130" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding TaxaReserva}" Watermark="Taxa da reserva" Width="130" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="6">
           <Button Content="Nova área" Command="{Binding NovaAreaCommand}" />

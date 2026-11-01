@@ -17,13 +17,13 @@
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Text="Receita da base" VerticalAlignment="Center" />
-        <TextBox Text="{Binding ReceitaTexto}" Width="120" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ReceitaTexto}" Width="120" />
         <TextBlock Text="Base dos créditos" VerticalAlignment="Center" />
-        <TextBox Text="{Binding BaseCreditosTexto}" Width="120" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding BaseCreditosTexto}" Width="120" />
         <TextBlock Text="PIS retido" VerticalAlignment="Center" />
-        <TextBox Text="{Binding PisRetidoTexto}" Width="95" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding PisRetidoTexto}" Width="95" />
         <TextBlock Text="COFINS retida" VerticalAlignment="Center" />
-        <TextBox Text="{Binding CofinsRetidoTexto}" Width="95" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding CofinsRetidoTexto}" Width="95" />
         <Button Content="Calcular" Command="{Binding CalcularCommand}" IsEnabled="{Binding PodeApurar}" />
         <Button Content="Salvar apuração" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeApurar}" />
         <Button Content="Contabilizar provisão" Command="{Binding ContabilizarCommand}" IsEnabled="{Binding PodeContabilizar}" />

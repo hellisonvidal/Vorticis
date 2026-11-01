@@ -26,7 +26,7 @@
         <StackPanel Margin="0,0,10,6" Spacing="2" IsVisible="{Binding PorReferencia}"><TextBlock Text="{Binding RotuloQuantidade}" FontSize="11" />
           <TextBox Text="{Binding Referencia}" Width="90" /></StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2" IsVisible="{Binding !PorReferencia}"><TextBlock Text="Valor (R$)" FontSize="11" />
-          <TextBox Text="{Binding Valor}" Width="120" /></StackPanel>
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" /></StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Observação" FontSize="11" />
           <TextBox Text="{Binding Observacao}" Width="220" /></StackPanel>
         <Button Content="Lançar" Command="{Binding LancarCommand}" Classes="accent" VerticalAlignment="Bottom" Margin="0,0,8,6" />

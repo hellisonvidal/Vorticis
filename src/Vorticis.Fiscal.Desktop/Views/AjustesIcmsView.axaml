@@ -33,7 +33,7 @@
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Valor" FontSize="12" />
-          <TextBox Text="{Binding Valor}" Width="110" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="110" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Observação (E112)" FontSize="12" />

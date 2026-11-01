@@ -25,7 +25,7 @@
           <CalendarDatePicker Grid.Row="4" Grid.Column="1" SelectedDate="{Binding Pagamento}" Width="160" HorizontalAlignment="Left" />
           <TextBlock Grid.Row="5" Classes="rotulo" Text="Saldo do FGTS (R$)" />
           <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <TextBox Text="{Binding SaldoFgts}" Width="130" Watermark="Base da multa" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoFgts}" Width="130" Watermark="Base da multa" />
             <Button Content="Estimar pela folha" Command="{Binding EstimarFgtsCommand}" />
           </StackPanel>
         </Grid>

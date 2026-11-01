@@ -44,7 +44,7 @@
         <AutoCompleteBox Text="{Binding Qualificacao}" ItemsSource="{x:Static vm:SociosViewModel.Qualificacoes}" Watermark="Qualificação" FilterMode="Contains" />
         <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Capital (%)" />
-          <TextBox Grid.Column="1" Text="{Binding Participacao}" Watermark="ex.: 50" />
+          <TextBox v:Mascara.Tipo="Valor" Grid.Column="1" Text="{Binding Participacao}" Watermark="ex.: 50" />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Entrada" />
           <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Entrada}" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Saída" />

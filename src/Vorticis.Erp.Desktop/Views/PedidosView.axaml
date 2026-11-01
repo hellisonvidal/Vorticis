@@ -47,8 +47,8 @@
           <ComboBox ItemsSource="{Binding ProdutosDisponiveis}" SelectedItem="{Binding Produto}" HorizontalAlignment="Stretch" PlaceholderText="Produto" />
           <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBox Text="{Binding Quantidade}" Watermark="Qtde" Width="80" />
-            <TextBox Text="{Binding Unitario}" Watermark="Unitário" Width="110" />
-            <TextBox Text="{Binding Desconto}" Watermark="Desconto" Width="100" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Unitario}" Watermark="Unitário" Width="110" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Desconto}" Watermark="Desconto" Width="100" />
             <Button Content="Incluir item" Command="{Binding IncluirItemCommand}" />
             <Button Content="Remover" Command="{Binding RemoverItemCommand}" />
           </StackPanel>

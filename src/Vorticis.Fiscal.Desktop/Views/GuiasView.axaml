@@ -36,7 +36,7 @@
           <TextBox Text="{Binding ManualTributo}" Watermark="Tributo" Width="100" Margin="0,0,6,4" />
           <TextBox Text="{Binding ManualDescricao}" Watermark="Descrição" Width="260" Margin="0,0,6,4" />
           <CalendarDatePicker SelectedDate="{Binding ManualVencimento}" Width="140" Margin="0,0,6,4" />
-          <TextBox Text="{Binding ManualValor}" Watermark="Valor" Width="110" Margin="0,0,6,4" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding ManualValor}" Watermark="Valor" Width="110" Margin="0,0,6,4" />
           <TextBox Text="{Binding ManualCodigo}" Watermark="Cód. receita" Width="95" Margin="0,0,6,4" />
           <Button Content="Incluir" Command="{Binding IncluirManualCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,6,4" />
         </WrapPanel>

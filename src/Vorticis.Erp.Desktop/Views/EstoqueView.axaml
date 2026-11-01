@@ -22,7 +22,7 @@
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
       <TextBlock Text="Preço e estoque mínimo do produto selecionado" FontWeight="SemiBold" />
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <TextBox Text="{Binding Preco}" Watermark="Preço de venda" Width="120" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Preco}" Watermark="Preço de venda" Width="120" />
         <TextBox Text="{Binding Minimo}" Watermark="Estoque mínimo" Width="110" />
         <Button Content="Gravar" Command="{Binding GravarParametrosCommand}" />
       </StackPanel>
@@ -30,7 +30,7 @@
       <CalendarDatePicker SelectedDate="{Binding DataAjuste}" />
       <StackPanel Orientation="Horizontal" Spacing="6">
         <TextBox Text="{Binding QuantidadeAjuste}" Watermark="Qtde (+ entra, − sai)" Width="150" />
-        <TextBox Text="{Binding CustoAjuste}" Watermark="Custo unitário" Width="120" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding CustoAjuste}" Watermark="Custo unitário" Width="120" />
       </StackPanel>
       <TextBox Text="{Binding MotivoAjuste}" Watermark="Motivo (ex.: contagem física)" />
       <Button Content="Registrar ajuste" Classes="accent" Command="{Binding AjustarCommand}" />

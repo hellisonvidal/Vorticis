@@ -73,7 +73,7 @@
           <TextBlock Classes="nome" Grid.Row="2" Grid.Column="2" Text="{Binding NomeContaCredito}" />
 
           <TextBlock Classes="rot" Grid.Row="3" Text="Valor" />
-          <TextBox Grid.Row="3" Grid.Column="1" Tag="valor" Classes="valor" Text="{Binding Valor}" Width="150" HorizontalAlignment="Left" />
+          <TextBox c:Mascara.Tipo="Valor" Grid.Row="3" Grid.Column="1" Tag="valor" Classes="valor" Text="{Binding Valor}" Width="150" HorizontalAlignment="Left" />
 
           <TextBlock Classes="rot" Grid.Row="4" Text="Documento" />
           <TextBox Grid.Row="4" Grid.Column="1" Tag="documento" Text="{Binding Documento}" Width="150" HorizontalAlignment="Left" />

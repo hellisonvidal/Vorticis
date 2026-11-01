@@ -17,7 +17,7 @@
         <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,6" />
         <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,10,6" />
         <TextBlock Text="Tolerância (dias)" VerticalAlignment="Center" Margin="0,0,6,6" />
-        <TextBox Text="{Binding Tolerancia}" Width="50" Margin="0,0,10,6" />
+        <TextBox fg:Mascara.Tipo="Valor" Text="{Binding Tolerancia}" Width="50" Margin="0,0,10,6" />
         <Button Content="Sugerir" Command="{Binding SugerirCommand}" IsEnabled="{Binding PodeBaixar}" Classes="accent" Margin="0,0,8,6" />
         <Button Content="Baixar marcadas" Command="{Binding BaixarMarcadasCommand}" IsEnabled="{Binding PodeBaixar}" Margin="0,0,8,6" />
       </WrapPanel>

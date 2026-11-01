@@ -13,7 +13,7 @@
       </StackPanel>
       <StackPanel Margin="0,0,10,6" Spacing="2">
         <TextBlock Text="Valor total" FontSize="12" />
-        <TextBox Text="{Binding Valor}" Width="130" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="130" />
       </StackPanel>
       <StackPanel Margin="0,0,10,6" Spacing="2">
         <TextBlock Text="Critério" FontSize="12" />

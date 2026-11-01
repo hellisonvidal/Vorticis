@@ -93,6 +93,12 @@ Usados para assinar arquivos (ECD, ECF, SPED) e transmitir o eSocial. A tela fic
 2. Abaixo estão todas as dicas. Digite em **Procurar nas dicas** para filtrar pelo texto ou escolha a área (*Geral*, *Contábil*, *Fiscal*...).
 3. Quando a dica fala de uma função, o botão **Abrir a função** leva direto à tela.
 
+## Campos de valor
+Em todos os módulos, os campos em que você digita **valores** (valor, preço, base, alíquota, desconto, frete, saldo, salário, multa, juros...) ficam alinhados à direita e aceitam só números, vírgula, ponto e sinal de menos.
+- Digite como preferir: *1500*, *1500,5* ou *1.500,50* (também aceita colar *1500.50* de uma planilha).
+- Ao sair do campo (Tab, Enter ou clique em outro campo), o valor aparece com **ponto de milhar e duas casas depois da vírgula**: *1.500,50*.
+- Campo em branco continua em branco.
+
 ## Filtros nas listas
 
 Toda tela que mostra uma **lista de registros** (cadastros, consultas, lançamentos, notas, duplicatas, funcionários, eventos etc.) tem, logo acima da lista, a barra de localização. Ela funciona em todos os módulos do mesmo jeito e age só sobre as linhas que já estão na tela: não busca de novo no banco. Os filtros próprios da tela (período, empresa, situação) continuam valendo; a barra serve para refinar o resultado. Telas de digitação (itens da nota, partidas do lançamento, orçamento mês a mês) não têm a barra.

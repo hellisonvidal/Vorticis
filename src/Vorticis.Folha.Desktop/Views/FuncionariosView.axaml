@@ -39,7 +39,7 @@
               <TextBlock Grid.Row="2" Classes="rotulo" Text="CPF" />
               <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Cpf}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
               <TextBlock Grid.Row="3" Classes="rotulo" Text="PIS/NIS" />
-              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Pis}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
+              <TextBox c:Mascara.Tipo="Valor" Grid.Row="3" Grid.Column="1" Text="{Binding Pis}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
               <TextBlock Grid.Row="4" Classes="rotulo" Text="Nascimento" />
               <CalendarDatePicker Grid.Row="4" Grid.Column="1" SelectedDate="{Binding Nascimento}" IsEnabled="{Binding EmEdicao}" HorizontalAlignment="Left" Width="160" />
               <TextBlock Grid.Row="5" Classes="rotulo" Text="Sexo" />
@@ -100,7 +100,7 @@
               <TextBlock Grid.Row="7" Classes="rotulo" Text="Tipo de salário" />
               <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{x:Static vm:FuncionariosViewModel.TiposSalario}" SelectedItem="{Binding TipoSalario}" IsEnabled="{Binding EmEdicao}" Width="260" />
               <TextBlock Grid.Row="8" Classes="rotulo" Text="Salário (R$)" />
-              <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Salario}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
+              <TextBox c:Mascara.Tipo="Valor" Grid.Row="8" Grid.Column="1" Text="{Binding Salario}" IsEnabled="{Binding EmEdicao}" Width="160" HorizontalAlignment="Left" />
               <TextBlock Grid.Row="9" Classes="rotulo" Text="Jornada (h)" />
               <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal" Spacing="6">
                 <TextBox Text="{Binding JornadaSemanal}" IsEnabled="{Binding EmEdicao}" Width="70" ToolTip.Tip="Horas semanais" />

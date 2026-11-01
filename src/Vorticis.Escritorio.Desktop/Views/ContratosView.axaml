@@ -35,7 +35,7 @@
         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Objeto}" TextWrapping="Wrap" Height="60" AcceptsReturn="False" />
         <TextBlock Grid.Row="3" Classes="rotulo" Text="Valor" />
         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-          <TextBox Text="{Binding Valor}" Width="110" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="110" />
           <ComboBox ItemsSource="{x:Static vm:ContratosViewModel.Periodicidades}" SelectedItem="{Binding Periodicidade}" Width="140" />
           <TextBlock Text="dia" VerticalAlignment="Center" />
           <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="100" />

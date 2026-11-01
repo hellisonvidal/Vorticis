@@ -15,7 +15,7 @@
           <TextBlock Grid.Row="1" Classes="rotulo" Text="FAP" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Fap}" IsEnabled="{Binding PodeEditar}" Width="120" HorizontalAlignment="Left" ToolTip.Tip="0,5000 a 2,0000" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Terceiros (%)" />
-          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Terceiros}" IsEnabled="{Binding PodeEditar}" Width="120" HorizontalAlignment="Left" />
+          <TextBox c:Mascara.Tipo="Valor" Grid.Row="2" Grid.Column="1" Text="{Binding Terceiros}" IsEnabled="{Binding PodeEditar}" Width="120" HorizontalAlignment="Left" />
           <TextBlock Grid.Row="3" Classes="rotulo" Text="FPAS / cód. terceiros" />
           <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
             <TextBox Text="{Binding Fpas}" IsEnabled="{Binding PodeEditar}" Width="80" MaxLength="3" />

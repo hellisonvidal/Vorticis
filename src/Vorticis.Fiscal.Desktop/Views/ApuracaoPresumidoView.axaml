@@ -20,13 +20,13 @@
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Text="Outras receitas" VerticalAlignment="Center" />
-        <TextBox Text="{Binding OutrasReceitasTexto}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding OutrasReceitasTexto}" Width="110" />
         <TextBlock Text="IRRF a compensar" VerticalAlignment="Center" />
-        <TextBox Text="{Binding IrrfTexto}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding IrrfTexto}" Width="110" />
         <TextBlock Text="CSLL retida" VerticalAlignment="Center" />
-        <TextBox Text="{Binding CsllRetidaTexto}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding CsllRetidaTexto}" Width="110" />
         <TextBlock Text="Outras deduções do IRPJ" VerticalAlignment="Center" />
-        <TextBox Text="{Binding OutrasDeducoesTexto}" Width="110" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding OutrasDeducoesTexto}" Width="110" />
         <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>

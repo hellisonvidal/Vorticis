@@ -29,7 +29,7 @@
         <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" />
         <TextBlock Grid.Row="2" Classes="rotulo" Text="Taxa anual (%)" />
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Taxa}" Width="80" HorizontalAlignment="Left" />
+        <TextBox c:Mascara.Tipo="Valor" Grid.Row="2" Grid.Column="1" Text="{Binding Taxa}" Width="80" HorizontalAlignment="Left" />
         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="14">
           <CheckBox Content="Deprecia" IsChecked="{Binding Deprecia}" />
           <CheckBox Content="Intangível (amortização)" IsChecked="{Binding Intangivel}" />

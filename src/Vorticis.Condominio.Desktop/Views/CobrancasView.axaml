@@ -13,9 +13,9 @@
       <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding PodeEditar}">
         <TextBlock Text="Pago em" VerticalAlignment="Center" />
         <CalendarDatePicker SelectedDate="{Binding DataPagamento}" Width="130" />
-        <TextBox Text="{Binding Multa}" Watermark="Multa" Width="90" />
-        <TextBox Text="{Binding Juros}" Watermark="Juros" Width="90" />
-        <TextBox Text="{Binding Desconto}" Watermark="Desconto" Width="90" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Multa}" Watermark="Multa" Width="90" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Juros}" Watermark="Juros" Width="90" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Desconto}" Watermark="Desconto" Width="90" />
         <Button Content="Receber" Classes="accent" Command="{Binding ReceberCommand}" />
         <Button Content="Estornar recebimento" Command="{Binding EstornarCommand}" />
         <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" />

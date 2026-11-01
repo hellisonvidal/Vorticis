@@ -26,7 +26,7 @@
       <CheckBox Content="Retira pró-labore" IsChecked="{Binding Retira}" IsEnabled="{Binding PodeEditar}" />
       <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
         <TextBlock Classes="rotulo" Text="Valor mensal (R$)" />
-        <TextBox Grid.Column="1" Text="{Binding Valor}" IsEnabled="{Binding Retira}" />
+        <TextBox c:Mascara.Tipo="Valor" Grid.Column="1" Text="{Binding Valor}" IsEnabled="{Binding Retira}" />
         <TextBlock Grid.Row="1" Classes="rotulo" Text="Início" />
         <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Inicio}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" />
         <TextBlock Grid.Row="2" Classes="rotulo" Text="Fim (opcional)" />
@@ -34,7 +34,7 @@
         <TextBlock Grid.Row="3" Classes="rotulo" Text="Dependentes (IRRF)" />
         <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Dependentes}" Minimum="0" Maximum="99" FormatString="0" />
         <TextBlock Grid.Row="4" Classes="rotulo" Text="INSS em outras fontes" ToolTip.Tip="INSS já descontado no mês em outro emprego ou empresa: limita o desconto ao teto." />
-        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding InssOutrasFontes}" />
+        <TextBox c:Mascara.Tipo="Valor" Grid.Row="4" Grid.Column="1" Text="{Binding InssOutrasFontes}" />
         <TextBlock Grid.Row="5" Classes="rotulo" Text="Observação" />
         <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Observacao}" />
       </Grid>

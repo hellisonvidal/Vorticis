@@ -85,7 +85,7 @@
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Descrição" /><TextBox Text="{Binding Item.Descricao}" /></StackPanel>
                 <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Quantidade" /><TextBox Text="{Binding Item.Quantidade}" /></StackPanel>
-                <StackPanel Grid.Column="4" Classes="campo"><TextBlock Classes="rot" Text="Valor unitário" /><TextBox Text="{Binding Item.Unitario}" /></StackPanel>
+                <StackPanel Grid.Column="4" Classes="campo"><TextBlock Classes="rot" Text="Valor unitário" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Unitario}" /></StackPanel>
                 <Button Grid.Column="5" Classes="mini" Content="Buscar produto" Command="{Binding BuscarProdutoCommand}" VerticalAlignment="Bottom" Height="26" />
               </Grid>
               <UniformGrid Columns="9">
@@ -93,10 +93,10 @@
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CEST" /><TextBox Text="{Binding Item.Cest}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Un." /><TextBox Text="{Binding Item.Unidade}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Orig." /><TextBox Text="{Binding Item.Origem}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox Text="{Binding Item.Desconto}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Frete" /><TextBox Text="{Binding Item.Frete}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Seguro" /><TextBox Text="{Binding Item.Seguro}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Outras desp." /><TextBox Text="{Binding Item.Outras}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Desconto}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Frete" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Frete}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Seguro" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Seguro}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Outras desp." /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Outras}" /></StackPanel>
                 <StackPanel Classes="campo" IsVisible="{Binding MostraCentro}"><TextBlock Classes="rot" Text="Centro de custo" />
                   <ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroItem}" HorizontalAlignment="Stretch" /></StackPanel>
               </UniformGrid>
@@ -109,7 +109,7 @@
             <TextBlock Text="Tributos do item na aba Tributos." FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
             <Border Width="1" Background="{DynamicResource Linha}" Margin="6,2" />
             <TextBlock Text="Total informado" FontSize="12" VerticalAlignment="Center" />
-            <TextBox Text="{Binding TotalInformado}" Width="130" IsEnabled="{Binding PodeEditar}" ToolTip.Tip="Confere com a soma dos itens; em branco, vale a soma." />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding TotalInformado}" Width="130" IsEnabled="{Binding PodeEditar}" ToolTip.Tip="Confere com a soma dos itens; em branco, vale a soma." />
           </StackPanel>
           <DataGrid Grid.Row="3" MinHeight="120" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Itens}" SelectedItem="{Binding ItemSelecionado, Mode=OneWay}" SelectionChanged="AoSelecionarItem" IsReadOnly="True" AutoGenerateColumns="False">
             <DataGrid.Columns>
@@ -152,35 +152,35 @@
               <UniformGrid Columns="8">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox Name="CampoCfopTrib" Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN" /><TextBox Text="{Binding Item.CstIcms}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS" /><TextBox Name="CampoBcIcms" Text="{Binding Item.BcIcms}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ICMS %" /><TextBox Name="CampoAliqIcms" Text="{Binding Item.AliqIcms}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ICMS" /><TextBox Name="CampoIcms" Text="{Binding Item.Icms}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS-ST" /><TextBox Text="{Binding Item.BcIcmsSt}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ICMS-ST" /><TextBox Text="{Binding Item.IcmsSt}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoBcIcms" Text="{Binding Item.BcIcms}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ICMS %" /><TextBox c:Mascara.Tipo="Valor" Name="CampoAliqIcms" Text="{Binding Item.AliqIcms}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ICMS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoIcms" Text="{Binding Item.Icms}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS-ST" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcIcmsSt}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ICMS-ST" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.IcmsSt}" /></StackPanel>
               </UniformGrid>
               <TextBlock Classes="grupo" Text="IPI" />
               <UniformGrid Columns="8">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IPI" /><TextBox Text="{Binding Item.CstIpi}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base IPI" /><TextBox Text="{Binding Item.BcIpi}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IPI %" /><TextBox Text="{Binding Item.AliqIpi}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IPI" /><TextBox Text="{Binding Item.Ipi}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base IPI" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcIpi}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IPI %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIpi}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IPI" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Ipi}" /></StackPanel>
               </UniformGrid>
               <TextBlock Classes="grupo" Text="PIS e COFINS" />
               <UniformGrid Columns="8">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST PIS" /><TextBox Text="{Binding Item.CstPis}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base PIS" /><TextBox Text="{Binding Item.BcPis}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. PIS %" /><TextBox Text="{Binding Item.AliqPis}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="PIS" /><TextBox Text="{Binding Item.Pis}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base PIS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcPis}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. PIS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqPis}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="PIS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Pis}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST COFINS" /><TextBox Text="{Binding Item.CstCofins}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base COFINS" /><TextBox Text="{Binding Item.BcCofins}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. COFINS %" /><TextBox Text="{Binding Item.AliqCofins}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="COFINS" /><TextBox Text="{Binding Item.Cofins}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base COFINS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcCofins}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. COFINS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqCofins}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="COFINS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Cofins}" /></StackPanel>
               </UniformGrid>
               <TextBlock Classes="grupo" Text="ISS (serviço)" />
               <UniformGrid Columns="8">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ISS" /><TextBox Text="{Binding Item.BcIss}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ISS %" /><TextBox Text="{Binding Item.AliqIss}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ISS" /><TextBox Text="{Binding Item.Iss}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ISS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcIss}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ISS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIss}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ISS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Iss}" /></StackPanel>
               </UniformGrid>
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
                 <Button Classes="mini" Content="Calcular tributos" Command="{Binding CalcularTributosCommand}" ToolTip.Tip="Preenche base e valor dos tributos que têm alíquota e valor em branco" />

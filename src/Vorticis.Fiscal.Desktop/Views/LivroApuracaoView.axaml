@@ -11,7 +11,7 @@
       <ComboBox ItemsSource="{x:Static vm:LivroApuracaoViewModel.Meses}" SelectedIndex="{Binding Mes}" Width="130" />
       <TextBox Text="{Binding Ano}" Width="70" Watermark="Ano" />
       <TextBlock Text="Saldo credor anterior (R$)" VerticalAlignment="Center" IsVisible="{Binding MostrarSaldo}" />
-      <TextBox Text="{Binding SaldoCredorAnterior}" Width="110" Watermark="0,00" IsVisible="{Binding MostrarSaldo}" />
+      <TextBox c:Mascara.Tipo="Valor" Text="{Binding SaldoCredorAnterior}" Width="110" Watermark="0,00" IsVisible="{Binding MostrarSaldo}" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />

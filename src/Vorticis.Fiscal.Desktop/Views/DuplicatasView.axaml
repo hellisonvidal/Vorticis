@@ -57,7 +57,7 @@
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Parcela" /><TextBox Text="{Binding FormParcela}" Width="70" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Emissão" /><CalendarDatePicker SelectedDate="{Binding FormEmissao}" Width="135" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Vencimento" /><CalendarDatePicker SelectedDate="{Binding FormVencimento}" Width="135" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor" /><TextBox Text="{Binding FormValor}" Width="110" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding FormValor}" Width="110" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Observação" /><TextBox Text="{Binding FormObservacao}" Width="260" /></StackPanel>
           </WrapPanel>
           <StackPanel Orientation="Horizontal" Spacing="6">
@@ -74,10 +74,10 @@
                      FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
           <WrapPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Data" /><CalendarDatePicker SelectedDate="{Binding BaixaData}" Width="135" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor principal" /><TextBox Text="{Binding BaixaPrincipal}" Width="110" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Juros" /><TextBox Text="{Binding BaixaJuros}" Width="90" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Multa" /><TextBox Text="{Binding BaixaMulta}" Width="90" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox Text="{Binding BaixaDesconto}" Width="90" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor principal" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaPrincipal}" Width="110" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Juros" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaJuros}" Width="90" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Multa" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaMulta}" Width="90" /></StackPanel>
+            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding BaixaDesconto}" Width="90" /></StackPanel>
             <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Conta do banco ou caixa (código)" /><TextBox Text="{Binding BaixaConta}" Width="170" /></StackPanel>
           </WrapPanel>
           <StackPanel Orientation="Horizontal" Spacing="6">

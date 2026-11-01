@@ -34,10 +34,10 @@
           <TextBox Text="{Binding CstEntrada}" Watermark="CST entrada" Width="105" Margin="0,0,6,0" />
           <TextBox Text="{Binding CfopSaida}" Watermark="CFOP saída" Width="110" Margin="0,0,6,0" />
           <TextBox Text="{Binding CstSaida}" Watermark="CST saída" Width="105" Margin="0,0,14,0" />
-          <TextBox Text="{Binding AliqIcms}" Watermark="ICMS %" Width="80" Margin="0,0,6,0" />
-          <TextBox Text="{Binding AliqIpi}" Watermark="IPI %" Width="80" Margin="0,0,6,0" />
-          <TextBox Text="{Binding AliqPis}" Watermark="PIS %" Width="80" Margin="0,0,6,0" />
-          <TextBox Text="{Binding AliqCofins}" Watermark="COFINS %" Width="90" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqIcms}" Watermark="ICMS %" Width="80" Margin="0,0,6,0" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqIpi}" Watermark="IPI %" Width="80" Margin="0,0,6,0" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqPis}" Watermark="PIS %" Width="80" Margin="0,0,6,0" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqCofins}" Watermark="COFINS %" Width="90" />
         </WrapPanel>
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="8">

@@ -49,8 +49,8 @@
           <ComboBox Grid.Row="8" Grid.Column="1" ItemsSource="{Binding MotoristasOpcoes}" SelectedItem="{Binding Motorista}" HorizontalAlignment="Stretch" />
           <TextBlock Grid.Row="9" Classes="rotulo" Text="Frete / carga / kg" />
           <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <TextBox Text="{Binding Frete}" Watermark="Frete" Width="95" />
-            <TextBox Text="{Binding ValorCarga}" Watermark="Carga" Width="95" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Frete}" Watermark="Frete" Width="95" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorCarga}" Watermark="Carga" Width="95" />
             <TextBox Text="{Binding Peso}" Watermark="Peso" Width="80" />
           </StackPanel>
           <TextBlock Grid.Row="10" Classes="rotulo" Text="Situação" />

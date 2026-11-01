@@ -42,7 +42,7 @@
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Valor da nota" FontSize="12" />
-          <TextBox Text="{Binding Valor}" Width="110" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="110" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="CFOP" FontSize="12" />
@@ -54,23 +54,23 @@
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Base do ICMS" FontSize="12" />
-          <TextBox Text="{Binding BaseIcms}" Width="110" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding BaseIcms}" Width="110" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="Alíquota (%)" FontSize="12" />
-          <TextBox Text="{Binding Aliquota}" Width="80" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Aliquota}" Width="80" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="ICMS" FontSize="12" />
-          <TextBox Text="{Binding Icms}" Width="100" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Icms}" Width="100" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="PIS" FontSize="12" />
-          <TextBox Text="{Binding Pis}" Width="90" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Pis}" Width="90" />
         </StackPanel>
         <StackPanel Margin="0,0,10,6" Spacing="2">
           <TextBlock Text="COFINS" FontSize="12" />
-          <TextBox Text="{Binding Cofins}" Width="90" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Cofins}" Width="90" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,0,0,6">
           <Button Content="Nova" Command="{Binding NovaCommand}" />

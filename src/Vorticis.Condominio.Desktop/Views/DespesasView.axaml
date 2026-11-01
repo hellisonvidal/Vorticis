@@ -27,7 +27,7 @@
       <ComboBox ItemsSource="{x:Static vm:DespesasViewModel.Categorias}" SelectedItem="{Binding Categoria}" HorizontalAlignment="Stretch" />
       <TextBox Text="{Binding Descricao}" Watermark="Descrição" />
       <ComboBox ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Fornecedor}" HorizontalAlignment="Stretch" PlaceholderText="Fornecedor" />
-      <TextBox Text="{Binding Valor}" Watermark="Valor" />
+      <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="Valor" />
       <CalendarDatePicker SelectedDate="{Binding PagoEm}" Watermark="Pago em (vazio = em aberto)" />
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Content="Nova despesa" Command="{Binding NovaCommand}" />

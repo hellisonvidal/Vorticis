@@ -15,7 +15,7 @@
     <StackPanel Grid.Row="1" Grid.Column="2" Spacing="6" IsEnabled="{Binding PodeEditar}">
       <TextBox Text="{Binding Descricao}" Watermark="Descrição (ex.: Taxa ordinária)" />
       <ComboBox ItemsSource="{x:Static vm:TaxasViewModel.Rateios}" SelectedItem="{Binding Rateio}" HorizontalAlignment="Stretch" />
-      <TextBox Text="{Binding Valor}" Watermark="Valor (total a ratear ou por unidade)" />
+      <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="Valor (total a ratear ou por unidade)" />
       <StackPanel Orientation="Horizontal" Spacing="6">
         <CalendarDatePicker SelectedDate="{Binding Inicio}" Watermark="Início" Width="150" />
         <CalendarDatePicker SelectedDate="{Binding Fim}" Watermark="Fim (opcional)" Width="150" />
