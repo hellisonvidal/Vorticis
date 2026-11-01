@@ -306,10 +306,11 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
             foreach (var i in sistema[..3]) yield return i;
         }
-        yield return ItemMenu.Submenu("Configurações _gerais",
-            ItemMenu.Tela("Preferências", TelasComuns.Preferencias),
-            ItemMenu.Tela("Menus do programa", TelasComuns.Menus),
-            ItemMenu.Tela($"Parâmetros do {Modulo.NomeCurto}", TelasComuns.Parametros));
+        // No Escritório os parâmetros ficam só em Cadastros › Parâmetros (não em Configurações gerais)
+        ItemMenu[] gerais = [ItemMenu.Tela("Preferências", TelasComuns.Preferencias), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)];
+        yield return Modulo.ModuloEmpresa == Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio
+            ? ItemMenu.Submenu("Configurações _gerais", gerais)
+            : ItemMenu.Submenu("Configurações _gerais", [.. gerais, ItemMenu.Tela($"Parâmetros do {Modulo.NomeCurto}", TelasComuns.Parametros)]);
         yield return ItemMenu.Separador;
         yield return ItemMenu.Tela("Sair (trocar de usuário)", TelasComuns.Sair);
     }

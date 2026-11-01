@@ -48,8 +48,17 @@ public class ParametrosMenusLoteTests(SessaoHeadless headless, Vorticis.Infra.Te
         foreach (var vm in modulos)
         {
             var gerais = Assert.Single(vm.Menus.Single(m => m.Titulo == "Con_figurações").Filhos!, i => i.Titulo == "Configurações _gerais");
-            Assert.Equal([TelasComuns.Preferencias, TelasComuns.Menus, TelasComuns.Parametros], gerais.Filhos!.Select(i => i.Chave));
-            Assert.Equal($"Parâmetros do {vm.Modulo.NomeCurto}", gerais.Filhos![2].Titulo);
+            if (vm.Modulo.ModuloEmpresa == Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio)
+            {
+                // Escritório: os parâmetros ficam só em Cadastros › Parâmetros
+                Assert.Equal([TelasComuns.Preferencias, TelasComuns.Menus], gerais.Filhos!.Select(i => i.Chave));
+                Assert.Contains(vm.Menus.Single(m => m.Titulo == "_Cadastros").Filhos!, i => i.Chave == TelasComuns.Parametros);
+            }
+            else
+            {
+                Assert.Equal([TelasComuns.Preferencias, TelasComuns.Menus, TelasComuns.Parametros], gerais.Filhos!.Select(i => i.Chave));
+                Assert.Equal($"Parâmetros do {vm.Modulo.NomeCurto}", gerais.Filhos![2].Titulo);
+            }
             Assert.True(vm.ConheceTela(TelasComuns.Preferencias));
         }
         var anterior = (PreferenciasGerais.Arquivo, SuiteViewModel.ArquivoLayout);

@@ -25,7 +25,7 @@ Menu *Configurações*. As telas de backup, senha do administrador e limpeza do 
 **Onde fica:** *Configurações › Configurações gerais*, em todos os módulos. Reúne:
 - **Preferências**: o jeito de trabalhar neste computador (veja abaixo).
 - **Menus do programa**: os itens de menu que cada usuário vê (veja [Menus do programa](02-cadastros-comuns.md#menus-do-programa)).
-- **Parâmetros do módulo** (*Parâmetros do Contábil*, *do Fiscal*...): a mesma tela de *Cadastros › Parâmetros*.
+- **Parâmetros do módulo** (*Parâmetros do Contábil*, *do Fiscal*...): a mesma tela de *Cadastros › Parâmetros*. No **Escritório** os parâmetros ficam só em *Cadastros › Parâmetros*.
 
 ### Preferências
 1. **Tema de cores**: *Claro*, *Escuro* ou *Automático (igual ao sistema)*. Vale na hora, na Suite e nos módulos abertos sozinhos.
