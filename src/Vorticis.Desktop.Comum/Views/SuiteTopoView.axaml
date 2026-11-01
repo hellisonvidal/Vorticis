@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views" xmlns:seg="using:Vorticis.Application.Seguranca"
              x:Class="Vorticis.Desktop.Comum.Views.SuiteTopoView" x:DataType="vm:SuiteViewModel">
-  <!-- Suite, parte de cima: A e E = abas dos módulos (E com a faixa de opções embaixo); D = painel inicial e módulo atual -->
+  <!-- Suite, parte de cima: abas dos módulos (visuais 1, 3, 4, 5 e 10; o 5 com a faixa de opções), barra de comandos (3), caminho da tela (3 e 4), moldura mínima (9) e painel (6) -->
   <StackPanel>
     <!-- A e E: uma aba por módulo -->
     <Border Name="BarraAbas" Background="{DynamicResource FundoSuave}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="10,6,10,0" IsVisible="{Binding MostraAbas}">
@@ -70,6 +70,78 @@
            IsLightDismissEnabled="False" Topmost="True">
       <ContentControl Name="CorpoPopup" />
     </Popup>
+
+    <!-- Visual 3: barra de comandos com as funções mais usadas do módulo, sempre no mesmo lugar -->
+    <Border Name="BarraComandos" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="10,5"
+            IsVisible="{Binding MostraComandos}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Left" Text="Mais usadas:" Classes="su-sub" FontSize="12" VerticalAlignment="Center" Margin="2,0,8,0" />
+        <ItemsControl ItemsSource="{Binding Ativo.Comandos}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NoSuite">
+              <Button Classes="su" Margin="0,1,6,1" BorderThickness="1" BorderBrush="{DynamicResource Linha}" CornerRadius="6" ToolTip.Tip="{Binding Caminho}"
+                      Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,3">
+                  <Ellipse Width="7" Height="7" Fill="{Binding Modulo.Cor}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </DockPanel>
+    </Border>
+
+    <!-- Visuais 3 e 4: caminho da tela em uso -->
+    <Border Name="BarraCaminho" Background="{DynamicResource FundoSuave}" Padding="14,4" IsVisible="{Binding MostraCaminho}">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <PathIcon Data="{Binding Ativo.Icone}" Width="13" Height="13" Foreground="{Binding Ativo.Cor}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Ativo.Nome}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+        <TextBlock Text="›" FontSize="12" Classes="su-sub" />
+        <TextBlock Name="CaminhoFuncao" FontSize="12" Classes="su-sub"
+                   Text="{Binding Ativo.Vm.FuncaoAtiva.Titulo, FallbackValue='Nenhuma função aberta', TargetNullValue='Nenhuma função aberta'}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Visual 9: moldura mínima (marca, módulo, empresa, Menus e Visual) -->
+    <Border Name="BarraBusca" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="12,6"
+            IsVisible="{Binding EhBusca}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="{Binding UsuarioRotulo}" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" MaxWidth="180" TextTrimming="CharacterEllipsis" />
+          <Button Name="BotaoMenus" Classes="su" Padding="9,6" Command="{Binding AlternarMenusNaBuscaCommand}" ToolTip.Tip="Mostrar ou esconder os menus do módulo">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <PathIcon Data="{x:Static v:Icones.MenuOpen}" Width="15" Height="15" Foreground="{DynamicResource TxSutil}" />
+              <TextBlock Text="Menus" FontSize="12" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <v:SuiteEscolhaLayoutView />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Image Source="avares://Vorticis.Desktop.Comum/Assets/marca-vorticis.png" Width="24" Height="24" ToolTip.Tip="{Binding Nome}" />
+          <ComboBox ItemsSource="{Binding Modulos}" SelectedItem="{Binding ModuloNoSeletor}" MinWidth="190" CornerRadius="8" ToolTip.Tip="Módulo (Ctrl+1, Ctrl+2…)">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ModuloSuite">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{Binding Icone}" Width="15" Height="15" Foreground="{Binding Cor}" />
+                  <TextBlock Text="{Binding NomeCompleto}" VerticalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Text="{Binding Ativo.Vm.RotuloEmpresaAtiva}" Classes="su-sub" FontSize="12" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding Ativo.Vm.EmpresasPermitidas}" SelectedItem="{Binding Ativo.Vm.EmpresaSelecionada}" MinWidth="160" MaxWidth="320"
+                    PlaceholderText="Nenhuma empresa" CornerRadius="8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="seg:EmpresaPermitida">
+                <TextBlock><Run Text="{Binding Codigo, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" – " /><Run Text="{Binding RazaoSocial, Mode=OneWay}" /></TextBlock>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </DockPanel>
+    </Border>
 
     <!-- D: marca, painel inicial e módulo atual -->
     <Border Name="BarraPainel" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1" Padding="14,8" IsVisible="{Binding EhPainel}">

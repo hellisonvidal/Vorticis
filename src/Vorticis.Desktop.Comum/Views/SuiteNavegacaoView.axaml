@@ -98,6 +98,26 @@
             </ItemsControl>
 
             <StackPanel IsVisible="{Binding !Buscando}">
+              <!-- visual 8: as funções abertas do módulo, para alternar entre elas -->
+              <StackPanel Name="AbertasC" IsVisible="{Binding Ativo.TemAbertas}" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="4,0,0,4">
+                  <PathIcon Data="{x:Static v:Icones.ViewGridOutline}" Width="12" Height="12" Foreground="{DynamicResource TxSutil}" />
+                  <TextBlock Text="ABERTAS" Classes="su-secao" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Ativo.Vm.JanelasAbertas}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FuncaoAberta">
+                      <Button Classes="su" ToolTip.Tip="{Binding Titulo}"
+                              Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).Ativo.Vm.AtivarFuncaoCommand}" CommandParameter="{Binding}">
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,4">
+                          <Ellipse Width="7" Height="7" Fill="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).Ativo.Cor}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Rotulo}" Foreground="{DynamicResource TxForte}" FontWeight="{Binding Ativa, Converter={x:Static v:Conversores.NegritoSe}}" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
               <StackPanel IsVisible="{Binding TemFavoritos}" Margin="0,0,0,8">
                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="4,0,0,4">
                   <PathIcon Data="{x:Static v:Icones.Star}" Width="12" Height="12" Foreground="#E0A100" />

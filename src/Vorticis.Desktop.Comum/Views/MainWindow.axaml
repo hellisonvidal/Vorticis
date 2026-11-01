@@ -3,6 +3,7 @@
         xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
         xmlns:v="using:Vorticis.Desktop.Comum.Views"
         xmlns:seg="using:Vorticis.Application.Seguranca"
+        xmlns:modulos="using:Vorticis.Desktop.Comum.Modulos"
         x:Class="Vorticis.Desktop.Comum.Views.MainWindow"
         x:DataType="vm:MainViewModelBase"
         Title="Vorticis"
@@ -116,6 +117,19 @@
     </Border>
     </StackPanel>
 
+    <!-- Suite, visual 10: teclas de atalho do módulo sempre à mostra no rodapé -->
+    <Border Name="BarraTeclas" DockPanel.Dock="Bottom" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0"
+            Padding="10,3" IsVisible="False">
+      <ItemsControl ItemsSource="{Binding Atalhos}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="modulos:AtalhoTela">
+            <TextBlock Margin="0,1,16,1" FontSize="11.5"><Run Text="{Binding Gesto, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource CorDestaqueModulo}" /><Run Text=" " /><Run Text="{Binding Descricao, Mode=OneWay}" Foreground="{DynamicResource TxSutil}" /></TextBlock>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
     <Border DockPanel.Dock="Bottom" Background="{DynamicResource FundoSuave}" Padding="12,3">
       <TextBlock Text="{Binding Status}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
     </Border>
@@ -124,6 +138,8 @@
       <ContentControl Name="AreaPrincipal" Content="{Binding ConteudoPrincipal}" Margin="8" />
       <!-- Suite, layout D: painel inicial com os cartões dos módulos (cobre a área de trabalho) -->
       <ContentControl Name="SuitePainel" IsVisible="False" />
+      <!-- Suite, visual 9 (e Ctrl+K nos demais): busca central -->
+      <ContentControl Name="SuiteBusca" IsVisible="False" />
     </Panel>
   </DockPanel>
 </Window>

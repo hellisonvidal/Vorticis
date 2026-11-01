@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels" xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.SuiteBuscaView" x:DataType="vm:SuiteViewModel">
+  <!-- Visual 9 (Busca primeiro) e Ctrl+K nos demais: "O que você quer fazer?" no centro da área de trabalho -->
+  <Panel Background="{DynamicResource FundoPagina}">
+    <ScrollViewer>
+      <StackPanel HorizontalAlignment="Center" Width="640" Margin="16,56,16,24" Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="O que você quer fazer?" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TxTitulo}" />
+          <Button Grid.Column="1" Classes="su" Padding="9,6" Content="Fechar (Esc)" IsVisible="{Binding !EhBusca}"
+                  Command="{Binding FecharBuscaRapidaCommand}" />
+        </Grid>
+        <Border CornerRadius="10" Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource BordaForte}" BorderThickness="1"
+                BoxShadow="0 12 32 0 #22233B55">
+          <StackPanel>
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,0">
+              <PathIcon Data="{x:Static v:Icones.Magnify}" Width="17" Height="17" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+              <TextBox Name="CampoBuscaCentral" Grid.Column="1" Text="{Binding Busca}" FontSize="15" Background="Transparent" BorderThickness="0" Padding="10,12"
+                       Watermark="Digite parte do nome: balancete, férias, nota de entrada, DCTFWeb…" />
+              <TextBlock Grid.Column="2" Text="Ctrl+K" FontSize="11" Foreground="{DynamicResource TxSutil}" VerticalAlignment="Center" />
+            </Grid>
+            <ItemsControl Name="ResultadosCentrais" ItemsSource="{Binding Resultados}" IsVisible="{Binding Buscando}" Margin="6,0,6,6">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:NoSuite">
+                  <Button Classes="su" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                    <Grid ColumnDefinitions="Auto,*" Margin="8,6">
+                      <PathIcon Data="{Binding Modulo.Icone}" Width="16" Height="16" Foreground="{Binding Modulo.Cor}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                      <StackPanel Grid.Column="1" Spacing="1">
+                        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+                        <TextBlock Text="{Binding Caminho}" Classes="su-sub" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <TextBlock Text="Enter abre o primeiro resultado. Os menus continuam no botão Menus, no alto." Classes="su-sub" IsVisible="{Binding EhBusca}" />
+        <StackPanel Spacing="6" IsVisible="{Binding TemRecentes}">
+          <TextBlock Text="RECENTES" Classes="su-secao" />
+          <ItemsControl ItemsSource="{Binding Recentes}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NoSuite">
+                <Button Classes="su" Margin="0,0,6,6" BorderThickness="1" BorderBrush="{DynamicResource Linha}" CornerRadius="14"
+                        Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,3">
+                    <Ellipse Width="7" Height="7" Fill="{Binding CorIcone}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <StackPanel Spacing="6" IsVisible="{Binding TemFavoritos}">
+          <TextBlock Text="FAVORITOS" Classes="su-secao" />
+          <ItemsControl ItemsSource="{Binding Favoritos}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NoSuite">
+                <Button Classes="su" Margin="0,0,6,6" BorderThickness="1" BorderBrush="{DynamicResource Linha}" CornerRadius="14"
+                        Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,3">
+                    <PathIcon Data="{x:Static v:Icones.Star}" Width="11" Height="11" Foreground="#E0A100" />
+                    <TextBlock Text="{Binding Titulo}" Foreground="{DynamicResource TxForte}" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <StackPanel Spacing="6">
+          <TextBlock Text="ATALHOS DO MÓDULO" Classes="su-secao" />
+          <ItemsControl ItemsSource="{Binding Ativo.Atalhos}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NoSuite">
+                <Button Classes="su" Margin="0,0,6,6" BorderThickness="1" BorderBrush="{DynamicResource Linha}" CornerRadius="14"
+                        Command="{Binding $parent[UserControl].((vm:SuiteViewModel)DataContext).AbrirFuncaoCommand}" CommandParameter="{Binding}">
+                  <TextBlock Text="{Binding Titulo}" Margin="8,3" Foreground="{DynamicResource TxForte}" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+</UserControl>

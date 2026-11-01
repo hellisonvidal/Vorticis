@@ -72,16 +72,29 @@ public partial class MainWindow : Window
         SuiteLado.Content = new SuiteLadoView { DataContext = suite };
         SuiteTopo.Content = new SuiteTopoView { DataContext = suite };
         SuitePainel.Content = new SuitePainelView { DataContext = suite };
+        SuiteBusca.Content = new SuiteBuscaView { DataContext = suite };
         (SuiteLado.IsVisible, SuiteTopo.IsVisible) = (true, true);
         foreach (var m in suite.Modulos) m.Vm.JanelasAbertas.CollectionChanged += AoMudarJanelas;
         suite.AoTrocar += (_, m) => DataContext = m.Vm;
         suite.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SuiteViewModel.MostraPainel)) AtualizarPainel();
-            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) or nameof(SuiteViewModel.Tema) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
+            if (e.PropertyName == nameof(SuiteViewModel.MostraBuscaCentral)) AtualizarBusca();
+            if (e.PropertyName is nameof(SuiteViewModel.MenusNaBusca) or nameof(SuiteViewModel.MostraTeclas)) AtualizarBarras();
+            if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.Visual) or nameof(SuiteViewModel.LateralFixa) or nameof(SuiteViewModel.FaixaFixa) or nameof(SuiteViewModel.Tema) && _vm is { } vm) { MontarMenu(vm); MontarAtalhos(vm); AtualizarBarras(); }
         };
         DataContext = suite.Ativo.Vm;
         AtualizarPainel();
+        AtualizarBusca();
+        AtualizarBarras();
+    }
+
+    /// <summary>Busca central (visual 9 e Ctrl+K): fica sobre a área de trabalho; as janelas das funções continuam por cima dela.</summary>
+    private void AtualizarBusca()
+    {
+        var busca = Suite?.MostraBuscaCentral == true;
+        SuiteBusca.IsVisible = busca;
+        if (busca && Suite?.BuscaRapidaAberta == true) SuiteBusca.FindDescendantOfType<SuiteBuscaView>()?.Focar();
     }
 
     /// <summary>Painel do layout D: à mostra, esconde as janelas das funções; ao sair dele, elas voltam.</summary>
@@ -190,7 +203,8 @@ public partial class MainWindow : Window
     private void AtualizarBarras()
     {
         BarraFuncoes.IsVisible = _vm is { Logado: true } v && (v.JanelasAbertas.Count > 0 || v.UsaPeriodo);
-        BarraMenuWrap.IsVisible = Suite?.EhFaixa != true;
+        BarraMenuWrap.IsVisible = Suite is null || (!Suite.EhFaixa && (!Suite.EhBusca || Suite.MenusNaBusca));
+        BarraTeclas.IsVisible = Suite?.MostraTeclas == true && _vm is { Logado: true };
     }
 
     private void AbrirJanela(FuncaoAberta f, MainViewModelBase dono)
@@ -395,7 +409,7 @@ public partial class MainWindow : Window
 
     private MenuItem MenuLayout(SuiteViewModel suite)
     {
-        var layout = new MenuItem { Header = "Layout da Suite", Icon = IconesSuite.IconeDe(Icones.ViewDashboard) };
+        var layout = new MenuItem { Header = "Visual da Suite", Icon = IconesSuite.IconeDe(Icones.ViewDashboard) };
         layout.Items.Add(new MenuItem
         {
             Header = "Escolher com miniaturas…", Icon = IconesSuite.IconeDe(Icones.ViewGridOutline),
@@ -403,10 +417,10 @@ public partial class MainWindow : Window
                 this.GetVisualDescendants().OfType<SuiteEscolhaLayoutView>().FirstOrDefault(v => v.IsEffectivelyVisible)?.Abrir()),
         });
         layout.Items.Add(new Separator());
-        foreach (var (valor, nome) in SuiteViewModel.Nomes)
+        foreach (var o in SuiteViewModel.Visuais)
             layout.Items.Add(new MenuItem
             {
-                Header = (valor == suite.Layout ? "●  " : "     ") + nome, Command = suite.EscolherLayoutCommand, CommandParameter = valor,
+                Header = (o.Valor == suite.Visual ? "●  " : "     ") + $"{o.Numero} – {o.Nome}", Command = suite.EscolherVisualCommand, CommandParameter = o.Valor,
             });
         layout.Items.Add(new Separator());
         var tema = new MenuItem { Header = "Tema de cores", Icon = IconesSuite.IconeDe(Icones.ThemeLightDark) };
@@ -416,12 +430,12 @@ public partial class MainWindow : Window
         layout.Items.Add(new Separator());
         layout.Items.Add(new MenuItem
         {
-            Header = (suite.LateralFixa ? "●  " : "     ") + "Menu à esquerda fixo (B e C); desmarcado, fica oculto e abre ao passar o mouse",
+            Header = (suite.LateralFixa ? "●  " : "     ") + "Menu à esquerda fixo (visuais 2, 7 e 8); desmarcado, fica oculto e abre ao passar o mouse",
             Command = suite.AlternarFixaCommand, Icon = IconesSuite.IconeDe(suite.IconeFixar),
         });
         layout.Items.Add(new MenuItem
         {
-            Header = (suite.FaixaFixa ? "●  " : "     ") + "Faixa de cima fixa (A e E); desmarcada, só os títulos das abas à mostra",
+            Header = (suite.FaixaFixa ? "●  " : "     ") + "Faixa de cima fixa (visuais com abas); desmarcada, só os títulos das abas à mostra",
             Command = suite.AlternarFaixaCommand, Icon = IconesSuite.IconeDe(suite.IconeFixarFaixa),
         });
         return layout;
@@ -486,8 +500,10 @@ public partial class MainWindow : Window
                 Gesture = KeyGesture.Parse("Ctrl+K"),
                 Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
                 {
-                    if (!suite.EhArvore) suite.Layout = LayoutSuite.Arvore;
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FocarBusca());
+                    // a árvore (visual 8) tem a busca própria; nos demais, a busca central (a do visual 9) abre por cima
+                    if (suite.EhArvore) Avalonia.Threading.Dispatcher.UIThread.Post(() => this.FindDescendantOfType<SuiteLadoView>()?.FocarBusca());
+                    else if (suite.EhBusca) SuiteBusca.FindDescendantOfType<SuiteBuscaView>()?.Focar();
+                    else suite.BuscaRapidaAberta = true;
                 }),
             });
         }

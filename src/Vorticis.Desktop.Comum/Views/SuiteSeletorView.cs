@@ -8,16 +8,16 @@ using Vorticis.Desktop.Comum.ViewModels;
 
 namespace Vorticis.Desktop.Comum.Views;
 
-/// <summary>Seletor dos cinco layouts da Suite, com a miniatura de cada um; a troca é imediata e fica gravada para o usuário.</summary>
+/// <summary>Seletor dos dez visuais da Suite, com a miniatura de cada um; a troca é imediata e fica gravada para o usuário.</summary>
 public sealed class SuiteSeletorView : UserControl
 {
-    private readonly Dictionary<LayoutSuite, (Button Botao, Border Marca)> _cartoes = [];
+    private readonly Dictionary<VisualSuite, (Button Botao, Border Marca)> _cartoes = [];
     private SuiteViewModel? _suite;
 
     public SuiteSeletorView()
     {
-        var painel = new WrapPanel { Width = 612, ItemWidth = 196 };
-        foreach (var o in SuiteViewModel.Opcoes)
+        var painel = new WrapPanel { Width = 960, ItemWidth = 192 };
+        foreach (var o in SuiteViewModel.Visuais)
         {
             var marca = new Border
             {
@@ -30,26 +30,26 @@ public sealed class SuiteSeletorView : UserControl
                 Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 8, 0, 2),
                 Children =
                 {
-                    new Border { Width = 18, Height = 18, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.Parse("#0F2A47")),
-                                 Child = new TextBlock { Text = o.Letra, FontSize = 10.5, FontWeight = FontWeight.Bold, Foreground = Brushes.White,
+                    new Border { Width = 20, Height = 18, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.Parse("#0F2A47")),
+                                 Child = new TextBlock { Text = o.Numero.ToString(System.Globalization.CultureInfo.InvariantCulture), FontSize = 10.5, FontWeight = FontWeight.Bold, Foreground = Brushes.White,
                                                          HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
                     new TextBlock { Text = o.Nome, FontSize = 12.5, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }.TextoRecurso("TxForte"),
                 },
             };
             var conteudo = new StackPanel
             {
-                Margin = new Thickness(8),
+                Margin = new Thickness(7),
                 Children =
                 {
-                    new Panel { Children = { new LayoutMiniatura(o.Valor), marca } },
+                    new Panel { Children = { Miniatura(o), marca } },
                     titulo,
-                    new TextBlock { Text = o.Descricao, FontSize = 11, TextWrapping = TextWrapping.Wrap, Width = 176, MinHeight = 44 }.TextoRecurso("TxSutil"),
+                    new TextBlock { Text = o.Descricao, FontSize = 11, TextWrapping = TextWrapping.Wrap, Width = 172, MinHeight = 44 }.TextoRecurso("TxSutil"),
                 },
             };
-            var botao = new Button { Content = conteudo, Margin = new Thickness(3), Padding = new Thickness(0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top };
-            botao.SetValue(ToolTip.TipProperty, $"Usar o layout {o.Letra} – {o.Nome}");
+            var botao = new Button { Content = conteudo, Margin = new Thickness(3), Padding = new Thickness(0), Classes = { "su" }, VerticalContentAlignment = VerticalAlignment.Top, Name = "Visual" + o.Numero };
+            botao.SetValue(ToolTip.TipProperty, $"Usar o visual {o.Numero} – {o.Nome}");
             var valor = o.Valor;
-            botao.Click += (_, _) => _suite?.EscolherLayoutCommand.Execute(valor);
+            botao.Click += (_, _) => _suite?.EscolherVisualCommand.Execute(valor);
             _cartoes[o.Valor] = (botao, marca);
             painel.Children.Add(botao);
         }
@@ -61,15 +61,30 @@ public sealed class SuiteSeletorView : UserControl
             {
                 Children =
                 {
-                    new TextBlock { Text = "Layout da Suite", FontSize = 15, FontWeight = FontWeight.Bold, Margin = new Thickness(4, 0, 0, 0) }.TextoRecurso("TxTitulo"),
-                    new TextBlock { Text = "Escolha como navegar entre os módulos. A troca é imediata e fica gravada para o seu usuário.", FontSize = 11.5,
-                                    Margin = new Thickness(4, 2, 0, 8) }.TextoRecurso("TxSutil"),
-                    painel,
+                    new TextBlock { Text = "Visual da Suite", FontSize = 15, FontWeight = FontWeight.Bold, Margin = new Thickness(4, 0, 0, 0) }.TextoRecurso("TxTitulo"),
+                    new TextBlock { Text = "Escolha o visual que mais lhe agrada. A troca é imediata e fica gravada para o seu usuário; as funções e os atalhos são os mesmos em todos.", FontSize = 11.5,
+                                    Margin = new Thickness(4, 2, 0, 8), TextWrapping = TextWrapping.Wrap, MaxWidth = 940, HorizontalAlignment = HorizontalAlignment.Left }.TextoRecurso("TxSutil"),
+                    new ScrollViewer { MaxHeight = 560, Content = painel },
                     LinhaDeTema(),
                 },
             },
         }.FundoRecurso("FundoCartao").BordaRecurso("BordaForte");
         DataContextChanged += (_, _) => Ligar();
+    }
+
+    /// <summary>Miniatura do visual (imagem em Assets/Visuais); sem a imagem, o desenho da moldura.</summary>
+    private static Control Miniatura(OpcaoVisual o)
+    {
+        try
+        {
+            using var arquivo = Avalonia.Platform.AssetLoader.Open(new Uri(o.Miniatura));
+            return new Border
+            {
+                CornerRadius = new CornerRadius(6), ClipToBounds = true, BorderThickness = new Thickness(1),
+                Child = new Image { Source = new Avalonia.Media.Imaging.Bitmap(arquivo), Width = 176, Height = 102, Stretch = Stretch.UniformToFill },
+            }.BordaRecurso("Linha");
+        }
+        catch (Exception) { return new LayoutMiniatura(SuiteViewModel.LayoutDe(o.Valor)); }
     }
 
     /// <summary>Tema de cores (claro, escuro ou automático), junto das miniaturas: vale para todos os layouts e fica gravado para o usuário.</summary>
@@ -113,15 +128,15 @@ public sealed class SuiteSeletorView : UserControl
 
     private void AoMudar(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.Tema)) Marcar();
+        if (e.PropertyName is nameof(SuiteViewModel.Visual) or nameof(SuiteViewModel.Layout) or nameof(SuiteViewModel.Tema)) Marcar();
     }
 
     private void Marcar()
     {
         foreach (var (tema, botao) in _botoesTema) botao.Classes.Set("sel", _suite?.Tema == tema);
-        foreach (var (layout, (botao, marca)) in _cartoes)
+        foreach (var (visual, (botao, marca)) in _cartoes)
         {
-            var atual = _suite?.Layout == layout;
+            var atual = _suite?.Visual == visual;
             botao.Classes.Set("sel", atual);
             marca.IsVisible = atual;
         }

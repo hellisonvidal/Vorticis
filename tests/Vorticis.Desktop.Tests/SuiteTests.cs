@@ -30,8 +30,9 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         // em ordem alfabética em todos os layouts; o Escritório (que administra a suíte) faz o login
         Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Modulos.Select(m => m.Nome));
         Assert.Equal(["Condomínio", "Contábil", "Escritório", "Fiscal", "Folha", "Gerencial"], suite.Arvore.Select(n => n.Titulo));
-        Assert.Equal(LayoutSuite.Lateral, suite.Layout);              // B é o padrão
-        Assert.True(suite.EhLateral);
+        Assert.Equal(VisualSuite.Classico, suite.Visual);             // o visual 1 (Clássico renovado, igual aos módulos separados) é o padrão
+        Assert.Equal(LayoutSuite.Abas, suite.Layout);
+        Assert.True(suite.EhAbas);
         Assert.Equal("Escritório", suite.Principal.Modulo.NomeCurto);
         Assert.Same(suite.Principal, suite.Ativo.Vm);                 // começa pelo Escritório
         Assert.Equal(["CD", "C", "E", "F", "FP", "G"], suite.Modulos.Select(m => m.Sigla));
@@ -43,7 +44,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         suite.Layout = LayoutSuite.Faixa;                             // E, a faixa de opções, também é gravada
         Assert.Equal(LayoutSuite.Faixa, new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath())).Layout);
         suite.Layout = LayoutSuite.Arvore;
-        Assert.Equal(5, SuiteViewModel.Opcoes.Count);
+        Assert.Equal(6, SuiteViewModel.Opcoes.Count);
         Assert.Equal(Enum.GetValues<LayoutSuite>(), SuiteViewModel.Opcoes.Select(o => o.Valor));
 
         Assert.Equal(6, suite.Arvore.Count);
@@ -71,6 +72,8 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
     {
         SuiteViewModel.ArquivoLayout = ArquivoTemporario();
         var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+        suite.Layout = LayoutSuite.Lateral;                // barra lateral (visual 7, trilho compacto)
+        Assert.Equal(VisualSuite.Trilho, suite.Visual);
         // oculto por padrão: só a faixa de ícones; a navegação abre por cima ao passar o mouse e fecha ao escolher
         Assert.False(suite.LateralFixa);
         Assert.True(suite.MostraRail);
@@ -198,7 +201,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
         var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
         {
             ModulosDaSuite.IncluirTelas(Avalonia.Application.Current!);
-            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()));
+            var suite = new SuiteViewModel(ModulosDaSuite.Criar(Path.GetTempPath()), LayoutSuite.Lateral);
             ModuloSuite M(string nome) => suite.Modulos.Single(m => m.Nome == nome);
             var janela = new MainWindow { Width = 1400, Height = 860 };
             janela.UsarSuite(suite);
@@ -240,7 +243,7 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var menus = janela.FindControl<Menu>("MenuPrincipal")!.Items.OfType<MenuItem>().ToList();
             Assert.Contains(menus, m => (m.Header as string) == "E_xibir");
             var config = Assert.Single(menus, m => (m.Header as string) == "Con_figurações");
-            Assert.Equal("Layout da Suite", Assert.IsType<MenuItem>(config.Items[0]).Header);   // o layout também em Configurações
+            Assert.Equal("Visual da Suite", Assert.IsType<MenuItem>(config.Items[0]).Header);   // o visual também em Configurações
             M("Contábil").Vm.AbrirCommand.Execute(TelasComuns.Sobre);
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(1, M("Contábil").Abertas);
@@ -284,7 +287,8 @@ public class SuiteTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
                     Assert.False(janela.FindControl<StackPanel>("BarraMenuWrap")!.IsVisible);   // a faixa substitui a barra de menus
                     Assert.True(topo.FindControl<Button>("BotaoExibir")!.IsVisible);
                 }
-                if (layout != LayoutSuite.Faixa) Assert.True(janela.FindControl<StackPanel>("BarraMenuWrap")!.IsVisible);
+                // na busca primeiro (9) os menus ficam no botão Menus
+                Assert.Equal(layout is not (LayoutSuite.Faixa or LayoutSuite.Busca), janela.FindControl<StackPanel>("BarraMenuWrap")!.IsVisible);
                 if (layout == LayoutSuite.Faixa)
                 {
                     // faixa de opções: todas as funções do módulo estão em algum botão ou no "Mais"
