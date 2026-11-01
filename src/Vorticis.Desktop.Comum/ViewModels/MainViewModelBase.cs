@@ -562,7 +562,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
         await CarregarPreferenciasMenuAsync();
-        if (PerguntarAtivacaoAoEntrar) await OferecerAtivacaoAsync();
+        // Ativar empresas em um módulo é tarefa do Escritório, que gerencia os módulos de cada cliente.
+        if (PerguntarAtivacaoAoEntrar && ModuloAtual == ModulosEmpresa.Escritorio) await OferecerAtivacaoAsync();
         if (_implantacao)
         {
             // Instalação nova: abre o cadastro de usuários, que só permite incluir o administrador, até concluir.

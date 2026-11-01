@@ -102,6 +102,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private bool _moduloErp = true;
     [ObservableProperty] private bool _moduloCondominio;
 
+    /// <summary>O seletor de módulos fica só no Escritório, que gerencia em que módulos cada empresa é usada.</summary>
+    public bool MostraModulos => main.ModuloAtual == ModulosEmpresa.Escritorio;
     public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
     public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
     public bool FolhaEditavel => main.ModuloAtual != ModulosEmpresa.Folha;
@@ -241,8 +243,9 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (OpcoesApuracao, OpcoesPatrimonio) = ([], []);
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
-        // Condomínio é outro tipo de cadastro: só vem marcado quando a empresa é incluída pelo próprio módulo Condomínio.
-        Modulos = (ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio) | main.Modulo.ModuloEmpresa;
+        // Fora do Escritório a empresa nova fica ativa no módulo atual e no Escritório, que decide os demais módulos.
+        // No Escritório vêm marcados todos (menos Condomínio, que é outro tipo de cadastro).
+        Modulos = MostraModulos ? ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio : main.Modulo.ModuloEmpresa | ModulosEmpresa.Escritorio;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;
@@ -338,10 +341,27 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         var origem = _consultado is not null && Domain.Cadastros.Cnpj.SomenteDigitos(_consultado.Cnpj) == Domain.Cadastros.Cnpj.SomenteDigitos(Cnpj)
             ? _consultado : null;
         // Confirma em quais módulos a empresa será cadastrada (o módulo atual é obrigatório; os demais vêm marcados).
-        if (await main.EscolherModulosAsync(Modulos | main.ModuloAtual) is not { } modulos)
+        // Só o Escritório pergunta os módulos; nos demais, confirma o compartilhamento do cadastro.
+        ModulosEmpresa modulos;
+        if (MostraModulos)
         {
-            Erros.Add("Cadastro cancelado: nenhum módulo foi confirmado.");
-            return false;
+            if (await main.EscolherModulosAsync(Modulos | main.ModuloAtual) is not { } escolhidos)
+            {
+                Erros.Add("Cadastro cancelado: nenhum módulo foi confirmado.");
+                return false;
+            }
+            modulos = escolhidos;
+        }
+        else
+        {
+            if (!await main.ConfirmarAsync("Cadastrar empresa", MensagensEmpresa.AvisoCompartilhado
+                    + $"\n\nA empresa ficará ativa no {main.Modulo.NomeCurto}. Para usá-la em outros módulos, marque-os no cadastro do cliente, no Escritório.",
+                    "Cadastrar", "Cancelar"))
+            {
+                Erros.Add("Cadastro cancelado.");
+                return false;
+            }
+            modulos = Modulos | main.ModuloAtual;
         }
         Modulos = modulos;
         var r = await app.Empresas.CadastrarAsync(new NovaEmpresa(

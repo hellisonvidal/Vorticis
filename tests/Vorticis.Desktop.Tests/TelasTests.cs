@@ -216,17 +216,15 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var picker = janela.JanelaAtiva!.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
             Assert.Equal((new DateTime(2015, 3, 2), (DateTime?)new DateTime(2015, 3, 2), "02/03/2015"), (emp.InicioAtividades!.Value, picker.SelectedDate, picker.Text));
             var salvandoEmpresa = emp.SalvarCommand.ExecuteAsync(null);
-            var modulos = await AguardarConfirmacao(vm);                      // cadastrar em quais módulos?
-            Assert.Equal("Cadastrar esta empresa em quais módulos?", modulos.Titulo);
-            Assert.Equal(["Contábil", "Fiscal", "Folha de Pagamento", "Escritório", "Gerencial", "Condomínio"], modulos.Opcoes.Select(o => o.Texto));
-            Assert.All(modulos.Opcoes.Take(5), o => Assert.True(o.Marcada));
-            Assert.False(modulos.Opcoes[5].Marcada);                          // Condomínio só se incluída pelo próprio módulo
-            modulos.Opcoes[2].Marcada = false;                                // sem Folha
+            Assert.False(emp.MostraModulos);                                  // a escolha dos módulos fica só no Escritório
+            var compartilhar = await AguardarConfirmacao(vm);                 // só confirma o compartilhamento, sem escolher módulos
+            Assert.Equal("Cadastrar empresa", compartilhar.Titulo);
+            Assert.Empty(compartilhar.Opcoes);
             vm.ResponderConfirmacaoCommand.Execute(true);
             await salvandoEmpresa;
             Assert.Empty(emp.Erros);
             Assert.True(emp.EmConsulta);
-            Assert.False(emp.ModuloFolha);
+            Assert.Equal((true, false, false, true), (emp.ModuloContabil, emp.ModuloFiscal, emp.ModuloFolha, emp.ModuloEscritorio));
             var empresa = Assert.Single(vm.EmpresasPermitidas);
             Assert.True(await db.EscalarAsync<bool>(
                 """
@@ -258,7 +256,7 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             emp.IncluirCommand.Execute(null);
             (emp.Cnpj, emp.RazaoSocial, emp.Cnae, emp.MunicipioIbge, emp.Uf) = ("06.990.590/0001-23", "EMPRESA A EXCLUIR LTDA", "6920601", "3550308", "SP");
             emp.ImportarPlanoModelo = false;
-            await ConcluirConfirmando(vm, emp.SalvarCommand.ExecuteAsync(null));         // aceita os módulos sugeridos (todos)
+            await ConcluirConfirmando(vm, emp.SalvarCommand.ExecuteAsync(null));         // confirma o compartilhamento
             Assert.Empty(emp.Erros);
             Assert.Equal(2, vm.EmpresasPermitidas.Count);
             vm.EmpresaSelecionada = vm.EmpresasPermitidas.Single(e => e.RazaoSocial == "EMPRESA A EXCLUIR LTDA");

@@ -35,7 +35,9 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 
 Nesta aba também fica o campo **Logo da empresa** (**Carregar logo...**, **Remover logo** e **Usar a logo nos relatórios**), igual ao de *Cadastros › Empresas*; a logo só é gravada quando o cliente já é empresa (marque um módulo e grave).
 
-Desmarcar um módulo aqui não apaga nada no módulo: para tirar a empresa de um módulo, use o cadastro de empresas.
+Esta aba é **o único lugar** em que se escolhe em quais módulos a empresa é usada: o Escritório gerencia tudo. Nos outros módulos o cadastro de empresas não mostra essa escolha (a empresa incluída lá fica ativa só naquele módulo e no Escritório), e eles também deixam de perguntar, ao entrar, se querem ativar empresas.
+
+Desmarcar um módulo aqui tira a empresa da lista daquele módulo, mas não apaga nada do que já foi feito nele: basta marcar de novo para ela voltar.
 
 ### Honorários e cobranças
 Aba **Honorários e cobranças** do cliente selecionado (veja [Honorários e cobranças](#honorarios-e-cobrancas)): o honorário mostrado e gravado é o do cliente da lista, e as cobranças listadas são só as dele, de todos os meses.

@@ -109,8 +109,8 @@
         <TextBlock Classes="secao" Text="Logo da empresa" />
         <StackPanel IsEnabled="{Binding EmEdicao}"><v:LogoEmpresaView DataContext="{Binding Logo}" /></StackPanel>
 
-        <TextBlock Classes="secao" Text="Módulos" />
-        <WrapPanel IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Módulos em que a empresa está ativa. O módulo em uso não pode ser desmarcado.">
+        <TextBlock Classes="secao" Text="Módulos" IsVisible="{Binding MostraModulos}" />
+        <WrapPanel IsVisible="{Binding MostraModulos}" IsEnabled="{Binding EmEdicao}" ToolTip.Tip="Módulos em que a empresa está ativa. O módulo em uso não pode ser desmarcado.">
           <CheckBox Margin="0,0,16,4" Name="ModuloContabilCheck" Content="Contábil" IsChecked="{Binding ModuloContabil}" IsEnabled="{Binding ContabilEditavel}" />
           <CheckBox Margin="0,0,16,4" Name="ModuloFiscalCheck" Content="Fiscal" IsChecked="{Binding ModuloFiscal}" IsEnabled="{Binding FiscalEditavel}" />
           <CheckBox Margin="0,0,16,4" Name="ModuloFolhaCheck" Content="Folha de Pagamento" IsChecked="{Binding ModuloFolha}" IsEnabled="{Binding FolhaEditavel}" />
