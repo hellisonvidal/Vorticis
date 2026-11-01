@@ -915,6 +915,8 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var enc = vm.Encerramento;
             enc.Ano = 2026;
             await enc.CarregarAsync();
+            // a abertura da tela também carrega as contas; se ela terminar depois, a carga acima cede a vez: espera as contas chegarem
+            for (var i = 0; i < 200 && enc.OpcoesApuracao.Count == 0; i++) { Dispatcher.UIThread.RunJobs(); await Task.Delay(25); }
             // contas escolhidas pela pesquisa: só analíticas de resultado (apuração) e de patrimônio líquido (lucros/prejuízos)
             Assert.Contains(enc.OpcoesApuracao, c => c.Codigo == "5.1.01.001");
             Assert.DoesNotContain(enc.OpcoesApuracao, c => c.Codigo.StartsWith("2."));
