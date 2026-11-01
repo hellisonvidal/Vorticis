@@ -128,6 +128,24 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
             return await cmd.ExecuteNonQueryAsync(ct);
         });
 
+    public async Task DefinirModulosAsync(long usuarioId, Application.Cadastros.ModulosEmpresa modulos, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("UPDATE core.usuario SET modulos = @m WHERE id = @id")
+            .Com("m", NpgsqlTypes.NpgsqlDbType.Smallint, modulos == Application.Cadastros.ModulosEmpresa.Todos ? null : (short)modulos).Com("id", usuarioId);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<Application.Cadastros.ModulosEmpresa> ModulosAsync(long usuarioId, CancellationToken ct)
+    {
+        await using var cmd = ds.CreateCommand("SELECT modulos FROM core.usuario WHERE id = @id").Com("id", usuarioId);
+        return await cmd.ExecuteScalarAsync(ct) switch
+        {
+            short m => (Application.Cadastros.ModulosEmpresa)m,
+            DBNull => Application.Cadastros.ModulosEmpresa.Todos,
+            _ => Application.Cadastros.ModulosEmpresa.Nenhum,   // usuário inexistente
+        };
+    }
+
     public async Task<PerfilDoUsuario?> ObterPerfilAsync(long perfilId, CancellationToken ct)
     {
         await using var cmd = ds.CreateCommand("SELECT id, nome, administrador FROM core.perfil WHERE id = @id").Com("id", perfilId);
@@ -214,7 +232,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
     {
         await using var cmd = ds.CreateCommand("""
             SELECT u.id, u.login, u.nome, u.administrador, u.ativo, u.ultimo_acesso, u.perfil_id, p.nome,
-                   u.cpf, u.telefone, u.celular, u.email, u.data_admissao, u.cargo, u.departamento, u.observacao
+                   u.cpf, u.telefone, u.celular, u.email, u.data_admissao, u.cargo, u.departamento, u.observacao, u.modulos
               FROM core.usuario u LEFT JOIN core.perfil p ON p.id = u.perfil_id
              ORDER BY u.nome
             """);
@@ -225,7 +243,8 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
                                       r.IsDBNull(5) ? null : r.GetFieldValue<DateTimeOffset>(5),
                                       r.IsDBNull(6) ? null : r.GetInt64(6), r.IsDBNull(7) ? null : r.GetString(7),
                                       new DadosPessoaisUsuario(T(8), T(9), T(10), T(11), r.IsDBNull(12) ? null : r.GetFieldValue<DateOnly>(12),
-                                                               T(13), T(14), T(15))));
+                                                               T(13), T(14), T(15)),
+                                      r.IsDBNull(16) ? Application.Cadastros.ModulosEmpresa.Todos : (Application.Cadastros.ModulosEmpresa)r.GetInt16(16)));
         return res;
         string T(int i) => r.IsDBNull(i) ? "" : r.GetString(i).Trim();
     }
@@ -275,8 +294,10 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
               LEFT JOIN core.usuario_empresa ue ON ue.empresa_id = e.id AND ue.usuario_id = @u
               LEFT JOIN core.perfil p ON p.id = ue.perfil_id
              WHERE e.ativa AND (@adm OR ue.perfil_id IS NOT NULL) AND e.{coluna} = @ativas
+               -- módulo bloqueado no cadastro do usuário: nenhuma empresa
+               AND (@adm OR EXISTS (SELECT 1 FROM core.usuario u WHERE u.id = @u AND (u.modulos IS NULL OR u.modulos & @bit <> 0)))
              ORDER BY e.razao_social
-            """).Com("u", usuarioId).Com("adm", administrador).Com("ativas", ativas);
+            """).Com("u", usuarioId).Com("adm", administrador).Com("ativas", ativas).Com("bit", (short)modulo);
         var res = new List<EmpresaPermitida>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct))

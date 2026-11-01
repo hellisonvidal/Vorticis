@@ -75,8 +75,9 @@ Em instalação nova não existe nenhum usuário. Por isso:
 2. Informe login, nome e **senha inicial** (o usuário troca no primeiro acesso).
 3. Escolha o **perfil** (obrigatório).
 4. Em **Dados pessoais e contato** (opcionais), informe **CPF**, **e-mail**, **telefone** e **celular**, a data de **admissão** no escritório, o **cargo**, o **departamento** e uma **observação**. O sistema confere se o CPF é válido, se o e-mail tem o formato nome@dominio e se a admissão não é uma data futura. Cargo, e-mail e telefone aparecem na lista de usuários.
-5. Em **Empresas que o usuário pode acessar**, marque as empresas (busque por nome, código ou CNPJ; *Marcar todas* e *Desmarcar todas* valem para as listadas). Usuário novo vem com todas marcadas e passa a receber também as empresas cadastradas depois; ao desmarcar alguma, isso deixa de valer. Dá para ter um perfil diferente por empresa.
-6. **Salvar**.
+5. Em **Módulos que o usuário pode acessar**, desmarque os módulos que ele não deve usar (Contábil, Fiscal, Folha de Pagamento, Escritório, Gerencial, Condomínio). Num módulo bloqueado o usuário consegue entrar, mas não vê nenhuma empresa nem função: só *Ajuda*, *Alterar minha senha* e *Sair*, com o aviso de que o acesso não foi liberado. Usuário novo vem com todos marcados; administradores acessam sempre todos os módulos.
+6. Em **Empresas que o usuário pode acessar**, marque as empresas (busque por nome, código ou CNPJ; *Marcar todas* e *Desmarcar todas* valem para as listadas). Usuário novo vem com todas marcadas e passa a receber também as empresas cadastradas depois; ao desmarcar alguma, isso deixa de valer. Dá para ter um perfil diferente por empresa.
+7. **Salvar**.
 
 Para esquecimentos use **Redefinir senha** (gera senha temporária). Excluir um usuário mantém o histórico de lançamentos, sem o vínculo com ele; ninguém exclui o próprio usuário.
 

@@ -1,4 +1,5 @@
 using Npgsql;
+using Vorticis.Application.Cadastros;
 using Vorticis.Application.Seguranca;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
@@ -108,6 +109,40 @@ public class UsuariosTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         // alterar com os campos vazios limpa
         Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Ana", perfil, true, ct, DadosPessoaisUsuario.Vazio)).Sucesso);
         Assert.Equal(DadosPessoaisUsuario.Vazio, (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Dados);
+    }
+
+    [Fact]
+    public async Task Modulo_desmarcado_no_usuario_fica_bloqueado_sem_nenhuma_empresa()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var svc = Servico();
+        var empresa = await db.CriarEmpresaAsync("60701190000104");
+        var perfil = await db.PerfilIdAsync("Consulta");
+        var r = await svc.CriarUsuarioAsync(Admin, "caio.modulos", "Caio", "Inicial123", perfil, ct,
+                                            modulos: ModulosEmpresa.Contabil | ModulosEmpresa.Fiscal);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var caio = new SessaoUsuario(r.Valor, "caio.modulos", "Caio", false, false);
+        Assert.Equal(ModulosEmpresa.Contabil | ModulosEmpresa.Fiscal, (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Modulos);
+
+        Assert.True(await svc.PodeUsarModuloAsync(caio, ModulosEmpresa.Contabil, ct));
+        Assert.False(await svc.PodeUsarModuloAsync(caio, ModulosEmpresa.Folha, ct));
+        Assert.Contains(await svc.EmpresasDoModuloAsync(caio, ModulosEmpresa.Contabil, ct), e => e.Id == empresa);
+        Assert.Empty(await svc.EmpresasDoModuloAsync(caio, ModulosEmpresa.Folha, ct));               // bloqueio no próprio banco
+
+        // nenhum módulo marcado não é aceito; marcar todos volta a valer "todos" (inclusive os futuros)
+        Assert.Contains("ao menos um módulo", (await svc.AlterarUsuarioAsync(Admin, r.Valor, "Caio", perfil, true, ct, modulos: ModulosEmpresa.Nenhum)).Erros[0]);
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Caio", perfil, true, ct, modulos: ModulosEmpresa.Todos)).Sucesso);
+        Assert.True(await svc.PodeUsarModuloAsync(caio, ModulosEmpresa.Folha, ct));
+        Assert.True(await db.EscalarAsync<bool>("SELECT modulos IS NULL FROM core.usuario WHERE id = @id", ("id", r.Valor)));
+
+        // alterar sem informar os módulos não mexe neles; administrador usa sempre todos
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Caio", perfil, true, ct, modulos: ModulosEmpresa.Folha)).Sucesso);
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Caio Silva", perfil, true, ct)).Sucesso);
+        Assert.False(await svc.PodeUsarModuloAsync(caio, ModulosEmpresa.Contabil, ct));
+        Assert.True(await svc.PodeUsarModuloAsync(caio with { Administrador = true }, ModulosEmpresa.Contabil, ct));
+        Assert.True((await svc.AlterarUsuarioAsync(Admin, r.Valor, "Caio", await db.PerfilIdAsync("Administrador"), true, ct)).Sucesso);
+        Assert.Equal(ModulosEmpresa.Todos, (await svc.ListarAsync(Admin, ct)).Single(u => u.Id == r.Valor).Modulos);
     }
 
     [Fact]

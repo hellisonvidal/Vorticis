@@ -21,6 +21,14 @@ public sealed record UsuarioLinha(UsuarioResumo Usuario)
 
 public sealed record OpcaoPerfil(long? Id, string Nome, bool Administrador = false);
 
+/// <summary>Um módulo na lista "Módulos que o usuário pode acessar": desmarcado = bloqueado para o usuário.</summary>
+public partial class ModuloAcessoLinha(Vorticis.Application.Cadastros.ModulosEmpresa modulo) : ObservableObject
+{
+    public Vorticis.Application.Cadastros.ModulosEmpresa Modulo { get; } = modulo;
+    public string Nome => Vorticis.Application.Cadastros.ModulosEmpresaExtensoes.Nome(Modulo);
+    [ObservableProperty] private bool _marcado = true;
+}
+
 /// <summary>Uma empresa na lista de acesso do usuário: marcada = o usuário acessa a empresa, com o perfil escolhido.</summary>
 public partial class AcessoLinha : ObservableObject
 {
@@ -61,6 +69,20 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
 
     /// <summary>As empresas que passam pelo filtro de busca (é o que a tela lista).</summary>
     public ObservableCollection<AcessoLinha> AcessosFiltrados { get; } = [];
+
+    /// <summary>Módulos da suíte, com a marca dos que o usuário pode usar (administrador: todos, sem lista).</summary>
+    public IReadOnlyList<ModuloAcessoLinha> ModulosAcesso { get; } =
+        [.. Vorticis.Application.Cadastros.ModulosEmpresaExtensoes.Individuais.Select(m => new ModuloAcessoLinha(m))];
+
+    /// <summary>Módulos marcados (todos marcados = todos, inclusive os que forem instalados depois).</summary>
+    public Vorticis.Application.Cadastros.ModulosEmpresa ModulosMarcados => ModulosAcesso.All(m => m.Marcado)
+        ? Vorticis.Application.Cadastros.ModulosEmpresa.Todos
+        : ModulosAcesso.Where(m => m.Marcado).Aggregate(Vorticis.Application.Cadastros.ModulosEmpresa.Nenhum, (a, m) => a | m.Modulo);
+
+    private void MostrarModulos(Vorticis.Application.Cadastros.ModulosEmpresa modulos)
+    {
+        foreach (var m in ModulosAcesso) m.Marcado = modulos.HasFlag(m.Modulo);
+    }
 
     /// <summary>Perfis que podem ser atribuídos ao usuário (aba Perfis de acesso).</summary>
     public ObservableCollection<OpcaoPerfil> PerfisDisponiveis { get; } = [];
@@ -194,6 +216,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = (value.Login, value.Nome, value.Usuario.Ativo, "", "");
             PerfilEdicao = PerfisDisponiveis.FirstOrDefault(p => p.Id == value.Usuario.PerfilId);
             MostrarDados(value.Usuario.Dados);
+            MostrarModulos(value.Usuario.Modulos);
             _ = CarregarAcessosAsync(value.Usuario.Id);
         }
         else
@@ -201,6 +224,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             (Login, NomeEdicao, AtivoEdicao, SenhaTemporaria, NovaSenha) = ("", "", true, "", "");
             PerfilEdicao = null;
             MostrarDados(null);
+            MostrarModulos(Vorticis.Application.Cadastros.ModulosEmpresa.Todos);
         }
         _carregandoSelecao = false;
         OnPropertyChanged(nameof(MostrarAcessos));
@@ -222,6 +246,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
         _carregandoSelecao = true;
         (Login, NomeEdicao, NovaSenha, AtivoEdicao, PerfilEdicao) = ("", "", "", true, null);
         MostrarDados(null);
+        MostrarModulos(Vorticis.Application.Cadastros.ModulosEmpresa.Todos);
         _carregandoSelecao = false;
         // novo usuário: todas as empresas já vêm marcadas (o administrador desmarca as que não valem)
         if (!EmImplantacao) _ = CarregarAcessosAsync(null);
@@ -296,7 +321,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
                 // lista ainda não carregada (ou sem empresas): vale "todas as empresas", como antes da lista existir
                 var empresas = PerfilEdicao is { Administrador: false } && Acessos.Count > 0 ? Acessos.Where(a => a.Marcada).Select(a => a.EmpresaId).ToList() : null;
                 var r = await app.Usuarios.CriarUsuarioAsync(sessao, Login, NomeEdicao, NovaSenha, PerfilEdicao?.Id, empresaIds: empresas,
-                                                             dados: DadosPessoais);
+                                                             dados: DadosPessoais, modulos: ModulosMarcados);
                 MostrarResultado(r, $"Usuário {Login.Trim()} criado com o perfil {PerfilEdicao?.Nome}. Ele deverá trocar a senha no primeiro acesso.");
                 if (!r.Sucesso) return;
                 ok = true;
@@ -315,7 +340,7 @@ public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(c
             }
             if (Selecionado is null) return;
             var id = Selecionado.Usuario.Id;
-            var alt = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao, dados: DadosPessoais);
+            var alt = await app.Usuarios.AlterarUsuarioAsync(sessao, id, NomeEdicao, PerfilEdicao?.Id, AtivoEdicao, dados: DadosPessoais, modulos: ModulosMarcados);
             if (!alt.Sucesso) { MostrarResultado(alt, ""); return; }
             var mudancas = Acessos.Where(a => MostrarAcessos && a.PerfilFinal != a.Original).ToList();
             if (mudancas.Count > 0)

@@ -561,6 +561,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         Sessao = sessao;
         Logado = true;
         _implantacao = sessao.Implantacao;
+        // Módulo bloqueado no cadastro do usuário (Configurações › Usuários): entra, mas só com Ajuda, Alterar senha e Sair
+        ModuloLiberado = App is null || await App.Usuarios.PodeUsarModuloAsync(sessao, ModuloAtual);
         _configuracaoInicialPendente = sessao.Administrador && App is not null && await App.Perfis.ConfiguracaoInicialPendenteAsync();
         await RecarregarEmpresasAsync();
         await CarregarPreferenciasMenuAsync();
@@ -582,9 +584,26 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             Abrir(TelasComuns.Perfis);
             Status = "Configuração inicial: defina os perfis de acesso dos usuários para liberar o sistema.";
         }
+        else if (!ModuloLiberado)
+        {
+            AbrirCommand.NotifyCanExecuteChanged();
+            Abrir(TelasComuns.Inicio);
+            Status = MensagemModuloBloqueado;
+        }
         else AbrirInicio();
         AvisarSessaoPronta();
     }
+
+    /// <summary>O usuário pode usar este módulo (marcado em Configurações › Usuários; administrador sempre).</summary>
+    [ObservableProperty] private bool _moduloLiberado = true;
+
+    public string MensagemModuloBloqueado =>
+        $"Seu usuário não tem acesso ao {Modulo.Nome}. Peça ao administrador para liberar o módulo em Configurações › Usuários.";
+
+    /// <summary>Telas que valem mesmo com o módulo bloqueado para o usuário.</summary>
+    private static bool TelaDeModuloBloqueado(string tela) => tela is TelasComuns.Inicio or TelasComuns.Sair or TelasComuns.AlterarSenha
+        or TelasComuns.Usuarios or TelasComuns.Manual or TelasComuns.ManualContextual or TelasComuns.Sobre or TelasComuns.Licenca or TelasComuns.Dicas
+        or TelasComuns.Preferencias;
 
     /// <summary>Tela inicial; no Escritório sem nenhum escritório cadastrado (primeiro uso), o cadastro do escritório.</summary>
     private void AbrirInicio()
@@ -699,7 +718,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         && (_implantacao
             ? tela is TelasComuns.Usuarios or TelasComuns.Sobre or TelasComuns.Manual or TelasComuns.ManualContextual
             : !_configuracaoInicialPendente
-                ? def.Pode(this)
+                ? def.Pode(this) && (ModuloLiberado || TelaDeModuloBloqueado(tela))
                 : tela is TelasComuns.Perfis or TelasComuns.Sobre or TelasComuns.AlterarSenha or TelasComuns.Usuarios or TelasComuns.Manual or TelasComuns.ManualContextual);
 
     /// <summary>

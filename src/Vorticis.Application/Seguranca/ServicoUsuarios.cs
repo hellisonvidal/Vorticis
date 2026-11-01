@@ -8,7 +8,8 @@ public sealed record CredenciaisUsuario(long Id, string Login, string Nome, stri
 
 /// <param name="PerfilId">Perfil do usuário (vale para todas as empresas; o acesso por empresa admite exceções).</param>
 public sealed record UsuarioResumo(long Id, string Login, string Nome, bool Administrador, bool Ativo, DateTimeOffset? UltimoAcesso,
-                                   long? PerfilId = null, string? Perfil = null, DadosPessoaisUsuario? Dados = null);
+                                   long? PerfilId = null, string? Perfil = null, DadosPessoaisUsuario? Dados = null,
+                                   Cadastros.ModulosEmpresa Modulos = Cadastros.ModulosEmpresa.Todos);
 
 /// <summary>Dados pessoais e de contato do usuário (Configurações › Usuários); todos opcionais. CPF só com os 11 dígitos.</summary>
 public sealed record DadosPessoaisUsuario(string Cpf = "", string Telefone = "", string Celular = "", string Email = "", DateOnly? Admissao = null,
@@ -83,6 +84,9 @@ public interface IRepositorioUsuarios
     Task AlterarAsync(long usuarioId, string nome, bool administrador, long perfilId, bool ativo, CancellationToken ct);
     /// <summary>Grava os dados pessoais e de contato (já validados e normalizados).</summary>
     Task GravarDadosPessoaisAsync(long usuarioId, DadosPessoaisUsuario dados, CancellationToken ct);
+    /// <summary>Módulos que o usuário pode usar (<see cref="Cadastros.ModulosEmpresa.Todos"/> = todos, inclusive os futuros).</summary>
+    Task DefinirModulosAsync(long usuarioId, Cadastros.ModulosEmpresa modulos, CancellationToken ct);
+    Task<Cadastros.ModulosEmpresa> ModulosAsync(long usuarioId, CancellationToken ct);
     Task<IReadOnlyList<UsuarioResumo>> ListarAsync(CancellationToken ct);
     /// <param name="perfilId">Perfil a atribuir; nulo revoga o acesso.</param>
     Task DefinirAcessoAsync(long usuarioId, long empresaId, long? perfilId, CancellationToken ct);
@@ -195,13 +199,14 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     /// </summary>
     public async Task<Resultado<long>> CriarUsuarioAsync(SessaoUsuario admin, string login, string nome, string senhaInicial,
                                                         long? perfilId, CancellationToken ct = default, IReadOnlyCollection<long>? empresaIds = null,
-                                                        DadosPessoaisUsuario? dados = null)
+                                                        DadosPessoaisUsuario? dados = null, Cadastros.ModulosEmpresa? modulos = null)
     {
         if (!admin.Administrador && !admin.Implantacao) return Resultado<long>.Falha("Somente administradores podem cadastrar usuários.");
         var erros = ValidarNovo(login, nome, senhaInicial, senhaInicial);
         erros.AddRange((dados ?? DadosPessoaisUsuario.Vazio).Validar(DateOnly.FromDateTime(_relogio.GetLocalNow().DateTime)));
         var perfil = perfilId is long pid ? await repositorio.ObterPerfilAsync(pid, ct) : null;
         if (perfil is null) erros.Add("Informe o perfil do usuário.");
+        if (perfil is { Administrador: false } && modulos is { } mods && !TemAlgumModulo(mods)) erros.Add(MensagemSemModulo);
         if (admin.Implantacao)
         {
             if (perfil is { Administrador: false }) erros.Add("Na implantação só é possível cadastrar um usuário com o perfil Administrador.");
@@ -214,6 +219,7 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
                                               deveTrocarSenha: !admin.Implantacao, somenteSeNaoHouverUsuarios: admin.Implantacao, ct);
         if (id is null) return Resultado<long>.Falha("A implantação já foi concluída: existe usuário cadastrado. Entre com o login do administrador.");
         if (dados is not null) await repositorio.GravarDadosPessoaisAsync(id.Value, dados.Normalizado(), ct);
+        if (!perfil.Administrador && modulos is { } m && m != Cadastros.ModulosEmpresa.Todos) await repositorio.DefinirModulosAsync(id.Value, m, ct);
         if (!perfil.Administrador)
         {
             if (empresaIds is null) await repositorio.AtribuirPerfilEmTodasEmpresasAsync(id.Value, perfil.Id, ct);
@@ -235,7 +241,8 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     /// <summary>Altera nome, perfil e situação. O perfil Administrador concede (e os demais retiram) a administração do sistema.</summary>
     public async Task<Resultado> AlterarUsuarioAsync(SessaoUsuario admin, long usuarioId, string nome, long? perfilId, bool ativo,
-                                                    CancellationToken ct = default, DadosPessoaisUsuario? dados = null)
+                                                    CancellationToken ct = default, DadosPessoaisUsuario? dados = null,
+                                                    Cadastros.ModulosEmpresa? modulos = null)
     {
         if (!admin.Administrador) return Resultado.Falha("Somente administradores podem alterar usuários.");
         if (string.IsNullOrWhiteSpace(nome)) return Resultado.Falha("Informe o nome.");
@@ -244,10 +251,14 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
         if (perfil is null) return Resultado.Falha("Informe o perfil do usuário.");
         if (usuarioId == admin.Id && (!perfil.Administrador || !ativo))
             return Resultado.Falha("Você não pode remover seu próprio acesso de administrador.");
+        if (!perfil.Administrador && modulos is { } mods && !TemAlgumModulo(mods)) return Resultado.Falha(MensagemSemModulo);
         try
         {
             await repositorio.AlterarAsync(usuarioId, nome.Trim(), perfil.Administrador, perfil.Id, ativo, ct);
             if (dados is not null) await repositorio.GravarDadosPessoaisAsync(usuarioId, dados.Normalizado(), ct);
+            // administrador usa sempre todos os módulos
+            if (perfil.Administrador) await repositorio.DefinirModulosAsync(usuarioId, Cadastros.ModulosEmpresa.Todos, ct);
+            else if (modulos is { } m) await repositorio.DefinirModulosAsync(usuarioId, m, ct);
             return Resultado.Ok();
         }
         catch (ViolacaoRegraException ex)
@@ -330,6 +341,17 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
     /// <summary>Empresas que o usuário pode acessar mas que ainda não estão ativas no módulo (para oferecer a ativação).</summary>
     public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasForaDoModuloAsync(SessaoUsuario sessao, Cadastros.ModulosEmpresa modulo, CancellationToken ct = default)
         => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasNoModuloAsync(sessao.Id, sessao.Administrador, modulo, false, ct);
+
+    private const string MensagemSemModulo = "Marque ao menos um módulo que o usuário pode acessar.";
+
+    private static bool TemAlgumModulo(Cadastros.ModulosEmpresa m) => Cadastros.ModulosEmpresaExtensoes.Individuais.Any(x => m.HasFlag(x));
+
+    /// <summary>
+    /// O usuário pode usar o módulo? Administrador e implantação sempre; os demais, se o módulo estiver marcado no cadastro do usuário
+    /// (Configurações › Usuários › Módulos que o usuário pode acessar).
+    /// </summary>
+    public async Task<bool> PodeUsarModuloAsync(SessaoUsuario sessao, Cadastros.ModulosEmpresa modulo, CancellationToken ct = default)
+        => sessao.Administrador || sessao.Implantacao || (await repositorio.ModulosAsync(sessao.Id, ct)).HasFlag(modulo);
 
     private static List<string> ValidarNovo(string login, string nome, string senha, string confirmacao)
     {

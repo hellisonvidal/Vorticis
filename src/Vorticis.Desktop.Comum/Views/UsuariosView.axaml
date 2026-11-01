@@ -68,6 +68,22 @@
           <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding ObservacaoUsuario}" MaxLength="500" AcceptsReturn="True" TextWrapping="Wrap" Height="54" />
         </Grid>
 
+        <StackPanel Name="ModulosDoUsuario" Spacing="4" IsVisible="{Binding MostrarAcessos}">
+          <TextBlock Text="Módulos que o usuário pode acessar" FontWeight="SemiBold" Margin="0,8,0,0" />
+          <TextBlock Text="Desmarque os módulos bloqueados: o usuário entra neles, mas não vê nenhuma empresa nem função (só Ajuda, Alterar senha e Sair). Administradores acessam todos."
+                     FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding ModulosAcesso}" IsEnabled="{Binding EmEdicao}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ModuloAcessoLinha">
+                <CheckBox IsChecked="{Binding Marcado}" Content="{Binding Nome}" FontSize="12" MinWidth="130" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
         <StackPanel Spacing="6" IsVisible="{Binding MostrarAcessos}">
           <TextBlock Text="Empresas que o usuário pode acessar" FontWeight="SemiBold" Margin="0,8,0,0" />
           <TextBlock Text="Marque as empresas liberadas; o usuário só vê e seleciona essas. O perfil ao lado vale em cada empresa. Empresas cadastradas depois só são liberadas automaticamente a quem tem todas marcadas."
