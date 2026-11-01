@@ -170,6 +170,17 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss)
                     .Com("prod", NpgsqlDbType.Bigint, produtoId).ComTexto("gtin", i.Gtin);
                 await item.ExecuteNonQueryAsync(ct);
+                if (i.Reforma is { } rf)
+                {
+                    await using var ibs = new NpgsqlCommand("""
+                        UPDATE fiscal.documento_item SET tem_ibscbs = TRUE, cst_ibscbs = @cst, c_class_trib = @cls, vl_bc_ibscbs = @bc, aliq_ibs_uf = @auf,
+                               vl_ibs_uf = @vuf, aliq_ibs_mun = @amun, vl_ibs_mun = @vmun, aliq_cbs = @acbs, vl_cbs = @vcbs
+                         WHERE documento_id = @d AND n_item = @n
+                        """, con, tx)
+                        .Com("d", documentoId).Com("n", i.Numero).ComTexto("cst", Cortar(rf.Cst, 3)).ComTexto("cls", Cortar(rf.ClassTrib, 6)).Com("bc", rf.Base)
+                        .Com("auf", rf.AliqIbsUf).Com("vuf", rf.IbsUf).Com("amun", rf.AliqIbsMun).Com("vmun", rf.IbsMun).Com("acbs", rf.AliqCbs).Com("vcbs", rf.Cbs);
+                    await ibs.ExecuteNonQueryAsync(ct);
+                }
 
                 // Nota de entrada: CFOP de entrada, CST e créditos pelas regras fiscais (sem regra: conversão padrão e marca "sem regra").
                 if (ident.Operacao == TipoOperacao.Entrada && i.Cfop != Cfop.Servico)

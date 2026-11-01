@@ -1,0 +1,7 @@
+{
+  "vigencia_inicio": "2026-01-01",
+  "fundamento": "EC 132/2023; LC 214/2025, arts. 343 a 346 (transição): em 2026, CBS de 0,9% e IBS de 0,1% destacados no documento fiscal, compensáveis com PIS/COFINS e dispensados de recolhimento se cumpridas as obrigações acessórias",
+  "anos": [
+    { "ano": 2026, "cbs": 0.9, "ibs_uf": 0.1, "ibs_mun": 0.0, "observacao": "Ano de teste: valores informativos, compensáveis com PIS e COFINS." }
+  ]
+}

@@ -46,7 +46,15 @@ public sealed record ItemFiscal(
     string? CstCofins, decimal BcCofins, decimal AliqCofins, decimal Cofins,
     decimal BcIss, decimal AliqIss, decimal Iss,
     string? Gtin = null, long? ProdutoId = null, long? CentroCustoId = null, string? CentroCustoCodigo = null, string? CfopOriginal = null,
-    bool CreditaIcms = true, bool CreditaIpi = true, bool CreditaPis = true, bool CreditaCofins = true, bool SemRegra = false);
+    bool CreditaIcms = true, bool CreditaIpi = true, bool CreditaPis = true, bool CreditaCofins = true, bool SemRegra = false,
+    TributosReforma? Reforma = null);
+
+/// <summary>Grupo IBSCBS do item da NF-e (reforma tributária): CST, classificação tributária, base e IBS da UF, IBS do município e CBS.</summary>
+public sealed record TributosReforma(string? Cst, string? ClassTrib, decimal Base, decimal AliqIbsUf, decimal IbsUf, decimal AliqIbsMun, decimal IbsMun,
+                                     decimal AliqCbs, decimal Cbs)
+{
+    public decimal Ibs => IbsUf + IbsMun;
+}
 
 /// <summary>Totais e retenções do documento.</summary>
 public sealed record TotaisDocumento(

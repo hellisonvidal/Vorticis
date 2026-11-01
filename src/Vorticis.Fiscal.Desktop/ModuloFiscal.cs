@@ -69,6 +69,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Lucro Presumido (IRPJ e CSLL)", Telas.Presumido),
             ItemMenu.Tela("Lucro Real (IRPJ, CSLL e LALUR)", Telas.Real),
             ItemMenu.Tela("PIS e COFINS", Telas.PisCofins),
+            ItemMenu.Tela("IBS e CBS (reforma tributária)", Telas.IbsCbs),
             ItemMenu.EmBreve("ICMS e IPI"),
             ItemMenu.Separador,
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
@@ -184,6 +185,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("NotasPorCentro", m => new NotasPorCentroViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.NotasPorCentro, "Relatórios › Resumos › Notas por centro de custo", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("IbsCbs", m => new ApuracaoIbsCbsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.IbsCbs, "Apuração › IBS e CBS (reforma tributária)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("DctfWeb", m => new DctfWebViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.DctfWeb, "Apuração › Obrigações › DCTFWeb (MIT)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());

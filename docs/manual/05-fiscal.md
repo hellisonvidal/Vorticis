@@ -287,6 +287,20 @@ A *Parte B* mostra o razão dos prejuízos e da base negativa. O **código da EC
 3. Informe PIS e COFINS retidos, **Calcular** e **Salvar apuração**. Cumulativo: 0,65% e 3%. Não cumulativo: 1,65% e 7,6%, com créditos sobre as entradas.
 4. **Contabilizar provisão** / **Desfazer provisão** como nas demais apurações.
 
+## IBS e CBS (reforma tributária)
+
+**Para que serve:** acompanhar, já na transição da reforma tributária do consumo, o **IBS** (estados e municípios) e a **CBS** (União) destacados nas notas fiscais, e conferir o saldo do mês.
+**Onde fica:** *Apuração › IBS e CBS (reforma tributária)*.
+
+A partir de 2026 a NF-e traz, em cada item, o grupo **IBS/CBS**: o CST e a classificação tributária, a base de cálculo, o IBS da UF, o IBS do município e a CBS. Ao importar o XML, o Fiscal guarda esses valores junto com o item.
+
+1. Importe as notas do mês (saídas e entradas) pelo XML.
+2. Escolha a **Competência** e clique em **Apurar**. A tabela mostra os **débitos** das saídas, os **créditos** das entradas, o **saldo a recolher** e o **saldo credor** de CBS e de IBS (UF, município e total).
+3. Os avisos abaixo do título apontam as notas sem o grupo IBS/CBS (as de entrada não geram crédito) e a CBS destacada diferente da esperada pela alíquota de referência do ano.
+4. Exporte em PDF, Excel ou CSV para conferir ou arquivar.
+
+**Transição:** em **2026** (ano de teste) as alíquotas são de 0,9% de CBS e 0,1% de IBS, os valores são informativos e compensáveis com o PIS e a COFINS, e o recolhimento é dispensado para quem cumpre as obrigações acessórias. De **2027** em diante a CBS substitui o PIS e a COFINS, e entre 2029 e 2032 o ICMS e o ISS diminuem enquanto o IBS aumenta, até 2033. As alíquotas de cada ano ficam nos parâmetros legais do programa e são atualizadas conforme forem definidas. Esta apuração é um apoio: a apuração oficial será feita pelos sistemas da Receita Federal e do Comitê Gestor do IBS.
+
 ## Histórico de receita e folha
 
 **Onde fica:** *Apuração › Histórico de receita e folha*.

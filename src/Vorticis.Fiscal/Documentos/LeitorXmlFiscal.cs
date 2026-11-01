@@ -132,6 +132,8 @@ public static class LeitorXmlFiscal
         var pis = Filho(Filho(imposto, "PIS"), null);
         var cofins = Filho(Filho(imposto, "COFINS"), null);
         var issqn = Filho(imposto, "ISSQN");
+        var ibscbs = Filho(imposto, "IBSCBS");
+        var gIbsCbs = Filho(ibscbs, "gIBSCBS");
 
         var vProd = Num(Valor(prod, "vProd"));
         var desc = Num(Valor(prod, "vDesc"));
@@ -154,7 +156,11 @@ public static class LeitorXmlFiscal
             Valor(pis, "CST"), Num(Valor(pis, "vBC")), Num(Valor(pis, "pPIS"), 4), Num(Valor(pis, "vPIS")),
             Valor(cofins, "CST"), Num(Valor(cofins, "vBC")), Num(Valor(cofins, "pCOFINS"), 4), Num(Valor(cofins, "vCOFINS")),
             Num(Valor(issqn, "vBC")), Num(Valor(issqn, "vAliq"), 4), Num(Valor(issqn, "vISSQN")),
-            Gtin: Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEAN")) ?? Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEANTrib")));
+            Gtin: Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEAN")) ?? Produtos.ValidadorGtin.Normalizar(Valor(prod, "cEANTrib")),
+            Reforma: ibscbs is null ? null : new TributosReforma(Valor(ibscbs, "CST"), Valor(ibscbs, "cClassTrib"), Num(Valor(gIbsCbs, "vBC")),
+                Num(Valor(Filho(gIbsCbs, "gIBSUF"), "pIBSUF"), 4), Num(Valor(Filho(gIbsCbs, "gIBSUF"), "vIBSUF")),
+                Num(Valor(Filho(gIbsCbs, "gIBSMun"), "pIBSMun"), 4), Num(Valor(Filho(gIbsCbs, "gIBSMun"), "vIBSMun")),
+                Num(Valor(Filho(gIbsCbs, "gCBS"), "pCBS"), 4), Num(Valor(Filho(gIbsCbs, "gCBS"), "vCBS"))));
     }
 
     // ------------------------------------------------------------------ CT-e (modelo 57)

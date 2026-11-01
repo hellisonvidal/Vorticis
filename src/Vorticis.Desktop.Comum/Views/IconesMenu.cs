@@ -116,6 +116,7 @@ public static class IconesMenu
         ["retencoes"] = "CashLockOpen",
         ["guias"] = "BarcodeScan",
         ["dctfweb"] = "FileDelimitedOutline",
+        ["apuracaoibscbs"] = "StarOutline",
         ["relnotascentrocusto"] = "SitemapOutline",
         ["efdicmsipi"] = "FileCogOutline",
         ["efdcontribuicoes"] = "FileChartOutline",

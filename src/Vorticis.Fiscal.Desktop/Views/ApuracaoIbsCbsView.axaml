@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.ApuracaoIbsCbsView"
+             x:DataType="vm:ApuracaoIbsCbsViewModel">
+  <!-- Apuração › IBS e CBS (reforma tributária) -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Classes="titulo" Text="IBS e CBS (reforma tributária)" VerticalAlignment="Center" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
+        <Button Content="Apurar" Command="{Binding ApurarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </StackPanel>
+      <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
+                 Text="Soma o IBS e a CBS destacados nos itens das NF-e importadas (grupo IBSCBS): débitos das saídas menos créditos das entradas. Apuração assistida para a transição da reforma tributária." />
+      <c:MensagensView />
+      <TextBlock Text="{Binding AvisosTexto}" Classes="erro" TextWrapping="Wrap" IsVisible="{Binding AvisosTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>
