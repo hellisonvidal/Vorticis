@@ -547,7 +547,7 @@ internal static class ExclusaoNotas
     }
 }
 
-/// <summary>Documentos fiscais › Importar NFS-e: só NFS-e (padrão nacional).</summary>
+/// <summary>Integrações › Importar NFS-e: só NFS-e (padrão nacional).</summary>
 public partial class ImportacaoNfseViewModel(IContexto contexto) : ImportacaoXmlViewModel(contexto)
 {
     protected override IReadOnlySet<ModeloDocumento>? ModelosAceitos { get; } = new HashSet<ModeloDocumento> { ModeloDocumento.NFSe };
@@ -557,7 +557,7 @@ public partial class ImportacaoNfseViewModel(IContexto contexto) : ImportacaoXml
         "Chaves já importadas são ignoradas e eventos de cancelamento atualizam a nota. Arquivos de outros tipos de nota são ignorados: use Integrações › Importação de XML em lote.";
 }
 
-/// <summary>Documentos fiscais › Importar CT-e: só conhecimentos de transporte (modelo 57, procCTe).</summary>
+/// <summary>Integrações › Importar CT-e: só conhecimentos de transporte (modelo 57, procCTe).</summary>
 public partial class ImportacaoCteViewModel(IContexto contexto) : ImportacaoXmlViewModel(contexto)
 {
     protected override IReadOnlySet<ModeloDocumento>? ModelosAceitos { get; } = new HashSet<ModeloDocumento> { ModeloDocumento.CTe57 };

@@ -182,7 +182,7 @@ public partial class NotaContabilizadaLinha(DocumentoFiscal documento) : Observa
     public string Valor => Numeros.Moeda(Documento.Totais.Total);
 }
 
-/// <summary>Documentos fiscais › Contabilizar notas fiscais: pré-visualiza os lançamentos pelas regras, contabiliza e desfaz (estorna).</summary>
+/// <summary>Integrações › Contabilizar notas fiscais: pré-visualiza os lançamentos pelas regras, contabiliza e desfaz (estorna).</summary>
 public partial class ContabilizarNotasViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public static IReadOnlyList<string> Operacoes { get; } = ["Entradas e saídas", "Somente entradas", "Somente saídas"];

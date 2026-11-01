@@ -20,7 +20,7 @@ public sealed class ModuloFiscal : IModuloDesktop
     public string CorDestaque => "#D97706";   // âmbar (ícone e selo do módulo)
     public string CorBarra => "#78350F";      // marrom-âmbar
 
-    /// <summary>Recurso ligado com a contabilização em lote (padrão): mostra Documentos fiscais › Contabilizar notas fiscais.</summary>
+    /// <summary>Recurso ligado com a contabilização em lote (padrão): mostra Integrações › Contabilizar notas fiscais.</summary>
     public const string RecursoContabilizacaoLote = "contabilizacao_lote";
 
     public async Task<IReadOnlySet<string>> RecursosAtivosAsync(Vorticis.Desktop.Comum.ViewModels.MainViewModelBase main)
@@ -57,12 +57,12 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Inventário de estoque (bloco H)", Telas.Inventario)),
         ItemMenu.Submenu("_Documentos fiscais",
             ItemMenu.Tela("Consulta de documentos", Telas.Documentos),
+            ItemMenu.Tela("Consulta de CT-e", Telas.ConsultaCte)),
+        ItemMenu.Submenu("_Integrações",
             ItemMenu.Tela("Contabilizar notas fiscais", Telas.ContabilizarNotas).SoCom(RecursoContabilizacaoLote),
             ItemMenu.Separador,
             ItemMenu.Tela("Importar NFS-e", Telas.ImportacaoNfse),
             ItemMenu.Tela("Importar CT-e", Telas.ImportacaoCte),
-            ItemMenu.Tela("Consulta de CT-e", Telas.ConsultaCte)),
-        ItemMenu.Submenu("_Integrações",
             ItemMenu.Tela("Importação de XML em lote (NF-e, NFC-e, NFS-e, CT-e)", Telas.ImportacaoXml)),
         ItemMenu.Submenu("_Apuração",
             ItemMenu.Tela("Simples Nacional (DAS)", Telas.Simples),
@@ -140,9 +140,9 @@ public sealed class ModuloFiscal : IModuloDesktop
         c.Instancia("ImportacaoXml", m => new ImportacaoXmlViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ImportacaoXml, "Integrações › Importação de XML em lote", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ImportacaoNfse", m => new ImportacaoNfseViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.ImportacaoNfse, "Documentos fiscais › Importar NFS-e", m => m.Pode(Permissao.FiscalDocumentosImportar));
+            .Tela(Telas.ImportacaoNfse, "Integrações › Importar NFS-e", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ImportacaoCte", m => new ImportacaoCteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.ImportacaoCte, "Documentos fiscais › Importar CT-e", m => m.Pode(Permissao.FiscalDocumentosImportar));
+            .Tela(Telas.ImportacaoCte, "Integrações › Importar CT-e", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ConsultaCte", m => new ConsultaCteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ConsultaCte, "Documentos fiscais › Consulta de CT-e", m => m.Pode(Permissao.FiscalDocumentosConsultar));
         c.Instancia("Documentos", m => new DocumentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
@@ -152,7 +152,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.RegrasContabilizacao, "Cadastros › Regras de contabilização",
                   m => m.Pode(Permissao.FiscalContabilizar) || m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalDuplicatasManter), v => v.CarregarAsync());
         c.Instancia("ContabilizarNotas", m => new ContabilizarNotasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.ContabilizarNotas, "Documentos fiscais › Contabilizar notas fiscais", m => m.Pode(Permissao.FiscalContabilizar));
+            .Tela(Telas.ContabilizarNotas, "Integrações › Contabilizar notas fiscais", m => m.Pode(Permissao.FiscalContabilizar));
 
         c.Instancia("NotaEntrada", m => new NotaEntradaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)

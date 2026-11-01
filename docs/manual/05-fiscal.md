@@ -103,14 +103,14 @@ Clique em **Importar arquivos...** e escolha os .xml ou um .zip.
 ## Importar NFS-e
 
 **Para que serve:** trazer só as notas de serviço (NFS-e).
-**Onde fica:** *Documentos fiscais › Importar NFS-e*.
+**Onde fica:** *Integrações › Importar NFS-e*.
 Funciona como a [importação de XML em lote](#importacao-de-xml-nf-e-nfc-e-nfs-e) (arquivos, .zip ou pasta), mas só aceita NFS-e; arquivos de outro tipo aparecem como *Ignorado* e podem ser importados em *Integrações › Importação de XML em lote*. Serviço prestado pela empresa é **saída**; serviço tomado é **entrada**.
 **Layouts aceitos:** padrão nacional (ADN) e o layout **ABRASF básico** (arquivos com CompNfse/Nfse: prestador, tomador, valor do serviço, ISS e retenções). A nota ABRASF não tem chave de acesso: o sistema usa o CNPJ do prestador, o número e o código de verificação para não importar a mesma nota duas vezes. Se o município usa outro layout, digite a nota em *Lançamentos › Documentos fiscais*.
 
 ## Importar CT-e
 
 **Para que serve:** trazer os conhecimentos de transporte eletrônicos (CT-e, modelo 57, arquivo procCTe).
-**Onde fica:** *Documentos fiscais › Importar CT-e*.
+**Onde fica:** *Integrações › Importar CT-e*.
 1. Clique em **Importar arquivos...** ou informe a pasta e clique em **Importar pasta**.
 2. O sistema lê a transportadora (emitente), o tomador, o remetente e o destinatário, o percurso, o valor da prestação, o CFOP, o ICMS e a chave de acesso, e guarda o XML.
 3. Se a empresa é o **tomador** do serviço (quem paga o frete), o CT-e é **entrada** (a transportadora vira fornecedor e o ICMS destacado pode ser crédito). Se a empresa é a **transportadora** (emitente), é **saída** (o tomador vira cliente). Se não for nenhuma das duas, o CT-e é recusado.
@@ -159,7 +159,7 @@ Vale a regra **mais específica**: a que tem participante vence a que não tem; 
 
 ## Contabilizar notas fiscais
 
-**Onde fica:** *Documentos fiscais › Contabilizar notas fiscais* (só aparece com a contabilização **em lote**).
+**Onde fica:** *Integrações › Contabilizar notas fiscais* (só aparece com a contabilização **em lote**).
 
 ### On-line ou em lote
 Em *Cadastros › Parâmetros*, grupo *Lançamento das notas*, escolha como as notas vão para o Contábil:

@@ -38,7 +38,7 @@ public sealed class ParametrosFiscalViewModel(IContexto contexto) : ParametrosVi
                 "As notas aceitam centro de custo no documento e nos itens, e a contabilização leva o centro de custo às partidas. Só pode ser ligado se a empresa usa centros de custo (Cadastros › Empresas, aba Contabilidade)."),
             new("contabilizacaoOnline", "Contabilizar as notas on-line (ao gravar ou importar)", TipoCampoParametro.SimNao,
                 "Ligado: cada nota é contabilizada assim que é gravada ou importada, pelas Regras de contabilização, e o menu Contabilizar notas fiscais some. " +
-                "Desligado (em lote): as notas são contabilizadas depois, pela função Documentos fiscais › Contabilizar notas fiscais. Exige a permissão de contabilizar."),
+                "Desligado (em lote): as notas são contabilizadas depois, pela função Integrações › Contabilizar notas fiscais. Exige a permissão de contabilizar."),
         };
         var icms = new CampoParametro[]
         {

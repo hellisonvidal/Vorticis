@@ -5,7 +5,7 @@
              xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
              x:Class="Vorticis.Fiscal.Desktop.Views.ContabilizarNotasView"
              x:DataType="vm:ContabilizarNotasViewModel">
-  <!-- Documentos fiscais › Contabilizar notas fiscais -->
+  <!-- Integrações › Contabilizar notas fiscais -->
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <TextBlock Classes="titulo" Text="Contabilização das notas fiscais" />
