@@ -21,6 +21,14 @@ namespace Vorticis.Desktop.Tests;
 /// </summary>
 public class VarreduraTelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixture<BancoDeTeste>
 {
+    private async Task CriarEscritorioAsync(string cnpj, CancellationToken ct)
+    {
+        var r = await db.App.Empresas.CadastrarAsync(new Vorticis.Application.Cadastros.NovaEmpresa(cnpj, "Escritório de Teste Ltda", null, "2062", "6920601", "SP",
+            "3550308", new DateOnly(2015, 1, 1), Vorticis.Application.Cadastros.RegimeTributario.SimplesNacional, 2026, ImportarPlanoModelo: false,
+            Modulos: Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio), ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+    }
+
     private static async Task<T> ForaDaSessao<T>(Task<T> tarefa)
     {
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -68,6 +76,7 @@ public class VarreduraTelasTests(BancoDeTeste db, SessaoHeadless headless) : ICl
         await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), ct);
         var empresa = await db.CriarEmpresaAsync("11444777000161");
         await SemearAsync(empresa, adm, ct);
+        await CriarEscritorioAsync("34028316000103", ct);   // no Escritório a escolha do topo é só o próprio escritório
         var falhas = new List<string>();
         var excecoes = new List<string>();
         void Excecao(object? s, Exception e) { lock (excecoes) excecoes.Add(e.ToString()); }
@@ -230,6 +239,7 @@ public class VarreduraTelasTests(BancoDeTeste db, SessaoHeadless headless) : ICl
         await db.App.Perfis.ConcluirConfiguracaoInicialAsync(new SessaoUsuario(adm, "admin_teste", "Admin", true, false), ct);
         var empresa = await db.CriarEmpresaAsync("55667788000186");
         await SemearAsync(empresa, adm, ct);
+        await CriarEscritorioAsync("06990590000123", ct);   // no Escritório a escolha do topo é só o próprio escritório
         var falhas = new List<string>();
         await ForaDaSessao(headless.Sessao.Dispatch(async () =>
         {

@@ -102,8 +102,19 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private bool _moduloErp = true;
     [ObservableProperty] private bool _moduloCondominio;
 
-    /// <summary>O seletor de módulos fica só no Escritório, que gerencia em que módulos cada empresa é usada.</summary>
-    public bool MostraModulos => main.ModuloAtual == ModulosEmpresa.Escritorio;
+    /// <summary>
+    /// Os módulos de cada empresa são escolhidos só no cadastro de clientes do Escritório (aba Módulos do contrato): o cadastro de
+    /// empresas não mostra essa escolha em nenhum módulo.
+    /// </summary>
+    public bool MostraModulos => false;
+
+    /// <summary>
+    /// No Escritório esta tela é a de Dados do escritório: só o registro do próprio escritório (sem plano de contas, sócios ou
+    /// contadores e sem módulos), que não é o cadastro geral de empresas. As empresas atendidas vêm do cadastro de clientes.
+    /// </summary>
+    public bool ModoEscritorio => main.ModuloAtual == ModulosEmpresa.Escritorio;
+    public bool MostraAbasEmpresa => !ModoEscritorio;
+    public string TituloLista => ModoEscritorio ? "Escritório" : "Empresas cadastradas";
     public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
     public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
     public bool FolhaEditavel => main.ModuloAtual != ModulosEmpresa.Folha;
@@ -207,14 +218,14 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         UsaEstorno = c.UsaEstorno;
     }
 
-    public string TituloFormulario => Modo switch
+    public string TituloFormulario => ModoEscritorio ? (EmInclusao ? "Cadastrar o escritório" : "Dados do escritório") : Modo switch
     {
         ModoCadastro.Inclusao => "Nova empresa",
         ModoCadastro.Alteracao => "Alterando a empresa",
         _ => _carregada is null ? "Empresa" : "Dados da empresa",
     };
 
-    protected override string NomeRegistro => "empresa";
+    protected override string NomeRegistro => ModoEscritorio ? "escritório" : "empresa";
 
     /// <summary>Código sequencial da empresa (atribuído na inclusão).</summary>
     public string NumeroRegistro => EmInclusao ? "Cód. automático (o mesmo em todos os módulos)" : _carregada is { } e ? $"Cód. {e.Id:0000} (o mesmo em todos os módulos)" : "";
@@ -245,7 +256,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
         // Fora do Escritório a empresa nova fica ativa no módulo atual e no Escritório, que decide os demais módulos.
         // No Escritório vêm marcados todos (menos Condomínio, que é outro tipo de cadastro).
-        Modulos = MostraModulos ? ModulosEmpresa.Todos & ~ModulosEmpresa.Condominio : main.Modulo.ModuloEmpresa | ModulosEmpresa.Escritorio;
+        Modulos = ModoEscritorio ? ModulosEmpresa.Escritorio : main.Modulo.ModuloEmpresa | ModulosEmpresa.Escritorio;
+        if (ModoEscritorio) ImportarPlanoModelo = false;
         MostrarConfiguracao(new ConfiguracaoContabil());
         PlanoAtual = "";
         ModeloSelecionado = CatalogoModelosPlano.Padrao;
@@ -343,15 +355,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         // Confirma em quais módulos a empresa será cadastrada (o módulo atual é obrigatório; os demais vêm marcados).
         // Só o Escritório pergunta os módulos; nos demais, confirma o compartilhamento do cadastro.
         ModulosEmpresa modulos;
-        if (MostraModulos)
-        {
-            if (await main.EscolherModulosAsync(Modulos | main.ModuloAtual) is not { } escolhidos)
-            {
-                Erros.Add("Cadastro cancelado: nenhum módulo foi confirmado.");
-                return false;
-            }
-            modulos = escolhidos;
-        }
+        if (ModoEscritorio) modulos = ModulosEmpresa.Escritorio;   // o registro do escritório fica só no Escritório
         else
         {
             if (!await main.ConfirmarAsync("Cadastrar empresa", MensagensEmpresa.AvisoCompartilhado
@@ -369,7 +373,9 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             NaturezaJuridica.Trim(), Cnae, Uf.Trim(), MunicipioIbge.Trim(),
             DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), Regime, (int)(AnoExercicio ?? DateTime.Today.Year),
             ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario(), modulos));
-        MostrarResultado(r, $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos. {MensagensEmpresa.CodigoUnico(r.Valor)}");
+        MostrarResultado(r, ModoEscritorio
+            ? "Escritório cadastrado. Agora cadastre as empresas atendidas em Cadastros › Clientes (o próprio escritório pode ser o primeiro cliente)."
+            : $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos. {MensagensEmpresa.CodigoUnico(r.Valor)}");
         if (!r.Sucesso) return false;
         if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);
         if (!await SalvarLogoAsync(app, r.Valor)) return false;

@@ -611,7 +611,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (Modulo.GerenciaSistema && EmpresasPermitidas.Count == 0 && Sessao?.Administrador == true)
         {
             Abrir(TelasComuns.Empresas);
-            Status = "Primeiro uso: cadastre o escritório contábil (Buscar na Receita) e, depois, os clientes em Cadastros › Clientes.";
+            Status = "Primeiro uso: cadastre os dados do escritório contábil (Buscar na Receita) e, depois, as empresas atendidas em Cadastros › Clientes — o próprio escritório pode ser o primeiro cliente.";
         }
         else Abrir(TelasComuns.Inicio);
     }

@@ -1,21 +1,27 @@
 # Escritório
 
-Módulo **Vorticis Escritório** (ícone azul): o gerenciador **do próprio escritório contábil**. As empresas usadas nos demais módulos são os **clientes** cadastrados aqui: o cliente é levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Clientes:**, é o **próprio escritório**, dono das tarefas, protocolos, honorários e contratos. O Escritório não tem cadastro de fornecedores.
+Módulo **Vorticis Escritório** (ícone azul): o gerenciador **do próprio escritório contábil**. O Escritório **não é o cadastro geral de empresas**: o cadastro de **clientes** serve para acompanhar as empresas contratadas, e é a partir dele que o trabalho nas empresas começa. As empresas usadas nos demais módulos são os **clientes** cadastrados aqui: o cliente é levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Clientes:**, é o **próprio escritório**, dono das tarefas, protocolos, honorários e contratos. O Escritório não tem cadastro de fornecedores.
 
 Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
 
 ## Primeiro uso
 
-Na instalação, o Escritório é o módulo aberto ao final. Depois de entrar com o administrador, se ainda não houver escritório cadastrado, a tela *Cadastros › Escritório* abre sozinha: cadastre o seu escritório contábil e, em seguida, os clientes em *Cadastros › Clientes*, marcando os módulos de cada um.
+Na instalação, o Escritório é o módulo aberto ao final. Depois de entrar com o administrador, se ainda não houver escritório cadastrado, a tela *Cadastros › Dados do escritório* abre sozinha: cadastre o seu escritório contábil e, em seguida, as empresas atendidas em *Cadastros › Clientes*, marcando os módulos de cada uma. **O próprio escritório pode ser o primeiro cliente**, para fazer nos módulos a contabilidade, a folha ou o fiscal dele mesmo.
 
 O Escritório também administra a suíte: **usuários e controle de acesso** (*Configurações › Usuários e controle de acesso*) e o **banco de dados** (*Configurações › Banco de dados*: conexão, backup e restauração, senha do administrador e limpeza). Com o Escritório instalado, essas funções saem dos outros módulos.
 
-## Escritório
+## Dados do escritório
 
-**Para que serve:** cadastrar o próprio escritório contábil (o contador), que é o escolhido no topo da tela.
-**Onde fica:** *Cadastros › Escritório* (primeiro item do menu).
+**Para que serve:** cadastrar o próprio escritório contábil (o contador), que é o escolhido no topo da tela e o dono das tarefas, protocolos, honorários e contratos.
+**Onde fica:** *Cadastros › Dados do escritório* (primeiro item do menu).
 
-É o mesmo cadastro de empresas dos outros módulos: digite o **CNPJ**, clique em **Buscar na Receita**, confira os dados e grave com o módulo **Escritório** marcado. Só os escritórios aparecem na escolha do topo; os clientes ficam nos módulos que contrataram. O escritório recebe o código **9999** e não ocupa a numeração das empresas: o primeiro cliente levado aos módulos fica com o código **0001**, o segundo com 0002, e assim por diante.
+Esta tela **não é o cadastro geral de empresas**: mostra só o escritório, sem plano de contas, sócios, contadores ou módulos. Digite o **CNPJ**, clique em **Buscar na Receita**, confira os dados e clique em **Salvar**. Só o escritório aparece na escolha do topo; as empresas atendidas ficam em *Cadastros › Clientes* e nos módulos que contrataram. O escritório recebe o código **9999** e não ocupa a numeração das empresas: o primeiro cliente levado aos módulos fica com o código **0001**, o segundo com 0002, e assim por diante.
+
+### O escritório como cliente
+Para usar os módulos no próprio escritório (a contabilidade, a folha ou o fiscal dele), cadastre-o também em *Cadastros › Clientes*, com o mesmo CNPJ, e marque os módulos na aba **Módulos do contrato**. Nos módulos ele vira uma empresa à parte, com código da numeração normal (por exemplo, **0001**), sem misturar com os dados do escritório desta tela.
+
+### Empresas cadastradas direto nos módulos
+Uma empresa incluída no cadastro de empresas do Contábil, do Fiscal ou da Folha fica ativa só naquele módulo. Para acompanhá-la no Escritório (tarefas, honorários) e escolher os outros módulos, cadastre-a como cliente com o **mesmo CNPJ**: o cliente fica ligado à empresa que já existe (nada é duplicado) e os módulos marcados no contrato passam a valer para ela.
 
 ## Clientes
 

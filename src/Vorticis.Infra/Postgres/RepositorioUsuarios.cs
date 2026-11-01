@@ -296,6 +296,8 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
              WHERE e.ativa AND (@adm OR ue.perfil_id IS NOT NULL) AND e.{coluna} = @ativas
                -- módulo bloqueado no cadastro do usuário: nenhuma empresa
                AND (@adm OR EXISTS (SELECT 1 FROM core.usuario u WHERE u.id = @u AND (u.modulos IS NULL OR u.modulos & @bit <> 0)))
+               -- no Escritório a escolha do topo é só o próprio escritório (as empresas dos clientes ficam no cadastro de clientes)
+               AND (@bit <> 8 OR e.escritorio_proprio)
              ORDER BY e.razao_social
             """).Com("u", usuarioId).Com("adm", administrador).Com("ativas", ativas).Com("bit", (short)modulo);
         var res = new List<EmpresaPermitida>();

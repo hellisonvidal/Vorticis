@@ -481,8 +481,13 @@ public sealed partial class SuiteViewModel : ObservableObject
         if (!modulo.Vm.Logado && Principal.Logado) { Status($"O {modulo.NomeCompleto} ainda está entrando com o seu usuário. Tente de novo em instantes."); return; }
         if (!Principal.Logado && !ReferenceEquals(modulo.Vm, Principal)) { Status("Entre com o seu usuário primeiro."); return; }
         var empresa = Ativo.Vm.EmpresaSelecionada?.Id;
+        var anterior = modulo.Vm.EmpresaSelecionada;
         Ativo = modulo;
         if (empresa is { } id && modulo.Vm.EmpresasPermitidas.FirstOrDefault(e => e.Id == id) is { } mesma) modulo.Vm.EmpresaSelecionada = mesma;
+        // a caixa de empresa do topo troca de lista junto com o módulo e, sem a empresa anterior nela, limpava a escolha deste módulo
+        // (no Escritório, que só lista o próprio escritório, isso acontecia sempre): volta a empresa que o módulo já tinha
+        else if (modulo.Vm.EmpresaSelecionada is null)
+            modulo.Vm.EmpresaSelecionada = anterior is not null && modulo.Vm.EmpresasPermitidas.Contains(anterior) ? anterior : modulo.Vm.EmpresasPermitidas.FirstOrDefault();
         AoTrocar?.Invoke(this, modulo);
     }
 

@@ -100,6 +100,48 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
     }
 
     [Fact]
+    public async Task Escritorio_pode_ser_o_primeiro_cliente_sem_misturar_com_o_cadastro_do_escritorio()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = await db.AdminAsync();
+        const string cnpj = "34028316000103";
+        var cadastro = await db.App.Empresas.CadastrarAsync(new NovaEmpresa(cnpj, "Contabilidade Exemplo Ltda", null, "2062", "6920601", "SP", "3550308",
+            new DateOnly(2015, 1, 1), RegimeTributario.SimplesNacional, 2026, ImportarPlanoModelo: false, Modulos: ModulosEmpresa.Escritorio), ct);
+        Assert.True(cadastro.Sucesso, string.Join("; ", cadastro.Erros));
+        var escritorio = cadastro.Valor;
+        Assert.True(escritorio >= 9000);                                                                     // código 9999...
+        Assert.True(await db.EscalarAsync<bool>("SELECT escritorio_proprio FROM core.empresa WHERE id = @e", ("e", escritorio)));
+        // outro escritório com o mesmo CNPJ não
+        Assert.Contains("Já existe escritório", (await db.App.Empresas.CadastrarAsync(new NovaEmpresa(cnpj, "Repetido", null, "2062", "6920601", "SP", "3550308",
+            new DateOnly(2015, 1, 1), RegimeTributario.SimplesNacional, 2026, ImportarPlanoModelo: false, Modulos: ModulosEmpresa.Escritorio), ct)).Erros[0]);
+
+        // o próprio escritório como cliente, com a própria contabilidade e folha: vira outra empresa (numeração normal) nos módulos
+        var svc = ServicosEscritorio.De(db.App);
+        var proprio = new PessoaEscritorio(0, 1, true, false, "Contabilidade Exemplo Ltda", cnpj, "Simples Nacional", NaturezaJuridica: "2062", Cnae: "6920601",
+            Uf: "SP", CodMunicipioIbge: "3550308", Municipio: "São Paulo", InicioAtividades: new DateOnly(2015, 1, 1), Modulos: ModulosEmpresa.Contabil | ModulosEmpresa.Folha);
+        var r = await svc.GravarPessoaAsync(escritorio, proprio, adm, ct);
+        Assert.True(r.Sucesso, string.Join("; ", r.Erros));
+        var vinculada = Assert.Single(await svc.ListarPessoasAsync(escritorio, adm, ct), p => p.Id == r.Valor).EmpresaVinculadaId!.Value;
+        Assert.NotEqual(escritorio, vinculada);
+        Assert.True(vinculada < 9000);
+        Assert.Equal(2L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM core.empresa WHERE cnpj = @c", ("c", cnpj)));
+        Assert.True(await db.EscalarAsync<bool>("SELECT modulo_escritorio AND NOT modulo_contabil FROM core.empresa WHERE id = @e", ("e", escritorio)));
+
+        // o registro do escritório nunca fica ativo nos outros módulos
+        await Assert.ThrowsAnyAsync<Npgsql.PostgresException>(() =>
+            db.EscalarAsync<int>("UPDATE core.empresa SET modulo_contabil = TRUE WHERE id = @e RETURNING 1", ("e", escritorio)));
+
+        // no Escritório, a escolha do topo mostra só o escritório; a empresa do escritório-cliente fica no Contábil
+        var sessao = new Vorticis.Domain.Seguranca.SessaoUsuario(adm, "adm", "Adm", true, false);
+        var noEscritorio = await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Escritorio, ct);
+        Assert.Contains(noEscritorio, e => e.Id == escritorio);
+        Assert.DoesNotContain(noEscritorio, e => e.Id == vinculada);
+        Assert.Contains(await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Contabil, ct), e => e.Id == vinculada);
+        Assert.Empty(await db.App.Usuarios.EmpresasForaDoModuloAsync(sessao, ModulosEmpresa.Escritorio, ct));
+    }
+
+    [Fact]
     public async Task Cadastro_proprio_tarefas_honorarios_protocolo_e_contratos()
     {
         BancoDeTeste.ExigirBanco();

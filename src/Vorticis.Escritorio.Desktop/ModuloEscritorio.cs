@@ -6,7 +6,7 @@ namespace Vorticis.Escritorio.Desktop;
 
 /// <summary>
 /// Módulo Escritório: só a gestão do próprio escritório contábil. Os clientes cadastrados aqui são as empresas usadas nos demais
-/// módulos (cadastradas neles pelos módulos do contrato). A empresa ativa é o próprio escritório, mostrado no topo como "Clientes". Permissões ESCRITORIO_* conferidas nos serviços.
+/// módulos (cadastradas neles pelos módulos do contrato); o próprio escritório pode ser um deles. A empresa ativa é o próprio escritório, mostrado no topo como "Clientes". Permissões ESCRITORIO_* conferidas nos serviços.
 /// </summary>
 public sealed class ModuloEscritorio : IModuloDesktop
 {
@@ -22,8 +22,11 @@ public sealed class ModuloEscritorio : IModuloDesktop
     public bool UsaClientesFornecedores => false;
     public bool UsaCalendarioObrigacoes => false;
 
-    /// <summary>Cadastros: Escritório (o cadastro de empresas, aqui só os escritórios) e Clientes; o escolhido no topo aparece como "Clientes:".</summary>
-    public string RotuloEmpresas => "Escritório";
+    /// <summary>
+    /// Cadastros: Dados do escritório (só o próprio escritório; não é o cadastro geral de empresas) e Clientes, que é onde as empresas
+    /// atendidas são cadastradas e levadas aos módulos. O escritório escolhido no topo aparece como "Clientes:".
+    /// </summary>
+    public string RotuloEmpresas => "Dados do escritório";
     public string RotuloEmpresaAtiva => "Clientes";
 
     /// <summary>Usuários, controle de acesso e banco de dados (conexão, backup, restauração, limpeza) da suíte ficam no Escritório.</summary>

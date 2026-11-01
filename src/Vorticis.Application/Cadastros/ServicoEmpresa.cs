@@ -174,7 +174,8 @@ public sealed partial record ConfiguracaoContabil(
 
 public interface IRepositorioEmpresa
 {
-    Task<bool> CnpjExisteAsync(string cnpj, CancellationToken ct);
+    /// <summary>Já existe empresa (ou, com <paramref name="escritorio"/>, registro de escritório) com o CNPJ.</summary>
+    Task<bool> CnpjExisteAsync(string cnpj, bool escritorio, CancellationToken ct);
     /// <summary>Cria empresa, regime, exercício com 12 períodos e (opcional) o plano de contas, numa transação.</summary>
     Task<long> CriarAsync(NovaEmpresa empresa, IReadOnlyList<ContaModelo> plano, CancellationToken ct);
     Task CriarExercicioAsync(long empresaId, int ano, CancellationToken ct);
@@ -235,7 +236,10 @@ public sealed class ServicoEmpresa(IRepositorioEmpresa repositorio, IFontePlanoM
         erros.AddRange(contabil.Validar(e.DataInicioAtividades));
         if (erros.Count > 0) return Resultado<long>.Falha(erros);
 
-        if (await repositorio.CnpjExisteAsync(cnpj, ct)) return Resultado<long>.Falha("Já existe empresa com este CNPJ.");
+        // o registro do próprio escritório (só no módulo Escritório) não conflita com a empresa do escritório como cliente
+        var soEscritorio = e.Modulos == ModulosEmpresa.Escritorio;
+        if (await repositorio.CnpjExisteAsync(cnpj, soEscritorio, ct))
+            return Resultado<long>.Falha(soEscritorio ? "Já existe escritório com este CNPJ." : "Já existe empresa com este CNPJ.");
 
         var normalizada = e with
         {

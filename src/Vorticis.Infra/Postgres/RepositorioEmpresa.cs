@@ -5,9 +5,10 @@ namespace Vorticis.Infra.Postgres;
 
 public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpresa
 {
-    public async Task<bool> CnpjExisteAsync(string cnpj, CancellationToken ct)
+    public async Task<bool> CnpjExisteAsync(string cnpj, bool escritorio, CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT EXISTS (SELECT 1 FROM core.empresa WHERE cnpj = @c)").Com("c", cnpj);
+        await using var cmd = ds.CreateCommand("SELECT EXISTS (SELECT 1 FROM core.empresa WHERE cnpj = @c AND escritorio_proprio = @e)")
+            .Com("c", cnpj).Com("e", escritorio);
         return (bool)(await cmd.ExecuteScalarAsync(ct))!;
     }
 

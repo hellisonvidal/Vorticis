@@ -141,7 +141,7 @@
     </ScrollViewer>
 
     <DockPanel Grid.Row="1" Grid.Column="2" IsEnabled="{Binding !EmEdicao}">
-      <TextBlock DockPanel.Dock="Top" Text="Empresas cadastradas" FontWeight="SemiBold" Margin="0,0,0,6" />
+      <TextBlock DockPanel.Dock="Top" Text="{Binding TituloLista}" FontWeight="SemiBold" Margin="0,0,0,6" />
       <ListBox ItemsSource="{Binding Main.EmpresasPermitidas}" SelectedItem="{Binding Main.EmpresaSelecionada}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="seg:EmpresaPermitida">
@@ -157,19 +157,19 @@
     </DockPanel>
   </Grid>
     </TabItem>
-    <TabItem Header="Sócios" IsEnabled="{Binding TemEmpresaSelecionada}">
+    <TabItem Header="Sócios" IsEnabled="{Binding TemEmpresaSelecionada}" IsVisible="{Binding MostraAbasEmpresa}">
       <DockPanel>
         <TextBlock DockPanel.Dock="Top" Classes="empresa-aba" Text="{Binding EmpresaSelecionadaRotulo}" />
         <ContentControl Content="{Binding Main.Socios}" />
       </DockPanel>
     </TabItem>
-    <TabItem Header="Contadores" IsEnabled="{Binding TemEmpresaSelecionada}">
+    <TabItem Header="Contadores" IsEnabled="{Binding TemEmpresaSelecionada}" IsVisible="{Binding MostraAbasEmpresa}">
       <DockPanel>
         <TextBlock DockPanel.Dock="Top" Classes="empresa-aba" Text="{Binding EmpresaSelecionadaRotulo}" />
         <ContentControl Content="{Binding Main.Contabilidade}" />
       </DockPanel>
     </TabItem>
-    <TabItem Header="Contabilidade" IsEnabled="{Binding PodeAbaContabilidade}">
+    <TabItem Header="Contabilidade" IsEnabled="{Binding PodeAbaContabilidade}" IsVisible="{Binding MostraAbasEmpresa}">
       <Grid RowDefinitions="Auto,*" Margin="8,4,8,0">
         <v:BarraCadastroView Margin="0,0,0,8" />
         <ScrollViewer Grid.Row="1">

@@ -340,7 +340,8 @@ public sealed class ServicoUsuarios(IRepositorioUsuarios repositorio, TimeProvid
 
     /// <summary>Empresas que o usuário pode acessar mas que ainda não estão ativas no módulo (para oferecer a ativação).</summary>
     public async Task<IReadOnlyList<EmpresaPermitida>> EmpresasForaDoModuloAsync(SessaoUsuario sessao, Cadastros.ModulosEmpresa modulo, CancellationToken ct = default)
-        => sessao.Implantacao ? [] : await repositorio.ListarEmpresasPermitidasNoModuloAsync(sessao.Id, sessao.Administrador, modulo, false, ct);
+        => sessao.Implantacao || modulo == Cadastros.ModulosEmpresa.Escritorio   // o Escritório não ativa empresas: os clientes vêm do cadastro de clientes
+            ? [] : await repositorio.ListarEmpresasPermitidasNoModuloAsync(sessao.Id, sessao.Administrador, modulo, false, ct);
 
     private const string MensagemSemModulo = "Marque ao menos um módulo que o usuário pode acessar.";
 

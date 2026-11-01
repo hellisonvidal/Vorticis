@@ -110,7 +110,7 @@ public sealed class ServicoEscritorio
         var complemento = new Vorticis.Application.Cadastros.ComplementoEmpresa(p.Cep, p.Logradouro, p.Numero, p.Complemento, p.Bairro, p.Municipio, p.Email, p.Telefone,
                                                                               FonteDados: "Cadastro de clientes do Escritório");
         var vinculada = p.EmpresaVinculadaId
-            ?? await _db.EscalarAsync<long?>("SELECT id FROM core.empresa WHERE cnpj = @c", ct, ("c", p.Documento));
+            ?? await _db.EscalarAsync<long?>("SELECT id FROM core.empresa WHERE cnpj = @c AND NOT escritorio_proprio", ct, ("c", p.Documento));
         if (vinculada is { } id && await _empresas.ObterAsync(id, ct) is { } atual)
         {
             var r = await _empresas.AlterarAsync(new Vorticis.Application.Cadastros.AlteracaoEmpresa(id, p.Nome, p.NomeFantasia, p.NaturezaJuridica!, p.Cnae!, p.Uf!,
