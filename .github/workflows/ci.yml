@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main, "claude/**", "ccr-**", "frota-*"]
+    tags: ["v*"]   # v1.0.0, v1.1.0...: publica o instalador e o portátil numa Release (sem prazo para apagar)
   pull_request:
 
 concurrency:
@@ -43,6 +44,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 40
     needs: testes
+    permissions:
+      contents: write   # só usado nas tags de versão, para criar a Release
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -116,3 +119,19 @@ jobs:
           retention-days: 3   # apagados sozinhos em 3 dias (o armazenamento do GitHub é limitado)
           name: VorticisSuiteEmpresarial-portatil
           path: portatil/VorticisSuite/
+      - name: Conferir a versão da tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $versao = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
+          if ("v$versao" -ne "${{ github.ref_name }}") { throw "A tag ${{ github.ref_name }} não confere com a versão $versao do Directory.Build.props" }
+          Compress-Archive -Path portatil/VorticisSuite/* -DestinationPath "saida/VorticisSuiteEmpresarial-portatil-$versao.zip"
+      - name: Publicar a Release da versão
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Vorticis ${{ github.ref_name }}
+          body_path: docs/notas-da-versao.md
+          files: |
+            saida/Setup-Vorticis-*.exe
+            saida/VorticisSuiteEmpresarial-portatil-*.zip

@@ -10,7 +10,9 @@
 
 Os módulos compartilham o mesmo banco, o mesmo login, as mesmas empresas e as mesmas configurações. Você pode abri-los ao mesmo tempo.
 
-**Dicas:** para atualizar, basta rodar o instalador novo: os dados são preservados. Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
+**Versões e atualizações:** o Vorticis começa na versão **1.0.0**. Cada versão nova é publicada no GitHub, na página *Releases* do projeto, com o instalador e as **notas da versão** (o que mudou). Para atualizar, baixe e rode o instalador novo: os dados são preservados e o banco é atualizado sozinho na primeira abertura. A versão em uso aparece em *Ajuda › Sobre* e na tela inicial.
+
+**Dicas:** Desinstalar remove o programa, mas **não** apaga os dados (pasta `%LOCALAPPDATA%\Vorticis`). Há também versões portáteis (descompacte e execute).
 
 ## Vorticis Suite Empresarial (todos os módulos numa janela)
 
