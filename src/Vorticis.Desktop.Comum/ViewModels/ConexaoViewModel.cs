@@ -15,6 +15,21 @@ public partial class ConexaoViewModel(MainViewModelBase main) : ModuloViewModel(
     [ObservableProperty] private string? _falha;
     [ObservableProperty] private bool _mostrarSenha;
 
+    // ---- servidor na rede ou na nuvem: conexão segura e tempos
+    public static IReadOnlyList<string> ModosSsl { get; } = [.. ConexaoRemota.Modos.Select(m => m.Nome)];
+    [ObservableProperty] private int _modoSsl;
+    [ObservableProperty] private decimal? _tempoLimite = ConexaoRemota.TempoLimitePadrao;
+    [ObservableProperty] private decimal? _keepAlive;
+
+    /// <summary>Servidor fora da rede interna sem conexão segura exigida: alerta na tela.</summary>
+    public string AvisoNuvem => ConexaoRemota.PareceNuvem(Servidor) && ConexaoRemota.Modos[Math.Clamp(ModoSsl, 0, ConexaoRemota.Modos.Count - 1)].Modo
+                                    is Npgsql.SslMode.Prefer or Npgsql.SslMode.Disable
+        ? "Servidor fora da rede interna: escolha \"Exigir conexão segura\" para os dados não trafegarem abertos pela internet."
+        : "";
+
+    partial void OnServidorChanged(string value) => OnPropertyChanged(nameof(AvisoNuvem));
+    partial void OnModoSslChanged(int value) => OnPropertyChanged(nameof(AvisoNuvem));
+
     /// <summary>Modo escolhido na tela: banco local do Vorticis ou servidor PostgreSQL.</summary>
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(EditandoServidor))] private bool _usarBancoLocal;
 
@@ -80,6 +95,7 @@ public partial class ConexaoViewModel(MainViewModelBase main) : ModuloViewModel(
     {
         var b = new NpgsqlConnectionStringBuilder(connectionString);
         (Servidor, Porta, Banco, Usuario, Senha) = (b.Host ?? "localhost", b.Port, b.Database ?? "vorticis", b.Username ?? "", b.Password ?? "");
+        (ModoSsl, TempoLimite, KeepAlive) = ConexaoRemota.Ler(b);
         Falha = falha;
         UsandoBancoLocal = main.App is not null && BancoDoAplicativo.EhBancoLocal(main.ConnectionString);
         UsarBancoLocal = BancoLocalDisponivel && (UsandoBancoLocal || Configuracao.Carregar().Modo == ModoBanco.Local);
@@ -170,10 +186,8 @@ public partial class ConexaoViewModel(MainViewModelBase main) : ModuloViewModel(
         await main.IniciarAsync();
     }
 
-    private string Montar() => new NpgsqlConnectionStringBuilder
-    {
-        Host = Servidor.Trim(), Port = (int)(Porta ?? 5432), Database = Banco.Trim(), Username = Usuario.Trim(), Password = Senha,
-    }.ConnectionString;
+    private string Montar() => ConexaoRemota.Montar(Servidor, (int)(Porta ?? 5432), Banco, Usuario, Senha, ModoSsl, (int)(TempoLimite ?? ConexaoRemota.TempoLimitePadrao),
+                                                   (int)(KeepAlive ?? 0));
 
     [RelayCommand]
     private async Task TestarAsync()

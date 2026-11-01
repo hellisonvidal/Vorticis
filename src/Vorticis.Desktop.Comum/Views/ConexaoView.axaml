@@ -65,7 +65,7 @@
           <RadioButton GroupName="ModoBanco" IsChecked="{Binding EditandoServidor}" FontWeight="SemiBold" IsVisible="{Binding BancoLocalDisponivel}"
                        Content="Servidor PostgreSQL (rede ou nuvem)" />
           <TextBlock FontWeight="SemiBold" Text="Servidor PostgreSQL" IsVisible="{Binding !BancoLocalDisponivel}" />
-          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EditandoServidor}">
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EditandoServidor}">
             <TextBlock Text="Servidor" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding Servidor}" />
             <TextBlock Grid.Row="1" Text="Porta" VerticalAlignment="Center" />
@@ -76,7 +76,16 @@
             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Usuario}" />
             <TextBlock Grid.Row="4" Text="Senha" VerticalAlignment="Center" />
             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Senha}" PasswordChar="{Binding CaractereSenha}" />
+            <TextBlock Grid.Row="5" Text="Conexão segura (SSL)" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:ConexaoViewModel.ModosSsl}" SelectedIndex="{Binding ModoSsl}" Width="320" />
+            <TextBlock Grid.Row="6" Text="Tempo limite (segundos)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="6" Grid.Column="1" Value="{Binding TempoLimite}" Minimum="1" Maximum="300" FormatString="0" Width="160" HorizontalAlignment="Left"
+                           ToolTip.Tip="Quanto esperar para abrir a conexão (servidores na nuvem podem demorar mais)." />
+            <TextBlock Grid.Row="7" Text="Manter conexão viva (s)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="7" Grid.Column="1" Value="{Binding KeepAlive}" Minimum="0" Maximum="3600" FormatString="0" Width="160" HorizontalAlignment="Left"
+                           ToolTip.Tip="Envia um sinal a cada tantos segundos para a nuvem não derrubar a conexão parada (vazio ou 0 = desligado; sugestão: 60)." />
           </Grid>
+          <TextBlock Text="{Binding AvisoNuvem}" Classes="erro" TextWrapping="Wrap" IsVisible="{Binding AvisoNuvem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
       </Border>
       </Expander>

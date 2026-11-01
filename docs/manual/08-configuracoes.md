@@ -54,6 +54,16 @@ Recomeça o sistema **do zero**: apaga **todas** as empresas com tudo o que é d
 - **Banco de dados local do Vorticis**: porta, pasta dos dados e troca da senha do banco (deixe em branco para manter). **Recriar o banco local** cria um novo e guarda o antigo como `banco.backup-<data>`.
 - **Servidor PostgreSQL (rede ou nuvem)**: informe servidor, porta, banco, usuário e senha (*Mostrar senhas* ajuda a conferir), **Testar conexão** e **Salvar e reconectar**. É assim que vários computadores usam o mesmo banco. O botão para usar o banco local volta ao embutido.
 
+### Banco de dados na nuvem
+O Vorticis funciona com um PostgreSQL contratado num provedor de nuvem (serviço de banco de dados gerenciado), para o escritório e os computadores de fora usarem os mesmos dados:
+1. No provedor, crie o banco (PostgreSQL 14 ou mais novo), um usuário com senha forte e **libere o acesso** (firewall) para os endereços de internet dos computadores que vão usar o sistema.
+2. Em *Servidor PostgreSQL (rede ou nuvem)*, informe o endereço do servidor, a porta (normalmente 5432), o banco, o usuário e a senha.
+3. Em **Conexão segura (SSL)**, escolha **Exigir conexão segura (nuvem)**; se o provedor fornecer o certificado, use **Exigir e conferir o certificado do servidor**. Com servidor fora da rede interna e a conexão segura desligada, a tela avisa.
+4. Se a conexão demorar, aumente o **Tempo limite**. Se ficar parada e cair, informe **Manter conexão viva** (sugestão: 60 segundos).
+5. **Testar conexão** e **Salvar e reconectar**. Na primeira conexão o sistema cria as tabelas.
+
+Os backups (*Backup e restauração*) também funcionam com o banco na nuvem; guarde as cópias fora do provedor. A velocidade depende da internet: com conexão lenta, telas de muitos lançamentos demoram mais.
+
 ## Certificados digitais
 
 **Para que serve:** guardar os certificados usados para assinar ECD, ECF, SPED, PDFs e para transmitir o eSocial.
