@@ -1,3 +1,14 @@
+# Vorticis 1.0.3
+
+## Novidades desta versão
+
+### Suite
+- **A Vorticis Suite Empresarial ganhou a aparência nova dos módulos:** barra de menus clara com a faixa na cor do módulo à frente, a empresa num seletor arredondado e o seu usuário com as iniciais num círculo, as mesmas etiquetas arredondadas das funções abertas e os mesmos botões, campos e listas, nos cinco visuais e nos temas claro e escuro.
+
+Para atualizar, rode o **Setup-Vorticis-1.0.3.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.0.2
 
 ## Novidades desta versão
@@ -57,12 +68,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.2.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.3.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.2.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.3.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
