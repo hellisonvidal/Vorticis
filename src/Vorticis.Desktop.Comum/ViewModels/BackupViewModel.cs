@@ -19,6 +19,26 @@ public partial class BackupViewModel(MainViewModelBase main) : ModuloViewModel(m
 
     [ObservableProperty] private string _pasta = ServicoBackup.PastaPadrao;
     [ObservableProperty] private BackupLinha? _selecionado;
+    [ObservableProperty] private bool _automaticoLigado = true;
+    [ObservableProperty] private decimal? _automaticoManter = BackupAutomatico.ManterPadrao;
+    [ObservableProperty] private string _ultimoAutomatico = "";
+
+    private void MostrarAutomatico(BackupAutomatico b)
+    {
+        (AutomaticoLigado, AutomaticoManter) = (b.Ligado, b.Manter);
+        UltimoAutomatico = b.Ultimo is { } u ? $"Último backup automático: {u.ToLocalTime():dd/MM/yyyy HH:mm}" : "Ainda não houve backup automático.";
+    }
+
+    [RelayCommand]
+    private async Task SalvarAutomaticoAsync()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (main.App is not { } app || main.Sessao is not { } sessao) return;
+        var r = await app.ConfiguracoesGerais.SalvarBackupAutomaticoAsync(sessao, AutomaticoLigado, (int)(AutomaticoManter ?? BackupAutomatico.ManterPadrao));
+        MostrarResultado(r, AutomaticoLigado ? $"Backup automático ligado: guarda os últimos {AutomaticoManter:0}." : "Backup automático desligado.");
+        if (r.Sucesso) MostrarAutomatico(await app.ConfiguracoesGerais.BackupAutomaticoAsync());
+    }
 
     [RelayCommand]
     private void AtualizarLista() => Atualizar();
@@ -30,8 +50,10 @@ public partial class BackupViewModel(MainViewModelBase main) : ModuloViewModel(m
         if (main.App is { } app)
         {
             var pasta = await app.ConfiguracoesGerais.PastaBackupAsync();
+            var automatico = await app.ConfiguracoesGerais.BackupAutomaticoAsync();
             if (!EhAtual(g)) return;                       // pasta escolhida enquanto carregava: não sobrescreve
             Pasta = pasta;
+            MostrarAutomatico(automatico);
         }
         Atualizar();
     }

@@ -97,6 +97,44 @@ public sealed class ServicoBackup(IBackupBanco backup)
         }
     }
 
+    public const string PrefixoAutomatico = "automatico";
+
+    /// <summary>
+    /// Backup automático do dia: se estiver ligado e ainda não foi feito hoje (em nenhum computador), grava na pasta dos backups com o
+    /// prefixo "automatico" e apaga os automáticos mais antigos que passarem do limite (os feitos à mão não são apagados).
+    /// Roda para qualquer usuário que entrar: é o sistema que faz, com a configuração do administrador. Devolve o arquivo, ou null se não era a hora.
+    /// </summary>
+    public async Task<Resultado<string?>> AutomaticoDoDiaAsync(ServicoConfiguracoesGerais configuracoes, DateTimeOffset agora, CancellationToken ct = default)
+    {
+        try
+        {
+            var cfg = await configuracoes.BackupAutomaticoAsync(ct);
+            if (!cfg.Ligado || cfg.Ultimo is { } u && u.ToLocalTime().Date >= agora.ToLocalTime().Date) return Resultado<string?>.Ok(null);
+            await configuracoes.MarcarBackupAutomaticoAsync(agora, ct);
+            var pasta = await configuracoes.PastaBackupAsync(ct);
+            Directory.CreateDirectory(pasta);
+            var arquivo = await backup.GerarAsync(pasta, PrefixoAutomatico, ct);
+            Podar(pasta, cfg.Manter);
+            return Resultado<string?>.Ok(arquivo);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return Resultado<string?>.Falha($"O backup automático do dia não foi feito: {ex.Message}");
+        }
+    }
+
+    /// <summary>Apaga os backups automáticos mais antigos, deixando os <paramref name="manter"/> mais novos.</summary>
+    public static int Podar(string pasta, int manter)
+    {
+        var velhos = Listar(pasta).Where(a => a.Nome.StartsWith(PrefixoAutomatico, StringComparison.OrdinalIgnoreCase)).Skip(Math.Max(1, manter)).ToList();
+        foreach (var a in velhos)
+        {
+            try { File.Delete(a.Caminho); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { /* em uso: fica para a próxima */ }
+        }
+        return velhos.Count;
+    }
+
     /// <returns>Caminho do backup de segurança gerado antes da restauração.</returns>
     public async Task<Resultado<string>> RestaurarAsync(SessaoUsuario sessao, string arquivo, string pastaSeguranca, CancellationToken ct = default)
     {

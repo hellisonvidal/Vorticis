@@ -5,6 +5,12 @@ namespace Vorticis.Application.Sistema;
 
 public sealed record ConfiguracoesGerais(string? PastaBackup = null);
 
+/// <summary>Backup automático: uma vez por dia, no primeiro acesso do dia; guarda os últimos <paramref name="Manter"/>.</summary>
+public sealed record BackupAutomatico(bool Ligado = true, int Manter = BackupAutomatico.ManterPadrao, DateTimeOffset? Ultimo = null)
+{
+    public const int ManterPadrao = 7, ManterMaximo = 90;
+}
+
 /// <summary>Configurações › Configurações gerais (valem para todos os usuários e empresas).</summary>
 public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao repositorio)
 {
@@ -28,6 +34,31 @@ public sealed class ServicoConfiguracoesGerais(IRepositorioConfiguracao reposito
         await repositorio.GravarAsync(new Dictionary<string, string?> { [ChavePastaBackup] = p }, admin.Id, ct);
         return Resultado.Ok();
     }
+
+    private const string ChaveBackupLigado = "backup_automatico", ChaveBackupManter = "backup_automatico_manter", ChaveBackupUltimo = "backup_automatico_ultimo";
+
+    /// <summary>Configuração do backup automático (ligado por padrão: guarda os 7 últimos).</summary>
+    public async Task<BackupAutomatico> BackupAutomaticoAsync(CancellationToken ct = default)
+    {
+        var v = await repositorio.LerAsync([ChaveBackupLigado, ChaveBackupManter, ChaveBackupUltimo], ct);
+        string? L(string k) => v.TryGetValue(k, out var x) && x.Valor.Length > 0 ? x.Valor : null;
+        return new BackupAutomatico(L(ChaveBackupLigado) != "0",
+                                    int.TryParse(L(ChaveBackupManter), out var m) ? Math.Clamp(m, 1, BackupAutomatico.ManterMaximo) : BackupAutomatico.ManterPadrao,
+                                    DateTimeOffset.TryParse(L(ChaveBackupUltimo), System.Globalization.CultureInfo.InvariantCulture,
+                                                            System.Globalization.DateTimeStyles.AssumeUniversal, out var u) ? u : null);
+    }
+
+    public async Task<Resultado> SalvarBackupAutomaticoAsync(SessaoUsuario admin, bool ligado, int manter, CancellationToken ct = default)
+    {
+        if (!admin.Administrador) return Resultado.Falha("Somente o administrador configura o backup automático.");
+        if (manter is < 1 or > BackupAutomatico.ManterMaximo) return Resultado.Falha($"Guarde de 1 a {BackupAutomatico.ManterMaximo} backups automáticos.");
+        await repositorio.GravarAsync(new Dictionary<string, string?> { [ChaveBackupLigado] = ligado ? "1" : "0", [ChaveBackupManter] = manter.ToString() }, admin.Id, ct);
+        return Resultado.Ok();
+    }
+
+    /// <summary>Marca o dia do backup automático (antes de gerar: outro computador que entrar em seguida não repete).</summary>
+    public Task MarcarBackupAutomaticoAsync(DateTimeOffset quando, CancellationToken ct = default)
+        => repositorio.GravarAsync(new Dictionary<string, string?> { [ChaveBackupUltimo] = quando.ToUniversalTime().ToString("O") }, null, ct);
 
     public const string TextoConfirmacaoLimpeza = "LIMPAR";
 

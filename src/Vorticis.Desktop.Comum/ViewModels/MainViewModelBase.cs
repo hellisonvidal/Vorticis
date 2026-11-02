@@ -1043,7 +1043,28 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     private void AvisarSessaoPronta()
     {
-        if (Logado && !_implantacao && !_configuracaoInicialPendente) SessaoPronta?.Invoke(this, EventArgs.Empty);
+        if (!Logado || _implantacao || _configuracaoInicialPendente) return;
+        SessaoPronta?.Invoke(this, EventArgs.Empty);
+        _ = BackupAutomaticoAsync();
+    }
+
+    private static int _backupAutomaticoEmAndamento;
+
+    /// <summary>Desligado nos testes automatizados (o backup chama o pg_dump).</summary>
+    public static bool BackupAutomaticoAtivo { get; set; } = true;
+
+    /// <summary>Backup automático do dia (Configurações › Backup e restauração), em segundo plano, no primeiro acesso do dia.</summary>
+    private async Task BackupAutomaticoAsync()
+    {
+        if (!BackupAutomaticoAtivo || App is not { } app || Interlocked.Exchange(ref _backupAutomaticoEmAndamento, 1) == 1) return;
+        try
+        {
+            var r = await Task.Run(() => app.Backup.AutomaticoDoDiaAsync(app.ConfiguracoesGerais, DateTimeOffset.Now));
+            if (!r.Sucesso) Status = r.Erros[0];
+            else if (r.Valor is { } arquivo) Status = $"Backup automático do dia gravado em {arquivo}.";
+        }
+        catch (Exception ex) { Status = $"O backup automático do dia não foi feito: {ex.Message}"; }
+        finally { Interlocked.Exchange(ref _backupAutomaticoEmAndamento, 0); }
     }
 
     /// <summary>Suite: entra com a conexão e a sessão de outro módulo, sem nova tela de login.</summary>

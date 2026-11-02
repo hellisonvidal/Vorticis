@@ -13,6 +13,13 @@ Menu *Configurações*. As telas de backup, senha do administrador e limpeza do 
 1. Veja a **pasta** de destino. O padrão é a pasta *Backups* dentro da instalação (ou *Documentos\Vorticis Empresarial\Backups*, se não for possível gravar). **Escolher pasta...** muda o destino dos próximos backups, inclusive os automáticos.
 2. Clique em **Fazer backup agora**. O arquivo aparece na lista (nome, data e tamanho).
 
+### Backup automático
+O sistema faz sozinho **um backup por dia**: no primeiro acesso do dia, em qualquer computador, ele grava a cópia em segundo plano (dá para continuar trabalhando) e avisa na barra de baixo onde ela ficou.
+1. Na mesma tela, o quadro **Backup automático todo dia** vem **ligado**, guardando os **7 últimos**.
+2. Para mudar, marque ou desmarque a opção, informe em **Guardar os últimos** quantos backups automáticos manter (de 1 a 90) e clique em **Gravar**. Só o administrador altera.
+3. Os automáticos têm o nome começando por *automatico_*; os mais antigos que passarem do limite são apagados. Os backups feitos com **Fazer backup agora** nunca são apagados sozinhos.
+4. Embaixo aparece a data do **último backup automático**.
+
 ### Restaurar
 1. Selecione o arquivo e clique em **Restaurar backup selecionado...**.
 2. Informe a **senha de administrador** (padrão `VORTICIS`, alterável em *Senha do administrador e limpeza do banco*).
