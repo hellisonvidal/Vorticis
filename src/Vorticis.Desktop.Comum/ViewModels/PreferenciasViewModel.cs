@@ -14,6 +14,8 @@ public partial class PreferenciasViewModel(IContexto contexto) : ModuloViewModel
     [ObservableProperty] private int _tema;
     [ObservableProperty] private bool _confirmarAoFechar = true;
     [ObservableProperty] private int _diasVencimentos = 15;
+    [ObservableProperty] private int _minutosBloqueio = 15;
+    public int BloqueioMaximo => Preferencias.BloqueioMaximo;
 
     public int DiasMinimo => Preferencias.DiasMinimo;
     public int DiasMaximo => Preferencias.DiasMaximo;
@@ -21,7 +23,7 @@ public partial class PreferenciasViewModel(IContexto contexto) : ModuloViewModel
     public void Carregar()
     {
         var p = PreferenciasGerais.Atual;
-        (ConfirmarAoFechar, DiasVencimentos) = (p.ConfirmarAoFechar, p.DiasVencimentos);
+        (ConfirmarAoFechar, DiasVencimentos, MinutosBloqueio) = (p.ConfirmarAoFechar, p.DiasVencimentos, p.MinutosBloqueio);
         Tema = Math.Max(0, SuiteViewModel.Temas.ToList().FindIndex(t => t.Valor == PreferenciasGerais.Tema));
         Mensagem = null;
         Erros.Clear();
@@ -36,9 +38,14 @@ public partial class PreferenciasViewModel(IContexto contexto) : ModuloViewModel
             Erros.Add($"Os dias dos vencimentos devem ficar entre {Preferencias.DiasMinimo} e {Preferencias.DiasMaximo}.");
             return;
         }
+        if (MinutosBloqueio is < 0 or > Preferencias.BloqueioMaximo)
+        {
+            Erros.Add($"O bloqueio por inatividade vai de 0 (desligado) a {Preferencias.BloqueioMaximo} minutos.");
+            return;
+        }
         try
         {
-            PreferenciasGerais.Gravar(new Preferencias(ConfirmarAoFechar, DiasVencimentos));
+            PreferenciasGerais.Gravar(new Preferencias(ConfirmarAoFechar, DiasVencimentos, MinutosBloqueio));
             PreferenciasGerais.GravarTema(SuiteViewModel.Temas[Math.Clamp(Tema, 0, SuiteViewModel.Temas.Count - 1)].Valor);
             Mensagem = "Preferências gravadas. Valem para este computador, em todos os módulos.";
         }

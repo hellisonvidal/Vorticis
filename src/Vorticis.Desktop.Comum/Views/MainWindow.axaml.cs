@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vorticis.Desktop.Comum.Modulos;
 using Vorticis.Desktop.Comum.ViewModels;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        PrepararBloqueio();
         // Sempre inicia maximizada (tela cheia, mantendo a barra de título com o nome do programa).
         WindowState = WindowState.Maximized;
         Opened += (_, _) => WindowState = WindowState.Maximized;
@@ -200,6 +202,40 @@ public partial class MainWindow : Window
     /// A barra de funções abertas só aparece quando há função aberta (ou período de trabalho a mostrar); no layout E a faixa de opções
     /// substitui a barra de menus clássica (empresa, usuário e Exibir passam para a linha das abas).
     /// </summary>
+    private DispatcherTimer? _relogioBloqueio;
+    private List<Window> _escondidasNoBloqueio = [];
+
+    /// <summary>Bloqueio por inatividade: confere a cada 15 s; bloqueado, esconde as janelas das funções (voltam ao desbloquear).</summary>
+    private void PrepararBloqueio()
+    {
+        var b = BloqueioViewModel.Atual;
+        BloqueioViewModel.Instalar();
+        TelaBloqueio.DataContext = b;
+        b.Verificar = async senha => _vm is { App: { } app, Sessao: { } s } && (await app.Usuarios.AutenticarAsync(s.Login, senha)).Sucesso;
+        b.AoSair = () => _vm?.SairCommand.Execute(null);
+        b.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(BloqueioViewModel.Ativo)) return;
+            if (b.Ativo)
+            {
+                _escondidasNoBloqueio = [.. _janelas.Values.Where(w => w.IsVisible)];
+                foreach (var w in _escondidasNoBloqueio) w.IsVisible = false;
+                SenhaBloqueio.Focus();
+            }
+            else
+            {
+                foreach (var w in _escondidasNoBloqueio) w.IsVisible = true;
+                _escondidasNoBloqueio = [];
+            }
+        };
+        _relogioBloqueio = new DispatcherTimer(TimeSpan.FromSeconds(15), DispatcherPriority.Background, (_, _) =>
+        {
+            if (BloqueioViewModel.ConferenciaAutomatica && _vm is { Logado: true, EmImplantacao: false, Sessao: { } s }) b.Conferir(PreferenciasGerais.Atual.MinutosBloqueio, s.Nome);
+        });
+        _relogioBloqueio.Start();
+        Closed += (_, _) => _relogioBloqueio?.Stop();
+    }
+
     private bool _moderna;
 
     /// <summary>

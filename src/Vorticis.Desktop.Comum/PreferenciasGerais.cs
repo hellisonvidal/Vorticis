@@ -4,9 +4,11 @@ using Vorticis.Desktop.Comum.ViewModels;
 namespace Vorticis.Desktop.Comum;
 
 /// <summary>Preferências deste computador (Configurações › Configurações gerais › Preferências), em preferencias.json na pasta local.</summary>
-public sealed record Preferencias(bool ConfirmarAoFechar = true, int DiasVencimentos = 15)
+/// <param name="MinutosBloqueio">Bloqueio por inatividade: minutos sem uso até pedir a senha (0 = desligado).</param>
+public sealed record Preferencias(bool ConfirmarAoFechar = true, int DiasVencimentos = 15, int MinutosBloqueio = 15)
 {
     public const int DiasMinimo = 1, DiasMaximo = 90;
+    public const int BloqueioMaximo = 240;
 }
 
 /// <summary>
@@ -29,7 +31,8 @@ public static class PreferenciasGerais
     public static void Gravar(Preferencias p)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Arquivo)!);
-        File.WriteAllText(Arquivo, JsonSerializer.Serialize(p with { DiasVencimentos = Math.Clamp(p.DiasVencimentos, Preferencias.DiasMinimo, Preferencias.DiasMaximo) }));
+        File.WriteAllText(Arquivo, JsonSerializer.Serialize(p with { DiasVencimentos = Math.Clamp(p.DiasVencimentos, Preferencias.DiasMinimo, Preferencias.DiasMaximo),
+                                                                     MinutosBloqueio = Math.Clamp(p.MinutosBloqueio, 0, Preferencias.BloqueioMaximo) }));
     }
 
     public static TemaSuite Tema

@@ -33,6 +33,13 @@ Menu *Configurações*. As telas de backup, senha do administrador e limpeza do 
 3. **Vencimentos na tela inicial (próximos dias)**: quantos dias à frente a tela inicial mostra as obrigações a vencer (de 1 a 90; o padrão é 15).
 4. Clique em **Gravar**. As preferências valem para este computador, em todos os módulos.
 
+### Bloqueio por inatividade
+Para ninguém usar o sistema com o seu usuário quando você sai de perto do computador:
+1. Em *Configurações › Configurações gerais › Preferências*, informe **Bloquear a tela depois de (minutos sem uso)** — o padrão é **15**; **0** desliga.
+2. Depois desse tempo sem mexer no teclado ou no mouse, a tela fica escura com a mensagem **Tela bloqueada** e as telas abertas somem de vista.
+3. Digite a **sua senha** e clique em **Desbloquear**: tudo volta exatamente como estava (nada do que estava digitado se perde). Senha errada conta para o bloqueio de 15 minutos depois de 5 tentativas, como no login.
+4. **Sair (trocar de usuário)** volta à tela de entrada para outra pessoa entrar.
+
 ## Senha do administrador e limpeza do banco
 
 **Onde fica:** *Configurações › Senha do administrador e limpeza do banco* (no Escritório: *Configurações › Banco de dados › Senha do administrador e limpeza do banco*).

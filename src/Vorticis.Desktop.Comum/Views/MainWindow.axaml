@@ -59,6 +59,7 @@
     </Style>
   </Window.Styles>
 
+  <Panel>
   <DockPanel>
     <!-- Suite (vários módulos na mesma janela): navegação à esquerda (B, C) e no topo (A, D); vazias nos executáveis de um módulo -->
     <ContentControl Name="SuiteLado" DockPanel.Dock="Left" IsVisible="False" />
@@ -187,4 +188,23 @@
       <ContentControl Name="SuiteBusca" IsVisible="False" />
     </Panel>
   </DockPanel>
+
+  <!-- Bloqueio por inatividade (Preferências): cobre tudo e pede a senha; as telas abertas continuam como estavam -->
+  <Border Name="TelaBloqueio" x:DataType="vm:BloqueioViewModel" IsVisible="{Binding Ativo}" Background="#E60F172A">
+    <Border Background="{DynamicResource FundoCartao}" CornerRadius="14" Padding="28,24" Width="380" HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 10 30 0 #66000000">
+      <StackPanel Spacing="12">
+        <PathIcon Data="{x:Static v:Icones.ShieldAccount}" Width="36" Height="36" Foreground="{DynamicResource TxTitulo}" HorizontalAlignment="Center" />
+        <TextBlock Text="Tela bloqueada" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TxForte}" />
+        <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="12" Foreground="{DynamicResource TxSutil}"
+                   Text="{Binding Usuario, StringFormat='O programa ficou sem uso. {0}, digite a sua senha para continuar de onde parou.'}" />
+        <TextBox Name="SenhaBloqueio" Text="{Binding Senha}" PasswordChar="●" Watermark="Senha" />
+        <TextBlock Text="{Binding Erro}" Classes="erro" IsVisible="{Binding Erro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <Button Name="Desbloquear" Content="Desbloquear" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Command="{Binding DesbloquearCommand}" IsDefault="True" />
+        <Button Content="Sair (trocar de usuário)" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding SairCommand}" />
+      </StackPanel>
+    </Border>
+  </Border>
+  </Panel>
 </Window>

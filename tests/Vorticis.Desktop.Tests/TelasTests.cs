@@ -32,6 +32,8 @@ public sealed class SessaoHeadless : IDisposable
 {
     public HeadlessUnitTestSession Sessao { get; } = HeadlessUnitTestSession.StartNew(typeof(AppDeTeste));
 
+    public SessaoHeadless() => Vorticis.Desktop.Comum.ViewModels.BloqueioViewModel.ConferenciaAutomatica = false;   // os testes ficam muito tempo "sem uso"
+
     public void Dispose() => Sessao.Dispose();
 }
 
