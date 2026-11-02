@@ -31,6 +31,17 @@ public class AuditoriaConsultaTests(BancoDeTeste db) : IClassFixture<BancoDeTest
         Assert.False((await db.App.Auditoria.ConsultarAsync(admin, new FiltroAuditoria(hoje, hoje.AddDays(-1)), ct)).Sucesso);
         Assert.Contains("core.empresa", await db.App.Auditoria.TabelasAsync(ct));
 
+        // o login de quem usa o programa vai para a trilha mesmo nas gravações que não informam o usuário
+        db.App.UsarLogin("maria.contadora");
+        try
+        {
+            var outra = await db.CriarEmpresaAsync("60701190000104");
+            var registro = (await db.App.Auditoria.ConsultarAsync(admin, new FiltroAuditoria(hoje.AddDays(-1), hoje.AddDays(1), Tabela: "core.empresa", EmpresaId: outra), ct)).Valor;
+            Assert.All(registro, x => Assert.Equal("maria.contadora", x.Usuario));
+            Assert.NotEmpty(registro);
+        }
+        finally { db.App.UsarLogin(null); }
+
         var integra = await db.App.Auditoria.VerificarIntegridadeAsync(admin, ct);
         Assert.True(integra.Sucesso);
         Assert.Null(integra.Valor);

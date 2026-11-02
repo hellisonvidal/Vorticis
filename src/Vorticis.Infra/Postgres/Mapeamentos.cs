@@ -101,7 +101,7 @@ internal static class Mapeamentos
     {
         await using var cmd = new NpgsqlCommand("""
             SELECT set_config('vorticis.usuario',
-                   COALESCE((SELECT login FROM core.usuario WHERE id = @u), current_user), true)
+                   COALESCE((SELECT login FROM core.usuario WHERE id = @u), NULLIF(current_setting('vorticis.usuario', true), ''), current_user), true)
             """, con, tx);
         cmd.Com("u", usuarioId);
         await cmd.ExecuteNonQueryAsync(ct);

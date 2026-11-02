@@ -578,6 +578,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     {
         Sessao = sessao;
         Logado = true;
+        App?.UsarLogin(sessao.Implantacao ? null : sessao.Login);   // a trilha de auditoria registra quem fez cada alteração
         _implantacao = sessao.Implantacao;
         // Módulo bloqueado no cadastro do usuário (Configurações › Usuários): entra, mas só com Ajuda, Alterar senha e Sair
         ModuloLiberado = App is null || await App.Usuarios.PodeUsarModuloAsync(sessao, ModuloAtual);

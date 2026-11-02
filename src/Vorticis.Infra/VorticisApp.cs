@@ -126,9 +126,20 @@ public sealed class VorticisApp : IAsyncDisposable
     public static async Task<VorticisApp> IniciarAsync(string connectionString, IConsultaCnpj? consultaCnpj = null, CancellationToken ct = default,
                                                       IConsultaInscricaoEstadual? consultaIe = null)
     {
-        var ds = NpgsqlDataSource.Create(connectionString);
+        // Login de quem está usando o programa, gravado em cada conexão (vorticis.usuario): a trilha de auditoria registra quem fez cada
+        // alteração mesmo nas gravações que não informam o usuário. Trocar de usuário renova as conexões (UsarLogin).
+        var usuario = new UsuarioDaConexao();
+        var builder = new NpgsqlDataSourceBuilder(connectionString);
+        // sem o DISCARD ALL ao devolver a conexão ao pool (ele apagaria o login): o sistema não guarda estado de sessão no banco
+        // (configurações e travas são sempre da transação) e transações abertas continuam sendo desfeitas ao fechar.
+        builder.ConnectionStringBuilder.NoResetOnClose = true;
+        builder.UsePhysicalConnectionInitializer(
+            con => { if (usuario.Login is { } l) { using var c = new NpgsqlCommand("SELECT set_config('vorticis.usuario', @l, false)", con); c.Parameters.AddWithValue("l", l); c.ExecuteNonQuery(); } },
+            async con => { if (usuario.Login is { } l) { await using var c = new NpgsqlCommand("SELECT set_config('vorticis.usuario', @l, false)", con); c.Parameters.AddWithValue("l", l); await c.ExecuteNonQueryAsync(); } });
+        var ds = builder.Build();
         var app = new VorticisApp(ds, connectionString, consultaCnpj ?? new ConsultaCnpjPublica(ConsultaCnpjPublica.CriarHttpClient()),
                                  consultaIe ?? new ConsultaInscricaoEstadualPublica(ConsultaCnpjPublica.CriarHttpClient()));
+        app._usuarioConexao = usuario;
         try
         {
             await app.Migrador.AplicarAsync(ct);
@@ -142,4 +153,15 @@ public sealed class VorticisApp : IAsyncDisposable
     }
 
     public ValueTask DisposeAsync() => _ds.DisposeAsync();
+
+    private sealed class UsuarioDaConexao { public volatile string? Login; }
+    private UsuarioDaConexao _usuarioConexao = new();
+
+    /// <summary>Login em uso (null ao sair): as conexões novas passam a registrá-lo na trilha de auditoria; as antigas são renovadas.</summary>
+    public void UsarLogin(string? login)
+    {
+        if (_usuarioConexao.Login == login) return;
+        _usuarioConexao.Login = login;
+        _ds.Clear();
+    }
 }
