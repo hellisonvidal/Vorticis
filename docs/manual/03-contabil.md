@@ -13,10 +13,27 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 1. Se a empresa ainda não tem plano, clique em **Escolher plano**, selecione um modelo e **Usar este plano**. A troca só é possível enquanto não há lançamentos.
 2. Para importar de uma planilha, veja [Importar plano de contas](#importar-plano-de-contas).
 
+### A tela do plano
+A tela mostra **todas as contas** do plano numa lista (código, reduzido, descrição, tipo, natureza e situação), com o filtro e a barra de busca. A **ficha da conta** abre numa janela por cima da lista:
+- **Incluir** abre a ficha de uma conta nova; com uma conta selecionada, o código já vem sugerido como subconta dela;
+- **Alterar** abre a ficha da conta selecionada liberada para edição;
+- **duplo clique** (ou **Enter**) numa conta, ou **Abrir ficha**, mostra a ficha só para consulta — nela, **Alterar** libera a edição e **Fechar** volta à lista;
+- **Salvar** grava e fecha a ficha; **Cancelar** (ou **Esc**) desiste.
+
 ### Manter contas
 1. **Incluir** e preencha o **código** (ex.: 1.1.01.004), a descrição, a natureza (devedora/credora) e se é **sintética** (grupo) ou **analítica** (recebe lançamentos).
 2. O **código reduzido** das analíticas é gerado automaticamente (pode ser editado).
 3. Controles: **Exige centro de custo**, **Exige participante** (e o grupo onde os participantes ficam) e **Ativa**.
+
+### Importar contas do Excel
+Para **acrescentar** contas ao plano a partir de uma planilha, sem trocar o plano:
+1. Clique em **Importar contas do Excel**: abre uma janela por cima da lista.
+2. **Procurar...** a planilha (.xlsx ou .csv) com o **código** e a **descrição** das contas (natureza, tipo e saldo são opcionais; sem eles, o sistema deduz pelo grupo).
+3. A lista mostra as contas da planilha: as **novas** vêm marcadas e as que **já estão no plano** vêm desmarcadas. Marque ou desmarque as que quiser (**Marcar as novas** / **Desmarcar todas**) e confira a data **Incluídas em**.
+4. **Acrescentar ao plano**: as marcadas entram na ordem certa (a conta superior antes das subcontas). Cada conta precisa da conta superior, no plano ou na própria planilha; as que não puderem entrar aparecem embaixo, com o motivo, sem impedir as outras.
+5. **Fechar** volta à lista, já com as contas novas.
+
+Para **substituir** o plano inteiro por uma planilha, use [Importar plano de contas](#importar-plano-de-contas).
 
 **Dica:** filtre a lista por código, reduzido ou descrição. Em lançamentos, você pode digitar o reduzido em vez do código completo.
 

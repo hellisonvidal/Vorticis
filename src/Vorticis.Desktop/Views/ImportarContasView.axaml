@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.ImportarContasView"
+             x:DataType="vm:ImportarContasPlanoViewModel">
+  <!-- Plano de contas › Importar contas do Excel: acrescenta ao plano só as contas marcadas -->
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Linha}" Padding="16,10">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <Button Name="AcrescentarContas" Content="Acrescentar ao plano" Classes="accent" MinWidth="150" Command="{Binding ImportarCommand}" />
+          <Button Content="Fechar" MinWidth="96" Command="{Binding FecharFichaCommand}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Resumo}" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+      </DockPanel>
+    </Border>
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="16,12,16,8">
+      <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}"
+                 Text="Escolha a planilha (Excel ou CSV) com o código e a descrição das contas — natureza, tipo e saldo são opcionais. Marque as contas que quer acrescentar: as que já estão no plano ficam como estão, e cada conta precisa da conta superior (no plano ou na própria planilha)." />
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+        <TextBlock Text="Planilha" VerticalAlignment="Center" />
+        <TextBox Grid.Column="1" Text="{Binding Arquivo}" Watermark="Caminho da planilha (.xlsx, .csv)" />
+        <Button Grid.Column="2" Content="Procurar..." Click="Procurar" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Marcar as novas" Command="{Binding MarcarNovasCommand}" />
+        <Button Content="Desmarcar todas" Command="{Binding DesmarcarCommand}" />
+        <TextBlock Text="Incluídas em" VerticalAlignment="Center" Margin="12,0,0,0" />
+        <CalendarDatePicker SelectedDate="{Binding DataInclusao}" Width="150" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Margin="16,0,16,6" Spacing="2">
+      <c:MensagensView />
+      <ItemsControl ItemsSource="{Binding Problemas}" MaxHeight="90">
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="erro" FontSize="11" /></DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+    <DataGrid Name="ContasDaPlanilha" ItemsSource="{Binding Contas}" AutoGenerateColumns="False" Margin="16,0,16,8" FontFamily="Consolas, Menlo, monospace">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Marcar" Width="90">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:ContaParaImportar">
+              <CheckBox IsChecked="{Binding Marcada}" HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="140" IsReadOnly="True" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="95" IsReadOnly="True" />
+        <DataGridTextColumn Header="Natureza" Binding="{ReflectionBinding Natureza}" Width="130" IsReadOnly="True" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="130" IsReadOnly="True" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

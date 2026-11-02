@@ -52,6 +52,14 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
 
     public ObservableCollection<ContaLinha> Lista { get; } = [];
 
+    /// <summary>A tela mostra as contas; a ficha da conta (incluir, alterar, consultar) abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
+    private ImportarContasPlanoViewModel? _importar;
+
+    /// <summary>Importar contas do Excel (acrescenta ao plano só as contas marcadas).</summary>
+    public ImportarContasPlanoViewModel Importar => _importar ??= new ImportarContasPlanoViewModel(Contexto, CarregarAsync);
+
     // ------------------------------------------------------------------ escolha do plano (modelos)
 
     public static IReadOnlyList<ModeloPlano> ModelosPlano => CatalogoModelosPlano.Todos;

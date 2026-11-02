@@ -68,6 +68,27 @@ public sealed partial class ServicoPlanoContas(IRepositorioPlanoContas repositor
     public async Task<IReadOnlyList<ContaDetalhe>> ListarAsync(long empresaId, long usuarioId, CancellationToken ct = default)
         => (await autorizador.ObterAsync(usuarioId, empresaId, ct)).TemAcesso ? await repositorio.ListarAsync(empresaId, ct) : [];
 
+    /// <summary>
+    /// Acrescenta ao plano as contas escolhidas (importadas do Excel), da superior para as subcontas: as que já existem ficam como estão
+    /// e cada conta com problema é informada sem impedir as demais. Devolve quantas entraram e as mensagens das que não entraram.
+    /// </summary>
+    public async Task<Resultado<(int Incluidas, int JaExistiam, IReadOnlyList<string> Problemas)>> AcrescentarAsync(
+        long empresaId, IReadOnlyList<NovaConta> contas, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<(int, int, IReadOnlyList<string>)>(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return negado;
+        if (contas.Count == 0) return Resultado<(int, int, IReadOnlyList<string>)>.Falha("Marque as contas que quer acrescentar.");
+        var existentes = (await repositorio.ListarAsync(empresaId, ct)).Select(c => c.Codigo).ToHashSet();
+        var (incluidas, jaExistiam, problemas) = (0, 0, new List<string>());
+        foreach (var c in contas.OrderBy(c => c.Codigo.Trim().Count(ch => ch == '.')).ThenBy(c => c.Codigo.Trim(), StringComparer.Ordinal))
+        {
+            if (existentes.Contains(c.Codigo.Trim())) { jaExistiam++; continue; }
+            var r = await IncluirAsync(empresaId, c, usuarioId, ct);
+            if (r.Sucesso) { incluidas++; existentes.Add(c.Codigo.Trim()); }
+            else problemas.Add($"{c.Codigo} – {c.Descricao}: {string.Join(" ", r.Erros)}");
+        }
+        return Resultado<(int, int, IReadOnlyList<string>)>.Ok((incluidas, jaExistiam, problemas));
+    }
+
     public async Task<Resultado<long>> IncluirAsync(long empresaId, NovaConta c, long usuarioId, CancellationToken ct = default)
     {
         if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.PlanoContasManter, ct) is { } negado) return negado;
