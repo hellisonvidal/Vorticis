@@ -1,3 +1,34 @@
+# Vorticis 1.0.2
+
+## Novidades desta versão
+
+### Escritório
+- **O escritório é a empresa 0001 e já entra como o cliente 0001.** Em *Cadastros › Dados do escritório* (que não é mais o cadastro geral de empresas) o escritório recebe o código 0001 e é incluído sozinho no cadastro de clientes, em primeiro na lista; os clientes seguintes ficam com 0002, 0003... É do cadastro de clientes que o sistema todo é alimentado: os módulos marcados no cliente 0001 valem para a própria empresa do escritório.
+- **Clientes, Tarefas e prazos e Protocolos** mostram a lista na tela e a ficha abre numa janela por cima (Incluir, Alterar, duplo clique ou Enter).
+- Os parâmetros do Escritório ficam só em *Cadastros › Parâmetros*.
+
+### Contábil
+- **Plano de contas:** a tela mostra todas as contas e a ficha da conta abre em janela. **Importar contas do Excel** acrescenta ao plano só as contas que você marcar na planilha, sem trocar o plano.
+
+### Usuários
+- Dados pessoais e de contato do usuário: CPF, e-mail, telefone, celular, admissão, cargo e departamento.
+- **Módulos que o usuário pode acessar:** desmarcado, o módulo fica bloqueado para ele.
+
+### Em todos os módulos
+- **Exportar a lista:** toda lista ganha o botão Exportar (Excel, CSV ou PDF) com o que está na tela.
+- **Histórico de alterações** (*Configurações*, administrador): quem incluiu, alterou ou excluiu cada cadastro, quando e o que mudou.
+- **Backup automático diário**, guardando os 7 últimos (*Configurações › Backup e restauração*).
+- **Bloqueio por inatividade:** depois de 15 minutos sem uso a tela pede a senha (ajuste em *Preferências*; 0 desliga).
+- **Ajuda › Verificar atualizações.**
+- Aparência mais moderna nos módulos abertos sozinhos: cabeçalho com o selo do módulo, a empresa e o usuário.
+
+### Suite
+- **Cinco visuais:** Clássico renovado, Barra lateral, Faixa de opções, Início em mosaico e Busca primeiro. Quem usava um dos visuais retirados passa para o mais parecido.
+
+Para atualizar, rode o **Setup-Vorticis-1.0.2.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.0.1
 
 ## Novidades desta versão
@@ -26,12 +57,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.1.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.2.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.1.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.2.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
