@@ -60,6 +60,19 @@ Recomeça o sistema **do zero**: apaga **todas** as empresas com tudo o que é d
 2. Informe a senha de administrador.
 3. O programa volta sozinho à tela de entrada, como numa instalação nova, **sem precisar fechar e abrir de novo**: todas as telas abertas são fechadas, o usuário, a empresa ativa e o login salvo neste computador são esquecidos. Só entra `vorticis` / `vorticis`, que abre o cadastro do administrador; depois de cadastrá-lo, entre com ele: o sistema pede de novo todos os cadastros, como no primeiro uso (perfis de acesso, o escritório, as empresas ou clientes e os demais cadastros de cada módulo).
 
+## Histórico de alterações
+
+**Para que serve:** saber **quem** incluiu, alterou ou excluiu um cadastro ou lançamento, **quando** e **o que mudou** (por exemplo, quem mudou o valor de um honorário ou excluiu um funcionário).
+**Onde fica:** *Configurações › Histórico de alterações*, em todos os módulos. Só o **administrador** abre.
+
+1. Escolha o período (**De** e **até**; o padrão são os últimos 30 dias).
+2. Se quiser, filtre pelo **usuário** (parte do login), pelo **cadastro** (Empresas, Lançamentos contábeis, Funcionários, Clientes do escritório...) ou marque **Só a empresa ativa**.
+3. Clique em **Consultar**. A lista mostra data e hora, usuário, operação (*Inclusão*, *Alteração* ou *Exclusão*), cadastro, número do registro, empresa e os campos alterados.
+4. Clique numa linha: embaixo aparece **O que mudou**, campo a campo, com o valor **Antes** e **Depois**.
+5. **Conferir a trilha** recalcula a cadeia de segurança da trilha inteira e diz se ela está **íntegra** ou se alguém mexeu nela direto no banco de dados (por fora do sistema).
+
+A trilha é gravada pelo próprio banco de dados e não pode ser apagada pelo sistema. A lista também tem a barra de busca, os filtros e o botão **Exportar**.
+
 ## Conexão com o banco de dados
 
 **Onde fica:** *Configurações › Conexão com o banco de dados* (no Escritório: *Configurações › Banco de dados*; abre sozinha se o programa não consegue conectar).

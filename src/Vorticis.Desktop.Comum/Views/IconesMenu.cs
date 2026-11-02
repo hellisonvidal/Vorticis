@@ -34,6 +34,7 @@ public static class IconesMenu
         ["manual"] = "HelpCircleOutline",
         ["licenca"] = "KeyVariant",
         ["sobre"] = "InformationOutline",
+        ["auditoria"] = "ClockOutline",
         ["obrigacoes"] = "CalendarAlert",
         ["planocontas"] = "FileTree",
         ["centroscusto"] = "Sitemap",

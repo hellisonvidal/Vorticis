@@ -86,6 +86,8 @@ public static class TelasComuns
     public const string Menus = "menus";
     public const string ConfiguracoesGerais = "configuracoesgerais";
     public const string Preferencias = "preferencias";
+    /// <summary>Configurações › Histórico de alterações (trilha de auditoria; administrador).</summary>
+    public const string Auditoria = "auditoria";
     public const string Dicas = "dicas";
     /// <summary>Centros de custo da empresa: o mesmo cadastro no Contábil e no Fiscal (as notas levam o centro aos lançamentos).</summary>
     public const string CentrosCusto = "centroscusto";
@@ -261,6 +263,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.CentrosCusto, "Cadastros › Centros de custo", ComAcesso, v => v.CarregarAsync());
         c.Instancia("Dicas", m => new DicasViewModel(m))
             .Tela(TelasComuns.Dicas, "Ajuda › Dicas", null, v => { v.Carregar(); return Task.CompletedTask; });
+        c.Instancia("Auditoria", m => new AuditoriaViewModel(m))
+            .Tela(TelasComuns.Auditoria, "Configurações › Histórico de alterações", Admin, v => v.CarregarAsync());
         c.Instancia("Preferencias", m => new PreferenciasViewModel(m))
             .Tela(TelasComuns.Preferencias, "Configurações › Configurações gerais › Preferências", _ => true, v => { v.Carregar(); return Task.CompletedTask; });
         c.Instancia(nameof(Certificados), m => new CertificadosViewModel(m))
@@ -306,6 +310,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             yield return ItemMenu.Tela("Certificados digitais", TelasComuns.Certificados);
             foreach (var i in sistema[..3]) yield return i;
         }
+        yield return ItemMenu.Tela("Histórico de alterações", TelasComuns.Auditoria);   // todos os módulos (só o administrador abre)
         // No Escritório os parâmetros ficam só em Cadastros › Parâmetros (não em Configurações gerais)
         ItemMenu[] gerais = [ItemMenu.Tela("Preferências", TelasComuns.Preferencias), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)];
         yield return Modulo.ModuloEmpresa == Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio

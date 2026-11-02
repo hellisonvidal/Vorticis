@@ -54,6 +54,7 @@ public static class IconesSuite
         var t = Vorticis.Desktop.Comum.ViewModels.SuiteViewModel.Normalizar(titulo);
         bool Tem(params string[] partes) => partes.Any(t.Contains);
         if (Tem("sair")) return Icones.Backburger;
+        if (Tem("historico de alteracoes", "auditoria")) return Icones.ClockOutline;
         if (Tem("tela inicial", "inicio")) return Icones.Home;
         if (Tem("empresa", "condominio", "escritorio")) return Icones.Domain;
         if (Tem("usuario", "perfil", "acesso")) return Icones.ShieldAccount;

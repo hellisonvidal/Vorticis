@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.AuditoriaView"
+             x:DataType="vm:AuditoriaViewModel">
+  <!-- Configurações › Histórico de alterações -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Histórico de alterações" />
+      <TextBlock FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
+                 Text="Quem incluiu, alterou ou excluiu cada cadastro e lançamento, quando e o que mudou. A trilha é gravada pelo próprio banco de dados e ninguém consegue apagá-la pelo sistema." />
+      <WrapPanel>
+        <TextBlock Text="De" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding De}" Width="140" Margin="0,0,10,4" />
+        <TextBlock Text="até" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding Ate}" Width="140" Margin="0,0,10,4" />
+        <TextBox Text="{Binding Usuario}" Watermark="Usuário (login)" Width="150" Margin="0,0,10,4" />
+        <ComboBox ItemsSource="{Binding Cadastros}" SelectedItem="{Binding Cadastro}" Width="230" Margin="0,0,10,4" />
+        <CheckBox Content="Só a empresa ativa" IsChecked="{Binding SoEmpresaAtiva}" Margin="0,0,10,4" />
+        <Button Name="Consultar" Content="Consultar" Classes="accent" Command="{Binding ConsultarCommand}" Margin="0,0,10,4" />
+        <Button Name="ConferirTrilha" Content="Conferir a trilha" Command="{Binding VerificarCommand}" Margin="0,0,0,4"
+                ToolTip.Tip="Recalcula a cadeia de hashes: mostra se alguém mexeu na trilha direto no banco de dados" />
+      </WrapPanel>
+      <TextBlock Text="{Binding Integridade}" FontWeight="SemiBold" TextWrapping="Wrap"
+                 IsVisible="{Binding Integridade, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+    <v:MensagensView DockPanel.Dock="Bottom" />
+    <Border DockPanel.Dock="Bottom" Height="190" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="O que mudou no registro selecionado" FontWeight="SemiBold" Margin="0,0,0,4" />
+        <DataGrid Name="DetalhesAlteracao" ItemsSource="{Binding Detalhes}" IsReadOnly="True" AutoGenerateColumns="False" v:FiltroGrade.Ativa="False">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Campo" Binding="{ReflectionBinding Campo}" Width="200" />
+            <DataGridTextColumn Header="Antes" Binding="{ReflectionBinding Antes}" Width="*" />
+            <DataGridTextColumn Header="Depois" Binding="{ReflectionBinding Depois}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
+    </Border>
+    <DataGrid Name="ListaAuditoria" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Data e hora" Binding="{ReflectionBinding Quando}" Width="150" />
+        <DataGridTextColumn Header="Usuário" Binding="{ReflectionBinding Usuario}" Width="120" />
+        <DataGridTextColumn Header="Operação" Binding="{ReflectionBinding Operacao}" Width="90" />
+        <DataGridTextColumn Header="Cadastro" Binding="{ReflectionBinding Cadastro}" Width="180" />
+        <DataGridTextColumn Header="Registro" Binding="{ReflectionBinding Registro}" Width="80" />
+        <DataGridTextColumn Header="Empresa" Binding="{ReflectionBinding Empresa}" Width="200" />
+        <DataGridTextColumn Header="Campos alterados" Binding="{ReflectionBinding Campos}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>
