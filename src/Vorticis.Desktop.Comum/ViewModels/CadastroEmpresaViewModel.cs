@@ -115,6 +115,10 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     public bool ModoEscritorio => main.ModuloAtual == ModulosEmpresa.Escritorio;
     public bool MostraAbasEmpresa => !ModoEscritorio;
     public string TituloLista => ModoEscritorio ? "Escritório" : "Empresas cadastradas";
+    public string TituloLogo => ModoEscritorio ? "Logo do escritório" : "Logo da empresa";
+    public string TituloEscrituracao => ModoEscritorio ? "Regime tributário do escritório" : "Escrituração";
+    /// <summary>O primeiro exercício é da escrituração contábil: não aparece no cadastro do escritório.</summary>
+    public bool MostraPrimeiroExercicio => EmInclusao && !ModoEscritorio;
     public bool ContabilEditavel => main.ModuloAtual != ModulosEmpresa.Contabil;
     public bool FiscalEditavel => main.ModuloAtual != ModulosEmpresa.Fiscal;
     public bool FolhaEditavel => main.ModuloAtual != ModulosEmpresa.Folha;
@@ -228,7 +232,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     protected override string NomeRegistro => ModoEscritorio ? "escritório" : "empresa";
 
     /// <summary>Código sequencial da empresa (atribuído na inclusão).</summary>
-    public string NumeroRegistro => EmInclusao ? "Cód. automático (o mesmo em todos os módulos)" : _carregada is { } e ? $"Cód. {e.Id:0000} (o mesmo em todos os módulos)" : "";
+    public string NumeroRegistro => EmInclusao ? (ModoEscritorio ? "Cód. automático (o escritório é o cliente 0001)" : "Cód. automático (o mesmo em todos os módulos)") : _carregada is { } e ? $"Cód. {e.Id:0000} (o mesmo em todos os módulos)" : "";
     protected override string? DescricaoSelecionado => _carregada is null ? null : $"{_carregada.RazaoSocial} ({Domain.Cadastros.Cnpj.Formatar(_carregada.Cnpj)})";
     public override bool PodeManter => main.Pode(Permissao.AdministrarSistema);
 
@@ -239,6 +243,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 
     protected override void AoMudarModo()
     {
+        OnPropertyChanged(nameof(MostraPrimeiroExercicio));
         OnPropertyChanged(nameof(TituloFormulario));
         OnPropertyChanged(nameof(NumeroRegistro));
         OnPropertyChanged(nameof(PodeAbaContabilidade));
@@ -374,7 +379,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), Regime, (int)(AnoExercicio ?? DateTime.Today.Year),
             ImportarPlanoModelo, Complementos(origem), InscricaoEstadual, Nire, ModeloSelecionado?.Id, ConfiguracaoDoFormulario(), modulos));
         MostrarResultado(r, ModoEscritorio
-            ? "Escritório cadastrado. Agora cadastre as empresas atendidas em Cadastros › Clientes (o próprio escritório pode ser o primeiro cliente)."
+            ? $"Escritório cadastrado com o código {r.Valor:0000} e incluído como o primeiro cliente (Cadastros › Clientes). Agora cadastre as empresas atendidas em Cadastros › Clientes."
             : $"Empresa cadastrada com exercício {AnoExercicio} e períodos mensais abertos. {MensagensEmpresa.CodigoUnico(r.Valor)}");
         if (!r.Sucesso) return false;
         if (UsaParticipantes && main.Sessao is { } s) await app.Participantes.DefinirUsaParticipantesAsync(r.Valor, true, s.Id);

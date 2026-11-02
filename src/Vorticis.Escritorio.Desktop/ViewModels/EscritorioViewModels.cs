@@ -50,6 +50,8 @@ internal static class ListaPessoas
 public sealed record PessoaLinha(PessoaEscritorio P)
 {
     public int Codigo => P.Codigo;
+    /// <summary>Código com 4 dígitos (o escritório é o 0001), como o código das empresas.</summary>
+    public string CodigoTexto => P.Codigo.ToString("0000");
     public string Nome => P.Nome;
     public string Documento => P.DocumentoFormatado;
     public string Papel => P.Papel;

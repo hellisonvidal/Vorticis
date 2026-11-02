@@ -13,7 +13,7 @@
     <c:MensagensView DockPanel.Dock="Bottom" />
     <DataGrid Name="ListaClientes" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding CodigoTexto}" Width="70" />
         <DataGridTextColumn Header="Razão social / nome" Binding="{ReflectionBinding Nome}" Width="2*" />
         <DataGridTextColumn Header="Nome fantasia" Binding="{ReflectionBinding Fantasia}" Width="*" />
         <DataGridTextColumn Header="CNPJ/CPF" Binding="{ReflectionBinding Documento}" Width="150" />

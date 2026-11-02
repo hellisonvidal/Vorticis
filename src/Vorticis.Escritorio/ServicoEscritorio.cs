@@ -42,7 +42,7 @@ public sealed class ServicoEscritorio
                      | (CASE WHEN e.modulo_erp THEN 16 ELSE 0 END) | (CASE WHEN e.modulo_condominio THEN 32 ELSE 0 END)
                      | (CASE WHEN e.modulo_frota THEN 64 ELSE 0 END)
                   FROM escritorio.pessoa p LEFT JOIN core.empresa e ON e.id = p.empresa_vinculada_id
-                 WHERE p.empresa_id = @e ORDER BY p.nome
+                 WHERE p.empresa_id = @e ORDER BY p.codigo
                 """, r => new PessoaEscritorio(r.GetInt64(0), r.GetInt32(1), r.GetBoolean(2), r.GetBoolean(3), r.GetString(4), r.Texto(5), r.Texto(6), r.Texto(7),
                                                r.Texto(8), r.Texto(9), r.Texto(10), r.Texto(11), r.Texto(12)?.Trim(), r.GetBoolean(13), r.Texto(14),
                                                r.Texto(15), r.Texto(16)?.Trim(), r.Texto(17)?.Trim(), r.Texto(18), r.Data(19), r.Texto(20)?.Trim(), r.Texto(21), r.Texto(22),
@@ -113,8 +113,10 @@ public sealed class ServicoEscritorio
             ?? await _db.EscalarAsync<long?>("SELECT id FROM core.empresa WHERE cnpj = @c AND NOT escritorio_proprio", ct, ("c", p.Documento));
         if (vinculada is { } id && await _empresas.ObterAsync(id, ct) is { } atual)
         {
+            // o cliente do próprio escritório: a empresa é a do escritório, que continua no módulo Escritório
+            var modulos = id == escritorio ? p.Modulos | Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio : p.Modulos;
             var r = await _empresas.AlterarAsync(new Vorticis.Application.Cadastros.AlteracaoEmpresa(id, p.Nome, p.NomeFantasia, p.NaturezaJuridica!, p.Cnae!, p.Uf!,
-                p.CodMunicipioIbge!, p.InicioAtividades!.Value, p.InscricaoEstadual, complemento, atual.Nire, p.Modulos), ct);
+                p.CodMunicipioIbge!, p.InicioAtividades!.Value, p.InscricaoEstadual, complemento, atual.Nire, modulos), ct);
             if (!r.Sucesso) return r;
         }
         else
@@ -134,6 +136,9 @@ public sealed class ServicoEscritorio
     public async Task<Resultado> ExcluirPessoaAsync(long escritorio, long id, long usuarioId, CancellationToken ct = default)
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioTarefas, ct) is { } negado) return Resultado.Falha(negado);
+        if (await _db.EscalarAsync<bool>("SELECT EXISTS (SELECT 1 FROM escritorio.pessoa WHERE id = @id AND empresa_id = @e AND empresa_vinculada_id = @e)", ct,
+                                         ("id", id), ("e", escritorio)))
+            return Resultado.Falha("O próprio escritório é o cliente 0001 e não pode ser excluído; para não usá-lo, desmarque Ativo.");
         var r = await Tentar(() => _db.ExecutarAsync("DELETE FROM escritorio.pessoa WHERE id = @id AND empresa_id = @e", ct, ("id", id), ("e", escritorio)));
         return r.Sucesso ? Resultado.Ok() : Resultado.Falha("O cadastro tem tarefas, honorários, protocolos ou contratos: desmarque Ativo em vez de excluir.");
     }

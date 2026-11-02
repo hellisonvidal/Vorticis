@@ -22,19 +22,17 @@ BEGIN
     IF EXISTS (SELECT 1 FROM core.perfil WHERE NOT padrao) THEN RAISE EXCEPTION 'perfil personalizado ficou'; END IF;
     IF EXISTS (SELECT 1 FROM core.configuracao_sistema WHERE chave <> 'pasta_backup') THEN RAISE EXCEPTION 'configuração gravada ficou'; END IF;
     IF NOT EXISTS (SELECT 1 FROM core.configuracao_sistema WHERE chave = 'pasta_backup') THEN RAISE EXCEPTION 'a pasta de backup é da instalação e deve ficar'; END IF;
-    -- numeração recomeça: o escritório fica com 9999 e o primeiro cliente com 1
+    -- numeração recomeça: o escritório fica com 0001 e já é o cliente 0001; as empresas seguintes, 0002...
+    SET CONSTRAINTS ALL IMMEDIATE;
     INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ, modulo_contabil, modulo_fiscal, modulo_folha, modulo_escritorio)
     VALUES ('11222333000181', 'Escritório Teste', '2062', '6920601', 'SP', '3550308', '2020-01-01', FALSE, FALSE, FALSE, TRUE) RETURNING id INTO v_n;
-    IF v_n <> 9999 THEN RAISE EXCEPTION 'escritório deveria ficar com o código 9999 (ficou %)', v_n; END IF;
+    IF v_n <> 1 THEN RAISE EXCEPTION 'escritório deveria ficar com o código 1 (ficou %)', v_n; END IF;
+    IF NOT EXISTS (SELECT 1 FROM escritorio.pessoa WHERE empresa_id = 1 AND codigo = 1 AND empresa_vinculada_id = 1 AND cliente) THEN
+        RAISE EXCEPTION 'o escritório deveria entrar como o cliente 0001';
+    END IF;
     INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ)
     VALUES ('19131243000197', 'Primeiro Cliente', '2062', '4711302', 'SP', '3550308', '2020-01-01') RETURNING id INTO v_n;
-    IF v_n <> 1 THEN RAISE EXCEPTION 'primeiro cliente deveria ficar com o código 1 (ficou %)', v_n; END IF;
-    INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ, modulo_contabil, modulo_fiscal, modulo_folha, modulo_escritorio)
-    VALUES ('34028316000103', 'Outro Escritório', '2062', '6920601', 'SP', '3550308', '2020-01-01', FALSE, FALSE, FALSE, TRUE) RETURNING id INTO v_n;
-    IF v_n <> 9998 THEN RAISE EXCEPTION 'segundo escritório deveria ficar com 9998 (ficou %)', v_n; END IF;
-    INSERT INTO core.empresa (cnpj, razao_social, natureza_juridica, cnae_principal, uf, cod_municipio_ibge, data_inicio_ativ)
-    VALUES ('06990590000123', 'Segundo Cliente', '2062', '4711302', 'SP', '3550308', '2020-01-01') RETURNING id INTO v_n;
-    IF v_n <> 2 THEN RAISE EXCEPTION 'segundo cliente deveria ficar com o código 2 (ficou %)', v_n; END IF;
+    IF v_n <> 2 THEN RAISE EXCEPTION 'a empresa seguinte deveria ficar com o código 2 (ficou %)', v_n; END IF;
     PERFORM core.fn_limpar_banco();
     RAISE NOTICE 'OK: limpeza do banco recomeça do zero';
 END $$;

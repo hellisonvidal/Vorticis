@@ -100,45 +100,45 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
     }
 
     [Fact]
-    public async Task Escritorio_pode_ser_o_primeiro_cliente_sem_misturar_com_o_cadastro_do_escritorio()
+    public async Task Escritorio_e_a_empresa_0001_e_ja_entra_como_o_cliente_0001()
     {
         BancoDeTeste.ExigirBanco();
         var ct = TestContext.Current.CancellationToken;
         var adm = await db.AdminAsync();
         const string cnpj = "34028316000103";
-        var cadastro = await db.App.Empresas.CadastrarAsync(new NovaEmpresa(cnpj, "Contabilidade Exemplo Ltda", null, "2062", "6920601", "SP", "3550308",
+        var cadastro = await db.App.Empresas.CadastrarAsync(new NovaEmpresa(cnpj, "Contabilidade Exemplo Ltda", "Exemplo Contábil", "2062", "6920601", "SP", "3550308",
             new DateOnly(2015, 1, 1), RegimeTributario.SimplesNacional, 2026, ImportarPlanoModelo: false, Modulos: ModulosEmpresa.Escritorio), ct);
         Assert.True(cadastro.Sucesso, string.Join("; ", cadastro.Erros));
         var escritorio = cadastro.Valor;
-        Assert.True(escritorio >= 9000);                                                                     // código 9999...
+        Assert.True(escritorio < 9000);                                                                      // numeração normal (0001 no banco novo)
         Assert.True(await db.EscalarAsync<bool>("SELECT escritorio_proprio FROM core.empresa WHERE id = @e", ("e", escritorio)));
-        // outro escritório com o mesmo CNPJ não
-        Assert.Contains("Já existe escritório", (await db.App.Empresas.CadastrarAsync(new NovaEmpresa(cnpj, "Repetido", null, "2062", "6920601", "SP", "3550308",
-            new DateOnly(2015, 1, 1), RegimeTributario.SimplesNacional, 2026, ImportarPlanoModelo: false, Modulos: ModulosEmpresa.Escritorio), ct)).Erros[0]);
 
-        // o próprio escritório como cliente, com a própria contabilidade e folha: vira outra empresa (numeração normal) nos módulos
+        // o escritório já é o primeiro cliente, ligado à própria empresa, com os dados do cadastro
         var svc = ServicosEscritorio.De(db.App);
-        var proprio = new PessoaEscritorio(0, 1, true, false, "Contabilidade Exemplo Ltda", cnpj, "Simples Nacional", NaturezaJuridica: "2062", Cnae: "6920601",
-            Uf: "SP", CodMunicipioIbge: "3550308", Municipio: "São Paulo", InicioAtividades: new DateOnly(2015, 1, 1), Modulos: ModulosEmpresa.Contabil | ModulosEmpresa.Folha);
-        var r = await svc.GravarPessoaAsync(escritorio, proprio, adm, ct);
+        var clientes = await svc.ListarPessoasAsync(escritorio, adm, ct);
+        var proprio = Assert.Single(clientes);
+        Assert.Equal((1, "Contabilidade Exemplo Ltda", cnpj, "Simples Nacional", "Exemplo Contábil"), (proprio.Codigo, proprio.Nome, proprio.Documento, proprio.Regime, proprio.NomeFantasia));
+        Assert.Equal(escritorio, proprio.EmpresaVinculadaId);
+
+        // marcar Contabilidade e Folha no cliente 0001 vale para a própria empresa do escritório (não cria outra)
+        var completo = proprio with { CodMunicipioIbge = "3550308", Uf = "SP", Municipio = "São Paulo", Modulos = ModulosEmpresa.Contabil | ModulosEmpresa.Folha };
+        var r = await svc.GravarPessoaAsync(escritorio, completo, adm, ct);
         Assert.True(r.Sucesso, string.Join("; ", r.Erros));
-        var vinculada = Assert.Single(await svc.ListarPessoasAsync(escritorio, adm, ct), p => p.Id == r.Valor).EmpresaVinculadaId!.Value;
-        Assert.NotEqual(escritorio, vinculada);
-        Assert.True(vinculada < 9000);
-        Assert.Equal(2L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM core.empresa WHERE cnpj = @c", ("c", cnpj)));
-        Assert.True(await db.EscalarAsync<bool>("SELECT modulo_escritorio AND NOT modulo_contabil FROM core.empresa WHERE id = @e", ("e", escritorio)));
+        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT COUNT(*) FROM core.empresa WHERE cnpj = @c", ("c", cnpj)));
+        Assert.True(await db.EscalarAsync<bool>("SELECT modulo_escritorio AND modulo_contabil AND modulo_folha FROM core.empresa WHERE id = @e", ("e", escritorio)));
 
-        // o registro do escritório nunca fica ativo nos outros módulos
-        await Assert.ThrowsAnyAsync<Npgsql.PostgresException>(() =>
-            db.EscalarAsync<int>("UPDATE core.empresa SET modulo_contabil = TRUE WHERE id = @e RETURNING 1", ("e", escritorio)));
+        // o seguinte vem depois: código 2 na lista (em primeiro, o 0001)
+        var outro = new PessoaEscritorio(0, 2, true, false, "Padaria Boa", "11444777000161");
+        Assert.True((await svc.GravarPessoaAsync(escritorio, outro, adm, ct)).Sucesso);
+        Assert.Equal([1, 2], (await svc.ListarPessoasAsync(escritorio, adm, ct)).Select(p => p.Codigo));
 
-        // no Escritório, a escolha do topo mostra só o escritório; a empresa do escritório-cliente fica no Contábil
+        // o cliente do escritório não se exclui
+        Assert.Contains("não pode ser excluído", (await svc.ExcluirPessoaAsync(escritorio, proprio.Id, adm, ct)).Erros[0]);
+
+        // no Escritório, a escolha do topo é o escritório; no Contábil ele aparece como a empresa 0001
         var sessao = new Vorticis.Domain.Seguranca.SessaoUsuario(adm, "adm", "Adm", true, false);
-        var noEscritorio = await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Escritorio, ct);
-        Assert.Contains(noEscritorio, e => e.Id == escritorio);
-        Assert.DoesNotContain(noEscritorio, e => e.Id == vinculada);
-        Assert.Contains(await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Contabil, ct), e => e.Id == vinculada);
-        Assert.Empty(await db.App.Usuarios.EmpresasForaDoModuloAsync(sessao, ModulosEmpresa.Escritorio, ct));
+        Assert.Contains(await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Escritorio, ct), e => e.Id == escritorio);
+        Assert.Contains(await db.App.Usuarios.EmpresasDoModuloAsync(sessao, ModulosEmpresa.Contabil, ct), e => e.Id == escritorio);
     }
 
     [Fact]

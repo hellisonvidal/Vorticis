@@ -6,7 +6,7 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 
 ## Primeiro uso
 
-Na instalação, o Escritório é o módulo aberto ao final. Depois de entrar com o administrador, se ainda não houver escritório cadastrado, a tela *Cadastros › Dados do escritório* abre sozinha: cadastre o seu escritório contábil e, em seguida, as empresas atendidas em *Cadastros › Clientes*, marcando os módulos de cada uma. **O próprio escritório pode ser o primeiro cliente**, para fazer nos módulos a contabilidade, a folha ou o fiscal dele mesmo.
+Na instalação, o Escritório é o módulo aberto ao final. Depois de entrar com o administrador, se ainda não houver escritório cadastrado, a tela *Cadastros › Dados do escritório* abre sozinha: cadastre o seu escritório contábil e, em seguida, as empresas atendidas em *Cadastros › Clientes*, marcando os módulos de cada uma. O próprio escritório já entra como o **cliente 0001**, o primeiro da lista; os clientes seguintes ficam com 0002, 0003...
 
 O Escritório também administra a suíte: **usuários e controle de acesso** (*Configurações › Usuários e controle de acesso*) e o **banco de dados** (*Configurações › Banco de dados*: conexão, backup e restauração, senha do administrador e limpeza). Com o Escritório instalado, essas funções saem dos outros módulos.
 
@@ -15,10 +15,12 @@ O Escritório também administra a suíte: **usuários e controle de acesso** (*
 **Para que serve:** cadastrar o próprio escritório contábil (o contador), que é o escolhido no topo da tela e o dono das tarefas, protocolos, honorários e contratos.
 **Onde fica:** *Cadastros › Dados do escritório* (primeiro item do menu).
 
-Esta tela **não é o cadastro geral de empresas**: mostra só o escritório, sem plano de contas, sócios, contadores ou módulos. Digite o **CNPJ**, clique em **Buscar na Receita**, confira os dados e clique em **Salvar**. Só o escritório aparece na escolha do topo; as empresas atendidas ficam em *Cadastros › Clientes* e nos módulos que contrataram. O escritório recebe o código **9999** e não ocupa a numeração das empresas: o primeiro cliente levado aos módulos fica com o código **0001**, o segundo com 0002, e assim por diante.
+Esta tela **não é o cadastro geral de empresas**: mostra só o escritório, sem plano de contas, sócios, contadores, módulos ou primeiro exercício. Digite o **CNPJ**, clique em **Buscar dados na Receita**, confira os dados e clique em **Salvar**.
 
-### O escritório como cliente
-Para usar os módulos no próprio escritório (a contabilidade, a folha ou o fiscal dele), cadastre-o também em *Cadastros › Clientes*, com o mesmo CNPJ, e marque os módulos na aba **Módulos do contrato**. Nos módulos ele vira uma empresa à parte, com código da numeração normal (por exemplo, **0001**), sem misturar com os dados do escritório desta tela.
+- O escritório recebe o **código 0001** (o primeiro da numeração das empresas) e entra **sozinho no cadastro de clientes como o cliente 0001**, o primeiro da lista, com os mesmos dados.
+- É do **cadastro de clientes** que o sistema todo é alimentado: os próximos clientes ficam com **0002**, **0003** e assim por diante, e cada um vai para os módulos que contratou.
+- Para fazer nos módulos a contabilidade, a folha ou o fiscal do próprio escritório, abra o cliente **0001** e marque os módulos na aba **Módulos do contrato**: vale para a própria empresa do escritório, sem criar outra.
+- O cliente 0001 não pode ser excluído (para não usá-lo, desmarque **Ativo**).
 
 ### Empresas cadastradas direto nos módulos
 Uma empresa incluída no cadastro de empresas do Contábil, do Fiscal ou da Folha fica ativa só naquele módulo. Para acompanhá-la no Escritório (tarefas, honorários) e escolher os outros módulos, cadastre-a como cliente com o **mesmo CNPJ**: o cliente fica ligado à empresa que já existe (nada é duplicado) e os módulos marcados no contrato passam a valer para ela.
@@ -28,7 +30,7 @@ Uma empresa incluída no cadastro de empresas do Contábil, do Fiscal ou da Folh
 **Para que serve:** cadastrar quem o escritório atende, levar o cliente para os módulos do contrato e controlar os honorários dele.
 **Onde fica:** *Cadastros › Clientes*.
 
-A tela mostra **todos os clientes cadastrados** numa lista (código, razão social, nome fantasia, CNPJ/CPF, regime, município, contato, módulos contratados e situação), com o filtro por código, nome ou documento. A **ficha do cliente** abre numa janela por cima da lista:
+A tela mostra **todos os clientes cadastrados**, em ordem de código — o primeiro é o próprio escritório, **0001** — numa lista (código, razão social, nome fantasia, CNPJ/CPF, regime, município, contato, módulos contratados e situação), com o filtro por código, nome ou documento. A **ficha do cliente** abre numa janela por cima da lista:
 - **Incluir** abre a ficha em branco; **Alterar** abre a do cliente selecionado já liberada para edição;
 - **duplo clique** (ou **Enter**) num cliente, ou o botão **Abrir ficha**, mostra a ficha só para consulta — nela, **Alterar** libera a edição e **Fechar** volta à lista;
 - na edição, **Salvar** grava e fecha a ficha; **Cancelar** (ou fechar a janela, ou **Esc**) desiste do que foi digitado.

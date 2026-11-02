@@ -106,7 +106,7 @@
           </Grid>
         </Grid>
 
-        <TextBlock Classes="secao" Text="Logo da empresa" />
+        <TextBlock Classes="secao" Text="{Binding TituloLogo}" />
         <StackPanel IsEnabled="{Binding EmEdicao}"><v:LogoEmpresaView DataContext="{Binding Logo}" /></StackPanel>
 
         <TextBlock Classes="secao" Text="Módulos" IsVisible="{Binding MostraModulos}" />
@@ -119,7 +119,7 @@
           <CheckBox Margin="0,0,16,4" Content="Condomínio" IsChecked="{Binding ModuloCondominio}" IsEnabled="{Binding CondominioEditavel}" />
         </WrapPanel>
 
-        <TextBlock Classes="secao" Text="Escrituração" />
+        <TextBlock Classes="secao" Text="{Binding TituloEscrituracao}" />
         <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
           <TextBlock Classes="rotulo" Text="Regime tributário" />
           <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:CadastroEmpresaViewModel.Regimes}" SelectedItem="{Binding Regime}" Width="260"
@@ -130,10 +130,10 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <TextBlock Grid.Row="1" Classes="rotulo" Text="Primeiro exercício" IsVisible="{Binding EmInclusao}" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Primeiro exercício" IsVisible="{Binding MostraPrimeiroExercicio}" />
           <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding AnoExercicio}" Minimum="2000" Maximum="2100" FormatString="0" Width="180"
-                         HorizontalAlignment="Left" IsVisible="{Binding EmInclusao}" />
-          <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                         HorizontalAlignment="Left" IsVisible="{Binding MostraPrimeiroExercicio}" />
+          <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap" IsVisible="{Binding MostraAbasEmpresa}"
                      Text="O modelo de plano de contas, as máscaras, o uso de participantes e de centros de custo e as demais opções contábeis ficam na aba Contabilidade." />
         </Grid>
         <v:MensagensView Margin="0,8,0,0" />
@@ -226,7 +226,7 @@
                          Text="Define os níveis do plano de centros de custo (Cadastros › Centros de custo), onde ficam os grupos e centros. Os centros já cadastrados precisam caber na máscara (ou ser convertidos)." />
             </Grid>
 
-            <TextBlock Classes="secao" Text="Escrituração" />
+            <TextBlock Classes="secao" Text="{Binding TituloEscrituracao}" />
             <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
               <TextBlock Classes="rotulo" Text="Início da escrituração" />
               <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding InicioEscrituracao}" Width="180" HorizontalAlignment="Left" />
