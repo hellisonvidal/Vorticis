@@ -55,6 +55,7 @@ public static class IconesSuite
         bool Tem(params string[] partes) => partes.Any(t.Contains);
         if (Tem("sair")) return Icones.Backburger;
         if (Tem("historico de alteracoes", "auditoria")) return Icones.ClockOutline;
+        if (Tem("atualiza")) return Icones.Download;
         if (Tem("tela inicial", "inicio")) return Icones.Home;
         if (Tem("empresa", "condominio", "escritorio")) return Icones.Domain;
         if (Tem("usuario", "perfil", "acesso")) return Icones.ShieldAccount;

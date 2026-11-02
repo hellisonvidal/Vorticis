@@ -5,6 +5,10 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Site do Vorticis (Directory.Build.props › VorticisSite): de onde o programa lê as atualizações -->
+    <AssemblyMetadata Include="VorticisSite" Value="$(VorticisSite)" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Ícones dos módulos (usados nas janelas; cada executável usa o seu, ver IModuloDesktop.NomeExecutavel) -->
     <AvaloniaResource Include="..\..\instalador\icone\VorticisContabil.ico" Link="Assets\VorticisContabil.ico" />
     <AvaloniaResource Include="..\..\instalador\icone\VorticisFiscal.ico" Link="Assets\VorticisFiscal.ico" />

@@ -88,6 +88,8 @@ public static class TelasComuns
     public const string Preferencias = "preferencias";
     /// <summary>Configurações › Histórico de alterações (trilha de auditoria; administrador).</summary>
     public const string Auditoria = "auditoria";
+    /// <summary>Ajuda › Verificar atualizações (site do Vorticis).</summary>
+    public const string Atualizacoes = "atualizacoes";
     public const string Dicas = "dicas";
     /// <summary>Centros de custo da empresa: o mesmo cadastro no Contábil e no Fiscal (as notas levam o centro aos lançamentos).</summary>
     public const string CentrosCusto = "centroscusto";
@@ -263,6 +265,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             .Tela(TelasComuns.CentrosCusto, "Cadastros › Centros de custo", ComAcesso, v => v.CarregarAsync());
         c.Instancia("Dicas", m => new DicasViewModel(m))
             .Tela(TelasComuns.Dicas, "Ajuda › Dicas", null, v => { v.Carregar(); return Task.CompletedTask; });
+        c.Instancia("Atualizacoes", m => new AtualizacoesViewModel(m))
+            .Tela(TelasComuns.Atualizacoes, "Ajuda › Verificar atualizações", null, v => v.VerificarAsync());
         c.Instancia("Auditoria", m => new AuditoriaViewModel(m))
             .Tela(TelasComuns.Auditoria, "Configurações › Histórico de alterações", Admin, v => v.CarregarAsync());
         c.Instancia("Preferencias", m => new PreferenciasViewModel(m))
@@ -374,6 +378,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                 ItemMenu.Tela("Dicas", TelasComuns.Dicas),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Licença e registro", TelasComuns.Licenca),
+                ItemMenu.Tela("Verificar atualizações", TelasComuns.Atualizacoes),
                 ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre)),
         ];
     }
@@ -616,7 +621,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     /// <summary>Telas que valem mesmo com o módulo bloqueado para o usuário.</summary>
     private static bool TelaDeModuloBloqueado(string tela) => tela is TelasComuns.Inicio or TelasComuns.Sair or TelasComuns.AlterarSenha
         or TelasComuns.Usuarios or TelasComuns.Manual or TelasComuns.ManualContextual or TelasComuns.Sobre or TelasComuns.Licenca or TelasComuns.Dicas
-        or TelasComuns.Preferencias;
+        or TelasComuns.Preferencias or TelasComuns.Atualizacoes;
 
     /// <summary>Tela inicial; no Escritório sem nenhum escritório cadastrado (primeiro uso), o cadastro do escritório.</summary>
     private void AbrirInicio()
@@ -1051,6 +1056,21 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         if (!Logado || _implantacao || _configuracaoInicialPendente) return;
         SessaoPronta?.Invoke(this, EventArgs.Empty);
         _ = BackupAutomaticoAsync();
+        _ = AvisarAtualizacaoAsync();
+    }
+
+    private static int _atualizacaoConsultada;
+
+    /// <summary>Uma vez por abertura do programa: se o site tem versão nova, avisa na barra de baixo (sem atrapalhar quem está trabalhando).</summary>
+    private async Task AvisarAtualizacaoAsync()
+    {
+        if (!BackupAutomaticoAtivo || Interlocked.Exchange(ref _atualizacaoConsultada, 1) == 1) return;
+        try
+        {
+            if (await Task.Run(() => Atualizacoes.ConsultarAsync()) is { } info && Atualizacoes.MaisNova(info.Versao, SobreViewModel.Versao))
+                Status = $"Há uma versão nova do Vorticis ({info.Versao}). Veja em Ajuda › Verificar atualizações.";
+        }
+        catch (Exception) { /* sem internet ou site fora do ar: tenta na próxima abertura */ }
     }
 
     private static int _backupAutomaticoEmAndamento;

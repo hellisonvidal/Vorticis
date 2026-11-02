@@ -73,6 +73,17 @@ Recomeça o sistema **do zero**: apaga **todas** as empresas com tudo o que é d
 
 A trilha é gravada pelo próprio banco de dados e não pode ser apagada pelo sistema. A lista também tem a barra de busca, os filtros e o botão **Exportar**.
 
+## Verificar atualizações
+
+**Para que serve:** saber se já saiu uma versão nova do Vorticis e baixá-la.
+**Onde fica:** *Ajuda › Verificar atualizações*, em todos os módulos.
+
+1. A tela mostra a **versão instalada** e consulta o site do Vorticis: aparece **Você já usa a versão mais nova** ou **Há uma versão nova**, com o que mudou.
+2. Com versão nova, clique em **Baixar a versão nova**: o navegador baixa o instalador.
+3. Feche o Vorticis em todos os computadores e rode o instalador por cima da instalação: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+O programa também consulta o site uma vez a cada abertura e, se houver versão nova, avisa na barra de baixo. Sem internet, ou sem o endereço do site configurado na instalação, nada acontece.
+
 ## Conexão com o banco de dados
 
 **Onde fica:** *Configurações › Conexão com o banco de dados* (no Escritório: *Configurações › Banco de dados*; abre sozinha se o programa não consegue conectar).

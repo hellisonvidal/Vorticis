@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.AtualizacoesView"
+             x:DataType="vm:AtualizacoesViewModel">
+  <!-- Ajuda › Verificar atualizações -->
+  <StackPanel Margin="12" Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
+    <TextBlock Classes="titulo" Text="Verificar atualizações" />
+    <TextBlock Text="{Binding VersaoInstalada, StringFormat='Versão instalada: {0}'}" />
+    <TextBlock Text="{Binding Site, StringFormat='Site: {0}'}" FontSize="11" Foreground="{DynamicResource TxSutil}"
+               IsVisible="{Binding Site, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    <TextBlock Name="SituacaoAtualizacao" Text="{Binding Situacao}" FontWeight="SemiBold" TextWrapping="Wrap" />
+    <TextBox Text="{Binding Notas}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="260"
+             IsVisible="{Binding Notas, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="Baixar a versão nova" Classes="accent" Command="{Binding BaixarCommand}" IsVisible="{Binding TemNova}" />
+      <Button Content="Verificar novamente" Command="{Binding VerificarNovamenteCommand}" />
+    </StackPanel>
+    <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+               Text="Depois de baixar, feche o Vorticis em todos os computadores e rode o instalador por cima da instalação: os dados são preservados e o banco é atualizado sozinho na primeira abertura." />
+    <v:MensagensView />
+  </StackPanel>
+</UserControl>
