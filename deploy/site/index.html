@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vorticis — sistema contábil, fiscal e folha</title>
+  <meta name="description" content="Download do Vorticis: Contábil, Fiscal, Folha, Escritório, Gerencial e Condomínio.">
+  <style>
+    :root { --fundo:#f4f6fa; --cartao:#fff; --texto:#1e293b; --sutil:#475569; --linha:#d0d5dd; --marca:#0f2a47; --destaque:#1d4ed8; }
+    @media (prefers-color-scheme: dark) { :root { --fundo:#141a25; --cartao:#1b2230; --texto:#e6ebf3; --sutil:#a9b6ca; --linha:#3a4659; --marca:#bfd3f2; --destaque:#3c82ce; } }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--fundo); color:var(--texto); line-height:1.5; }
+    main { max-width: 920px; margin: 0 auto; padding: 48px 16px 64px; }
+    h1 { font-size: 2.2rem; margin: 0 0 4px; color: var(--marca); }
+    .sub { color: var(--sutil); margin: 0 0 32px; }
+    .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:14px; padding:24px; margin-bottom:20px; }
+    .botao { display:inline-block; background:var(--destaque); color:#fff; text-decoration:none; padding:12px 22px; border-radius:10px; font-weight:600; }
+    .botao.secundario { background:transparent; color:var(--destaque); border:1px solid var(--destaque); margin-left:8px; }
+    .modulos { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; }
+    .modulo { border:1px solid var(--linha); border-radius:10px; padding:12px; }
+    .modulo b { display:block; }
+    .modulo span { color:var(--sutil); font-size:.9rem; }
+    pre { white-space: pre-wrap; background:var(--fundo); padding:12px; border-radius:8px; font-size:.9rem; }
+    ol li { margin-bottom: 6px; }
+    footer { color:var(--sutil); font-size:.85rem; text-align:center; margin-top:40px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Vorticis</h1>
+  <p class="sub">Contábil, Fiscal, Folha de Pagamento, Escritório, Gerencial e Condomínio — para escritórios de contabilidade.</p>
+
+  <section class="cartao">
+    <h2 id="versao">Versão atual</h2>
+    <p id="publicada" class="sub" style="margin-bottom:16px"></p>
+    <a id="baixar" class="botao" href="downloads/">Baixar o instalador para Windows</a>
+    <a id="portatil" class="botao secundario" href="downloads/" hidden>Versão portátil (.zip)</a>
+    <details style="margin-top:16px"><summary>O que mudou nesta versão</summary><pre id="notas">—</pre></details>
+  </section>
+
+  <section class="cartao">
+    <h2>Como instalar</h2>
+    <ol>
+      <li>Baixe o instalador acima e execute. Não precisa de senha de administrador do Windows.</li>
+      <li>Escolha os módulos. Para usar o banco de dados on-line do escritório, na primeira abertura vá em <b>Conexão com o banco de dados</b>, informe o servidor que o escritório passou, marque <b>Exigir conexão segura (nuvem)</b> e clique em <b>Testar conexão</b>.</li>
+      <li>Para atualizar, rode o instalador novo por cima: os dados são preservados. O próprio programa avisa quando há versão nova (<b>Ajuda › Verificar atualizações</b>).</li>
+    </ol>
+  </section>
+
+  <section class="cartao">
+    <h2>Módulos</h2>
+    <div class="modulos">
+      <div class="modulo"><b>Contábil</b><span>Lançamentos, balancete, DRE, balanço, ECD e ECF</span></div>
+      <div class="modulo"><b>Fiscal</b><span>Notas, apurações, Simples, EFD, DCTFWeb, IBS/CBS</span></div>
+      <div class="modulo"><b>Folha</b><span>Folha mensal, férias, 13º, rescisões, eSocial</span></div>
+      <div class="modulo"><b>Escritório</b><span>Clientes, tarefas, protocolos, honorários, contratos</span></div>
+      <div class="modulo"><b>Gerencial</b><span>Faturamento, estoque, financeiro</span></div>
+      <div class="modulo"><b>Condomínio</b><span>Unidades, taxas, rateios, assembleias</span></div>
+    </div>
+  </section>
+
+  <footer>Vorticis</footer>
+</main>
+<script>
+  fetch('atualizacao.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(a => {
+      document.getElementById('versao').textContent = 'Versão ' + a.versao;
+      if (a.publicada) document.getElementById('publicada').textContent = 'Publicada em ' + a.publicada;
+      if (a.instalador) document.getElementById('baixar').href = a.instalador;
+      if (a.portatil) { const p = document.getElementById('portatil'); p.href = a.portatil; p.hidden = false; }
+      if (a.notas) document.getElementById('notas').textContent = a.notas;
+    })
+    .catch(() => { document.getElementById('publicada').textContent = 'Nenhuma versão publicada ainda.'; });
+</script>
+</body>
+</html>

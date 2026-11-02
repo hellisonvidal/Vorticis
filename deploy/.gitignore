@@ -1,0 +1,5 @@
+.env
+backups/
+site/downloads/*
+!site/downloads/.gitkeep
+site/atualizacao.json

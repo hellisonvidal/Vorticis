@@ -1,0 +1,19 @@
+{
+	email {$EMAIL_CERTIFICADO}
+}
+
+{$DOMINIO} {
+	root * /srv/site
+	encode gzip
+	file_server
+
+	# o programa consulta este arquivo a cada abertura: nunca guardar em cache
+	header /atualizacao.json Cache-Control "no-cache"
+	header /downloads/* Content-Disposition attachment
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

@@ -1,0 +1,115 @@
+# Vorticis on-line: site (download + atualizações) com HTTPS automático, banco PostgreSQL com conexão segura (SSL)
+# para os computadores do escritório e backup diário do banco. Guia passo a passo: deploy/README.md.
+name: vorticis
+
+services:
+  # Site do Vorticis: página de download, instaladores e atualizacao.json (HTTPS automático pelo Let's Encrypt).
+  site:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMINIO: ${DOMINIO:?defina DOMINIO no .env}
+      EMAIL_CERTIFICADO: ${EMAIL_CERTIFICADO:?defina EMAIL_CERTIFICADO no .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/site:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+
+  # Gera uma vez o certificado do banco (autoassinado: os computadores usam "Exigir conexão segura").
+  certificado-banco:
+    image: postgres:16.4
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ ! -f /certs/server.key ]; then
+          openssl req -new -x509 -days 3650 -nodes -subj "/CN=$${DOMINIO_BANCO}" \
+            -addext "subjectAltName=DNS:$${DOMINIO_BANCO}" -keyout /certs/server.key -out /certs/server.crt
+        fi
+        chown 999:999 /certs/server.key /certs/server.crt
+        chmod 600 /certs/server.key
+    environment:
+      DOMINIO_BANCO: ${DOMINIO_BANCO:?defina DOMINIO_BANCO no .env}
+    volumes:
+      - banco_certs:/certs
+
+  # Banco de dados do Vorticis: só aceita conexão segura (SSL) e senha (scram-sha-256) de fora do servidor.
+  banco:
+    image: postgres:16.4
+    restart: unless-stopped
+    depends_on:
+      certificado-banco:
+        condition: service_completed_successfully
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vorticis}
+      POSTGRES_USER: ${POSTGRES_USER:-vorticis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --locale=C.UTF-8 --encoding=UTF8"
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/certs/server.crt
+      - -c
+      - ssl_key_file=/certs/server.key
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - tcp_keepalives_idle=60
+    volumes:
+      - banco_dados:/var/lib/postgresql/data
+      - banco_certs:/certs:ro
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      retries: 10
+
+  # Backup diário do banco (pg_dump no formato do Vorticis) às 2h, guardando os últimos BACKUP_DIAS dias em ./backups.
+  backup:
+    image: postgres:16.4
+    restart: unless-stopped
+    depends_on:
+      banco:
+        condition: service_healthy
+    environment:
+      PGHOST: banco
+      PGDATABASE: ${POSTGRES_DB:-vorticis}
+      PGUSER: ${POSTGRES_USER:-vorticis}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGSSLMODE: require
+      BACKUP_DIAS: ${BACKUP_DIAS:-30}
+      TZ: America/Sao_Paulo
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          agora=$$(date +%H%M)
+          if [ "$$agora" = "0200" ] || [ ! -f /backups/.primeiro ]; then
+            arquivo=/backups/servidor_$${PGDATABASE}_$$(date +%Y%m%d_%H%M%S).backup
+            if pg_dump -Fc -f "$$arquivo"; then
+              touch /backups/.primeiro
+              echo "backup gravado: $$arquivo"
+              find /backups -name 'servidor_*.backup' -mtime +$${BACKUP_DIAS} -delete
+            else
+              echo "ERRO no backup" >&2
+            fi
+            sleep 61
+          fi
+          sleep 30
+        done
+    volumes:
+      - ./backups:/backups
+
+volumes:
+  caddy_dados:
+  caddy_config:
+  banco_dados:
+  banco_certs:
