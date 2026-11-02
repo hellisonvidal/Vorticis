@@ -239,22 +239,20 @@ public partial class MainWindow : Window
     private bool _moderna;
 
     /// <summary>
-    /// Módulo aberto sozinho (fora da Suite): cabeçalho com o selo do módulo, a empresa e o usuário, e barra de menus clara com a faixa
-    /// da cor do módulo embaixo. Na Suite a moldura é a do visual escolhido.
+    /// Aparência moderna (módulo sozinho e Suite): barra de menus clara com a faixa da cor do módulo embaixo, itens e funções abertas
+    /// com cantos arredondados. Fora da Suite o cabeçalho mostra o selo do módulo, a empresa e o usuário; na Suite a navegação do visual
+    /// já mostra o módulo, e a empresa (seletor arredondado) e o usuário (iniciais) ficam na própria barra de menus.
     /// </summary>
     private void AplicarAparenciaModerna()
     {
-        var moderna = Suite is null;
-        CabecalhoModulo.IsVisible = moderna && _vm is { Logado: true };
-        EmpresaNaBarra.IsVisible = UsuarioNaBarra.IsVisible = !moderna;
-        if (moderna == _moderna && Classes.Contains("moderna") == moderna) return;
-        _moderna = moderna;
-        Classes.Set("moderna", moderna);
-        if (moderna)
-        {
-            BarraMenu.Bind(Border.BackgroundProperty, BarraMenu.GetResourceObservable("FundoCartao"));
-            FaixaDestaque.BorderThickness = new Thickness(0, 0, 0, 3);
-        }
+        var sozinho = Suite is null;
+        CabecalhoModulo.IsVisible = sozinho && _vm is { Logado: true };
+        EmpresaNaBarra.IsVisible = UsuarioNaBarra.IsVisible = !sozinho;
+        if (_moderna) return;
+        _moderna = true;
+        Classes.Set("moderna", true);
+        BarraMenu.Bind(Border.BackgroundProperty, BarraMenu.GetResourceObservable("FundoCartao"));
+        FaixaDestaque.BorderThickness = new Thickness(0, 0, 0, 3);
     }
 
     private void AtualizarBarras()

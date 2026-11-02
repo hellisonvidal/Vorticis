@@ -45,4 +45,36 @@ public class AparenciaModernaTests(SessaoHeadless headless)
         }, TestContext.Current.CancellationToken));
         Assert.True(ok);
     }
+
+    [Fact]
+    public async Task Suite_usa_a_mesma_aparencia_moderna_dos_modulos()
+    {
+        Vorticis.Desktop.Comum.ViewModels.SuiteViewModel.ArquivoLayout = Path.Combine(Path.GetTempPath(), $"suite-{Guid.NewGuid():N}.json");
+        var ok = await Task.Run(() => headless.Sessao.Dispatch(() =>
+        {
+            var suite = new Vorticis.Desktop.Comum.ViewModels.SuiteViewModel(Vorticis.Suite.Desktop.ModulosDaSuite.Criar(Path.GetTempPath()));
+            var janela = new MainWindow { Width = 1366, Height = 768 };
+            try
+            {
+                janela.UsarSuite(suite);
+                janela.Show();
+                Dispatcher.UIThread.RunJobs();
+                foreach (var m in suite.Modulos) m.Vm.Logado = true;
+                Dispatcher.UIThread.RunJobs();
+                Assert.Contains("moderna", janela.Classes);                                         // barra clara, cantos arredondados
+                Assert.False(janela.FindControl<Border>("CabecalhoModulo")!.IsVisible);           // o módulo aparece na navegação da Suite
+                Assert.True(janela.FindControl<StackPanel>("EmpresaNaBarra")!.IsVisible);         // empresa e usuário ficam na barra de menus
+                Assert.True(janela.FindControl<StackPanel>("UsuarioNaBarra")!.IsVisible);
+                Assert.NotEqual(suite.Ativo.Vm.PincelBarra, janela.FindControl<Border>("BarraMenu")!.Background);
+                foreach (var m in suite.Modulos) m.Vm.Logado = false;
+                return true;
+            }
+            finally
+            {
+                typeof(MainWindow).GetField("_fechamentoConfirmado", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(janela, true);
+                janela.Close();
+            }
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
 }

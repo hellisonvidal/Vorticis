@@ -171,6 +171,7 @@ public sealed partial class SuiteViewModel : ObservableObject
                 {
                     if (ReferenceEquals(m, _principal) && m.Vm.Logado) CarregarPreferenciasDoUsuario();
                     OnPropertyChanged(nameof(Logado)); OnPropertyChanged(nameof(MostraPainel)); OnPropertyChanged(nameof(MostraBuscaCentral)); OnPropertyChanged(nameof(Saudacao));
+                    OnPropertyChanged(nameof(UsuarioRotulo)); OnPropertyChanged(nameof(IniciaisUsuario));
                 }
                 if (e.PropertyName == nameof(MainViewModelBase.RecursosAtivos)) Reconstruir(m);
             };
@@ -410,6 +411,9 @@ public sealed partial class SuiteViewModel : ObservableObject
 
     /// <summary>Usuário e empresa para o canto do painel D.</summary>
     public string UsuarioRotulo => Principal.UsuarioRotulo;
+
+    /// <summary>Iniciais do usuário (círculo ao lado do nome, como nos módulos).</summary>
+    public string IniciaisUsuario => Principal.IniciaisUsuario;
 
     partial void OnLayoutChanged(LayoutSuite value)
     {

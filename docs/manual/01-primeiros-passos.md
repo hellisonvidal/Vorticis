@@ -22,7 +22,7 @@ Cada módulo aberto sozinho (Contábil, Fiscal, Folha, Escritório, Gerencial, C
 - **Funções abertas** em etiquetas arredondadas na faixa seguinte: clique para trazer a tela para a frente e no **✕** para fechar.
 - Botões, campos e listas com cantos arredondados e o cabeçalho das listas em destaque. O tema claro ou escuro segue *Configurações › Configurações gerais › Preferências*.
 
-Na Suite a moldura é a do visual escolhido (veja abaixo).
+Na **Vorticis Suite Empresarial** a aparência é a mesma: a mesma **barra de menus clara** com a faixa na cor do módulo que está à frente, a **empresa** num seletor arredondado e o **seu usuário** com as iniciais no canto direito dessa barra (no visual *Faixa de opções* e no *Busca primeiro*, na linha de cima), as mesmas etiquetas das funções abertas e os mesmos botões, campos e listas. O que muda é só a navegação entre os módulos, conforme o visual escolhido (veja abaixo); o selo e o nome do módulo aparecem na própria navegação (abas, barra lateral ou seletor).
 
 ## Vorticis Suite Empresarial (todos os módulos numa janela)
 
