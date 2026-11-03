@@ -19,9 +19,11 @@ Para as cobranças e os rateios funcionarem, cadastre nesta ordem:
 
 **Onde fica:** *Cadastros › Unidades e condôminos*.
 
+A tela mostra a **lista das unidades**; a ficha abre numa janela por cima da lista (**Nova unidade**, **Abrir ficha**, duplo clique ou **Enter**; **Cancelar**, **Esc** ou o **X** fecham sem gravar).
+
 1. **Nova unidade**: informe **Bloco** (se houver) e **Número**, o **Tipo** (apartamento, casa, sala, loja, vaga...), a **Fração ideal** (como está na convenção, ex.: 0,0125) e a área.
 2. Escolha o **Proprietário** e, se houver, o **Inquilino**. Marque **Cobrar do inquilino** para as cobranças saírem no nome dele.
-3. **Gravar**. Desmarque **Unidade ativa** para tirar a unidade das próximas cobranças.
+3. **Gravar** (a janela fecha). Desmarque **Unidade ativa** para tirar a unidade das próximas cobranças.
 
 A linha de totais mostra quantas unidades estão ativas e a soma das frações (o rateio funciona com qualquer soma, mas o normal é 1 ou 100).
 
@@ -29,7 +31,7 @@ A linha de totais mostra quantas unidades estão ativas e a soma das frações (
 
 **Onde fica:** *Financeiro › Taxas condominiais*.
 
-Cadastre cada taxa (taxa ordinária, fundo de reserva, taxa extra, gás...) com o **Rateio**:
+Cadastre cada taxa (taxa ordinária, fundo de reserva, taxa extra, gás...) com o **Rateio**. A tela mostra a lista das taxas e a ficha abre numa janela (**Nova taxa**, **Abrir ficha** ou duplo clique; **Gravar** fecha a janela):
 - **Fração ideal**: o **Valor** é o total a dividir; cada unidade paga pela sua fração (o centavo do arredondamento vai para a maior fração).
 - **Partes iguais**: o total é dividido igualmente entre as unidades ativas.
 - **Valor fixo por unidade**: cada unidade paga o valor informado.
@@ -50,7 +52,7 @@ Marque **Todas em aberto** para ver todas as cobranças não pagas. As vencidas 
 
 **Onde fica:** *Financeiro › Despesas do condomínio*.
 
-Informe data, vencimento, **categoria** (pessoal, água, energia, manutenção, limpeza, segurança...), descrição, fornecedor e valor. Quando pagar, informe **Pago em** e grave de novo. Só as despesas pagas entram na prestação de contas do mês.
+A tela mostra a lista das despesas do período e a ficha abre numa janela (**Nova despesa**, **Abrir ficha** ou duplo clique; **Gravar** fecha a janela). Informe data, vencimento, **categoria** (pessoal, água, energia, manutenção, limpeza, segurança...), descrição, fornecedor e valor. Quando pagar, informe **Pago em** e grave de novo. Só as despesas pagas entram na prestação de contas do mês.
 
 ## Rateio entre unidades
 
@@ -68,15 +70,15 @@ Use para dividir um valor avulso entre as unidades: uma obra, uma despesa extra,
 
 **Onde fica:** *Cadastros › Áreas comuns e reservas*.
 
-1. Cadastre as áreas (salão de festas, churrasqueira...) com capacidade e taxa da reserva.
-2. Selecione a área na lista, escolha a **Unidade** e a data e clique em **Reservar**. Cada área aceita uma reserva por dia; o sistema avisa se a data já estiver ocupada.
+1. Cadastre as áreas (salão de festas, churrasqueira...) com capacidade e taxa da reserva: **Nova área** abre a ficha da área numa janela (**Abrir ficha** ou duplo clique na área altera a selecionada).
+2. Selecione a área na lista e clique em **Nova reserva**: na janela, escolha a **Unidade** e a data e clique em **Reservar**. Cada área aceita uma reserva por dia; o sistema avisa se a data já estiver ocupada.
 3. **Cancelar reserva** libera a data.
 
 ## Ocorrências e assembleias
 
 **Onde fica:** *Administração › Ocorrências e assembleias*.
 
-Registre reclamações, manutenções, advertências, multas, avisos e convocações de assembleia, ligados ou não a uma unidade. Marque **Resolvida / encerrada** quando concluir. A ata da assembleia é feita em *Relatórios › Atas de Assembleia*.
+Registre reclamações, manutenções, advertências, multas, avisos e convocações de assembleia, ligados ou não a uma unidade. A tela mostra a lista das ocorrências e a ficha abre numa janela (**Nova**, **Abrir ficha** ou duplo clique; **Gravar** fecha a janela). Marque **Resolvida / encerrada** quando concluir. A ata da assembleia é feita em *Relatórios › Atas de Assembleia*.
 
 ## Prestação de contas e inadimplência
 
@@ -88,9 +90,9 @@ Escolha o **Mês**. O quadro mostra o que foi emitido, o arrecadado (cotas pagas
 
 **Onde fica:** *Relatórios › Atas de Assembleia*.
 
-1. Clique em **Nova**. O número da assembleia é dado automaticamente ao gravar (1, 2, 3... em cada condomínio).
+1. Clique em **Nova**: a ficha abre numa janela por cima da lista (**Abrir ficha** ou duplo clique alteram a selecionada). O número da assembleia é dado automaticamente ao gravar (1, 2, 3... em cada condomínio).
 2. Preencha a **data**, o **horário** (ex.: 19:30), o tipo (**Ordinária** ou **Extraordinária**), a convocação (**primeira** ou **segunda**), o **local**, o **presidente** e o **secretário(a)** da mesa e quantas **unidades** estavam presentes.
-3. Escreva a **Ordem do dia** (pauta, um item por linha) e as **Deliberações** (o que foi decidido e o resultado das votações). Clique em **Gravar**.
+3. Escreva a **Ordem do dia** (pauta, um item por linha) e as **Deliberações** (o que foi decidido e o resultado das votações). Clique em **Gravar** (a janela fecha).
 4. Com a assembleia selecionada na lista, clique em **Gerar ata (PDF)**. A ata traz a abertura (data, local, convocação, mesa e presença), a ordem do dia, as deliberações, o encerramento e o **campo de assinaturas** do presidente, do secretário(a) e do síndico (o síndico vem de *Cadastros › Condomínios*, aba **Síndico**).
 5. Marque **Incluir lista de presença** para sair, numa página à parte, a lista de todas as unidades com o condômino e uma linha para a assinatura de cada um.
 

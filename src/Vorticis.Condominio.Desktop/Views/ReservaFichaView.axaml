@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.ReservaFichaView" x:DataType="vm:ReservasViewModel">
+  <!-- Ficha da área comum e da reserva (janela aberta pela tela Reservas de áreas comuns) -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarAreaCommand}" SalvarTexto="Gravar área" IsVisible="{Binding FichaEhArea}" />
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding ReservarCommand}" SalvarTexto="Reservar" IsVisible="{Binding FichaEhReserva}" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8" IsEnabled="{Binding PodeEditar}">
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" IsVisible="{Binding FichaEhArea}">
+          <TextBlock Classes="rotulo" Text="Nome" />
+          <TextBox Grid.Column="1" Text="{Binding NomeArea}" Watermark="Nome (ex.: Salão de festas)" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Capacidade" />
+          <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Capacidade}" Minimum="0" FormatString="0" Width="150" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Taxa da reserva" />
+          <TextBox Grid.Row="2" Grid.Column="1" c:Mascara.Tipo="Valor" Text="{Binding TaxaReserva}" Width="150" HorizontalAlignment="Left" />
+        </Grid>
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8" IsVisible="{Binding FichaEhReserva}">
+          <TextBlock Classes="rotulo" Text="Área" />
+          <TextBlock Grid.Column="1" Text="{Binding AreaSelecionada.Nome}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Unidade" />
+          <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding UnidadesOpcoes}" SelectedItem="{Binding Unidade}" HorizontalAlignment="Stretch" PlaceholderText="Escolha a unidade" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Data" />
+          <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding DataReserva}" Width="160" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Observação" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Observacao}" />
+        </Grid>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

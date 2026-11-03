@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.TaxaFichaView"
+             x:DataType="vm:TaxasViewModel">
+  <!-- Ficha da taxa condominial, aberta em janela pela tela Taxas -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <Border Margin="0,0,16,8">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <TextBox Text="{Binding Descricao}" Watermark="Descrição (ex.: Taxa ordinária)" />
+          <ComboBox ItemsSource="{x:Static vm:TaxasViewModel.Rateios}" SelectedItem="{Binding Rateio}" HorizontalAlignment="Stretch" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="Valor (total a ratear ou por unidade)" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <CalendarDatePicker SelectedDate="{Binding Inicio}" Watermark="Início" Width="150" />
+            <CalendarDatePicker SelectedDate="{Binding Fim}" Watermark="Fim (opcional)" Width="150" />
+          </StackPanel>
+          <CheckBox Content="Taxa ativa" IsChecked="{Binding Ativa}" />
+          <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                     Text="Fração ideal: o valor total é dividido pela fração de cada unidade. Partes iguais: dividido igualmente. Valor fixo: o mesmo valor para cada unidade." />
+          <c:MensagensView />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.AtaAssembleiaFichaView"
+             x:DataType="vm:AtasAssembleiaViewModel">
+  <!-- Ficha da assembleia, aberta em janela pela tela Atas de Assembleia -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <Border Margin="0,0,16,8">
+        <StackPanel Spacing="6">
+          <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Nº" VerticalAlignment="Center" />
+              <TextBox Text="{Binding Numero}" IsReadOnly="True" Width="110" />
+              <CalendarDatePicker SelectedDate="{Binding Data}" Width="140" />
+              <TextBox Text="{Binding Horario}" Width="70" Watermark="19:30" ToolTip.Tip="Horário (HH:MM)" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <ComboBox ItemsSource="{x:Static vm:AtasAssembleiaViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="150" />
+              <ComboBox ItemsSource="{x:Static vm:AtasAssembleiaViewModel.Convocacoes}" SelectedIndex="{Binding Convocacao}" Width="190" />
+            </StackPanel>
+            <TextBox Text="{Binding Local}" Watermark="Local (ex.: salão de festas do condomínio)" />
+            <TextBox Text="{Binding Presidente}" Watermark="Presidente da mesa" />
+            <TextBox Text="{Binding Secretario}" Watermark="Secretário(a)" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Unidades presentes" VerticalAlignment="Center" />
+              <NumericUpDown Value="{Binding UnidadesPresentes}" Minimum="0" Increment="1" FormatString="0" Width="130" />
+            </StackPanel>
+            <TextBox Text="{Binding Pauta}" Watermark="Ordem do dia (pauta), um item por linha" AcceptsReturn="True" Height="90" TextWrapping="Wrap" />
+            <TextBox Text="{Binding Deliberacoes}" Watermark="Deliberações (o que foi decidido e as votações)" AcceptsReturn="True" Height="130" TextWrapping="Wrap" />
+          </StackPanel>
+          <c:MensagensView />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

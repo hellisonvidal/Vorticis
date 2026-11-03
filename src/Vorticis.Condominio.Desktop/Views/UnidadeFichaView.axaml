@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.UnidadeFichaView"
+             x:DataType="vm:UnidadesViewModel">
+  <!-- Ficha da unidade, aberta em janela pela tela Unidades e condôminos -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <Border Margin="0,0,16,8">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <TextBlock Classes="rotulo" Text="Bloco / número" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Text="{Binding Bloco}" Width="80" Watermark="Bloco" />
+              <TextBox Text="{Binding Numero}" Width="100" Watermark="Número" />
+            </StackPanel>
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="Tipo" />
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:UnidadesViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="160" />
+            <TextBlock Grid.Row="2" Classes="rotulo" Text="Fração ideal" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Fracao}" Watermark="Ex.: 0,0125 ou 1,25" />
+            <TextBlock Grid.Row="3" Classes="rotulo" Text="Área (m²)" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Area}" />
+            <TextBlock Grid.Row="4" Classes="rotulo" Text="Proprietário" />
+            <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Proprietario}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="5" Classes="rotulo" Text="Inquilino" />
+            <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Inquilino}" HorizontalAlignment="Stretch" />
+            <StackPanel Grid.Row="6" Grid.Column="1" Spacing="2">
+              <CheckBox Content="Cobrar do inquilino" IsChecked="{Binding CobrarInquilino}" />
+              <CheckBox Content="Unidade ativa" IsChecked="{Binding Ativa}" />
+            </StackPanel>
+          </Grid>
+          <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                     Text="Proprietários e inquilinos são cadastrados em Cadastros › Clientes (cadastro comum a todos os módulos)." />
+          <c:MensagensView />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

@@ -36,7 +36,7 @@ public sealed record Opcao(long? Id, string Texto)
 }
 
 /// <summary>Base das telas do condomínio: carrega a lista de condôminos (participantes) e de unidades para os combos.</summary>
-public abstract partial class CondominioBase(IContexto contexto, Permissao edicao) : ModuloViewModel(contexto)
+public abstract partial class CondominioBase(IContexto contexto, Permissao edicao) : ModuloComFichaViewModel(contexto)
 {
     public ObservableCollection<Opcao> Pessoas { get; } = [];
     public ObservableCollection<Opcao> UnidadesOpcoes { get; } = [];
@@ -72,6 +72,11 @@ public sealed record UnidadeLinha(Unidade U)
 /// <summary>Cadastros › Unidades e condôminos.</summary>
 public partial class UnidadesViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioCadastros)
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Unidade {s.Unidade}" : "Nova unidade";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a unidade na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<UnidadeLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Tipos { get; } = ["APARTAMENTO", "CASA", "SALA", "LOJA", "VAGA", "OUTRO"];
     [ObservableProperty] private UnidadeLinha? _selecionada;
@@ -109,6 +114,12 @@ public partial class UnidadesViewModel(IContexto contexto) : CondominioBase(cont
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         (Numero, Fracao, Area, CobrarInquilino, Ativa) = ("", "", "", false, true);
         (Proprietario, Inquilino) = (Pessoas.FirstOrDefault(), Pessoas.FirstOrDefault());
@@ -122,6 +133,7 @@ public partial class UnidadesViewModel(IContexto contexto) : CondominioBase(cont
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Unidade gravada.";
+        FichaAberta = false;
     }, Permissao.CondominioCadastros);
 }
 
@@ -139,6 +151,11 @@ public sealed record TaxaLinha(Taxa T)
 /// <summary>Financeiro › Taxas condominiais.</summary>
 public partial class TaxasViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioFinanceiro)
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Taxa: {s.Descricao}" : "Nova taxa";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a taxa na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<TaxaLinha> Lista { get; } = [];
     public sealed record OpcaoRateio(Vorticis.Condominio.Rateio R) { public override string ToString() => R.Rotulo(); }
     public static IReadOnlyList<OpcaoRateio> Rateios { get; } = [new(Vorticis.Condominio.Rateio.Fracao), new(Vorticis.Condominio.Rateio.Igual), new(Vorticis.Condominio.Rateio.Fixo)];
@@ -165,7 +182,9 @@ public partial class TaxasViewModel(IContexto contexto) : CondominioBase(context
     }
 
     [RelayCommand]
-    private void Nova() { Selecionada = null; (Descricao, Rateio, Valor, Fim, Ativa) = ("", Rateios[0], "", null, true); }
+    private void Nova() { LimparFormulario(); AbrirFichaNova(); }
+
+    private void LimparFormulario() { Selecionada = null; (Descricao, Rateio, Valor, Fim, Ativa) = ("", Rateios[0], "", null, true); }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -175,6 +194,7 @@ public partial class TaxasViewModel(IContexto contexto) : CondominioBase(context
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Taxa gravada.";
+        FichaAberta = false;
     }, Permissao.CondominioFinanceiro);
 }
 
@@ -281,6 +301,11 @@ public sealed record DespesaLinha(Despesa D)
 /// <summary>Financeiro › Despesas do condomínio.</summary>
 public partial class DespesasViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioFinanceiro)
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Despesa: {s.Descricao}" : "Nova despesa";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a despesa na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<DespesaLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Categorias { get; } =
         ["PESSOAL", "AGUA", "ENERGIA", "GAS", "MANUTENCAO", "LIMPEZA", "SEGURANCA", "ADMINISTRACAO", "SEGURO", "TRIBUTOS", "FUNDO_RESERVA", "OUTRAS"];
@@ -324,7 +349,9 @@ public partial class DespesasViewModel(IContexto contexto) : CondominioBase(cont
     }
 
     [RelayCommand]
-    private void Nova() { Selecionada = null; (Data, Vencimento, Descricao, Valor, PagoEm) = (DateTime.Today, DateTime.Today, "", "", null); Fornecedor = Pessoas.FirstOrDefault(); }
+    private void Nova() { LimparFormulario(); AbrirFichaNova(); }
+
+    private void LimparFormulario() { Selecionada = null; (Data, Vencimento, Descricao, Valor, PagoEm) = (DateTime.Today, DateTime.Today, "", "", null); Fornecedor = Pessoas.FirstOrDefault(); }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -334,6 +361,7 @@ public partial class DespesasViewModel(IContexto contexto) : CondominioBase(cont
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Despesa gravada.";
+        FichaAberta = false;
     }, Permissao.CondominioFinanceiro);
 
     [RelayCommand]
@@ -363,6 +391,38 @@ public sealed record ReservaLinha(Reserva R)
 /// <summary>Cadastros › Áreas comuns e reservas.</summary>
 public partial class ReservasViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioCadastros)
 {
+    /// <summary>A ficha aberta é a da área comum (verdadeiro) ou a de uma reserva (falso).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(FichaEhReserva))] private bool _fichaEhArea = true;
+
+    public bool FichaEhReserva => !FichaEhArea;
+    public override string TituloFicha => FichaEhArea ? (AreaSelecionada is { } a && !_novaArea ? $"Área comum: {a.Nome}" : "Nova área comum") : "Nova reserva";
+    private bool _novaArea;
+    protected override void AoDescartarFicha()
+    {
+        if (AreaSelecionada is { } a) OnAreaSelecionadaChanged(a); else (NomeArea, Capacidade, TaxaReserva) = ("", 0, "");
+        _novaArea = false;
+    }
+
+    /// <summary>Abre a ficha da área comum selecionada.</summary>
+    [RelayCommand]
+    private void AbrirArea()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (AreaSelecionada is null) { Erros.Add("Selecione a área na lista."); return; }
+        (FichaEhArea, _novaArea) = (true, false);
+        OnPropertyChanged(nameof(TituloFicha));
+        FichaAberta = true;
+    }
+
+    /// <summary>Abre a ficha de uma nova reserva para a área selecionada.</summary>
+    [RelayCommand]
+    private void NovaReserva()
+    {
+        FichaEhArea = false;
+        AbrirFichaNova();
+    }
+
     public ObservableCollection<AreaComum> Areas { get; } = [];
     public ObservableCollection<ReservaLinha> Lista { get; } = [];
     [ObservableProperty] private AreaComum? _areaSelecionada;
@@ -396,7 +456,13 @@ public partial class ReservasViewModel(IContexto contexto) : CondominioBase(cont
     }
 
     [RelayCommand]
-    private void NovaArea() { AreaSelecionada = null; (NomeArea, Capacidade, TaxaReserva) = ("", 0, ""); }
+    private void NovaArea()
+    {
+        AreaSelecionada = null;
+        (NomeArea, Capacidade, TaxaReserva) = ("", 0, "");
+        (FichaEhArea, _novaArea) = (true, true);
+        AbrirFichaNova();
+    }
 
     [RelayCommand]
     private Task GravarAreaAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -405,6 +471,8 @@ public partial class ReservasViewModel(IContexto contexto) : CondominioBase(cont
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Área comum gravada.";
+        _novaArea = false;
+        FichaAberta = false;
     }, Permissao.CondominioCadastros);
 
     [RelayCommand]
@@ -416,6 +484,7 @@ public partial class ReservasViewModel(IContexto contexto) : CondominioBase(cont
         Observacao = "";
         await CarregarAsync();
         Mensagem = "Reserva registrada.";
+        FichaAberta = false;
     }, Permissao.CondominioCadastros);
 
     [RelayCommand]
@@ -443,6 +512,11 @@ public sealed record OcorrenciaLinha(Ocorrencia O)
 /// <summary>Administração › Ocorrências e assembleias.</summary>
 public partial class OcorrenciasViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioCadastros)
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Ocorrência: {s.Titulo}" : "Nova ocorrência";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a ocorrência na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<OcorrenciaLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Tipos { get; } = ["RECLAMACAO", "MANUTENCAO", "ADVERTENCIA", "MULTA", "AVISO", "ASSEMBLEIA"];
     public static string RotuloTipo(string t) => t switch
@@ -476,7 +550,9 @@ public partial class OcorrenciasViewModel(IContexto contexto) : CondominioBase(c
     }
 
     [RelayCommand]
-    private void Nova() { Selecionada = null; (Data, Titulo, Descricao, Resolvida) = (DateTime.Today, "", "", false); Unidade = UnidadesOpcoes.FirstOrDefault(); }
+    private void Nova() { LimparFormulario(); AbrirFichaNova(); }
+
+    private void LimparFormulario() { Selecionada = null; (Data, Titulo, Descricao, Resolvida) = (DateTime.Today, "", "", false); Unidade = UnidadesOpcoes.FirstOrDefault(); }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -487,6 +563,7 @@ public partial class OcorrenciasViewModel(IContexto contexto) : CondominioBase(c
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Ocorrência gravada.";
+        FichaAberta = false;
     }, Permissao.CondominioCadastros);
 }
 
@@ -620,6 +697,11 @@ public sealed record AssembleiaLinha(Assembleia A)
 /// <summary>Relatórios › Atas de Assembleia: registra a assembleia (mesa, pauta, deliberações) e gera a ata em PDF com as assinaturas.</summary>
 public partial class AtasAssembleiaViewModel(IContexto contexto) : CondominioBase(contexto, Permissao.CondominioCadastros)
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Assembleia nº {s.Numero}" : "Nova assembleia";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a assembleia na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<AssembleiaLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Tipos { get; } = ["Ordinária", "Extraordinária"];
     public static IReadOnlyList<string> Convocacoes { get; } = ["Primeira convocação", "Segunda convocação"];
@@ -657,6 +739,12 @@ public partial class AtasAssembleiaViewModel(IContexto contexto) : CondominioBas
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         (Numero, Data, Horario, Tipo, Convocacao, Local, Presidente, Secretario, UnidadesPresentes, Pauta, Deliberacoes) =
             ("(automático)", DateTime.Today, "19:00", "Ordinária", 0, "", "", "", 0, "", "");
@@ -675,6 +763,7 @@ public partial class AtasAssembleiaViewModel(IContexto contexto) : CondominioBas
         await CarregarAsync();
         Selecionada = Lista.FirstOrDefault(l => l.A.Numero == r.Valor);
         Mensagem = $"Assembleia nº {r.Valor} gravada.";
+        FichaAberta = false;
     }, Permissao.CondominioCadastros);
 
     [RelayCommand]
@@ -683,7 +772,7 @@ public partial class AtasAssembleiaViewModel(IContexto contexto) : CondominioBas
         if (Selecionada?.A is not { } a) { Erros.Add("Selecione a assembleia na lista."); return; }
         var r = await app.Cond().ExcluirAssembleiaAsync(empresa, a.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Nova();
+        LimparFormulario();
         await CarregarAsync();
         Mensagem = $"Assembleia nº {a.Numero} excluída.";
     }, Permissao.CondominioCadastros);

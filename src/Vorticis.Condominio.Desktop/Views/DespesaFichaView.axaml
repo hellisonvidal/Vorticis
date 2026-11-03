@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Condominio.Desktop.ViewModels"
+             x:Class="Vorticis.Condominio.Desktop.Views.DespesaFichaView"
+             x:DataType="vm:DespesasViewModel">
+  <!-- Ficha da despesa, aberta em janela pela tela Despesas -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <Border Margin="0,0,16,8">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <CalendarDatePicker SelectedDate="{Binding Data}" Watermark="Data" Width="150" />
+            <CalendarDatePicker SelectedDate="{Binding Vencimento}" Watermark="Vencimento" Width="150" />
+          </StackPanel>
+          <ComboBox ItemsSource="{x:Static vm:DespesasViewModel.Categorias}" SelectedItem="{Binding Categoria}" HorizontalAlignment="Stretch" />
+          <TextBox Text="{Binding Descricao}" Watermark="Descrição" />
+          <ComboBox ItemsSource="{Binding Pessoas}" SelectedItem="{Binding Fornecedor}" HorizontalAlignment="Stretch" PlaceholderText="Fornecedor" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Watermark="Valor" />
+          <CalendarDatePicker SelectedDate="{Binding PagoEm}" Watermark="Pago em (vazio = em aberto)" />
+          <c:MensagensView />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>
