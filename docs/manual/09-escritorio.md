@@ -94,11 +94,13 @@ A tela mostra a **lista dos protocolos** registrados (número, data, cliente, ti
 **Para que serve:** montar o contrato de prestação de serviços contábeis com o cliente, já com os dados das partes, e exportar em PDF (com assinatura digital, se quiser) ou em Word.
 **Onde fica:** *Relatórios › Gerador de contratos*.
 
+A tela mostra a **lista dos contratos gravados**. A **ficha do contrato** abre numa janela por cima da lista: **Novo contrato**, **Abrir ficha**, duplo clique ou **Enter** a abrem; **Gravar** grava e fecha a janela, e **Cancelar**, **Esc** ou o **X** fecham sem gravar.
+
 1. **Novo contrato**: o **Tipo** é *Cliente* (o cliente é o contratante e o escritório, o contratado).
 2. Escolha a **Parte** (do cadastro próprio do escritório), confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*), o **dia** do vencimento, a **vigência** (sem fim = prazo indeterminado), o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
-3. **Gerar texto**: o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
-4. **Gravar**: o contrato recebe o próximo número do escritório.
-5. Selecione-o na lista e exporte:
+3. **Gerar texto** (botão na ficha): o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
+4. **Gravar**: o contrato recebe o próximo número do escritório e a janela fecha.
+5. Selecione-o na lista da tela e exporte:
    - **Exportar PDF**: o texto e as linhas de assinatura das duas partes. Marque antes **Assinar digitalmente** para assinar o PDF com o certificado digital padrão do contador (ou do responsável), definido em *Configurações › Certificados digitais*; com certificado A3, o leitor pede o PIN.
    - **Exportar Word**: o mesmo contrato em arquivo .docx, para editar no Word ou no LibreOffice.
 

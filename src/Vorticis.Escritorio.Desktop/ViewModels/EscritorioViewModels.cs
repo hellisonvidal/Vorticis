@@ -762,8 +762,14 @@ public sealed record ContratoLinha(ContratoEscritorio C)
 /// Contratos › Gerador de contratos: monta o contrato de prestação de serviços contábeis (cliente) ou de fornecimento (fornecedor) com os
 /// dados do escritório e do cadastro próprio, permite ajustar o texto, grava numerado e gera o PDF para assinatura.
 /// </summary>
-public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Contrato nº {s.Numero}" : "Novo contrato";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o contrato na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<ContratoLinha> Lista { get; } = [];
     public ObservableCollection<Opcao<long?>> Partes { get; } = [];
     public static IReadOnlyList<Opcao<ModeloContrato>> Modelos { get; } = [new(ModeloContrato.Cliente, "Cliente: prestação de serviços contábeis")];
@@ -837,12 +843,18 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(co
     [RelayCommand]
     private void Novo()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+        Mensagem = "Escolha o tipo e a parte, preencha as condições e clique em Gerar texto.";
+    }
+
+    private void LimparFormulario()
+    {
         Selecionado = null;
         Modelo = Modelos[0];
         Objeto = GeradorContratos.ObjetoPadrao(ModeloContrato.Cliente);
         (Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) = ("", 10, new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), null, "IPCA", "", "", true);
         Periodicidade = Periodicidades[0];
-        Mensagem = "Escolha o tipo e a parte, preencha as condições e clique em Gerar texto.";
     }
 
     [RelayCommand]
@@ -866,6 +878,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloViewModel(co
         await CarregarAsync();
         Selecionado = Lista.FirstOrDefault(l => l.C.Numero == r.Valor);
         Mensagem = $"Contrato nº {r.Valor} gravado.";
+        FichaAberta = false;
     }, Permissao.EscritorioHonorarios);
 
     /// <summary>Assina o PDF digitalmente com o certificado padrão do contador (ou do responsável), em Configurações › Certificados digitais.</summary>
