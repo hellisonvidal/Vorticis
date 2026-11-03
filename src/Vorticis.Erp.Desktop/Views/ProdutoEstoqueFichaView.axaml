@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Erp.Desktop.ViewModels"
+             x:Class="Vorticis.Erp.Desktop.Views.ProdutoEstoqueFichaView" x:DataType="vm:EstoqueViewModel">
+  <!-- Ficha do produto em estoque (janela aberta pela tela Estoque): preço, mínimo e ajuste de inventário -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarParametrosCommand}" SalvarTexto="Gravar preço e mínimo" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="6" Margin="0,0,16,8" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Text="Preço e estoque mínimo do produto selecionado" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Preco}" Watermark="Preço de venda" Width="120" />
+          <TextBox Text="{Binding Minimo}" Watermark="Estoque mínimo" Width="110" />
+        </StackPanel>
+        <TextBlock Text="Ajuste de estoque (inventário)" FontWeight="SemiBold" Margin="0,8,0,0" />
+        <CalendarDatePicker SelectedDate="{Binding DataAjuste}" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBox Text="{Binding QuantidadeAjuste}" Watermark="Qtde (+ entra, − sai)" Width="150" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding CustoAjuste}" Watermark="Custo unitário" Width="120" />
+        </StackPanel>
+        <TextBox Text="{Binding MotivoAjuste}" Watermark="Motivo (ex.: contagem física)" />
+        <Button Content="Registrar ajuste" Classes="accent" Command="{Binding AjustarCommand}" />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Erp.Desktop.ViewModels"
+             x:Class="Vorticis.Erp.Desktop.Views.TransporteFichaView"
+             x:DataType="vm:TransporteViewModel">
+  <!-- Ficha do documento de transporte (CT-e/MDF-e), aberta em janela pela tela Transporte -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <Border Margin="0,0,16,8">
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeEditar}">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="5">
+            <TextBlock Classes="rotulo" Text="Tipo" />
+            <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:TransporteViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="120" />
+            <TextBlock Grid.Row="1" Classes="rotulo" Text="Número / série" />
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Text="{Binding Numero}" Width="110" />
+              <TextBox Text="{Binding Serie}" Width="60" />
+            </StackPanel>
+            <TextBlock Grid.Row="2" Classes="rotulo" Text="Emissão" />
+            <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding Emissao}" />
+            <TextBlock Grid.Row="3" Classes="rotulo" Text="Chave" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Chave}" Watermark="44 dígitos (opcional)" />
+            <TextBlock Grid.Row="4" Classes="rotulo" Text="Remetente" />
+            <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Participantes}" SelectedItem="{Binding Remetente}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="5" Classes="rotulo" Text="Destinatário" />
+            <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding Participantes}" SelectedItem="{Binding Destinatario}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="6" Classes="rotulo" Text="UF início / fim" />
+            <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox Text="{Binding UfInicio}" Width="50" MaxLength="2" />
+              <TextBox Text="{Binding UfFim}" Width="50" MaxLength="2" />
+            </StackPanel>
+            <TextBlock Grid.Row="7" Classes="rotulo" Text="Veículo" />
+            <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{Binding VeiculosOpcoes}" SelectedItem="{Binding Veiculo}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="8" Classes="rotulo" Text="Motorista" />
+            <ComboBox Grid.Row="8" Grid.Column="1" ItemsSource="{Binding MotoristasOpcoes}" SelectedItem="{Binding Motorista}" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="9" Classes="rotulo" Text="Frete / carga / kg" />
+            <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <TextBox c:Mascara.Tipo="Valor" Text="{Binding Frete}" Watermark="Frete" Width="95" />
+              <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorCarga}" Watermark="Carga" Width="95" />
+              <TextBox Text="{Binding Peso}" Watermark="Peso" Width="80" />
+            </StackPanel>
+            <TextBlock Grid.Row="10" Classes="rotulo" Text="Situação" />
+            <ComboBox Grid.Row="10" Grid.Column="1" ItemsSource="{x:Static vm:TransporteViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="140" />
+          </Grid>
+          <TextBox Text="{Binding ChavesNfe}" Watermark="Chaves das NF-e transportadas (uma por linha)" AcceptsReturn="True" Height="70" />
+          <c:MensagensView />
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

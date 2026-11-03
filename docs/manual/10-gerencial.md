@@ -15,6 +15,8 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 
 **Onde fica:** *Faturamento › Pedidos de venda* (atalho **Ctrl+V**) e *Compras › Pedidos de compra*.
 
+A tela mostra a **lista dos pedidos** do período. A **ficha do pedido** abre numa janela por cima da lista: **Novo pedido**, **Abrir ficha**, duplo clique ou **Enter** a abrem. **Gravar pedido** grava e fecha a janela (**Cancelar**, **Esc** ou o **X** fecham sem gravar).
+
 1. **Novo pedido**. Escolha o **Cliente** (venda) ou o **Fornecedor** (compra), a **Data** e as **Parcelas** (quantidade, intervalo em dias e, se quiser, o **1º vencimento**).
 2. Em **Itens**, escolha o **Produto** (o saldo em estoque aparece ao lado do nome), informe **Qtde**, **Unitário** (na venda, vem o preço de venda; na compra, o custo médio) e **Desconto**, e clique em **Incluir item**. **Remover** tira o item selecionado.
 3. **Gravar pedido**. O número é dado pelo sistema. Enquanto estiver *Em aberto*, o pedido pode ser alterado ou cancelado (**Cancelar pedido**).
@@ -31,7 +33,8 @@ Escolha o **Mês de referência**. O painel mostra: vendas e compras do mês (no
 
 - A lista mostra, por produto, o **saldo**, o **mínimo**, o **custo médio** (média das entradas), o **valor** em estoque e o **preço de venda**. **REPOR** aparece quando o saldo está abaixo do mínimo.
 - Selecione o produto para ver os **movimentos** (entradas das compras, saídas das vendas e ajustes).
-- **Preço e estoque mínimo:** informe e clique em **Gravar**.
+- Para alterar um produto, clique em **Preço, mínimo e ajuste** (ou dê duplo clique na linha): a ficha do produto abre numa janela por cima da lista.
+- **Preço e estoque mínimo:** informe e clique em **Gravar preço e mínimo** (a janela fecha).
 - **Ajuste de estoque (inventário):** informe a data, a quantidade (positiva para entrada, negativa para saída), o custo unitário e o motivo, e clique em **Registrar ajuste**.
 
 ## Monitor de notas fiscais

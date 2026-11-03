@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Erp.Desktop.ViewModels"
+             x:Class="Vorticis.Erp.Desktop.Views.VeiculoMotoristaFichaView" x:DataType="vm:VeiculosViewModel">
+  <!-- Ficha do veículo e do motorista (janela aberta pela tela Veículos e motoristas) -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarVeiculoCommand}" SalvarTexto="Gravar veículo" IsVisible="{Binding FichaEhVeiculo}" />
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarMotoristaCommand}" SalvarTexto="Gravar motorista" IsVisible="{Binding FichaEhMotorista}" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8" IsEnabled="{Binding PodeEditar}">
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsVisible="{Binding FichaEhVeiculo}">
+          <TextBlock Classes="rotulo" Text="Placa" />
+          <TextBox Grid.Column="1" Text="{Binding Placa}" Watermark="Placa" Width="140" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="RENAVAM" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Renavam}" Width="180" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Tipo" />
+          <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{x:Static vm:VeiculosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="180" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="UF" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Uf}" Watermark="UF" Width="70" MaxLength="2" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="Tara (kg)" />
+          <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding Tara}" Minimum="0" FormatString="0" Width="160" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Capacidade (kg)" />
+          <NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding Capacidade}" Minimum="0" FormatString="0" Width="160" HorizontalAlignment="Left" />
+        </Grid>
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8" IsVisible="{Binding FichaEhMotorista}">
+          <TextBlock Classes="rotulo" Text="Nome" />
+          <TextBox Grid.Column="1" Text="{Binding Nome}" Watermark="Nome" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="CPF" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Cpf}" Width="180" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="CNH" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Cnh}" Width="180" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Validade da CNH" />
+          <CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding CnhValidade}" Width="160" HorizontalAlignment="Left" />
+        </Grid>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

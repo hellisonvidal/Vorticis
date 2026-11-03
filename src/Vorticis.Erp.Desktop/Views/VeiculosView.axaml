@@ -1,24 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Erp.Desktop.ViewModels"
              x:Class="Vorticis.Erp.Desktop.Views.VeiculosView" x:DataType="vm:VeiculosViewModel">
+  <!-- Veículos à esquerda e motoristas à direita; as fichas abrem numa janela por cima -->
   <Grid ColumnDefinitions="*,16,*" Margin="8">
     <DockPanel>
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Veículos" Margin="0,0,0,6" />
-      <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0" IsEnabled="{Binding PodeEditar}">
-        <WrapPanel>
-          <TextBox Text="{Binding Placa}" Watermark="Placa" Width="100" Margin="0,0,6,4" />
-          <TextBox Text="{Binding Renavam}" Watermark="RENAVAM" Width="120" Margin="0,0,6,4" />
-          <ComboBox ItemsSource="{x:Static vm:VeiculosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="130" Margin="0,0,6,4" />
-          <TextBox Text="{Binding Uf}" Watermark="UF" Width="50" MaxLength="2" Margin="0,0,6,4" />
-          <NumericUpDown Value="{Binding Tara}" Minimum="0" FormatString="0" Width="120" Watermark="Tara (kg)" Margin="0,0,6,4" />
-          <NumericUpDown Value="{Binding Capacidade}" Minimum="0" FormatString="0" Width="130" Watermark="Capacidade (kg)" Margin="0,0,6,4" />
-        </WrapPanel>
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <Button Content="Novo veículo" Command="{Binding NovoVeiculoCommand}" />
-          <Button Content="Gravar veículo" Classes="accent" Command="{Binding GravarVeiculoCommand}" />
-        </StackPanel>
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+        <Button Content="Novo veículo" Command="{Binding NovoVeiculoCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Name="AbrirFichaVeiculo" Content="Abrir ficha" Command="{Binding AbrirVeiculoCommand}" ToolTip.Tip="Mostra a ficha do veículo selecionado (ou dê duplo clique na lista)" />
       </StackPanel>
-      <DataGrid ItemsSource="{Binding Veiculos}" SelectedItem="{Binding VeiculoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid Name="ListaVeiculos" ItemsSource="{Binding Veiculos}" SelectedItem="{Binding VeiculoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Placa" Binding="{ReflectionBinding Placa}" Width="90" />
           <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="*" />
@@ -29,20 +20,12 @@
     </DockPanel>
     <DockPanel Grid.Column="2">
       <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Motoristas" Margin="0,0,0,6" />
-      <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0" IsEnabled="{Binding PodeEditar}">
-        <TextBox Text="{Binding Nome}" Watermark="Nome" />
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <TextBox Text="{Binding Cpf}" Watermark="CPF" Width="140" />
-          <TextBox Text="{Binding Cnh}" Watermark="CNH" Width="140" />
-          <CalendarDatePicker SelectedDate="{Binding CnhValidade}" Watermark="Validade da CNH" Width="150" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <Button Content="Novo motorista" Command="{Binding NovoMotoristaCommand}" />
-          <Button Content="Gravar motorista" Classes="accent" Command="{Binding GravarMotoristaCommand}" />
-        </StackPanel>
-        <c:MensagensView />
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+        <Button Content="Novo motorista" Command="{Binding NovoMotoristaCommand}" IsEnabled="{Binding PodeEditar}" />
+        <Button Name="AbrirFichaMotorista" Content="Abrir ficha" Command="{Binding AbrirMotoristaCommand}" ToolTip.Tip="Mostra a ficha do motorista selecionado (ou dê duplo clique na lista)" />
       </StackPanel>
-      <DataGrid ItemsSource="{Binding Motoristas}" SelectedItem="{Binding MotoristaSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <c:MensagensView DockPanel.Dock="Bottom" />
+      <DataGrid Name="ListaMotoristas" ItemsSource="{Binding Motoristas}" SelectedItem="{Binding MotoristaSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Nome" Binding="{ReflectionBinding Nome}" Width="*" />
           <DataGridTextColumn Header="CPF" Binding="{ReflectionBinding Cpf}" Width="120" />

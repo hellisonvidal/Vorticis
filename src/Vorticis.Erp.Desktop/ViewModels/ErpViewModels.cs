@@ -101,8 +101,14 @@ public sealed record ProdutoOpcao(PosicaoEstoque P)
 }
 
 /// <summary>Vendas › Pedidos de venda e Compras › Pedidos de compra: digitação e conclusão (faturar / receber) do pedido.</summary>
-public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido tipo) : ModuloViewModel(contexto)
+public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido tipo) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Pedido nº {s.Numero}" : "Novo pedido";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o pedido na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public TipoPedido Tipo { get; } = tipo;
     public bool Venda => Tipo == TipoPedido.Venda;
     public string Titulo => Venda ? "Pedidos de venda" : "Pedidos de compra";
@@ -183,11 +189,17 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
     [RelayCommand]
     private void Novo()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+        Mensagem = $"Escolha o {RotuloParticipante.ToLowerInvariant()}, inclua os itens e clique em Gravar pedido.";
+    }
+
+    private void LimparFormulario()
+    {
         Selecionado = null;
         (Participante, Data, Parcelas, Intervalo, PrimeiroVencimento, Observacao) = (null, DateTime.Today, 1, 30, null, "");
         Itens.Clear();
         Totalizar();
-        Mensagem = $"Escolha o {RotuloParticipante.ToLowerInvariant()}, inclua os itens e clique em Gravar pedido.";
     }
 
     [RelayCommand]
@@ -224,6 +236,7 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         await CarregarAsync();
         Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
         Mensagem = $"Pedido nº {Selecionado?.Numero} gravado.";
+        FichaAberta = false;
     }, Venda ? Permissao.ErpVendas : Permissao.ErpCompras);
 
     [RelayCommand]
@@ -235,6 +248,7 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Pedido cancelado.";
+        FichaAberta = false;
     }, Venda ? Permissao.ErpVendas : Permissao.ErpCompras);
 
     [RelayCommand]
@@ -249,6 +263,7 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         await CarregarAsync();
         Mensagem = Venda ? "Pedido faturado: a nota de saída e as contas a receber foram geradas e o estoque foi baixado."
                          : "Mercadorias recebidas: a nota de entrada e as contas a pagar foram geradas e o estoque foi atualizado.";
+        FichaAberta = false;
     }, Venda ? Permissao.ErpVendas : Permissao.ErpCompras);
 }
 
@@ -280,8 +295,14 @@ public sealed record MovimentoLinha(MovimentoEstoque M)
 }
 
 /// <summary>Estoque › Posição e movimentos: saldo e custo médio por produto, preço de venda, mínimo, ajustes e movimentos.</summary>
-public partial class EstoqueViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class EstoqueViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Estoque: {s.Descricao}" : "Produto";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o produto na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); }
+
     public ObservableCollection<PosicaoLinha> Posicao { get; } = [];
     public ObservableCollection<MovimentoLinha> Movimentos { get; } = [];
     [ObservableProperty] private PosicaoLinha? _selecionado;
@@ -332,6 +353,7 @@ public partial class EstoqueViewModel(IContexto contexto) : ModuloViewModel(cont
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Preço de venda e estoque mínimo gravados.";
+        FichaAberta = false;
     }, Permissao.ErpEstoque);
 
     [RelayCommand]
@@ -344,14 +366,49 @@ public partial class EstoqueViewModel(IContexto contexto) : ModuloViewModel(cont
         (QuantidadeAjuste, MotivoAjuste) = ("", "");
         await CarregarAsync();
         Mensagem = "Ajuste registrado.";
+        FichaAberta = false;
     }, Permissao.ErpEstoque);
 }
 
 // ---------------------------------------------------------------------------------------------- veículos e motoristas
 
 /// <summary>Cadastros › Veículos e motoristas (usados nos manifestos e conhecimentos).</summary>
-public partial class VeiculosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class VeiculosViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A ficha aberta é a do veículo (verdadeiro) ou a do motorista (falso).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(FichaEhMotorista))] private bool _fichaEhVeiculo = true;
+
+    public bool FichaEhMotorista => !FichaEhVeiculo;
+    public override string TituloFicha => FichaEhVeiculo
+        ? (VeiculoSelecionado is { } v && !_novo ? $"Veículo {v.Placa}" : "Novo veículo")
+        : (MotoristaSelecionado is { } m && !_novo ? $"Motorista {m.Nome}" : "Novo motorista");
+    private bool _novo;
+
+    protected override void AoDescartarFicha()
+    {
+        if (FichaEhVeiculo) { if (VeiculoSelecionado is { } v) OnVeiculoSelecionadoChanged(v); else (Placa, Renavam, Tipo, Uf, Tara, Capacidade) = ("", "", "CAMINHAO", "", 0, 0); }
+        else { if (MotoristaSelecionado is { } m) OnMotoristaSelecionadoChanged(m); else (Nome, Cpf, Cnh, CnhValidade) = ("", "", "", null); }
+        _novo = false;
+    }
+
+    /// <summary>Abre a ficha do veículo selecionado.</summary>
+    [RelayCommand]
+    private void AbrirVeiculo() => AbrirDe(true, VeiculoSelecionado is not null, "Selecione o veículo na lista.");
+
+    /// <summary>Abre a ficha do motorista selecionado.</summary>
+    [RelayCommand]
+    private void AbrirMotorista() => AbrirDe(false, MotoristaSelecionado is not null, "Selecione o motorista na lista.");
+
+    private void AbrirDe(bool veiculo, bool ha, string aviso)
+    {
+        Erros.Clear();
+        Mensagem = null;
+        if (!ha) { Erros.Add(aviso); return; }
+        (FichaEhVeiculo, _novo) = (veiculo, false);
+        OnPropertyChanged(nameof(TituloFicha));
+        FichaAberta = true;
+    }
+
     public ObservableCollection<Veiculo> Veiculos { get; } = [];
     public ObservableCollection<Motorista> Motoristas { get; } = [];
     public static IReadOnlyList<string> Tipos { get; } = ["CAMINHAO", "CARRETA", "VAN", "UTILITARIO", "CARRO", "MOTO", "OUTRO"];
@@ -396,10 +453,22 @@ public partial class VeiculosViewModel(IContexto contexto) : ModuloViewModel(con
     }
 
     [RelayCommand]
-    private void NovoVeiculo() { VeiculoSelecionado = null; (Placa, Renavam, Tipo, Uf, Tara, Capacidade) = ("", "", "CAMINHAO", "", 0, 0); }
+    private void NovoVeiculo()
+    {
+        VeiculoSelecionado = null;
+        (Placa, Renavam, Tipo, Uf, Tara, Capacidade) = ("", "", "CAMINHAO", "", 0, 0);
+        (FichaEhVeiculo, _novo) = (true, true);
+        AbrirFichaNova();
+    }
 
     [RelayCommand]
-    private void NovoMotorista() { MotoristaSelecionado = null; (Nome, Cpf, Cnh, CnhValidade) = ("", "", "", null); }
+    private void NovoMotorista()
+    {
+        MotoristaSelecionado = null;
+        (Nome, Cpf, Cnh, CnhValidade) = ("", "", "", null);
+        (FichaEhVeiculo, _novo) = (false, true);
+        AbrirFichaNova();
+    }
 
     [RelayCommand]
     private Task GravarVeiculoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -409,6 +478,8 @@ public partial class VeiculosViewModel(IContexto contexto) : ModuloViewModel(con
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Veículo gravado.";
+        _novo = false;
+        FichaAberta = false;
     }, Permissao.ErpTransporte);
 
     [RelayCommand]
@@ -419,6 +490,8 @@ public partial class VeiculosViewModel(IContexto contexto) : ModuloViewModel(con
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Motorista gravado.";
+        _novo = false;
+        FichaAberta = false;
     }, Permissao.ErpTransporte);
 }
 
@@ -437,8 +510,14 @@ public sealed record TransporteLinha(DocumentoTransporte D)
 }
 
 /// <summary>Transporte › Conhecimentos e manifestos: registro e controle dos CT-e e MDF-e (emitidos no emissor da SEFAZ).</summary>
-public partial class TransporteViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class TransporteViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Documento de transporte nº {s.Numero}" : "Novo documento de transporte";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o documento na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<TransporteLinha> Lista { get; } = [];
     public ObservableCollection<Opcao> Participantes { get; } = [];
     public ObservableCollection<Opcao> VeiculosOpcoes { get; } = [];
@@ -503,6 +582,12 @@ public partial class TransporteViewModel(IContexto contexto) : ModuloViewModel(c
     [RelayCommand]
     private void Novo()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionado = null;
         (Numero, Chave, Remetente, Destinatario, Veiculo, Motorista, Frete, ValorCarga, Peso, ChavesNfe, Situacao) = ("", "", null, null, null, null, "", "", "", "", "DIGITADO");
         Emissao = DateTime.Today;
@@ -519,5 +604,6 @@ public partial class TransporteViewModel(IContexto contexto) : ModuloViewModel(c
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Documento de transporte gravado.";
+        FichaAberta = false;
     }, Permissao.ErpTransporte);
 }
