@@ -27,12 +27,16 @@
         <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Situação" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.Situacoes}" SelectedIndex="{Binding SituacaoFiltro}" Width="210" /></StackPanel>
         <CheckBox Content="Somente vencidas" IsChecked="{Binding SomenteVencidas}" VerticalAlignment="Bottom" Margin="0,0,10,4" />
         <Button Classes="mini accent" Content="Consultar" Command="{Binding ConsultarCommand}" VerticalAlignment="Bottom" Margin="0,0,8,4" />
-        <Button Classes="mini" Content="Nova duplicata" Command="{Binding NovaCommand}" IsEnabled="{Binding PodeManter}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+        <Button Classes="mini" Content="Nova duplicata" Command="{Binding NovaCommand}" IsEnabled="{Binding PodeManter}" VerticalAlignment="Bottom" Margin="0,0,8,4" />
+        <Button Name="AbrirFicha" Classes="mini" Content="Abrir ficha" Command="{Binding AbrirFichaCommand}" VerticalAlignment="Bottom" Margin="0,0,8,4"
+                ToolTip.Tip="Mostra a ficha da duplicata selecionada (ou dê duplo clique na lista)" />
+        <Button Classes="mini" Content="Cancelar duplicata" Command="{Binding CancelarDuplicataCommand}" IsEnabled="{Binding PodeManter}" VerticalAlignment="Bottom" Margin="0,0,8,4" />
+        <Button Classes="mini" Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeManter}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
       </WrapPanel>
       <TextBlock Text="{Binding Resumo}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
       <c:MensagensView />
 
-      <DataGrid fg:FiltroGrade.Forcar="True" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" AutoGenerateColumns="False" CanUserSortColumns="False" Height="230">
+      <DataGrid Name="ListaDuplicatas" fg:FiltroGrade.Forcar="True" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" AutoGenerateColumns="False" CanUserSortColumns="False" Height="230">
         <DataGrid.Columns>
           <DataGridCheckBoxColumn Header="" Binding="{ReflectionBinding Marcada}" Width="44" />
           <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="100" IsReadOnly="True" />
@@ -47,26 +51,6 @@
         </DataGrid.Columns>
       </DataGrid>
 
-      <Expander Header="Duplicata selecionada ou nova" IsExpanded="True">
-        <StackPanel Spacing="4">
-          <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxAviso}" />
-          <WrapPanel IsEnabled="{Binding PodeManter}">
-            <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox fg:Pesquisa.Fonte="Participante" Text="{Binding FormParticipante}" Width="260" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº do documento" /><TextBox Text="{Binding FormDocumento}" Width="120" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Parcela" /><TextBox Text="{Binding FormParcela}" Width="70" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Emissão" /><CalendarDatePicker SelectedDate="{Binding FormEmissao}" Width="135" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Vencimento" /><CalendarDatePicker SelectedDate="{Binding FormVencimento}" Width="135" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding FormValor}" Width="110" /></StackPanel>
-            <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Observação" /><TextBox Text="{Binding FormObservacao}" Width="260" /></StackPanel>
-          </WrapPanel>
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button Classes="mini accent" Content="Gravar" Command="{Binding SalvarCommand}" IsEnabled="{Binding PodeManter}" />
-            <Button Classes="mini" Content="Cancelar duplicata" Command="{Binding CancelarDuplicataCommand}" IsEnabled="{Binding PodeManter}" />
-            <Button Classes="mini" Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeManter}" />
-          </StackPanel>
-        </StackPanel>
-      </Expander>
 
       <Expander Header="Baixa (pagamento ou recebimento)" IsExpanded="True">
         <StackPanel Spacing="4" IsEnabled="{Binding PodeBaixar}">

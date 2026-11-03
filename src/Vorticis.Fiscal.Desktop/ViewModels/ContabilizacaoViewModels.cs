@@ -23,8 +23,14 @@ public sealed record RegraLinha(RegraContabilizacao Regra)
 /// participante, indicam a conta de débito e a de crédito. Vale a regra mais específica (participante, depois CFOP exato, depois prefixo); no empate, a que está
 /// primeiro na lista, que se ajusta com Subir e Descer.
 /// </summary>
-public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionada is { } r ? $"Regra de contabilização: CFOP {r.Cfop}" : "Nova regra de contabilização";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a regra na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public IReadOnlyList<VariavelHistorico> Variaveis => VariaveisHistorico.Todas;
     public ObservableCollection<RegraLinha> RegrasEntrada { get; } = [];
     public ObservableCollection<RegraLinha> RegrasSaida { get; } = [];
@@ -93,6 +99,12 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         (Cfop, Participante, Debito, Credito, Historico, Ativa) = ("", "", "", "", RegraContabilizacao.HistoricoPadrao, true);
         Erros.Clear();
@@ -122,6 +134,7 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
         await CarregarAsync();
         Selecionada = ListaAtual.FirstOrDefault(x => x.Regra.Id == r.Valor);
         Mensagem = "Regra gravada.";
+        FichaAberta = false;
     }, Permissao.FiscalContabilizar);
 
     [RelayCommand]
@@ -132,7 +145,7 @@ public partial class RegrasContabilizacaoViewModel(IContexto contexto) : ModuloV
         var r = await app.Fiscal().Contabilizacao.ExcluirRegraAsync(empresa, s.Regra.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Nova();
+        LimparFormulario();
         Mensagem = "Regra excluída.";
     }, Permissao.FiscalContabilizar);
 

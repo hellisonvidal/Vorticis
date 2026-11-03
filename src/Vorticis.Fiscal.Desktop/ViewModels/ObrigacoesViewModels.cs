@@ -77,6 +77,11 @@ public partial class RetencoesViewModel(IContexto contexto) : RelatorioFiscalVie
         Mensagem = $"{r.Valor} retenção(ões) gerada(s) das notas do período (as lançadas à mão foram mantidas).";
     }, Permissao.FiscalRetencoesManter);
 
+    public override string TituloFicha => "Nova retenção (lançamento manual)";
+
+    [RelayCommand]
+    private void NovaManual() => AbrirFichaNova();
+
     [RelayCommand]
     private Task IncluirManualAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
@@ -91,6 +96,7 @@ public partial class RetencoesViewModel(IContexto contexto) : RelatorioFiscalVie
         (NovaBase, NovoValor, NovoCodigo, NovaDescricao) = ("", "", "", "");
         await ConsultarAsync();
         Mensagem = "Retenção incluída.";
+        FichaAberta = false;
     }, Permissao.FiscalRetencoesManter);
 
     private bool TemSelecionada() => Selecionada is not null;
@@ -229,6 +235,11 @@ public partial class GuiasViewModel(IContexto contexto) : RelatorioFiscalViewMod
         Mensagem = "Guia excluída.";
     }, Permissao.FiscalRetencoesManter);
 
+    public override string TituloFicha => "Nova guia (manual)";
+
+    [RelayCommand]
+    private void NovaManual() => AbrirFichaNova();
+
     [RelayCommand]
     private Task IncluirManualAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
@@ -242,6 +253,7 @@ public partial class GuiasViewModel(IContexto contexto) : RelatorioFiscalViewMod
         (ManualTributo, ManualDescricao, ManualValor, ManualCodigo) = ("", "", "", "");
         await ConsultarAsync();
         Mensagem = "Guia incluída.";
+        FichaAberta = false;
     }, Permissao.FiscalRetencoesManter);
 }
 

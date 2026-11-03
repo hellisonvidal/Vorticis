@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.CodigoAjusteFichaView"
+             x:DataType="vm:CodigosAjusteViewModel">
+  <!-- Ficha do código de ajuste, aberta em janela pela tela Códigos de ajuste -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <WrapPanel IsEnabled="{Binding PodeManter}">
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Imposto" FontSize="12" /><ComboBox ItemsSource="{x:Static vm:CodigosAjusteViewModel.Impostos}" SelectedIndex="{Binding Imposto}" Width="110" /></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Código" FontSize="12" /><TextBox Text="{Binding Codigo}" Width="110" MaxLength="8" /></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Descrição" FontSize="12" /><TextBox Text="{Binding Descricao}" Width="420" MaxLength="255" /></StackPanel>
+        </WrapPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

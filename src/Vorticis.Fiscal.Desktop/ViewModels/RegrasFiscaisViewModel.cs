@@ -29,8 +29,14 @@ public sealed record RegraFiscalLinha(RegraFiscal Regra)
 }
 
 /// <summary>Cadastros › Regras fiscais: de-para de CFOP das notas de entrada importadas e sugestões para as notas de saída.</summary>
-public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionada is { } r ? $"Regra fiscal: {r.Regra.Descricao}" : "Nova regra fiscal";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a regra na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public static IReadOnlyList<string> Operacoes { get; } = ["Entrada (importação de XML)", "Saída (sugestão na digitação)"];
     public static IReadOnlyList<string> Destinos { get; } = ["Qualquer", "Dentro do estado", "Outro estado"];
 
@@ -83,6 +89,12 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloViewMode
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         (Ordem, Descricao, CfopOrigem, Participante, Ncm, Produto, CstOrigem, CfopDestino, CstDestino, ContaDebito, ContaCredito) = ("100", "", "", "", "", "", "", "", "", "", "");
         (Destino, CreditaIcms, CreditaIpi, CreditaPis, CreditaCofins, Ativa) = (0, true, true, true, true, true);
@@ -117,6 +129,7 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloViewMode
         await CarregarAsync();
         Selecionada = Regras.FirstOrDefault(x => x.Regra.Id == r.Valor);
         Mensagem = "Regra gravada. Ela vale para as próximas importações; use \"Reaplicar regras\" nas notas de entrada para as já importadas.";
+        FichaAberta = false;
     }, Permissao.FiscalDocumentosImportar);
 
     [RelayCommand]
@@ -127,7 +140,7 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloViewMode
         var r = await app.Fiscal().Regras.ExcluirAsync(empresa, s.Regra.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Nova();
+        LimparFormulario();
         Mensagem = "Regra excluída.";
     }, Permissao.FiscalDocumentosImportar);
 

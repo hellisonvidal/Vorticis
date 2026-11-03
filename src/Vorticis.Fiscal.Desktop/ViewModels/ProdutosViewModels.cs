@@ -21,8 +21,14 @@ public sealed record ProdutoLinha(Produto Produto)
 }
 
 /// <summary>Cadastros › Produtos: mercadorias com NCM, CEST, GTIN, origem, tipo do item (SPED) e padrões de CFOP, CST e alíquotas.</summary>
-public partial class ProdutosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class ProdutosViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Produto: {s.Descricao}" : "Novo produto";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o produto na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public static IReadOnlyList<string> Tipos { get; } = TiposItem.Todos.Select(t => $"{t.Codigo} - {t.Descricao}").ToList();
     public static IReadOnlyList<string> Origens { get; } = OrigensMercadoria.Todas.Select(o => $"{o.Codigo} - {o.Descricao}").ToList();
 
@@ -80,6 +86,12 @@ public partial class ProdutosViewModel(IContexto contexto) : ModuloViewModel(con
     [RelayCommand]
     private void Novo()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionado = null;
         (Codigo, Descricao, Unidade, Ncm, Cest, Gtin, Origem, Tipo) = ("(novo)", "", "UN", "", "", "", 0, 0);
         (CfopEntrada, CfopSaida, CstEntrada, CstSaida, AliqIcms, AliqIpi, AliqPis, AliqCofins, Ativo) = ("", "", "", "", "", "", "", "", true);
@@ -99,6 +111,7 @@ public partial class ProdutosViewModel(IContexto contexto) : ModuloViewModel(con
         await CarregarAsync();
         Selecionado = Produtos.FirstOrDefault(x => x.Produto.Id == r.Valor);
         Mensagem = "Produto gravado.";
+        FichaAberta = false;
     }, Permissao.FiscalDocumentosImportar);
 
     [RelayCommand]
@@ -109,7 +122,7 @@ public partial class ProdutosViewModel(IContexto contexto) : ModuloViewModel(con
         var r = await app.Fiscal().Produtos.ExcluirAsync(empresa, s.Produto.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Novo();
+        LimparFormulario();
         Mensagem = "Produto excluído.";
     }, Permissao.FiscalDocumentosImportar);
 }

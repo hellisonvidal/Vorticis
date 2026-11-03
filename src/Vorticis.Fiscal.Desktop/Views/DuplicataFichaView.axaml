@@ -1,0 +1,38 @@
+<UserControl xmlns:fg="using:Vorticis.Desktop.Comum.Views" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.DuplicataFichaView"
+             x:DataType="vm:DuplicatasViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rot"><Setter Property="FontSize" Value="10.5" /><Setter Property="Foreground" Value="{DynamicResource TxSutil}" /><Setter Property="Margin" Value="2,0,0,1" /></Style>
+    <Style Selector="StackPanel.campo"><Setter Property="Margin" Value="0,0,6,4" /></Style>
+    <Style Selector="StackPanel.campo TextBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="StackPanel.campo ComboBox"><Setter Property="MinHeight" Value="26" /><Setter Property="Padding" Value="5,2" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="StackPanel.campo CalendarDatePicker"><Setter Property="MinHeight" Value="26" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="Button.mini"><Setter Property="Padding" Value="8,3" /><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="Expander"><Setter Property="FontSize" Value="12" /></Style>
+    <Style Selector="DataGrid"><Setter Property="FontSize" Value="12" /><Setter Property="RowHeight" Value="24" /></Style>
+  </UserControl.Styles>
+  <!-- Ficha da duplicata (janela aberta pela tela Contas a pagar / Contas a receber) -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding SalvarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Foreground="{DynamicResource TxAviso}" />
+        <WrapPanel IsEnabled="{Binding PodeManter}">
+          <StackPanel Classes="campo" IsVisible="{Binding EscolheTipo}"><TextBlock Classes="rot" Text="Tipo" /><ComboBox ItemsSource="{x:Static vm:DuplicatasViewModel.TiposNova}" SelectedIndex="{Binding FormTipo}" Width="170" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Fornecedor / cliente (código, nome ou CPF/CNPJ)" /><TextBox fg:Pesquisa.Fonte="Participante" Text="{Binding FormParticipante}" Width="260" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Nº do documento" /><TextBox Text="{Binding FormDocumento}" Width="120" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Parcela" /><TextBox Text="{Binding FormParcela}" Width="70" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Emissão" /><CalendarDatePicker SelectedDate="{Binding FormEmissao}" Width="135" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Vencimento" /><CalendarDatePicker SelectedDate="{Binding FormVencimento}" Width="135" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Valor" /><TextBox fg:Mascara.Tipo="Valor" Text="{Binding FormValor}" Width="110" /></StackPanel>
+          <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Observação" /><TextBox Text="{Binding FormObservacao}" Width="260" /></StackPanel>
+        </WrapPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

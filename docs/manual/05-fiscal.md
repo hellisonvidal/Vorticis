@@ -9,9 +9,11 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 **Para que serve:** cadastro das mercadorias e serviços, usado na digitação das notas e na EFD.
 **Onde fica:** *Cadastros › Produtos*.
 
+A tela mostra a **lista dos produtos** (com filtro). A **ficha do produto** abre numa janela por cima da lista: **Novo**, **Abrir ficha**, duplo clique ou **Enter** na lista a abrem; **Salvar** grava e fecha a janela, e **Cancelar**, **Esc** ou o **X** fecham sem gravar. **Excluir** fica na tela.
+
 1. **Novo** e informe código, descrição, unidade, **NCM**, CEST, código de barras (GTIN/EAN), origem e tipo do item.
 2. Informe os padrões fiscais: CFOP e CST de entrada e de saída, e as alíquotas de ICMS, IPI, PIS e COFINS.
-3. **Salvar**. O filtro busca por descrição, código, GTIN ou NCM; *Somente ativos* esconde os inativos.
+3. **Salvar** (a janela fecha). O filtro busca por descrição, código, GTIN ou NCM; *Somente ativos* esconde os inativos.
 
 ## Regras fiscais
 
@@ -19,9 +21,9 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 **Onde fica:** *Cadastros › Regras fiscais*.
 
 1. Clique em **Gerar regras padrão** para criar a troca usual (5.xxx vira 1.xxx, 6.xxx vira 2.xxx, com as correspondências conhecidas, como 5.405 para 1.403 e 5.933 para 1.933). Só entram correspondências seguras; as demais ficam sem regra. As regras que você já cadastrou não são alteradas.
-2. Para uma regra própria, clique em **Nova**, escolha o tipo **Entrada** e informe o **CFOP do emitente** e o **CFOP a usar**. Se quiser, restrinja a regra a um fornecedor, a um NCM (ou ao começo dele, para valer para um grupo), a um produto ou a um CST/CSOSN do XML.
+2. Para uma regra própria, clique em **Nova** (a ficha da regra abre numa janela por cima da lista; também por **Abrir ficha** ou duplo clique numa regra), escolha o tipo **Entrada** e informe o **CFOP do emitente** e o **CFOP a usar**. Se quiser, restrinja a regra a um fornecedor, a um NCM (ou ao começo dele, para valer para um grupo), a um produto ou a um CST/CSOSN do XML.
 3. Em **Então**, informe, se precisar, o CST/CSOSN a usar e desmarque os impostos que **não geram crédito** (os valores de crédito do item ficam zerados na escrituração, e o XML original não muda). Também pode indicar as contas de débito e de crédito (código da conta analítica) para a contabilização.
-4. **Salvar**. A regra vale nas próximas importações; para notas já importadas use **Reaplicar regras** (veja abaixo).
+4. **Salvar** (a janela fecha). A regra vale nas próximas importações; para notas já importadas use **Reaplicar regras** (veja abaixo).
 
 **Qual regra vale:** a mais específica. Produto vence NCM, que vence fornecedor, que vence a regra só com o CFOP. Se duas forem igualmente específicas, vale a de menor **Ordem**.
 
@@ -150,9 +152,9 @@ A tela tem três abas:
 
 Cada aba pede a sua permissão: as regras, a de contabilizar; as provisões, a de apurar tributos; as duplicatas, a de manter duplicatas.
 
-1. Na aba desejada, clique em **Nova**. Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos).
+1. Na aba desejada, clique em **Nova** (a ficha da regra abre numa janela por cima das listas; **Abrir ficha** ou duplo clique numa regra abrem a que está selecionada). Informe o **CFOP** (completo, como 5102, só o prefixo, como 51, ou `NFSE` para notas de serviço; vazio vale para todos).
 2. Informe a **conta de débito** e a **de crédito** e, se quiser, o **participante** e o histórico (aceita as variáveis dos históricos padrão).
-3. **Salvar**. A regra nova entra no fim da lista da aba.
+3. **Salvar** (a janela fecha). A regra nova entra no fim da lista da aba. **Excluir**, **Subir** e **Descer** ficam na tela.
 
 Vale a regra **mais específica**: a que tem participante vence a que não tem; depois, o CFOP completo vence o prefixo (e o prefixo mais longo vence o mais curto); por último, a regra geral. Se duas regras forem igualmente específicas, vale a que estiver **mais acima na lista**. Para mudar a ordem, selecione a regra e use **Subir** ou **Descer**; a ordem fica gravada. Não há campo de prioridade para digitar.
 
@@ -213,9 +215,9 @@ Quando a nota tem duplicatas e a empresa informou a **conta de fornecedores** (e
 Situações: **Aberta** (sem baixa), **Parcial** (parte já paga ou recebida), **Liquidada** (saldo zero) e **Cancelada**.
 
 ### Incluir e alterar
-1. Clique em **Nova duplicata**, escolha *A pagar* ou *A receber*, informe o fornecedor/cliente (como cadastrado), o número do documento, a parcela, a emissão, o vencimento e o valor. **Gravar**.
-2. Para alterar, selecione a duplicata, mude os campos e **Gravar**. O valor só muda enquanto não há baixas. O vencimento não pode ser anterior à emissão.
-3. **Cancelar duplicata** vale para a que está aberta e sem baixas. **Excluir** vale para as lançadas à mão e sem baixas; as que vieram de nota são canceladas ou somem junto com a nota.
+1. Clique em **Nova duplicata**: a ficha abre numa janela por cima da lista. Escolha *A pagar* ou *A receber*, informe o fornecedor/cliente (como cadastrado), o número do documento, a parcela, a emissão, o vencimento e o valor. **Gravar** fecha a janela.
+2. Para alterar, selecione a duplicata e clique em **Abrir ficha** (ou dê duplo clique na linha), mude os campos e **Gravar**. O valor só muda enquanto não há baixas. O vencimento não pode ser anterior à emissão.
+3. **Cancelar duplicata** e **Excluir** ficam ao lado de *Nova duplicata*, na tela. O cancelamento vale para a que está aberta e sem baixas. **Excluir** vale para as lançadas à mão e sem baixas; as que vieram de nota são canceladas ou somem junto com a nota.
 
 ### Baixar (pagar ou receber)
 1. Selecione a duplicata. Na área *Baixa*, confira a **data**, o **valor principal** (já vem com o saldo; digite menos para baixa parcial), os **juros**, a **multa** e o **desconto** (se houver) e o código da **conta do banco ou caixa**.
@@ -354,14 +356,14 @@ Um tributo bloqueado que já tenha contas gravadas continua liberado, para você
 **Onde fica:** *Apuração › Obrigações › Retenções (IRRF, CSRF, INSS, ISS)*.
 1. Escolha o período e **Consultar**.
 2. **Gerar das notas** cria as retenções (sofridas e efetuadas) a partir dos documentos.
-3. Para lançar à mão, use *Nova retenção (lançamento manual)*: tributo, sentido, base de cálculo, valor retido e código da receita, e **Incluir**.
+3. Para lançar à mão, clique em **Nova retenção (manual)**: a ficha abre numa janela com o tributo, o sentido, a base de cálculo, o valor retido e o código da receita; **Incluir** grava e fecha a janela.
 4. **Excluir selecionada** apaga uma retenção.
 
 ### Guias de recolhimento
 **Onde fica:** *Apuração › Obrigações › Guias de recolhimento*.
 1. Escolha as competências e **Consultar**.
 2. **Gerar guias** cria DAS, DARF (com código de receita), DCTFWeb/GPS do INSS (informativo) e ISS a partir das apurações e retenções.
-3. Selecione a guia e **Marcar como paga** (ou **Reabrir**). Guias manuais: *Nova guia (manual)* e **Excluir (manual)**.
+3. Selecione a guia e **Marcar como paga** (ou **Reabrir**). Guias manuais: **Nova guia (manual)** abre a ficha numa janela (**Incluir** grava e fecha) e **Excluir (manual)** apaga a selecionada.
 
 Guias com vencimento próximo aparecem no calendário de obrigações e na tela inicial.
 
@@ -437,24 +439,24 @@ O arquivo traz as notas (bloco C), as contas de consumo (C500 e D500), os ajuste
 **Onde fica:** *Lançamentos › Contas de energia, gás, água e comunicação*.
 Para as contas recebidas de energia elétrica (modelo 06), gás canalizado (28), água (29) e de comunicação/telecomunicação (21 e 22), que não vêm em XML de NF-e:
 1. Cadastre a concessionária ou operadora em *Cadastros › Fornecedores*.
-2. Clique em **Nova**, escolha o **Modelo**, o **Fornecedor** e informe número, série, emissão, entrada e o **valor da nota**. O CFOP vem sugerido (energia 1253, comunicação 1303, água e gás 1556; altere se a atividade for outra).
-3. Para aproveitar o crédito, informe o **CST** (ex.: 000), a **base** e a **alíquota** do ICMS: o valor do ICMS é calculado. Informe PIS e COFINS, se destacados. **Gravar**.
+2. Clique em **Nova** (a ficha abre numa janela por cima da lista das contas; **Abrir ficha** ou duplo clique abrem a selecionada), escolha o **Modelo**, o **Fornecedor** e informe número, série, emissão, entrada e o **valor da nota**. O CFOP vem sugerido (energia 1253, comunicação 1303, água e gás 1556; altere se a atividade for outra).
+3. Para aproveitar o crédito, informe o **CST** (ex.: 000), a **base** e a **alíquota** do ICMS: o valor do ICMS é calculado. Informe PIS e COFINS, se destacados. **Gravar** fecha a janela.
 A nota sai no C500/C590 (energia, gás, água) ou no D500/D590 (comunicação) da EFD do mês da entrada, e o ICMS entra nos créditos da apuração (E110).
 
 ### Ajustes de entrada e de saída
 **Onde fica:** *Lançamentos › Ajustes › Ajustes de entrada* e *Ajustes de saída*.
 Os ajustes corrigem a apuração do mês. **Ajustes de entrada** aumentam o crédito (outros créditos e estornos de débito); **Ajustes de saída** aumentam o débito (outros débitos, estornos de crédito, deduções e débitos especiais). No IPI, entrada é crédito e saída é débito.
-1. Escolha a **Competência**.
+1. Escolha a **Competência** (a lista mostra os ajustes dela). Clique em **Novo**: a ficha do ajuste abre numa janela por cima da lista.
 2. Escolha o **Imposto**: ICMS, ICMS-ST ou IPI.
 3. Informe o **código do ajuste** (ou escolha um já cadastrado em *Código cadastrado*). ICMS e ICMS-ST usam a tabela 5.1.1 da sua UF, com 8 posições: UF + 0 (ICMS próprio) ou 1 (ICMS-ST) + tipo + 4 dígitos, como SP020099. O tipo (4ª posição) é mostrado ao lado: 0 outros débitos, 1 estorno de créditos, 2 outros créditos, 3 estorno de débitos, 4 deduções, 5 débitos especiais. O sistema não deixa lançar na tela errada: crédito vai em entrada, débito em saída. O código do IPI tem 3 posições.
 4. Informe a **descrição** e o **valor**. A **observação** vai como informação complementar do ajuste.
 5. Se o ajuste se refere a uma nota, abra *Documento fiscal relacionado* e informe o cliente ou fornecedor, o modelo, a série, o número e a data (só para ICMS).
-6. **Gravar**. **Novo** limpa os campos e **Excluir** apaga o ajuste selecionado.
+6. **Gravar** (a janela fecha). Na tela, **Novo** abre a ficha em branco, **Abrir ficha** (ou duplo clique) altera o ajuste selecionado e **Excluir** apaga o ajuste selecionado.
 Os ajustes entram no [Livro de Apuração do ICMS e do IPI](#livros-de-apuracao-do-icms-e-do-ipi) e na EFD ICMS/IPI: ICMS próprio em E111 (com E112 para a observação e E113 para o documento relacionado), ICMS-ST em E220 e IPI em E530. As deduções só abatem até o saldo devedor do mês.
 
 ### Códigos de ajuste
 **Onde fica:** *Lançamentos › Ajustes › Códigos de ajuste*.
-Cadastro simples dos códigos que a empresa usa. Escolha o **Imposto**, informe o **código** e a **descrição** e clique em **Gravar**. Os códigos cadastrados aparecem para escolha nas telas de ajustes de entrada e de saída.
+Cadastro simples dos códigos que a empresa usa. A tela mostra a lista dos códigos; **Novo**, **Abrir ficha** ou duplo clique abrem a ficha numa janela. Escolha o **Imposto**, informe o **código** e a **descrição** e clique em **Gravar** (a janela fecha). Os códigos cadastrados aparecem para escolha nas telas de ajustes de entrada e de saída.
 
 ### Inventário de estoque (bloco H)
 **Onde fica:** *Lançamentos › Inventário de estoque (bloco H)*.

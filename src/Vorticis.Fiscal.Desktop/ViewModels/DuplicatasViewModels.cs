@@ -48,8 +48,13 @@ public sealed class ContasPagarViewModel(IContexto contexto) : DuplicatasViewMod
 /// <summary>ERP › Financeiro › Contas a receber: a tela de duplicatas só com as a receber.</summary>
 public sealed class ContasReceberViewModel(IContexto contexto) : DuplicatasViewModel(contexto, TipoDuplicata.Receber);
 
-public partial class DuplicatasViewModel : ModuloViewModel
+public partial class DuplicatasViewModel : ModuloComFichaViewModel
 {
+    public override string TituloFicha => Selecionada is { } s ? $"Duplicata {s.Documento}" : "Nova duplicata";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a duplicata na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public DuplicatasViewModel(IContexto contexto, TipoDuplicata? tipoFixo = null) : base(contexto)
     {
         TipoFixo = tipoFixo;
@@ -168,6 +173,12 @@ public partial class DuplicatasViewModel : ModuloViewModel
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         _formId = 0;
         Titulo = "Nova duplicata";
@@ -195,6 +206,7 @@ public partial class DuplicatasViewModel : ModuloViewModel
         await ConsultarAsync();
         Selecionada = Lista.FirstOrDefault(l => l.Id == r.Valor);
         Mensagem = "Duplicata gravada.";
+        FichaAberta = false;
     }, Permissao.FiscalDuplicatasManter);
 
     private bool TemSelecionada() => Selecionada is not null;

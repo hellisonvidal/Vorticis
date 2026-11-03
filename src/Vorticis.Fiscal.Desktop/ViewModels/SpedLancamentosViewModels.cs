@@ -36,8 +36,14 @@ public sealed record CodigoAjusteLinha(CodigoAjuste C)
 /// Ajustes da apuração do ICMS (E111/E112/E113), do ICMS-ST (E220) e do IPI (E530) de um sentido: entrada (outros créditos e estornos de débito) ou saída
 /// (outros débitos, estornos de crédito, deduções e débitos especiais). Os ajustes entram no Livro de Apuração e na EFD ICMS/IPI da competência.
 /// </summary>
-public abstract partial class AjustesViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public abstract partial class AjustesViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Ajuste: {s.Codigo}" : "Novo ajuste";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o ajuste na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public static IReadOnlyList<string> Impostos { get; } = ["ICMS", "ICMS-ST", "IPI"];
     private static readonly string[] CodigosImposto = [ImpostosAjuste.Icms, ImpostosAjuste.IcmsSt, ImpostosAjuste.Ipi];
 
@@ -128,6 +134,12 @@ public abstract partial class AjustesViewModel(IContexto contexto) : ModuloViewM
     [RelayCommand]
     private void Novo()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionado = null;
         (Codigo, Descricao, Valor, Observacao, DocParticipante, DocModelo, DocSerie, DocNumero, DocData) = ("", "", "", "", "", "55", "", "", null);
     }
@@ -150,8 +162,9 @@ public abstract partial class AjustesViewModel(IContexto contexto) : ModuloViewM
                               DocModelo, DocSerie, DocNumero, DocData is { } dd ? DateOnly.FromDateTime(dd) : null), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Novo();
+        LimparFormulario();
         Mensagem = "Ajuste gravado. Ele entra no Livro de Apuração e na EFD ICMS/IPI desta competência.";
+        FichaAberta = false;
     }, Permissao.FiscalApurar);
 
     [RelayCommand]
@@ -161,7 +174,7 @@ public abstract partial class AjustesViewModel(IContexto contexto) : ModuloViewM
         var r = await app.Fiscal().OutrosLancamentosEfd.ExcluirAjusteAsync(empresa, a.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Novo();
+        LimparFormulario();
         Mensagem = "Ajuste excluído.";
     }, Permissao.FiscalApurar);
 }
@@ -183,8 +196,14 @@ public sealed partial class AjustesSaidaViewModel(IContexto contexto) : AjustesV
 }
 
 /// <summary>Lançamentos › Ajustes › Códigos de ajuste: cadastro simples dos códigos que a empresa usa (tabela 5.1.1 da UF; IPI com 3 posições).</summary>
-public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Código de ajuste: {s.Codigo}" : "Novo código de ajuste";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o código na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public static IReadOnlyList<string> Impostos { get; } = ["ICMS", "ICMS-ST", "IPI"];
     private static readonly string[] CodigosImposto = [ImpostosAjuste.Icms, ImpostosAjuste.IcmsSt, ImpostosAjuste.Ipi];
 
@@ -212,7 +231,9 @@ public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloViewMode
     });
 
     [RelayCommand]
-    private void Novo() { Selecionado = null; (Codigo, Descricao) = ("", ""); }
+    private void Novo() { LimparFormulario(); AbrirFichaNova(); }
+
+    private void LimparFormulario() { Selecionado = null; (Codigo, Descricao) = ("", ""); }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -220,8 +241,9 @@ public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloViewMode
         var r = await app.Fiscal().OutrosLancamentosEfd.GravarCodigoAjusteAsync(empresa, new CodigoAjuste(CodigosImposto[Math.Clamp(Imposto, 0, 2)], Codigo, Descricao), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Novo();
+        LimparFormulario();
         Mensagem = "Código gravado.";
+        FichaAberta = false;
     }, Permissao.FiscalApurar);
 
     [RelayCommand]
@@ -231,7 +253,7 @@ public partial class CodigosAjusteViewModel(IContexto contexto) : ModuloViewMode
         var r = await app.Fiscal().OutrosLancamentosEfd.ExcluirCodigoAjusteAsync(empresa, s.C.Imposto, s.Codigo, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Novo();
+        LimparFormulario();
         Mensagem = "Código excluído.";
     }, Permissao.FiscalApurar);
 }
@@ -250,8 +272,14 @@ public sealed record ContaConsumoLinha(ContaConsumo C)
 }
 
 /// <summary>Lançamentos › SPED Fiscal › Contas de consumo: energia elétrica, gás e água (C500) e comunicação/telecomunicação (D500) recebidas.</summary>
-public partial class ContasConsumoViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class ContasConsumoViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionada is { } s ? $"Conta de consumo: {s.Fornecedor} nº {s.Numero}" : "Nova conta de consumo";
+    protected override bool HaRegistroParaAbrir => Selecionada is not null;
+    protected override string AvisoSelecione => "Selecione a nota na lista.";
+    protected override void AoDescartarFicha() { if (Selecionada is { } s) OnSelecionadaChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<ContaConsumoLinha> Lista { get; } = [];
     public ObservableCollection<OpcaoSped> Fornecedores { get; } = [];
     public static IReadOnlyList<string> Modelos { get; } = OutrosLancamentosEfd.Modelos.Select(m => m.Nome).ToList();
@@ -316,6 +344,12 @@ public partial class ContasConsumoViewModel(IContexto contexto) : ModuloViewMode
     [RelayCommand]
     private void Nova()
     {
+        LimparFormulario();
+        AbrirFichaNova();
+    }
+
+    private void LimparFormulario()
+    {
         Selecionada = null;
         (Numero, Serie, Valor, BaseIcms, Aliquota, Icms, Pis, Cofins, Cst, Classe) = ("", "", "", "", "", "", "", "", "000", "01");
         Cfop = OutrosLancamentosEfd.CfopSugerido(CodigoModelo);
@@ -330,8 +364,9 @@ public partial class ContasConsumoViewModel(IContexto contexto) : ModuloViewMode
         var r = await app.Fiscal().OutrosLancamentosEfd.GravarContaAsync(empresa, c, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Nova();
+        LimparFormulario();
         Mensagem = "Nota gravada. Ela entra na EFD ICMS/IPI do mês da entrada (C500 ou D500) e o ICMS vira crédito na apuração.";
+        FichaAberta = false;
     }, Permissao.FiscalDocumentosImportar);
 
     [RelayCommand]
@@ -341,7 +376,7 @@ public partial class ContasConsumoViewModel(IContexto contexto) : ModuloViewMode
         var r = await app.Fiscal().OutrosLancamentosEfd.ExcluirContaAsync(empresa, c.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Nova();
+        LimparFormulario();
         Mensagem = "Nota excluída.";
     }, Permissao.FiscalDocumentosImportar);
 

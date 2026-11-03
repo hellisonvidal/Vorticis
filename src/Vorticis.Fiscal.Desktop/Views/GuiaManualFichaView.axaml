@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.GuiaManualFichaView"
+             x:DataType="vm:GuiasViewModel">
+  <!-- Ficha da guia lançada à mão, aberta em janela pela tela Guias de recolhimento -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding IncluirManualCommand}" SalvarTexto="Incluir" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <WrapPanel>
+          <ComboBox ItemsSource="{x:Static vm:GuiasViewModel.Documentos}" SelectedIndex="{Binding ManualDocumento}" Width="95" Margin="0,0,6,6" />
+          <TextBox Text="{Binding ManualTributo}" Watermark="Tributo" Width="100" Margin="0,0,6,6" />
+          <TextBox Text="{Binding ManualDescricao}" Watermark="Descrição" Width="260" Margin="0,0,6,6" />
+          <CalendarDatePicker SelectedDate="{Binding ManualVencimento}" Width="140" Margin="0,0,6,6" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding ManualValor}" Watermark="Valor" Width="110" Margin="0,0,6,6" />
+          <TextBox Text="{Binding ManualCodigo}" Watermark="Cód. receita" Width="95" Margin="0,0,6,6" />
+        </WrapPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

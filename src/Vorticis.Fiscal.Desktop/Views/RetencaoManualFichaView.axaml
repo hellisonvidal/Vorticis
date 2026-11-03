@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:g="using:Vorticis.Fiscal.Desktop.Views"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.RetencaoManualFichaView"
+             x:DataType="vm:RetencoesViewModel">
+  <!-- Ficha da retenção lançada à mão, aberta em janela pela tela Retenções -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding IncluirManualCommand}" SalvarTexto="Incluir" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <WrapPanel>
+          <CalendarDatePicker SelectedDate="{Binding NovaCompetencia}" Width="140" Margin="0,0,6,6" />
+          <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.SentidosNova}" SelectedIndex="{Binding NovoSentido}" Width="170" Margin="0,0,6,6" />
+          <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.TributosNova}" SelectedIndex="{Binding NovoTributo}" Width="100" Margin="0,0,6,6" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding NovaBase}" Watermark="Base de cálculo" Width="120" Margin="0,0,6,6" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding NovoValor}" Watermark="Valor retido" Width="110" Margin="0,0,6,6" />
+          <TextBox Text="{Binding NovoCodigo}" Watermark="Cód. receita" Width="95" Margin="0,0,6,6" />
+          <TextBox Text="{Binding NovaDescricao}" Watermark="Descrição" Width="220" Margin="0,0,6,6" />
+        </WrapPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

@@ -17,26 +17,12 @@
         <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.Tributos}" SelectedIndex="{Binding Tributo}" Width="100" Margin="0,0,8,6" />
         <Button Content="Consultar" Command="{Binding ConsultarCommand}" Classes="accent" Margin="0,0,8,6" />
         <Button Content="Gerar das notas" Command="{Binding GerarDasNotasCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,8,6" />
+        <Button Name="NovaManual" Content="Nova retenção (manual)" Command="{Binding NovaManualCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,8,6" />
         <Button Content="Excluir selecionada" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,8,6" />
         <c:BarraExportacaoView />
       </WrapPanel>
       <c:MensagensView />
     </StackPanel>
-    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
-      <StackPanel Spacing="4">
-        <TextBlock Text="Nova retenção (lançamento manual)" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
-        <WrapPanel>
-          <CalendarDatePicker SelectedDate="{Binding NovaCompetencia}" Width="140" Margin="0,0,6,4" />
-          <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.SentidosNova}" SelectedIndex="{Binding NovoSentido}" Width="170" Margin="0,0,6,4" />
-          <ComboBox ItemsSource="{x:Static vm:RetencoesViewModel.TributosNova}" SelectedIndex="{Binding NovoTributo}" Width="100" Margin="0,0,6,4" />
-          <TextBox c:Mascara.Tipo="Valor" Text="{Binding NovaBase}" Watermark="Base de cálculo" Width="120" Margin="0,0,6,4" />
-          <TextBox c:Mascara.Tipo="Valor" Text="{Binding NovoValor}" Watermark="Valor retido" Width="110" Margin="0,0,6,4" />
-          <TextBox Text="{Binding NovoCodigo}" Watermark="Cód. receita" Width="95" Margin="0,0,6,4" />
-          <TextBox Text="{Binding NovaDescricao}" Watermark="Descrição" Width="220" Margin="0,0,6,4" />
-          <Button Content="Incluir" Command="{Binding IncluirManualCommand}" IsEnabled="{Binding PodeManter}" Margin="0,0,6,4" />
-        </WrapPanel>
-      </StackPanel>
-    </Border>
     <Grid RowDefinitions="*,6,180">
       <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Linhas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
         <DataGrid.Columns>
