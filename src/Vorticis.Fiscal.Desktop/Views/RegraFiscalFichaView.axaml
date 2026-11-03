@@ -19,16 +19,16 @@
           <TextBox Grid.Column="5" Text="{Binding Ordem}" Width="70" />
           <TextBlock Grid.Row="1" Text="Quando" VerticalAlignment="Center" />
           <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5">
-            <TextBox Text="{Binding CfopOrigem}" Watermark="CFOP do emitente" Width="130" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding CfopOrigem}" Watermark="CFOP do emitente" Width="130" Margin="0,0,6,0" />
             <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding Participante}" Watermark="Fornecedor/cliente (nome ou CNPJ)" Width="240" Margin="0,0,6,0" />
-            <TextBox Text="{Binding Ncm}" Watermark="NCM ou início" Width="120" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="Ncm" Text="{Binding Ncm}" Watermark="NCM ou início" Width="120" Margin="0,0,6,0" />
             <TextBox c:Pesquisa.Fonte="Produto" Text="{Binding Produto}" Watermark="Produto (código ou descrição)" Width="220" Margin="0,0,6,0" />
             <TextBox Text="{Binding CstOrigem}" Watermark="CST/CSOSN do XML" Width="130" Margin="0,0,6,0" />
             <ComboBox ItemsSource="{x:Static vm:RegrasFiscaisViewModel.Destinos}" SelectedIndex="{Binding Destino}" Width="150" ToolTip.Tip="Só para regras de saída" />
           </WrapPanel>
           <TextBlock Grid.Row="2" Text="Então" VerticalAlignment="Center" />
           <WrapPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5">
-            <TextBox Text="{Binding CfopDestino}" Watermark="CFOP a usar" Width="110" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding CfopDestino}" Watermark="CFOP a usar" Width="110" Margin="0,0,6,0" />
             <TextBox Text="{Binding CstDestino}" Watermark="CST/CSOSN a usar" Width="130" Margin="0,0,14,0" />
             <CheckBox Content="Credita ICMS" IsChecked="{Binding CreditaIcms}" />
             <CheckBox Content="Credita IPI" IsChecked="{Binding CreditaIpi}" />

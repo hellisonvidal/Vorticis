@@ -314,6 +314,26 @@ A partir de 2026 a NF-e traz, em cada item, o grupo **IBS/CBS**: o CST e a class
 
 **Transição:** em **2026** (ano de teste) as alíquotas são de 0,9% de CBS e 0,1% de IBS, os valores são informativos e compensáveis com o PIS e a COFINS, e o recolhimento é dispensado para quem cumpre as obrigações acessórias. De **2027** em diante a CBS substitui o PIS e a COFINS, e entre 2029 e 2032 o ICMS e o ISS diminuem enquanto o IBS aumenta, até 2033. As alíquotas de cada ano ficam nos parâmetros legais do programa e são atualizadas conforme forem definidas. Esta apuração é um apoio: a apuração oficial será feita pelos sistemas da Receita Federal e do Comitê Gestor do IBS.
 
+## Simples Nacional × IBS/CBS (reforma)
+
+**Para que serve:** mostrar, ano a ano, quanto a empresa do Simples Nacional paga hoje (o DAS) e quanto pagaria com a reforma tributária, de **2026** (ano de teste) a **2033**, e comparar as duas escolhas que a reforma dá ao Simples.
+**Onde fica:** *Apuração › Simples Nacional × IBS/CBS (reforma)*.
+
+**As duas escolhas:**
+- **A – tudo dentro do DAS:** a empresa continua pagando tudo no DAS. As partes de PIS e COFINS viram CBS e as de ICMS e ISS viram IBS, na mesma proporção, então o valor total tende a ficar igual. Atenção: o cliente só aproveita como crédito o IBS/CBS que está dentro do DAS, que é pouco.
+- **B – IBS/CBS fora do DAS (regime regular):** a empresa continua no Simples para os outros tributos, mas paga o IBS e a CBS à parte, com a alíquota cheia sobre a venda, **descontando o crédito das compras**. O DAS diminui as partes de PIS/COFINS e de ICMS/ISS que já acabaram, e o cliente aproveita o crédito integral. Vale a pena, em geral, para quem vende para empresas e tem muitas compras com crédito.
+
+**Como usar:**
+1. Escolha a **Atividade** da empresa (ela define o anexo do Simples; nos serviços intelectuais o Fator R decide entre os anexos III e V).
+2. Clique em **Trazer do histórico** para preencher a **Receita dos 12 meses** e a **Folha** (de *Apuração › Histórico de receita e folha*) e as **Compras com crédito** (das notas de entrada autorizadas). Se preferir, digite os valores.
+3. Se a atividade tem alíquota reduzida na reforma, informe a **Redução de alíquota (%)**; ela vale só para a escolha B.
+4. Clique em **Simular**. A primeira tabela resume a situação de hoje (anexo, faixa, alíquota efetiva, DAS anual e quanto dele é PIS, COFINS, ICMS e ISS). A segunda mostra, para cada ano, o imposto atual, o resultado de A e de B, a **diferença em reais e em %** sobre o imposto atual, o crédito que o cliente aproveita e qual escolha dá o **menor imposto**. A terceira mostra o cronograma usado.
+5. Exporte em PDF, Excel ou CSV.
+
+**Como ler:** em **2026** nada muda no valor pago: o IBS e a CBS são só informativos (0,9% de CBS e 0,1% de IBS), compensáveis com o PIS e a COFINS. Em **2027** o PIS e a COFINS acabam e a CBS entra. De **2029 a 2032** o ICMS e o ISS diminuem a cada ano enquanto o IBS aumenta, e em **2033** a reforma está completa. Um resultado de B **negativo** nas colunas de CBS ou IBS é saldo credor (as compras superam as vendas).
+
+**Cuidados:** é uma estimativa. Usa a receita e as compras dos últimos 12 meses como se fossem iguais nos anos seguintes e as alíquotas de referência dos parâmetros legais do programa (CBS 8,8% e IBS 17,7%), que só valem depois de fixadas por lei e pelo Senado. As tabelas do Simples para a reforma ainda serão definidas pelo Comitê Gestor do Simples Nacional; por isso a escolha A mantém a carga de hoje. Consulte o contador responsável antes de decidir.
+
 ## Histórico de receita e folha
 
 **Onde fica:** *Apuração › Histórico de receita e folha*.

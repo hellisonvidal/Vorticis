@@ -63,6 +63,7 @@ public class FiscalViewsTests(SessaoHeadless headless)
                 (new GuiasViewModel(ctx), new GuiasView()),
                 (new DctfWebViewModel(ctx), new DctfWebView()),
                 (new ApuracaoIbsCbsViewModel(ctx), new ApuracaoIbsCbsView()),
+                (new SimplesReformaViewModel(ctx), new SimplesReformaView()),
                 (new NotasPorCentroViewModel(ctx), new NotasPorCentroView()),
             };
             foreach (var (vm, view) in pares)

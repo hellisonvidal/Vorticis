@@ -115,6 +115,48 @@ public class BiTelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixt
     }
 
     [Fact]
+    public async Task Evolucao_patrimonial_gera_periodos_com_grafico_variacoes_e_exporta()
+    {
+        BancoDeTeste.ExigirBanco();
+        var (empresa, adm) = await SemearAsync("44778899000810");
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            ArquivosGerados.AbrirAposGerar = false;
+            var ctx = new ContextoDeTeste(db.App, new SessaoUsuario(adm, "admin_teste", "Admin de Teste", true, false), empresa);
+            var vm = new EvolucaoPatrimonialViewModel(ctx) { Inicio = new DateTime(2026, 1, 1), Fim = new DateTime(2026, 6, 30) };
+            await vm.GerarCommand.ExecuteAsync(null);
+            Assert.Empty(vm.Erros);
+            Assert.Equal(6, vm.RotulosPeriodos.Count);
+            Assert.Equal(4, vm.Series.Count);
+            Assert.Equal(6, vm.TabelaTela!.Linhas.Count);
+            Assert.Equal(6, vm.TabelaVariacoes!.Linhas.Count);   // 5 variações + total
+            Assert.True(vm.TemDados);
+            // o patrimônio líquido de cada período é a soma de capital, reservas e lucros
+            foreach (var l in vm.TabelaTela.Linhas)
+                Assert.Equal((decimal)l.Valores[3]!, (decimal)l.Valores[4]! + (decimal)l.Valores[5]! + (decimal)l.Valores[6]!);
+
+            var janela = new Window { Width = 1280, Height = 1400, Content = new ContentControl { Content = vm } };
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            Capturar(janela, "evolucao_patrimonial");
+            janela.Close();
+
+            vm.SoFimDeAno = true;
+            vm.Inicio = new DateTime(2025, 1, 1);
+            await vm.GerarCommand.ExecuteAsync(null);
+            Assert.Equal(2, vm.RotulosPeriodos.Count);   // 2025 e o mês final de 2026
+            vm.ExportarPdfCommand.Execute(null);
+            Assert.Empty(vm.Erros);
+
+            vm.Fim = new DateTime(2000, 1, 1);
+            await vm.GerarCommand.ExecuteAsync(null);
+            Assert.NotEmpty(vm.Erros);
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
+    [Fact]
     public async Task Analise_cubo_e_exportacao_funcionam_pelas_telas_e_o_comparativo_vale_nos_dois_relatorios_gerenciais()
     {
         BancoDeTeste.ExigirBanco();

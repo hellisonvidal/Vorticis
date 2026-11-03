@@ -154,6 +154,54 @@ public sealed partial class AnaliseIndicadoresViewModel(IContexto contexto) : Re
     }, Permissao.RelatorioDemonstracoes);
 }
 
+/// <summary>Relatórios › BI › Evolução patrimonial: ativo, passivo, patrimônio líquido e resultado mês a mês (ou ano a ano), com gráfico e variações.</summary>
+public sealed partial class EvolucaoPatrimonialViewModel(IContexto contexto) : RelatorioViewModel(contexto)
+{
+    private string _parametros = "";
+    private TabelaRelatorio? _variacoes;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year - 1, 1, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private bool _soFimDeAno;
+    [ObservableProperty] private string _resumo = "";
+    [ObservableProperty] private IReadOnlyList<string> _rotulosPeriodos = [];
+    [ObservableProperty] private IReadOnlyList<SerieGrafico> _series = [];
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemVariacoes))] private TabelaRelatorio? _tabelaVariacoes;
+
+    public bool TemVariacoes => TabelaVariacoes is not null;
+
+    protected override string TituloRelatorio => "Evolução patrimonial";
+    protected override string Parametros => _parametros;
+    protected override bool Paisagem => true;
+    protected override string NomeArquivo => "evolucao_patrimonial_" + new string(_parametros.Where(char.IsDigit).Take(12).ToArray());
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() => TabelaTela is null ? [] : _variacoes is null ? [TabelaTela] : [TabelaTela, _variacoes];
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year - 1, 1, 1));
+        var fim = Data(Fim, DateOnly.FromDateTime(DateTime.Today));
+        var r = await app.Bi.EvolucaoPatrimonialAsync(empresa, ini, fim, SoFimDeAno, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var e = r.Valor;
+        _parametros = $"De {e.Inicio:MM/yyyy} a {e.Fim:MM/yyyy}" + (e.SoFimDeAno ? " | Só o fim de cada ano" : " | Mês a mês");
+        TabelaTela = TabelasEvolucao.Valores(e);
+        _variacoes = TabelasEvolucao.Variacoes(e);
+        TabelaVariacoes = _variacoes;
+        RotulosPeriodos = e.Pontos.Select(p => TabelasEvolucao.Rotulo(p.Data, e.SoFimDeAno)).ToList();
+        Series =
+        [
+            new SerieGrafico("Ativo", e.Pontos.Select(p => (double)p.Ativo).ToList(), 0),
+            new SerieGrafico("Passivo", e.Pontos.Select(p => (double)p.Passivo).ToList(), 1),
+            new SerieGrafico("Patrimônio líquido", e.Pontos.Select(p => (double)p.PatrimonioLiquido).ToList(), 2),
+            new SerieGrafico("Resultado do período", e.Pontos.Select(p => (double)p.Resultado).ToList(), 3),
+        ];
+        Resumo = e.Pontos.All(p => p.Ativo == 0 && p.Passivo == 0 && p.PatrimonioLiquido == 0) ? "Nenhum saldo patrimonial nos períodos escolhidos." : "";
+        TemDados = true;
+        AtualizarPermissoesExportacao();
+    }, Permissao.RelatorioDemonstracoes);
+}
+
 /// <summary>Linha de opção das listas do cubo.</summary>
 public sealed record OpcaoCubo<T>(T Valor, string Texto);
 

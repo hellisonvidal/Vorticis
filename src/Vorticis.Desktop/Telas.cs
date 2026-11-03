@@ -46,6 +46,7 @@ public static class Telas
     public const string ReceitaCentro = "gerencial.receitacentro";
     public const string BiPainel = "bi.painel";
     public const string BiAnalise = "bi.analise";
+    public const string BiEvolucao = "bi.evolucao";
     public const string BiCubo = "bi.cubo";
     public const string BiExportar = "bi.exportar";
     public const string Termos = "termos";

@@ -22,7 +22,7 @@
       <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Período: de" /><CalendarDatePicker SelectedDate="{Binding FiltroInicio}" Width="130" /></StackPanel>
       <StackPanel Classes="campo"><TextBlock Classes="rot" Text="até" /><CalendarDatePicker SelectedDate="{Binding FiltroFim}" Width="130" /></StackPanel>
       <StackPanel Classes="campo"><TextBlock Classes="rot" Text="{Binding RotuloParticipante}" />
-        <TextBox Text="{Binding FiltroParticipante}" Width="210" Watermark="Nome ou CNPJ/CPF" /></StackPanel>
+        <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding FiltroParticipante}" Width="210" Watermark="Nome ou CNPJ/CPF" /></StackPanel>
       <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Número" /><TextBox Text="{Binding FiltroNumero}" Width="90" /></StackPanel>
       <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Origem" />
         <ComboBox ItemsSource="{x:Static vm:DigitacaoDocumentoViewModel.OpcoesOrigem}" SelectedIndex="{Binding FiltroOrigem}" Width="140" /></StackPanel>

@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.SimplesReformaView"
+             x:DataType="vm:SimplesReformaViewModel">
+  <!-- Apuração › Simples Nacional × IBS/CBS -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Simples Nacional × IBS/CBS (reforma tributária)" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Text="Atividade" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{x:Static vm:SimplesReformaViewModel.Atividades}" SelectedItem="{Binding Atividade}" Width="360" />
+        <TextBlock Text="Receita dos 12 meses" VerticalAlignment="Center" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ReceitaTexto}" Width="130" />
+        <TextBlock Text="Compras com crédito" VerticalAlignment="Center" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ComprasTexto}" Width="130" />
+        <TextBlock Text="Folha dos 12 meses" VerticalAlignment="Center" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding FolhaTexto}" Width="130" ToolTip.Tip="Só conta nos serviços sujeitos ao Fator R" />
+        <TextBlock Text="Redução de alíquota (%)" VerticalAlignment="Center" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ReducaoTexto}" Width="70" ToolTip.Tip="Para atividades com alíquota reduzida na reforma (ex.: 30% ou 60%). Vale só para a opção B." />
+        <Button Content="Trazer do histórico" Command="{Binding TrazerHistoricoCommand}" ToolTip.Tip="Receita e folha de Apuração › Histórico de receita e folha e compras das notas de entrada, dos últimos 12 meses" />
+        <Button Content="Simular" Command="{Binding SimularCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <c:MensagensView />
+      <TextBlock Text="{Binding AvisosTexto}" Classes="erro" TextWrapping="Wrap" IsVisible="{Binding AvisosTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock Text="{Binding Explicacao}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" IsVisible="{Binding Explicacao, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

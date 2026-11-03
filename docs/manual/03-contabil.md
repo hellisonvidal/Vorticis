@@ -470,6 +470,17 @@ Os indicadores de liquidez, endividamento, ROE, ROA e giro usam o Balanço na da
 2. Para comparar períodos, marque **Comparativo** e escolha o período anterior, o mesmo período do ano anterior ou até 3 outros períodos (veja [Comparativo](#comparativo)). A tabela ganha uma coluna por período e a variação em pontos.
 3. Exporte em PDF, Excel ou CSV.
 
+### Evolução patrimonial
+*Relatórios › BI › Evolução patrimonial*: veja como o **Ativo**, o **Passivo**, o **Patrimônio líquido** e o **resultado** da empresa foram mudando mês a mês (ou ano a ano).
+1. Em **Do mês de** e **até o mês de**, escolha os meses inicial e final (vale o mês da data escolhida; no máximo 10 anos de cada vez).
+2. Se quiser ver só uma posição por ano, marque **Só o fim de cada ano** (o último ano mostra o mês final escolhido).
+3. Clique em **Gerar**. O **gráfico** mostra as linhas de Ativo, Passivo, Patrimônio líquido e Resultado do período.
+4. A **tabela** traz, para cada período, o Ativo, o Passivo (suas obrigações), o Patrimônio líquido dividido em **Capital social**, **Reservas** e **Lucros/prejuízos acumulados**, e o **Resultado do período** (receitas menos custos e despesas). Os valores são os do último dia de cada período.
+5. A segunda tabela, **Variação sobre o período anterior**, mostra quanto o Ativo, o Passivo, o Patrimônio líquido e o Resultado subiram ou caíram em reais e em %. A última linha compara o primeiro período com o último. Aparece "—" no % quando o valor anterior era zero.
+6. Use **PDF**, **Excel** ou **CSV** para levar as duas tabelas.
+
+O lucro do ano que ainda não foi encerrado já entra em *Lucros/prejuízos acumulados*, por isso Capital, Reservas e Lucros somam o Patrimônio líquido. O programa reconhece capital, reservas e lucros pelos nomes das contas do patrimônio líquido no seu plano de contas.
+
 ### Cubo (tabela dinâmica)
 *Relatórios › BI › Cubo (tabela dinâmica)*: monte você mesmo uma tabela de totais, como no Excel.
 1. Informe o **período**.

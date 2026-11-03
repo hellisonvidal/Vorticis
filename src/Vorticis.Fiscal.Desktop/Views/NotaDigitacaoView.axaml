@@ -83,13 +83,13 @@
               <Grid ColumnDefinitions="1.3*,2.6*,0.8*,0.9*,1.1*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Produto (código, descrição ou GTIN)" /><TextBox c:Pesquisa.Fonte="Produto" Name="CampoProduto" Text="{Binding Item.Produto}" /></StackPanel>
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Descrição" /><TextBox Text="{Binding Item.Descricao}" /></StackPanel>
-                <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
+                <StackPanel Grid.Column="2" Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Grid.Column="3" Classes="campo"><TextBlock Classes="rot" Text="Quantidade" /><TextBox Text="{Binding Item.Quantidade}" /></StackPanel>
                 <StackPanel Grid.Column="4" Classes="campo"><TextBlock Classes="rot" Text="Valor unitário" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Unitario}" /></StackPanel>
                 <Button Grid.Column="5" Classes="mini" Content="Buscar produto" Command="{Binding BuscarProdutoCommand}" VerticalAlignment="Bottom" Height="26" />
               </Grid>
               <UniformGrid Columns="9">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="NCM" /><TextBox Text="{Binding Item.Ncm}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="NCM" /><TextBox c:Pesquisa.Fonte="Ncm" Text="{Binding Item.Ncm}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CEST" /><TextBox Text="{Binding Item.Cest}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Un." /><TextBox Text="{Binding Item.Unidade}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Orig." /><TextBox Text="{Binding Item.Origem}" /></StackPanel>
@@ -150,7 +150,7 @@
             <StackPanel Spacing="2" Margin="0,4" IsEnabled="{Binding PodeEditar}">
               <TextBlock Classes="grupo" Text="ICMS e ICMS-ST do item selecionado (base × alíquota recalcula o valor; o valor pode ser corrigido à mão)" />
               <UniformGrid Columns="8">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox Name="CampoCfopTrib" Text="{Binding Item.Cfop}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox c:Pesquisa.Fonte="Cfop" Name="CampoCfopTrib" Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN" /><TextBox Text="{Binding Item.CstIcms}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoBcIcms" Text="{Binding Item.BcIcms}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ICMS %" /><TextBox c:Mascara.Tipo="Valor" Name="CampoAliqIcms" Text="{Binding Item.AliqIcms}" /></StackPanel>
@@ -243,7 +243,7 @@
                 <CheckBox Content="Credita COFINS" IsChecked="{Binding EscCreditaCofins}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
               </WrapPanel>
               <Grid ColumnDefinitions="*,2*,*,Auto">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP de escrituração (ex.: entrada 1.102)" /><TextBox Text="{Binding Item.Cfop}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP de escrituração (ex.: entrada 1.102)" /><TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding Item.Cfop}" /></StackPanel>
                 <StackPanel Grid.Column="1" Classes="campo"><TextBlock Classes="rot" Text="Produto vinculado (código, descrição ou GTIN do cadastro)" /><TextBox c:Pesquisa.Fonte="Produto" Text="{Binding EscProduto}" /></StackPanel>
                 <StackPanel Grid.Column="2" Classes="campo" IsVisible="{Binding MostraCentro}"><TextBlock Classes="rot" Text="Centro de custo (item)" /><ComboBox ItemsSource="{Binding Centros}" SelectedItem="{Binding CentroItem}" HorizontalAlignment="Stretch" /></StackPanel>
                 <Button Grid.Column="3" Classes="mini" Content="Aplicar ao item" Command="{Binding AplicarEscrituracaoItemCommand}" VerticalAlignment="Bottom" Height="26" />

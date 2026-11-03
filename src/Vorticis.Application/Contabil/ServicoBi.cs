@@ -43,6 +43,32 @@ public sealed class ServicoBi(IConsultasContabeis consultas, ServicoFluxos fluxo
             CalculoBi.CustosPorCentro(plano, centros, movs), CalculoBi.Cascata(atual.Value.Resultado)));
     }
 
+    /// <summary>
+    /// Evolução patrimonial: ativo, passivo, patrimônio líquido (capital, reservas, lucros/prejuízos) e resultado em cada fim de mês
+    /// (ou de ano) entre o mês de <paramref name="inicio"/> e o de <paramref name="fim"/>, até <see cref="EvolucaoPatrimonial.MaximoMeses"/> meses.
+    /// </summary>
+    public async Task<Resultado<EvolucaoBi>> EvolucaoPatrimonialAsync(long empresaId, DateOnly inicio, DateOnly fim, bool soFimDeAno, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<EvolucaoBi>(usuarioId, empresaId, Permissao.RelatorioDemonstracoes, ct) is { } negado) return negado;
+        var primeiro = new DateOnly(inicio.Year, inicio.Month, 1);
+        if (fim < primeiro) return Resultado<EvolucaoBi>.Falha("Mês final anterior ao inicial.");
+        if ((fim.Year - inicio.Year) * 12 + fim.Month - inicio.Month + 1 > EvolucaoPatrimonial.MaximoMeses)
+            return Resultado<EvolucaoBi>.Falha($"Escolha no máximo {EvolucaoPatrimonial.MaximoMeses} meses (10 anos) de cada vez.");
+        var plano = await consultas.ObterPlanoAsync(empresaId, ct);
+        var datas = EvolucaoPatrimonial.Datas(inicio, fim, soFimDeAno);
+        var meses = CalculoBi.Serie(plano, await consultas.ObterMovimentosCentroAsync(empresaId, primeiro, datas[^1], ct), primeiro, new DateOnly(datas[^1].Year, datas[^1].Month, 1));
+        var pontos = new List<PontoPatrimonial>();
+        var de = primeiro;
+        foreach (var data in datas)
+        {
+            var saldos = (await consultas.ObterMovimentosAsync(empresaId, data.AddDays(1), data, ct)).ToDictionary(m => m.ContaId, m => m.SaldoAnterior);
+            var resultado = meses.Where(m => m.Mes >= de && m.Mes <= data).Sum(m => m.Lucro);
+            pontos.Add(EvolucaoPatrimonial.Ponto(plano, saldos, data, resultado));
+            de = data.AddDays(1);
+        }
+        return Resultado<EvolucaoBi>.Ok(new EvolucaoBi(primeiro, datas[^1], soFimDeAno, pontos));
+    }
+
     /// <summary>Tabela com todos os indicadores (grupo, fórmula e interpretação) do período e, se pedido, dos períodos comparados.</summary>
     public async Task<Resultado<TabelaRelatorio>> AnaliseAsync(long empresaId, DateOnly inicio, DateOnly fim, OpcoesComparativo op, long usuarioId, CancellationToken ct = default)
     {

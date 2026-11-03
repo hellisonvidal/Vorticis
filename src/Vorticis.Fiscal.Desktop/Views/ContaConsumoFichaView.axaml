@@ -45,7 +45,7 @@
           </StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2">
             <TextBlock Text="CFOP" FontSize="12" />
-            <TextBox Text="{Binding Cfop}" Width="70" MaxLength="4" />
+            <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding Cfop}" Width="70" MaxLength="4" />
           </StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2">
             <TextBlock Text="CST ICMS" FontSize="12" />

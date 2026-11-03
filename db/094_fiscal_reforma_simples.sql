@@ -1,0 +1,23 @@
+-- Simulação "Simples Nacional × IBS/CBS" (Fiscal › Apuração): cronograma da reforma tributária por ano (alíquotas de referência de CBS e IBS e
+-- percentual de extinção de PIS/COFINS e de ICMS/ISS) em core.parametro_legal, chave REFORMA_SIMPLES. O ano de 2026 (teste) vem de REFORMA_IBS_CBS.
+-- Mesmo conteúdo do parâmetro embutido no programa (Parametros/REFORMA_SIMPLES.json); novas vigências entram como novas linhas.
+
+INSERT INTO core.parametro_legal (chave, vigencia_inicio, valor, fundamento_legal) VALUES
+('REFORMA_SIMPLES', DATE '2026-01-01', $json$
+{
+  "vigencia_inicio": "2026-01-01",
+  "fundamento": "EC 132/2023; LC 214/2025 (transição do IBS e da CBS e extinção de PIS, COFINS, ICMS e ISS); LC 123/2006 (Simples Nacional). Alíquotas de referência estimadas: valem as fixadas por resolução do Senado.",
+  "carga_dentro_do_das": 100,
+  "anos": [
+    { "ano": 2027, "cbs": 8.8, "ibs": 0.1, "pis_cofins_extinto": 100, "icms_iss_extinto": 0, "observacao": "CBS cheia; PIS e COFINS extintos; IBS ainda em teste (0,1%)." },
+    { "ano": 2028, "cbs": 8.8, "ibs": 0.1, "pis_cofins_extinto": 100, "icms_iss_extinto": 0, "observacao": "Último ano antes da substituição gradual de ICMS e ISS." },
+    { "ano": 2029, "cbs": 8.8, "ibs": 1.77, "pis_cofins_extinto": 100, "icms_iss_extinto": 10, "observacao": "IBS em 10% da alíquota de referência (17,7%); ICMS e ISS reduzidos em 10%." },
+    { "ano": 2030, "cbs": 8.8, "ibs": 3.54, "pis_cofins_extinto": 100, "icms_iss_extinto": 20, "observacao": "IBS em 20% da alíquota de referência; ICMS e ISS reduzidos em 20%." },
+    { "ano": 2031, "cbs": 8.8, "ibs": 5.31, "pis_cofins_extinto": 100, "icms_iss_extinto": 30, "observacao": "IBS em 30% da alíquota de referência; ICMS e ISS reduzidos em 30%." },
+    { "ano": 2032, "cbs": 8.8, "ibs": 7.08, "pis_cofins_extinto": 100, "icms_iss_extinto": 40, "observacao": "IBS em 40% da alíquota de referência; ICMS e ISS reduzidos em 40%." },
+    { "ano": 2033, "cbs": 8.8, "ibs": 17.7, "pis_cofins_extinto": 100, "icms_iss_extinto": 100, "observacao": "IBS cheio; ICMS e ISS extintos." }
+  ]
+}
+$json$::jsonb,
+'EC 132/2023; LC 214/2025 (transição do IBS e da CBS); LC 123/2006 - cronograma da simulação Simples Nacional x IBS/CBS')
+ON CONFLICT (chave, vigencia_inicio) DO NOTHING;

@@ -11,7 +11,7 @@
       <CalendarDatePicker SelectedDate="{Binding Inicio}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="110" />
       <TextBlock Text="a" VerticalAlignment="Center" />
       <CalendarDatePicker SelectedDate="{Binding Fim}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="110" />
-      <TextBox Text="{Binding Codigo}" Watermark="Código (opcional)" Width="150" />
+      <TextBox c:Pesquisa.Fonte="CodigoAjuste" Text="{Binding Codigo}" Watermark="Código (opcional)" Width="150" />
       <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
       <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
       <c:BarraExportacaoView />

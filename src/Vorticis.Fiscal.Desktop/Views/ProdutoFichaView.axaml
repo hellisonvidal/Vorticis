@@ -29,9 +29,9 @@
           <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{x:Static vm:ProdutosViewModel.Tipos}" SelectedIndex="{Binding Tipo}" Width="300" />
           <CheckBox Grid.Row="3" Grid.Column="4" Content="Ativo" IsChecked="{Binding Ativo}" />
           <WrapPanel Grid.Row="4" Grid.ColumnSpan="6">
-            <TextBox Text="{Binding CfopEntrada}" Watermark="CFOP entrada" Width="110" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding CfopEntrada}" Watermark="CFOP entrada" Width="110" Margin="0,0,6,0" />
             <TextBox Text="{Binding CstEntrada}" Watermark="CST entrada" Width="105" Margin="0,0,6,0" />
-            <TextBox Text="{Binding CfopSaida}" Watermark="CFOP saída" Width="110" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding CfopSaida}" Watermark="CFOP saída" Width="110" Margin="0,0,6,0" />
             <TextBox Text="{Binding CstSaida}" Watermark="CST saída" Width="105" Margin="0,0,14,0" />
             <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqIcms}" Watermark="ICMS %" Width="80" Margin="0,0,6,0" />
             <TextBox c:Mascara.Tipo="Valor" Text="{Binding AliqIpi}" Watermark="IPI %" Width="80" Margin="0,0,6,0" />

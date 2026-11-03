@@ -15,8 +15,8 @@
         <ComboBox ItemsSource="{x:Static vm:RelatorioItensNotasViewModel.Operacoes}" SelectedIndex="{Binding Operacao}" Width="170" Margin="0,0,8,6" />
         <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding Participante}" Watermark="Participante (código, nome ou CNPJ)" Width="240" Margin="0,0,8,6" />
         <TextBox c:Pesquisa.Fonte="Produto" Text="{Binding Produto}" Watermark="Produto (código, descrição ou GTIN)" Width="240" Margin="0,0,8,6" />
-        <TextBox Text="{Binding Cfop}" Watermark="CFOP" Width="80" Margin="0,0,8,6" />
-        <TextBox Text="{Binding Ncm}" Watermark="NCM" Width="110" Margin="0,0,8,6" />
+        <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding Cfop}" Watermark="CFOP" Width="80" Margin="0,0,8,6" />
+        <TextBox c:Pesquisa.Fonte="Ncm" Text="{Binding Ncm}" Watermark="NCM" Width="110" Margin="0,0,8,6" />
         <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,8,6" />
         <c:BarraExportacaoView />
       </WrapPanel>

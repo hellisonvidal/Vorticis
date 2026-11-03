@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.EvolucaoPatrimonialView"
+             x:DataType="vm:EvolucaoPatrimonialViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,4">
+      <TextBlock Classes="titulo" Text="Evolução patrimonial" />
+      <WrapPanel>
+        <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,10,6" /></Style></WrapPanel.Styles>
+        <TextBlock Text="Do mês de" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+        <TextBlock Text="até o mês de" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+        <CheckBox Content="Só o fim de cada ano" IsChecked="{Binding SoFimDeAno}" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" />
+        <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Spacing="2">
+      <TextBlock Text="{Binding Resumo}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="10" Margin="0,0,10,0">
+        <c:GraficoLinhas Rotulos="{Binding RotulosPeriodos}" Series="{Binding Series}" Height="260" />
+        <c:GradeTabelaView Tabela="{Binding TabelaTela}" MinHeight="180" />
+        <TextBlock Text="Variação sobre o período anterior" FontWeight="SemiBold" IsVisible="{Binding TemVariacoes}" />
+        <c:GradeTabelaView Tabela="{Binding TabelaVariacoes}" MinHeight="180" IsVisible="{Binding TemVariacoes}" />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

@@ -19,6 +19,7 @@ public static class Telas
     public const string Planejamento = "planejamentotributario";
     public const string DctfWeb = "dctfweb";
     public const string IbsCbs = "apuracaoibscbs";
+    public const string SimplesReforma = "simplesreforma";
     public const string NotasPorCentro = "relnotascentrocusto";
     public const string FechamentoFiscal = "fiscal.fechamento";
     public const string AjustesEntrada = "fiscal.ajustes.entrada";

@@ -100,6 +100,7 @@ public sealed class ModuloContabil : IModuloDesktop
             ItemMenu.Submenu("_BI",
                 ItemMenu.Tela("Painel de indicadores", Telas.BiPainel),
                 ItemMenu.Tela("Análise de indicadores", Telas.BiAnalise),
+                ItemMenu.Tela("Evolução patrimonial", Telas.BiEvolucao),
                 ItemMenu.Tela("Cubo (tabela dinâmica)", Telas.BiCubo),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Exportar dados para BI", Telas.BiExportar)),
@@ -271,6 +272,8 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.BiPainel, "Relatórios › BI › Painel de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.BiAnalise), m => new AnaliseIndicadoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.BiAnalise, "Relatórios › BI › Análise de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.BiEvolucao), m => new EvolucaoPatrimonialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.BiEvolucao, "Relatórios › BI › Evolução patrimonial", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.BiCubo), m => new CuboBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.BiCubo, "Relatórios › BI › Cubo (tabela dinâmica)", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.BiExportar), m => new ExportarBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

@@ -109,4 +109,38 @@ public class PesquisaTests(SessaoHeadless headless)
         }, TestContext.Current.CancellationToken));
         Assert.True(ok);
     }
+
+    [Fact]
+    public async Task Campos_do_Fiscal_que_buscam_dado_cadastrado_em_outro_menu_tem_lupa()
+    {
+        var ok = await Task.Run(() => headless.Sessao.Dispatch(() =>
+        {
+            new Vorticis.Fiscal.Desktop.ModuloFiscal().RegistrarTelas(new Vorticis.Desktop.Comum.Modulos.CatalogoTelas());
+            Assert.All(new[] { "Ncm", "Cfop", "CodigoAjuste", "Produto", "Participante", "Conta" }, f => Assert.True(Pesquisa.Registrada(f), f));
+
+            var esperado = new (UserControl View, string[] Fontes)[]
+            {
+                (new Vorticis.Fiscal.Desktop.Views.NotaDigitacaoView(), ["Cfop", "Cfop", "Cfop", "Ncm", "Participante", "Produto"]),
+                (new Vorticis.Fiscal.Desktop.Views.ProdutoFichaView(), ["Cfop", "Cfop"]),
+                (new Vorticis.Fiscal.Desktop.Views.RegraFiscalFichaView(), ["Cfop", "Cfop", "Ncm", "Participante", "Produto", "Conta"]),
+                (new Vorticis.Fiscal.Desktop.Views.RelatorioItensNotasView(), ["Cfop", "Ncm", "Participante", "Produto"]),
+                (new Vorticis.Fiscal.Desktop.Views.RelacaoAjustesView(), ["CodigoAjuste"]),
+                (new Vorticis.Fiscal.Desktop.Views.DigitacaoDocumentoView(), ["Participante"]),
+            };
+            foreach (var (view, fontes) in esperado)
+            {
+                var janela = new Window { Content = view, Width = 1200, Height = 900 };
+                janela.Show();
+                Dispatcher.UIThread.RunJobs();
+                var achadas = view.GetVisualDescendants().OfType<TextBox>().Select(Pesquisa.GetFonte).Where(f => f is not null).Order().ToArray();
+                foreach (var f in fontes.Distinct())
+                    Assert.True(achadas.Count(a => a == f) >= 1, $"{view.GetType().Name}: falta a lupa {f}");
+                foreach (var f in fontes.GroupBy(x => x))
+                    Assert.True(achadas.Count(a => a == f.Key) >= f.Count() || view is Vorticis.Fiscal.Desktop.Views.NotaDigitacaoView, $"{view.GetType().Name}: lupas de {f.Key}");
+                janela.Close();
+            }
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
 }

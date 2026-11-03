@@ -71,6 +71,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("Lucro Real (IRPJ, CSLL e LALUR)", Telas.Real),
             ItemMenu.Tela("PIS e COFINS", Telas.PisCofins),
             ItemMenu.Tela("IBS e CBS (reforma tributária)", Telas.IbsCbs),
+            ItemMenu.Tela("Simples Nacional × IBS/CBS (reforma)", Telas.SimplesReforma),
             ItemMenu.EmBreve("ICMS e IPI"),
             ItemMenu.Separador,
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
@@ -145,6 +146,29 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ? r.Valor.Select(p => new Vorticis.Desktop.Comum.Views.ItemPesquisa(p.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     p.Descricao + (p.Ncm is { Length: > 0 } n ? $" · NCM {n}" : "") + (p.Gtin is { Length: > 0 } g ? $" · GTIN {g}" : ""))).ToList()
                 : []);
+        // Pesquisa dentro dos campos de NCM, CFOP e código de ajuste: valores já cadastrados em Produtos, Regras fiscais e Códigos de ajuste.
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("Ncm", async (ctx, ct) =>
+            ctx.App is { } app && ctx.EmpresaId is { } e && ctx.Sessao is { } s
+            && await app.Fiscal().Produtos.ListarAsync(e, true, null, s.Id, ct) is { Sucesso: true } r
+                ? r.Valor.Where(p => p.Ncm is { Length: > 0 }).GroupBy(p => p.Ncm!).OrderBy(g => g.Key)
+                    .Select(g => new Vorticis.Desktop.Comum.Views.ItemPesquisa(g.Key, string.Join("; ", g.Take(3).Select(p => p.Descricao)) + (g.Count() > 3 ? "..." : ""))).ToList()
+                : []);
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("Cfop", async (ctx, ct) =>
+        {
+            if (ctx.App is not { } app || ctx.EmpresaId is not { } e || ctx.Sessao is not { } s) return [];
+            var usos = new Dictionary<string, List<string>>();
+            void Usar(string? cfop, string onde) { if (cfop is { Length: > 0 }) { if (!usos.TryGetValue(cfop, out var l)) usos[cfop] = l = []; if (!l.Contains(onde)) l.Add(onde); } }
+            if (await app.Fiscal().Produtos.ListarAsync(e, true, null, s.Id, ct) is { Sucesso: true } produtos)
+                foreach (var p in produtos.Valor) { Usar(p.CfopEntrada, "Produtos"); Usar(p.CfopSaida, "Produtos"); }
+            if (await app.Fiscal().Regras.ListarAsync(e, null, s.Id, ct) is { Sucesso: true } regras)
+                foreach (var g in regras.Valor) { Usar(g.CfopOrigem, "Regras fiscais"); Usar(g.CfopDestino, "Regras fiscais"); }
+            return usos.OrderBy(u => u.Key, StringComparer.Ordinal).Select(u => new Vorticis.Desktop.Comum.Views.ItemPesquisa(u.Key, "cadastrado em " + string.Join(" e ", u.Value))).ToList();
+        });
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("CodigoAjuste", async (ctx, ct) =>
+            ctx.App is { } app && ctx.EmpresaId is { } e && ctx.Sessao is { } s
+            && await app.Fiscal().OutrosLancamentosEfd.CodigosAjusteAsync(e, null, s.Id, ct) is { Sucesso: true } r
+                ? r.Valor.Select(c => new Vorticis.Desktop.Comum.Views.ItemPesquisa(c.Codigo, c.Descricao + " · " + c.Imposto)).ToList()
+                : []);
         c.Instancia("ImportacaoXml", m => new ImportacaoXmlViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ImportacaoXml, "Integrações › Importação de XML em lote", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ImportacaoSped", m => new Vorticis.Desktop.Comum.ViewModels.ImportacaoSpedViewModel(m, "Importar SPED (EFD ICMS/IPI e EFD-Contribuições)",
@@ -200,6 +224,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.NotasPorCentro, "Relatórios › Resumos › Notas por centro de custo", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("IbsCbs", m => new ApuracaoIbsCbsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.IbsCbs, "Apuração › IBS e CBS (reforma tributária)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("SimplesReforma", m => new SimplesReformaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.SimplesReforma, "Apuração › Simples Nacional × IBS/CBS (reforma)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("DctfWeb", m => new DctfWebViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Telas.DctfWeb, "Apuração › Obrigações › DCTFWeb (MIT)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());

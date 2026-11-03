@@ -12,7 +12,7 @@
       <StackPanel Spacing="8" Margin="0,0,16,8">
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
           <TextBlock Text="CFOP" VerticalAlignment="Center" />
-          <TextBox Grid.Column="1" Text="{Binding Cfop}" Watermark="5102, 51, NFSE ou vazio" Width="170" />
+          <TextBox c:Pesquisa.Fonte="Cfop" Grid.Column="1" Text="{Binding Cfop}" Watermark="5102, 51, NFSE ou vazio" Width="170" />
           <TextBlock Grid.Row="1" Text="Conta débito" VerticalAlignment="Center" />
           <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="1" Grid.Column="1" Text="{Binding Debito}" Watermark="ex.: 1.1.02.001" Width="170" />
           <TextBlock Grid.Row="1" Grid.Column="2" Text="Conta crédito" VerticalAlignment="Center" />
