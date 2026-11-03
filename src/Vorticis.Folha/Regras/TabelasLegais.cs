@@ -45,6 +45,16 @@ public sealed record TabelasLegais(TabelaInss Inss, TabelaIrrf Irrf, TabelaSalar
 
     private static readonly JsonSerializerOptions Opcoes = new(JsonSerializerDefaults.Web);
 
+    /// <summary>Alíquotas do FGTS vigentes na data, sem exigir as demais tabelas (usado ao importar histórico de competências antigas); nulo se não houver vigência.</summary>
+    public static ParametrosFgts? FgtsEm(DateOnly data, IEnumerable<ParametroLegal> parametros)
+    {
+        var p = parametros.Where(x => x.Chave == ChaveFgts && x.VigenciaInicio <= data && (x.VigenciaFim is null || x.VigenciaFim >= data))
+                          .OrderByDescending(x => x.VigenciaInicio).FirstOrDefault();
+        if (p is null) return null;
+        var f = JsonSerializer.Deserialize<DtoFgts>(p.Valor, Opcoes)!;
+        return new ParametrosFgts(f.Aliquota, f.AliquotaAprendiz, f.MultaSemJustaCausa, f.MultaAcordo);
+    }
+
     /// <summary>Escolhe, para cada tabela, a vigência que cobre <paramref name="data"/>.</summary>
     public static TabelasLegais Em(DateOnly data, IEnumerable<ParametroLegal> parametros)
     {
