@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Views"
+             x:Class="Vorticis.Desktop.Views.GrupoDepreciacaoFichaView"
+             x:DataType="vm:GruposDepreciacaoViewModel">
+  <!-- Ficha da regra de depreciação (janela aberta pela tela Regras de depreciação) -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+      <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="80" HorizontalAlignment="Left" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" />
+        <TextBlock Grid.Row="2" Classes="rotulo" Text="Taxa anual (%)" />
+        <TextBox c:Mascara.Tipo="Valor" Grid.Row="2" Grid.Column="1" Text="{Binding Taxa}" Width="80" HorizontalAlignment="Left" />
+        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="14">
+          <CheckBox Content="Deprecia" IsChecked="{Binding Deprecia}" />
+          <CheckBox Content="Intangível (amortização)" IsChecked="{Binding Intangivel}" />
+        </StackPanel>
+        <TextBlock Grid.Row="4" Classes="rotulo" Text="Conta do bem" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="4" Grid.Column="1" Text="{Binding ContaBem}" Watermark="sugestão para novos bens" />
+        <TextBlock Grid.Row="5" Classes="rotulo" Text="Deprec. acumulada" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="5" Grid.Column="1" Text="{Binding ContaAcumulada}" />
+        <TextBlock Grid.Row="6" Classes="rotulo" Text="Despesa" />
+        <TextBox c:Pesquisa.Fonte="Conta" Grid.Row="6" Grid.Column="1" Text="{Binding ContaDespesa}" />
+        <TextBlock Grid.Row="7" Classes="rotulo" Text="Base legal" />
+        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding BaseLegal}" TextWrapping="Wrap" />
+      </Grid>
+      <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

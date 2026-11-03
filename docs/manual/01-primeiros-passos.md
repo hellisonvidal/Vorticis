@@ -76,18 +76,18 @@ Em instalação nova não existe nenhum usuário. Por isso:
 **Onde fica:** *Configurações › Usuários* (com o Vorticis Escritório instalado, só nele: *Configurações › Usuários e controle de acesso*), em quatro abas: *Usuários*, *Perfis de acesso*, *Alterar minha senha* e *Registro de acessos*. Usuários comuns veem apenas a troca de senha.
 
 ### Cadastrar um usuário (administrador)
-1. Aba *Usuários* › **Incluir**.
+1. Aba *Usuários* (a lista dos usuários) › **Incluir**: a ficha do usuário abre numa janela por cima da lista (também por **Alterar**, duplo clique ou **Enter**).
 2. Informe login, nome e **senha inicial** (o usuário troca no primeiro acesso).
 3. Escolha o **perfil** (obrigatório).
 4. Em **Dados pessoais e contato** (opcionais), informe **CPF**, **e-mail**, **telefone** e **celular**, a data de **admissão** no escritório, o **cargo**, o **departamento** e uma **observação**. O sistema confere se o CPF é válido, se o e-mail tem o formato nome@dominio e se a admissão não é uma data futura. Cargo, e-mail e telefone aparecem na lista de usuários.
 5. Em **Módulos que o usuário pode acessar**, desmarque os módulos que ele não deve usar (Contábil, Fiscal, Folha de Pagamento, Escritório, Gerencial, Condomínio). Num módulo bloqueado o usuário consegue entrar, mas não vê nenhuma empresa nem função: só *Ajuda*, *Alterar minha senha* e *Sair*, com o aviso de que o acesso não foi liberado. Usuário novo vem com todos marcados; administradores acessam sempre todos os módulos.
 6. Em **Empresas que o usuário pode acessar**, marque as empresas (busque por nome, código ou CNPJ; *Marcar todas* e *Desmarcar todas* valem para as listadas). Usuário novo vem com todas marcadas e passa a receber também as empresas cadastradas depois; ao desmarcar alguma, isso deixa de valer. Dá para ter um perfil diferente por empresa.
-7. **Salvar**.
+7. **Salvar** (a janela fecha; **Cancelar**, **Esc** ou o **X** fecham sem gravar).
 
-Para esquecimentos use **Redefinir senha** (gera senha temporária). Excluir um usuário mantém o histórico de lançamentos, sem o vínculo com ele; ninguém exclui o próprio usuário.
+Para esquecimentos use **Redefinir senha** (na ficha do usuário, aberta por duplo clique) (gera senha temporária). Excluir um usuário mantém o histórico de lançamentos, sem o vínculo com ele; ninguém exclui o próprio usuário.
 
 ### Perfis de acesso
-Um perfil é um conjunto de funções liberadas (lançar, estornar, fechar períodos, relatórios, exportar, folha, fiscal etc.). Na aba *Perfis de acesso*: **Incluir** (ou **Duplicar perfil**), marque as funções e salve. Perfis padrão, que não se excluem: **Administrador** (tudo, inclusive empresas, usuários, conexão e backup), **Contador** (todas as funções, inclusive *Manter o orçamento*), **Assistente** (lança e estorna, não fecha períodos) e **Consulta** (relatórios).
+Um perfil é um conjunto de funções liberadas (lançar, estornar, fechar períodos, relatórios, exportar, folha, fiscal etc.). Na aba *Perfis de acesso* (a lista dos perfis): **Incluir** (ou **Duplicar perfil**) abre a ficha do perfil numa janela; marque as funções e salve. Perfis padrão, que não se excluem: **Administrador** (tudo, inclusive empresas, usuários, conexão e backup), **Contador** (todas as funções, inclusive *Manter o orçamento*), **Assistente** (lança e estorna, não fecha períodos) e **Consulta** (relatórios).
 
 ### Segurança
 - Após 5 tentativas de senha errada, o usuário fica bloqueado por 15 minutos.

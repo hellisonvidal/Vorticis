@@ -11,7 +11,7 @@ namespace Vorticis.Desktop.Comum.ViewModels;
 /// Base dos relatórios: o relatório é sempre exibido na tela e, a partir dela, exportado para PDF, Excel (.xlsx) ou CSV
 /// — os três arquivos saem da mesma tabela mostrada.
 /// </summary>
-public abstract partial class RelatorioViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public abstract partial class RelatorioViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExportarPdfCommand), nameof(ExportarExcelCommand), nameof(ExportarCsvCommand))]
     private bool _temDados;

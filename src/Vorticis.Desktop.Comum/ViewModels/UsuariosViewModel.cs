@@ -62,6 +62,9 @@ public partial class AcessoLinha : ObservableObject
 /// </summary>
 public partial class UsuariosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<UsuarioLinha> Lista { get; } = [];
 
     /// <summary>Todas as empresas cadastradas, com a marca de acesso do usuário em edição.</summary>

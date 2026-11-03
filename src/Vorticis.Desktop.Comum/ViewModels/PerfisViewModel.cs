@@ -25,6 +25,9 @@ public sealed record PerfilLinha(PerfilAcesso Perfil)
 /// <summary>Configurações › Perfis de acesso: o administrador define, função a função, o que cada perfil libera.</summary>
 public partial class PerfisViewModel : CadastroViewModel
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     private readonly IReadOnlyList<FuncaoMarcavel> _funcoes;
 
     public PerfisViewModel(IContexto contexto) : base(contexto)

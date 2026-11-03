@@ -20,6 +20,9 @@ public sealed record HistoricoLinha(HistoricoPadrao Historico)
 /// </summary>
 public partial class HistoricosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<HistoricoLinha> Lista { get; } = [];
     /// <summary>Variáveis de preenchimento automático ({DOCUMENTO}, {DATA}...) que podem entrar no texto do histórico.</summary>
     public IReadOnlyList<VariavelHistorico> Variaveis => VariaveisHistorico.Todas;

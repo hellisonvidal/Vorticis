@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.FormaPagamentoFichaView"
+             x:DataType="vm:FormasPagamentoViewModel">
+  <!-- Ficha da forma de pagamento (janela aberta pela tela Formas de pagamento) -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="6" Margin="0,0,16,8">
+        <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsEnabled="{Binding EmEdicao}">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="100" HorizontalAlignment="Left" IsReadOnly="{Binding !EmInclusao}" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" Watermark="ex.: Boleto 30/60/90" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Meio" />
+          <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Meios}" SelectedItem="{Binding Meio}" DisplayMemberBinding="{ReflectionBinding Texto}" Width="220" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Parcelas" />
+          <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Parcelas}" Minimum="1" Maximum="120" FormatString="0" Width="130" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="1º vencimento (dias)" />
+          <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding PrimeiroVencimento}" Minimum="0" Maximum="999" FormatString="0" Width="130" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="Dias entre parcelas" />
+          <NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding Intervalo}" Minimum="0" Maximum="365" FormatString="0" Width="130" HorizontalAlignment="Left" />
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="Prazos (dias)" />
+          <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Prazos}" Watermark="0 = à vista; 30/60/90" />
+          <TextBlock Grid.Row="7" Classes="rotulo" Text="Conta bancária" />
+          <ComboBox Grid.Row="7" Grid.Column="1" ItemsSource="{Binding Contas}" SelectedItem="{Binding Conta}" DisplayMemberBinding="{ReflectionBinding Texto}" HorizontalAlignment="Stretch" />
+          <CheckBox Grid.Row="8" Grid.Column="1" Content="Ativa" IsChecked="{Binding Ativa}" />
+        </Grid>
+        <TextBlock Text="{Binding Exemplo}" FontSize="11.5" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+        <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
+                   Text="Informe as parcelas, o 1º vencimento e os dias entre parcelas: os prazos são montados sozinhos (ou digite os prazos à mão, ex.: 0/30/45). Os prazos contam a partir da emissão da nota." />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

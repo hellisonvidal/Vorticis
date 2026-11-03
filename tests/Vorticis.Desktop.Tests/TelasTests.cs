@@ -219,7 +219,10 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             emp.AnoExercicio = 2026;
             Foto(janela, "02_empresa_dados_receita");
             Assert.NotNull(janela.JanelaAtiva);                               // a função abriu em janela flutuante
-            var picker = janela.JanelaAtiva!.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
+            var telaEmpresas = janela.JanelaAtiva!.GetVisualDescendants().OfType<Vorticis.Desktop.Comum.Views.CadastroEmpresaView>().Single();
+            var fichaEmpresa = Vorticis.Desktop.Comum.Views.FichaPopup.Aberta(telaEmpresas);       // a ficha da empresa abre em janela por cima da lista
+            Assert.NotNull(fichaEmpresa);
+            var picker = fichaEmpresa!.GetVisualDescendants().OfType<CalendarDatePicker>().Single();
             Assert.Equal((new DateTime(2015, 3, 2), (DateTime?)new DateTime(2015, 3, 2), "02/03/2015"), (emp.InicioAtividades!.Value, picker.SelectedDate, picker.Text));
             var salvandoEmpresa = emp.SalvarCommand.ExecuteAsync(null);
             Assert.False(emp.MostraModulos);                                  // a escolha dos módulos fica só no Escritório

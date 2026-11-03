@@ -35,6 +35,9 @@ public sealed class FornecedoresViewModel(IContexto contexto) : ParticipantesVie
 /// </summary>
 public abstract partial class ParticipantesViewModel(IContexto contexto, bool fornecedores) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     private IReadOnlyList<Participante> _todos = [];
 
     public bool Fornecedores { get; } = fornecedores;

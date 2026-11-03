@@ -30,6 +30,9 @@ public sealed record BemLinha(BemImobilizado Bem, string Grupo)
 /// <summary>Imobilizado › Cadastro de bens.</summary>
 public partial class BensViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     private IReadOnlyList<BemImobilizado> _todos = [];
 
     public ObservableCollection<BemLinha> Lista { get; } = [];
@@ -284,6 +287,9 @@ public sealed record GrupoLinha(GrupoBem Grupo)
 /// <summary>Imobilizado › Regras de depreciação: grupos de bens com a taxa fiscal (RFB) e as contas sugeridas.</summary>
 public partial class GruposDepreciacaoViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<GrupoLinha> Lista { get; } = [];
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private GrupoLinha? _selecionado;
     [ObservableProperty] private string _codigo = "";

@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             xmlns:cad="using:Vorticis.Application.Cadastros"
+             x:Class="Vorticis.Desktop.Comum.Views.ContadorFichaView"
+             x:DataType="vm:ContabilidadeEmpresaViewModel">
+  <!-- Ficha do vínculo contábil (janela aberta pela tela Contadores): inclusão de contador ou escritório, alteração e consulta do vínculo -->
+  <DockPanel>
+    <v:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="10" Margin="0,0,16,8">
+        <TextBlock Classes="titulo" Text="{Binding TituloFicha}" />
+
+        <!-- Incluir: contador ou escritório -->
+        <StackPanel Orientation="Horizontal" Spacing="16" IsVisible="{Binding EmInclusao}">
+          <TextBlock Text="Vincular:" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" VerticalAlignment="Center" />
+          <RadioButton GroupName="TipoVinculoFicha" Content="Contador" IsChecked="{Binding IncluirContador}" />
+          <RadioButton GroupName="TipoVinculoFicha" Content="Escritório contábil" IsChecked="{Binding !IncluirContador}" />
+        </StackPanel>
+
+        <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding IncluindoContador}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Contador" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+            <ComboBox ItemsSource="{Binding ContadoresCadastrados}" SelectedItem="{Binding ContadorExistente}" PlaceholderText="Já cadastrado em outra empresa? Escolha aqui" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Contador"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
+              <TextBlock Classes="rotulo" Text="Nome" />
+              <TextBox Grid.Column="1" Text="{Binding ContadorNome}" />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="CPF" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ContadorCpf}" Watermark="000.000.000-00" v:Mascara.Tipo="Cpf" Width="180" HorizontalAlignment="Left" />
+              <TextBlock Grid.Row="2" Classes="rotulo" Text="CRC" />
+              <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,8,80">
+                <TextBox Text="{Binding ContadorCrc}" Watermark="Nº CRC (ex.: 1SP123456/O-7)" />
+                <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:ContabilidadeEmpresaViewModel.Ufs}" SelectedItem="{Binding ContadorUf}" HorizontalAlignment="Stretch" />
+              </Grid>
+              <TextBlock Grid.Row="3" Classes="rotulo" Text="E-mail" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ContadorEmail}" Watermark="nome@escritorio.com.br" />
+              <TextBlock Grid.Row="4" Classes="rotulo" Text="Telefone" />
+              <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ContadorTelefone}" Width="180" HorizontalAlignment="Left" />
+              <TextBlock Grid.Row="5" Classes="rotulo" Text="Vínculo desde" />
+              <CalendarDatePicker Grid.Row="5" Grid.Column="1" SelectedDate="{Binding ContadorInicio}" Width="160" HorizontalAlignment="Left" />
+              <StackPanel Grid.Row="6" Grid.Column="1" Spacing="2">
+                <CheckBox Content="Responsável técnico" IsChecked="{Binding ContadorResponsavel}" />
+                <CheckBox Content="Assina ECD/ECF" IsChecked="{Binding ContadorAssinaEcdEcf}"
+                          ToolTip.Tip="Contador signatário da ECD e da ECF (registros J930/0930)" />
+              </StackPanel>
+            </Grid>
+            <v:ProcuracaoEletronicaView DataContext="{Binding ProcuracaoNova}" />
+          </StackPanel>
+        </Border>
+
+        <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding IncluindoEscritorio}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Escritório contábil" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+            <ComboBox ItemsSource="{Binding EscritoriosCadastrados}" SelectedItem="{Binding EscritorioExistente}" PlaceholderText="Já cadastrado? Escolha aqui" HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:EscritorioContabil"><TextBlock Text="{Binding RazaoSocial}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
+              <TextBlock Classes="rotulo" Text="CNPJ" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,8,Auto">
+                <TextBox Text="{Binding EscritorioCnpj}" Watermark="00.000.000/0000-00" v:Mascara.Tipo="Cnpj" />
+                <Button Grid.Column="2" Content="Buscar dados na Receita" Command="{Binding BuscarEscritorioCommand}" />
+              </Grid>
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Razão social" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EscritorioRazao}" />
+              <TextBlock Grid.Row="2" Classes="rotulo" Text="CRC" />
+              <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,8,80">
+                <TextBox Text="{Binding EscritorioCrc}" Watermark="Registro da organização contábil no CRC" />
+                <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:ContabilidadeEmpresaViewModel.Ufs}" SelectedItem="{Binding EscritorioUf}" HorizontalAlignment="Stretch" />
+              </Grid>
+              <TextBlock Grid.Row="3" Classes="rotulo" Text="E-mail" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EscritorioEmail}" Watermark="nome@escritorio.com.br" />
+              <TextBlock Grid.Row="4" Classes="rotulo" Text="Telefone" />
+              <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding EscritorioTelefone}" Width="180" HorizontalAlignment="Left" />
+              <TextBlock Grid.Row="5" Classes="rotulo" Text="Vínculo desde" />
+              <CalendarDatePicker Grid.Row="5" Grid.Column="1" SelectedDate="{Binding EscritorioInicio}" Width="160" HorizontalAlignment="Left" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Alterar / consultar: o vínculo selecionado -->
+        <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="12" IsVisible="{Binding !EmInclusao}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding DescricaoVinculo}" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto" RowSpacing="8" IsEnabled="{Binding EmAlteracao}">
+              <StackPanel Grid.Column="1" Spacing="2">
+                <CheckBox Content="Responsável técnico" IsChecked="{Binding ResponsavelEdicao}" IsEnabled="{Binding SelecionadoEhContador}" />
+                <CheckBox Content="Assina ECD/ECF" IsChecked="{Binding AssinaEdicao}" IsEnabled="{Binding SelecionadoEhContador}" />
+              </StackPanel>
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Fim do vínculo" />
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                <CalendarDatePicker SelectedDate="{Binding FimEdicao}" Width="160" HorizontalAlignment="Left" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" Text="Deixe em branco se o vínculo continua vigente." />
+              </StackPanel>
+            </Grid>
+            <StackPanel IsVisible="{Binding SelecionadoEhContador}" IsEnabled="{Binding EmAlteracao}"><v:ProcuracaoEletronicaView DataContext="{Binding ProcuracaoAlterar}" /></StackPanel>
+          </StackPanel>
+        </Border>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

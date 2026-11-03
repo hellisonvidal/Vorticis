@@ -26,6 +26,9 @@ public sealed record CentroLinha(CentroCustoDetalhe Centro, string? CodigoPai)
 /// </summary>
 public partial class CentrosCustoViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<CentroLinha> Lista { get; } = [];
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private CentroLinha? _selecionado;

@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.RodapeFichaSimplesView"
+             x:DataType="vm:ModuloComFichaViewModel">
+  <!-- Rodapé da ficha em janela das telas sem a barra padrão de cadastro: Salvar (ou Gravar) e Cancelar -->
+  <Border Classes="rodapeFicha" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Linha}" Padding="16,10">
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+      <Button Name="FichaSalvar" Command="{Binding $parent[v:RodapeFichaSimplesView].SalvarCommand}" Classes="accent" MinWidth="96" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{x:Static v:Icones.Salvar}" Width="14" Height="14" /><TextBlock Text="{Binding $parent[v:RodapeFichaSimplesView].SalvarTexto}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Name="FichaCancelar" Command="{Binding FecharFichaCommand}" MinWidth="96" HorizontalContentAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{x:Static v:Icones.Cancelar}" Width="14" Height="14" /><TextBlock Text="Cancelar" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+    </StackPanel>
+  </Border>
+</UserControl>

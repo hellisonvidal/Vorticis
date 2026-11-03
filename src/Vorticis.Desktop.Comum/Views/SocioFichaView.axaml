@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             x:Class="Vorticis.Desktop.Comum.Views.SocioFichaView"
+             x:DataType="vm:SociosViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo"><Setter Property="FontSize" Value="12" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  </UserControl.Styles>
+  <!-- Ficha do sócio (janela aberta pela tela Sócios) -->
+  <DockPanel>
+    <v:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="6" Margin="0,0,16,8">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <TextBlock Text="Dados do sócio" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+        <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
+        <TextBox Text="{Binding Nome}" Watermark="Nome completo / razão social" />
+        <ComboBox ItemsSource="{x:Static vm:OpcaoTipoPessoa.Todas}" SelectedItem="{Binding Tipo}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoTipoPessoa"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBox Text="{Binding Documento}" Watermark="CPF ou CNPJ" v:Mascara.Tipo="CpfCnpj" />
+        <TextBlock Text="{Binding DocumentoMascarado, StringFormat='Na base pública da RFB: {0} (complete o documento acima)'}" FontSize="11" Foreground="Gray"
+                   IsVisible="{Binding DocumentoMascarado, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <AutoCompleteBox Text="{Binding Qualificacao}" ItemsSource="{x:Static vm:SociosViewModel.Qualificacoes}" Watermark="Qualificação" FilterMode="Contains" />
+        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Capital (%)" />
+          <TextBox v:Mascara.Tipo="Valor" Grid.Column="1" Text="{Binding Participacao}" Watermark="ex.: 50" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Entrada" />
+          <CalendarDatePicker Grid.Row="1" Grid.Column="1" SelectedDate="{Binding Entrada}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Saída" />
+          <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding Saida}" />
+        </Grid>
+        <CheckBox Content="Representante legal (assina a ECD e os termos)" IsChecked="{Binding Representante}" />
+        <TextBox Text="{Binding Email}" Watermark="E-mail" />
+        <TextBox Text="{Binding Telefone}" Watermark="Telefone" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

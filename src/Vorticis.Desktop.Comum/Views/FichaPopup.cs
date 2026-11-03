@@ -26,6 +26,33 @@ public static class FichaPopup
     /// <summary>A janela da ficha aberta para a tela (null se fechada).</summary>
     public static Window? Aberta(UserControl tela) => Estados.TryGetValue(tela, out var e) ? e.Janela : null;
 
+    /// <summary>
+    /// Liga uma tela de lista (<see cref="CadastroViewModel"/> ou <see cref="ModuloComFichaViewModel"/>) à ficha em janela: além de <see cref="Ligar"/>, duplo clique ou Enter na
+    /// lista abrem a ficha do registro selecionado.
+    /// </summary>
+    public static void LigarCadastro(UserControl tela, InputElement lista, Func<Control> criarConteudo, double largura = 680, double altura = 640)
+    {
+        Ligar(tela, criarConteudo, largura, altura);
+        LigarAbertura(tela, lista);
+    }
+
+    /// <summary>Duplo clique ou Enter numa lista da tela abrem a ficha do registro selecionado (para telas com mais de uma lista).</summary>
+    public static void LigarAbertura(UserControl tela, InputElement lista)
+    {
+        lista.DoubleTapped += (_, _) => ComandoAbrir(tela.DataContext)?.Execute(null);
+        lista.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter && ComandoAbrir(tela.DataContext) is { } cmd && cmd.CanExecute(null)) { cmd.Execute(null); e.Handled = true; }
+        };
+    }
+
+    private static System.Windows.Input.ICommand? ComandoAbrir(object? vm) => vm switch
+    {
+        CadastroViewModel c => c.AbrirFichaCommand,
+        ModuloComFichaViewModel m => m.AbrirFichaCommand,
+        _ => null,
+    };
+
     /// <summary>Liga a tela ao ViewModel: a janela abre e fecha com <see cref="IComFicha.FichaAberta"/>.</summary>
     public static void Ligar(UserControl tela, Func<Control> criarConteudo, double largura = 680, double altura = 640)
     {

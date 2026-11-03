@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             x:Class="Vorticis.Desktop.Comum.Views.CentroCustoFichaView"
+             x:DataType="vm:CentrosCustoViewModel">
+  <!-- Ficha do centro de custo (janela aberta pela tela Centros de custo) -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="6" Margin="0,0,16,8">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" Watermark="ex.: 1.01.001" IsEnabled="{Binding EmInclusao}" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Superior" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CodigoPai}" Watermark="Obrigatório nos níveis 2+ (pela máscara)" IsEnabled="{Binding EmInclusao}" />
+          <CheckBox Grid.Row="3" Grid.Column="1" Content="Sintético (grupo, não recebe lançamentos)" IsChecked="{Binding Sintetico}" IsEnabled="{Binding EmEdicao}" />
+          <CheckBox Grid.Row="4" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" IsEnabled="{Binding EmAlteracao}" />
+        </Grid>
+        <TextBlock Text="{Binding ResumoMascara}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

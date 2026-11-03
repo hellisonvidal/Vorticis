@@ -1,6 +1,6 @@
 # Cadastros comuns
 
-Estes cadastros existem em todos os módulos e têm o mesmo código em todos eles. Todos usam a barra **Incluir · Alterar · Excluir · Salvar · Cancelar** (cada botão tem o seu ícone: mais, lápis, lixeira, disquete e X), mostram o **Nº** de cada registro e a lista dos cadastrados à direita. As datas, CNPJ, CPF e CEP são formatados enquanto você digita.
+Estes cadastros existem em todos os módulos e têm o mesmo código em todos eles. Todos usam a barra **Incluir · Alterar · Excluir · Salvar · Cancelar** (cada botão tem o seu ícone: mais, lápis, lixeira, disquete e X), mostram o **Nº** de cada registro e, na tela, a **lista de todos os cadastrados** (com busca e filtros). A **ficha** do registro abre numa **janela por cima da lista**: **Incluir**, **Alterar**, duplo clique na linha ou **Enter** abrem a ficha; **Salvar** grava e fecha a janela; **Cancelar**, **Esc** ou o **X** fecham sem gravar. Fora da edição, a ficha aberta por duplo clique mostra o registro só para consulta (botões **Alterar** e **Fechar**). As datas, CNPJ, CPF e CEP são formatados enquanto você digita.
 
 Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
 
@@ -10,19 +10,20 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 **Onde fica:** *Cadastros › Empresas*.
 
 ### Passo a passo
-1. Clique em **Incluir**.
+1. Na aba **Dados cadastrais** (lista das empresas cadastradas), clique em **Incluir**: a ficha da empresa abre numa janela.
 2. Digite o **CNPJ** (aceita o novo CNPJ alfanumérico) e clique em **Buscar dados na Receita**: razão social, natureza jurídica, CNAE, endereço, início de atividade e opção pelo Simples/MEI são preenchidos. Revise os dados. Os sócios (QSA) também são incluídos.
 3. Confira a **inscrição estadual** (digite só números ou ISENTO). **Buscar IE (SINTEGRA)** procura o número; o sistema sempre pergunta antes de usá-lo. Se não encontrar, grava ISENTO. **Abrir SINTEGRA** abre o portal para conferência manual.
 4. Preencha o **NIRE** (11 dígitos), endereço e contatos.
 5. **Em quais módulos a empresa é usada** é decidido só no **Escritório**, no cadastro do cliente (aba *Módulos do contrato*). O cadastro de empresas não mostra essa escolha: a empresa incluída nele fica ativa no módulo em que você está; para levá-la a outros módulos, cadastre-a como cliente no Escritório com o mesmo CNPJ (veja [Empresas cadastradas direto nos módulos](09-escritorio.md#empresas-cadastradas-direto-nos-modulos)). A lista de empresas no topo de cada programa mostra só as empresas ativas naquele módulo.
 6. Em **Escrituração**, escolha o **regime tributário** (tem histórico por ano; é definido na inclusão) e o primeiro exercício.
 7. Em **Logo da empresa** (opcional), clique em **Carregar logo...** e escolha uma imagem PNG ou JPG. O sistema reduz a imagem sozinho (no máximo 600 pontos e 512 KB) e mostra a prévia; **Remover logo** apaga. Marque **Usar a logo nos relatórios** para que ela apareça, à esquerda, no cabeçalho de todos os relatórios e livros em PDF da empresa; desmarcada, a logo fica guardada mas não é impressa.
-8. **Salvar**. Antes de gravar uma empresa nova o sistema avisa: *"Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?"*. Só grava se você confirmar em **Cadastrar**.
+8. Em **Plano de contas** (só na inclusão), escolha o **modelo do plano** e deixe marcado **Criar o plano de contas ao cadastrar a empresa** para já receber as contas; as demais opções contábeis ficam na aba **Contabilidade**, depois de salva a empresa.
+9. **Salvar** (a janela fecha). Antes de gravar uma empresa nova o sistema avisa: *"Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?"*. Só grava se você confirmar em **Cadastrar**.
 
 **Código da empresa:** cada empresa recebe um número de sequência (exemplo: *Cód. 0005*) que é o mesmo em todos os módulos e em todas as telas (cadastro de empresas, clientes do Escritório, Condomínio e Suite). Ele aparece ao lado do título do cadastro e na mensagem depois de salvar.
 
 ### Abas da empresa
-- **Dados cadastrais**: tudo acima.
+- **Dados cadastrais**: a lista das empresas; a ficha com tudo acima abre em janela (**Incluir**, **Alterar** ou duplo clique). As abas **Contabilidade** e **Síndico** continuam sendo preenchidas na própria aba.
 - **Sócios** e **Contadores**: iguais às telas [Sócios](#socios) e [Contadores](#contadores).
 - **Contabilidade**: modelo e máscara do plano de contas, centros de custo, início da escrituração, regras dos lançamentos e contas do encerramento (veja abaixo).
 
@@ -89,32 +90,32 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 **Para que serve:** cadastrar quem compra e quem vende. A mesma pessoa pode ser cliente e fornecedor (são menus separados).
 **Onde fica:** *Cadastros › Clientes* e *Cadastros › Fornecedores*.
 
-1. **Incluir** e digite CPF ou CNPJ (validado); **Buscar dados na Receita** preenche o restante.
+1. **Incluir** (a ficha abre numa janela sobre a lista) e digite CPF ou CNPJ (validado); **Buscar dados na Receita** preenche o restante.
 2. Complete nome, inscrição estadual (ou ISENTO), endereço (o CEP preenche o endereço) e contatos.
 3. Em **Contabilidade**, informe a **conta contábil** (código ou reduzido; opcional).
-4. **Salvar**.
+4. **Salvar** (a janela fecha).
 
 **Participante na conta:** com a opção "plano com participantes" ligada na empresa, informe a conta (ex.: Clientes) e marque **Participante**. A conta passa a exigir o participante em cada lançamento, a tela de lançamento ganha a coluna *Part.* e o balancete pode **detalhar participantes**.
 
 ## Contas bancárias
 
 **Para que serve:** cadastrar as contas da empresa nos bancos, para indicar onde cai o dinheiro de cada forma de pagamento e qual conta contábil representa o banco.
-**Onde fica:** *Cadastros › Bancos* no Contábil; *Cadastros › Contas bancárias* no Fiscal e no Gerencial. O formulário fica em cima e a lista embaixo.
+**Onde fica:** *Cadastros › Bancos* no Contábil; *Cadastros › Contas bancárias* no Fiscal e no Gerencial. A tela mostra a lista das contas; a ficha abre numa janela.
 
-1. Clique em **Incluir**; o código é sugerido.
+1. Clique em **Incluir**; a ficha abre com o código sugerido.
 2. Informe a **descrição** (ex.: *Banco do Brasil – movimento*), o **banco** (código de compensação com 3 dígitos: 001, 104, 237, 341...), a **agência** e a **conta** (com o dígito depois do traço, se houver).
 3. Se quiser, informe a **conta contábil** do banco (precisa existir no plano de contas da empresa).
-4. **Gravar**. Desmarque **Ativa** para tirar a conta das listas sem apagá-la. Conta usada numa forma de pagamento pode ser excluída: a forma fica sem conta.
+4. **Salvar** (a janela fecha). Desmarque **Ativa** para tirar a conta das listas sem apagá-la. Conta usada numa forma de pagamento pode ser excluída: a forma fica sem conta.
 
 ## Formas de pagamento
 
 **Para que serve:** padronizar como as notas são pagas ou recebidas. Na digitação da nota fiscal, ao escolher a forma, as duplicatas (parcelas) são geradas sozinhas.
 **Onde fica:** *Cadastros › Formas de pagamento* (Fiscal e Gerencial).
 
-1. Clique em **Incluir**: o próximo código já aparece preenchido.
+1. Clique em **Incluir**: a ficha abre numa janela e o próximo código já aparece preenchido.
 2. Informe a **descrição** (ex.: *Boleto 30/60/90*) e o **meio** (dinheiro, boleto, PIX, cartão, cheque, transferência...).
 3. Informe o número de **Parcelas**, o **1º vencimento (dias)** e os **Dias entre parcelas**: os **Prazos (dias)** são montados sozinhos, contados da emissão da nota (ex.: 3 parcelas, 1º vencimento em 30 dias, 30 dias entre parcelas = `30/60/90`; 1 parcela com 0 dias = à vista). Para prazos irregulares, digite-os direto em **Prazos (dias)**, separados por barra (ex.: `0/30/45`). O exemplo abaixo mostra como fica uma venda de R$ 1.000,00 hoje.
-4. Escolha, se quiser, a **conta bancária** onde o dinheiro entra ou sai. **Gravar**.
+4. Escolha, se quiser, a **conta bancária** onde o dinheiro entra ou sai. **Salvar** (a janela fecha).
 
 As parcelas saem com valores iguais; a última recebe a diferença dos centavos. Os prazos precisam estar em ordem crescente.
 
@@ -126,8 +127,8 @@ Estes cadastros não aparecem no módulo Escritório, que trabalha só com os da
 
 **Onde fica:** *Cadastros › Empresas*, aba **Sócios** (empresa selecionada no topo).
 
-1. **Importar quadro societário da Receita** traz os sócios da base pública. O CPF vem mascarado: complete-o.
-2. Para incluir à mão: nome, CPF ou CNPJ, qualificação, **capital (%)**, data de entrada e de saída, e-mail e telefone.
+1. **Importar quadro societário da Receita** traz os sócios da base pública. O CPF vem mascarado: complete-o (**Alterar**, ou duplo clique no sócio).
+2. Para incluir à mão, clique em **Incluir** (a ficha abre numa janela sobre a lista de sócios) e preencha: nome, CPF ou CNPJ, qualificação, **capital (%)**, data de entrada e de saída, e-mail e telefone.
 3. Marque **Representante legal** em quem assina a ECD e os termos.
 
 **Regra:** a soma da participação dos sócios ativos não pode passar de 100%.
@@ -141,7 +142,9 @@ No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF,
 **Para que serve:** vincular à empresa o contador ou escritório responsável.
 **Onde fica:** *Cadastros › Contadores* (ou a aba *Contadores* da empresa).
 
-1. Escolha **Contador** (CPF, CRC/UF) ou **Escritório contábil** (CNPJ, CRC). O cadastro é único e reaproveitado entre empresas: se já existe, escolha na lista "Já cadastrado".
+A tela mostra **todos os contadores e escritórios vinculados** à empresa (nº, tipo, nome, CPF/CNPJ, CRC, início, fim, responsável técnico, assinatura e procuração). **Incluir**, **Alterar** ou duplo clique abrem a ficha numa janela; a janela de inclusão mostra um campo por linha, bem alinhado, e **Salvar** a fecha.
+
+1. Em **Incluir**, escolha **Contador** (CPF, CRC/UF) ou **Escritório contábil** (CNPJ, CRC): a ficha mostra só os campos do tipo escolhido. O cadastro é único e reaproveitado entre empresas: se já existe, escolha na lista "Já cadastrado".
 2. Informe o início do vínculo e contatos (e-mail e telefone são exigidos pela ECD).
 3. Marque **Responsável técnico** (apenas um vigente por empresa) e **Assina ECD/ECF** se for o signatário. Sem marcação, assina o responsável técnico. Quem assina como contador precisa ter o CRC informado.
 4. Se o contador também é procurador da empresa, preencha a seção **Procuração eletrônica** (veja abaixo).
@@ -151,7 +154,7 @@ No módulo Condomínio, o cadastro da empresa tem a aba **Síndico**: nome, CPF,
 ### Procuração eletrônica
 
 **Para que serve:** registrar que o contador é **procurador da empresa**: ele assina a ECD/ECF no lugar do responsável (qualificação 309 – Procurador) e pode transmitir o eSocial com o certificado dele. Não existe mais um cadastro separado de procuradores: o procurador é um contador da empresa.
-**Onde fica:** *Cadastros › Contadores*, seção **Procuração eletrônica**, ao **Incluir** o contador ou ao **Alterar** o vínculo dele.
+**Onde fica:** *Cadastros › Contadores*, seção **Procuração eletrônica** da ficha, ao **Incluir** o contador ou ao **Alterar** o vínculo dele.
 
 1. Marque **É procurador da empresa**.
 2. Informe a vigência: **desde** (obrigatório) e **até** (deixe em branco se o prazo é indeterminado).

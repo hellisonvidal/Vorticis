@@ -13,8 +13,8 @@
 
 ### Obrigações personalizadas
 Para incluir obrigações municipais, estaduais ou próprias:
-1. Em *Obrigações personalizadas*, clique em **Nova**.
+1. Clique em **Obrigações personalizadas** (acima da lista): a ficha abre numa janela por cima do calendário.
 2. Informe o **nome** (ex.: ISS - Prefeitura), o **órgão**, o **dia** do vencimento (ou o nº do dia útil), quantos **meses após a competência** vence, e, se for anual, o mês e os **anos após o ano-calendário**.
-3. **Salvar**. Para alterar, selecione na lista; **Excluir** remove.
+3. **Salvar** (a janela fecha). Para alterar, abra a janela de novo e escolha a obrigação em *Selecione para editar*; **Nova** limpa os campos e **Excluir** remove.
 
 **Dicas:** os vencimentos que caem em fim de semana ou feriado seguem a regra de cada obrigação; confira sempre no órgão responsável. Quem só consulta (perfil sem permissão) vê o calendário, mas não marca como cumprida.

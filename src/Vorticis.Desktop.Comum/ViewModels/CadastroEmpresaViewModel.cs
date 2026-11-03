@@ -33,6 +33,12 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 {
     private DadosCnpj? _consultado;
 
+    /// <summary>
+    /// Na aba Dados cadastrais a tela mostra as empresas e a ficha abre numa janela por cima; nas outras abas (Contabilidade, Síndico)
+    /// os formulários continuam na própria aba.
+    /// </summary>
+    protected override bool FichaEmJanela => AbaSelecionada == 0;
+
     public static IReadOnlyList<RegimeTributario> Regimes { get; } = Enum.GetValues<RegimeTributario>();
 
     public MainViewModelBase Main => main;
@@ -62,7 +68,11 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
 
     public string EmpresaSelecionadaRotulo => main.EmpresaSelecionada is { } e ? $"Empresa: {e.RazaoSocial}" : "";
 
-    partial void OnAbaSelecionadaChanged(int value) => main.CarregarAbaEmpresa();
+    partial void OnAbaSelecionadaChanged(int value)
+    {
+        AbrirFichaCommand.NotifyCanExecuteChanged();
+        main.CarregarAbaEmpresa();
+    }
 
     public void AoTrocarEmpresa()
     {

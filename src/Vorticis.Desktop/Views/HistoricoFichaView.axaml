@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Views"
+             xmlns:dom="using:Vorticis.Domain.Contabil"
+             x:Class="Vorticis.Desktop.Views.HistoricoFichaView"
+             x:DataType="vm:HistoricosViewModel">
+  <!-- Ficha do histórico padrão (janela aberta pela tela Históricos padrão) -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+      <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+        <TextBlock Classes="rotulo" Text="Código" />
+        <TextBox Grid.Column="1" Text="{Binding Codigo}" Width="90" HorizontalAlignment="Left" IsEnabled="{Binding EmInclusao}" />
+        <TextBlock Grid.Row="1" Classes="rotulo" Text="Texto fixo" />
+        <TextBox Grid.Row="1" Grid.Column="1" Name="TextoHistorico" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" TextWrapping="Wrap"
+                 Watermark="ex.: Pagamento da NF {DOCUMENTO} de {PARTICIPANTE}" MinHeight="70" AcceptsReturn="False" />
+      </Grid>
+      <TextBlock Text="Variáveis de preenchimento automático" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" Margin="0,6,0,0" />
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="No lançamento, ao escolher o histórico, cada variável é trocada pelos dados da linha. As que não puderem ser resolvidas ficam {entre chaves} para você completar. Clique para inserir no texto (em edição)." />
+      <ItemsControl ItemsSource="{Binding Variaveis}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="dom:VariavelHistorico">
+            <Button Content="{Binding Marcador}" Tag="{Binding Marcador}" ToolTip.Tip="{Binding Descricao}" Click="AoInserirVariavel"
+                    IsEnabled="{Binding $parent[UserControl].((vm:HistoricosViewModel)DataContext).EmEdicao}"
+                    Margin="0,0,4,4" Padding="6,2" FontFamily="Consolas, Menlo, monospace" FontSize="11.5" Focusable="False" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

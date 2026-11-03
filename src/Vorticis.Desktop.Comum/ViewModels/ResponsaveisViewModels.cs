@@ -27,6 +27,9 @@ public sealed record VinculoContabilLinha(VinculoContabil Vinculo)
 /// <summary>Cadastros › Contadores (contador responsável e escritório contábil) da empresa selecionada; também é a aba Contadores de Cadastros › Empresas.</summary>
 public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     /// <summary>Na inclusão: vincular um contador (true) ou um escritório contábil (false).</summary>
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IncluindoContador), nameof(IncluindoEscritorio))] private bool _incluirContador = true;
 
@@ -144,7 +147,8 @@ public partial class ContabilidadeEmpresaViewModel(IContexto contexto) : Cadastr
     public ObservableCollection<EscritorioContabil> EscritoriosCadastrados { get; } = [];
     public static IReadOnlyList<string> Ufs { get; } = Uf.Todas.Order().ToArray();
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private VinculoContabilLinha? _selecionado;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado), nameof(DescricaoVinculo))] private VinculoContabilLinha? _selecionado;
+    public string DescricaoVinculo => Selecionado is { } s ? $"{s.Tipo}: {s.Nome}" : "";
 
     // contador
     [ObservableProperty] private Contador? _contadorExistente;
@@ -282,6 +286,9 @@ public sealed record OpcaoTipoPessoa(char Codigo, string Nome)
 /// <summary>Cadastros › Empresas, aba Sócios: sócios da empresa selecionada (Incluir / Alterar / Excluir).</summary>
 public partial class SociosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<SocioLinha> Lista { get; } = [];
     public static IReadOnlyList<string> Qualificacoes { get; } =
         ["Sócio-Administrador", "Sócio", "Administrador", "Titular", "Diretor", "Presidente", "Procurador", "Sócio Comanditário"];

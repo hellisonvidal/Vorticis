@@ -53,6 +53,8 @@ O cadastro é o mesmo do Fiscal (*Cadastros › Centros de custo* nos dois módu
 
 **Onde fica:** *Cadastros › Centros de custo*. Só é usado se a empresa ligou "Usar centros de custo" (aba Contabilidade); a máscara também é definida lá.
 
+A tela mostra a **lista dos centros de custo**; a ficha abre numa janela por cima (**Incluir**, **Alterar**, duplo clique ou **Enter**).
+
 1. **Incluir**: código (obrigatório nos níveis 2 ou mais, conforme a máscara), descrição e superior.
 2. Marque **Sintético** para grupos que não recebem lançamentos. **Ativo** controla o uso.
 
@@ -61,7 +63,9 @@ O cadastro é o mesmo do Fiscal (*Cadastros › Centros de custo* nos dois módu
 **Para que serve:** textos prontos para os lançamentos.
 **Onde fica:** *Cadastros › Históricos*.
 
-1. **Incluir**; o código é sequencial. Digite o texto fixo, por exemplo `Pagamento da NF {DOCUMENTO} de {PARTICIPANTE}`.
+A tela mostra a lista dos históricos (com filtro por código ou texto); a ficha abre numa janela por cima.
+
+1. **Incluir** (ou **Alterar**, ou duplo clique no histórico); o código é sequencial. Digite o texto fixo, por exemplo `Pagamento da NF {DOCUMENTO} de {PARTICIPANTE}`, e clique nas variáveis para inseri-las. **Salvar** fecha a janela.
 2. No lançamento, digite o código do histórico: o texto entra e o cursor vai para o fim, para completar com o complemento livre.
 
 **Variáveis disponíveis:** `{DOCUMENTO}`, `{PARTICIPANTE}`, `{DATA}`, `{MES}`, `{ANO}`, `{MES_ANTERIOR}`, `{COMPETENCIA}`, `{CONTA}`, `{VALOR}` e `{COMPLEMENTO}`. As que o sistema não consegue resolver ficam para você completar.
@@ -277,17 +281,17 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 ## Imobilizado
 
 ### Regras de depreciação (grupos)
-**Onde fica:** *Imobilizado › Regras de depreciação (grupos)*. Já vêm cadastradas as taxas fiscais da RFB (edificações 4%, máquinas e móveis 10%, veículos de passageiros e computadores 20%, veículos de carga 25%, software 20%; terrenos não depreciam) com contas sugeridas. Edite taxa, vida útil, contas e marque *Deprecia* / *Intangível (amortização)*, ou crie novos grupos.
+**Onde fica:** *Imobilizado › Regras de depreciação (grupos)*. A tela mostra só a **lista das regras já cadastradas**; para incluir ou alterar, use **Incluir**, **Alterar**, duplo clique na linha ou **Enter**: a ficha da regra abre numa janela por cima da lista e **Salvar** a fecha (**Cancelar**, **Esc** ou o **X** fecham sem gravar). Já vêm cadastradas as taxas fiscais da RFB (edificações 4%, máquinas e móveis 10%, veículos de passageiros e computadores 20%, veículos de carga 25%, software 20%; terrenos não depreciam) com contas sugeridas. Edite taxa, vida útil, contas e marque *Deprecia* / *Intangível (amortização)*, ou crie novos grupos.
 
 ### Cadastro de bens
-**Onde fica:** *Imobilizado › Cadastro de bens*.
+**Onde fica:** *Imobilizado › Cadastro de bens*. A tela mostra a lista dos bens (com filtro por código, descrição ou plaqueta); a ficha do bem abre numa janela por cima (**Incluir**, **Alterar**, duplo clique ou **Enter**).
 1. **Incluir** e escolha o **grupo** (traz taxa e contas).
 2. Informe plaqueta, local, nota fiscal e fornecedor, datas de aquisição e de início de uso.
 3. Informe **custo**, **valor residual**, **vida útil (meses)** e **método** (linear ou soma dos dígitos), conforme o CPC 27.
 4. **Turnos de uso**: 2 turnos acelera a depreciação fiscal em 1,5; 3 turnos em 2,0.
    - **Depreciar a partir da data de aquisição, proporcional aos dias** (opcional): a depreciação começa no dia da aquisição, e não no mês do início de uso. No primeiro mês entram só os dias desde a aquisição (inclusive). Exemplo: bem comprado em 21/04, quota de R$ 1.000,00 → em abril deprecia 10 de 30 dias = R$ 333,33. A parte que faltou é lançada no mês seguinte ao fim da vida útil. Na baixa, o mês da baixa deprecia os dias até a véspera. Sem a opção, vale a regra normal: quota cheia a partir do mês do início de uso, e o mês da baixa não deprecia.
 5. Se o bem já vinha depreciado, preencha **Já depreciado** (depreciação acumulada antes do Vorticis).
-6. Confirme as contas do bem, da depreciação acumulada e da despesa. **Salvar**.
+6. Confirme as contas do bem, da depreciação acumulada e da despesa. **Salvar** (a janela fecha).
 7. Para dar baixa: informe a **data** e o **motivo** (venda, perda, doação...).
 
 **Bem que vem de uma nota fiscal:** quando o Cadastro de bens abre sozinho a partir de uma nota de compra (veja [Bens a cadastrar das notas](#bens-a-cadastrar-das-notas)), aparece uma faixa azul no alto e o bem já vem preenchido: descrição, valor, data da nota, início do uso (data de entrada), nota fiscal/série, fornecedor e, quando o sistema reconhece o tipo de bem, o **grupo** com a vida útil e as contas. Confira, escolha o grupo se estiver em branco e clique em **Salvar**: o bem fica ligado ao item da nota e o sistema abre o próximo item, se houver. **Cancelar** deixa o item esperando na lista *Bens a cadastrar das notas*.

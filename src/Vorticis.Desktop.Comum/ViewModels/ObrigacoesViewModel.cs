@@ -217,6 +217,18 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
         if (r.Sucesso) { await CarregarAsync(); main.Inicio.Atualizar(); }
     }, Permissao.ObrigacoesManter);
 
+    public override string TituloFicha => "Obrigações personalizadas";
+
+    protected override void AoDescartarFicha() => NovaPersonalizada();
+
+    /// <summary>Abre a janela das obrigações personalizadas (escolher uma para alterar ou incluir uma nova).</summary>
+    [RelayCommand]
+    private void AbrirPersonalizadas()
+    {
+        NovaPersonalizada();
+        AbrirFichaNova();
+    }
+
     [RelayCommand]
     private void NovaPersonalizada()
     {
@@ -233,7 +245,7 @@ public partial class ObrigacoesViewModel(MainViewModelBase main) : RelatorioView
             PObservacao);
         var r = await app.Obrigacoes.SalvarPersonalizadaAsync(usuario, empresa, o);
         MostrarResultado(r, "Obrigação personalizada salva.");
-        if (r.Sucesso) { PId = r.Valor; PersonalizadaSelecionada = null; await CarregarAsync(); PersonalizadaSelecionada = Personalizadas.FirstOrDefault(x => x.Id == r.Valor); }
+        if (r.Sucesso) { PId = r.Valor; PersonalizadaSelecionada = null; await CarregarAsync(); PersonalizadaSelecionada = Personalizadas.FirstOrDefault(x => x.Id == r.Valor); FichaAberta = false; }
     }, Permissao.ObrigacoesManter);
 
     [RelayCommand]

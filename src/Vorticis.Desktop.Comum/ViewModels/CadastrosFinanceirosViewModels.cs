@@ -12,6 +12,9 @@ public sealed record OpcaoMeio(MeioPagamento Meio, string Texto);
 /// <summary>Cadastros › Contas bancárias (Contábil, Fiscal e ERP): banco, agência, conta e a conta contábil do banco.</summary>
 public partial class ContasBancariasViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<ContaBancaria> Lista { get; } = [];
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionado))] private ContaBancaria? _selecionado;
@@ -111,6 +114,9 @@ public sealed record FormaPagamentoLinha(FormaPagamento Forma, string Conta)
 /// </summary>
 public partial class FormasPagamentoViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<FormaPagamentoLinha> Lista { get; } = [];
     public ObservableCollection<OpcaoContaBancaria> Contas { get; } = [new(null, "(nenhuma)")];
     public IReadOnlyList<OpcaoMeio> Meios { get; } = FormaPagamento.Meios.Select(m => new OpcaoMeio(m.Meio, m.Texto)).ToList();
