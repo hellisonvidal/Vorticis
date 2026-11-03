@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             xmlns:cad="using:Vorticis.Folha.Cadastros"
+             x:Class="Vorticis.Folha.Desktop.Views.EventoVariavelFichaView"
+             x:DataType="vm:EventosVariaveisViewModel">
+  <!-- Ficha do lançamento de evento variável (janela aberta pela tela Eventos variáveis) -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding LancarCommand}" SalvarTexto="Lançar" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <TextBlock Text="{Binding Situacao}" Foreground="{DynamicResource TxSutil}" />
+        <WrapPanel Orientation="Horizontal" IsEnabled="{Binding PodeLancar}">
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Funcionário" FontSize="11" />
+            <ComboBox ItemsSource="{Binding Funcionarios}" SelectedItem="{Binding Funcionario}" Width="240">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Funcionario"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Rubrica" FontSize="11" />
+            <ComboBox ItemsSource="{Binding Rubricas}" SelectedItem="{Binding Rubrica}" Width="280">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Rubrica"><TextBlock Text="{Binding Descricao}" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2" IsVisible="{Binding PorReferencia}"><TextBlock Text="{Binding RotuloQuantidade}" FontSize="11" />
+            <TextBox Text="{Binding Referencia}" Width="90" /></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2" IsVisible="{Binding !PorReferencia}"><TextBlock Text="Valor (R$)" FontSize="11" />
+            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" /></StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Observação" FontSize="11" />
+            <TextBox Text="{Binding Observacao}" Width="220" /></StackPanel>
+        </WrapPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

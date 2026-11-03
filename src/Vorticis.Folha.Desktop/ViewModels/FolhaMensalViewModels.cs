@@ -19,8 +19,14 @@ public sealed record EventoLinha(EventoVariavel E)
 }
 
 /// <summary>Folha › Folha › Eventos variáveis: horas extras 50%/100%, faltas, adicional noturno, comissões, adiantamentos e outros.</summary>
-public partial class EventosVariaveisViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class EventosVariaveisViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => "Lançar evento variável";
+    protected override bool HaRegistroParaAbrir => false;
+    protected override string AvisoSelecione => "Selecione o evento na lista.";
+    protected override void AoDescartarFicha() { Referencia = Valor = Observacao = ""; }
+
     public ObservableCollection<EventoLinha> Eventos { get; } = [];
     public ObservableCollection<Funcionario> Funcionarios { get; } = [];
     public ObservableCollection<Rubrica> Rubricas { get; } = [];
@@ -62,6 +68,10 @@ public partial class EventosVariaveisViewModel(IContexto contexto) : ModuloViewM
         Situacao = status.Fechada ? $"Competência {competencia:MM/yyyy} FECHADA: reabra-a para lançar eventos." : $"Competência {competencia:MM/yyyy} aberta.";
     }
 
+    /// <summary>Abre a janela do novo lançamento.</summary>
+    [RelayCommand]
+    private void NovoLancamento() => AbrirFichaNova();
+
     [RelayCommand]
     private Task LancarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
@@ -73,6 +83,7 @@ public partial class EventosVariaveisViewModel(IContexto contexto) : ModuloViewM
         Referencia = Valor = Observacao = "";
         await CarregarAsync();
         Mensagem = "Evento lançado. Recalcule a folha mensal para considerá-lo.";
+        FichaAberta = false;
     }, Permissao.FolhaEventosLancar);
 
     [RelayCommand]

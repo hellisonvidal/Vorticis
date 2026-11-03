@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.DepartamentoFichaView"
+             x:DataType="vm:DepartamentosViewModel">
+  <!-- Ficha do departamento (lotação), aberta em janela pela tela Departamentos -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Margin="0,0,16,8" Spacing="6">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <TextBlock Text="Departamento" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+        <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" IsEnabled="{Binding EmEdicao}" MaxLength="20" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Nome" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Nome}" IsEnabled="{Binding EmEdicao}" />
+          <CheckBox Grid.Row="2" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" IsEnabled="{Binding EmEdicao}" />
+        </Grid>
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                   Text="O código vira a lotação tributária do eSocial (S-1020). Funcionários sem departamento usam a lotação GERAL." />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

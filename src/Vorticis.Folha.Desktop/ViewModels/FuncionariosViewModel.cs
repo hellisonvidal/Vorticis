@@ -42,6 +42,9 @@ public partial class DependenteEdicao : ObservableObject
 /// <summary>Folha › Funcionários › Cadastro de funcionários: dados pessoais, vínculo, jornada, centro de custo, banco e dependentes.</summary>
 public partial class FuncionariosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public static IReadOnlyList<Opcao> Sexos { get; } = [new("M", "Masculino"), new("F", "Feminino")];
     public static IReadOnlyList<Opcao> Racas { get; } =
         [new("1", "1 – Branca"), new("2", "2 – Preta"), new("3", "3 – Parda"), new("4", "4 – Amarela"), new("5", "5 – Indígena"), new("6", "6 – Não informado")];

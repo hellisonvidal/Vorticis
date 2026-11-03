@@ -111,8 +111,14 @@ public sealed record EventoContabilLinha(Vorticis.Folha.EventoContabil E)
 }
 
 /// <summary>Cadastros › Contábeis › Eventos contábeis: agrupa rubricas (e códigos ENC_*, PROV_*) em eventos; cada evento vira um lançamento na contabilização por eventos.</summary>
-public partial class EventosContabeisViewModel(IContexto contexto) : ModuloViewModel(contexto)
+public partial class EventosContabeisViewModel(IContexto contexto) : ModuloComFichaViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    public override string TituloFicha => Selecionado is { } s ? $"Evento contábil: {s.Codigo}" : "Novo evento contábil";
+    protected override bool HaRegistroParaAbrir => Selecionado is not null;
+    protected override string AvisoSelecione => "Selecione o evento na lista.";
+    protected override void AoDescartarFicha() { if (Selecionado is { } s) OnSelecionadoChanged(s); else LimparFormulario(); }
+
     public ObservableCollection<EventoContabilLinha> Eventos { get; } = [];
     [ObservableProperty] private EventoContabilLinha? _selecionado;
     [ObservableProperty] private string _codigo = "";
@@ -145,7 +151,9 @@ public partial class EventosContabeisViewModel(IContexto contexto) : ModuloViewM
     }
 
     [RelayCommand]
-    private void Novo() { Selecionado = null; (Codigo, Descricao, Rubricas) = ("", "", ""); }
+    private void Novo() { LimparFormulario(); AbrirFichaNova(); }
+
+    private void LimparFormulario() { Selecionado = null; (Codigo, Descricao, Rubricas) = ("", "", ""); }
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -155,6 +163,7 @@ public partial class EventosContabeisViewModel(IContexto contexto) : ModuloViewM
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = "Evento gravado.";
+        FichaAberta = false;
     }, Permissao.FolhaParametrosManter);
 
     [RelayCommand]
@@ -163,7 +172,7 @@ public partial class EventosContabeisViewModel(IContexto contexto) : ModuloViewM
         if (Selecionado is null) { Erros.Add("Selecione um evento."); return; }
         var r = await app.Folha().Contabilizacao.ExcluirEventoContabilAsync(empresa, Selecionado.E.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Novo();
+        LimparFormulario();
         await CarregarAsync();
         Mensagem = "Evento excluído. As rubricas dele voltam a formar eventos próprios.";
     }, Permissao.FolhaParametrosManter);

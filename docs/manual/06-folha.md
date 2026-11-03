@@ -51,18 +51,20 @@ O menu *Cadastros* da Folha reúne:
 
 ## Cargos
 
-*Cadastros › Funcionários › Cargos*: **Incluir**, código, nome do cargo, **CBO** (6 dígitos, ex.: 252105) e situação.
+*Cadastros › Funcionários › Cargos*: a tela mostra a lista dos cargos e a ficha abre numa janela (**Incluir**, **Alterar**, duplo clique ou **Enter**; **Salvar** fecha a janela). Informe código, nome do cargo, **CBO** (6 dígitos, ex.: 252105) e situação.
 
 ## Departamentos (lotações)
 
-*Cadastros › Funcionários › Departamentos*: **Incluir**, código e nome. Viram as lotações do eSocial.
+*Cadastros › Funcionários › Departamentos*: a tela mostra a lista e a ficha abre numa janela (**Incluir**, **Alterar**, duplo clique ou **Enter**). Informe código e nome. Viram as lotações do eSocial.
 
 ## Rubricas (eventos)
 
 **Para que serve:** os códigos de proventos, descontos e informativas que compõem o holerite.
 **Onde fica:** *Cadastros › Funcionários › Rubricas (eventos)*.
 
-1. **Incluir** código, descrição, tipo (provento, desconto ou informativa) e a **natureza** da tabela 3 do eSocial (ex.: 1000).
+A tela mostra a lista das rubricas; a ficha abre numa janela.
+
+1. **Incluir** (ou **Alterar**, ou duplo clique) código, descrição, tipo (provento, desconto ou informativa) e a **natureza** da tabela 3 do eSocial (ex.: 1000).
 2. Marque as **incidências**: INSS, IRRF e FGTS.
 3. Marque **Variável** se entra nas médias de férias, 13º e rescisão. **Salvar**.
 
@@ -70,13 +72,15 @@ O menu *Cadastros* da Folha reúne:
 
 **Onde fica:** *Cadastros › Funcionários › Cadastro de funcionários*.
 
-1. **Incluir**. A matrícula vazia assume a próxima.
+A tela mostra a lista dos funcionários (com filtro por nome, matrícula ou CPF); a ficha, com as abas Pessoal, Contrato, Banco e Dependentes, abre numa janela por cima da lista.
+
+1. **Incluir** (ou **Alterar**, duplo clique ou **Enter** na lista). A matrícula vazia assume a próxima.
 2. **Pessoal**: nome, CPF e PIS/NIS (validados), nascimento, sexo, raça/cor, estado civil, contatos e endereço completo (o **tipo de logradouro** é exigido pelo eSocial: R, AV, TV...).
 3. **Contrato**: categoria eSocial, tipo de contrato (e término, se determinado), admissão, CBO, **CNPJ do sindicato**, cargo e departamento.
 4. **Salário**: tipo (mensal ou horista), valor, jornada (horas semanais e mensais; o divisor do valor-hora), centro de custo e insalubridade/periculosidade.
 5. **Banco**: banco (COMPE), agência, conta, tipo e chave PIX.
 6. **Dependentes**: **Adicionar dependente** (nascimento, parentesco, marque *Deduz IRRF*, *Salário-família*, *Incapaz*).
-7. **Salvar**.
+7. **Salvar** (a janela fecha).
 
 **Regras:** alterar salário ou cargo grava o histórico contratual (evento S-2206). O desligamento é feito em *Rescisões*, não neste cadastro.
 
@@ -85,9 +89,11 @@ O menu *Cadastros* da Folha reúne:
 **Para que serve:** lançar o que muda todo mês antes de calcular a folha (horas extras, faltas, comissões, adiantamentos, vale-transporte, pensão alimentícia etc.).
 **Onde fica:** *Cálculos › Folha › Eventos variáveis* (**Ctrl+E**).
 
-1. Escolha a **competência** e o **funcionário**.
-2. Escolha a **rubrica**, informe a **quantidade** (horas, dias) ou o **valor** e uma observação.
-3. **Lançar**. Para corrigir, selecione e **Excluir selecionado**.
+A tela mostra os eventos já lançados na competência.
+
+1. Escolha a **competência** e clique em **Novo lançamento**: a ficha abre numa janela por cima da lista.
+2. Escolha o **funcionário** e a **rubrica**, informe a **quantidade** (horas, dias) ou o **valor** e uma observação.
+3. **Lançar** grava e fecha a janela (**Cancelar**, **Esc** ou o **X** fecham sem gravar). Para corrigir, selecione na lista e **Excluir selecionado**.
 
 ## Cálculo da folha mensal
 
@@ -164,7 +170,7 @@ Em vez de um lançamento só para a competência, a folha gera **um lançamento 
 **Eventos contábeis (opcional)**
 
 1. Abra *Eventos contábeis*. Cada rubrica sem evento forma um evento próprio, com o nome da rubrica.
-2. Para juntar rubricas num só lançamento, clique em **Novo**, informe o **Código** (ex.: SAL), a **Descrição** (ela vai no histórico, ex.: *Salários*) e as **Rubricas** que somam nele, separadas por vírgula (ex.: `1000, 1001, 1002`; também vale `ENC_FGTS`, `PROV_13` etc.). Clique em **Gravar evento**.
+2. Para juntar rubricas num só lançamento, clique em **Novo** (a ficha do evento abre numa janela por cima da lista; **Abrir ficha** ou duplo clique alteram o selecionado), informe o **Código** (ex.: SAL), a **Descrição** (ela vai no histórico, ex.: *Salários*) e as **Rubricas** que somam nele, separadas por vírgula (ex.: `1000, 1001, 1002`; também vale `ENC_FGTS`, `PROV_13` etc.). Clique em **Gravar evento**.
 3. Uma rubrica só pode somar em um evento. **Excluir** devolve as rubricas ao seu evento próprio.
 
 **Contabilizar**

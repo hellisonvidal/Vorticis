@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.EventoContabilFichaView"
+             x:DataType="vm:EventosContabeisViewModel">
+  <!-- Ficha do evento contábil (janela aberta pela tela Eventos contábeis) -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar evento" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="6" Margin="0,0,16,8" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Text="Evento" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+        <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" MaxLength="30" Watermark="Ex.: SAL" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" Watermark="Ex.: Salários (vai no histórico)" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Rubricas" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Rubricas}" AcceptsReturn="True" Height="90" TextWrapping="Wrap" Watermark="Códigos separados por vírgula" />
+        </Grid>
+      
+        <TextBlock Text="{Binding Disponiveis}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Uma rubrica soma em um único evento. Rubricas que não estiverem em nenhum evento formam um evento próprio, com o nome da rubrica. As contas vêm das regras de Cálculos › Folha › Contabilização." />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

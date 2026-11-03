@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.CargoFichaView"
+             x:DataType="vm:CargosViewModel">
+  <!-- Ficha do cargo, aberta em janela pela tela Cargos -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Margin="0,0,16,8" Spacing="6">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <TextBlock Text="Cargo" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+        <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" IsEnabled="{Binding EmEdicao}" MaxLength="20" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Cargo" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Nome}" IsEnabled="{Binding EmEdicao}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="CBO" />
+          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Cbo}" IsEnabled="{Binding EmEdicao}" MaxLength="7" Watermark="6 dígitos (ex.: 252105)" />
+          <CheckBox Grid.Row="3" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" IsEnabled="{Binding EmEdicao}" />
+        </Grid>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

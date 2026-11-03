@@ -64,6 +64,9 @@ public sealed record DepartamentoLinha(Departamento D)
 /// <summary>Folha › Funcionários › Departamentos (lotações do eSocial).</summary>
 public partial class DepartamentosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<DepartamentoLinha> Lista { get; } = [];
 
     [ObservableProperty] private DepartamentoLinha? _selecionado;
@@ -151,6 +154,9 @@ public sealed record CargoLinha(Cargo C)
 /// <summary>Folha › Funcionários › Cargos (com o CBO usado no eSocial).</summary>
 public partial class CargosViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public ObservableCollection<CargoLinha> Lista { get; } = [];
 
     [ObservableProperty] private CargoLinha? _selecionado;
@@ -241,6 +247,9 @@ public sealed record RubricaLinha(Rubrica R)
 /// <summary>Folha › Funcionários › Rubricas (eventos): proventos, descontos e informativas, com incidências e natureza do eSocial.</summary>
 public partial class RubricasViewModel(IContexto contexto) : CadastroViewModel(contexto)
 {
+    /// <summary>A tela mostra a lista; a ficha do registro abre numa janela por cima.</summary>
+    protected override bool FichaEmJanela => true;
+
     public static IReadOnlyList<Opcao> Tipos { get; } = [new("P", "Provento"), new("D", "Desconto"), new("I", "Informativa")];
     public static IReadOnlyList<Opcao> IncidenciasInss { get; } =
         [new("00", "00 – Não é base de cálculo"), new("11", "11 – Base de cálculo mensal"), new("12", "12 – Base de cálculo do 13º"),

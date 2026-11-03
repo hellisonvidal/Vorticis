@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.RubricaFichaView"
+             x:DataType="vm:RubricasViewModel">
+  <!-- Ficha da rubrica, aberta em janela pela tela Rubricas -->
+  <DockPanel>
+    <c:RodapeFichaView DockPanel.Dock="Bottom" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Margin="0,0,16,8" Spacing="6">
+        <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
+        <TextBlock Text="Rubrica" FontWeight="SemiBold" Foreground="{DynamicResource TxTitulo}" />
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+          <TextBlock Classes="rotulo" Text="Código" />
+          <TextBox Grid.Column="1" Text="{Binding Codigo}" IsEnabled="{Binding EmInclusao}" MaxLength="10" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Descrição" />
+          <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" IsEnabled="{Binding EmEdicao}" />
+          <TextBlock Grid.Row="2" Classes="rotulo" Text="Tipo" />
+          <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{x:Static vm:RubricasViewModel.Tipos}" SelectedItem="{Binding Tipo}" IsEnabled="{Binding EmInclusao}" HorizontalAlignment="Stretch" />
+          <TextBlock Grid.Row="3" Classes="rotulo" Text="Natureza eSocial" />
+          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Natureza}" IsEnabled="{Binding EmEdicao}" MaxLength="4" Watermark="Tabela 03 (ex.: 1000)" />
+          <TextBlock Grid.Row="4" Classes="rotulo" Text="INSS" />
+          <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{x:Static vm:RubricasViewModel.IncidenciasInss}" SelectedItem="{Binding IncInss}" IsEnabled="{Binding EmEdicao}" HorizontalAlignment="Stretch" />
+          <TextBlock Grid.Row="5" Classes="rotulo" Text="IRRF" />
+          <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static vm:RubricasViewModel.IncidenciasIrrf}" SelectedItem="{Binding IncIrrf}" IsEnabled="{Binding EmEdicao}" HorizontalAlignment="Stretch" />
+          <TextBlock Grid.Row="6" Classes="rotulo" Text="FGTS" />
+          <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{x:Static vm:RubricasViewModel.IncidenciasFgts}" SelectedItem="{Binding IncFgts}" IsEnabled="{Binding EmEdicao}" HorizontalAlignment="Stretch" />
+          <StackPanel Grid.Row="7" Grid.Column="1" Spacing="2">
+            <CheckBox Content="Variável (entra nas médias de férias, 13º e rescisão)" IsChecked="{Binding Variavel}" IsEnabled="{Binding EmEdicao}" />
+            <CheckBox Content="Ativa" IsChecked="{Binding Ativa}" IsEnabled="{Binding EmEdicao}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Rubricas padrão (cálculo automático) mantêm o código e o tipo; ajuste as incidências conforme o caso. Descontos com a mesma incidência de uma base (ex.: faltas com INSS 11) reduzem essa base." />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>
