@@ -101,6 +101,8 @@ public static class Icones
     public static Geometry PinOutline => G("PinOutline");
     public static Geometry FileDelimitedOutline => G("FileDelimitedOutline");
     public static Geometry Download => G("Download");
+    public static Geometry DatabaseArrowDownOutline => G("DatabaseArrowDownOutline");
+    public static Geometry FileArrowLeftRightOutline => G("FileArrowLeftRightOutline");
     public static Geometry AccountArrowRightOutline => G("AccountArrowRightOutline");
     public static Geometry AccountBoxMultipleOutline => G("AccountBoxMultipleOutline");
     public static Geometry AccountCashOutline => G("AccountCashOutline");
@@ -541,5 +543,7 @@ public static class Icones
         ["ViewDashboardOutline"] = "M19,5V7H15V5H19M9,5V11H5V5H9M19,13V19H15V13H19M9,17V19H5V17H9M21,3H13V9H21V3M11,3H3V13H11V3M21,11H13V21H21V11M11,15H3V21H11V15Z",
         ["Warehouse"] = "M6 19H8V21H6V19M12 3L2 8V21H4V13H20V21H22V8L12 3M8 11H4V9H8V11M14 11H10V9H14V11M20 11H16V9H20V11M6 15H8V17H6V15M10 15H12V17H10V15M10 19H12V21H10V19M14 19H16V21H14V19Z",
         ["Xml"] = "M12.89,3L14.85,3.4L11.11,21L9.15,20.6L12.89,3M19.59,12L16,8.41V5.58L22.42,12L16,18.41V15.58L19.59,12M1.58,12L8,5.58V8.41L4.41,12L8,15.58V18.41L1.58,12Z",
+        ["DatabaseArrowDownOutline"] = "M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 20L19 23L16 20H18V16H20V20H22Z",
+        ["FileArrowLeftRightOutline"] = "M13.09 20C13.21 20.72 13.46 21.39 13.81 22H6C4.89 22 4 21.11 4 20V4C4 2.9 4.89 2 6 2H14L20 8V13.09C19.67 13.04 19.34 13 19 13C18.66 13 18.33 13.04 18 13.09V9H13V4H6V20H13.09M23 17L20 14.5V16H16V18H20V19.5L23 17M18 18.5L15 21L18 23.5V22H22V20H18V18.5Z",
     };
 }

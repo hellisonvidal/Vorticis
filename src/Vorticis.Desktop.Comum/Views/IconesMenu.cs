@@ -59,6 +59,8 @@ public static class IconesMenu
         ["importarplanilhas"] = "FileExcelOutline",
         ["importarextratos"] = "BankTransferIn",
         ["importarplano"] = "FileDownloadOutline",
+        ["importarsped"] = "DatabaseArrowDownOutline",
+        ["importarspedefd"] = "FileArrowLeftRightOutline",
         ["importacaoreferencial"] = "DatabaseImportOutline",
         ["mapeamentoreferencial"] = "LinkVariant",
         ["exportarlancamentos"] = "FileExportOutline",

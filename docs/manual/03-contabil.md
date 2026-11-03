@@ -177,6 +177,20 @@ Todas ficam em *Integrações › Importar*. Em todas, **Pré-visualizar** valid
 ### Lançamentos contábeis (layout padrão)
 Use **Gerar planilha modelo (.xlsx)**, preencha (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), escolha o arquivo, **Pré-visualizar** e **Importar**.
 
+### Importar SPED (ECD e ECF)
+**Para que serve:** trazer para a empresa os dados de um arquivo SPED feito em outro sistema: a **ECD** (plano de contas, centros de custo, históricos, saldos e lançamentos) ou a **ECF** (e-Lalur/e-Lacs, Parte B, apurações do IRPJ e da CSLL e, se faltar, o plano de contas).
+**Onde fica:** *Integrações › Importar › Importar SPED (ECD e ECF)*.
+1. **1. Arquivo:** clique em **Procurar...** e escolha o arquivo .txt do SPED. O programa lê o arquivo na hora e mostra o **Tipo reconhecido**. Se o arquivo for da EFD (Fiscal), o aviso diz em qual módulo importar. O botão **Conferir arquivo** lê de novo.
+2. **2. O que importar:** escolha a forma de importar (por exemplo, tudo, só o plano de contas e os saldos, ou só o plano). A explicação aparece logo abaixo. Marque as opções que quiser:
+   - *Substituir o plano de contas atual pelo do arquivo*: só vale antes do primeiro lançamento. Desmarcado, o que já existe é mantido e o que for igual no arquivo é ignorado.
+   - *Ajustar os códigos das contas à máscara do plano da empresa*.
+   - *Cadastrar os signatários do arquivo* (ECD).
+   - *Ignorar o que tiver erro e importar o restante*: sem esta opção, qualquer erro nos lançamentos impede a importação, e nada é gravado.
+3. **Aba Prévia** (nada é gravado ainda): mostra o período, a empresa do arquivo, e para cada tipo de informação quantos registros são **novos**, quantos **já existem** (serão ignorados) e quantos têm **conflito**, com exemplos. Mais abaixo vêm os erros, avisos e informações, com a linha do arquivo. Se o CNPJ do arquivo não for o da empresa ativa, a importação é bloqueada: abra a empresa certa em *Cadastros*.
+4. **3. Importar:** clique em **Importar** e confirme. A barra mostra o andamento e **Cancelar importação** desfaz tudo o que foi feito até ali. Tudo é gravado numa só vez: se algo falhar, nada fica pela metade. O mesmo arquivo não pode ser importado duas vezes; para repetir, desfaça a importação anterior.
+5. **Aba Relatório:** mostra o que foi importado, o que já existia e o que teve erro. **Salvar relatório (CSV)** grava uma planilha que abre no Excel.
+6. **Aba Histórico de importações:** lista as importações feitas (data, arquivo, período, usuário). Selecione uma e clique em **Desfazer importação** para remover o que ela criou. Se algo já foi usado, contabilizado ou fechado, nada é removido e o programa explica o motivo.
+
 ### Plano referencial da RFB
 **Onde fica:** *Integrações › Importar › Plano referencial da RFB (tabela oficial)* (administrador).
 1. Escolha o **tipo de plano** (ex.: PJ em geral – Lucro Real) e o **ano**.

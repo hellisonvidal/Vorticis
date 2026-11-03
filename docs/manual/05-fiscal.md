@@ -117,6 +117,17 @@ Funciona como a [importação de XML em lote](#importacao-de-xml-nf-e-nfc-e-nfs-
 4. O CT-e entra nos livros de entradas e saídas, no resumo por CFOP, na contabilização (pelas regras de contabilização) e, na EFD ICMS/IPI, nos registros **D100 e D190** (ICMS destacado nos créditos e débitos da apuração). Eventos de cancelamento atualizam o CT-e.
 **Limitações:** a EFD-Contribuições ainda não traz o CT-e (registro D100 daquela escrituração).
 
+## Importar SPED (EFD ICMS/IPI e EFD-Contribuições)
+
+**Para que serve:** trazer os dados de uma escrituração feita em outro sistema: participantes, produtos, notas fiscais de entrada e saída (NF-e, NFC-e, NFS-e e CT-e), apuração e ajustes, inventário e o histórico de PIS e COFINS.
+**Onde fica:** *Integrações › Importar SPED (EFD ICMS/IPI e EFD-Contribuições)*.
+1. **1. Arquivo:** clique em **Procurar...** e escolha o arquivo .txt. O programa mostra o **Tipo reconhecido** (EFD ICMS/IPI ou EFD-Contribuições). Arquivos da ECD ou da ECF devem ser importados no módulo Contábil.
+2. **2. O que importar:** tudo, só cadastros e notas, ou só os cadastros. Marque *Ignorar o que tiver erro e importar o restante* se aceitar que as notas com problema fiquem de fora (elas aparecem no relatório).
+3. **Aba Prévia** (nada é gravado ainda): período, empresa do arquivo e, para cada tipo de registro, quantos são **novos**, quantos **já existem** (notas com a mesma chave, ou mesmo número, série e participante, não são duplicadas) e quantos têm **conflito**. Abaixo ficam os erros e avisos com a linha do arquivo. Se o CNPJ não for o da empresa ativa, a importação é bloqueada.
+4. **3. Importar:** clique em **Importar** e confirme. A barra mostra o andamento; **Cancelar importação** desfaz tudo. Tudo é gravado numa só vez. O mesmo arquivo não pode ser importado duas vezes.
+5. **Aba Relatório:** o que foi importado, o que já existia e o que teve erro; **Salvar relatório (CSV)** abre no Excel.
+6. **Aba Histórico de importações:** selecione uma importação e clique em **Desfazer importação** para remover o que ela criou. Notas já contabilizadas ou em período fechado impedem o desfazer, e o programa explica o motivo.
+
 ## Consulta de CT-e
 
 **Onde fica:** *Documentos fiscais › Consulta de CT-e*.

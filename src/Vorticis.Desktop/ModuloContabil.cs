@@ -64,6 +64,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Planilhas (layouts personalizados)", Telas.ImportarPlanilhas),
                 ItemMenu.Tela("Extratos bancários (OFX e PDF)", Telas.ImportarExtratos),
                 ItemMenu.Tela("Lançamentos contábeis (layout padrão)", Telas.ImportarLancamentos),
+                ItemMenu.Tela("Importar SPED (ECD e ECF)", Telas.ImportarSped),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Plano de contas (planilha Excel/CSV)", Telas.ImportarPlano),
                 ItemMenu.Tela("Plano referencial da RFB (tabela oficial)", Telas.ImportacaoReferencial),
@@ -223,6 +224,12 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.ImportarExtratos, "Integrações › Importar › Extratos bancários (OFX e PDF)", m => m.Pode(Permissao.LancamentoIncluir), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.ImportacaoLancamentos), m => new ImportacaoLancamentosPadraoViewModel(m))
             .Tela(Telas.ImportarLancamentos, "Integrações › Importar › Lançamentos contábeis", m => m.Pode(Permissao.LancamentoIncluir));
+        c.Instancia("ImportacaoSped", m => new Vorticis.Desktop.Comum.ViewModels.ImportacaoSpedViewModel(m, "Importar SPED (ECD e ECF)",
+                        "Aceita arquivos da ECD (SPED Contábil) e da ECF. Para a EFD ICMS/IPI e a EFD-Contribuições use o módulo Fiscal.",
+                        app => [app.ImportacaoEcd, app.ImportacaoEcf]),
+                    aoLimpar: v => v.Limpar(), aoTrocarEmpresa: (v, ativa) => { v.Limpar(); return ativa ? v.CarregarAsync() : Task.CompletedTask; })
+            .Tela(Telas.ImportarSped, "Integrações › Importar › Importar SPED (ECD e ECF)",
+                  m => m.Pode(Permissao.PlanoContasManter) || m.Pode(Permissao.SpedEcfGerar), v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.ImportacaoReferencial), m => new ImportacaoReferencialViewModel(m))
             .Tela(Telas.ImportacaoReferencial, "Integrações › Importar › Plano referencial da RFB",
                   m => m.Pode(Permissao.AdministrarSistema), v => v.CarregarAsync());

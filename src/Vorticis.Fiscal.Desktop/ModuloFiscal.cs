@@ -63,7 +63,8 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Separador,
             ItemMenu.Tela("Importar NFS-e", Telas.ImportacaoNfse),
             ItemMenu.Tela("Importar CT-e", Telas.ImportacaoCte),
-            ItemMenu.Tela("Importação de XML em lote (NF-e, NFC-e, NFS-e, CT-e)", Telas.ImportacaoXml)),
+            ItemMenu.Tela("Importação de XML em lote (NF-e, NFC-e, NFS-e, CT-e)", Telas.ImportacaoXml),
+            ItemMenu.Tela("Importar SPED (EFD ICMS/IPI e EFD-Contribuições)", Telas.ImportarSped)),
         ItemMenu.Submenu("_Apuração",
             ItemMenu.Tela("Simples Nacional (DAS)", Telas.Simples),
             ItemMenu.Tela("Lucro Presumido (IRPJ e CSLL)", Telas.Presumido),
@@ -146,6 +147,11 @@ public sealed class ModuloFiscal : IModuloDesktop
                 : []);
         c.Instancia("ImportacaoXml", m => new ImportacaoXmlViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ImportacaoXml, "Integrações › Importação de XML em lote", m => m.Pode(Permissao.FiscalDocumentosImportar));
+        c.Instancia("ImportacaoSped", m => new Vorticis.Desktop.Comum.ViewModels.ImportacaoSpedViewModel(m, "Importar SPED (EFD ICMS/IPI e EFD-Contribuições)",
+                        "Aceita arquivos da EFD ICMS/IPI e da EFD-Contribuições. Para a ECD e a ECF use o módulo Contábil.",
+                        app => [app.Fiscal().ImportacaoEfdIcms, app.Fiscal().ImportacaoEfdContribuicoes]),
+                    aoLimpar: v => v.Limpar(), aoTrocarEmpresa: (v, ativa) => { v.Limpar(); return ativa ? v.CarregarAsync() : Task.CompletedTask; })
+            .Tela(Telas.ImportarSped, "Integrações › Importar SPED (EFD ICMS/IPI e EFD-Contribuições)", m => m.Pode(Permissao.FiscalDocumentosImportar), v => v.CarregarAsync());
         c.Instancia("ImportacaoNfse", m => new ImportacaoNfseViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ImportacaoNfse, "Integrações › Importar NFS-e", m => m.Pode(Permissao.FiscalDocumentosImportar));
         c.Instancia("ImportacaoCte", m => new ImportacaoCteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

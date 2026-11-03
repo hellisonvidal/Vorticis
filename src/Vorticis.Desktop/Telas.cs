@@ -26,6 +26,7 @@ public static class Telas
     public const string ConsultaSaldos = "consultasaldos";
     public const string ConsultaLancamentos = "consultalancamentos";
     public const string ImportarPlano = "importarplano";
+    public const string ImportarSped = "importarsped";
     public const string Historicos = "historicos";
     public const string BloqueioLancamentos = "bloqueiolancamentos";
     public const string RelacaoBens = "relacaobens";

@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
+             xmlns:v="using:Vorticis.Desktop.Comum.Views"
+             xmlns:dom="using:Vorticis.Domain.Sped.Importacao"
+             x:Class="Vorticis.Desktop.Comum.Views.ImportacaoSpedView"
+             x:DataType="vm:ImportacaoSpedViewModel">
+  <!-- Integrações › Importar › Arquivo SPED -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.secao">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="TextBlock.dica">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="Gray" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="440,16,*" Margin="8">
+    <ScrollViewer>
+      <StackPanel Spacing="6">
+        <TextBlock Classes="titulo" Text="{Binding Titulo}" />
+        <TextBlock Classes="dica" FontSize="12" Foreground="{DynamicResource TxSutil}" Text="{Binding Aceita}" />
+
+        <TextBlock Classes="secao" Text="1. Arquivo" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+          <TextBox Text="{Binding Arquivo}" Watermark="Arquivo SPED (.txt)" />
+          <Button Grid.Column="1" Content="Procurar..." Click="Procurar" />
+        </Grid>
+        <Button Content="Conferir arquivo" Command="{Binding LerArquivoCommand}" HorizontalAlignment="Left" />
+        <TextBlock IsVisible="{Binding TipoDetectado, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap">
+          <Run Text="Tipo reconhecido:" /> <Run Text="{Binding TipoDetectado, Mode=OneWay}" FontWeight="SemiBold" />
+        </TextBlock>
+
+        <StackPanel Spacing="6" IsVisible="{Binding Modos.Count}">
+          <TextBlock Classes="secao" Text="2. O que importar" />
+          <ComboBox ItemsSource="{Binding Modos}" SelectedItem="{Binding ModoSelecionado}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="dom:ModoImportacao"><TextBlock Text="{Binding Titulo}" TextWrapping="Wrap" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Classes="dica" Text="{Binding ModoDescricao}" />
+          <CheckBox IsVisible="{Binding MostraOpcoesPlano}" IsChecked="{Binding SubstituirPlano}"
+                    Content="Substituir o plano de contas atual pelo do arquivo (só antes do primeiro lançamento)" />
+          <TextBlock Classes="dica" IsVisible="{Binding MostraOpcoesPlano}"
+                     Text="Desmarcado, o que já existe no sistema é mantido e o que for igual no arquivo é ignorado." />
+          <CheckBox IsVisible="{Binding MostraOpcoesPlano}" IsChecked="{Binding ConverterMascara}"
+                    Content="Ajustar os códigos das contas à máscara do plano da empresa" />
+          <CheckBox IsVisible="{Binding MostraSignatarios}" IsChecked="{Binding CadastrarSignatarios}"
+                    Content="Cadastrar os signatários do arquivo (contador e responsáveis)" />
+          <CheckBox IsChecked="{Binding IgnorarComErro}" Content="Ignorar o que tiver erro e importar o restante" />
+          <TextBlock Classes="dica" Text="Desmarcado, qualquer erro nos dados impede a importação, e nada é gravado." />
+
+          <TextBlock Classes="secao" Text="3. Importar" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
+            <Button Content="Cancelar importação" Command="{Binding CancelarCommand}" />
+          </StackPanel>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progresso}" Height="14" IsVisible="{Binding Importando}" />
+          <TextBlock Text="{Binding ProgressoTexto}" FontSize="12" IsVisible="{Binding ProgressoTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+        <v:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+
+    <TabControl Grid.Column="2">
+      <TabItem Header="Prévia">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,6">
+            <TextBlock TextWrapping="Wrap" IsVisible="{Binding Periodo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <Run Text="Período:" /> <Run Text="{Binding Periodo, Mode=OneWay}" FontWeight="SemiBold" />
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Text="{Binding EmpresaDoArquivo}" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding ResumoPrevia}" FontWeight="SemiBold" />
+          </StackPanel>
+          <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding Previa}" IsReadOnly="True" AutoGenerateColumns="False" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Registro" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="O que é" Binding="{ReflectionBinding Descricao}" Width="*" />
+              <DataGridTextColumn Header="No arquivo" Binding="{ReflectionBinding Total}" Width="90" />
+              <DataGridTextColumn Header="Novos" Binding="{ReflectionBinding Novos}" Width="70" />
+              <DataGridTextColumn Header="Já existem" Binding="{ReflectionBinding Existentes}" Width="90" />
+              <DataGridTextColumn Header="Conflitos" Binding="{ReflectionBinding Conflitos}" Width="80" />
+              <DataGridTextColumn Header="Exemplos" Binding="{ReflectionBinding AmostraTexto}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock DockPanel.Dock="Top" Classes="secao" Text="Erros, avisos e informações" />
+          <DataGrid ItemsSource="{Binding Ocorrencias}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Gravidade" Binding="{ReflectionBinding Gravidade}" Width="90" />
+              <DataGridTextColumn Header="Linha" Binding="{ReflectionBinding Linha}" Width="70" />
+              <DataGridTextColumn Header="Registro" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="Motivo" Binding="{ReflectionBinding Motivo}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Relatório">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+            <TextBlock Text="{Binding ResumoRelatorio}" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <Button Content="Salvar relatório (CSV)" Command="{Binding SalvarRelatorioCommand}" />
+          </StackPanel>
+          <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding RelatorioLinhas}" IsReadOnly="True" AutoGenerateColumns="False" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Registro" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="O que é" Binding="{ReflectionBinding Descricao}" Width="*" />
+              <DataGridTextColumn Header="Importados" Binding="{ReflectionBinding Importados}" Width="100" />
+              <DataGridTextColumn Header="Já existiam" Binding="{ReflectionBinding Existentes}" Width="100" />
+              <DataGridTextColumn Header="Com erro" Binding="{ReflectionBinding ComErro}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <DataGrid ItemsSource="{Binding RelatorioOcorrencias}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Gravidade" Binding="{ReflectionBinding Gravidade}" Width="90" />
+              <DataGridTextColumn Header="Linha" Binding="{ReflectionBinding Linha}" Width="70" />
+              <DataGridTextColumn Header="Registro" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="Motivo" Binding="{ReflectionBinding Motivo}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Histórico de importações">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+            <Button Content="Desfazer importação" Command="{Binding DesfazerCommand}" />
+            <TextBlock Classes="dica" VerticalAlignment="Center" Text="Selecione uma importação na lista. Só é possível desfazer o que ainda não foi usado, contabilizado ou fechado." />
+          </StackPanel>
+          <DataGrid ItemsSource="{Binding Historico}" SelectedItem="{Binding HistoricoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Quando" Binding="{ReflectionBinding Quando}" Width="130" />
+              <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="110" />
+              <DataGridTextColumn Header="Arquivo" Binding="{ReflectionBinding Arquivo}" Width="*" />
+              <DataGridTextColumn Header="Período" Binding="{ReflectionBinding Periodo}" Width="180" />
+              <DataGridTextColumn Header="Registros" Binding="{ReflectionBinding Importados}" Width="90" />
+              <DataGridTextColumn Header="Usuário" Binding="{ReflectionBinding Usuario}" Width="120" />
+              <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

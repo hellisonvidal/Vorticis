@@ -4,6 +4,7 @@ namespace Vorticis.Fiscal.Desktop.ViewModels;
 public static class Telas
 {
     public const string ImportacaoXml = "importacaoxml";
+    public const string ImportarSped = "importarspedefd";
     public const string ImportacaoNfse = "importacaonfse";
     public const string ImportacaoCte = "importacaocte";
     public const string ConsultaCte = "consultacte";
