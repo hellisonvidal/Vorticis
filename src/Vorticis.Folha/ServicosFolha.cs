@@ -24,6 +24,7 @@ public sealed class ServicosFolha
     public ServicoProLabore ProLabore { get; }
     public ServicoFgtsDigital FgtsDigital { get; }
     public ServicoImportacaoEsocial ImportacaoEsocial { get; }
+    public ServicoDownloadEsocial DownloadEsocial { get; }
 
     public ServicosFolha(VorticisApp app)
     {
@@ -43,6 +44,7 @@ public sealed class ServicosFolha
         ProLabore = new ServicoProLabore(new RepositorioProLabore(ds), cadastros, movimento, app.Autorizador);
         ImportacaoEsocial = new ServicoImportacaoEsocial(new RepositorioImportacaoEsocial(ds, cadastros), new Vorticis.Infra.Sped.RepositorioHistoricoSped(ds), app.Autorizador);
         Transmissao = new ServicoTransmissaoEsocial(cadastros, repoEsocial, new RepositorioTransmissaoEsocial(ds), app.Responsaveis, app.Autorizador);
+        DownloadEsocial = new ServicoDownloadEsocial(Transmissao, cadastros, app.Autorizador);
     }
 
     public static ServicosFolha De(VorticisApp app) => Instancias.GetValue(app, a => new ServicosFolha(a));

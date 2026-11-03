@@ -111,7 +111,24 @@ public sealed class ClienteEsocial(HttpClient http, EnderecosEsocial enderecos) 
                                         resposta.ToString(SaveOptions.DisableFormatting));
     }
 
-    private async Task<XElement> PostarAsync(Uri destino, string acao, XElement corpo, CancellationToken ct)
+    private Task<XElement> PostarAsync(Uri destino, string acao, XElement corpo, CancellationToken ct) => SoapEsocial.PostarAsync(http, destino, acao, corpo, ct);
+
+    private static XElement Filho(XElement pai, string nome)
+        => pai.Elements().FirstOrDefault(e => e.Name.LocalName == nome) ?? throw new ErroComunicacaoEsocial($"Resposta do eSocial sem o elemento {nome}.");
+
+    private static string? Texto(XElement pai, string nome) => pai.Descendants().FirstOrDefault(e => e.Name.LocalName == nome)?.Value.Trim();
+
+    private static int Inteiro(XElement pai, string nome) => int.TryParse(Texto(pai, nome), out var n) ? n : 0;
+
+    private static IReadOnlyList<OcorrenciaEsocial> Ocorrencias(XElement pai)
+        => pai.Descendants().Where(e => e.Name.LocalName == "ocorrencia")
+              .Select(o => new OcorrenciaEsocial(Inteiro(o, "tipo"), Texto(o, "codigo") ?? "", Texto(o, "descricao") ?? "", Texto(o, "localizacao"))).ToList();
+}
+
+/// <summary>Envio SOAP 1.1 comum aos serviços do eSocial (envio e consulta de lotes, consulta de identificadores e download de eventos).</summary>
+internal static class SoapEsocial
+{
+    public static async Task<XElement> PostarAsync(HttpClient http, Uri destino, string acao, XElement corpo, CancellationToken ct)
     {
         XNamespace s = "http://schemas.xmlsoap.org/soap/envelope/";
         var envelope = new XDocument(new XElement(s + "Envelope", new XAttribute(XNamespace.Xmlns + "soapenv", s), new XElement(s + "Header"), new XElement(s + "Body", corpo)));
@@ -136,15 +153,4 @@ public sealed class ClienteEsocial(HttpClient http, EnderecosEsocial enderecos) 
             return xml;
         }
     }
-
-    private static XElement Filho(XElement pai, string nome)
-        => pai.Elements().FirstOrDefault(e => e.Name.LocalName == nome) ?? throw new ErroComunicacaoEsocial($"Resposta do eSocial sem o elemento {nome}.");
-
-    private static string? Texto(XElement pai, string nome) => pai.Descendants().FirstOrDefault(e => e.Name.LocalName == nome)?.Value.Trim();
-
-    private static int Inteiro(XElement pai, string nome) => int.TryParse(Texto(pai, nome), out var n) ? n : 0;
-
-    private static IReadOnlyList<OcorrenciaEsocial> Ocorrencias(XElement pai)
-        => pai.Descendants().Where(e => e.Name.LocalName == "ocorrencia")
-              .Select(o => new OcorrenciaEsocial(Inteiro(o, "tipo"), Texto(o, "codigo") ?? "", Texto(o, "descricao") ?? "", Texto(o, "localizacao"))).ToList();
 }
