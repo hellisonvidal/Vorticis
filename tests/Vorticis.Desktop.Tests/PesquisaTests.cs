@@ -29,7 +29,7 @@ public class PesquisaTests(SessaoHeadless headless)
     {
         Assert.Equal(4, Pesquisa.Filtrar(Contas, "").Count);
         Assert.Empty(Pesquisa.Filtrar(Contas, "inexistente"));
-        Assert.All(new[] { "Conta", "Historico", "Participante", "ParticipanteCodigo", "CentroCusto" }, f => Assert.True(Pesquisa.Registrada(f)));
+        Assert.All(new[] { "Conta", "ContaAnalitica", "ContaResultado", "ContaPatrimonio", "Historico", "Participante", "ParticipanteCodigo", "CentroCusto" }, f => Assert.True(Pesquisa.Registrada(f)));
     }
 
     [Fact]
@@ -86,6 +86,25 @@ public class PesquisaTests(SessaoHeadless headless)
             Assert.Equal("Pesquisar (F4)", ToolTip.GetTip((Button)campo.InnerRightContent!));
             Pesquisa.SetFonte(campo, null);
             Assert.Null(campo.InnerRightContent);
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
+    [Fact]
+    public async Task Caixa_de_sugestoes_de_conta_tambem_ganha_lupa_dentro_do_campo()
+    {
+        var ok = await Task.Run(() => headless.Sessao.Dispatch(() =>
+        {
+            var caixa = new AutoCompleteBox();
+            Pesquisa.SetFonte(caixa, "ContaAnalitica");
+            var janela = new Window { Content = caixa, Width = 400, Height = 200 };
+            janela.Show();
+            Dispatcher.UIThread.RunJobs();
+            var interno = caixa.GetVisualDescendants().OfType<TextBox>().First();
+            var lupa = Assert.IsType<Button>(interno.InnerRightContent);
+            Assert.Equal("Pesquisar (F4)", ToolTip.GetTip(lupa));
+            janela.Close();
             return true;
         }, TestContext.Current.CancellationToken));
         Assert.True(ok);

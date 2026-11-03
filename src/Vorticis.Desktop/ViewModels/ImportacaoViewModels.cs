@@ -546,7 +546,11 @@ public partial class ImportacaoExtratoViewModel(IContexto contexto) : Importacao
     }
 }
 
-/// <summary>Aba Lançamentos contábeis: arquivo no layout padrão do Vorticis (uma linha por partida).</summary>
+/// <summary>
+/// Integrações › Importar › Lançamentos contábeis: arquivo no layout padrão do Vorticis (DATA, DEBITO, CREDITO, VALOR...). A linha com as duas
+/// contas é um lançamento; com só uma delas é uma partida simples, agrupada com as seguintes (mesmo documento e data) até fechar.
+/// As planilhas antigas (LANCAMENTO, CONTA, DC) continuam sendo aceitas.
+/// </summary>
 public partial class ImportacaoLancamentosPadraoViewModel(IContexto contexto) : ImportacaoLancamentosBase(contexto)
 {
     protected override OrigemLancamento Origem => OrigemLancamento.Planilha;
@@ -566,8 +570,10 @@ public partial class ImportacaoLancamentosPadraoViewModel(IContexto contexto) : 
         var colunas = LayoutImportacao.ColunasPadrao.Select(c => new ColunaRelatorio(c)).ToList();
         var exemplo = new List<LinhaRelatorio>
         {
-            new(["1", "05/03/2026", "4.2.02.001", "D", "1000,00", "Aluguel de março", "", "123"]),
-            new(["1", "05/03/2026", "1.1.01.002", "C", "1000,00", "Aluguel de março", "", "123"]),
+            new(["05/03/2026", "4.2.02.001", "1.1.01.002", "1000,00", "Aluguel de março", "", "123"]),         // débito e crédito: um lançamento
+            new(["06/03/2026", "1.1.01.001", "", "300,00", "Venda de mercadorias", "", "77"]),                    // só débito...
+            new(["06/03/2026", "", "3.1.01.001", "200,00", "Venda de mercadorias", "", "77"]),                    // ...e só crédito: o mesmo documento
+            new(["06/03/2026", "", "3.1.01.003", "100,00", "Venda de mercadorias", "", "77"]),                    // e data formam um lançamento
         };
         try
         {
@@ -579,5 +585,5 @@ public partial class ImportacaoLancamentosPadraoViewModel(IContexto contexto) : 
     }
 
     protected override IReadOnlyList<LancamentoLido>? Ler() =>
-        LerPlanilha(Arquivo) is { } t ? Resultado(ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao)) : null;
+        LerPlanilha(Arquivo) is { } t ? Resultado(ImportadorLancamentos.Ler(t, LayoutImportacao.PadraoPara(t))) : null;
 }

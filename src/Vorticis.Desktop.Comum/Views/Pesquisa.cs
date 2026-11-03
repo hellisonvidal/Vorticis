@@ -38,10 +38,10 @@ public static class Pesquisa
     private static readonly Dictionary<(string, long), (DateTime Em, IReadOnlyList<ItemPesquisa> Itens)> Cache = [];
 
     public static readonly AttachedProperty<string?> FonteProperty =
-        AvaloniaProperty.RegisterAttached<TextBox, string?>("Fonte", typeof(Pesquisa));
+        AvaloniaProperty.RegisterAttached<Control, string?>("Fonte", typeof(Pesquisa));
 
-    public static string? GetFonte(TextBox c) => c.GetValue(FonteProperty);
-    public static void SetFonte(TextBox c, string? v) => c.SetValue(FonteProperty, v);
+    public static string? GetFonte(Control c) => c.GetValue(FonteProperty);
+    public static void SetFonte(Control c, string? v) => c.SetValue(FonteProperty, v);
 
     public static void Registrar(string nome, FontePesquisa fonte) => Fontes[nome] = fonte;
     public static bool Registrada(string nome) => Fontes.ContainsKey(nome);
@@ -67,16 +67,70 @@ public static class Pesquisa
             ? (await app.PlanoContas.ListarCentrosAsync(e, s.Id, ct)).Where(x => x.Ativo && x.Analitico).Select(x => new ItemPesquisa(x.Codigo, x.Descricao)).ToList()
             : []);
 
-        FonteProperty.Changed.AddClassHandler<TextBox>((tb, e) =>
+        // Contas analíticas (as que recebem lançamento) e as do encerramento do exercício (resultado e patrimônio líquido).
+        Registrar("ContaAnalitica", async (c, ct) => c.App is { } app && c.EmpresaId is { } e && c.Sessao is { } s
+            ? (await app.PlanoContas.ListarAsync(e, s.Id, ct)).Where(x => x.Ativa && x.Analitica)
+                .Select(x => new ItemPesquisa(x.Codigo, (x.CodigoReduzido is { } r ? $"[{r}] " : "") + x.Descricao)).ToList()
+            : []);
+        Registrar("ContaResultado", async (c, ct) => c.App is { } app && c.EmpresaId is { } e && c.Sessao is { } s
+            ? OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(e, s.Id, ct)).Apuracao.Select(Opcao).ToList()
+            : []);
+        Registrar("ContaPatrimonio", async (c, ct) => c.App is { } app && c.EmpresaId is { } e && c.Sessao is { } s
+            ? OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(e, s.Id, ct)).Patrimonio.Select(Opcao).ToList()
+            : []);
+
+        FonteProperty.Changed.AddClassHandler<Control>((alvo, e) =>
         {
-            tb.KeyDown -= AoTeclar;
-            if (e.NewValue is not string) { if (tb.InnerRightContent is Button { Tag: "pesquisa" }) tb.InnerRightContent = null; return; }
-            tb.KeyDown += AoTeclar;
-            tb.InnerRightContent = CriarLupa(tb);
+            if (alvo is TextBox tb)
+            {
+                tb.KeyDown -= AoTeclar;
+                if (e.NewValue is not string) { if (tb.InnerRightContent is Button { Tag: "pesquisa" }) tb.InnerRightContent = null; return; }
+                tb.KeyDown += AoTeclar;
+                tb.InnerRightContent = CriarLupa(tb, tb);
+            }
+            else if (alvo is AutoCompleteBox acb)
+            {
+                // Caixa com sugestões: a lupa vai dentro do campo de texto da própria caixa, assim que o modelo é aplicado.
+                acb.TemplateApplied -= AoAplicarModelo;
+                if (e.NewValue is string) acb.TemplateApplied += AoAplicarModelo;
+            }
         });
     }
 
-    private static Button CriarLupa(TextBox tb)
+    private static ItemPesquisa Opcao(ContaPesquisavel c) => new(c.Codigo, (c.Reduzido is { } r ? $"[{r}] " : "") + c.Descricao);
+
+    private static void AoAplicarModelo(object? sender, Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
+    {
+        if (sender is not AutoCompleteBox acb || e.NameScope.Find<TextBox>("PART_TextBox") is not { } interno) return;
+        interno.KeyDown -= AoTeclarCaixa;
+        interno.KeyDown += AoTeclarCaixa;
+        interno.InnerRightContent = CriarLupa(acb, interno);
+    }
+
+    private static void AoTeclarCaixa(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F4 || sender is not TextBox interno) return;
+        if (interno.GetVisualAncestors().OfType<AutoCompleteBox>().FirstOrDefault() is not { } acb) return;
+        e.Handled = true;
+        _ = AbrirAsync(acb);
+    }
+
+    private static string? TextoDe(Control c) => c switch { TextBox t => t.Text, AutoCompleteBox a => a.Text, _ => null };
+
+    private static void DefinirTexto(Control c, string texto)
+    {
+        switch (c)
+        {
+            case TextBox t: t.Text = texto; t.Focus(); t.CaretIndex = texto.Length; break;
+            case AutoCompleteBox a:
+                a.Text = texto;
+                if (a.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() is { } i) { i.Focus(); i.CaretIndex = texto.Length; }
+                else a.Focus();
+                break;
+        }
+    }
+
+    private static Button CriarLupa(Control campo, TextBox tb)
     {
         var lupa = new Button
         {
@@ -85,7 +139,7 @@ public static class Pesquisa
             Content = new Avalonia.Controls.Shapes.Path { Data = Icones.Magnify, Width = 13, Height = 13, Stretch = Stretch.Uniform, Fill = Brushes.Gray },
         };
         ToolTip.SetTip(lupa, "Pesquisar (F4)");
-        lupa.Click += (_, _) => _ = AbrirAsync(tb);
+        lupa.Click += (_, _) => _ = AbrirAsync(campo);
         return lupa;
     }
 
@@ -132,10 +186,11 @@ public static class Pesquisa
     /// <summary>Esquece as listas guardadas (depois de incluir uma conta, um participante...).</summary>
     public static void Limpar() => Cache.Clear();
 
-    public static async Task AbrirAsync(TextBox tb)
+    public static async Task AbrirAsync(Control tb)
     {
-        if (GetFonte(tb) is not { } fonte || tb.IsReadOnly || !tb.IsEffectivelyEnabled) return;
-        var filtro = new TextBox { Watermark = "Digite parte do código ou da descrição", Text = Normalizar(tb.Text ?? "").Any(char.IsLetter) ? tb.Text : "" };
+        if (GetFonte(tb) is not { } fonte || tb is TextBox { IsReadOnly: true } || !tb.IsEffectivelyEnabled) return;
+        var atual = TextoDe(tb) ?? "";
+        var filtro = new TextBox { Watermark = "Digite parte do código ou da descrição", Text = Normalizar(atual).Any(char.IsLetter) ? atual : "" };
         var lista = new ListBox { Height = 280, MinWidth = Math.Max(tb.Bounds.Width, 460) };
         var situacao = new TextBlock { FontSize = 11, Foreground = Brushes.Gray, Text = "Carregando..." };
         var painel = new StackPanel { Spacing = 6, Children = { filtro, lista, situacao } };
@@ -157,9 +212,7 @@ public static class Pesquisa
         {
             if (lista.SelectedItem is not ItemPesquisa item) return;
             flyout.Hide();
-            tb.Text = item.Codigo;
-            tb.Focus();
-            tb.CaretIndex = tb.Text.Length;
+            DefinirTexto(tb, item.Codigo);
         }
 
         filtro.TextChanged += (_, _) => Atualizar();

@@ -108,13 +108,17 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     }
 
     public ObservableCollection<LinhaLancamentoViewModel> Linhas { get; } = [];
-    public ObservableCollection<ContaSelecionavel> Contas { get; } = [];
+    /// <summary>A primeira linha: o formulário do lançamento (data, contas, valor, documento, histórico...).</summary>
+    public LinhaLancamentoViewModel? Principal => Linhas.Count > 0 ? Linhas[0] : null;
+    /// <summary>Mais partidas do mesmo lançamento (as demais linhas), mostradas como linhas compactas no formulário.</summary>
+    public ObservableCollection<LinhaLancamentoViewModel> Extras { get; } = [];
+    public bool TemExtras => Extras.Count > 0;
     public IReadOnlyList<ContaSelecionavel> TodasContas => _todasContas;
+    /// <summary>Empresa com centros de custo ligados (Cadastros › Empresas › Contabilidade): sem isso o campo não aparece.</summary>
+    [ObservableProperty] private bool _usaCentroCusto;
 
     [ObservableProperty] private DateTime? _data = DateTime.Today;
     [ObservableProperty] private LinhaLancamentoViewModel? _linhaSelecionada;
-    [ObservableProperty] private ContaSelecionavel? _contaSelecionada;
-    [ObservableProperty] private string _filtroConta = "";
     [ObservableProperty] private string _totalDebito = "0,00";
     [ObservableProperty] private string _totalCredito = "0,00";
     [ObservableProperty] private string _diferenca = "0,00";
@@ -230,11 +234,13 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         IReadOnlyList<Participante> participantes = [];
         var usa = false;
         var usaEstorno = true;
+        var usaCentro = false;
         if (Contexto.App is { } app)
         {
             if (Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
             {
                 usaEstorno = await app.Lancamentos.UsaEstornoAsync(empresa, sessao.Id);
+                usaCentro = (await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id)).UsaCentroCusto;
                 plano = await app.PlanoContas.ListarAsync(empresa, sessao.Id);
                 historicos = await app.Historicos.ListarAsync(empresa, sessao.Id);
                 usa = await app.Participantes.UsaParticipantesAsync(empresa);
@@ -248,14 +254,14 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         _historicos = historicos.ToDictionary(h => h.Codigo);
         UsaParticipantes = usa;
         UsaEstorno = usaEstorno;
+        UsaCentroCusto = usaCentro;
         _participantes = participantes.Where(p => p.Ativo).ToDictionary(p => p.Codigo);
         _contasComParticipante = plano.Where(c => c.ExigeParticipante).Select(c => c.Codigo)
                                       .Concat(participantes.Where(p => p.ControleConta && p.CodigoConta is not null).Select(p => p.CodigoConta!))
                                       .ToHashSet();
         OnPropertyChanged(nameof(TodasContas));
-        if (EmEdicao) { Filtrar(); OnPropertyChanged(nameof(PodeEstornar)); await CarregarEfetuadosAsync(); return; }
+        if (EmEdicao) { OnPropertyChanged(nameof(PodeEstornar)); await CarregarEfetuadosAsync(); return; }
         if (Linhas.All(l => l.Vazia)) Limpar();
-        Filtrar();
         OnPropertyChanged(nameof(PodeEstornar));
         await CarregarEfetuadosAsync();
     }
@@ -368,7 +374,7 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     }
 
     /// <summary>Grava a digitação: inclusão normal ou, em alteração, estorno do original + lançamento corrigido.</summary>
-    private async Task<bool> GravarAsync(VorticisApp app, long empresa, long usuario, IReadOnlyList<LancamentoProposto> propostas, IReadOnlyList<int> linhasOrigem)
+    private async Task<bool> GravarAsync(VorticisApp app, long empresa, long usuario, IReadOnlyList<LancamentoProposto> propostas)
     {
         if (Editando is { } ed)
         {
@@ -382,25 +388,12 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         var r = await app.Lancamentos.EfetivarLoteAsync(propostas, null, usuario);
         if (!r.Sucesso)
         {
-            // "Lançamento 2: ..." do serviço vira "Linha N: ..." da tela (N = linha que originou aquele lançamento).
-            foreach (var e in r.Erros)
-            {
-                var m = System.Text.RegularExpressions.Regex.Match(e, @"^Lançamento (\d+): (.*)$");
-                Erros.Add(m.Success && int.Parse(m.Groups[1].Value) is var k && k >= 1 && k <= linhasOrigem.Count ? $"Linha {linhasOrigem[k - 1]}: {m.Groups[2].Value}" : e);
-            }
+            foreach (var e in r.Erros) Erros.Add(System.Text.RegularExpressions.Regex.Replace(e, @"^Lançamento \d+: ", ""));
             return false;
         }
         Mensagem = r.Valor.Count == 1 ? $"Lançamento nº {r.Valor[0].Numero} salvo."
                                       : $"{r.Valor.Count} lançamentos salvos (nº {r.Valor.Min(x => x.Numero)} a {r.Valor.Max(x => x.Numero)}).";
         return true;
-    }
-
-    partial void OnFiltroContaChanged(string value) => Filtrar();
-
-    private void Filtrar()
-    {
-        Contas.Clear();
-        foreach (var c in _todasContas.Where(c => Combina(c, FiltroConta))) Contas.Add(c);
     }
 
     /// <summary>Busca de conta: reduzido exato, início do código ou parte do nome.</summary>
@@ -411,22 +404,14 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
                || c.Descricao.Contains(f, StringComparison.CurrentCultureIgnoreCase);
     }
 
-    /// <summary>Clique numa conta da lista: vai para a linha selecionada (débito, se vazio; senão crédito).</summary>
-    partial void OnContaSelecionadaChanged(ContaSelecionavel? value)
-    {
-        if (value is null || LinhaSelecionada is not { } l) return;
-        if (l.Conta.Trim().Length > 0 && l.ContaCredito.Trim().Length == 0) l.ContaCredito = value.Codigo;
-        else l.Conta = value.Codigo;
-    }
-
     private LinhaLancamentoViewModel NovaLinha()
     {
         var anterior = Linhas.LastOrDefault();
         var nova = new LinhaLancamentoViewModel { Data = anterior?.Data ?? (Data ?? DateTime.Today).ToString("dd/MM/yyyy") };
-        // Depois de uma partida simples (uma conta só), repete histórico e documento e sugere o valor que fecha o lançamento.
-        if (anterior is { } ant && !(ant.TemDebito && ant.TemCredito))
+        // A nova partida repete histórico, documento e centro de custo da anterior e sugere o valor que fecha o lançamento.
+        if (anterior is { } ant)
         {
-            (nova.Historico, nova.CodigoHistorico, nova.Documento) = (ant.Historico, ant.CodigoHistorico, ant.Documento);
+            (nova.Historico, nova.CodigoHistorico, nova.Documento, nova.CentroCusto) = (ant.Historico, ant.CodigoHistorico, ant.Documento, ant.CentroCusto);
             (nova.ModeloHistorico, nova.HistoricoAutomatico) = (ant.ModeloHistorico, ant.HistoricoAutomatico);
         }
         var dif = SomaDebitos() - SomaCreditos();
@@ -462,12 +447,21 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         LinhaSelecionada = Linhas[0];
     }
 
-    /// <summary>Botão "Nova partida" (o mesmo que a seta para baixo na última partida): acrescenta uma partida e põe o foco na data.</summary>
+    /// <summary>Botão "+ Mais partidas": acrescenta uma partida ao lançamento (linha compacta no formulário) e põe o foco nela.</summary>
     [RelayCommand]
     private void NovaPartida()
     {
         var nova = AdicionarLinha();
-        FocoSolicitado?.Invoke(Linhas.IndexOf(nova), "data");
+        FocoSolicitado?.Invoke(Linhas.IndexOf(nova), "reduzido");
+    }
+
+    /// <summary>Botão de remover numa das "mais partidas" (a primeira linha, o formulário, não sai: só é esvaziada pelo Limpar).</summary>
+    [RelayCommand]
+    private void RemoverPartida(LinhaLancamentoViewModel? linha)
+    {
+        if (linha is null || Linhas.Count <= 1 || ReferenceEquals(linha, Linhas[0])) return;
+        Linhas.Remove(linha);
+        LinhaSelecionada = Linhas[^1];
     }
 
     /// <summary>Exclui a linha atual (Ctrl+Delete); a última linha é apenas esvaziada.</summary>
@@ -493,70 +487,75 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     private Task SalvarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var preenchidas = Linhas.Where(l => !l.Vazia).ToList();
-        var propostas = new List<LancamentoProposto>();
-        var linhasOrigem = new List<int>();          // nº da linha da tela que originou cada proposta
-        var simples = new List<LinhaLancamentoViewModel>();
+        if (preenchidas.Count == 0) { Erros.Add("Digite ao menos um lançamento."); return; }
+        var principal = Linhas[0];
+        var varias = preenchidas.Count > 1;           // mais de uma partida: tudo forma um único lançamento, que precisa fechar
+        foreach (var l in preenchidas)
+        {
+            if (varias && !ReferenceEquals(l, principal)) l.Data = principal.Data;        // a data é uma só (a do formulário)
+            if (l.Documento.Trim().Length == 0) l.Documento = principal.Documento;
+            if (l.CentroCusto.Trim().Length == 0) l.CentroCusto = principal.CentroCusto;
+            if (l.Historico.Trim().Length == 0) l.Historico = principal.Historico;
+        }
         foreach (var l in preenchidas)
         {
             var n = Linhas.IndexOf(l) + 1;
-            var data = Formato.LerData(CompletarData(l.Data));
-            var ok = true;
-            if (data is null) { Erros.Add($"Linha {n}: data inválida."); ok = false; }
-            if (l.ValorDecimal is not > 0) { Erros.Add($"Linha {n}: informe o valor."); ok = false; }
-            if (!l.TemDebito && !l.TemCredito) { Erros.Add($"Linha {n}: informe a conta de débito e/ou a de crédito."); ok = false; }
-            foreach (var v in HistoricoPendente(l.Historico))
-            {
-                Erros.Add($"Linha {n}: complete no histórico a variável {{{v}}}.");
-                ok = false;
-            }
-            if (!ok) continue;
-            if (!(l.TemDebito && l.TemCredito)) { simples.Add(l); continue; }
-            var cc = string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim();
-            var (partD, partC) = (Part(l, l.Conta), Part(l, l.ContaCredito));
-            if (l.Participante.Trim().Length > 0 && partD is null && partC is null)
-            {
-                Erros.Add($"Linha {n}: participante informado, mas nenhuma das contas controla participantes.");
-                continue;
-            }
-            propostas.Add(new LancamentoProposto(empresa, data!.Value, OrigemLancamento.Manual,
-            [
-                new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal!.Value, l.Historico.Trim(), cc, partD, Doc(l)),
-                new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal.Value, l.Historico.Trim(), cc, partC, Doc(l)),
-            ]));
-            linhasOrigem.Add(n);
+            var rotulo = Linhas.Count == 1 ? "Lançamento" : n == 1 ? "Lançamento (formulário)" : $"Mais partidas, linha {n - 1}";
+            if (Formato.LerData(CompletarData(l.Data)) is null) Erros.Add($"{rotulo}: data inválida.");
+            if (l.ValorDecimal is not > 0) Erros.Add($"{rotulo}: informe o valor.");
+            if (!l.TemDebito && !l.TemCredito) Erros.Add($"{rotulo}: informe a conta de débito e/ou a de crédito.");
+            foreach (var v in HistoricoPendente(l.Historico)) Erros.Add($"{rotulo}: complete no histórico a variável {{{v}}}.");
         }
         if (Erros.Count > 0) return;
-        if (preenchidas.Count == 0) { Erros.Add("Digite ao menos um lançamento."); return; }
+        var data = Formato.LerData(CompletarData(principal.Data))!.Value;
+        var participantes = ParticipantePadrao(principal);
 
-        // Linhas de uma conta só (partidas simples): juntas formam um único lançamento, que precisa fechar.
-        if (simples.Count > 0)
+        if (!varias && preenchidas[0] is { TemDebito: true, TemCredito: true } l1)
         {
-            var datas = simples.Select(l => Formato.LerData(CompletarData(l.Data))!.Value).Distinct().ToList();
-            if (datas.Count > 1)
+            var cc = string.IsNullOrWhiteSpace(l1.CentroCusto) ? null : l1.CentroCusto.Trim();
+            var (partD, partC) = (Part(l1, l1.Conta), Part(l1, l1.ContaCredito));
+            if (l1.Participante.Trim().Length > 0 && partD is null && partC is null)
             {
-                Erros.Add("As linhas com uma conta só formam um único lançamento e devem ter a mesma data.");
+                Erros.Add("Participante informado, mas nenhuma das contas controla participantes.");
                 return;
             }
-            var (d, c) = (simples.Where(l => l.TemDebito).Sum(l => l.ValorDecimal!.Value), simples.Where(l => l.TemCredito).Sum(l => l.ValorDecimal!.Value));
+            var proposta = new LancamentoProposto(empresa, Formato.LerData(CompletarData(l1.Data))!.Value, OrigemLancamento.Manual,
+            [
+                new PartidaProposta(l1.Conta.Trim(), IndicadorDC.D, l1.ValorDecimal!.Value, l1.Historico.Trim(), cc, partD, Doc(l1)),
+                new PartidaProposta(l1.ContaCredito.Trim(), IndicadorDC.C, l1.ValorDecimal.Value, l1.Historico.Trim(), cc, partC, Doc(l1)),
+            ]);
+            if (!await GravarAsync(app, empresa, usuario, [proposta])) return;
+        }
+        else
+        {
+            var (d, c) = (SomaDebitos(), SomaCreditos());
             if (d != c)
             {
                 if (d == 0 || c == 0) await PerguntarContrapartidaAsync(somenteDebito: c == 0, d + c);
                 else Erros.Add($"Débitos ({Formato.Moeda(d)}) e créditos ({Formato.Moeda(c)}) não fecham: diferença de {Formato.Moeda(Math.Abs(d - c))}.");
                 return;
             }
-            propostas.Add(new LancamentoProposto(empresa, datas[0], OrigemLancamento.Manual,
-                simples.Select(l => new PartidaProposta(l.TemDebito ? l.Conta.Trim() : l.ContaCredito.Trim(), l.TemDebito ? IndicadorDC.D : IndicadorDC.C,
-                    l.ValorDecimal!.Value, l.Historico.Trim(), string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim(),
-                    PartSimples(l), Doc(l))).ToArray()));
-            linhasOrigem.Add(Linhas.IndexOf(simples[0]) + 1);
+            var partidas = new List<PartidaProposta>();
+            foreach (var l in preenchidas)
+            {
+                var cc = string.IsNullOrWhiteSpace(l.CentroCusto) ? null : l.CentroCusto.Trim();
+                var par = l.TemDebito && l.TemCredito;
+                var part = l.Participante.Trim().Length > 0 ? l.Participante.Trim() : participantes;
+                string? PartDe(string conta) => part is { Length: > 0 } p && (_contasComParticipante.Contains(conta.Trim()) || (!par && l.Participante.Trim().Length > 0)) ? p : null;
+                if (l.TemDebito) partidas.Add(new PartidaProposta(l.Conta.Trim(), IndicadorDC.D, l.ValorDecimal!.Value, l.Historico.Trim(), cc, PartDe(l.Conta), Doc(l)));
+                if (l.TemCredito) partidas.Add(new PartidaProposta(l.ContaCredito.Trim(), IndicadorDC.C, l.ValorDecimal!.Value, l.Historico.Trim(), cc, PartDe(l.ContaCredito), Doc(l)));
+            }
+            if (!await GravarAsync(app, empresa, usuario, [new LancamentoProposto(empresa, data, OrigemLancamento.Manual, partidas)])) return;
         }
-        if (!await GravarAsync(app, empresa, usuario, propostas, linhasOrigem)) return;
-        var ultimaData = preenchidas[^1].Data;
+        var ultimaData = principal.Data;
         Limpar();
         Linhas[0].Data = ultimaData;
         DigitacaoAberta = false;                            // fecha o pop-up; a grade se atualiza e recebe o foco
         await CarregarEfetuadosAsync();
     }, Permissao.LancamentoIncluir);
+
+    /// <summary>Participante do formulário, usado nas partidas que não têm o seu (só vale nas contas que controlam participantes).</summary>
+    private static string ParticipantePadrao(LinhaLancamentoViewModel principal) => principal.Participante.Trim();
 
     /// <summary>
     /// Só há débito (ou só crédito): avisa que falta a contrapartida e, se o usuário quiser, cria a linha complementar já
@@ -576,9 +575,6 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     /// <summary>Participante da partida: só nas contas que controlam participantes (plano com participantes).</summary>
     private string? Part(LinhaLancamentoViewModel l, string conta) =>
         l.Participante.Trim() is { Length: > 0 } p && _contasComParticipante.Contains(conta.Trim()) ? p : null;
-
-    /// <summary>Partida simples: a linha é uma conta só; o participante digitado vai na partida.</summary>
-    private static string? PartSimples(LinhaLancamentoViewModel l) => l.Participante.Trim() is { Length: > 0 } p ? p : null;
 
     /// <summary>Nº do documento (NF, recibo, boleto...) — base da conciliação automática.</summary>
     private static string? Doc(LinhaLancamentoViewModel l) => string.IsNullOrWhiteSpace(l.Documento) ? null : l.Documento.Trim();
@@ -619,7 +615,29 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     {
         foreach (LinhaLancamentoViewModel l in e.NewItems ?? Array.Empty<LinhaLancamentoViewModel>()) l.PropertyChanged += AoMudarLinha;
         foreach (LinhaLancamentoViewModel l in e.OldItems ?? Array.Empty<LinhaLancamentoViewModel>()) l.PropertyChanged -= AoMudarLinha;
+        SincronizarExtras(e);
+        OnPropertyChanged(nameof(Principal));
         Recalcular();
+    }
+
+    /// <summary>Mantém <see cref="Extras"/> (todas as linhas menos a primeira) em dia, sem refazer as linhas que já estão na tela.</summary>
+    private void SincronizarExtras(NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add && e.NewStartingIndex > 0 && e.NewItems is { } novos)
+        {
+            var i = e.NewStartingIndex - 1;
+            foreach (LinhaLancamentoViewModel l in novos) Extras.Insert(i++, l);
+        }
+        else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldStartingIndex > 0 && e.OldItems is { } velhos)
+        {
+            for (var k = 0; k < velhos.Count; k++) Extras.RemoveAt(e.OldStartingIndex - 1);
+        }
+        else
+        {
+            Extras.Clear();
+            foreach (var l in Linhas.Skip(1)) Extras.Add(l);
+        }
+        OnPropertyChanged(nameof(TemExtras));
     }
 
     /// <summary>Liga reduzido ↔ conta ↔ nome e o código do histórico ao texto fixo.</summary>

@@ -22,9 +22,9 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" MaxWidth="1000" HorizontalAlignment="Left">
       <TextBlock Classes="dica" FontSize="12" Foreground="{DynamicResource TxSutil}"
-                 Text="Importe lançamentos já prontos (de outro sistema ou digitados numa planilha) no layout padrão do Vorticis: uma linha por partida, agrupadas pelo número do lançamento. Aceita Excel (.xlsx) ou CSV separado por ponto e vírgula." />
+                 Text="Importe lançamentos já prontos (de outro sistema ou digitados numa planilha) no layout padrão do Vorticis: uma linha por lançamento, com a conta a débito e a conta a crédito em colunas separadas. Aceita Excel (.xlsx) ou CSV separado por ponto e vírgula." />
       <TextBlock FontFamily="Consolas, Menlo, monospace" FontSize="12" Text="{x:Static vm:ImportacaoLancamentosPadraoViewModel.Colunas}" />
-      <TextBlock Classes="dica" Text="LANCAMENTO: número que agrupa as partidas · DATA: dd/mm/aaaa · CONTA: código analítico · DC: D ou C · VALOR: 1.500,00 · CENTRO_CUSTO e DOCUMENTO são opcionais." />
+      <TextBlock Classes="dica" Text="DATA: dd/mm/aaaa · DEBITO e CREDITO: código da conta analítica · VALOR: 1.500,00 · HISTORICO, CENTRO_CUSTO e DOCUMENTO são opcionais. Linha com só o débito ou só o crédito é uma partida: as seguintes, com o mesmo DOCUMENTO e a mesma DATA, formam um lançamento até os débitos igualarem os créditos." />
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button Content="Gerar planilha modelo (.xlsx)" Command="{Binding GerarModeloCommand}" />
       </StackPanel>

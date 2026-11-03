@@ -38,19 +38,42 @@ public sealed record LayoutImportacao
     public string? ColunaValorDebito { get; init; }
     public string? ColunaValorCredito { get; init; }
 
+    /// <summary>
+    /// Uma linha por lançamento que também aceita a linha com só a conta a débito ou só a conta a crédito (partida simples): as partidas
+    /// simples seguidas, com o mesmo documento e a mesma data, formam um lançamento até os débitos igualarem os créditos.
+    /// </summary>
+    public bool AceitaPartidaSimples { get; init; }
+
     public string? HistoricoPadrao { get; init; }
     /// <summary>Máscara para converter os códigos de conta da planilha (ex.: 11010001 → 1.1.01.0001); vazio = usar como estão.</summary>
     public string? MascaraContas { get; init; }
 
-    /// <summary>Layout padrão do Vorticis (aba Lançamentos contábeis): uma linha por partida.</summary>
+    /// <summary>
+    /// Layout padrão do Vorticis (Integrações › Importar › Lançamentos contábeis): uma linha por lançamento, com a conta a débito e a conta a
+    /// crédito em colunas separadas. A linha com só uma das contas é uma partida simples (ver <see cref="AceitaPartidaSimples"/>).
+    /// </summary>
     public static LayoutImportacao Padrao { get; } = new()
     {
-        Nome = "Padrão Vorticis", Modelo = ModeloLayout.UmaLinhaPorPartida, ColunaAgrupador = "LANCAMENTO", ColunaData = "DATA",
+        Nome = "Padrão Vorticis", Modelo = ModeloLayout.UmaLinhaPorLancamento, ColunaData = "DATA", ColunaContaDebito = "DEBITO", ColunaContaCredito = "CREDITO",
+        ColunaValor = "VALOR", ColunaHistorico = "HISTORICO", ColunaCentroCusto = "CENTRO_CUSTO", ColunaDocumento = "DOCUMENTO", AceitaPartidaSimples = true,
+    };
+
+    public static IReadOnlyList<string> ColunasPadrao { get; } = ["DATA", "DEBITO", "CREDITO", "VALOR", "HISTORICO", "CENTRO_CUSTO", "DOCUMENTO"];
+
+    /// <summary>Layout padrão das planilhas antigas: uma linha por partida (conta e D/C), agrupadas pelo número do lançamento.</summary>
+    public static LayoutImportacao PadraoAnterior { get; } = new()
+    {
+        Nome = "Padrão Vorticis (anterior)", Modelo = ModeloLayout.UmaLinhaPorPartida, ColunaAgrupador = "LANCAMENTO", ColunaData = "DATA",
         ColunaConta = "CONTA", ColunaDC = "DC", ColunaValor = "VALOR", ColunaHistorico = "HISTORICO", ColunaCentroCusto = "CENTRO_CUSTO",
         ColunaDocumento = "DOCUMENTO",
     };
 
-    public static IReadOnlyList<string> ColunasPadrao { get; } = ["LANCAMENTO", "DATA", "CONTA", "DC", "VALOR", "HISTORICO", "CENTRO_CUSTO", "DOCUMENTO"];
+    /// <summary>O layout padrão que serve à planilha: o atual (DEBITO e CREDITO) ou, se ela tem as colunas CONTA e DC, o anterior.</summary>
+    public static LayoutImportacao PadraoPara(TabelaImportada t)
+    {
+        bool Tem(string nome) => t.Colunas.Any(c => TabelaImportada.Normalizar(c) == TabelaImportada.Normalizar(nome));
+        return Tem("CONTA") && Tem("DC") && !Tem("DEBITO") && !Tem("CREDITO") ? PadraoAnterior : Padrao;
+    }
 }
 
 /// <summary>Lançamento lido da planilha (ainda por códigos; validado depois contra o plano e os períodos).</summary>
@@ -109,6 +132,15 @@ public static class ImportadorLancamentos
             var iCred = Col(layout.ColunaContaCredito, "conta crédito", string.IsNullOrWhiteSpace(layout.ContaCreditoPadrao));
             var iValor = Col(layout.ColunaValor, "valor", true);
             if (erros.Count > 0) return new([], erros);
+            // Partidas simples (só débito ou só crédito) à espera da contrapartida: mesmo documento e mesma data, até fechar.
+            var pend = new List<PartidaProposta>();
+            (int Linha, DateOnly Data, string Doc)? pendInicio = null;
+            void FecharPendentes()
+            {
+                if (pendInicio is { } p && pend.Count > 0) res.Add(new LancamentoLido(p.Linha, p.Data, pend.ToList()));
+                pend.Clear();
+                pendInicio = null;
+            }
             for (var i = 0; i < t.Linhas.Count && erros.Count < 50; i++)
             {
                 var linha = t.NumerosLinha[i];
@@ -121,22 +153,40 @@ public static class ImportadorLancamentos
                 if (valor == 0) continue;
                 var debBruto = iDeb >= 0 && t.Valor(i, iDeb).Length > 0 ? t.Valor(i, iDeb) : layout.ContaDebitoPadrao?.Trim() ?? "";
                 var credBruto = iCred >= 0 && t.Valor(i, iCred).Length > 0 ? t.Valor(i, iCred) : layout.ContaCreditoPadrao?.Trim() ?? "";
+                var hist = Historico(t, i, iHist, iDoc, layout.HistoricoPadrao);
+                var doc = iDoc >= 0 ? Nulo(t.Valor(i, iDoc)) : null;
+                var cc = iCc >= 0 ? Nulo(t.Valor(i, iCc)) : null;
+                var v = Math.Abs(valor.Value);
+                if (layout.AceitaPartidaSimples && (debBruto.Length == 0) != (credBruto.Length == 0))
+                {
+                    var bruta = debBruto.Length > 0 ? debBruto : credBruto;
+                    var simples = Conta(bruta, linha);
+                    if (simples is null) continue;
+                    var dc = debBruto.Length > 0 ? IndicadorDC.D : IndicadorDC.C;
+                    if (valor < 0) dc = dc.Inverso();                        // valor negativo inverte o lado
+                    var chave = (data.Value, doc ?? "");
+                    if (pendInicio is { } pi && (pi.Data, pi.Doc) != chave) FecharPendentes();
+                    pendInicio ??= (linha, data.Value, doc ?? "");
+                    pend.Add(new PartidaProposta(simples, dc, v, hist, cc, null, doc));
+                    if (Soma(pend, IndicadorDC.D) == Soma(pend, IndicadorDC.C)) FecharPendentes();
+                    continue;
+                }
                 if (debBruto.Length == 0 || credBruto.Length == 0)
                 {
-                    erros.Add($"Linha {linha}: informe a conta {(debBruto.Length == 0 ? "débito" : "crédito")}.");
+                    erros.Add(layout.AceitaPartidaSimples
+                        ? $"Linha {linha}: informe a conta de débito, a de crédito ou as duas."
+                        : $"Linha {linha}: informe a conta {(debBruto.Length == 0 ? "débito" : "crédito")}.");
                     continue;
                 }
                 var deb = Conta(debBruto, linha);
                 var cred = Conta(credBruto, linha);
                 if (deb is null || cred is null) continue;
                 if (valor < 0) (deb, cred) = (cred, deb);                   // valor negativo inverte débito e crédito
-                var hist = Historico(t, i, iHist, iDoc, layout.HistoricoPadrao);
-                var doc = iDoc >= 0 ? Nulo(t.Valor(i, iDoc)) : null;
-                var cc = iCc >= 0 ? Nulo(t.Valor(i, iCc)) : null;
-                var v = Math.Abs(valor.Value);
+                FecharPendentes();
                 res.Add(new LancamentoLido(linha, data.Value,
                     [new PartidaProposta(deb, IndicadorDC.D, v, hist, cc, null, doc), new PartidaProposta(cred, IndicadorDC.C, v, hist, cc, null, doc)]));
             }
+            FecharPendentes();
             return new(res, erros);
         }
 

@@ -84,11 +84,11 @@ A mesma data aparece na aba Contabilidade de *Cadastros › Empresas*. Para trav
 A tela mostra os **lançamentos efetuados** do período, com os botões **Novo (Ctrl+N), Editar, Consultar, Excluir, Estornar** e Atualizar. Os estornados continuam na lista, marcados.
 
 ### Incluir um lançamento (pop-up)
-1. Clique em **Novo (Ctrl+N)**. Abre o pop-up de digitação, com os campos **um embaixo do outro** (preenchimento na vertical), a lista *Partidas deste lançamento* logo abaixo e a lista *Contas analíticas* à direita. Tudo cabe na janela: nenhum campo fica escondido.
+1. Clique em **Novo (Ctrl+N)**. Abre o pop-up de digitação, com os campos **um embaixo do outro** (preenchimento na vertical). Embaixo ficam só os totais (**Débitos**, **Créditos** e **Diferença**) e os botões.
 2. Informe a **data**.
-3. Em **Conta a débito (D)** e **Conta a crédito (C)**, digite o **código reduzido** (no primeiro campo) ou o código/nome da conta (no segundo, com lista de sugestões), ou clique na conta em *Contas analíticas*. O **nome da conta** aparece ao lado, para conferir.
-4. Informe o **valor** (formata como 1.500,00), o **documento** (NF, recibo, boleto), o **histórico padrão** (código) e/ou o **histórico**, o **centro de custo** e o **participante**, quando exigidos.
-5. Para mais de uma partida, clique em **Nova partida (↓)** (ou seta para baixo): o formulário passa a mostrar a nova partida. Clique numa partida da lista para voltar a ela.
+3. Em **Conta a débito (D)** e **Conta a crédito (C)**, digite o **código reduzido** (no primeiro campo) ou o código/nome da conta (no segundo, com lista de sugestões). Para procurar no plano de contas, clique na **lupa** dentro do campo (ou tecle **F4**): abre uma lista só com as contas analíticas, com caixa para digitar parte do código ou do nome; **Enter** ou duplo clique escolhe. O **nome da conta** aparece ao lado, para conferir.
+4. Informe o **valor** (formata como 1.500,00), o **documento** (NF, recibo, boleto), o **histórico padrão** (código) e/ou o **histórico**, o **centro de custo** (o campo só aparece se a empresa usa centros de custo: *Cadastros › Empresas › Contabilidade*) e o **participante**, quando exigidos.
+5. Para um lançamento com **várias partidas**, clique em **+ Mais partidas**, logo abaixo da conta a crédito. Aparece uma linha compacta com a conta a débito (D) e/ou a conta a crédito (C), o valor e o histórico; repita para cada partida e use o **✕** para remover uma. O rodapé mostra a diferença: o lançamento só salva quando débitos e créditos são iguais.
 6. **Salvar (Ctrl+S)**.
 
 ### Teclado
@@ -98,13 +98,15 @@ A tela mostra os **lançamentos efetuados** do período, com os botões **Novo (
 | Shift+Enter | Volta ao campo anterior |
 | **Enter no último campo** | Salva, se o lançamento já fecha; senão segue para a próxima partida |
 | Ctrl+Enter | Salva |
-| Ctrl+N / ↓ na última partida | Nova partida |
+| F4 (ou a lupa) | Pesquisa a conta, o histórico ou o centro de custo |
+| ↓ na última linha | Acrescenta uma partida (o mesmo que **+ Mais partidas**) |
 | ↑ em partida nova e vazia | Cancela a partida |
 | Ctrl+Delete | Exclui a partida |
 
 ### Uma partida ou várias
-- Uma partida com conta débito **e** conta crédito é um lançamento completo.
-- Partidas com **uma conta só** somam um único lançamento que precisa fechar (débitos = créditos). Se faltar a contrapartida, o sistema pergunta e oferece incluir a linha.
+- Só o formulário, com conta débito **e** conta crédito: é um lançamento completo.
+- Com **+ Mais partidas**, todas as linhas (o formulário e as partidas acrescentadas) formam **um único lançamento**, com a data, o documento e o centro de custo do formulário (a partida pode ter o seu próprio histórico). Débitos e créditos precisam fechar. Se faltar a contrapartida, o sistema pergunta e oferece incluir a linha.
+- Exemplo: venda de 300,00 com 200,00 de mercadorias e 100,00 de serviços. No formulário, débito em Clientes e valor 300,00; em **+ Mais partidas**, uma linha com crédito em Vendas de mercadorias 200,00 e outra com crédito em Receita de serviços 100,00.
 
 ### Editar um lançamento
 Dê **duplo clique** (ou Enter) no lançamento da lista, ou clique em **Editar**. O que acontece ao salvar depende da configuração **Usar estorno de lançamentos** da empresa (aba Contabilidade do cadastro da empresa):
@@ -175,7 +177,13 @@ Todas ficam em *Integrações › Importar*. Em todas, **Pré-visualizar** valid
 **Atenção:** PDF escaneado (imagem) não tem texto para ler; peça ao banco o OFX ou o PDF gerado pelo internet banking.
 
 ### Lançamentos contábeis (layout padrão)
-Use **Gerar planilha modelo (.xlsx)**, preencha (`LANCAMENTO;DATA;CONTA;DC;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`), escolha o arquivo, **Pré-visualizar** e **Importar**.
+**Onde fica:** *Integrações › Importar › Lançamentos contábeis (layout padrão)* (não está mais no menu Lançamentos).
+
+Use **Gerar planilha modelo (.xlsx)**, preencha as colunas `DATA;DEBITO;CREDITO;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO`, escolha o arquivo, **Pré-visualizar** e **Importar**.
+- **Débito e crédito em colunas separadas:** a linha com a conta a débito **e** a conta a crédito é um lançamento completo.
+- **Só débito ou só crédito:** preencha apenas uma das duas colunas. As linhas seguintes com o **mesmo documento e a mesma data** formam um único lançamento, que se fecha quando os débitos igualam os créditos (no modelo, a venda de 06/03 tem um débito e dois créditos). Se o grupo não fechar, a pré-visualização mostra o erro de débitos diferentes de créditos.
+- **Valor negativo** inverte o lado (débito vira crédito).
+- Planilhas antigas, com as colunas `LANCAMENTO;DATA;CONTA;DC;VALOR`, continuam sendo aceitas.
 
 ### Importar SPED (ECD e ECF)
 **Para que serve:** trazer para a empresa os dados de um arquivo SPED feito em outro sistema: a **ECD** (plano de contas, centros de custo, históricos, saldos e lançamentos) ou a **ECF** (e-Lalur/e-Lacs, Parte B, apurações do IRPJ e da CSLL e, se faltar, o plano de contas).
@@ -261,7 +269,7 @@ Escolha o período, marque (ou não) *Incluir estornados e estornos*, clique em 
 **Onde fica:** *Lançamentos › Fechamentos › Encerramento do exercício*.
 
 1. Escolha o **exercício**.
-2. Confira a **conta de apuração do resultado** e as contas de **lucros** e **prejuízos acumulados** (vêm da aba Contabilidade da empresa). Ao lado de cada campo há uma **caixa de pesquisa**: digite parte do código, o número reduzido ou parte do nome e escolha a conta na lista. Só aparecem contas analíticas do plano desta empresa (de resultado para a apuração; de patrimônio líquido para lucros e prejuízos).
+2. Confira a **conta de apuração do resultado** e as contas de **lucros** e **prejuízos acumulados** (vêm da aba Contabilidade da empresa). Cada campo tem uma **caixa de pesquisa**: digite parte do código, o número reduzido ou parte do nome e escolha a conta na lista; ou clique na **lupa** dentro do campo (ou tecle **F4**) para abrir a pesquisa em uma janela, com filtro por código ou nome, e escolha com **Enter** ou duplo clique. Só aparecem contas analíticas do plano desta empresa (de resultado para a apuração; de patrimônio líquido para lucros e prejuízos).
 3. **Calcular prévia** para ver os valores. Antes de calcular (e antes de encerrar) o sistema confere as três contas: se alguma não existe no plano da empresa, não está na máscara do plano, é sintética (agrupadora) ou é de outro grupo (por exemplo, uma conta do Ativo), aparece o aviso *"Corrija as contas do encerramento antes de continuar"* com o motivo de cada conta, e nada é gravado. Corrija com a caixa de pesquisa e tente de novo.
 4. **Encerrar exercício**. Os lançamentos saem como tipo "E" (exigido pela ECD).
 5. Para ajustar algo depois, use **Desfazer o encerramento**, informe o motivo (obrigatório) e confirme: os dois lançamentos são estornados.

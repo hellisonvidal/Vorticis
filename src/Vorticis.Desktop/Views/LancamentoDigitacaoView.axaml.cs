@@ -22,6 +22,9 @@ public partial class LancamentoDigitacaoView : UserControl
     private static readonly string[] CamposLinha =
         ["data", "reduzido", "conta", "reduzidocredito", "contacredito", "valor", "documento", "codhistorico", "historico", "centrocusto", "participante"];
 
+    /// <summary>Campos das "mais partidas" (linhas compactas): contas de débito e crédito, valor e histórico.</summary>
+    private static readonly string[] CamposExtra = ["reduzido", "conta", "reduzidocredito", "contacredito", "valor", "historico"];
+
     /// <summary>Sugestões de conta: reduzido, início do código ou parte do nome.</summary>
     public static AutoCompleteFilterPredicate<object?> FiltroConta { get; } =
         (texto, item) => item is ContaSelecionavel c && LancamentoViewModel.Combina(c, texto);
@@ -46,13 +49,24 @@ public partial class LancamentoDigitacaoView : UserControl
         };
     }
 
-    /// <summary>Ordem dos campos no Enter; o participante só existe no plano com participantes.</summary>
-    private string[] Campos => _vm?.UsaParticipantes == true ? CamposLinha : CamposLinha[..^1];
+    /// <summary>
+    /// Ordem dos campos no Enter. No formulário (primeira linha), o centro de custo só existe com o uso de centros de custo ligado
+    /// na empresa e o participante só no plano com participantes; as "mais partidas" têm só os campos compactos.
+    /// </summary>
+    private string[] CamposDe(LinhaLancamentoViewModel linha)
+    {
+        if (_vm is null || !ReferenceEquals(linha, _vm.Principal)) return CamposExtra;
+        return CamposLinha.Where(c => c switch { "centrocusto" => _vm.UsaCentroCusto, "participante" => _vm.UsaParticipantes, _ => true }).ToArray();
+    }
+
+    /// <summary>O campo pedido se a linha o tem; senão o primeiro campo dela (ao descer do formulário para as partidas compactas, por exemplo).</summary>
+    private string TagValida(LinhaLancamentoViewModel linha, string tag) =>
+        CamposDe(linha) is var campos && campos.Contains(tag) ? tag : campos[0];
 
     /// <summary>Linhas recomeçadas (abrir, Limpar, Salvar): foco no primeiro campo.</summary>
     private void AoMudarLinhas(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Reset) Focar(0, Campos[0]);
+        if (e.Action == NotifyCollectionChangedAction.Reset && _vm is { Linhas.Count: > 0 }) Focar(0, CamposDe(_vm.Linhas[0])[0]);
     }
 
     /// <summary>Campo (TextBox ou AutoCompleteBox com Tag) que contém o elemento.</summary>
@@ -81,31 +95,33 @@ public partial class LancamentoDigitacaoView : UserControl
                 break;
             case Key.Enter when e.KeyModifiers == KeyModifiers.Shift && !listaAberta:      // Shift+Enter volta ao campo anterior
                 e.Handled = true;
-                var anterior = Array.IndexOf(Campos, tag) - 1;
-                if (anterior >= 0) Focar(i, Campos[anterior]);
-                else if (i > 0) Focar(i - 1, Campos[^1]);
+                var campos = CamposDe(linha);
+                var anterior = Array.IndexOf(campos, tag) - 1;
+                if (anterior >= 0) Focar(i, campos[anterior]);
+                else if (i > 0) Focar(i - 1, CamposDe(_vm.Linhas[i - 1])[^1]);
                 break;
             case Key.Down when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
                 ConcluirCampo(linha, tag, campo);
                 if (i == _vm.Linhas.Count - 1)
                 {
-                    _vm.AdicionarLinha();
-                    Focar(i + 1, Campos[0]);
+                    var nova = _vm.AdicionarLinha();
+                    Focar(i + 1, CamposDe(nova)[0]);
                 }
-                else Focar(i + 1, tag);
+                else Focar(i + 1, TagValida(_vm.Linhas[i + 1], tag));
                 break;
             case Key.Up when e.KeyModifiers == KeyModifiers.None && !listaAberta:
                 e.Handled = true;
                 if (i == 0) break;
                 ConcluirCampo(linha, tag, campo);
                 _vm.CancelarLinhaNova(linha);
-                Focar(i - 1, tag);
+                Focar(i - 1, TagValida(_vm.Linhas[i - 1], tag));
                 break;
             case Key.Delete when e.KeyModifiers == KeyModifiers.Control:
                 e.Handled = true;
                 _vm.ExcluirLinhaCommand.Execute(null);
-                Focar(Math.Min(i, _vm.Linhas.Count - 1), tag);
+                var alvo = Math.Min(i, _vm.Linhas.Count - 1);
+                Focar(alvo, TagValida(_vm.Linhas[alvo], tag));
                 break;
         }
     }
@@ -113,7 +129,7 @@ public partial class LancamentoDigitacaoView : UserControl
     /// <summary>Enter: próximo campo; no último, salva (se o lançamento fecha) ou vai à próxima linha (criada se preciso).</summary>
     private void Avancar(LinhaLancamentoViewModel linha, int i, string tag)
     {
-        var campos = Campos;
+        var campos = CamposDe(linha);
         var p = Array.IndexOf(campos, tag) + 1;
         // Reduzido já identificou a conta: pula o campo da conta.
         if (tag == "reduzido" && linha.NomeConta.Length > 0 && linha.Reduzido.Trim().Length > 0) p++;
@@ -125,20 +141,21 @@ public partial class LancamentoDigitacaoView : UserControl
         }
         if (_vm!.SalvarPeloEnter()) return;
         if (i == _vm.Linhas.Count - 1) _vm.AdicionarLinha();
-        Focar(i + 1, campos[0]);
+        Focar(i + 1, CamposDe(_vm.Linhas[i + 1])[0]);
     }
 
-    /// <summary>Seleciona a partida (o formulário passa a mostrá-la) e foca o campo.</summary>
+    /// <summary>Seleciona a partida (o formulário ou uma das linhas compactas) e foca o campo.</summary>
     private void Focar(int linha, string tag)
     {
         if (_vm is null || linha < 0 || linha >= _vm.Linhas.Count) return;
-        _vm.LinhaSelecionada = _vm.Linhas[linha];
-        Dispatcher.UIThread.Post(() => FocarCampo(tag), DispatcherPriority.Loaded);
+        var l = _vm.Linhas[linha];
+        _vm.LinhaSelecionada = l;
+        Dispatcher.UIThread.Post(() => FocarCampo(l, tag), DispatcherPriority.Loaded);
     }
 
-    private void FocarCampo(string tag)
+    private void FocarCampo(LinhaLancamentoViewModel linha, string tag)
     {
-        var alvo = Detalhes.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag && (c is TextBox || c is AutoCompleteBox));
+        var alvo = Detalhes.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Tag as string == tag && ReferenceEquals(c.DataContext, linha) && (c is TextBox || c is AutoCompleteBox));
         if (alvo is AutoCompleteBox acb) alvo = acb.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? alvo;
         alvo?.Focus(NavigationMethod.Tab);
         if (alvo is TextBox tb && tag != "historico") tb.SelectAll();

@@ -42,11 +42,84 @@ public class ImportacaoLancamentosTests
             2;06/03/2026;1.1.01.001;D;300,00;Venda;;77
             2;06/03/2026;3.1.01.001;C;300,00;Venda;;77
             """);
-        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao);
+        Assert.Same(LayoutImportacao.PadraoAnterior, LayoutImportacao.PadraoPara(t));      // planilha antiga: CONTA e DC
+        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.PadraoPara(t));
         Assert.Empty(r.Erros);
         Assert.Equal(2, r.Lancamentos.Count);
         Assert.Equal("ADM", r.Lancamentos[0].Partidas[0].CodigoCentroCusto);
         Assert.Equal((4, 300m, "77"), (r.Lancamentos[1].Linha, r.Lancamentos[1].Total, r.Lancamentos[1].Partidas[0].NumeroArquivo));
+    }
+
+    [Fact]
+    public void Layout_padrao_tem_debito_e_credito_em_colunas_separadas()
+    {
+        Assert.Equal(["DATA", "DEBITO", "CREDITO", "VALOR", "HISTORICO", "CENTRO_CUSTO", "DOCUMENTO"], LayoutImportacao.ColunasPadrao);
+        var t = TabelaImportada.DeTexto("""
+            DATA;DEBITO;CREDITO;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO
+            05/03/2026;4.2.02.001;1.1.01.002;1000,00;Aluguel março;ADM;123
+            ;;;;;;
+            """);
+        Assert.Same(LayoutImportacao.Padrao, LayoutImportacao.PadraoPara(t));
+        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao);
+        Assert.Empty(r.Erros);
+        var l = Assert.Single(r.Lancamentos);
+        Assert.Equal([("4.2.02.001", IndicadorDC.D), ("1.1.01.002", IndicadorDC.C)], l.Partidas.Select(p => (p.CodigoConta, p.DC)));
+        Assert.All(l.Partidas, p => Assert.Equal((1000m, "ADM", "123", "Aluguel março"), (p.Valor, p.CodigoCentroCusto, p.NumeroArquivo, p.Historico)));
+    }
+
+    [Fact]
+    public void Linha_so_com_debito_ou_so_com_credito_agrupa_por_documento_e_data_ate_fechar()
+    {
+        var t = TabelaImportada.DeTexto("""
+            DATA;DEBITO;CREDITO;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO
+            06/03/2026;1.1.01.001;;300,00;Venda;;77
+            06/03/2026;;3.1.01.001;200,00;Venda;;77
+            06/03/2026;;3.1.01.002;100,00;Venda;;77
+            07/03/2026;4.2.02.001;1.1.01.002;50,00;Tarifa;;
+            08/03/2026;1.1.01.002;;80,00;Depósito;;88
+            08/03/2026;;1.1.01.001;80,00;Depósito;;88
+            09/03/2026;1.1.01.001;;10,00;Sem contrapartida;;99
+            """);
+        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao);
+        Assert.Empty(r.Erros);
+        Assert.Equal([3, 2, 2, 1], r.Lancamentos.Select(l => l.Partidas.Count));              // o último fica aberto: a validação aponta o desbalanceamento
+        Assert.Equal([2, 5, 6, 8], r.Lancamentos.Select(l => l.Linha));
+        var venda = r.Lancamentos[0];
+        Assert.Equal((300m, 300m), (venda.Partidas.Where(p => p.DC == IndicadorDC.D).Sum(p => p.Valor), venda.Partidas.Where(p => p.DC == IndicadorDC.C).Sum(p => p.Valor)));
+        Assert.All(venda.Partidas, p => Assert.Equal("77", p.NumeroArquivo));
+        var solto = r.Lancamentos[^1];
+        Assert.Equal((new DateOnly(2026, 3, 9), IndicadorDC.D, 10m), (solto.Data, solto.Partidas[0].DC, solto.Partidas[0].Valor));
+    }
+
+    [Fact]
+    public void Partidas_simples_de_documentos_ou_datas_diferentes_nao_se_misturam()
+    {
+        var t = TabelaImportada.DeTexto("""
+            DATA;DEBITO;CREDITO;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO
+            06/03/2026;1.1.01.001;;300,00;;;77
+            06/03/2026;;3.1.01.001;300,00;;;78
+            07/03/2026;;3.1.01.001;300,00;;;78
+            06/03/2026;;1.1.01.001;-50,00;;;5
+            06/03/2026;;3.1.01.001;50,00;;;5
+            """);
+        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao);
+        Assert.Empty(r.Erros);
+        Assert.Equal([1, 1, 1, 2], r.Lancamentos.Select(l => l.Partidas.Count));            // 77 e 78 ficam abertos (erro na validação); crédito de -50 vira débito e fecha com o crédito de 50
+        Assert.Equal([IndicadorDC.D, IndicadorDC.C], r.Lancamentos[3].Partidas.Select(p => p.DC));
+    }
+
+    [Fact]
+    public void Layout_padrao_sem_nenhuma_conta_na_linha_da_erro_em_portugues()
+    {
+        var t = TabelaImportada.DeTexto("""
+            DATA;DEBITO;CREDITO;VALOR;HISTORICO;CENTRO_CUSTO;DOCUMENTO
+            06/03/2026;;;300,00;;;
+            """);
+        var r = ImportadorLancamentos.Ler(t, LayoutImportacao.Padrao);
+        Assert.Equal(["Linha 2: informe a conta de débito, a de crédito ou as duas."], r.Erros);
+        // um layout próprio, sem partida simples, mantém a mensagem de sempre
+        var proprio = new LayoutImportacao { ColunaData = "DATA", ColunaContaDebito = "DEBITO", ColunaContaCredito = "CREDITO", ColunaValor = "VALOR" };
+        Assert.Equal(["Linha 2: informe a conta débito."], ImportadorLancamentos.Ler(t, proprio).Erros);
     }
 
     [Fact]

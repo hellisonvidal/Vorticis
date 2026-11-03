@@ -684,7 +684,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             padrao.Arquivo = padrao.ModeloGerado!;
             await padrao.PreVisualizarCommand.ExecuteAsync(null);
             Assert.Empty(padrao.Erros);
-            Assert.Equal(("1000,00".Replace(",00", ""), "OK"), (Assert.Single(padrao.Previa).Item.Lancamento.Total.ToString("0"), padrao.Previa[0].Situacao));
+            Assert.Equal(2, padrao.Previa.Count);                               // o modelo traz um lançamento com débito e crédito na mesma linha...
+            Assert.Equal(("1000", "OK", 2), (padrao.Previa[0].Item.Lancamento.Total.ToString("0"), padrao.Previa[0].Situacao, padrao.Previa[0].Item.Lancamento.Partidas.Count));
+            Assert.Equal(("300", "OK", 3), (padrao.Previa[1].Item.Lancamento.Total.ToString("0"), padrao.Previa[1].Situacao, padrao.Previa[1].Item.Lancamento.Partidas.Count));   // ...e outro de três partidas simples (mesmo documento)
             Foto(janela, "06e_importar_lancamentos");
 
             // Centros de custo
@@ -792,7 +794,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             Assert.Equal("reduzido", (pop.FocusManager!.GetFocusedElement() as Control)?.Tag);
             pop.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.Shift, Avalonia.Input.PhysicalKey.Enter, null); Dispatcher.UIThread.RunJobs();
             Assert.Same(Campo("data"), pop.FocusManager!.GetFocusedElement());
-            Assert.NotNull(dig.FindControl<ItemsControl>("LinhasLancamento"));
+            Assert.Null(dig.FindControl<ItemsControl>("LinhasLancamento"));      // sem a grade grande de partidas nem o painel do plano de contas
+            Assert.Contains(dig.GetVisualDescendants().OfType<Button>(), b => b.Content as string == "+ Mais partidas");
+            Assert.False(Campo("centrocusto") is { IsEffectivelyVisible: true });  // a empresa de teste não usa centros de custo
             // preenchimento na vertical: cada campo abaixo do anterior
             var alturas = new[] { "data", "reduzido", "reduzidocredito", "valor", "documento", "codhistorico", "historico" }
                 .Select(t => Campo(t)!.TranslatePoint(new Point(0, 0), pop)!.Value.Y).ToList();
@@ -802,7 +806,9 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             pop.KeyPress(Avalonia.Input.Key.Down, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.ArrowDown, null); Dispatcher.UIThread.RunJobs();
             Assert.Equal(2, la.Linhas.Count);
             Assert.Same(la.Linhas[1], la.LinhaSelecionada);
-            Assert.Same(la.Linhas[1], Campo("data")!.DataContext);
+            Assert.Same(la.Linhas[1], Assert.Single(la.Extras));                  // a nova partida é uma linha compacta; o formulário continua o do lançamento
+            Assert.Same(la.Linhas[0], Campo("data")!.DataContext);
+            Assert.Equal(2, dig.GetVisualDescendants().OfType<Control>().Count(c => c.Tag as string == "conta"));
             la.CancelarDigitacao();
             Assert.False(la.DigitacaoAberta);
             // Botões da grade: Excluir (com confirmação), Consultar (somente leitura + Estornar) e Editar (pop-up para alteração)

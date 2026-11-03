@@ -40,7 +40,6 @@ public sealed class ModuloContabil : IModuloDesktop
             ItemMenu.Submenu("_Contábeis",
                 ItemMenu.Tela("Lançamento contábil", Telas.Lancamento, "Ctrl+L"),
                 ItemMenu.Tela("Saldos iniciais (implantação)", Telas.SaldosIniciais),
-                ItemMenu.Tela("Importar lançamentos (layout padrão)", Telas.ImportarLancamentos),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Reorganizar lançamentos", Telas.ReorganizarLancamentos)),
             ItemMenu.Submenu("C_onciliações", ItemMenu.Tela("Conciliação automática", Telas.Conciliacao)),
