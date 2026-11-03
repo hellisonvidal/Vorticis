@@ -173,6 +173,10 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
     [ObservableProperty] private string _contaApuracao = "";
     [ObservableProperty] private string _contaLucros = "";
     [ObservableProperty] private string _contaPrejuizos = "";
+    /// <summary>Contas título (sintéticas do último nível) onde nascem as contas dos clientes e dos fornecedores cadastrados.</summary>
+    [ObservableProperty] private string _contaTituloClientes = "";
+    [ObservableProperty] private string _contaTituloFornecedores = "";
+    private IReadOnlyList<Application.Contabil.ContaDetalhe> _contasPlano = [];
     [ObservableProperty] private OpcaoApuracaoIrpj? _apuracaoIrpj;
     [ObservableProperty] private bool _regimeCaixa;
     /// <summary>Máscara do plano de centros de custo (vazia = códigos livres); vale quando a empresa usa centros de custo.</summary>
@@ -217,13 +221,22 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         ModeloSelecionado?.Id, Mascara, InicioEscrituracao is { } d ? DateOnly.FromDateTime(d) : null, UsaCentroCusto, GrandePorte,
         ContaApuracao, ContaLucros, ContaPrejuizos, EhLucroReal ? ApuracaoIrpj?.Valor : null, PermiteRegimeCaixa && RegimeCaixa,
         UsaCentroCusto ? MascaraCentroCusto : _configuracao.MascaraCentroCusto, ExigeDocumento,
-        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null, UsaEstorno, _configuracao.UsaGerencial);
+        DataBloqueio is { } b ? DateOnly.FromDateTime(b) : null, UsaEstorno, _configuracao.UsaGerencial, _configuracao.NomePlano,
+        TituloId(ContaTituloClientes), TituloId(ContaTituloFornecedores));
+
+    private long? TituloId(string codigo)
+        => codigo.Trim() is { Length: > 0 } c ? _contasPlano.FirstOrDefault(x => x.Codigo == c || x.CodigoReduzido?.ToString() == c)?.Id : null;
+
+    private string CodigoDaConta(long? id) => id is long i && _contasPlano.FirstOrDefault(x => x.Id == i) is { } c ? c.Codigo : "";
 
     private void MostrarConfiguracao(ConfiguracaoContabil c)
     {
         _configuracao = c;
         ModeloSelecionado = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == c.ModeloPlano);
-        PlanoAtual = ModeloSelecionado is { } m ? $"Plano de contas aplicado: {m.Nome}." : "Plano próprio (importado ou personalizado) ou ainda não criado.";
+        PlanoAtual = ModeloSelecionado is { } m ? $"Plano de contas aplicado: {m.Nome}."
+                   : c.NomePlano is { Length: > 0 } nome ? $"Plano de contas: {nome}."
+                   : "Plano próprio (importado ou personalizado) ou ainda não criado.";
+        (ContaTituloClientes, ContaTituloFornecedores) = (CodigoDaConta(c.ContaTituloClientesId), CodigoDaConta(c.ContaTituloFornecedoresId));
         (Mascara, InicioEscrituracao, UsaCentroCusto, GrandePorte) = (c.MascaraPlano ?? "", c.InicioEscrituracao?.ToDateTime(TimeOnly.MinValue), c.UsaCentroCusto, c.GrandePorte);
         (ContaApuracao, ContaLucros, ContaPrejuizos) = (c.ContaApuracao ?? "", c.ContaLucros ?? "", c.ContaPrejuizos ?? "");
         (ApuracaoIrpj, RegimeCaixa) = (OpcaoApuracaoIrpj.Todas.FirstOrDefault(o => o.Valor == c.ApuracaoIrpj), c.RegimeCaixa);
@@ -267,6 +280,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         LimparFormulario();
         Logo.Carregar(null);
         (OpcoesApuracao, OpcoesPatrimonio) = ([], []);
+        _contasPlano = [];
         (NaturezaJuridica, Uf, Regime, ImportarPlanoModelo, UsaParticipantes) = ("2062", "SP", RegimeTributario.SimplesNacional, true, false);
         (InicioAtividades, AnoExercicio) = (new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today.Year);
         // Fora do Escritório a empresa nova fica ativa no módulo atual e no Escritório, que decide os demais módulos.
@@ -291,6 +305,7 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
         var usa = false;
         LogoEmpresa? logo = null;
         OpcoesContasEncerramento? opcoes = null;
+        IReadOnlyList<Application.Contabil.ContaDetalhe> contas = [];
         if (main.App is { } app && main.EmpresaSelecionada is { } sel && PodeManter)
         {
             d = await app.Empresas.ObterAsync(sel.Id);
@@ -299,12 +314,14 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             if (main.Sessao is { } sessao)
             {
                 cfg = await app.PlanoContas.ObterConfiguracaoAsync(sel.Id, sessao.Id);
-                opcoes = OpcoesContasEncerramento.De(await app.PlanoContas.ListarAsync(sel.Id, sessao.Id));
+                contas = await app.PlanoContas.ListarAsync(sel.Id, sessao.Id);
+                opcoes = OpcoesContasEncerramento.De(contas);
             }
         }
         if (!EhAtual(geracao) || EmEdicao) return;
         UsaParticipantes = usa;
         (OpcoesApuracao, OpcoesPatrimonio) = (opcoes?.Apuracao ?? [], opcoes?.Patrimonio ?? []);
+        _contasPlano = contas;
         Logo.Carregar(logo);
         _carregada = d;
         if (d is null) LimparFormulario();
@@ -444,14 +461,42 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
                 var m = await app.PlanoContas.AplicarModeloAsync(empresaId, escolhido.Id, usuarioId);
                 if (!m.Sucesso) { MostrarResultado(m, ""); return false; }
                 aplicado = $" Plano de contas substituído pelo modelo {escolhido.Nome} ({m.Valor} contas).";
+                (_contasPlano, ContaTituloClientes, ContaTituloFornecedores) = ([], "", "");   // as contas antigas deixaram de existir
                 (ContaApuracao, ContaLucros, ContaPrejuizos) = (escolhido.Contas.Apuracao, escolhido.Contas.LucrosAcumulados, escolhido.Contas.PrejuizosAcumulados);
+            }
+        }
+        // Máscara nova com plano já cadastrado: mostra a prévia e, confirmando, recodifica o plano inteiro junto com a gravação
+        var converterPlano = false;
+        var mascaraNova = Domain.Contabil.MascaraPlano.Ler(Mascara) is { Sucesso: true } mn ? mn.Valor : null;
+        var mascaraAntiga = Domain.Contabil.MascaraPlano.Ler(_configuracao.MascaraPlano) is { Sucesso: true } ma ? ma.Valor.Texto : null;
+        if (aplicado is null && mascaraNova is not null && mascaraNova.Texto != mascaraAntiga && _contasPlano.Count > 0)
+        {
+            var previa = await app.PlanoContas.PreverMascaraAsync(empresaId, mascaraNova, usuarioId);
+            if (!previa.Sucesso) { MostrarResultado(previa, ""); return false; }
+            if (!previa.Valor.Possivel)
+            {
+                Erros.Clear();
+                Erros.Add($"O plano de contas não pode ser convertido para a máscara {mascaraNova.Texto}; nada foi alterado.");
+                foreach (var e in previa.Valor.Erros) Erros.Add(e);
+                return false;
+            }
+            if (previa.Valor.Mudancas > 0)
+            {
+                var exemplos = string.Join("\n", previa.Valor.Itens.Where(i => i.Muda).Take(6).Select(i => $"   {i.Antigo}  →  {i.Novo}"));
+                var avisos = previa.Valor.Avisos > 0 ? $"\n\nAtenção: {previa.Valor.Avisos} conta(s) perdem zeros à esquerda em algum nível." : "";
+                if (!await Contexto.ConfirmarAsync("Converter o plano de contas",
+                        $"A máscara mudou para {mascaraNova.Texto}. {previa.Valor.Mudancas} conta(s) do plano terão o código convertido, por exemplo:\n{exemplos}{avisos}\n\n" +
+                        "Os lançamentos e saldos continuam nas mesmas contas e a mudança fica na trilha de auditoria. Para ver todas as contas antes, use Cadastros › Plano de contas › Converter máscara.",
+                        "Converter o plano", "Cancelar"))
+                    return false;
+                converterPlano = true;
             }
         }
         var c = await app.PlanoContas.SalvarConfiguracaoAsync(empresaId, ConfiguracaoDoFormulario(),
                                                               DateOnly.FromDateTime(InicioAtividades ?? DateTime.Today), usuarioId,
-                                                              converterCentros: ConverterCentros);
+                                                              converterCentros: ConverterCentros, converterPlano: converterPlano);
         if (!c.Sucesso) { MostrarResultado(c, ""); return false; }
-        Mensagem += aplicado;
+        Mensagem += aplicado + (converterPlano ? " Plano de contas convertido para a nova máscara." : "");
         return true;
     }
 

@@ -24,7 +24,9 @@
     <!-- Plano atual e botão para trocá-lo (a grade só aparece com o plano escolhido) -->
     <DockPanel Grid.Row="1" Margin="0,0,0,8" IsVisible="{Binding MostrarGrade}">
       <Button DockPanel.Dock="Right" Content="Escolher plano" Command="{Binding EscolherPlanoCommand}" IsEnabled="{Binding !EmEdicao}" Margin="8,0,0,0"
-              ToolTip.Tip="Troca o plano inteiro por um modelo (só sem lançamentos)" />
+              ToolTip.Tip="Troca o plano inteiro por um modelo, ou cria um plano novo com a máscara que você definir (só sem lançamentos)" />
+      <Button Name="ConverterMascara" DockPanel.Dock="Right" Content="Converter máscara" Command="{Binding AbrirConversaoCommand}" IsEnabled="{Binding PodeEditar}" Margin="8,0,0,0"
+              ToolTip.Tip="Mostra como cada código ficaria em outra máscara e converte o plano inteiro (os lançamentos não mudam)" />
       <Button Name="ImportarContasExcel" DockPanel.Dock="Right" Content="Importar contas do Excel" Command="{Binding Importar.AbrirCommand}" IsEnabled="{Binding PodeEditar}" Margin="8,0,0,0"
               ToolTip.Tip="Acrescenta ao plano as contas que você marcar numa planilha (as que já existem ficam como estão)" />
       <Button Name="AbrirFichaConta" DockPanel.Dock="Right" Content="Abrir ficha" Command="{Binding AbrirFichaCommand}" Margin="12,0,0,0"
@@ -56,15 +58,86 @@
           <TextBlock Text="{Binding ModeloEscolhido.Descricao}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ModeloEscolhido.Base, StringFormat='Base normativa: {0}'}" FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
         </StackPanel>
+        <StackPanel Spacing="4" IsVisible="{Binding ModeloEscolhido, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Classes="secao" Text="Máscara dos códigos (opcional)" />
+          <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
+                     Text="Para usar o modelo numa máscara diferente, digite-a aqui (ex.: 9.9.99.999) e clique em Ver prévia. Os códigos são completados com zeros; o plano da empresa fica com a cópia convertida. Vazio = códigos do modelo." />
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Ver prévia" Command="{Binding VerPreviaModeloCommand}" Margin="8,0,0,0" />
+            <ComboBox DockPanel.Dock="Right" ItemsSource="{x:Static vm:PlanoContasViewModel.MascarasSugeridas}" SelectedItem="{Binding MascaraModelo}"
+                      PlaceholderText="Sugestões" Width="140" Margin="8,0,0,0" />
+            <TextBox Text="{Binding MascaraModelo}" Watermark="ex.: 9.9.99.999" FontFamily="Consolas, Menlo, monospace" />
+          </DockPanel>
+          <TextBlock Text="{Binding ResumoPreviaModelo}" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding ResumoPreviaModelo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <DataGrid ItemsSource="{Binding PreviaModelo}" IsReadOnly="True" AutoGenerateColumns="False" MaxHeight="220" FontFamily="Consolas, Menlo, monospace">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Código do modelo" Binding="{ReflectionBinding Antigo}" Width="150" />
+              <DataGridTextColumn Header="Código na máscara" Binding="{ReflectionBinding Novo}" Width="150" />
+              <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
         <TextBlock Classes="erro" Text="Seu perfil permite apenas consultar o plano." IsVisible="{Binding !PodeEditar}" />
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Content="Usar este plano" Classes="accent" Command="{Binding AplicarModeloCommand}" IsEnabled="{Binding PodeEditar}" />
+          <Button Name="CriarNovoPlano" Content="Criar novo plano" Command="{Binding AbrirNovoPlanoCommand}" IsEnabled="{Binding PodeEditar}"
+                  ToolTip.Tip="Cria um plano vazio com o nome e a máscara que você definir" />
           <Button Content="Cancelar" Command="{Binding CancelarEscolhaCommand}" IsVisible="{Binding TemPlano}" />
         </StackPanel>
+        <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="10" IsVisible="{Binding CriandoNovoPlano}">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="secao" Text="Criar novo plano" Margin="0" />
+            <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
+                       Text="Cria um plano vazio, só com os grupos principais (Ativo, Passivo, Patrimônio líquido, Receitas e Custos e despesas), na máscara que você definir. Depois use Incluir para cadastrar as contas; os códigos seguem a máscara." />
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+              <TextBlock Classes="rotulo" Text="Nome do plano" />
+              <TextBox Grid.Column="1" Text="{Binding NovoPlanoNome}" MaxLength="80" Watermark="ex.: Plano da empresa" />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Máscara" />
+              <DockPanel Grid.Row="1" Grid.Column="1">
+                <ComboBox DockPanel.Dock="Right" ItemsSource="{x:Static vm:PlanoContasViewModel.MascarasSugeridas}" SelectedItem="{Binding NovoPlanoMascara}"
+                          PlaceholderText="Sugestões" Width="140" Margin="8,0,0,0" />
+                <TextBox Text="{Binding NovoPlanoMascara}" Watermark="ex.: 9.9.99.999" FontFamily="Consolas, Menlo, monospace" />
+              </DockPanel>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Criar plano" Classes="accent" Command="{Binding CriarNovoPlanoCommand}" IsEnabled="{Binding PodeEditar}" />
+              <Button Content="Desistir" Command="{Binding CancelarNovoPlanoCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
         <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                    Text="O plano também pode vir de uma planilha: Integrações › Importar › Plano de contas. O mesmo catálogo de modelos é usado no cadastro da empresa (aba Contabilidade)." />
         <c:MensagensView />
       </StackPanel>
+    </Border>
+
+    <!-- Converter a máscara do plano da empresa: prévia conta a conta, avisos e conflitos antes de confirmar -->
+    <Border Grid.Row="2" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="14"
+            VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsVisible="{Binding MostrarConversao}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Converter máscara do plano de contas" />
+        <TextBlock DockPanel.Dock="Top" FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" Margin="0,4,0,8"
+                   Text="Digite a máscara desejada (ex.: 9.9.99.999) e clique em Ver prévia. Cada nível é completado com zeros à esquerda até a largura da máscara; se um nível não couber, ou dois códigos ficarem iguais, nada é convertido. Os lançamentos, saldos e vínculos continuam nas mesmas contas." />
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+          <Button DockPanel.Dock="Right" Content="Ver prévia" Command="{Binding VerPreviaConversaoCommand}" Margin="8,0,0,0" />
+          <ComboBox DockPanel.Dock="Right" ItemsSource="{x:Static vm:PlanoContasViewModel.MascarasSugeridas}" SelectedItem="{Binding MascaraConversao}"
+                    PlaceholderText="Sugestões" Width="140" Margin="8,0,0,0" />
+          <TextBox Text="{Binding MascaraConversao}" Watermark="ex.: 9.9.99.999" FontFamily="Consolas, Menlo, monospace" />
+        </DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="{Binding ResumoConversao}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6" IsVisible="{Binding ResumoConversao, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <c:MensagensView DockPanel.Dock="Bottom" />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button Name="ConfirmarConversao" Content="Converter plano" Classes="accent" Command="{Binding ConfirmarConversaoCommand}" />
+          <Button Content="Voltar" Command="{Binding CancelarConversaoCommand}" />
+        </StackPanel>
+        <DataGrid ItemsSource="{Binding PreviaConversaoItens}" IsReadOnly="True" AutoGenerateColumns="False" FontFamily="Consolas, Menlo, monospace">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Código atual" Binding="{ReflectionBinding Antigo}" Width="160" />
+            <DataGridTextColumn Header="Código novo" Binding="{ReflectionBinding Novo}" Width="160" />
+            <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
     </Border>
 
     <DockPanel Grid.Row="2" IsVisible="{Binding MostrarGrade}">

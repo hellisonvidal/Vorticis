@@ -27,6 +27,9 @@ public interface IRepositorioParticipantes
 /// Cadastros › Clientes e fornecedores. O código é numérico e sequencial por empresa; a mesma pessoa pode ser cliente
 /// e fornecedor. Quem já aparece em lançamentos não é excluído.
 /// </summary>
+/// <summary>Participante gravado; <see cref="ContaCriada"/> é o código da conta aberta no plano de contas (null = nenhuma foi criada).</summary>
+public sealed record ParticipanteGravado(long Id, string? ContaCriada);
+
 public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, Contabil.IRepositorioPlanoContas plano, Autorizador autorizador)
 {
     public async Task<IReadOnlyList<Participante>> ListarAsync(long empresaId, long usuarioId, CancellationToken ct = default)
@@ -53,7 +56,20 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
 
     public async Task<Resultado<long>> GravarAsync(long empresaId, Participante p, long usuarioId, CancellationToken ct = default)
     {
-        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return negado;
+        var r = await GravarCriandoContaAsync(empresaId, p, false, usuarioId, ct);
+        return r.Sucesso ? Resultado<long>.Ok(r.Valor.Id) : Resultado<long>.Falha(r.Erros);
+    }
+
+    /// <summary>
+    /// Grava o participante e, com <paramref name="criarConta"/>, abre a conta analítica dele no plano de contas: sob a conta título de
+    /// Clientes (ou de Fornecedores, se não for cliente) escolhida na configuração contábil, com o próximo código livre da máscara e o
+    /// nome do participante, e liga a conta ao cadastro. Quem já tem conta ligada não ganha outra. A criação da conta exige a
+    /// permissão de manter o plano de contas (ou de contabilização fiscal, no módulo Fiscal) e, se falhar, o participante não é gravado.
+    /// </summary>
+    public async Task<Resultado<ParticipanteGravado>> GravarCriandoContaAsync(long empresaId, Participante p, bool criarConta, long usuarioId,
+                                                                             CancellationToken ct = default)
+    {
+        if (await autorizador.VerificarAsync(usuarioId, empresaId, Permissao.LancamentoIncluir, ct) is { } negado) return Resultado<ParticipanteGravado>.Falha(negado);
         var lista = await repositorio.ListarAsync(empresaId, ct);
         var codigo = string.IsNullOrWhiteSpace(p.Codigo) ? ProximoCodigo(lista) : p.Codigo.Trim();
         var doc = Cnpj.SomenteDigitos(p.CpfCnpj);
@@ -83,20 +99,67 @@ public sealed class ServicoParticipantes(IRepositorioParticipantes repositorio, 
         if (p.ControleConta && !await repositorio.UsaParticipantesAsync(empresaId, ct))
             erros.Add("A empresa não usa o plano de contas com participantes (Cadastros › Empresas › Escrituração).");
         if (p.Id != 0 && lista.All(x => x.Id != p.Id)) erros.Add("Participante não encontrado.");
-        if (erros.Count > 0) return Resultado<long>.Falha(erros);
+        if (erros.Count > 0) return Resultado<ParticipanteGravado>.Falha(erros);
+        long? contaCriadaId = null;
+        string? contaCriada = null;
+        var jaLigado = contaId is not null || (p.Id != 0 && lista.FirstOrDefault(x => x.Id == p.Id)?.CodigoConta is { Length: > 0 });
+        if (criarConta && !jaLigado)
+        {
+            var pa = await autorizador.ObterAsync(usuarioId, empresaId, ct);
+            if (!pa.Pode(Permissao.PlanoContasManter) && !pa.Pode(Permissao.FiscalContabilizar))
+                return Resultado<ParticipanteGravado>.Falha($"Seu perfil ({pa.NomePerfil}) não permite criar contas no plano de contas.");
+            var nova = await CriarContaDoParticipanteAsync(empresaId, p, usuarioId, ct);
+            if (!nova.Sucesso) return Resultado<ParticipanteGravado>.Falha(nova.Erros);
+            (contaCriadaId, contaCriada) = (nova.Valor.Id, nova.Valor.Codigo);
+            contaId = contaCriadaId;
+            p = p with { CodigoConta = contaCriada };
+        }
         static string? N(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
         try
         {
-            return Resultado<long>.Ok(await repositorio.GravarAsync(empresaId, p with
+            var id = await repositorio.GravarAsync(empresaId, p with
             {
                 Codigo = codigo, Nome = p.Nome.Trim(), NomeFantasia = N(p.NomeFantasia), CpfCnpj = doc.Length == 0 ? null : doc,
                 InscricaoEstadual = N(p.InscricaoEstadual)?.ToUpperInvariant(), Uf = N(p.Uf)?.ToUpperInvariant(),
                 CodMunicipioIbge = N(p.CodMunicipioIbge), Municipio = N(p.Municipio), Email = N(p.Email), Telefone = N(p.Telefone),
                 Cep = cep.Length == 0 ? null : cep, Logradouro = N(p.Logradouro), Numero = N(p.Numero), Complemento = N(p.Complemento),
                 Bairro = N(p.Bairro),
-            }, contaId, ct));
+            }, contaId, ct);
+            return Resultado<ParticipanteGravado>.Ok(new ParticipanteGravado(id, contaCriada));
         }
-        catch (ViolacaoRegraException ex) { return Resultado<long>.Falha(ex.Message); }
+        catch (ViolacaoRegraException ex)
+        {
+            if (contaCriadaId is { } criada) try { await plano.ExcluirAsync(criada, usuarioId, ct); } catch (ViolacaoRegraException) { /* a conta fica no plano */ }
+            return Resultado<ParticipanteGravado>.Falha(ex.Message);
+        }
+    }
+
+    /// <summary>Abre a conta analítica do participante sob a conta título (a configuração contábil da empresa define qual).</summary>
+    private async Task<Resultado<(long Id, string Codigo)>> CriarContaDoParticipanteAsync(long empresaId, Participante p, long usuarioId, CancellationToken ct)
+    {
+        var cfg = await plano.ObterConfiguracaoAsync(empresaId, ct);
+        var tituloId = p.Cliente ? cfg.ContaTituloClientesId : cfg.ContaTituloFornecedoresId;
+        var rotulo = p.Cliente ? "Clientes" : "Fornecedores";
+        if (tituloId is null)
+            return Resultado<(long, string)>.Falha($"Para criar a conta no plano de contas, escolha antes a conta título de {rotulo} " +
+                                                  "(Cadastros › Empresas › aba Contabilidade).");
+        var contas = await plano.ListarAsync(empresaId, ct);
+        var titulo = contas.FirstOrDefault(c => c.Id == tituloId);
+        if (titulo is null || titulo.Analitica)
+            return Resultado<(long, string)>.Falha($"A conta título de {rotulo} não existe mais ou deixou de ser sintética; escolha-a de novo na aba Contabilidade da empresa.");
+        if (!titulo.Ativa) return Resultado<(long, string)>.Falha($"A conta título de {rotulo} ({titulo.Codigo}) está inativa.");
+        var mascara = Domain.Contabil.MascaraPlano.Ler(cfg.MascaraPlano) is { Sucesso: true } m ? m.Valor : null;
+        var codigo = Domain.Contabil.ConversaoPlano.ProximoCodigoFilho(titulo.Codigo, contas.Select(c => c.Codigo), mascara);
+        if (!codigo.Sucesso) return Resultado<(long, string)>.Falha(codigo.Erros);
+        var nome = p.Nome.Trim();
+        var reduzido = Sequencia.MenorLivre(contas.Where(c => c.CodigoReduzido.HasValue).Select(c => c.CodigoReduzido!.Value));
+        try
+        {
+            var id = await plano.IncluirAsync(empresaId, new Contabil.NovaConta(codigo.Valor, nome.Length > 200 ? nome[..200] : nome, titulo.CodNat,
+                titulo.NaturezaSaldo, false, false, titulo.DataInclusao, reduzido), titulo.Id, (short)(titulo.Nivel + 1), true, null, usuarioId, ct);
+            return Resultado<(long, string)>.Ok((id, codigo.Valor));
+        }
+        catch (ViolacaoRegraException ex) { return Resultado<(long, string)>.Falha($"Não foi possível criar a conta no plano: {ex.Message}"); }
     }
 
     public async Task<Resultado> ExcluirAsync(long empresaId, long id, long usuarioId, CancellationToken ct = default)

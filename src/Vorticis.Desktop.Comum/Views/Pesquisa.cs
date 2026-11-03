@@ -67,6 +67,15 @@ public static class Pesquisa
             ? (await app.PlanoContas.ListarCentrosAsync(e, s.Id, ct)).Where(x => x.Ativo && x.Analitico).Select(x => new ItemPesquisa(x.Codigo, x.Descricao)).ToList()
             : []);
 
+        // Contas título de clientes e fornecedores: sintéticas do último nível (só têm analíticas abaixo).
+        Registrar("ContaTitulo", async (c, ct) =>
+        {
+            if (c.App is not { } app || c.EmpresaId is not { } e || c.Sessao is not { } s) return [];
+            var plano = await app.PlanoContas.ListarAsync(e, s.Id, ct);
+            return plano.Where(x => x.Ativa && !x.Analitica && x.Nivel >= 2 && !plano.Any(f => f.ContaPaiId == x.Id && !f.Analitica))
+                        .Select(x => new ItemPesquisa(x.Codigo, (x.CodigoReduzido is { } r ? $"[{r}] " : "") + x.Descricao)).ToList();
+        });
+
         // Contas analíticas (as que recebem lançamento) e as do encerramento do exercício (resultado e patrimônio líquido).
         Registrar("ContaAnalitica", async (c, ct) => c.App is { } app && c.EmpresaId is { } e && c.Sessao is { } s
             ? (await app.PlanoContas.ListarAsync(e, s.Id, ct)).Where(x => x.Ativa && x.Analitica)

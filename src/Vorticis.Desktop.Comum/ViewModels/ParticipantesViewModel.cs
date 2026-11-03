@@ -67,6 +67,13 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
     /// <summary>Alocado como participante dentro da conta contábil (plano com participantes).</summary>
     [ObservableProperty] private bool _controleConta;
     [ObservableProperty] private bool _usaParticipantes;
+    /// <summary>A conta título de Clientes (ou de Fornecedores, nesta tela) está escolhida na aba Contabilidade da empresa.</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(PodeCriarConta))] private bool _tituloConfigurado;
+    /// <summary>"Criar conta no plano de contas": abre a conta analítica do cadastro sob a conta título ao salvar.</summary>
+    [ObservableProperty] private bool _criarConta;
+    /// <summary>Opção disponível: conta título escolhida e o cadastro ainda sem conta ligada.</summary>
+    public bool PodeCriarConta => TituloConfigurado && Conta.Trim().Length == 0;
+    partial void OnContaChanged(string value) => OnPropertyChanged(nameof(PodeCriarConta));
 
     public string TituloLista => Fornecedores ? "Fornecedores cadastrados" : "Clientes cadastrados";
     public string TituloFormulario => (Fornecedores ? "Fornecedor" : "Cliente") + (EmInclusao ? " — inclusão" : Modo == ModoCadastro.Alteracao ? " — alteração" : "");
@@ -90,8 +97,10 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         var g = NovaGeracao();
         var lista = await app.Participantes.ListarAsync(empresa, sessao.Id);
         var usa = await app.Participantes.UsaParticipantesAsync(empresa);
+        var cfg = await app.PlanoContas.ObterConfiguracaoAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
         UsaParticipantes = usa;
+        TituloConfigurado = (Fornecedores ? cfg.ContaTituloFornecedoresId : cfg.ContaTituloClientesId) is not null;
         _todos = lista;
         Filtrar();
     }
@@ -132,6 +141,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         (Cep, Logradouro, Numero, Complemento, Bairro) = (Domain.Comum.Formato.Cep(p?.Cep), p?.Logradouro ?? "", p?.Numero ?? "", p?.Complemento ?? "", p?.Bairro ?? "");
         (Cliente, Fornecedor, Conta, Ativo, ControleConta) =
             (p?.Cliente ?? !Fornecedores, p?.Fornecedor ?? Fornecedores, p?.CodigoConta ?? "", p?.Ativo ?? true, p?.ControleConta ?? false);
+        CriarConta = false;
     }
 
     protected override void PrepararInclusao()
@@ -139,6 +149,7 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         Selecionado = null;
         MostrarSelecionado();
         Codigo = ServicoParticipantes.ProximoCodigo(_todos);
+        CriarConta = TituloConfigurado;   // padrão ligado quando a conta título está escolhida
     }
 
     protected override async Task<bool> GravarAsync(bool inclusao)
@@ -148,14 +159,16 @@ public abstract partial class ParticipantesViewModel(IContexto contexto, bool fo
         {
             var id = inclusao ? 0 : Selecionado?.P.Id ?? 0;
             if (!inclusao && id == 0) { Erros.Add("Selecione um cadastro."); return; }
-            var r = await app.Participantes.GravarAsync(empresa, new Participante(id, Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual, Uf,
-                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo, false, Cep, Logradouro, Numero, Complemento, Bairro, ControleConta), usuario);
+            var r = await app.Participantes.GravarCriandoContaAsync(empresa, new Participante(id, Codigo, Nome, NomeFantasia, CpfCnpj, InscricaoEstadual, Uf,
+                MunicipioIbge, Municipio, Email, Telefone, Cliente, Fornecedor, Conta, Ativo, false, Cep, Logradouro, Numero, Complemento, Bairro, ControleConta),
+                CriarConta && PodeCriarConta, usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
             Modo = ModoCadastro.Consulta;
             await CarregarAsync();
-            Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
-            Mensagem = inclusao ? $"{Nome.Trim()} incluído (código {Selecionado?.Codigo})." : "Cadastro alterado.";
+            Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor.Id);
+            Mensagem = (inclusao ? $"{Nome.Trim()} incluído (código {Selecionado?.Codigo})." : "Cadastro alterado.")
+                     + (r.Valor.ContaCriada is { } conta ? $" Conta {conta} criada no plano de contas." : "");
         }, Permissao.LancamentoIncluir);
         return ok;
     }

@@ -96,7 +96,19 @@
                           PlaceholderText="Modelos" Width="150" />
               </Grid>
               <TextBlock Grid.Row="4" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
-                         Text="Em empresa já cadastrada, escolher outro modelo e salvar substitui o plano de contas, o que só é possível enquanto não houver lançamentos." />
+                         Text="Em empresa já cadastrada, escolher outro modelo e salvar substitui o plano de contas, o que só é possível enquanto não houver lançamentos. Trocar a máscara de um plano já cadastrado mostra a prévia e converte todos os códigos de uma vez (os lançamentos não mudam)." />
+            </Grid>
+
+            <TextBlock Classes="secao" Text="Contas título de clientes e fornecedores" />
+            <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmEdicao}" IsVisible="{Binding !EmInclusao}">
+              <TextBlock Classes="rotulo" Text="Conta título de Clientes" />
+              <TextBox Grid.Column="1" v:Pesquisa.Fonte="ContaTitulo" Text="{Binding ContaTituloClientes}" Width="340" HorizontalAlignment="Left"
+                       Watermark="Sintética do último nível (ex.: 1.1.02)" FontFamily="Consolas, Menlo, monospace" />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Conta título de Fornecedores" />
+              <TextBox Grid.Row="1" Grid.Column="1" v:Pesquisa.Fonte="ContaTitulo" Text="{Binding ContaTituloFornecedores}" Width="340" HorizontalAlignment="Left"
+                       Watermark="Sintética do último nível (ex.: 2.1.01)" FontFamily="Consolas, Menlo, monospace" />
+              <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                         Text="No cadastro de Clientes e Fornecedores (também no Fiscal), a opção &quot;Criar conta no plano de contas&quot; abre a conta analítica da pessoa abaixo desta conta, com o próximo código da máscara e o nome dela. Use a lupa (F4) para escolher; deixe vazio para não usar." />
             </Grid>
 
             <TextBlock Classes="secao" Text="Participantes e centros de custo" />

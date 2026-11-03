@@ -31,7 +31,8 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 | Campo | Para que serve |
 |---|---|
 | Modelo do plano | 13 modelos prontos (comércio, indústria e serviços por regime, ITG 1000, entidade sem fins lucrativos, completo). "Plano próprio" não cria contas. |
-| Máscara dos códigos | Ex.: `9.9.99.999`; usada na importação e na conversão do plano. |
+| Máscara dos códigos | Ex.: `9.9.99.999`; usada na importação, na criação de contas e na conversão do plano. Ao trocá-la em empresa com plano cadastrado, o sistema mostra a prévia e converte o plano inteiro de uma vez (veja *Converter máscara* no Contábil). |
+| Contas título de Clientes e de Fornecedores | Escolha com a lupa (F4) a conta **sintética do último nível** sob a qual nascem as contas dos clientes e dos fornecedores (ex.: `1.1.02 Clientes`, `2.1.01 Fornecedores`). Aparece em empresa já cadastrada. Veja a opção *Criar conta no plano de contas* em [Clientes e fornecedores](#clientes-e-fornecedores-participantes). |
 | Usar centros de custo / máscara | Liga os centros de custo e define o formato dos códigos. |
 | Início da escrituração | Data a partir da qual a empresa é escriturada no sistema. |
 | Exigir nº do documento | Cada partida do lançamento precisa do número do documento (saldos iniciais, encerramento e estornos ficam isentos). |
@@ -92,8 +93,15 @@ Se o seu perfil não permite alterar, a tela só mostra os valores. Se você ape
 
 1. **Incluir** (a ficha abre numa janela sobre a lista) e digite CPF ou CNPJ (validado); **Buscar dados na Receita** preenche o restante.
 2. Complete nome, inscrição estadual (ou ISENTO), endereço (o CEP preenche o endereço) e contatos.
-3. Em **Contabilidade**, informe a **conta contábil** (código ou reduzido; opcional).
+3. Em **Contabilidade**, informe a **conta contábil** (código ou reduzido; opcional) ou deixe marcada **Criar conta no plano de contas** (veja abaixo).
 4. **Salvar** (a janela fecha).
+
+**Criar conta no plano de contas:** se a empresa escolheu a conta título de Clientes (ou de Fornecedores) na aba *Contabilidade*, a opção vem marcada na inclusão. Ao salvar, o sistema abre no plano de contas a conta analítica da pessoa, com o nome dela, abaixo da conta título e com o próximo código livre da máscara, e já liga a conta ao cadastro. Regras:
+- quem já tem conta contábil ligada não ganha outra (a opção fica desabilitada); na **alteração** a opção vem desmarcada, e você pode marcá-la para quem ainda não tem conta;
+- quem é cliente e fornecedor ao mesmo tempo recebe a conta sob o título de Clientes;
+- se o nível da máscara estiver cheio (ex.: 999 contas), o sistema avisa para ampliar a máscara (*Converter máscara*) e não salva;
+- exige permissão para manter o plano de contas (ou para a contabilização fiscal); sem ela, a mensagem informa e o cadastro não é salvo;
+- a mesma tela e a mesma opção valem no módulo Fiscal.
 
 **Participante na conta:** com a opção "plano com participantes" ligada na empresa, informe a conta (ex.: Clientes) e marque **Participante**. A conta passa a exigir o participante em cada lançamento, a tela de lançamento ganha a coluna *Part.* e o balancete pode **detalhar participantes**.
 

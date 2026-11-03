@@ -1,6 +1,6 @@
 # Fiscal
 
-Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de clientes e fornecedores e o plano de contas do módulo Contábil, no mesmo banco.
+Menus do módulo Vorticis Fiscal. As escriturações usam os cadastros de clientes e fornecedores e o plano de contas do módulo Contábil, no mesmo banco. No cadastro de *Clientes* e *Fornecedores* a opção **Criar conta no plano de contas** abre automaticamente a conta da pessoa abaixo da conta título escolhida na empresa (veja [Clientes e fornecedores](02-cadastros-comuns.md#clientes-e-fornecedores-participantes)).
 
 Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
 

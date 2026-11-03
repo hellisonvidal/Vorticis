@@ -133,7 +133,10 @@ public sealed partial record ConfiguracaoContabil(
     bool ExigeDocumento = false,
     DateOnly? DataBloqueio = null,
     bool UsaEstorno = true,
-    bool UsaGerencial = false)
+    bool UsaGerencial = false,
+    string? NomePlano = null,
+    long? ContaTituloClientesId = null,
+    long? ContaTituloFornecedoresId = null)
 {
     public const string Trimestral = "TRIMESTRAL";
     public const string AnualEstimativa = "ANUAL_ESTIMATIVA";

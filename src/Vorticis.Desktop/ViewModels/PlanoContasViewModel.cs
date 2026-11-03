@@ -35,6 +35,12 @@ public sealed record ContaLinha(ContaDetalhe Conta)
     public string Situacao => Conta.Ativa ? "" : "Inativa";
 }
 
+/// <summary>Linha da prévia de conversão: código atual → código novo, com o aviso quando a conta perde zeros.</summary>
+public sealed record LinhaPrevia(string Antigo, string Novo, string Situacao)
+{
+    public static LinhaPrevia De(ItemConversao i) => new(i.Antigo, i.Novo, i.Aviso is { } a ? "Atenção: " + a : i.Muda ? "Muda" : "Igual");
+}
+
 /// <summary>Conta sintética que pode ser o grupo onde as contas dos participantes são alocadas.</summary>
 public sealed record OpcaoGrupo(long Id, string Codigo, string Descricao)
 {
@@ -64,8 +70,9 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
 
     public static IReadOnlyList<ModeloPlano> ModelosPlano => CatalogoModelosPlano.Todos;
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade))] private bool _temPlano;
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade))] private bool _escolhendoPlano;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade), nameof(MostrarConversao))] private bool _temPlano;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarEscolha), nameof(MostrarGrade), nameof(MostrarConversao))] private bool _escolhendoPlano;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostrarGrade), nameof(MostrarConversao))] private bool _convertendoMascara;
     [ObservableProperty] private ModeloPlano? _modeloEscolhido;
     [ObservableProperty] private string _planoAtual = "";
     [ObservableProperty] private bool _usaCentroCusto;
@@ -74,7 +81,10 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     public bool MostrarEscolha => !TemPlano || EscolhendoPlano;
 
     /// <summary>Formulário e grade das contas: só com o plano escolhido (e fora da troca de plano).</summary>
-    public bool MostrarGrade => TemPlano && !EscolhendoPlano;
+    public bool MostrarGrade => TemPlano && !EscolhendoPlano && !ConvertendoMascara;
+
+    /// <summary>Painel "Converter máscara" do plano da empresa (prévia de cada conta antes de converter).</summary>
+    public bool MostrarConversao => TemPlano && !EscolhendoPlano && ConvertendoMascara;
 
     /// <summary>Contas sintéticas (nível 2 em diante): candidatas a grupo dos participantes.</summary>
     public ObservableCollection<OpcaoGrupo> Grupos { get; } = [];
@@ -90,6 +100,7 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
     {
         Erros.Clear();
         Mensagem = null;
+        CriandoNovoPlano = false;
         EscolhendoPlano = true;
     }
 
@@ -111,11 +122,159 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
                 $"O plano de contas atual será substituído pelo modelo \"{modelo.Nome}\" ({modelo.QuantidadeContas} contas). " +
                 "Isso só é possível enquanto não houver lançamentos. Deseja continuar?", "Trocar o plano", "Cancelar"))
             return;
-        var r = await app.PlanoContas.AplicarModeloAsync(empresa, modelo.Id, usuario);
+        var mascara = MascaraModelo.Trim();
+        var r = await app.PlanoContas.AplicarModeloAsync(empresa, modelo.Id, usuario, mascara: mascara.Length > 0 ? mascara : null);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         EscolhendoPlano = false;
         await CarregarAsync();
-        Mensagem = $"Plano \"{modelo.Nome}\" aplicado: {r.Valor} contas.";
+        Mensagem = mascara.Length > 0 ? $"Plano \"{modelo.Nome}\" aplicado na máscara {PlanoMascara(mascara)}: {r.Valor} contas."
+                                      : $"Plano \"{modelo.Nome}\" aplicado: {r.Valor} contas.";
+    }, Permissao.PlanoContasManter);
+
+    private static string PlanoMascara(string m) => MascaraPlano.Ler(m) is { Sucesso: true } r ? r.Valor.Texto : m;
+
+    public static IReadOnlyList<string> MascarasSugeridas => MascaraPlano.Sugestoes;
+
+    // ------------------------------------------------------------------ modelo em outra máscara (cópia convertida)
+
+    /// <summary>Máscara desejada para o modelo escolhido (vazio = como no modelo).</summary>
+    [ObservableProperty] private string _mascaraModelo = "";
+    [ObservableProperty] private string _resumoPreviaModelo = "";
+    public ObservableCollection<LinhaPrevia> PreviaModelo { get; } = [];
+
+    partial void OnMascaraModeloChanged(string value) { PreviaModelo.Clear(); ResumoPreviaModelo = ""; }
+    partial void OnModeloEscolhidoChanged(ModeloPlano? value) { PreviaModelo.Clear(); ResumoPreviaModelo = ""; }
+
+    /// <summary>Mostra, conta a conta, como o modelo ficaria na máscara informada (nada é gravado).</summary>
+    [RelayCommand]
+    private void VerPreviaModelo()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        PreviaModelo.Clear();
+        ResumoPreviaModelo = "";
+        if (ModeloEscolhido is not { } modelo) { Erros.Add("Escolha um modelo de plano de contas."); return; }
+        if (Contexto.App is not { } app) return;
+        var r = app.PlanoContas.PreverModelo(modelo.Id, MascaraModelo);
+        if (!r.Sucesso) { foreach (var e in r.Erros) Erros.Add(e); return; }
+        MostrarPrevia(r.Valor, PreviaModelo, t => ResumoPreviaModelo = t);
+    }
+
+    private void MostrarPrevia(PreviaConversao previa, ObservableCollection<LinhaPrevia> destino, Action<string> resumo)
+    {
+        foreach (var i in previa.Itens.Take(500)) destino.Add(LinhaPrevia.De(i));
+        if (!previa.Possivel)
+        {
+            foreach (var e in previa.Erros) Erros.Add(e);
+            resumo($"Não é possível converter para a máscara {previa.Mascara}: {previa.Erros.Count} problema(s) — nada será alterado.");
+        }
+        else
+            resumo($"Máscara {previa.Mascara}: {previa.Itens.Count} conta(s), {previa.Mudancas} com código novo" +
+                   (previa.Avisos > 0 ? $", {previa.Avisos} com aviso (perdem zeros à esquerda)" : "") +
+                   (previa.Itens.Count > 500 ? ". A lista mostra as 500 primeiras." : "."));
+    }
+
+    // ------------------------------------------------------------------ criar novo plano
+
+    [ObservableProperty] private bool _criandoNovoPlano;
+    [ObservableProperty] private string _novoPlanoNome = "";
+    [ObservableProperty] private string _novoPlanoMascara = "";
+
+    [RelayCommand]
+    private void AbrirNovoPlano()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        NovoPlanoNome = "";
+        NovoPlanoMascara = MascaraAtual;
+        CriandoNovoPlano = true;
+    }
+
+    [RelayCommand]
+    private void CancelarNovoPlano() => CriandoNovoPlano = false;
+
+    /// <summary>Cria um plano vazio (só os grupos de nível 1) com o nome e a máscara informados.</summary>
+    [RelayCommand]
+    private Task CriarNovoPlanoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (TemPlano && !await Contexto.ConfirmarAsync("Criar novo plano de contas",
+                "O plano de contas atual será substituído por um plano novo, vazio (só os grupos principais). Isso só é possível enquanto não houver lançamentos. Deseja continuar?",
+                "Criar o plano", "Cancelar"))
+            return;
+        var nome = NovoPlanoNome.Trim();
+        var r = await app.PlanoContas.CriarNovoPlanoAsync(empresa, nome, NovoPlanoMascara, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        CriandoNovoPlano = false;
+        EscolhendoPlano = false;
+        await CarregarAsync();
+        Mensagem = $"Plano \"{nome}\" criado com {r.Valor} grupos principais. Use Incluir para cadastrar as demais contas.";
+    }, Permissao.PlanoContasManter);
+
+    private string MascaraAtual => _plano.Count == 0 ? "" : _mascaraEmpresa ?? MascaraPlano.Deduzir(_plano.Select(c => c.Codigo)) ?? "";
+    private string? _mascaraEmpresa;
+
+    // ------------------------------------------------------------------ converter a máscara do plano da empresa
+
+    [ObservableProperty] private string _mascaraConversao = "";
+    [ObservableProperty] private string _resumoConversao = "";
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ConfirmarConversaoCommand))] private bool _conversaoPossivel;
+    public ObservableCollection<LinhaPrevia> PreviaConversaoItens { get; } = [];
+
+    partial void OnMascaraConversaoChanged(string value)
+    {
+        PreviaConversaoItens.Clear();
+        ResumoConversao = "";
+        ConversaoPossivel = false;
+    }
+
+    [RelayCommand]
+    private void AbrirConversao()
+    {
+        Erros.Clear();
+        Mensagem = null;
+        MascaraConversao = MascaraAtual;
+        ConvertendoMascara = true;
+    }
+
+    [RelayCommand]
+    private void CancelarConversao()
+    {
+        ConvertendoMascara = false;
+        Erros.Clear();
+    }
+
+    /// <summary>Simula a conversão do plano inteiro (código atual → novo, avisos e conflitos) sem gravar nada.</summary>
+    [RelayCommand]
+    private Task VerPreviaConversaoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        PreviaConversaoItens.Clear();
+        ConversaoPossivel = false;
+        ResumoConversao = "";
+        var m = MascaraPlano.Ler(MascaraConversao);
+        if (!m.Sucesso) { MostrarResultado(m, ""); return; }
+        var r = await app.PlanoContas.PreverMascaraAsync(empresa, m.Valor, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        MostrarPrevia(r.Valor, PreviaConversaoItens, t => ResumoConversao = t);
+        ConversaoPossivel = r.Valor.Possivel && r.Valor.Mudancas > 0;
+        if (r.Valor.Possivel && r.Valor.Mudancas == 0) ResumoConversao = $"O plano já está na máscara {r.Valor.Mascara}; não há nada a converter.";
+    }, Permissao.PlanoContasManter);
+
+    /// <summary>Converte o plano da empresa para a máscara (uma transação; os lançamentos continuam nas mesmas contas).</summary>
+    [RelayCommand(CanExecute = nameof(ConversaoPossivel))]
+    private Task ConfirmarConversaoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var m = MascaraPlano.Ler(MascaraConversao);
+        if (!m.Sucesso) { MostrarResultado(m, ""); return; }
+        if (!await Contexto.ConfirmarAsync("Converter máscara do plano",
+                $"Os códigos de {PreviaConversaoItens.Count(l => l.Antigo != l.Novo)} conta(s) serão convertidos para a máscara {m.Valor.Texto}. " +
+                "Os lançamentos, saldos, vínculos com o plano referencial e as contas das configurações acompanham a mudança, que fica na trilha de auditoria. " +
+                "Arquivos já entregues (ECD de anos anteriores) mantêm os códigos antigos. Deseja converter?", "Converter", "Cancelar"))
+            return;
+        var r = await app.PlanoContas.AplicarMascaraAsync(empresa, m.Valor, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        ConvertendoMascara = false;
+        await CarregarAsync();
+        Mensagem = $"{r.Valor} código(s) convertido(s) para a máscara {m.Valor.Texto}.";
     }, Permissao.PlanoContasManter);
 
     [ObservableProperty] private string _filtro = "";
@@ -159,10 +318,12 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         _plano = plano;
         TemPlano = plano.Count > 0;
         _modeloAplicado = cfg.ModeloPlano;
+        _mascaraEmpresa = cfg.MascaraPlano;
         UsaCentroCusto = cfg.UsaCentroCusto;
         var modelo = CatalogoModelosPlano.Todos.FirstOrDefault(m => m.Id == cfg.ModeloPlano);
-        PlanoAtual = !TemPlano ? "" : modelo is not null ? $"Plano de contas: {modelo.Nome} ({plano.Count} contas)" : $"Plano de contas próprio ({plano.Count} contas)";
-        if (!TemPlano) EscolhendoPlano = false;
+        PlanoAtual = !TemPlano ? "" : modelo is not null ? $"Plano de contas: {modelo.Nome} ({plano.Count} contas)"
+                   : cfg.NomePlano is { Length: > 0 } nomePlano ? $"Plano de contas: {nomePlano} ({plano.Count} contas)" : $"Plano de contas próprio ({plano.Count} contas)";
+        if (!TemPlano) { EscolhendoPlano = false; ConvertendoMascara = false; }
         ModeloEscolhido = modelo ?? (TemPlano ? null : CatalogoModelosPlano.Padrao);
         Grupos.Clear();
         foreach (var g in plano.Where(c => !c.Analitica && c.Nivel >= 2)) Grupos.Add(new OpcaoGrupo(g.Id, g.Codigo, g.Descricao));
