@@ -34,6 +34,7 @@ public static class FolhaTelas
     public const string ESocial = "folha.esocial";
     public const string AssistenteEsocial = "folha.esocial.assistente";
     public const string Transmissao = "folha.esocial.transmissao";
+    public const string ImportarEsocial = "folha.esocial.importacao";
     public const string Resumo = "folha.resumo";
     public const string Encargos = "folha.encargos";
     public const string ProLabore = "folha.prolabore";

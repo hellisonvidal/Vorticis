@@ -65,6 +65,9 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("FGTS Digital", FolhaTelas.FgtsDigital),
             ItemMenu.EmBreve("DCTFWeb e INSS"),
             ItemMenu.EmBreve("RAIS e DIRF")),
+        ItemMenu.Submenu("_Integrações",
+            ItemMenu.Submenu("Importar",
+                ItemMenu.Tela("Importar eSocial", FolhaTelas.ImportarEsocial))),
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Tela("Holerites e recibos", FolhaTelas.Holerites),
             ItemMenu.Tela("Resumo da folha", FolhaTelas.Resumo),
@@ -76,6 +79,7 @@ public sealed class ModuloFolha : IModuloDesktop
     public IReadOnlyList<Dica> Dicas { get; } =
     [
         new("Folha", "Feche a competência depois de conferir", "Feche a folha do mês depois de conferir os holerites: a competência fechada não recalcula por engano e libera a guia do FGTS Digital.", FolhaTelas.FolhaMensal),
+        new("Folha", "Mudou de sistema? Importe do eSocial", "Integrações › Importar › Importar eSocial lê os eventos baixados do portal (pasta ou ZIP) e leva funcionários, rubricas e o histórico de holerites para a folha continuar de onde o sistema anterior parou.", FolhaTelas.ImportarEsocial),
         new("Folha", "Assistente do eSocial", "Antes da primeira transmissão, rode Obrigações › eSocial › Assistente de configuração: ele aponta cada pendência e a tela para corrigir.", FolhaTelas.AssistenteEsocial),
         new("Folha", "FGTS Digital vence no dia 20", "A guia do FGTS Digital vence no dia 20 do mês seguinte (antecipa se não for dia útil). Confira o demonstrativo antes de emitir a guia no portal.", FolhaTelas.FgtsDigital),
         new("Folha", "Tabelas da previdência à mão", "Cadastros › Tabelas legais › Tabelas da previdência social mostra as faixas do INSS, o teto, o salário-família e o FGTS da competência, prontas para imprimir.", FolhaTelas.TabelasPrevidencia),
@@ -164,6 +168,11 @@ public sealed class ModuloFolha : IModuloDesktop
                     aoLimpar: v => v.Limpar(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Transmissao, "Obrigações › eSocial › Transmissão", m => Pode(m, Permissao.FolhaESocial), v => v.CarregarAsync());
+
+        c.Instancia(nameof(MainViewModel.ImportacaoEsocial), m => new ImportacaoEsocialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.ImportarEsocial, "Integrações › Importar › Importar eSocial", m => Pode(m, Permissao.FolhaCadastrosManter), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Resumo), m => new ResumoFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.Resumo, "Relatórios › Resumo da folha", m => Pode(m, Permissao.FolhaRelatorios));

@@ -1,0 +1,197 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             x:Class="Vorticis.Folha.Desktop.Views.ImportacaoEsocialView"
+             x:DataType="vm:ImportacaoEsocialViewModel">
+  <!-- Integrações › Importar › Importar eSocial -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.secao">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="TextBlock.dica">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="Gray" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="450,16,*" Margin="8">
+    <ScrollViewer>
+      <StackPanel Spacing="6" Margin="0,0,8,0">
+        <TextBlock Classes="titulo" Text="Importar eSocial" />
+        <TextBlock Classes="dica" FontSize="12" Text="{x:Static vm:ImportacaoEsocialViewModel.Aceita}" />
+        <TextBlock Text="Seu perfil não permite importar para a folha." Classes="erro" IsVisible="{Binding !PodeUsar}" />
+
+        <StackPanel Spacing="6" IsEnabled="{Binding PodeUsar}">
+          <TextBlock Classes="secao" Text="1. Arquivos do eSocial" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <TextBox Text="{Binding Origem}" Watermark="Pasta, arquivo XML ou ZIP" />
+            <Button Grid.Column="1" Content="Conferir" Command="{Binding LerArquivosCommand}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Escolher pasta..." Click="EscolherPasta" />
+            <Button Content="Escolher arquivos..." Click="EscolherArquivos" />
+          </StackPanel>
+          <TextBlock Classes="dica" Text="{Binding ResumoLeitura}" IsVisible="{Binding ResumoLeitura, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+          <Expander Header="Baixar do eSocial (em vez de usar arquivos)" IsEnabled="{Binding PodeBaixar}">
+            <StackPanel Spacing="6" Margin="0,4,0,0">
+              <TextBlock Classes="dica" Text="Consulta o eSocial com o certificado digital e baixa os eventos do período. Serviço novo, ainda sem teste no ambiente real: se o eSocial recusar, baixe os eventos pelo portal (Download de eventos) e use a pasta ou o ZIP acima." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="De" VerticalAlignment="Center" />
+                <c:SeletorCompetencia Competencia="{Binding BaixarDe}" />
+                <TextBlock Text="até" VerticalAlignment="Center" />
+                <c:SeletorCompetencia Competencia="{Binding BaixarAte}" />
+              </StackPanel>
+              <ComboBox ItemsSource="{x:Static vm:ImportacaoEsocialViewModel.Ambientes}" SelectedItem="{Binding Ambiente}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoAmbiente"><TextBlock Text="{Binding Texto}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <ComboBox ItemsSource="{x:Static vm:ImportacaoEsocialViewModel.Transmissores}" SelectedItem="{Binding Transmissor}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:OpcaoTransmissor"><TextBlock Text="{Binding Texto}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+              <CheckBox IsChecked="{Binding BaixarTabelas}" Content="Tabelas (empregador, estabelecimento, rubricas e lotações)" />
+              <CheckBox IsChecked="{Binding BaixarRemuneracoes}" Content="Remunerações (holerites do período)" />
+              <CheckBox IsChecked="{Binding BaixarPagamentos}" Content="Pagamentos" />
+              <CheckBox IsChecked="{Binding BaixarTrabalhadores}" Content="Admissões, alterações, afastamentos e desligamentos dos trabalhadores" />
+              <TextBox Text="{Binding CpfsExtras}" AcceptsReturn="True" Height="54" Watermark="CPFs a incluir além dos encontrados nas remunerações (um por linha)" />
+              <Button Content="Baixar do eSocial" Command="{Binding BaixarCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Expander>
+
+          <StackPanel Spacing="6" IsVisible="{Binding PreviaPronta}">
+            <TextBlock Classes="secao" Text="2. O que importar" />
+            <CheckBox IsChecked="{Binding ImportarRemuneracoes}" Content="Histórico de holerites (S-1200 e S-1210): médias, bases e 13º" />
+            <CheckBox IsChecked="{Binding ImportarFerias}" Content="Férias gozadas (controle dos períodos aquisitivos)" />
+            <CheckBox IsChecked="{Binding FecharCompetencias}" Content="Fechar as competências importadas (recomendado)" />
+            <TextBlock Classes="dica" Text="Competência fechada não é recalculada por engano. Para continuar a folha, abra só a competência seguinte." />
+            <CheckBox IsChecked="{Binding AtualizarParametros}" Content="Atualizar os parâmetros de encargos (RAT, FAP, FPAS, terceiros) com os do arquivo" />
+            <CheckBox IsChecked="{Binding LimitarPeriodo}" Content="Importar o histórico só neste período" />
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding LimitarPeriodo}">
+              <c:SeletorCompetencia Competencia="{Binding De}" />
+              <TextBlock Text="até" VerticalAlignment="Center" />
+              <c:SeletorCompetencia Competencia="{Binding Ate}" />
+            </StackPanel>
+          </StackPanel>
+          <CheckBox IsChecked="{Binding IgnorarComErro}" Content="Ignorar o que tiver erro e importar o restante" />
+          <TextBlock Classes="dica" Text="Desmarcado, qualquer item com erro impede a importação, e nada é gravado." />
+
+          <TextBlock Classes="secao" Text="3. Importar" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Importar" Command="{Binding ImportarCommand}" Classes="accent" />
+            <Button Content="Cancelar importação" Command="{Binding CancelarCommand}" />
+          </StackPanel>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progresso}" Height="14" IsVisible="{Binding Importando}" />
+          <TextBlock Text="{Binding ProgressoTexto}" FontSize="12" IsVisible="{Binding ProgressoTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+
+    <TabControl Grid.Column="2">
+      <TabItem Header="Prévia">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,6">
+            <TextBlock TextWrapping="Wrap" IsVisible="{Binding Periodo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <Run Text="Competências do histórico:" /> <Run Text="{Binding Periodo, Mode=OneWay}" FontWeight="SemiBold" />
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Text="{Binding ResumoPrevia}" FontWeight="SemiBold" />
+          </StackPanel>
+          <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding Previa}" IsReadOnly="True" AutoGenerateColumns="False" MaxHeight="250">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Evento" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="O que é" Binding="{ReflectionBinding Descricao}" Width="*" />
+              <DataGridTextColumn Header="No arquivo" Binding="{ReflectionBinding Total}" Width="90" />
+              <DataGridTextColumn Header="Novos" Binding="{ReflectionBinding Novos}" Width="70" />
+              <DataGridTextColumn Header="Já existem" Binding="{ReflectionBinding Existentes}" Width="90" />
+              <DataGridTextColumn Header="Conflitos" Binding="{ReflectionBinding Conflitos}" Width="80" />
+              <DataGridTextColumn Header="Exemplos" Binding="{ReflectionBinding AmostraTexto}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBlock DockPanel.Dock="Top" Classes="secao" Text="Erros, avisos e informações" />
+          <DataGrid ItemsSource="{Binding Ocorrencias}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Gravidade" Binding="{ReflectionBinding Gravidade}" Width="90" />
+              <DataGridTextColumn Header="Item" Binding="{ReflectionBinding Registro}" Width="170" />
+              <DataGridTextColumn Header="Motivo" Binding="{ReflectionBinding Motivo}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Rubricas">
+        <DockPanel Margin="0,6,0,0">
+          <TextBlock DockPanel.Dock="Top" Classes="dica" Margin="0,0,0,6"
+                     Text="Cada rubrica (evento de folha) do arquivo vira uma rubrica do Vorticis. Se o sistema anterior usava outro código para a mesma coisa (por exemplo, o salário), escolha a rubrica que já existe no Vorticis em &quot;Usar a rubrica&quot;. Marque &quot;Média&quot; nas rubricas variáveis (horas extras, comissões...): elas entram na média de férias e 13º." />
+          <DataGrid ItemsSource="{Binding Rubricas}" AutoGenerateColumns="False" CanUserSortColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Código no arquivo" Binding="{ReflectionBinding Origem}" Width="110" IsReadOnly="True" />
+              <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" IsReadOnly="True" />
+              <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="90" IsReadOnly="True" />
+              <DataGridTextColumn Header="Usos" Binding="{ReflectionBinding Usos}" Width="60" IsReadOnly="True" />
+              <DataGridTemplateColumn Header="Usar a rubrica" Width="260">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:LinhaRubricaEsocial">
+                    <ComboBox ItemsSource="{Binding Opcoes}" SelectedItem="{Binding Destino}" HorizontalAlignment="Stretch" Margin="2" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Média" Width="70">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:LinhaRubricaEsocial">
+                    <CheckBox IsChecked="{Binding Variavel}" IsEnabled="{Binding PodeEditarMedia}" HorizontalAlignment="Center" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="Fica como" Binding="{ReflectionBinding DestinoFinal}" Width="90" IsReadOnly="True" />
+              <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="110" IsReadOnly="True" />
+              <DataGridTextColumn Header="Aviso" Binding="{ReflectionBinding Aviso}" Width="*" IsReadOnly="True" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Relatório">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+            <TextBlock Text="{Binding ResumoRelatorio}" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <Button Content="Salvar relatório (CSV)" Command="{Binding SalvarRelatorioCommand}" />
+          </StackPanel>
+          <DataGrid DockPanel.Dock="Top" ItemsSource="{Binding RelatorioLinhas}" IsReadOnly="True" AutoGenerateColumns="False" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Evento" Binding="{ReflectionBinding Registro}" Width="80" />
+              <DataGridTextColumn Header="O que é" Binding="{ReflectionBinding Descricao}" Width="*" />
+              <DataGridTextColumn Header="Importados" Binding="{ReflectionBinding Importados}" Width="100" />
+              <DataGridTextColumn Header="Já existiam" Binding="{ReflectionBinding Existentes}" Width="100" />
+              <DataGridTextColumn Header="Com erro" Binding="{ReflectionBinding ComErro}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <DataGrid ItemsSource="{Binding RelatorioOcorrencias}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Gravidade" Binding="{ReflectionBinding Gravidade}" Width="90" />
+              <DataGridTextColumn Header="Item" Binding="{ReflectionBinding Registro}" Width="170" />
+              <DataGridTextColumn Header="Motivo" Binding="{ReflectionBinding Motivo}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Histórico de importações">
+        <DockPanel Margin="0,6,0,0">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+            <Button Content="Desfazer importação" Command="{Binding DesfazerCommand}" />
+            <TextBlock Classes="dica" VerticalAlignment="Center" Text="Selecione uma importação na lista. Só é possível desfazer o que ainda não foi usado ou contabilizado." />
+          </StackPanel>
+          <DataGrid ItemsSource="{Binding Historico}" SelectedItem="{Binding HistoricoSelecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Quando" Binding="{ReflectionBinding Quando}" Width="130" />
+              <DataGridTextColumn Header="Origem" Binding="{ReflectionBinding Arquivo}" Width="*" />
+              <DataGridTextColumn Header="Período" Binding="{ReflectionBinding Periodo}" Width="180" />
+              <DataGridTextColumn Header="Registros" Binding="{ReflectionBinding Importados}" Width="90" />
+              <DataGridTextColumn Header="Usuário" Binding="{ReflectionBinding Usuario}" Width="120" />
+              <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

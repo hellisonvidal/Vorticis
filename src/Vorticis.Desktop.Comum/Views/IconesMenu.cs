@@ -166,6 +166,7 @@ public static class IconesMenu
         ["folha.esocial.assistente"] = "AutoFix",
         ["folha.esocial"] = "FileXmlBox",
         ["folha.esocial.transmissao"] = "CloudUploadOutline",
+        ["folha.esocial.importacao"] = "FileDownloadOutline",
         ["folha.holerites"] = "ReceiptText",
         ["folha.resumo"] = "ChartBox",
         ["folha.encargos"] = "BankOutline",

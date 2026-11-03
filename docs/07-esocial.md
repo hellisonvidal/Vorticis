@@ -83,3 +83,14 @@ O Vorticis impõe essa ordem: não envia um grupo enquanto houver evento de grup
 **Teste e produção**
 - [ ] Transmitir tudo na **produção restrita** primeiro (S-1000 → tabelas → não periódicos → periódicos → S-1299), consultando o retorno entre as etapas; corrigir as ocorrências e regerar os eventos rejeitados.
 - [ ] Só então repetir em **produção** (o sistema pede confirmação). Guardar os recibos.
+
+## Importação de eventos (continuar a folha de outro sistema)
+
+Folha › Integrações › Importar eSocial (manual: `docs/manual/06-folha.md`, seção "Importar do eSocial") faz o caminho inverso da transmissão: lê eventos já existentes no eSocial e leva para a folha o necessário para continuar de onde o sistema anterior parou.
+
+- **Entrada:** XML do evento puro (raiz `eSocial`, `evtXxx/v_S_01_0x_00`), XML com o recibo (`recibo/nrRecibo` no elemento de retorno com o mesmo `Id` do evento) ou ZIP (inclusive aninhado, limite de 1 GB descompactado). Leitura sem DTD/entidades externas.
+- **Consolidação (`ConsolidadorEsocial`):** S-3000 retira o evento do recibo informado; retificação (`indRetif` 2 + `nrRecibo`) retira o anterior; do mesmo fato (trabalhador + período/data) vale o evento de Id mais recente; o que sobra é aplicado em ordem (tabelas, eventos não periódicos pela data do fato, S-1200/S-1210 por período). Um vínculo por CPF (o mais recente).
+- **Eventos lidos:** S-1000, S-1005, S-1010, S-1020, S-2200, S-2205, S-2206, S-2230, S-2299, S-2300/S-2399 (só categorias 9xx, estagiários), S-1200, S-1210 e S-3000. Não importados: verbas rescisórias do S-2299, `infoPerAnt` do S-1200, encargos patronais.
+- **Destino:** funcionários, dependentes, cargos, departamentos (lotações), rubricas (com mapeamento para rubricas existentes), `folha.alteracao_contratual`, `folha.afastamento`, `folha.ferias` (afastamento de motivo 15, ligado ao período aquisitivo desde a admissão) e `folha.calculo`/`folha.calculo_item` (histórico de holerites: tipo pelo código do demonstrativo ou pela natureza das rubricas; FGTS pela tabela legal `FOLHA_FGTS`). O histórico alimenta as médias de férias, 13º e rescisão (`VariaveisUltimosMesesAsync`), o FGTS acumulado e o último salário.
+- **Gravação:** uma transação, registro em `core.importacao_sped` (tipo `ESOCIAL`, migração 095) e `core.importacao_sped_item`; "Desfazer" remove o criado e reabre as competências fechadas pela importação, recusando se já houve uso (cálculos novos, rescisões, eventos variáveis, contabilização).
+- **Baixar do eSocial:** `ClienteDownloadEsocial` consulta `ConsultarIdentificadoresEventos` (empregador por período, tabela por datas, trabalhador por CPF) e `SolicitarDownloadEventos` (por Id, até 10 por pedido; por recibo), com o mesmo certificado/papel da transmissão. Preparado pelo manual do desenvolvedor e testado só com servidor simulado: conferir endereços e leiaute no ambiente real (`EnderecosDownloadEsocial`).

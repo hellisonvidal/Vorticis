@@ -163,6 +163,7 @@ folha.eventoscontabeis=06-folha.md#contabilizacao-por-eventos
 folha.esocial.assistente=06-folha.md#esocial-assistente-de-configuracao
 folha.esocial=06-folha.md#esocial-geracao-dos-eventos
 folha.esocial.transmissao=06-folha.md#esocial-transmissao
+folha.esocial.importacao=06-folha.md#importar-do-esocial
 folha.resumo=06-folha.md#relatorios-da-folha
 folha.encargos=06-folha.md#relatorios-da-folha
 folha.prolabore=06-folha.md#pro-labore-dos-socios

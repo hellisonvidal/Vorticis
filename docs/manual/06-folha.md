@@ -231,6 +231,64 @@ As etapas:
 
 A tela traz um painel **Passo a passo** com o roteiro.
 
+## Importar do eSocial
+
+**Para que serve:** a empresa veio de **outro sistema de folha** e precisa continuar a folha de onde ele parou. O eSocial já tem tudo o que foi informado ao governo (funcionários, salários, rubricas, remuneração de cada mês, afastamentos, desligamentos); esta tela lê esses eventos e leva para o Vorticis o que a folha precisa para seguir: cadastro dos funcionários, rubricas, **histórico de holerites** (dele saem as médias de férias e 13º, as bases e o último salário), **dependentes** para o IRRF, **períodos de férias** já gozados e afastamentos.
+
+**Onde fica:** *Integrações › Importar › Importar eSocial*. Precisa da permissão de manter cadastros da folha; para **Baixar do eSocial** precisa também da permissão do eSocial.
+
+### Antes
+- Cadastre e selecione a **empresa** certa: o sistema confere o CNPJ dos eventos e recusa arquivos de outro empregador.
+- Tenha os eventos em XML. Há dois caminhos: **baixar do portal** ou **baixar aqui pelo certificado** (veja abaixo).
+- Para a prévia mostrar tudo certo, inclua os eventos de **tabela** (S-1010 rubricas, S-1020 lotações) junto com os de remuneração (S-1200). Sem o S-1010 o sistema não sabe se uma rubrica é provento ou desconto.
+
+### Passo a passo
+1. Em **1. Arquivos do eSocial**, clique em **Escolher pasta...** (uma pasta com os XML), **Escolher arquivos...** (vários XML ou ZIP) ou digite o caminho e clique em **Conferir**. Aceita o XML do evento puro e o XML que veio do portal com o recibo do eSocial, soltos, em subpastas ou dentro de ZIP.
+2. O sistema lê tudo, junta as versões e mostra na aba **Prévia**:
+   - **Quantos eventos de cada tipo** (admissões, alterações contratuais, afastamentos, desligamentos, remunerações, pagamentos, rubricas, lotações), quantos são **novos**, quantos **já existem** no Vorticis (funcionário pelo CPF, rubrica pelo código, holerite pelo mês) e quantos têm **conflito**.
+   - **Erros, avisos e informações** item a item (por exemplo: funcionário sem data de nascimento, matrícula que já pertence a outra pessoa, rubrica que não está nas tabelas).
+   - As regras de leitura: se o mesmo fato foi enviado mais de uma vez, **vale a versão mais recente**; um evento **retificado** (retificação com o recibo anterior) substitui o anterior; um evento **excluído** pelo S-3000 não é importado; as alterações de salário ou cargo são aplicadas **por ordem de data**, mesmo que cheguem fora de ordem.
+3. Na aba **Rubricas**, confira de onde cada rubrica do arquivo vai cair:
+   - Se o Vorticis já tem a mesma rubrica (mesmo código ou mesmo nome), ela aparece como **Existente** e é usada.
+   - Se o sistema anterior usava outro código para a mesma coisa (por exemplo, "Salário" com código 0001 e o Vorticis usa 1000), escolha a rubrica do Vorticis em **Usar a rubrica**. A prévia se atualiza.
+   - Se o código já é de outra rubrica do Vorticis, aparece **Conflito** e a rubrica é criada com outro código (a letra E na frente); você pode trocar.
+   - Rubricas **novas** nascem com o tipo, a natureza e as incidências do eSocial. Marque **Média** nas que são variáveis (horas extras, comissões, adicional noturno, DSR): elas entram na média de férias, 13º e rescisão.
+4. Em **2. O que importar**, escolha:
+   - **Histórico de holerites**: leva os meses do S-1200 (e a data de pagamento do S-1210) para o Vorticis como folhas já calculadas. É o que permite calcular **férias, 13º e rescisão** com a média correta logo no primeiro mês. Use **Importar o histórico só neste período** para limitar os meses.
+   - **Férias gozadas**: grava os períodos aquisitivos já usados, para o Vorticis saber o saldo de férias de cada um.
+   - **Fechar as competências importadas** (recomendado): o histórico não será recalculado por engano. Para continuar a folha, abra só o mês seguinte.
+   - **Atualizar os parâmetros de encargos**: usa o RAT, o FAP, o FPAS e o código de terceiros do arquivo no lugar dos que estão em *Cadastros › Parâmetros*. Se a empresa ainda não tinha parâmetros, eles são criados sem marcar nada.
+   - **Ignorar o que tiver erro e importar o restante**: sem marcar, qualquer item com erro impede a importação; marcando, o que tem erro fica de fora e aparece no relatório.
+5. Clique em **Importar** e confirme. Tudo é gravado numa **única vez** com barra de andamento: se algo falhar, **nada fica pela metade**. Use **Cancelar importação** para parar.
+6. Veja o resultado na aba **Relatório** e salve em **Salvar relatório (CSV)** (abre direto no Excel).
+
+### O que é levado para a folha
+- **Funcionários** (S-2200 e, para estagiários, S-2300): dados pessoais, endereço, contato, dependentes (para o IRRF e o salário-família), cargo, CBO, departamento (a lotação das folhas importadas), categoria, contrato, jornada, salário e situação (**ativo**, **afastado** ou **desligado**). Vale o **salário e o cargo mais recentes** (S-2206), e o histórico de reajustes é guardado junto com o funcionário. Quem recebia adicional de periculosidade vem com o adicional marcado; para quem recebia insalubridade o sistema avisa para informar o percentual.
+- **Desligamentos** (S-2299): o funcionário vem como desligado, com a data e o motivo.
+- **Afastamentos** (S-2230): licenças e afastamentos viram afastamentos do funcionário; os de motivo **férias** viram **períodos de férias gozados**, ligados ao período aquisitivo contado desde a admissão.
+- **Rubricas** (S-1010), **lotações** (S-1020, viram departamentos) e **parâmetros de encargos** (S-1000, S-1005 e S-1020).
+- **Histórico de holerites** (S-1200 e S-1210): cada mês vira um cálculo com seus itens, proventos, descontos, líquido, bases de INSS, IRRF e FGTS, INSS e IRRF retidos e o FGTS do mês (calculado pela alíquota da tabela legal). O 13º salário do ano (apuração anual) entra na competência de dezembro.
+- O que **já existe** no Vorticis (funcionário com o mesmo CPF, holerite do mesmo mês) não é alterado: aparece como "já existe" e é ignorado.
+
+### Cuidados
+- **Não contabilize de novo** as competências importadas: a contabilidade desses meses foi feita no sistema anterior. O histórico serve para médias, bases e consulta.
+- Os **encargos patronais** dos meses importados ficam zerados (não vêm no eSocial).
+- As **verbas de rescisão** (S-2299) e os valores de períodos anteriores (infoPerAnt) **não** são importados como holerite.
+- Funcionário com mais de um vínculo (readmissão) é importado pelo vínculo mais recente: o Vorticis guarda um vínculo por CPF.
+- Sócios e diretores (categorias sem vínculo, como 721 e 722) não viram funcionários: cadastre-os em *Cadastros › Sócios (pró-labore)*.
+- Confira os primeiros funcionários e um holerite importado (*Cálculos › Folha › Cálculo da folha mensal*, escolhendo a competência) antes de calcular o primeiro mês novo.
+
+### Histórico de importações e desfazer
+Na aba **Histórico de importações** ficam todas as importações (data, origem, período, quantidade e usuário). Para voltar atrás, selecione a importação e clique em **Desfazer importação**: saem os funcionários, as rubricas, o histórico de holerites, as férias e os afastamentos que ela criou, e as competências que ela fechou voltam a ficar abertas. Se algo já foi usado depois (um cálculo novo, uma rescisão, um evento variável, a contabilização), o sistema **não remove nada** e explica o motivo. O mesmo material só pode ser importado de novo depois de desfazer a importação anterior.
+
+### Baixar do eSocial (pelo certificado)
+Em vez de baixar os arquivos no portal, abra **Baixar do eSocial (em vez de usar arquivos)** e informe:
+1. As **competências** inicial e final, o **ambiente** (produção ou produção restrita) e **Transmitir com** (empregador, procurador ou contador). Vale a mesma regra da Transmissão: certificado digital padrão do papel escolhido e, para procurador ou contador, procuração eletrônica com o perfil de consulta dos eventos.
+2. O que baixar: tabelas, remunerações, pagamentos e os eventos dos trabalhadores (admissões, alterações, afastamentos, desligamentos). Em **CPFs a incluir**, digite os CPFs de quem não aparece nas remunerações do período.
+3. Clique em **Baixar do eSocial**. O sistema consulta os identificadores dos eventos e baixa cada um, em lotes, mostrando o andamento; ao terminar, os eventos seguem para a mesma **Prévia** acima e você continua do passo 2.
+
+**Atenção:** este serviço de consulta foi preparado conforme o manual do eSocial, mas **ainda não foi testado no ambiente real**. Se o eSocial recusar a consulta ou devolver algo diferente, a tela mostra o motivo; nesse caso baixe os eventos pelo portal do eSocial (*Download de eventos*), guarde os XML ou o ZIP numa pasta e use **Escolher pasta...**.
+
 ## FGTS Digital
 
 **Para que serve:** conferir o FGTS da competência calculado pela folha e controlar a guia do **FGTS Digital** (GFD) e o pagamento.
