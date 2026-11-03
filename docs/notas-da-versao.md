@@ -1,3 +1,32 @@
+# Vorticis 1.0.4
+
+## Novidades desta versão
+
+### Contábil
+- **Lançamento contábil mais simples:** o botão **+ Mais partidas** (abaixo da conta a crédito) acrescenta linhas de débito e crédito; o rodapé mostra só os totais de débitos, créditos e a diferença. Com mais de uma linha, tudo é gravado como um único lançamento, que precisa fechar. O centro de custo só aparece quando a empresa usa centros de custo, e as contas têm lupa (F4) no lugar do plano de contas ao lado.
+- **Encerramento do exercício:** lupa nas contas de apuração, lucros e prejuízos.
+- **Importar lançamentos** fica só em *Integrações*; a planilha modelo tem as colunas DEBITO e CREDITO separadas e aceita linhas só com débito ou só com crédito.
+- **Importar SPED (ECD e ECF)** em *Integrações › Importar*: prévia, importação, relatório e Desfazer.
+- **Plano de contas:** criar um novo plano com a máscara que você definir, usar um modelo em outra máscara e converter o plano da empresa para outra máscara (também ao alterar a máscara em *Empresas › Contabilidade*), com prévia antes de gravar.
+- **Conta automática de clientes e fornecedores:** escolha as contas título em *Empresas › Contabilidade* e marque *Criar conta no plano de contas* na ficha (vale também no Fiscal).
+- **BI › Evolução patrimonial:** ativo, passivo, patrimônio líquido e resultado mês a mês ou por ano, com gráfico e variação.
+
+### Fiscal
+- **Importar SPED (EFD ICMS/IPI e EFD-Contribuições)** em *Integrações*.
+- **Simples Nacional × IBS/CBS:** compara o imposto de hoje com o de 2026 a 2033, com IBS/CBS dentro ou fora do DAS. Os percentuais da transição estão nos parâmetros legais e devem ser conferidos com a legislação.
+- Lupa (F4) nos campos de CFOP, NCM, código de ajuste e participante.
+
+### Folha
+- **Importar eSocial** em *Integrações › Importar*: eventos do portal (XML ou ZIP) ou baixados com o certificado; cadastra empregador, rubricas, funcionários, afastamentos e o histórico de remunerações para continuar a folha (médias de férias e 13º, saldos de férias).
+
+### Em todos os módulos
+- **Inclusão em janela:** as telas de cadastro mostram a lista e a ficha abre numa janela por cima (Incluir, Alterar, duplo clique ou Enter). Inclui as regras de depreciação.
+- **Contadores:** a janela de inclusão foi reorganizada (um tipo por vez, campos alinhados).
+
+Para atualizar, rode o **Setup-Vorticis-1.0.4.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.0.3
 
 ## Novidades desta versão
