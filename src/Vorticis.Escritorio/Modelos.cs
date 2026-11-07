@@ -198,12 +198,17 @@ public static class RegrasEscritorio
         FrequenciaParcelas.Semestral => "Semestral", FrequenciaParcelas.Anual => "Anual", _ => "Parcela única",
     };
 
-    /// <summary>Cobranças da competência para os contratos vigentes cujo cliente ainda não tem cobrança nela.</summary>
-    public static IReadOnlyList<CobrancaHonorario> GerarCobrancas(IEnumerable<ContratoHonorario> contratos, DateOnly competencia, IReadOnlySet<long> jaCobradas)
+    /// <summary>
+    /// Cobranças da competência para os contratos vigentes cujo cliente ainda não tem cobrança nela; o vencimento fica no dia do contrato no
+    /// mês seguinte (regime de competência) ou no próprio mês (regime de caixa).
+    /// </summary>
+    public static IReadOnlyList<CobrancaHonorario> GerarCobrancas(IEnumerable<ContratoHonorario> contratos, DateOnly competencia, IReadOnlySet<long> jaCobradas,
+                                                                  bool vencimentoNoMesSeguinte = false)
     {
         competencia = Mes(competencia);
+        var mesVenc = vencimentoNoMesSeguinte ? competencia.AddMonths(1) : competencia;
         return contratos.Where(c => CobraNaCompetencia(c, competencia) && !jaCobradas.Contains(c.PessoaId))
-                        .Select(c => new CobrancaHonorario(0, c.PessoaId, competencia, c.Valor, NoDia(competencia, c.DiaVencimento), SituacaoCobranca.Aberta, null, null, c.PessoaNome))
+                        .Select(c => new CobrancaHonorario(0, c.PessoaId, competencia, c.Valor, NoDia(mesVenc, c.DiaVencimento), SituacaoCobranca.Aberta, null, null, c.PessoaNome))
                         .ToList();
     }
 

@@ -152,7 +152,7 @@ Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consul
 Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **vencimento** (digite dia/mês/ano), o **valor** ou a **descrição** e clique em **Gravar**. Só cobranças em aberto podem ser alteradas (na recebida, estorne a baixa antes). O honorário não pode ir para uma competência em que o cliente já tem outro honorário.
 
 ### Gerar do contrato
-**Gerar do contrato** cria, na competência *de*, a cobrança do honorário informado na aba **Contrato** de cada cliente: os mensais todo mês, os anuais só no mês em que o honorário começou (os especiais não). Rodar de novo não duplica.
+**Gerar do contrato** cria, na competência *de*, a cobrança do honorário informado na aba **Contrato** de cada cliente: os mensais todo mês, os anuais só no mês em que o honorário começou (os especiais não). O vencimento fica no dia do contrato, no mês seguinte ou no mesmo mês da competência, conforme a caixa marcada em **Vencimento no**, no alto da tela: **Competência (mês seguinte)** ou **Regime de caixa (mesmo mês)**. São as mesmas caixas da janela de lançamento: marcar numa marca na outra. Rodar de novo não duplica.
 
 ### Baixas
 1. Selecione a cobrança e clique em **Baixar** (ou dê um duplo clique nela).

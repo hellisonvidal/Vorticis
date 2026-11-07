@@ -220,6 +220,24 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 await Calma(20);
                 Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
                 Assert.Equal(3, hon.Cobrancas.Count(c => c.Tipo == "Honorário"));
+
+                // Gerar do contrato segue as mesmas caixas (marcadas na tela ou na janela): competência vence no mês seguinte, caixa no mesmo mês
+                var tela = janela.JanelaDa(hon)!;
+                tela.GetLogicalDescendants().OfType<CheckBox>().Single(c => c.Name == "RegimeCompetenciaTela").IsChecked = true;
+                await Calma(5);
+                Assert.True(hon.Lancamento.RegimeCompetencia);
+                Assert.False(hon.Lancamento.RegimeCaixa);
+                hon.CompetenciaDe = new DateTime(2027, 6, 1);
+                await hon.GerarDoContratoCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.Equal("31/07/2027", hon.Cobrancas.Single(c => c.Tipo == "Honorário" && c.Competencia == "06/2027").Vencimento);
+                hon.Lancamento.RegimeCaixa = true;
+                hon.CompetenciaDe = new DateTime(2027, 8, 1);
+                await hon.GerarDoContratoCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.Equal("31/08/2027", hon.Cobrancas.Single(c => c.Tipo == "Honorário" && c.Competencia == "08/2027").Vencimento);
+                hon.CompetenciaDe = new DateTime(2027, 1, 1);
+                await Calma(20);
                 hon.Selecionada = hon.Cobrancas[0];
                 hon.BaixarCommand.Execute(null);
                 Assert.True(hon.Baixa.FichaAberta);

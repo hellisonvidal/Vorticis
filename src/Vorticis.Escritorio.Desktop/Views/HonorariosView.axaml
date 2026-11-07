@@ -17,6 +17,13 @@
       <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,6,0" />
       <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="130" />
     </WrapPanel>
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="16" Margin="0,0,0,6">
+      <TextBlock Text="Vencimento no" VerticalAlignment="Center" />
+      <CheckBox Name="RegimeCompetenciaTela" Content="Competência (mês seguinte)" IsChecked="{Binding Lancamento.RegimeCompetencia}"
+                ToolTip.Tip="O vencimento fica no mês seguinte ao da competência (ex.: honorário de 03/2027 vence em abril). Vale para Gerar do contrato e para os lançamentos." />
+      <CheckBox Name="RegimeCaixaTela" Content="Regime de caixa (mesmo mês)" IsChecked="{Binding Lancamento.RegimeCaixa}"
+                ToolTip.Tip="O vencimento fica no próprio mês da competência (ex.: honorário de 03/2027 vence em março). Vale para Gerar do contrato e para os lançamentos." />
+    </StackPanel>
     <TextBlock DockPanel.Dock="Top" Text="{Binding ClienteDoFiltro}" FontSize="12" Foreground="{DynamicResource TxSutil}" Margin="0,0,0,6" />
     <WrapPanel DockPanel.Dock="Top" ItemSpacing="6" LineSpacing="6" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
       <Button Name="NovoHonorario" Content="Novo honorário" Classes="accent" Command="{Binding NovoHonorarioCommand}"
@@ -26,7 +33,7 @@
       <Button Name="AlterarCobranca" Content="Alterar" Command="{Binding AlterarCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Altera a competência, o vencimento, o valor e a descrição da cobrança selecionada (só as em aberto)." />
       <Button Content="Gerar do contrato" Command="{Binding GerarDoContratoCommand}"
-              ToolTip.Tip="Gera, na competência 'de', a cobrança do honorário informado na aba Contrato de cada cliente (mensal; anual no mês do início)." />
+              ToolTip.Tip="Gera, na competência 'de', a cobrança do honorário informado na aba Contrato de cada cliente (mensal; anual no mês do início), vencendo conforme Competência ou Regime de caixa." />
       <Button Name="BaixarCobranca" Content="Baixar" Command="{Binding BaixarCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Registra o recebimento da cobrança selecionada (data, valor e observação)." />
       <Button Content="Estornar baixa" Command="{Binding EstornarCommand}" IsEnabled="{Binding TemSelecionada}" />

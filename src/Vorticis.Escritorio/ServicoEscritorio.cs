@@ -346,7 +346,8 @@ public sealed class ServicoEscritorio
             : [];
 
     /// <summary>Gera as cobranças da competência para todos os contratos de honorários vigentes; devolve quantas foram geradas.</summary>
-    public async Task<Resultado<int>> GerarCobrancasAsync(long escritorio, DateOnly competencia, long usuarioId, CancellationToken ct = default)
+    public async Task<Resultado<int>> GerarCobrancasAsync(long escritorio, DateOnly competencia, long usuarioId, CancellationToken ct = default,
+                                                          bool vencimentoNoMesSeguinte = false)
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
         competencia = RegrasEscritorio.Mes(competencia);
@@ -354,7 +355,7 @@ public sealed class ServicoEscritorio
         if (contratos.Count == 0) return Resultado<int>.Falha("Nenhum contrato de honorários cadastrado.");
         var ja = (await ListarCobrancasAsync(escritorio, competencia, false, usuarioId, ct))
                  .Where(c => c.Tipo == TipoCobranca.Honorario && c.Situacao != SituacaoCobranca.Cancelada).Select(c => c.PessoaId).ToHashSet();
-        var novas = RegrasEscritorio.GerarCobrancas(contratos, competencia, ja);
+        var novas = RegrasEscritorio.GerarCobrancas(contratos, competencia, ja, vencimentoNoMesSeguinte);
         foreach (var n in novas)
             await _db.ExecutarAsync("""
                 INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (@e, @p, @c, @v, @venc) ON CONFLICT DO NOTHING

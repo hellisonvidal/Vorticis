@@ -27,7 +27,9 @@ public class RegrasEscritorioTests
         ];
         var r = RegrasEscritorio.GerarCobrancas(contratos, comp, new HashSet<long> { 40 });
         var c = Assert.Single(r);
-        Assert.Equal((10L, new DateOnly(2026, 2, 28), 800m), (c.PessoaId, c.Vencimento, c.Valor));
+        Assert.Equal((10L, new DateOnly(2026, 2, 28), 800m), (c.PessoaId, c.Vencimento, c.Valor));            // regime de caixa: mesmo mês
+        var seguinte = Assert.Single(RegrasEscritorio.GerarCobrancas(contratos, comp, new HashSet<long> { 40 }, vencimentoNoMesSeguinte: true));
+        Assert.Equal((comp, new DateOnly(2026, 3, 31)), (seguinte.Competencia, seguinte.Vencimento));           // competência: mês seguinte
     }
 
     [Fact]

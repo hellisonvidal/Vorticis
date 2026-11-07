@@ -778,11 +778,14 @@ public partial class HonorariosViewModel : ModuloViewModel
         await Lancamento.AbrirAlteracaoAsync(c);
     }
 
-    /// <summary>Gera, na competência "de", a cobrança do honorário da aba Contrato de cada cliente (mensal; anual no mês do início).</summary>
+    /// <summary>
+    /// Gera, na competência "de", a cobrança do honorário da aba Contrato de cada cliente (mensal; anual no mês do início), com o vencimento
+    /// conforme as caixas Competência (mês seguinte) e Regime de caixa (mesmo mês), as mesmas da janela de lançamento.
+    /// </summary>
     [RelayCommand]
     private Task GerarDoContratoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(CompetenciaDe), usuario);
+        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(CompetenciaDe), usuario, vencimentoNoMesSeguinte: Lancamento.RegimeCompetencia);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Mensagem = r.Valor == 0 ? $"Nenhuma cobrança nova em {Ext.Dia(CompetenciaDe):MM/yyyy}: os clientes com honorário no contrato já têm a cobrança dessa competência."
