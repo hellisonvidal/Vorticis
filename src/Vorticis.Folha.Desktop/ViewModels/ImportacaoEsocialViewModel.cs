@@ -274,15 +274,17 @@ public sealed partial class ImportacaoEsocialViewModel(IContexto contexto) : Mod
         if (previa is null) return;
         _previa = previa;
         var plano = previa.Plano;
+        // as rubricas existentes são lidas antes de limpar as grades: a tela nunca fica vazia no meio da troca
+        var existentes = new List<OpcaoRubrica> { new("", "(criar uma rubrica nova)") };
+        if (Contexto.App is { } app && Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
+            existentes.AddRange((await app.Folha().Cadastros.ListarRubricasAsync(empresa, sessao.Id)).OrderBy(r => r.Codigo, StringComparer.Ordinal).Select(r => new OpcaoRubrica(r.Codigo, $"{r.Codigo} – {r.Descricao}")));
+        if (!EhAtual(g)) return;
         _montando = true;
         try
         {
             Previa.Clear(); Ocorrencias.Clear(); Rubricas.Clear();
             foreach (var l in plano.Linhas) Previa.Add(l);
             foreach (var o in plano.Ocorrencias.OrderBy(o => o.Gravidade).ThenBy(o => o.Registro)) Ocorrencias.Add(OcorrenciaTela.De(o));
-            var existentes = new List<OpcaoRubrica> { new("", "(criar uma rubrica nova)") };
-            if (Contexto.App is { } app && Contexto.EmpresaId is { } empresa && Contexto.Sessao is { } sessao)
-                existentes.AddRange((await app.Folha().Cadastros.ListarRubricasAsync(empresa, sessao.Id)).OrderBy(r => r.Codigo, StringComparer.Ordinal).Select(r => new OpcaoRubrica(r.Codigo, $"{r.Codigo} – {r.Descricao}")));
             foreach (var r in plano.GradeRubricas) Rubricas.Add(new LinhaRubricaEsocial(r, existentes, ReverPrevia));
         }
         finally { _montando = false; }

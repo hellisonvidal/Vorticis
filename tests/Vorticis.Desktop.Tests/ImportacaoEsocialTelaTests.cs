@@ -77,7 +77,7 @@ public class ImportacaoEsocialTelaTests(BancoDeTeste db) : IClassFixture<BancoDe
         var salario = vm.Rubricas.Single(r => r.Origem == "0001");
         var padrao = salario.Opcoes.Single(o => o.Codigo == "1000");
         salario.Destino = padrao;
-        await EsperarAsync(() => vm.Rubricas.Single(r => r.Origem == "0001").DestinoFinal == "1000");
+        await EsperarAsync(() => vm.PreviaPronta && vm.Rubricas.FirstOrDefault(r => r.Origem == "0001")?.DestinoFinal == "1000");
         Assert.Equal("Existente", vm.Rubricas.Single(r => r.Origem == "0001").Situacao);
         Assert.Equal(1, vm.Previa.Single(l => l.Registro == "S-1010").Novos);
 
