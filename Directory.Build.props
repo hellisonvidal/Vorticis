@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <!-- Versão única da suíte (Contábil, Fiscal e Folha são instalados e atualizados juntos) -->
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <!-- Endereço do site do Vorticis (download e atualizações), sem barra no fim. Defina o seu domínio aqui, por exemplo
          https://www.seudominio.com.br; o programa procura as atualizações em <VorticisSite>/atualizacao.json. Vazio: não procura. -->
     <VorticisSite></VorticisSite>

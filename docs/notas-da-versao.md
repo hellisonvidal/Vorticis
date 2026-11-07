@@ -1,3 +1,19 @@
+# Vorticis 1.0.5
+
+## Novidades desta versão
+
+### Escritório
+- **Seletor de clientes no topo:** em **Cliente:** aparecem os clientes de *Cadastros › Clientes* (o escritório, 0001, é o primeiro), com **Todos os clientes** no alto. O cliente escolhido filtra as tarefas, os protocolos, os contratos, a carteira e os honorários.
+- **Novo menu Financeiro › Honorários:** lance o honorário com competência, valor, dia do vencimento (ajustado nos meses mais curtos) e periodicidade, que cria as parcelas seguintes, com a prévia antes de lançar; **cobranças avulsas** para serviços extras; **Gerar do contrato**; **baixas** com data, valor e observação; estornar, cancelar e excluir; filtros por competência, situação e tipo.
+- **Cadastro de clientes:** a aba *Módulos do contrato* passou a se chamar **Contrato** e tem o honorário do cliente (valor, vencimento e periodicidade **mensal**, **anual** ou **especial**) e os módulos contratados. As cobranças ficam só no Financeiro.
+
+### Contábil
+- **Comparar com anos anteriores:** em cada relatório (Balanço, Balancete, DRE, DFC, EBITDA, DMPL, DLPA, Razão e os gerenciais) a comparação agora é uma caixa só: marque **Comparar com anos anteriores** e escolha quantos anos (1 a 5). O relatório sai com o período escolhido e o mesmo período de cada ano anterior, com a variação em R$ e em %. A comparação entre outros períodos saiu.
+
+Para atualizar, rode o **Setup-Vorticis-1.0.5.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.0.4
 
 ## Novidades desta versão
@@ -97,12 +113,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.3.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.5.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.3.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.5.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
