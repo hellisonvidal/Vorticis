@@ -1,37 +1,56 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.LancamentoCobrancaView" x:DataType="vm:LancamentoCobrancaViewModel">
-  <!-- Janela Novo honorário / Cobrança avulsa: dados, prévia das parcelas e Lançar -->
+  <!-- Janela Novo honorário / Cobrança avulsa / Alterar cobrança: dados, prévia das parcelas e Lançar (Gravar na alteração) -->
   <DockPanel Margin="20,16">
     <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
       <c:MensagensView />
       <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
         <Button Content="Cancelar" Command="{Binding FecharFichaCommand}" />
-        <Button Name="Lancar" Content="Lançar" Classes="accent" Command="{Binding LancarCommand}" />
+        <Button Name="Lancar" Content="{Binding TextoBotao}" Classes="accent" Command="{Binding LancarCommand}" />
       </StackPanel>
     </StackPanel>
-    <Grid DockPanel.Dock="Top" ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,8">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,8">
       <Grid.Styles>
         <Style Selector="TextBlock.rot"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="Margin" Value="0,4,8,4" /></Style>
       </Grid.Styles>
       <TextBlock Classes="rot" Text="Cliente" />
-      <ComboBox Grid.Column="1" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" HorizontalAlignment="Stretch" Margin="0,4" />
+      <ComboBox Grid.Column="1" Name="ClienteCobranca" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" IsEnabled="{Binding EhNovo}"
+                HorizontalAlignment="Stretch" Margin="0,4" />
       <TextBlock Grid.Row="1" Classes="rot" Text="Descrição" />
-      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Descricao}" Margin="0,4" MaxLength="200"
+      <TextBox Grid.Row="1" Grid.Column="1" Name="DescricaoCobranca" Text="{Binding Descricao}" Margin="0,4" MaxLength="200"
                Watermark="{Binding DicaDescricao}" />
       <TextBlock Grid.Row="2" Classes="rot" Text="Competência (mês/ano)" />
-      <CalendarDatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="130" Margin="0,4" />
+      <TextBox Grid.Row="2" Grid.Column="1" Name="CompetenciaCobranca" c:Mascara.Tipo="Competencia" Text="{Binding CompetenciaTexto}" Watermark="mm/aaaa"
+               Width="110" HorizontalAlignment="Left" Margin="0,4" />
       <TextBlock Grid.Row="3" Classes="rot" Text="Valor" />
       <TextBox Grid.Row="3" Grid.Column="1" Name="ValorCobranca" c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="140" HorizontalAlignment="Left" Watermark="R$ 0,00" Margin="0,4" />
-      <TextBlock Grid.Row="4" Classes="rot" Text="Dia do vencimento" />
-      <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="110" HorizontalAlignment="Left" Margin="0,4" />
-      <TextBlock Grid.Row="5" Classes="rot" Text="Periodicidade" />
-      <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="0,4">
+      <TextBlock Grid.Row="4" Classes="rot" Text="Vencimento" IsVisible="{Binding MostraVencimento}" />
+      <TextBox Grid.Row="4" Grid.Column="1" Name="VencimentoCobranca" c:Mascara.Tipo="Data" Text="{Binding VencimentoTexto}" Watermark="dd/mm/aaaa"
+               Width="130" HorizontalAlignment="Left" Margin="0,4" IsVisible="{Binding MostraVencimento}" />
+      <TextBlock Grid.Row="5" Classes="rot" Text="Pagamento" IsVisible="{Binding EhNovo}" />
+      <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="0,4" IsVisible="{Binding EhNovo}">
+        <CheckBox Name="AVista" Content="À vista, pago em" IsChecked="{Binding AVista}"
+                  ToolTip.Tip="A cobrança entra já recebida; a data do pagamento passa a ser o vencimento." />
+        <TextBox Name="DataPagamento" c:Mascara.Tipo="Data" Text="{Binding DataPagamentoTexto}" Watermark="dd/mm/aaaa" Width="130" IsEnabled="{Binding AVista}" />
+      </StackPanel>
+      <TextBlock Grid.Row="6" Classes="rot" Text="Dia do vencimento" IsVisible="{Binding MostraDia}" />
+      <NumericUpDown Grid.Row="6" Grid.Column="1" Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="110" HorizontalAlignment="Left" Margin="0,4"
+                     IsVisible="{Binding MostraDia}" />
+      <TextBlock Grid.Row="7" Classes="rot" Text="Vencimento no" IsVisible="{Binding MostraRegime}" />
+      <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="16" Margin="0,4" IsVisible="{Binding MostraRegime}">
+        <CheckBox Name="RegimeCompetencia" Content="Competência (mês seguinte)" IsChecked="{Binding RegimeCompetencia}"
+                  ToolTip.Tip="O vencimento fica no mês seguinte ao da competência (ex.: honorário de 03/2027 vence em abril)." />
+        <CheckBox Name="RegimeCaixa" Content="Regime de caixa (mesmo mês)" IsChecked="{Binding RegimeCaixa}"
+                  ToolTip.Tip="O vencimento fica no próprio mês da competência (ex.: honorário de 03/2027 vence em março)." />
+      </StackPanel>
+      <TextBlock Grid.Row="8" Classes="rot" Text="Periodicidade" IsVisible="{Binding MostraParcelamento}" />
+      <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="0,4" IsVisible="{Binding MostraParcelamento}">
         <ComboBox ItemsSource="{x:Static vm:LancamentoCobrancaViewModel.Frequencias}" SelectedItem="{Binding Frequencia}" Width="140" />
         <TextBlock Text="parcelas" VerticalAlignment="Center" IsVisible="{Binding MostraQuantidade}" />
         <NumericUpDown Value="{Binding Quantidade}" Minimum="1" Maximum="120" FormatString="0" Width="100" IsVisible="{Binding MostraQuantidade}" />
       </StackPanel>
-      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Text="{Binding Resumo}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" />
+      <TextBlock Grid.Row="9" Grid.ColumnSpan="2" Text="{Binding Resumo}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" />
     </Grid>
     <DataGrid ItemsSource="{Binding Previa}" IsReadOnly="True" AutoGenerateColumns="False" MinHeight="120">
       <DataGrid.Columns>

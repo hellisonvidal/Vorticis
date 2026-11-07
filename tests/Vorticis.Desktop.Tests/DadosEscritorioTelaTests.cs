@@ -138,6 +138,12 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 Assert.Equal("1.250,00", hon.Lancamento.Valor);
                 hon.Lancamento.Competencia = new DateTime(2027, 1, 1);
                 hon.Lancamento.Quantidade = 3;
+                // regime de competência (padrão): vence no mês seguinte ao da competência
+                Assert.True(hon.Lancamento.RegimeCompetencia);
+                Assert.Equal(["28/02/2027", "31/03/2027", "30/04/2027"], hon.Lancamento.Previa.Select(p => p.Vencimento));
+                // regime de caixa: vence no próprio mês (as duas caixas se excluem)
+                hon.Lancamento.RegimeCaixa = true;
+                Assert.False(hon.Lancamento.RegimeCompetencia);
                 Assert.Equal(["31/01/2027", "28/02/2027", "31/03/2027"], hon.Lancamento.Previa.Select(p => p.Vencimento));
                 var wl = FichaPopup.Aberta(janela.JanelaDa(hon)!.GetLogicalDescendants().OfType<E.Views.LancamentoCobrancaHost>().Single())!;
                 if (pasta is not null) { wl.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wl.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_novo_honorario.png")); }
@@ -145,10 +151,75 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 await Calma(20);
                 Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
                 await hon.CobrancaAvulsaCommand.ExecuteAsync(null);
+                Assert.True(hon.Lancamento.RegimeCaixa);                                              // o regime escolhido fica para o próximo lançamento
                 (hon.Lancamento.Descricao, hon.Lancamento.Valor, hon.Lancamento.Competencia, hon.Lancamento.Dia) = ("Declaração de IRPF", "350,00", new DateTime(2027, 4, 1), 30);
                 await hon.Lancamento.LancarCommand.ExecuteAsync(null);
                 await Calma(20);
-                Assert.Equal(["Honorário", "Honorário", "Honorário", "Avulsa"], hon.Cobrancas.Select(c => c.Tipo));
+                Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
+
+                // uma segunda cobrança avulsa sem fechar a tela, escolhendo o cliente e digitando a competência na janela
+                vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == 0);
+                await Calma(20);
+                await hon.CobrancaAvulsaCommand.ExecuteAsync(null);
+                await Calma(10);
+                Assert.True(hon.Lancamento.FichaAberta);
+                var w2 = FichaPopup.Aberta(janela.JanelaDa(hon)!.GetLogicalDescendants().OfType<E.Views.LancamentoCobrancaHost>().Single())!;
+                w2.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ClienteCobranca").SelectedItem = hon.Lancamento.Clientes.Single(c => c.Valor == novo.Valor);
+                w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "DescricaoCobranca").Text = "Alteração contratual";
+                w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "CompetenciaCobranca").Text = "05/2027";
+                w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "ValorCobranca").Text = "200,00";
+                await Calma(5);
+                Assert.Equal(new DateTime(2027, 5, 1), hon.Lancamento.Competencia);
+                w2.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "Lancar").Command!.Execute(null);
+                await Calma(30);
+                Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
+                Assert.Equal(["Honorário", "Honorário", "Honorário", "Avulsa", "Avulsa"], hon.Cobrancas.Select(c => c.Tipo));
+                Assert.Equal("10/05/2027", hon.Cobrancas[4].Vencimento);
+
+                // pagamento à vista: entra já recebida, vencendo na data do pagamento digitada
+                await hon.CobrancaAvulsaCommand.ExecuteAsync(null);
+                (hon.Lancamento.Cliente, hon.Lancamento.Descricao, hon.Lancamento.Valor) = (hon.Lancamento.Clientes.Single(c => c.Valor == novo.Valor), "Certidão", "80,00");
+                hon.Lancamento.CompetenciaTexto = "03/2027";
+                hon.Lancamento.AVista = true;
+                hon.Lancamento.DataPagamentoTexto = "15/03/2027";
+                Assert.False(hon.Lancamento.MostraParcelamento);
+                Assert.Equal(["15/03/2027"], hon.Lancamento.Previa.Select(p => p.Vencimento));
+                await hon.Lancamento.LancarCommand.ExecuteAsync(null);
+                await Calma(20);
+                var avista = hon.Cobrancas.Single(c => c.Descricao == "Certidão");
+                Assert.Equal(("15/03/2027", "Recebida"), (avista.Vencimento, avista.Situacao));
+                Assert.StartsWith("15/03/2027 – 80,00", avista.Recebido);
+
+                // Alterar: vencimento digitado e valor novo
+                hon.Selecionada = hon.Cobrancas.Single(c => c.Descricao == "Alteração contratual");
+                await hon.AlterarCommand.ExecuteAsync(null);
+                Assert.True(hon.Lancamento.FichaAberta);
+                Assert.Equal(("Alterar cobrança", "10/05/2027"), (hon.Lancamento.TituloFicha, hon.Lancamento.VencimentoTexto));
+                (hon.Lancamento.VencimentoTexto, hon.Lancamento.Valor) = ("20/06/2027", "250,00");
+                await hon.Lancamento.LancarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
+                var alterada = hon.Cobrancas.Single(c => c.Descricao == "Alteração contratual");
+                Assert.Equal(("20/06/2027", "250,00"), (alterada.Vencimento, alterada.Valor));
+
+                // Excluir em lote (com confirmação) e lançar de novo nas mesmas condições: sem aviso de honorário já lançado
+                hon.Selecionada = hon.Cobrancas.First(c => c.Tipo == "Honorário");
+                hon.Marcadas = [.. hon.Cobrancas.Where(c => c.Tipo == "Honorário")];
+                var exclusao = hon.ExcluirCommand.ExecuteAsync(null);
+                for (var i = 0; i < 50 && vm.Confirmacao is null; i++) await Calma(2);
+                Assert.Contains("3 cobranças", vm.Confirmacao!.Mensagem);
+                vm.ResponderConfirmacaoCommand.Execute(true);
+                await exclusao;
+                await Calma(20);
+                Assert.DoesNotContain(hon.Cobrancas, c => c.Tipo == "Honorário");
+                await hon.NovoHonorarioCommand.ExecuteAsync(null);
+                (hon.Lancamento.Cliente, hon.Lancamento.Competencia, hon.Lancamento.Quantidade, hon.Lancamento.RegimeCaixa) =
+                    (hon.Lancamento.Clientes.Single(c => c.Valor == novo.Valor), new DateTime(2027, 1, 1), 3, true);
+                hon.Lancamento.Valor = "1.250,00";
+                await hon.Lancamento.LancarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
+                Assert.Equal(3, hon.Cobrancas.Count(c => c.Tipo == "Honorário"));
                 hon.Selecionada = hon.Cobrancas[0];
                 hon.BaixarCommand.Execute(null);
                 Assert.True(hon.Baixa.FichaAberta);

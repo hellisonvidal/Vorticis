@@ -166,17 +166,22 @@ public static class RegrasEscritorio
 
     /// <summary>
     /// Parcelas de um honorário lançado no Financeiro: a primeira na competência informada e as seguintes a cada intervalo da frequência;
-    /// o vencimento fica no dia escolhido de cada mês (31 vira o último dia nos meses curtos).
+    /// o vencimento fica no dia escolhido de cada mês (31 vira o último dia nos meses curtos): no mês seguinte ao da competência (regime de
+    /// competência: o serviço do mês é cobrado no mês seguinte) ou no próprio mês (regime de caixa). Com pagamento à vista sai uma cobrança só,
+    /// já recebida, com o vencimento na data do pagamento.
     /// </summary>
     public static IReadOnlyList<CobrancaHonorario> Parcelas(long pessoa, DateOnly competencia, decimal valor, int dia, FrequenciaParcelas frequencia, int quantidade,
-                                                            TipoCobranca tipo = TipoCobranca.Honorario, string? descricao = null)
+                                                            TipoCobranca tipo = TipoCobranca.Honorario, string? descricao = null,
+                                                            bool vencimentoNoMesSeguinte = false, DateOnly? pagoAVistaEm = null)
     {
+        if (pagoAVistaEm is { } pago)
+            return [new CobrancaHonorario(0, pessoa, Mes(competencia), valor, pago, SituacaoCobranca.Recebida, pago, valor, null, tipo, descricao, null, null, "Pagamento à vista")];
         var n = frequencia == FrequenciaParcelas.Unica ? 1 : Math.Max(1, quantidade);
         var passo = Math.Max(1, (int)frequencia);
         return Enumerable.Range(0, n).Select(i =>
         {
             var comp = Mes(competencia).AddMonths(i * passo);
-            return new CobrancaHonorario(0, pessoa, comp, valor, NoDia(comp, dia), SituacaoCobranca.Aberta, null, null, null, tipo, descricao,
+            return new CobrancaHonorario(0, pessoa, comp, valor, NoDia(vencimentoNoMesSeguinte ? comp.AddMonths(1) : comp, dia), SituacaoCobranca.Aberta, null, null, null, tipo, descricao,
                                          n > 1 ? i + 1 : null, n > 1 ? n : null);
         }).ToList();
     }

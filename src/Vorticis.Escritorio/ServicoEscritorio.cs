@@ -270,12 +270,18 @@ public sealed class ServicoEscritorio
                 return Resultado<int>.Falha($"O cliente já tem honorário lançado em {string.Join(", ", ja.Select(d => d.ToString("MM/yyyy")))}. "
                                             + "Escolha outra competência, menos parcelas ou lance como cobrança avulsa.");
         }
+        // à vista: a cobrança já entra recebida (data do pagamento = vencimento)
         var n = await _db.ExecutarAsync("""
-            INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento, tipo, descricao, parcela, parcelas)
-            SELECT @e, @p, x.c, x.v, x.venc, x.t, NULLIF(x.d, ''), x.n, x.tot
-              FROM unnest(@comp::date[], @val::numeric[], @vencs::date[], @tipos::varchar[], @descs::varchar[], @ns::smallint[], @tots::smallint[])
-                   AS x(c, v, venc, t, d, n, tot)
+            INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento, tipo, descricao, parcela, parcelas,
+                                                       situacao, recebido_em, valor_recebido, observacao_baixa)
+            SELECT @e, @p, x.c, x.v, x.venc, x.t, NULLIF(x.d, ''), x.n, x.tot,
+                   CASE WHEN x.pago IS NULL THEN 'ABERTA' ELSE 'RECEBIDA' END, x.pago, CASE WHEN x.pago IS NULL THEN NULL ELSE x.v END, NULLIF(x.o, '')
+              FROM unnest(@comp::date[], @val::numeric[], @vencs::date[], @tipos::varchar[], @descs::varchar[], @ns::smallint[], @tots::smallint[],
+                          @pagos::date[], @obs::varchar[])
+                   AS x(c, v, venc, t, d, n, tot, pago, o)
             """, ct, ("e", escritorio), ("p", novas[0].PessoaId),
+            ("pagos", novas.Select(x => x.Situacao == SituacaoCobranca.Recebida ? x.RecebidoEm : null).ToArray()),
+            ("obs", novas.Select(x => x.Situacao == SituacaoCobranca.Recebida ? x.ObservacaoBaixa ?? "" : "").ToArray()),
             ("comp", novas.Select(x => RegrasEscritorio.Mes(x.Competencia)).ToArray()), ("val", novas.Select(x => x.Valor).ToArray()),
             ("vencs", novas.Select(x => x.Vencimento).ToArray()), ("tipos", novas.Select(x => x.Tipo.Sql()).ToArray()),
             ("descs", novas.Select(x => x.Descricao?.Trim() ?? "").ToArray()), ("ns", novas.Select(x => (short?)x.Parcela).ToArray()),
@@ -286,10 +292,40 @@ public sealed class ServicoEscritorio
     /// <summary>Exclui a cobrança em aberto ou cancelada (a recebida precisa ter a baixa estornada antes).</summary>
     public async Task<Resultado> ExcluirCobrancaAsync(long escritorio, CobrancaHonorario c, long usuarioId, CancellationToken ct = default)
     {
-        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         if (c.Situacao == SituacaoCobranca.Recebida) return Resultado.Falha("A cobrança já foi baixada: estorne a baixa antes de excluir.");
-        await _db.ExecutarAsync("DELETE FROM escritorio.honorario_cobranca WHERE id = @id AND empresa_id = @e AND situacao <> 'RECEBIDA'", ct, ("id", c.Id), ("e", escritorio));
-        return Resultado.Ok();
+        var r = await ExcluirCobrancasAsync(escritorio, [c.Id], usuarioId, ct);
+        return r.Sucesso ? Resultado.Ok() : Resultado.Falha(r.Erros);
+    }
+
+    /// <summary>Exclui de uma vez as cobranças escolhidas que não estejam recebidas; devolve quantas saíram.</summary>
+    public async Task<Resultado<int>> ExcluirCobrancasAsync(long escritorio, IReadOnlyCollection<long> ids, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        if (ids.Count == 0) return Resultado<int>.Ok(0);
+        var n = await _db.ExecutarAsync("DELETE FROM escritorio.honorario_cobranca WHERE id = ANY(@ids) AND empresa_id = @e AND situacao <> 'RECEBIDA'",
+                                        ct, ("ids", ids.ToArray()), ("e", escritorio));
+        return Resultado<int>.Ok(n);
+    }
+
+    /// <summary>Altera competência, vencimento, valor e descrição de uma cobrança em aberto (a recebida precisa ter a baixa estornada antes).</summary>
+    public async Task<Resultado> AlterarCobrancaAsync(long escritorio, CobrancaHonorario c, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
+        var erros = new List<string>();
+        if (c.Valor <= 0) erros.Add("Informe o valor (maior que zero).");
+        if (c.Tipo == TipoCobranca.Avulsa && string.IsNullOrWhiteSpace(c.Descricao)) erros.Add("Informe a descrição da cobrança avulsa (o serviço cobrado).");
+        if (erros.Count > 0) return Resultado.Falha(erros);
+        var comp = RegrasEscritorio.Mes(c.Competencia);
+        if (c.Tipo == TipoCobranca.Honorario && await _db.EscalarAsync<long?>("""
+                SELECT id FROM escritorio.honorario_cobranca
+                 WHERE empresa_id = @e AND pessoa_id = @p AND tipo = 'HONORARIO' AND situacao <> 'CANCELADA' AND competencia = @c AND id <> @id LIMIT 1
+                """, ct, ("e", escritorio), ("p", c.PessoaId), ("c", comp), ("id", c.Id)) is not null)
+            return Resultado.Falha($"O cliente já tem outro honorário em {comp:MM/yyyy}. Escolha outra competência.");
+        var n = await _db.ExecutarAsync("""
+            UPDATE escritorio.honorario_cobranca SET competencia = @c, vencimento = @v, valor = @valor, descricao = NULLIF(@d, '')
+             WHERE id = @id AND empresa_id = @e AND situacao = 'ABERTA'
+            """, ct, ("c", comp), ("v", c.Vencimento), ("valor", c.Valor), ("d", c.Descricao?.Trim() ?? ""), ("id", c.Id), ("e", escritorio));
+        return n == 1 ? Resultado.Ok() : Resultado.Falha("Só cobranças em aberto podem ser alteradas: estorne a baixa antes.");
     }
 
     public async Task<List<CobrancaHonorario>> ListarCobrancasAsync(long escritorio, DateOnly? competencia, bool somenteAbertas, long usuarioId, CancellationToken ct = default,

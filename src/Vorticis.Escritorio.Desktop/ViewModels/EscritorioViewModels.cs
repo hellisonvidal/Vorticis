@@ -26,6 +26,11 @@ internal static class Ext
     public static ServicoEscritorio Escritorio(this VorticisApp app) => ServicosEscritorio.De(app);
     public static DateOnly Dia(DateTime? d) => d is { } v ? DateOnly.FromDateTime(v) : DateOnly.FromDateTime(DateTime.Today);
     public static DateTime Dt(DateOnly d) => d.ToDateTime(TimeOnly.MinValue);
+    private static readonly System.Globalization.CultureInfo Br = new("pt-BR");
+    /// <summary>Data digitada dd/mm/aaaa; null enquanto incompleta ou inválida.</summary>
+    public static DateTime? LerData(string? t) => DateTime.TryParseExact(t?.Trim(), "dd/MM/yyyy", Br, System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+    /// <summary>Competência digitada mm/aaaa (primeiro dia do mês); null enquanto incompleta ou inválida.</summary>
+    public static DateTime? LerMes(string? t) => DateTime.TryParseExact(t?.Trim(), "MM/yyyy", Br, System.Globalization.DateTimeStyles.None, out var d) && d.Year >= 1900 ? d : null;
 }
 
 public sealed record Opcao<T>(T Valor, string Texto)
@@ -677,8 +682,8 @@ public enum FiltroSituacaoCobranca { Todas, EmAberto, Vencidas, Recebidas, Cance
 
 /// <summary>
 /// Financeiro › Honorários: as cobranças de honorários e avulsas de todos os clientes (ou do escolhido no topo), por competência.
-/// Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança avulsa, Gerar do contrato (o honorário da aba
-/// Contrato de cada cliente), Baixar (recebimento), Estornar baixa, Cancelar e Excluir.
+/// Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança avulsa, Alterar, Gerar do contrato (o honorário
+/// da aba Contrato de cada cliente), Baixar (recebimento), Estornar baixa, Cancelar e Excluir (uma ou várias cobranças marcadas na lista).
 /// </summary>
 public partial class HonorariosViewModel : ModuloViewModel
 {
@@ -698,13 +703,20 @@ public partial class HonorariosViewModel : ModuloViewModel
     ];
     public static IReadOnlyList<Opcao<TipoCobranca?>> Tipos { get; } = [new(null, "Todos"), new(TipoCobranca.Honorario, "Honorários"), new(TipoCobranca.Avulsa, "Avulsas")];
 
-    [ObservableProperty] private DateTime? _competenciaDe = new DateTime(DateTime.Today.Year, 1, 1);
-    [ObservableProperty] private DateTime? _competenciaAte = new DateTime(DateTime.Today.Year, 12, 1);
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CompetenciaDeTexto))] private DateTime? _competenciaDe = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CompetenciaAteTexto))] private DateTime? _competenciaAte = new DateTime(DateTime.Today.Year, 12, 1);
     [ObservableProperty] private Opcao<FiltroSituacaoCobranca>? _situacao = Situacoes[0];
     [ObservableProperty] private Opcao<TipoCobranca?>? _tipo = Tipos[0];
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private CobrancaLinha? _selecionada;
     [ObservableProperty] private string _totais = "";
     [ObservableProperty] private string _clienteDoFiltro = "Todos os clientes";
+
+    /// <summary>Competências do filtro digitadas como mm/aaaa (o valor só muda quando o mês está completo).</summary>
+    public string CompetenciaDeTexto { get => CompetenciaDe?.ToString("MM/yyyy") ?? ""; set { if (Ext.LerMes(value) is { } d) CompetenciaDe = d; } }
+    public string CompetenciaAteTexto { get => CompetenciaAte?.ToString("MM/yyyy") ?? ""; set { if (Ext.LerMes(value) is { } d) CompetenciaAte = d; } }
+
+    /// <summary>As cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias); Excluir age em todas.</summary>
+    public IReadOnlyList<CobrancaLinha> Marcadas { get; set; } = [];
 
     public bool TemSelecionada => Selecionada is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
@@ -736,6 +748,7 @@ public partial class HonorariosViewModel : ModuloViewModel
         })).ToList();
         ClienteDoFiltro = foco is null ? "Todos os clientes (escolha um no topo, em Cliente:, para ver só os dele)" : $"Só do cliente escolhido no topo: {lista.FirstOrDefault()?.PessoaNome ?? "sem cobranças no período"}";
         var id = Selecionada?.C.Id;
+        Marcadas = [];
         Cobrancas.Clear();
         foreach (var c in lista) Cobrancas.Add(new CobrancaLinha(c));
         Selecionada = Cobrancas.FirstOrDefault(c => c.C.Id == id);
@@ -750,6 +763,20 @@ public partial class HonorariosViewModel : ModuloViewModel
 
     [RelayCommand]
     private Task CobrancaAvulsaAsync() => Lancamento.AbrirAsync(TipoCobranca.Avulsa);
+
+    /// <summary>Abre a cobrança selecionada para alterar competência, vencimento, valor e descrição (só as em aberto).</summary>
+    [RelayCommand]
+    private async Task AlterarAsync()
+    {
+        Erros.Clear();
+        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
+        if (c.Situacao != SituacaoCobranca.Aberta)
+        {
+            Erros.Add(c.Situacao == SituacaoCobranca.Recebida ? "A cobrança já foi baixada: estorne a baixa antes de alterar." : "A cobrança está cancelada: estorne para alterá-la.");
+            return;
+        }
+        await Lancamento.AbrirAlteracaoAsync(c);
+    }
 
     /// <summary>Gera, na competência "de", a cobrança do honorário da aba Contrato de cada cliente (mensal; anual no mês do início).</summary>
     [RelayCommand]
@@ -787,16 +814,26 @@ public partial class HonorariosViewModel : ModuloViewModel
         Mensagem = msg;
     }, Permissao.EscritorioHonorarios);
 
+    /// <summary>Exclui as cobranças marcadas na lista (ou a selecionada), depois de confirmar; as recebidas ficam (estorne a baixa antes).</summary>
     [RelayCommand]
     private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
-        if (!await Contexto.ConfirmarAsync("Excluir cobrança", $"Excluir a cobrança de {c.PessoaNome} ({c.Competencia:MM/yyyy}, {Formato.Moeda(c.Valor)})?", "Excluir", "Cancelar")) return;
-        var r = await app.Escritorio().ExcluirCobrancaAsync(empresa, c, usuario);
+        var alvos = Marcadas.Count > 0 ? Marcadas.Select(l => l.C).ToList() : Selecionada?.C is { } s ? [s] : [];
+        if (alvos.Count == 0) { Erros.Add("Selecione a cobrança na lista (Ctrl ou Shift + clique marcam várias)."); return; }
+        var podem = alvos.Where(c => c.Situacao != SituacaoCobranca.Recebida).ToList();
+        var recebidas = alvos.Count - podem.Count;
+        if (podem.Count == 0) { Erros.Add("As cobranças escolhidas já foram baixadas: estorne a baixa antes de excluir."); return; }
+        var texto = podem.Count == 1
+            ? $"Excluir a cobrança de {podem[0].PessoaNome} ({podem[0].Competencia:MM/yyyy}, {Formato.Moeda(podem[0].Valor)})?"
+            : $"Excluir as {podem.Count} cobranças selecionadas (total {Formato.Moeda(podem.Sum(c => c.Valor))})?";
+        if (recebidas > 0) texto += $"\n{recebidas} cobrança(s) já recebida(s) não será(ão) excluída(s): estorne a baixa antes.";
+        if (!await Contexto.ConfirmarAsync(podem.Count == 1 ? "Excluir cobrança" : "Excluir cobranças", texto, "Excluir", "Cancelar")) return;
+        var r = await app.Escritorio().ExcluirCobrancasAsync(empresa, podem.Select(c => c.Id).ToList(), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Selecionada = null;
         await CarregarAsync();
-        Mensagem = "Cobrança excluída.";
+        Mensagem = (r.Valor == 1 ? "Cobrança excluída." : $"{r.Valor} cobranças excluídas.")
+                   + (recebidas > 0 ? $" {recebidas} recebida(s) não foram excluídas (estorne a baixa antes)." : "");
     }, Permissao.EscritorioHonorarios);
 
     internal async Task AposLancarAsync(string mensagem)
@@ -806,7 +843,11 @@ public partial class HonorariosViewModel : ModuloViewModel
     }
 }
 
-/// <summary>Janela "Novo honorário" / "Cobrança avulsa": cliente, competência, valor, dia do vencimento, frequência e parcelas, com a prévia.</summary>
+/// <summary>
+/// Janela "Novo honorário" / "Cobrança avulsa" / "Alterar cobrança": cliente, competência (digitada mm/aaaa), valor, dia do vencimento,
+/// regime (competência: vence no mês seguinte; caixa: no mesmo mês), pagamento à vista (já entra recebida, vencendo na data do pagamento),
+/// frequência e parcelas, com a prévia. Na alteração: competência, vencimento (digitado dd/mm/aaaa), valor e descrição.
+/// </summary>
 public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosViewModel tela) : ModuloViewModel(contexto), IComFicha
 {
     public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
@@ -814,21 +855,43 @@ public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosV
     public static IReadOnlyList<Opcao<FrequenciaParcelas>> Frequencias { get; } =
         [.. Enum.GetValues<FrequenciaParcelas>().Select(f => new Opcao<FrequenciaParcelas>(f, f.Rotulo()))];
 
+    private CobrancaHonorario? _alterando;
+
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(EhAvulsa), nameof(DicaDescricao))] private TipoCobranca _tipo;
     [ObservableProperty] private bool _fichaAberta;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(EhNovo), nameof(MostraParcelamento), nameof(MostraQuantidade), nameof(MostraVencimento),
+                                                   nameof(MostraDia), nameof(MostraRegime), nameof(TextoBotao))] private bool _emAlteracao;
     [ObservableProperty] private Opcao<long?>? _cliente;
     [ObservableProperty] private string _descricao = "";
-    [ObservableProperty] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CompetenciaTexto))] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private string _valor = "";
     [ObservableProperty] private decimal? _dia = 10;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostraQuantidade))] private Opcao<FrequenciaParcelas>? _frequencia = Frequencias[1];
     [ObservableProperty] private decimal? _quantidade = 12;
     [ObservableProperty] private string _resumo = "";
+    /// <summary>Regime de competência: o vencimento fica no mês seguinte ao da competência (padrão).</summary>
+    [ObservableProperty] private bool _regimeCompetencia = true;
+    /// <summary>Regime de caixa: o vencimento fica no mesmo mês da competência.</summary>
+    [ObservableProperty] private bool _regimeCaixa;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostraParcelamento), nameof(MostraQuantidade), nameof(MostraDia), nameof(MostraRegime))] private bool _aVista;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(DataPagamentoTexto))] private DateTime? _dataPagamento = DateTime.Today;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(VencimentoTexto))] private DateTime? _vencimento;
 
-    public string TituloFicha => Tipo == TipoCobranca.Avulsa ? "Cobrança avulsa" : "Novo honorário";
+    /// <summary>Competência digitada (mm/aaaa); a data do pagamento e o vencimento, dd/mm/aaaa.</summary>
+    public string CompetenciaTexto { get => Competencia?.ToString("MM/yyyy") ?? ""; set { if (Ext.LerMes(value) is { } d) Competencia = d; } }
+    public string DataPagamentoTexto { get => DataPagamento?.ToString("dd/MM/yyyy") ?? ""; set { if (Ext.LerData(value) is { } d) DataPagamento = d; } }
+    public string VencimentoTexto { get => Vencimento?.ToString("dd/MM/yyyy") ?? ""; set { if (Ext.LerData(value) is { } d) Vencimento = d; } }
+
+    public string TituloFicha => EmAlteracao ? "Alterar cobrança" : Tipo == TipoCobranca.Avulsa ? "Cobrança avulsa" : "Novo honorário";
+    public string TextoBotao => EmAlteracao ? "Gravar" : "Lançar";
     public bool EhAvulsa => Tipo == TipoCobranca.Avulsa;
+    public bool EhNovo => !EmAlteracao;
     public string DicaDescricao => EhAvulsa ? "Serviço cobrado (ex.: abertura de empresa, IRPF, consultoria)" : "Opcional (ex.: honorário 2027)";
-    public bool MostraQuantidade => Frequencia?.Valor != FrequenciaParcelas.Unica;
+    public bool MostraParcelamento => !EmAlteracao && !AVista;
+    public bool MostraQuantidade => MostraParcelamento && Frequencia?.Valor != FrequenciaParcelas.Unica;
+    public bool MostraDia => MostraParcelamento;
+    public bool MostraRegime => MostraParcelamento;
+    public bool MostraVencimento => EmAlteracao;
 
     partial void OnClienteChanged(Opcao<long?>? value) => AtualizarPrevia();
     partial void OnCompetenciaChanged(DateTime? value) => AtualizarPrevia();
@@ -836,16 +899,29 @@ public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosV
     partial void OnDiaChanged(decimal? value) => AtualizarPrevia();
     partial void OnFrequenciaChanged(Opcao<FrequenciaParcelas>? value) => AtualizarPrevia();
     partial void OnQuantidadeChanged(decimal? value) => AtualizarPrevia();
+    partial void OnAVistaChanged(bool value) => AtualizarPrevia();
+    partial void OnDataPagamentoChanged(DateTime? value) => AtualizarPrevia();
+    partial void OnVencimentoChanged(DateTime? value) => AtualizarPrevia();
+    partial void OnDescricaoChanged(string value) => AtualizarPrevia();
 
+    // as duas caixas se excluem: marcar uma desmarca a outra, e uma delas fica sempre marcada
+    partial void OnRegimeCompetenciaChanged(bool value) { if (RegimeCaixa == value) RegimeCaixa = !value; AtualizarPrevia(); }
+    partial void OnRegimeCaixaChanged(bool value) { if (RegimeCompetencia == value) RegimeCompetencia = !value; AtualizarPrevia(); }
+
+    /// <summary>Abre a janela em branco para um honorário ou uma cobrança avulsa (os campos voltam ao padrão; o regime escolhido por último fica).</summary>
     public async Task AbrirAsync(TipoCobranca tipo)
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        FichaAberta = false;
         Erros.Clear();
         Mensagem = null;
+        _alterando = null;
+        EmAlteracao = false;
         Tipo = tipo;
         await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
         Cliente = Clientes.FirstOrDefault(c => c.Valor == Contexto.ClienteEmFocoId) ?? Clientes[0];
-        (Descricao, Valor) = ("", "");
+        (Descricao, Valor, Dia, AVista, DataPagamento, Vencimento) = ("", "", 10, false, DateTime.Today, null);
+        Competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         Frequencia = tipo == TipoCobranca.Avulsa ? Frequencias[0] : Frequencias[1];
         Quantidade = tipo == TipoCobranca.Avulsa ? 1 : 12;
         // honorário: valor e dia do contrato do cliente, se houver
@@ -856,29 +932,69 @@ public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosV
         FichaAberta = true;
     }
 
-    private IReadOnlyList<CobrancaHonorario> Parcelas() =>
-        RegrasEscritorio.Parcelas(Cliente?.Valor ?? 0, Ext.Dia(Competencia), Formato.LerValor(Valor) ?? 0, (int)(Dia ?? 10), Frequencia?.Valor ?? FrequenciaParcelas.Unica,
-                                  (int)(Quantidade ?? 1), Tipo, string.IsNullOrWhiteSpace(Descricao) ? null : Descricao.Trim());
+    /// <summary>Abre a cobrança em aberto para alterar competência, vencimento, valor e descrição.</summary>
+    public async Task AbrirAlteracaoAsync(CobrancaHonorario c)
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        FichaAberta = false;
+        Erros.Clear();
+        Mensagem = null;
+        _alterando = c;
+        EmAlteracao = true;
+        Tipo = c.Tipo;
+        await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
+        Cliente = Clientes.FirstOrDefault(x => x.Valor == c.PessoaId) ?? Clientes[0];
+        (Descricao, Valor, AVista) = (c.Descricao ?? "", Formato.Moeda(c.Valor), false);
+        Competencia = Ext.Dt(c.Competencia);
+        Vencimento = Ext.Dt(c.Vencimento);
+        AtualizarPrevia();
+        FichaAberta = true;
+    }
+
+    private IReadOnlyList<CobrancaHonorario> Parcelas()
+    {
+        var descricao = string.IsNullOrWhiteSpace(Descricao) ? null : Descricao.Trim();
+        var valor = Formato.LerValor(Valor) ?? 0;
+        if (_alterando is { } c)
+            return [c with { Competencia = RegrasEscritorio.Mes(Ext.Dia(Competencia)), Vencimento = Ext.Dia(Vencimento), Valor = valor, Descricao = descricao }];
+        return RegrasEscritorio.Parcelas(Cliente?.Valor ?? 0, Ext.Dia(Competencia), valor, (int)(Dia ?? 10), Frequencia?.Valor ?? FrequenciaParcelas.Unica,
+                                         (int)(Quantidade ?? 1), Tipo, descricao, vencimentoNoMesSeguinte: RegimeCompetencia,
+                                         pagoAVistaEm: AVista ? Ext.Dia(DataPagamento) : null);
+    }
 
     private void AtualizarPrevia()
     {
         var p = Parcelas();
         Previa.Clear();
         foreach (var c in p.Take(60)) Previa.Add(new PreviaParcela(c.ParcelaTexto is { Length: > 0 } t ? t : "única", c.Competencia.ToString("MM/yyyy"), c.Vencimento.ToString("dd/MM/yyyy"), Formato.Moeda(c.Valor)));
-        Resumo = p.Count == 1 ? $"1 cobrança de {Formato.Moeda(p[0].Valor)}, vencimento {p[0].Vencimento:dd/MM/yyyy}."
+        Resumo = EmAlteracao ? $"Competência {p[0].Competencia:MM/yyyy}, vencimento {p[0].Vencimento:dd/MM/yyyy}, {Formato.Moeda(p[0].Valor)}."
+               : AVista ? $"Pagamento à vista: a cobrança de {Formato.Moeda(p[0].Valor)} entra já recebida em {p[0].Vencimento:dd/MM/yyyy} (o vencimento é a data do pagamento)."
+               : p.Count == 1 ? $"1 cobrança de {Formato.Moeda(p[0].Valor)}, vencimento {p[0].Vencimento:dd/MM/yyyy}."
                : $"{p.Count} parcelas de {Formato.Moeda(p[0].Valor)} (total {Formato.Moeda(p.Sum(x => x.Valor))}), de {p[0].Competencia:MM/yyyy} a {p[^1].Competencia:MM/yyyy}, "
-                 + $"vencimento no dia {(int)(Dia ?? 10)} (nos meses mais curtos, no último dia).";
+                 + $"vencimento no dia {(int)(Dia ?? 10)} {(RegimeCompetencia ? "do mês seguinte ao da competência" : "do próprio mês da competência")} (nos meses mais curtos, no último dia).";
     }
 
     [RelayCommand]
     private Task LancarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Cliente?.Valor is null) { Erros.Add("Escolha o cliente."); return; }
-        if (Dia is not (>= 1 and <= 31)) { Erros.Add("Dia do vencimento: de 1 a 31."); return; }
+        if (Competencia is null) { Erros.Add("Informe a competência (mês/ano)."); return; }
+        if (_alterando is not null)
+        {
+            if (Vencimento is null) { Erros.Add("Informe o vencimento (dia/mês/ano)."); return; }
+            var ra = await app.Escritorio().AlterarCobrancaAsync(empresa, Parcelas()[0], usuario);
+            if (!ra.Sucesso) { MostrarResultado(ra, ""); return; }
+            FichaAberta = false;
+            await tela.AposLancarAsync("Cobrança alterada.");
+            return;
+        }
+        if (AVista && DataPagamento is null) { Erros.Add("Informe a data do pagamento."); return; }
+        if (!AVista && Dia is not (>= 1 and <= 31)) { Erros.Add("Dia do vencimento: de 1 a 31."); return; }
         var r = await app.Escritorio().LancarCobrancasAsync(empresa, Parcelas(), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         FichaAberta = false;
-        await tela.AposLancarAsync(r.Valor == 1 ? $"{TituloFicha}: cobrança lançada." : $"{TituloFicha}: {r.Valor} parcelas lançadas.");
+        await tela.AposLancarAsync(AVista ? $"{TituloFicha}: pagamento à vista lançado e já baixado."
+                                   : r.Valor == 1 ? $"{TituloFicha}: cobrança lançada." : $"{TituloFicha}: {r.Valor} parcelas lançadas.");
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]

@@ -9,9 +9,9 @@
     <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Honorários" Margin="0,0,0,6" />
     <WrapPanel DockPanel.Dock="Top" ItemSpacing="0" LineSpacing="6" Margin="0,0,0,6">
       <TextBlock Text="Competência de" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <CalendarDatePicker Name="CompetenciaDe" SelectedDate="{Binding CompetenciaDe}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Margin="0,0,6,0" />
+      <TextBox Name="CompetenciaDe" c:Mascara.Tipo="Competencia" Text="{Binding CompetenciaDeTexto}" Watermark="mm/aaaa" Width="100" Margin="0,0,6,0" />
       <TextBlock Text="até" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <CalendarDatePicker SelectedDate="{Binding CompetenciaAte}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Margin="0,0,14,0" />
+      <TextBox Name="CompetenciaAte" c:Mascara.Tipo="Competencia" Text="{Binding CompetenciaAteTexto}" Watermark="mm/aaaa" Width="100" Margin="0,0,14,0" />
       <TextBlock Text="Situação" VerticalAlignment="Center" Margin="0,0,6,0" />
       <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="130" Margin="0,0,14,0" />
       <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,6,0" />
@@ -23,19 +23,23 @@
               ToolTip.Tip="Lança o honorário de um cliente: competência, valor, dia do vencimento e as parcelas seguintes (mensal, trimestral, anual...)." />
       <Button Name="CobrancaAvulsa" Content="Cobrança avulsa" Command="{Binding CobrancaAvulsaCommand}"
               ToolTip.Tip="Cobra um serviço extra (abertura de empresa, IRPF, consultoria...), em uma ou mais parcelas." />
+      <Button Name="AlterarCobranca" Content="Alterar" Command="{Binding AlterarCommand}" IsEnabled="{Binding TemSelecionada}"
+              ToolTip.Tip="Altera a competência, o vencimento, o valor e a descrição da cobrança selecionada (só as em aberto)." />
       <Button Content="Gerar do contrato" Command="{Binding GerarDoContratoCommand}"
               ToolTip.Tip="Gera, na competência 'de', a cobrança do honorário informado na aba Contrato de cada cliente (mensal; anual no mês do início)." />
       <Button Name="BaixarCobranca" Content="Baixar" Command="{Binding BaixarCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Registra o recebimento da cobrança selecionada (data, valor e observação)." />
       <Button Content="Estornar baixa" Command="{Binding EstornarCommand}" IsEnabled="{Binding TemSelecionada}" />
       <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" IsEnabled="{Binding TemSelecionada}" />
-      <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding TemSelecionada}" />
+      <Button Name="ExcluirCobrancas" Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding TemSelecionada}"
+              ToolTip.Tip="Exclui as cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias), depois de confirmar." />
     </WrapPanel>
     <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0">
       <TextBlock Text="{Binding Totais}" FontSize="12" />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid Name="ListaCobrancas" ItemsSource="{Binding Cobrancas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+    <DataGrid Name="ListaCobrancas" ItemsSource="{Binding Cobrancas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False"
+              SelectionMode="Extended">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Cliente" Binding="{ReflectionBinding Cliente}" Width="*" />
         <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="90" />

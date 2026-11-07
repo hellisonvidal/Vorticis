@@ -5,13 +5,17 @@ using Vorticis.Escritorio.Desktop.ViewModels;
 
 namespace Vorticis.Escritorio.Desktop.Views;
 
-/// <summary>Financeiro › Honorários: duplo clique ou Enter numa cobrança em aberto abre a baixa.</summary>
+/// <summary>Financeiro › Honorários: duplo clique ou Enter numa cobrança em aberto abre a baixa; as linhas marcadas vão para Excluir.</summary>
 public partial class HonorariosView : UserControl
 {
     public HonorariosView()
     {
         InitializeComponent();
         ListaCobrancas.DoubleTapped += (_, _) => (DataContext as HonorariosViewModel)?.BaixarCommand.Execute(null);
+        ListaCobrancas.SelectionChanged += (_, _) =>
+        {
+            if (DataContext is HonorariosViewModel vm) vm.Marcadas = [.. ListaCobrancas.SelectedItems.OfType<CobrancaLinha>()];
+        };
         ListaCobrancas.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter && DataContext is HonorariosViewModel { Selecionada: not null } vm) { vm.BaixarCommand.Execute(null); e.Handled = true; }

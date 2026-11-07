@@ -57,6 +57,18 @@ public class RegrasEscritorioTests
     }
 
     [Fact]
+    public void Regime_de_competencia_vence_no_mes_seguinte_e_a_vista_ja_entra_recebida()
+    {
+        var comp = RegrasEscritorio.Parcelas(7, new DateOnly(2026, 12, 1), 500m, 31, FrequenciaParcelas.Mensal, 3, vencimentoNoMesSeguinte: true);
+        Assert.Equal([new DateOnly(2026, 12, 1), new DateOnly(2027, 1, 1), new DateOnly(2027, 2, 1)], comp.Select(x => x.Competencia));
+        Assert.Equal([new DateOnly(2027, 1, 31), new DateOnly(2027, 2, 28), new DateOnly(2027, 3, 31)], comp.Select(x => x.Vencimento));
+        var avista = Assert.Single(RegrasEscritorio.Parcelas(7, new DateOnly(2026, 5, 1), 1200m, 20, FrequenciaParcelas.Mensal, 12, TipoCobranca.Avulsa, "IRPF",
+                                                             pagoAVistaEm: new DateOnly(2026, 5, 8)));
+        Assert.Equal((new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 8), SituacaoCobranca.Recebida, new DateOnly(2026, 5, 8), 1200m),
+                     (avista.Competencia, avista.Vencimento, avista.Situacao, avista.RecebidoEm, (decimal)avista.ValorRecebido!));
+    }
+
+    [Fact]
     public void Gerador_de_contratos_qualifica_as_partes_e_numera_as_clausulas()
     {
         var esc = new DadosEscritorio("Escritório Modelo Ltda", "11222333000181", "Rua A, 10", "Campinas", "SP");
@@ -219,6 +231,26 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.True((await svc.AlterarSituacaoAsync(escritorio, avulsa, SituacaoCobranca.Aberta, adm, ct)).Sucesso);
         Assert.True((await svc.ExcluirCobrancaAsync(escritorio, avulsa with { Situacao = SituacaoCobranca.Aberta }, adm, ct)).Sucesso);
         Assert.Equal(5, (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1))).Count);
+        // alterar a cobrança em aberto (não pode ir para uma competência que já tem honorário)
+        var abril = (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 4, 1), false, adm, ct)).Single(c => c.Tipo == TipoCobranca.Honorario);
+        Assert.Contains("05/2026", Assert.Single((await svc.AlterarCobrancaAsync(escritorio, abril with { Competencia = new DateOnly(2026, 5, 1) }, adm, ct)).Erros));
+        Assert.True((await svc.AlterarCobrancaAsync(escritorio, abril with { Vencimento = new DateOnly(2026, 5, 5), Valor = 990m, Descricao = "Reajustado" }, adm, ct)).Sucesso);
+        abril = (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 4, 1), false, adm, ct)).Single(c => c.Id == abril.Id);
+        Assert.Equal((new DateOnly(2026, 5, 5), 990m, "Reajustado"), (abril.Vencimento, abril.Valor, abril.Descricao));
+        // pagamento à vista: já recebido, vencendo na data do pagamento
+        Assert.Equal(1, (await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 8, 1), 150m, 10, FrequenciaParcelas.Unica, 1,
+                                                                                              TipoCobranca.Avulsa, "Certidão", pagoAVistaEm: new DateOnly(2026, 8, 3)), adm, ct)).Valor);
+        var paga = (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 8, 1), false, adm, ct)).Single();
+        Assert.Equal((SituacaoCobranca.Recebida, new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 3), 150m, "Pagamento à vista"),
+                     (paga.Situacao, paga.Vencimento, paga.RecebidoEm, (decimal)paga.ValorRecebido!, paga.ObservacaoBaixa));
+        Assert.False((await svc.AlterarCobrancaAsync(escritorio, paga with { Valor = 1m }, adm, ct)).Sucesso);   // recebida: estorne antes
+        // exclusão em lote: as recebidas ficam; relançar as mesmas competências depois de excluir não acusa honorário já lançado
+        var lote = await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1));
+        Assert.Equal(lote.Count(c => c.Situacao != SituacaoCobranca.Recebida), (await svc.ExcluirCobrancasAsync(escritorio, lote.Select(c => c.Id).ToList(), adm, ct)).Valor);
+        var sobra = await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1));
+        Assert.All(sobra, c => Assert.Equal(SituacaoCobranca.Recebida, c.Situacao));
+        Assert.Contains(sobra, c => c.Id == paga.Id);
+        Assert.Equal(3, (await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 4, 1), 950m, 31, FrequenciaParcelas.Mensal, 3), adm, ct)).Valor);
         // honorário anual no contrato do cliente e retirada do contrato
         Assert.True((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 9000m, 15, new DateOnly(2026, 1, 1), null, "NENHUM", null, null, PeriodicidadeHonorario.Anual), adm, ct)).Sucesso);
         Assert.Equal(PeriodicidadeHonorario.Anual, Assert.Single(await svc.ListarHonorariosAsync(escritorio, adm, ct)).Periodicidade);

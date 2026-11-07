@@ -5,8 +5,8 @@ using Avalonia.Controls.Primitives;
 namespace Vorticis.Desktop.Comum.Views;
 
 /// <summary>
-/// Máscara de digitação: <c>v:Mascara.Tipo="Cnpj|Cpf|CpfCnpj|Cep|Data|Valor"</c> num TextBox (ou CalendarDatePicker) formata
-/// enquanto o usuário digita — 00.000.000/0000-00, 000.000.000-00, 00000-000, dd/mm/aaaa. Só age com o campo em foco:
+/// Máscara de digitação: <c>v:Mascara.Tipo="Cnpj|Cpf|CpfCnpj|Cep|Data|Competencia|Valor"</c> num TextBox (ou CalendarDatePicker) formata
+/// enquanto o usuário digita — 00.000.000/0000-00, 000.000.000-00, 00000-000, dd/mm/aaaa, mm/aaaa. Só age com o campo em foco:
 /// valores vindos do sistema (ex.: documento mascarado de sócio) não são alterados.
 /// "Valor" (campos de valor, base, alíquota, saldo...): aceita só números, vírgula, ponto e sinal enquanto digita, alinha à direita
 /// e, ao sair do campo, mostra o número com separador de milhar e duas casas (1.234,56).
@@ -83,6 +83,7 @@ public static class Mascara
                 return d.Length <= 11 && d.All(char.IsAsciiDigit) ? Formatar(d, "000.000.000-00") : Formatar(d, "00.000.000/0000-00");
             case "Cep": return Formatar(Sig(texto, 8), "00000-000");
             case "Data": return Formatar(Sig(texto, 8), "00/00/0000");
+            case "Competencia": return Formatar(Sig(texto, 6), "00/0000");
             case "Valor": return new string(texto.Where(ch => char.IsAsciiDigit(ch) || ch is ',' or '.' or '-').ToArray());
             default: return texto;
         }

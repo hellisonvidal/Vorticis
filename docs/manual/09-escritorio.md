@@ -130,16 +130,26 @@ Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. 
 **Para que serve:** organizar os honorários do escritório: lançar os honorários com as parcelas, as cobranças avulsas de serviços extras e registrar as baixas (recebimentos).
 **Onde fica:** *Financeiro › Honorários*.
 
-A tela mostra as cobranças das **competências** escolhidas (*de* e *até*, mês/ano), de todos os clientes ou só do cliente escolhido no topo, em **Cliente:**. Filtre também pela **Situação** (todas, em aberto, vencidas, recebidas, canceladas) e pelo **Tipo** (honorários ou avulsas). A lista mostra o cliente, o tipo, a descrição, a parcela (1/12, 2/12...), a competência, o vencimento, o valor, a situação e a baixa; cobranças vencidas e não pagas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido, o que está em aberto e o vencido.
+A tela mostra as cobranças das **competências** escolhidas (*de* e *até*: digite o mês/ano, por exemplo 03/2027), de todos os clientes ou só do cliente escolhido no topo, em **Cliente:**. Filtre também pela **Situação** (todas, em aberto, vencidas, recebidas, canceladas) e pelo **Tipo** (honorários ou avulsas). A lista mostra o cliente, o tipo, a descrição, a parcela (1/12, 2/12...), a competência, o vencimento, o valor, a situação e a baixa; cobranças vencidas e não pagas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido, o que está em aberto e o vencido.
 
 ### Novo honorário
 1. Clique em **Novo honorário**. Na janela, escolha o **Cliente** (o escolhido no topo já vem marcado; se ele tem honorário na aba Contrato, o valor e o dia vêm preenchidos).
-2. Informe a **Competência** (mês/ano) da primeira parcela, o **Valor** (em reais) e o **Dia do vencimento**. Nos meses seguintes o vencimento fica no mesmo dia; nos meses mais curtos, no último dia (31 vira 28 ou 29 em fevereiro, 30 em abril...).
-3. Escolha a **Periodicidade** (parcela única, mensal, bimestral, trimestral, semestral ou anual) e quantas **parcelas**: o sistema cria as parcelas seguintes. A **prévia** mostra cada parcela com a competência, o vencimento e o valor antes de lançar.
-4. **Lançar**. Se o cliente já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses: escolha outra competência, menos parcelas, ou lance como cobrança avulsa.
+2. Digite a **Competência** da primeira parcela (mês/ano, por exemplo 03/2027), o **Valor** (em reais) e o **Dia do vencimento**. Nos meses seguintes o vencimento fica no mesmo dia; nos meses mais curtos, no último dia (31 vira 28 ou 29 em fevereiro, 30 em abril...).
+3. Em **Vencimento no**, marque uma das duas caixas:
+   - **Competência (mês seguinte)**: o vencimento fica no mês seguinte ao da competência (o honorário de 03/2027 vence em abril). É o padrão.
+   - **Regime de caixa (mesmo mês)**: o vencimento fica no próprio mês da competência (o honorário de 03/2027 vence em março).
+   Marcar uma desmarca a outra; a escolha fica para os próximos lançamentos.
+4. Escolha a **Periodicidade** (parcela única, mensal, bimestral, trimestral, semestral ou anual) e quantas **parcelas**: o sistema cria as parcelas seguintes. A **prévia** mostra cada parcela com a competência, o vencimento e o valor antes de lançar.
+5. **Lançar**. Se o cliente já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses: escolha outra competência, menos parcelas, ou lance como cobrança avulsa. Cobranças excluídas ou canceladas não contam: depois de excluí-las, é só lançar de novo.
+
+### Pagamento à vista
+Quando o cliente já pagou na hora, marque **À vista, pago em** e digite a data do pagamento (dia/mês/ano). A cobrança entra uma só vez, **já recebida (baixada)**, e a data do pagamento passa a ser o vencimento. Vale para o honorário e para a cobrança avulsa.
 
 ### Cobrança avulsa
-Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consultoria...): clique em **Cobrança avulsa**, escolha o cliente, descreva o serviço em **Descrição** (obrigatória), informe a competência, o valor e o dia do vencimento e, se for parcelado, a periodicidade e as parcelas. **Lançar**. O mesmo cliente pode ter várias cobranças avulsas no mesmo mês.
+Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consultoria...): clique em **Cobrança avulsa**, escolha o cliente, descreva o serviço em **Descrição** (obrigatória), digite a competência e o valor, informe o dia do vencimento e o regime (ou marque o pagamento à vista) e, se for parcelado, a periodicidade e as parcelas. **Lançar**. O mesmo cliente pode ter várias cobranças avulsas no mesmo mês, e a janela pode ser aberta de novo quantas vezes precisar, sem fechar a tela.
+
+### Alterar uma cobrança
+Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **vencimento** (digite dia/mês/ano), o **valor** ou a **descrição** e clique em **Gravar**. Só cobranças em aberto podem ser alteradas (na recebida, estorne a baixa antes). O honorário não pode ir para uma competência em que o cliente já tem outro honorário.
 
 ### Gerar do contrato
 **Gerar do contrato** cria, na competência *de*, a cobrança do honorário informado na aba **Contrato** de cada cliente: os mensais todo mês, os anuais só no mês em que o honorário começou (os especiais não). Rodar de novo não duplica.
@@ -149,7 +159,12 @@ Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consul
 2. Confira **Recebido em** e o **Valor recebido** (pode ser diferente do valor da cobrança, com juros, multa ou desconto) e, se quiser, escreva uma **Observação** (Pix, boleto, com desconto...).
 3. **Confirmar baixa**.
 
-**Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto); **Cancelar cobrança** cancela uma cobrança em aberto; **Excluir** apaga uma cobrança em aberto ou cancelada (a recebida precisa ter a baixa estornada antes).
+**Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto); **Cancelar cobrança** cancela uma cobrança em aberto.
+
+### Excluir cobranças (uma ou várias)
+1. Marque as cobranças na lista: clique na primeira e use **Ctrl + clique** para marcar outras ou **Shift + clique** para marcar um intervalo.
+2. Clique em **Excluir**. O sistema pergunta se quer mesmo excluir, com a quantidade e o total das cobranças marcadas.
+3. Confirme. As cobranças em aberto ou canceladas são apagadas; as já recebidas ficam (estorne a baixa antes) e o aviso diz quantas ficaram.
 
 **Boleto:** o Vorticis ainda não emite boleto. O boleto registrado exige convênio de cobrança com o banco (arquivo CNAB de remessa e retorno ou a API do banco); enquanto isso, informe ao cliente a chave PIX ou os dados bancários do escritório e registre a baixa aqui.
 
