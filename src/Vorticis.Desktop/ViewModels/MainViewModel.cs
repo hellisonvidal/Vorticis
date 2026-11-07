@@ -38,7 +38,6 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public PainelBiViewModel BiPainel => Instancia<PainelBiViewModel>();
     public AnaliseIndicadoresViewModel BiAnalise => Instancia<AnaliseIndicadoresViewModel>();
     public EvolucaoPatrimonialViewModel BiEvolucao => Instancia<EvolucaoPatrimonialViewModel>();
-    public ComparativosViewModel Comparativos => Instancia<ComparativosViewModel>();
     public CuboBiViewModel BiCubo => Instancia<CuboBiViewModel>();
     public ExportarBiViewModel BiExportar => Instancia<ExportarBiViewModel>();
     public OrcamentoViewModel Orcamento => Instancia<OrcamentoViewModel>();

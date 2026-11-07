@@ -16,13 +16,13 @@ public sealed record PeriodoRelatorio(string Rotulo, DateOnly Inicio, DateOnly F
 
 /// <summary>Opções do comparativo, iguais para todos os relatórios contábeis.</summary>
 public sealed record OpcoesComparativo(bool PeriodoAnterior = false, bool MesmoPeriodoAnoAnterior = false, IReadOnlyList<PeriodoEscolhido>? Escolhidos = null,
-                                       bool VariacaoAbsoluta = true, bool VariacaoPercentual = true, bool AnaliseVertical = false, int AnterioresSeguidos = 0)
+                                       bool VariacaoAbsoluta = true, bool VariacaoPercentual = true, bool AnaliseVertical = false, int AnosAnteriores = 0)
 {
     public const int MaximoEscolhidos = 3;
-    /// <summary>Máximo de períodos anteriores seguidos (evolução: 12 meses, 12 trimestres ou 12 anos antes do atual).</summary>
-    public const int MaximoSeguidos = 12;
+    /// <summary>Máximo de anos anteriores comparados (o mesmo período em cada um dos anos antes do atual).</summary>
+    public const int MaximoAnos = 5;
     public IReadOnlyList<PeriodoEscolhido> Periodos => Escolhidos ?? [];
-    public bool TemPeriodos => PeriodoAnterior || MesmoPeriodoAnoAnterior || Periodos.Count > 0 || AnterioresSeguidos > 0;
+    public bool TemPeriodos => PeriodoAnterior || MesmoPeriodoAnoAnterior || Periodos.Count > 0 || AnosAnteriores > 0;
 }
 
 /// <summary>Valor de uma linha do relatório em um período; <c>Valor</c> nulo = linha de título (sem valor).</summary>
@@ -47,7 +47,7 @@ public static class Comparativo
     {
         if (!op.TemPeriodos) return "Comparativo: marque \"Período anterior\", \"Mesmo período do ano anterior\" ou escolha ao menos um período.";
         if (op.Periodos.Count > OpcoesComparativo.MaximoEscolhidos) return $"Comparativo: escolha no máximo {OpcoesComparativo.MaximoEscolhidos} períodos.";
-        if (op.AnterioresSeguidos is < 0 or > OpcoesComparativo.MaximoSeguidos) return $"Comparativo: de 0 a {OpcoesComparativo.MaximoSeguidos} períodos anteriores seguidos.";
+        if (op.AnosAnteriores is < 0 or > OpcoesComparativo.MaximoAnos) return $"Comparativo: de 1 a {OpcoesComparativo.MaximoAnos} anos anteriores.";
         foreach (var p in op.Periodos)
             if (p.Tipo == TipoPeriodoComparado.Intervalo && (p.Fim is null || p.Fim < p.Inicio)) return "Comparativo: o intervalo escolhido tem data final anterior à inicial.";
         return null;
@@ -131,11 +131,11 @@ public static class Comparativo
             if (lista.All(x => x.Inicio != p.Inicio || x.Fim != p.Fim)) lista.Add(p);
         }
         if (op.PeriodoAnterior) Adicionar(Anterior(inicio, fim, pontual));
-        // evolução: os N períodos imediatamente anteriores, um atrás do outro (do mesmo tamanho do atual)
+        // anos anteriores: o mesmo período em cada um dos N anos antes do atual (2025, 2024...)
         var (ai, af) = (inicio, fim);
-        for (var n = 0; n < Math.Min(op.AnterioresSeguidos, OpcoesComparativo.MaximoSeguidos); n++)
+        for (var n = 0; n < Math.Min(op.AnosAnteriores, OpcoesComparativo.MaximoAnos); n++)
         {
-            var ant = Anterior(ai, af, pontual);
+            var ant = AnoAnterior(ai, af);
             Adicionar(ant);
             (ai, af) = (ant.Inicio, ant.Fim);
         }

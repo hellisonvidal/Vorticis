@@ -1037,11 +1037,11 @@ public class TelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixtur
             var dreComparada = vm.Dre;
             (dreComparada.Inicio, dreComparada.Fim) = (new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
             dreComparada.Comparacao.Ativo = true;
-            dreComparada.Comparacao.AnaliseVertical = true;
             await dreComparada.GerarCommand.ExecuteAsync(null);
             Assert.Empty(dreComparada.Erros);
             Assert.NotNull(dreComparada.TabelaComparativa);
             Assert.Contains(dreComparada.TabelaComparativa!.Colunas, c => c.Titulo.StartsWith("Var. %"));
+            Assert.Contains(dreComparada.TabelaComparativa!.Colunas, c => c.Titulo.Contains("2025"));   // compara só com o ano anterior
             Foto(janela, "08b7_dre_comparativo");
             dreComparada.ExportarPdfCommand.Execute(null);
             Assert.Empty(dreComparada.Erros);

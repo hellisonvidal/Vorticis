@@ -82,7 +82,6 @@ gerencial.receitacentro=03-contabil.md#receita-por-centro-de-custo
 bi.painel=03-contabil.md#painel-de-indicadores
 bi.analise=03-contabil.md#analise-de-indicadores
 bi.evolucao=03-contabil.md#evolucao-patrimonial
-comparativos=03-contabil.md#relatorios-comparativos
 bi.cubo=03-contabil.md#cubo-tabela-dinamica
 bi.exportar=03-contabil.md#exportar-dados-para-bi
 ecd=04-auditoria.md#ecd-sped-contabil

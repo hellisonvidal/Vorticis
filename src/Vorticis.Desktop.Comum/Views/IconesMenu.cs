@@ -87,7 +87,6 @@ public static class IconesMenu
         ["bi.painel"] = "ViewDashboardOutline",
         ["bi.analise"] = "ChartLine",
         ["bi.evolucao"] = "TrendingUp",
-        ["comparativos"] = "ViewCarousel",
         ["bi.cubo"] = "CubeOutline",
         ["bi.exportar"] = "DatabaseExportOutline",
         ["relacaobens"] = "ClipboardListOutline",

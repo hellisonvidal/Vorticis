@@ -382,7 +382,7 @@ Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**. E
 4. Embaixo da tela o programa avisa se o caixa **confere com o Balanço Patrimonial** nas duas datas. Se aparecer o aviso de que não confere, alguma conta está sem a classificação certa: ajuste em [Classificação da DFC e do EBITDA](#classificacao-da-dfc-e-do-ebitda) e gere de novo.
 5. Exporte em PDF, Excel ou CSV. Para incluir a DFC no PDF do livro, marque **DFC (fluxos de caixa)** no [Livro Contábil Completo](#livro-contabil-completo). A DFC não vai no arquivo da ECD, porque o leiaute do SPED Contábil não tem registro próprio para ela.
 
-Para comparar com outros períodos, marque **Comparativo** (veja [Comparativo](#comparativo)).
+Para comparar com os anos anteriores, marque **Comparar com anos anteriores** (veja [Comparar com anos anteriores](#comparar-com-anos-anteriores)).
 
 ### EBITDA
 *Relatórios › Contábeis › EBITDA* (também chamado LAJIDA: lucro antes de juros, impostos sobre o lucro, depreciação e amortização). Escolha a visão e clique em **Gerar**:
@@ -391,7 +391,7 @@ Para comparar com outros períodos, marque **Comparativo** (veja [Comparativo](#
 - **Mensal**: um quadro com os doze meses do ano da data inicial e o total do ano (receita líquida, lucro operacional, EBITDA, margem e EBITDA ajustado).
 - **Por centro de custo**: uma linha para cada centro de custo, com as partidas sem centro em *Sem centro de custo*, e o total.
 
-Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não recorrentes se define em [Classificação da DFC e do EBITDA](#classificacao-da-dfc-e-do-ebitda). A demonstração do período aceita **Comparativo** e **Análise vertical** (cada linha como % da receita líquida).
+Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não recorrentes se define em [Classificação da DFC e do EBITDA](#classificacao-da-dfc-e-do-ebitda). A demonstração do período aceita **Comparar com anos anteriores**.
 
 ### Classificação da DFC e do EBITDA
 *Relatórios › Contábeis › Classificação da DFC e do EBITDA*: diz ao programa como tratar cada conta na DFC e no EBITDA. O programa já traz uma **sugestão automática**, feita pelo nome da conta, pela natureza e pelo plano referencial, então muitas vezes não é preciso mexer em nada.
@@ -401,28 +401,14 @@ Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não r
 3. Marque **Não recorrente** nas receitas e despesas eventuais (ganho na venda de um bem, multa, indenização) para que o EBITDA ajustado as desconsidere.
 4. A coluna *Sugestão automática* mostra o que o programa sugeriu. **Restaurar sugestão automática** volta tudo para ela na tela. Clique em **Salvar classificação** para gravar; só as mudanças ficam registradas. Salvar exige a permissão de manter o plano de contas.
 
-### Comparativo
-Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA) e os relatórios gerenciais *Contabilização por centro de custo*, *Receita por centro de custo* e *Orçado x Realizado* têm a opção **Comparativo**, logo acima da grade:
+### Comparar com anos anteriores
+Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA), a *Análise de indicadores* e os relatórios gerenciais *Contabilização por centro de custo*, *Receita por centro de custo* e *Orçado x Realizado* têm, logo acima da grade, a caixa **Comparar com anos anteriores**:
 
-1. Marque **Comparativo**. Escolha **Período anterior** (o período de mesma duração logo antes; para um mês, o mês anterior) e/ou **Mesmo período do ano anterior**. Para ver a **evolução**, informe quantos **períodos anteriores seguidos** entram (até 12): com o mês de junho, 5 mostra junho e os cinco meses antes dele (mês a mês); com o ano, os anos anteriores (ano a ano); no Balanço, os fins de mês anteriores.
-2. Se quiser, marque até **3 outros períodos**: em cada linha marque *Usar*, escolha *Mês*, *Trimestre*, *Ano* ou *Intervalo* e informe a data (em Mês, Trimestre e Ano, qualquer data dentro do período; no Intervalo, as datas inicial e final).
-3. Escolha as colunas extras: **Variação em R$** (período atual menos o período comparado), **Variação em %** (variação dividida pelo valor comparado) e, nos relatórios que têm um total de referência (Balanço, DRE e EBITDA), a **Análise vertical (%)**, que mostra cada linha como % do total do ativo ou da receita.
-4. Clique em **Gerar**. O relatório mostra uma coluna para o período atual e uma para cada período comparado; PDF, Excel e CSV saem exatamente como a tela (o PDF sai em paisagem). Desmarque **Comparativo** e gere de novo para voltar ao relatório normal.
+1. Escolha o período do relatório normalmente (por exemplo, janeiro a junho de 2026).
+2. Marque **Comparar com anos anteriores** e, ao lado, quantos **anos** (1 a 5; 1 = só o ano anterior).
+3. Clique em **Gerar**. O relatório mostra uma coluna para o período escolhido e uma para o mesmo período de cada ano anterior (janeiro a junho de 2025, de 2024...), com a **variação em R$** (período atual menos o do ano comparado) e a **variação em %**. PDF, Excel e CSV saem como a tela (o PDF sai em paisagem). Desmarque a caixa e gere de novo para voltar ao relatório normal.
 
-Observações: no **Balanço** só importa a data final (as colunas são saldos em cada data). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). Na **Receita por centro de custo** cada centro mostra três linhas por período: *Receita*, *Custos e despesas* e *Margem*. No **Orçado x Realizado** cada conta mostra o *Orçado* e o *Realizado* de cada período, somando os meses (a opção **Mês a mês** não tem comparativo; desmarque-a para comparar). No **Razão** o comparativo resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** o comparativo usa a coluna *Total*. Quando uma linha não existe em um dos períodos, o valor aparece zerado e a variação % fica em branco.
-
-### Relatórios comparativos
-
-**Para que serve:** comparar períodos num só lugar, sem precisar abrir cada relatório: Balanço Patrimonial, Balancete de verificação, DRE, DFC (método indireto), EBITDA, DMPL e DLPA.
-**Onde fica:** *Relatórios › Comparativos (Balanço, Balancete, DRE...)*.
-
-1. Escolha o **relatório**.
-2. Informe o **período atual** (no Balanço, a **data**). Para o Balanço, a DRE e a DFC escolha também o **nível** das contas; no Balancete, se quer **incluir contas zeradas**.
-3. Marque com o que comparar: **Período anterior**, **Mesmo período do ano anterior**, **períodos anteriores seguidos** (evolução mês a mês, trimestre a trimestre ou ano a ano, até 12) e até **3 outros períodos** escolhidos (mês, trimestre, ano ou intervalo).
-4. Escolha as colunas: **Variação em R$**, **Variação em %** e, no Balanço e na DRE, **Análise vertical (%)**.
-5. **Gerar**. A tabela mostra uma coluna para o período atual e uma para cada período comparado; **PDF** (em paisagem), **Excel** e **CSV** saem como a tela.
-
-Os valores são os mesmos dos relatórios de cada um (mesmas regras, como a DRE sem os lançamentos de encerramento). Com muitos períodos, desmarque **Variação em R$** e **Variação em %** para ver só os valores, um período por coluna, lado a lado. As observações de [Comparativo](#comparativo) valem aqui também.
+Observações: no **Balanço** só importa a data (as colunas são os saldos na mesma data de cada ano; 28/02 vira 29/02 nos anos bissextos). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). Na **Receita por centro de custo** cada centro mostra três linhas por ano: *Receita*, *Custos e despesas* e *Margem*. No **Orçado x Realizado** cada conta mostra o *Orçado* e o *Realizado* de cada ano (a opção **Mês a mês** não tem comparação; desmarque-a para comparar). No **Razão** a comparação resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** é usada a coluna *Total*. Quando uma linha não existe em um dos anos, o valor aparece zerado e a variação % fica em branco.
 
 ## Relatórios gerenciais
 
@@ -431,7 +417,7 @@ O menu só aparece quando o parâmetro **Contabilidade gerencial** está ligado 
 *Relatórios › Gerenciais* reúne relatórios para acompanhar custos, receitas e metas por centro de custo. Todos aparecem na tela e têm os botões **PDF**, **Excel (.xlsx)** e **CSV**, com as mesmas opções de assinatura dos relatórios contábeis (veja [Assinaturas](#assinaturas) e [PDF assinado](#pdf-assinado)). Os lançamentos de encerramento do exercício não entram. Os centros de custo vêm do cadastro [Centros de custo](#centros-de-custo): cada centro sintético mostra a soma dos centros analíticos abaixo dele.
 
 ### Contabilização por centro de custo
-*Relatórios › Gerenciais › Contabilização por centro de custo*: mostra, para cada centro de custo, os débitos, créditos e o saldo do período e, abaixo, as contas com movimento. Marque **Comparativo** para comparar o saldo com outros períodos (veja [Comparativo](#comparativo)); nesse modo o detalhe dos lançamentos não é mostrado.
+*Relatórios › Gerenciais › Contabilização por centro de custo*: mostra, para cada centro de custo, os débitos, créditos e o saldo do período e, abaixo, as contas com movimento. Marque **Comparar com anos anteriores** para comparar o saldo com o mesmo período dos anos anteriores (veja [Comparar com anos anteriores](#comparar-com-anos-anteriores)); nesse modo o detalhe dos lançamentos não é mostrado.
 1. Informe o período (datas inicial e final).
 2. Se quiser, escolha um **centro** (o relatório mostra ele e os centros abaixo dele), digite uma **conta ou grupo** (por exemplo, 4.2 mostra só as contas que começam com 4.2) e o **nível do centro** (1 mostra só os centros de topo, com as contas somadas; 0 mostra todos).
 3. Marque **Detalhar lançamentos** para ver cada lançamento (data, número e histórico) abaixo da conta.
@@ -452,7 +438,7 @@ Digite os valores como positivos, na natureza da conta: a receita e a despesa or
 1. Informe o **ano** e o **mês inicial e final** (1 a 12).
 2. Se quiser, filtre por **centro** ou por **conta ou grupo**. Marque **Somar os centros** para ver uma linha por conta, sem separar por centro.
 3. Marque **Mês a mês** para ver uma linha por mês com o acumulado; sem essa opção, o relatório mostra o total dos meses escolhidos.
-4. Clique em **Gerar**. As colunas são *Orçado*, *Realizado*, *Diferença* (realizado − orçado) e *%* (realizado ÷ orçado). No total do período aparecem ainda as receitas, os custos e despesas e o resultado. Para comparar o orçado e o realizado de períodos diferentes, marque **Comparativo** (sem a opção *Mês a mês*; veja [Comparativo](#comparativo)).
+4. Clique em **Gerar**. As colunas são *Orçado*, *Realizado*, *Diferença* (realizado − orçado) e *%* (realizado ÷ orçado). No total do período aparecem ainda as receitas, os custos e despesas e o resultado. Para comparar o orçado e o realizado com os anos anteriores, marque **Comparar com anos anteriores** (sem a opção *Mês a mês*; veja [Comparar com anos anteriores](#comparar-com-anos-anteriores)).
 
 ### Relação de custos
 *Relatórios › Gerenciais › Relação de custos*: lista os custos e despesas (contas de resultado de natureza devedora, inclusive deduções da receita) do período, com a **participação %** de cada linha no total.
@@ -462,7 +448,7 @@ Digite os valores como positivos, na natureza da conta: a receita e a despesa or
 4. Clique em **Gerar**.
 
 ### Receita por centro de custo
-*Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**. Para comparar com outros períodos, marque **Comparativo** (veja [Comparativo](#comparativo)).
+*Relatórios › Gerenciais › Receita por centro de custo*: receita de cada centro mês a mês (até 24 meses), com o **% do total**, os custos e despesas do centro, a **margem** (receita − custos − despesas) e a **margem %** (margem ÷ receita). Informe o período, o centro e o nível (opcionais) e clique em **Gerar**. Para comparar com os anos anteriores, marque **Comparar com anos anteriores** (veja [Comparar com anos anteriores](#comparar-com-anos-anteriores)).
 
 ## Relatórios BI
 
@@ -480,7 +466,7 @@ Os indicadores de liquidez, endividamento, ROE, ROA e giro usam o Balanço na da
 ### Análise de indicadores
 *Relatórios › BI › Análise de indicadores*: a tabela completa dos indicadores, com a **fórmula** e uma explicação curta de **como ler** cada um (liquidez, estrutura de capital, rentabilidade e prazos).
 1. Informe o período e clique em **Gerar**.
-2. Para comparar períodos, marque **Comparativo** e escolha o período anterior, o mesmo período do ano anterior ou até 3 outros períodos (veja [Comparativo](#comparativo)). A tabela ganha uma coluna por período e a variação em pontos.
+2. Para comparar com os anos anteriores, marque **Comparar com anos anteriores** e escolha quantos anos (veja [Comparar com anos anteriores](#comparar-com-anos-anteriores)). A tabela ganha uma coluna por ano e a variação em pontos.
 3. Exporte em PDF, Excel ou CSV.
 
 ### Evolução patrimonial

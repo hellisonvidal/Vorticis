@@ -3,38 +3,11 @@
              xmlns:vm="using:Vorticis.Desktop.Comum.ViewModels"
              x:Class="Vorticis.Desktop.Comum.Views.ComparativoView"
              x:DataType="vm:ComparativoViewModel">
-  <!-- Opção "Comparativo" de todos os relatórios contábeis: períodos comparados, variação (R$ e %) e análise vertical. -->
-  <StackPanel Spacing="4" Margin="0,0,0,6">
-    <CheckBox Content="Comparativo" IsChecked="{Binding Ativo}" FontWeight="SemiBold" IsVisible="{Binding MostraLigar}" />
-    <Border IsVisible="{Binding Ativo}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8">
-      <StackPanel Spacing="6">
-        <WrapPanel>
-          <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,14,4" /></Style></WrapPanel.Styles>
-          <CheckBox Content="Período anterior" IsChecked="{Binding PeriodoAnterior}" />
-          <CheckBox Content="Mesmo período do ano anterior" IsChecked="{Binding MesmoPeriodoAnoAnterior}" />
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="Evolução: os períodos imediatamente anteriores ao atual, do mesmo tamanho (mês a mês, trimestre a trimestre ou ano a ano). 0 = nenhum.">
-            <NumericUpDown Name="AnterioresSeguidos" Value="{Binding AnterioresSeguidos}" Minimum="0" Maximum="12" FormatString="0" Width="100" />
-            <TextBlock Text="períodos anteriores seguidos" VerticalAlignment="Center" />
-          </StackPanel>
-          <CheckBox Content="Variação em R$" IsChecked="{Binding VariacaoAbsoluta}" />
-          <CheckBox Content="Variação em %" IsChecked="{Binding VariacaoPercentual}" />
-          <CheckBox Content="Análise vertical (%)" IsChecked="{Binding AnaliseVertical}" IsVisible="{Binding PodeAnaliseVertical}" />
-        </WrapPanel>
-        <TextBlock Text="Outros períodos (até 3). Em Mês, Trimestre e Ano, escolha qualquer data dentro do período." FontSize="11" Foreground="Gray" />
-        <ItemsControl ItemsSource="{Binding Escolhas}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:EscolhaPeriodo">
-              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,3">
-                <CheckBox Content="Usar" IsChecked="{Binding Usar}" Width="64" />
-                <ComboBox ItemsSource="{x:Static vm:ComparativoViewModel.Tipos}" SelectedIndex="{Binding Tipo}" Width="130" />
-                <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
-                <TextBlock Text="a" VerticalAlignment="Center" IsVisible="{Binding EhIntervalo}" />
-                <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" IsVisible="{Binding EhIntervalo}" />
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-    </Border>
+  <!-- "Comparar com anos anteriores" de todos os relatórios contábeis: o mesmo período em cada ano anterior, com a variação em R$ e %. -->
+  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+    <CheckBox Name="CompararAnos" Content="Comparar com anos anteriores" IsChecked="{Binding Ativo}" FontWeight="SemiBold"
+              ToolTip.Tip="O relatório sai com o período escolhido e o mesmo período de cada ano anterior (ex.: jan a jun de 2026 e de 2025), com a variação em R$ e em %." />
+    <NumericUpDown Value="{Binding Anos}" Minimum="1" Maximum="5" FormatString="0" Width="100" IsVisible="{Binding Ativo}" />
+    <TextBlock Text="ano(s)" VerticalAlignment="Center" IsVisible="{Binding Ativo}" />
   </StackPanel>
 </UserControl>
