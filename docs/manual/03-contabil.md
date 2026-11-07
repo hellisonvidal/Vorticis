@@ -404,12 +404,25 @@ Quais contas são depreciação, resultado financeiro, IR e CSLL ou itens não r
 ### Comparativo
 Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, DFC e EBITDA) e os relatórios gerenciais *Contabilização por centro de custo*, *Receita por centro de custo* e *Orçado x Realizado* têm a opção **Comparativo**, logo acima da grade:
 
-1. Marque **Comparativo**. Escolha **Período anterior** (o período de mesma duração logo antes; para um mês, o mês anterior) e/ou **Mesmo período do ano anterior**.
+1. Marque **Comparativo**. Escolha **Período anterior** (o período de mesma duração logo antes; para um mês, o mês anterior) e/ou **Mesmo período do ano anterior**. Para ver a **evolução**, informe quantos **períodos anteriores seguidos** entram (até 12): com o mês de junho, 5 mostra junho e os cinco meses antes dele (mês a mês); com o ano, os anos anteriores (ano a ano); no Balanço, os fins de mês anteriores.
 2. Se quiser, marque até **3 outros períodos**: em cada linha marque *Usar*, escolha *Mês*, *Trimestre*, *Ano* ou *Intervalo* e informe a data (em Mês, Trimestre e Ano, qualquer data dentro do período; no Intervalo, as datas inicial e final).
 3. Escolha as colunas extras: **Variação em R$** (período atual menos o período comparado), **Variação em %** (variação dividida pelo valor comparado) e, nos relatórios que têm um total de referência (Balanço, DRE e EBITDA), a **Análise vertical (%)**, que mostra cada linha como % do total do ativo ou da receita.
 4. Clique em **Gerar**. O relatório mostra uma coluna para o período atual e uma para cada período comparado; PDF, Excel e CSV saem exatamente como a tela (o PDF sai em paisagem). Desmarque **Comparativo** e gere de novo para voltar ao relatório normal.
 
 Observações: no **Balanço** só importa a data final (as colunas são saldos em cada data). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). Na **Receita por centro de custo** cada centro mostra três linhas por período: *Receita*, *Custos e despesas* e *Margem*. No **Orçado x Realizado** cada conta mostra o *Orçado* e o *Realizado* de cada período, somando os meses (a opção **Mês a mês** não tem comparativo; desmarque-a para comparar). No **Razão** o comparativo resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** o comparativo usa a coluna *Total*. Quando uma linha não existe em um dos períodos, o valor aparece zerado e a variação % fica em branco.
+
+### Relatórios comparativos
+
+**Para que serve:** comparar períodos num só lugar, sem precisar abrir cada relatório: Balanço Patrimonial, Balancete de verificação, DRE, DFC (método indireto), EBITDA, DMPL e DLPA.
+**Onde fica:** *Relatórios › Comparativos (Balanço, Balancete, DRE...)*.
+
+1. Escolha o **relatório**.
+2. Informe o **período atual** (no Balanço, a **data**). Para o Balanço, a DRE e a DFC escolha também o **nível** das contas; no Balancete, se quer **incluir contas zeradas**.
+3. Marque com o que comparar: **Período anterior**, **Mesmo período do ano anterior**, **períodos anteriores seguidos** (evolução mês a mês, trimestre a trimestre ou ano a ano, até 12) e até **3 outros períodos** escolhidos (mês, trimestre, ano ou intervalo).
+4. Escolha as colunas: **Variação em R$**, **Variação em %** e, no Balanço e na DRE, **Análise vertical (%)**.
+5. **Gerar**. A tabela mostra uma coluna para o período atual e uma para cada período comparado; **PDF** (em paisagem), **Excel** e **CSV** saem como a tela.
+
+Os valores são os mesmos dos relatórios de cada um (mesmas regras, como a DRE sem os lançamentos de encerramento). Com muitos períodos, desmarque **Variação em R$** e **Variação em %** para ver só os valores, um período por coluna, lado a lado. As observações de [Comparativo](#comparativo) valem aqui também.
 
 ## Relatórios gerenciais
 

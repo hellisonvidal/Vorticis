@@ -5,13 +5,17 @@
              x:DataType="vm:ComparativoViewModel">
   <!-- Opção "Comparativo" de todos os relatórios contábeis: períodos comparados, variação (R$ e %) e análise vertical. -->
   <StackPanel Spacing="4" Margin="0,0,0,6">
-    <CheckBox Content="Comparativo" IsChecked="{Binding Ativo}" FontWeight="SemiBold" />
+    <CheckBox Content="Comparativo" IsChecked="{Binding Ativo}" FontWeight="SemiBold" IsVisible="{Binding MostraLigar}" />
     <Border IsVisible="{Binding Ativo}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8">
       <StackPanel Spacing="6">
         <WrapPanel>
           <WrapPanel.Styles><Style Selector="WrapPanel &gt; :is(Control)"><Setter Property="Margin" Value="0,0,14,4" /></Style></WrapPanel.Styles>
           <CheckBox Content="Período anterior" IsChecked="{Binding PeriodoAnterior}" />
           <CheckBox Content="Mesmo período do ano anterior" IsChecked="{Binding MesmoPeriodoAnoAnterior}" />
+          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="Evolução: os períodos imediatamente anteriores ao atual, do mesmo tamanho (mês a mês, trimestre a trimestre ou ano a ano). 0 = nenhum.">
+            <NumericUpDown Name="AnterioresSeguidos" Value="{Binding AnterioresSeguidos}" Minimum="0" Maximum="12" FormatString="0" Width="100" />
+            <TextBlock Text="períodos anteriores seguidos" VerticalAlignment="Center" />
+          </StackPanel>
           <CheckBox Content="Variação em R$" IsChecked="{Binding VariacaoAbsoluta}" />
           <CheckBox Content="Variação em %" IsChecked="{Binding VariacaoPercentual}" />
           <CheckBox Content="Análise vertical (%)" IsChecked="{Binding AnaliseVertical}" IsVisible="{Binding PodeAnaliseVertical}" />

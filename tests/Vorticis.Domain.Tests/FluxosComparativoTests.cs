@@ -172,6 +172,20 @@ public class FluxosComparativoTests
     }
 
     [Fact]
+    public void Periodos_anteriores_seguidos_mostram_a_evolucao_mes_a_mes_ano_a_ano_e_no_balanco()
+    {
+        var op = new OpcoesComparativo(AnterioresSeguidos: 3);
+        Assert.Equal(["jun/2026", "mai/2026", "abr/2026", "mar/2026"], Comparativo.Periodos(new(2026, 6, 1), new(2026, 6, 30), op).Select(p => p.Rotulo));
+        Assert.Equal(["2026", "2025", "2024", "2023"], Comparativo.Periodos(new(2026, 1, 1), new(2026, 12, 31), op).Select(p => p.Rotulo));
+        var bal = Comparativo.Periodos(new(2026, 6, 30), new(2026, 6, 30), op, pontual: true);
+        Assert.Equal([new DateOnly(2026, 6, 30), new DateOnly(2026, 5, 31), new DateOnly(2026, 4, 30), new DateOnly(2026, 3, 31)], bal.Select(p => p.Fim));
+        // período anterior junto com os seguidos não repete a coluna
+        Assert.Equal(4, Comparativo.Periodos(new(2026, 6, 1), new(2026, 6, 30), op with { PeriodoAnterior = true }).Count);
+        Assert.True(op.TemPeriodos);
+        Assert.NotNull(Comparativo.Validar(new OpcoesComparativo(AnterioresSeguidos: 13)));
+    }
+
+    [Fact]
     public void Periodos_ano_anterior_acompanha_fim_de_fevereiro_e_balanco_usa_so_a_data()
     {
         var p = Comparativo.Periodos(new(2025, 2, 1), new(2025, 2, 28), new OpcoesComparativo(MesmoPeriodoAnoAnterior: true));

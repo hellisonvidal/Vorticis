@@ -157,6 +157,43 @@ public class BiTelasTests(BancoDeTeste db, SessaoHeadless headless) : IClassFixt
     }
 
     [Fact]
+    public async Task Relatorios_comparativos_numa_tela_so_com_evolucao_mes_a_mes()
+    {
+        BancoDeTeste.ExigirBanco();
+        var (empresa, adm) = await SemearAsync("44778899000909");
+        var ok = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            ArquivosGerados.AbrirAposGerar = false;
+            var ctx = new ContextoDeTeste(db.App, new SessaoUsuario(adm, "admin_teste", "Admin de Teste", true, false), empresa);
+            var vm = new ComparativosViewModel(ctx) { Inicio = new DateTime(2026, 6, 1), Fim = new DateTime(2026, 6, 30) };
+            Assert.True(vm.Comparacao.Ativo && vm.Comparacao.SempreAtivo);
+            Assert.Equal(7, ComparativosViewModel.Relatorios.Count);
+            vm.Comparacao.PeriodoAnterior = false;
+            vm.Comparacao.AnterioresSeguidos = 5;
+            foreach (var r in ComparativosViewModel.Relatorios)
+            {
+                vm.Relatorio = r;
+                await vm.GerarCommand.ExecuteAsync(null);
+                Assert.True(vm.Erros.Count == 0, r.Texto + ": " + string.Join("; ", vm.Erros));
+                Assert.NotNull(vm.TabelaComparativa);
+            }
+            vm.Relatorio = ComparativosViewModel.Relatorios[2];   // DRE, jan a jun de 2026 mês a mês
+            await vm.GerarCommand.ExecuteAsync(null);
+            var cab = vm.TabelaComparativa!.Colunas.Select(c => c.Titulo).ToList();
+            foreach (var m in new[] { "jun/2026", "mai/2026", "abr/2026", "mar/2026", "fev/2026", "jan/2026" }) Assert.Contains(cab, c => c.Contains(m));
+            Assert.Contains("jan/2026", vm.Resumo);
+            vm.ExportarPdfCommand.Execute(null);
+            Assert.Empty(vm.Erros);
+            var janela = new Window { Width = 1366, Height = 820, Content = new ContentControl { Content = vm } };
+            janela.Show();
+            Capturar(janela, "relatorios_comparativos");
+            janela.Close();
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(ok);
+    }
+
+    [Fact]
     public async Task Analise_cubo_e_exportacao_funcionam_pelas_telas_e_o_comparativo_vale_nos_dois_relatorios_gerenciais()
     {
         BancoDeTeste.ExigirBanco();

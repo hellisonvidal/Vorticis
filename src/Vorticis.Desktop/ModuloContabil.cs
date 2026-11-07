@@ -91,6 +91,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("EBITDA (LAJIDA)", Telas.Ebitda),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Classificação da DFC e do EBITDA", Telas.ClassificacaoDfc)),
+            ItemMenu.Tela("Comparativos (Balanço, Balancete, DRE...)", Telas.Comparativos),
             ItemMenu.Submenu("_Gerenciais",
                 ItemMenu.Tela("Contabilização por centro de custo", Telas.CentroCustoRelatorio),
                 ItemMenu.Tela("Orçado x Realizado", Telas.OrcadoRealizado),
@@ -272,6 +273,8 @@ public sealed class ModuloContabil : IModuloDesktop
             .Tela(Telas.BiPainel, "Relatórios › BI › Painel de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.BiAnalise), m => new AnaliseIndicadoresViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.BiAnalise, "Relatórios › BI › Análise de indicadores", m => m.Pode(Permissao.RelatorioDemonstracoes));
+        c.Instancia(nameof(MainViewModel.Comparativos), m => new ComparativosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(Telas.Comparativos, "Relatórios › Comparativos", m => m.Pode(Permissao.RelatorioDemonstracoes) || m.Pode(Permissao.RelatorioBalancete));
         c.Instancia(nameof(MainViewModel.BiEvolucao), m => new EvolucaoPatrimonialViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(Telas.BiEvolucao, "Relatórios › BI › Evolução patrimonial", m => m.Pode(Permissao.RelatorioDemonstracoes));
         c.Instancia(nameof(MainViewModel.BiCubo), m => new CuboBiViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())

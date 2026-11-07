@@ -34,11 +34,17 @@ public sealed partial class ComparativoViewModel : ObservableObject
     [ObservableProperty] private bool _variacaoAbsoluta = true;
     [ObservableProperty] private bool _variacaoPercentual = true;
     [ObservableProperty] private bool _analiseVertical;
+    /// <summary>Quantos períodos anteriores seguidos entram (evolução mês a mês, trimestre a trimestre ou ano a ano).</summary>
+    [ObservableProperty] private decimal? _anterioresSeguidos = 0;
+    /// <summary>Tela própria de comparativos (Relatórios › Comparativos): o comparativo está sempre ligado e a caixa "Comparativo" some.</summary>
+    public bool SempreAtivo { get; set; }
+    public bool MostraLigar => !SempreAtivo;
     /// <summary>Relatórios sem um total de referência (balancete, razão...) não têm análise vertical.</summary>
     [ObservableProperty] private bool _podeAnaliseVertical;
 
     public IReadOnlyList<EscolhaPeriodo> Escolhas { get; } = [new(), new(), new()];
 
     public OpcoesComparativo Opcoes() => new(PeriodoAnterior, MesmoPeriodoAnoAnterior,
-        Escolhas.Select(e => e.Converter()).OfType<PeriodoEscolhido>().ToList(), VariacaoAbsoluta, VariacaoPercentual, AnaliseVertical && PodeAnaliseVertical);
+        Escolhas.Select(e => e.Converter()).OfType<PeriodoEscolhido>().ToList(), VariacaoAbsoluta, VariacaoPercentual, AnaliseVertical && PodeAnaliseVertical,
+        (int)(AnterioresSeguidos ?? 0));
 }
