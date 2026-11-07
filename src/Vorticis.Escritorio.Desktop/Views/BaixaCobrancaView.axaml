@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             x:Class="Vorticis.Escritorio.Desktop.Views.BaixaCobrancaView" x:DataType="vm:BaixaCobrancaViewModel">
+  <!-- Janela Baixar cobrança: data, valor recebido e observação -->
+  <DockPanel Margin="20,16">
+    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
+      <c:MensagensView />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <Button Content="Cancelar" Command="{Binding FecharFichaCommand}" />
+        <Button Name="ConfirmarBaixa" Content="Confirmar baixa" Classes="accent" Command="{Binding ConfirmarCommand}" />
+      </StackPanel>
+    </StackPanel>
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding DescricaoCobranca}" TextWrapping="Wrap" FontWeight="SemiBold" />
+      <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto">
+        <TextBlock Text="Recebido em" VerticalAlignment="Center" Margin="0,4,8,4" />
+        <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Data}" Width="140" Margin="0,4" />
+        <TextBlock Grid.Row="1" Text="Valor recebido" VerticalAlignment="Center" Margin="0,4,8,4" />
+        <TextBox Grid.Row="1" Grid.Column="1" c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="140" HorizontalAlignment="Left" Margin="0,4" />
+        <TextBlock Grid.Row="2" Text="Observação" VerticalAlignment="Center" Margin="0,4,8,4" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Observacao}" MaxLength="200" Watermark="Pix, boleto, com juros, com desconto..." Margin="0,4" />
+      </Grid>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="O valor recebido pode ser diferente do valor da cobrança (juros, multa ou desconto). Errou? Use Estornar baixa: a cobrança volta a ficar em aberto." />
+    </StackPanel>
+  </DockPanel>
+</UserControl>

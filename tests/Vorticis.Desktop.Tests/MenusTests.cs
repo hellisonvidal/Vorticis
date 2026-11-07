@@ -358,13 +358,15 @@ public class MenusTests
     }
 
     [Fact]
-    public void Cliente_do_escritorio_importa_dados_da_receita_e_tem_aba_de_honorarios()
+    public void Cliente_do_escritorio_importa_dados_da_receita_e_tem_o_honorario_na_aba_contrato()
     {
         var main = new Vorticis.Escritorio.Desktop.MainViewModel();
         var cli = new Vorticis.Escritorio.Desktop.ViewModels.ClientesEscritorioViewModel(main);
         Assert.True(cli.ModoClientes);
-        Assert.True(cli.Honorarios.EmbutidoNoCliente);
-        Assert.False(cli.Honorarios.EscolheCliente);                 // o cliente é o do cadastro, sem caixa de escolha
+        Assert.Equal(["Mensal", "Anual", "Especial"], Vorticis.Escritorio.Desktop.ViewModels.ClientesEscritorioViewModel.PeriodicidadesHonorario.Select(p => p.Texto));
+        Assert.Equal(("", 10m, "Mensal"), (cli.ValorHonorario, cli.DiaHonorario, cli.PeriodicidadeHonorario?.Texto));
+        var financeiro = Assert.Single(main.Menus, m => m.Titulo == "_Financeiro");
+        Assert.Equal(["Honorários"], financeiro.Filhos!.Select(f => f.Titulo));
         Assert.Equal(["Simples Nacional", "Lucro Presumido", "Lucro Real", "MEI", "Lucro Arbitrado", "Imune/isenta"],
                      Vorticis.Escritorio.Desktop.ViewModels.PessoasViewModel.Regimes);
         cli.AplicarConsulta(new Vorticis.Application.Cadastros.DadosCnpj("41827365000171", "MERCADO BOM PRECO LTDA", "BOM PRECO", "2062", "4711302", "SP", "3550308",

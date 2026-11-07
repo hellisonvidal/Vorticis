@@ -18,6 +18,7 @@ public static class EscritorioTelas
     public const string Clientes = "escritorio.clientes";
     public const string Contratos = "escritorio.contratos";
     public const string RelHonorarios = "escritorio.rel.honorarios";
+    public const string Honorarios = "escritorio.honorarios";
 }
 
 internal static class Ext
@@ -66,7 +67,7 @@ public sealed record PessoaLinha(PessoaEscritorio P)
 /// <summary>
 /// Cadastro próprio do Escritório (Cadastros › Clientes); a marca de fornecedor de cadastros antigos é preservada ao gravar.
 /// O cliente tem os dados do cadastro de empresas (importados pela consulta do CNPJ), os módulos do contrato (com algum marcado, a
-/// empresa é cadastrada nos demais módulos) e a aba Honorários e cobranças.
+/// empresa é cadastrada nos demais módulos) e o honorário, na aba Contrato.
 /// </summary>
 public abstract partial class PessoasViewModel(IContexto contexto, bool clientes) : CadastroViewModel(contexto)
 {
@@ -156,6 +157,9 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
     }
 
     protected virtual Task AoSelecionarAsync(PessoaEscritorio? p) => Task.CompletedTask;
+
+    /// <summary>Depois de gravar o cadastro (antes de recarregar a lista): grava o que a ficha tem além do cadastro (o honorário do contrato).</summary>
+    protected virtual Task AposGravarAsync(VorticisApp app, long escritorio, long pessoa, long usuario) => Task.CompletedTask;
 
     /// <summary>Logo da empresa vinculada ao cliente (cadastro único de empresas, usado no cabeçalho dos relatórios).</summary>
     public Vorticis.Desktop.Comum.ViewModels.LogoEmpresaEditor Logo { get; } = new();
@@ -254,6 +258,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
             var r = await app.Escritorio().GravarPessoaAsync(empresa, p, usuario);
             if (!r.Sucesso) { MostrarResultado(r, ""); return; }
             ok = true;
+            await AposGravarAsync(app, empresa, r.Valor, usuario);
             Modo = ModoCadastro.Consulta;
             await CarregarAsync();
             await Contexto.RecarregarClientesSeletorAsync();   // o seletor de clientes da barra mostra o cadastro atualizado
@@ -290,29 +295,72 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
     }
 }
 
-/// <summary>Cadastros › Clientes: dados cadastrais (como o cadastro de empresas), módulos do contrato e honorários e cobranças.</summary>
-public sealed partial class ClientesEscritorioViewModel : PessoasViewModel
+/// <summary>
+/// Cadastros › Clientes: dados cadastrais (como o cadastro de empresas) e a aba Contrato, com os módulos contratados e o honorário (valor,
+/// dia do vencimento e periodicidade). As cobranças ficam em Financeiro › Honorários.
+/// </summary>
+public sealed partial class ClientesEscritorioViewModel(IContexto contexto) : PessoasViewModel(contexto, true)
 {
-    public ClientesEscritorioViewModel(IContexto contexto) : base(contexto, true) => Honorarios = new HonorariosViewModel(contexto) { EmbutidoNoCliente = true };
+    public static IReadOnlyList<Opcao<PeriodicidadeHonorario>> PeriodicidadesHonorario { get; } =
+        [.. Enum.GetValues<PeriodicidadeHonorario>().Select(p => new Opcao<PeriodicidadeHonorario>(p, p.Rotulo()))];
 
-    public HonorariosViewModel Honorarios { get; }
+    private ContratoHonorario? _honorario;
+    [ObservableProperty] private string _valorHonorario = "";
+    [ObservableProperty] private decimal? _diaHonorario = 10;
+    [ObservableProperty] private Opcao<PeriodicidadeHonorario>? _periodicidadeHonorario = PeriodicidadesHonorario[0];
+    [ObservableProperty] private string _situacaoHonorario = "";
 
-    /// <summary>A tela mostra a lista de clientes; a ficha (dados, módulos, honorários) abre numa janela por cima.</summary>
+    /// <summary>A tela mostra a lista de clientes; a ficha (dados e contrato) abre numa janela por cima.</summary>
     protected override bool FichaEmJanela => true;
 
-    public override void AtualizarPermissoes()
+    protected override void MostrarSelecionado()
     {
-        base.AtualizarPermissoes();
-        Honorarios.AtualizarPermissoes();
+        base.MostrarSelecionado();
+        MostrarHonorario();
+    }
+
+    private void MostrarHonorario()
+    {
+        var h = _honorario is { } x && x.PessoaId == Selecionado?.P.Id ? x : null;
+        ValorHonorario = h is null ? "" : Formato.Moeda(h.Valor);
+        DiaHonorario = h?.DiaVencimento ?? 10;
+        PeriodicidadeHonorario = PeriodicidadesHonorario.First(p => p.Valor == (h?.Periodicidade ?? Escritorio.PeriodicidadeHonorario.Mensal));
+        SituacaoHonorario = h is null ? "Sem honorário no contrato: informe o valor para as cobranças serem geradas em Financeiro › Honorários."
+            : h.Periodicidade switch
+            {
+                Escritorio.PeriodicidadeHonorario.Mensal => $"Honorário de {Formato.Moeda(h.Valor)} por mês, vencimento no dia {h.DiaVencimento}.",
+                Escritorio.PeriodicidadeHonorario.Anual => $"Honorário de {Formato.Moeda(h.Valor)} por ano, cobrado em {h.Inicio:MM} de cada ano, vencimento no dia {h.DiaVencimento}.",
+                _ => $"Honorário especial de {Formato.Moeda(h.Valor)}: as cobranças são lançadas em Financeiro › Honorários (Novo honorário).",
+            };
     }
 
     protected override async Task AoSelecionarAsync(PessoaEscritorio? p)
     {
         await CarregarLogoAsync(p?.EmpresaVinculadaId);
-        await Honorarios.MostrarClienteAsync(p?.Id);
+        _honorario = p is not null && Contexto.App is { } app && Contexto.Sessao is { } sessao && Contexto.EmpresaId is { } empresa
+            ? (await app.Escritorio().ListarHonorariosAsync(empresa, sessao.Id)).FirstOrDefault(h => h.PessoaId == p.Id)
+            : null;
+        if (EmConsulta) MostrarHonorario();
+    }
+
+    protected override async Task AposGravarAsync(VorticisApp app, long escritorio, long pessoa, long usuario)
+    {
+        var valor = Formato.LerValor(ValorHonorario) ?? 0;
+        var anterior = _honorario?.PessoaId == pessoa ? _honorario : null;
+        Resultado r;
+        if (valor > 0)
+        {
+            var hoje = DateOnly.FromDateTime(DateTime.Today);
+            r = await app.Escritorio().GravarHonorarioAsync(escritorio, new ContratoHonorario(anterior?.Id ?? 0, pessoa, valor, (int)(DiaHonorario ?? 10),
+                anterior?.Inicio ?? new DateOnly(hoje.Year, hoje.Month, 1), anterior?.Fim, anterior?.IndiceReajuste ?? "NENHUM", anterior?.Observacao, null,
+                PeriodicidadeHonorario?.Valor ?? Escritorio.PeriodicidadeHonorario.Mensal), usuario);
+        }
+        else if (anterior is not null) r = await app.Escritorio().ExcluirHonorarioAsync(escritorio, pessoa, usuario);
+        else return;
+        if (!r.Sucesso) foreach (var e in r.Erros) Erros.Add("Honorário: " + e);
+        _honorario = (await app.Escritorio().ListarHonorariosAsync(escritorio, usuario)).FirstOrDefault(h => h.PessoaId == pessoa);
     }
 }
-
 
 // ---------------------------------------------------------------------------------------------- carteira
 
@@ -612,144 +660,266 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
 public sealed record CobrancaLinha(CobrancaHonorario C)
 {
     public string Cliente => C.PessoaNome ?? "";
+    public string Tipo => C.Tipo.Rotulo();
+    public string Descricao => C.Descricao ?? (C.Tipo == TipoCobranca.Honorario ? "Honorário" : "");
+    public string Parcela => C.ParcelaTexto;
     public string Competencia => C.Competencia.ToString("MM/yyyy");
     public string Vencimento => C.Vencimento.ToString("dd/MM/yyyy");
     public string Valor => Formato.Moeda(C.Valor);
     public string Situacao => C.Vencida(DateOnly.FromDateTime(DateTime.Today)) ? "VENCIDA" : C.Situacao.Rotulo();
-    public string Recebido => C.RecebidoEm is { } d ? $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}" : "";
+    public string Recebido => C.RecebidoEm is { } d ? $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}{(C.ObservacaoBaixa is { } o ? $" ({o})" : "")}" : "";
 }
 
-/// <summary>Aba Honorários e cobranças do cadastro de clientes: honorário mensal do cliente e as cobranças dele.</summary>
-public partial class HonorariosViewModel(IContexto contexto) : ModuloViewModel(contexto)
+/// <summary>Parcela na prévia do lançamento (Financeiro › Honorários › Novo honorário / Cobrança avulsa).</summary>
+public sealed record PreviaParcela(string Parcela, string Competencia, string Vencimento, string Valor);
+
+public enum FiltroSituacaoCobranca { Todas, EmAberto, Vencidas, Recebidas, Canceladas }
+
+/// <summary>
+/// Financeiro › Honorários: as cobranças de honorários e avulsas de todos os clientes (ou do escolhido no topo), por competência.
+/// Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança avulsa, Gerar do contrato (o honorário da aba
+/// Contrato de cada cliente), Baixar (recebimento), Estornar baixa, Cancelar e Excluir.
+/// </summary>
+public partial class HonorariosViewModel : ModuloViewModel
 {
+    public HonorariosViewModel(IContexto contexto) : base(contexto)
+    {
+        Lancamento = new LancamentoCobrancaViewModel(contexto, this);
+        Baixa = new BaixaCobrancaViewModel(contexto, this);
+    }
+
+    public LancamentoCobrancaViewModel Lancamento { get; }
+    public BaixaCobrancaViewModel Baixa { get; }
     public ObservableCollection<CobrancaLinha> Cobrancas { get; } = [];
-    public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
-    public static IReadOnlyList<string> Indices { get; } = ["NENHUM", "IPCA", "IGPM", "INPC", "SALARIO"];
-    private IReadOnlyList<ContratoHonorario> _contratos = [];
+    public static IReadOnlyList<Opcao<FiltroSituacaoCobranca>> Situacoes { get; } =
+    [
+        new(FiltroSituacaoCobranca.Todas, "Todas"), new(FiltroSituacaoCobranca.EmAberto, "Em aberto"), new(FiltroSituacaoCobranca.Vencidas, "Vencidas"),
+        new(FiltroSituacaoCobranca.Recebidas, "Recebidas"), new(FiltroSituacaoCobranca.Canceladas, "Canceladas"),
+    ];
+    public static IReadOnlyList<Opcao<TipoCobranca?>> Tipos { get; } = [new(null, "Todos"), new(TipoCobranca.Honorario, "Honorários"), new(TipoCobranca.Avulsa, "Avulsas")];
 
-    [ObservableProperty] private Opcao<long?>? _cliente;
-    [ObservableProperty] private string _valor = "";
-    [ObservableProperty] private decimal? _dia = 10;
-    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-    [ObservableProperty] private DateTime? _fim;
-    [ObservableProperty] private string _indice = "NENHUM";
-    [ObservableProperty] private string _observacao = "";
-    [ObservableProperty] private string _situacaoContrato = "";
-    [ObservableProperty] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-    [ObservableProperty] private bool _somenteAbertas;
-    [ObservableProperty] private CobrancaLinha? _selecionada;
-    [ObservableProperty] private DateTime? _dataRecebimento = DateTime.Today;
-    [ObservableProperty] private string _valorRecebido = "";
+    [ObservableProperty] private DateTime? _competenciaDe = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _competenciaAte = new DateTime(DateTime.Today.Year, 12, 1);
+    [ObservableProperty] private Opcao<FiltroSituacaoCobranca>? _situacao = Situacoes[0];
+    [ObservableProperty] private Opcao<TipoCobranca?>? _tipo = Tipos[0];
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private CobrancaLinha? _selecionada;
     [ObservableProperty] private string _totais = "";
+    [ObservableProperty] private string _clienteDoFiltro = "Todos os clientes";
 
+    public bool TemSelecionada => Selecionada is not null;
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
 
-    /// <summary>Na aba Honorários e cobranças do cadastro do cliente: o cliente é o selecionado no cadastro e a lista mostra só as cobranças dele.</summary>
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(EscolheCliente))] private long? _clienteFixo;
-    public bool EmbutidoNoCliente { get; init; }
-    public bool EscolheCliente => !EmbutidoNoCliente;
-
-    /// <summary>Mostra o honorário e as cobranças do cliente escolhido no cadastro de clientes.</summary>
-    public async Task MostrarClienteAsync(long? pessoa)
-    {
-        ClienteFixo = pessoa;
-        if (!Clientes.Any(c => c.Valor == pessoa)) { await CarregarAsync(); return; }
-        Cliente = Clientes.FirstOrDefault(c => c.Valor == pessoa) ?? Clientes.FirstOrDefault();
-        MostrarContrato();
-        await CarregarCobrancasAsync();
-    }
-
-    partial void OnCompetenciaChanged(DateTime? value) => _ = CarregarCobrancasAsync();
-    partial void OnSomenteAbertasChanged(bool value) => _ = CarregarCobrancasAsync();
-    partial void OnSelecionadaChanged(CobrancaLinha? value) => ValorRecebido = value is null ? "" : Formato.Num(value.C.Valor);
-    partial void OnClienteChanged(Opcao<long?>? value) => MostrarContrato();
-
-    private void MostrarContrato()
-    {
-        var c = _contratos.FirstOrDefault(x => x.PessoaId == Cliente?.Valor);
-        if (c is null)
-        {
-            (Valor, Dia, Fim, Indice, Observacao) = ("", 10, null, "NENHUM", "");
-            SituacaoContrato = Cliente?.Valor is null ? "Escolha o cliente para ver ou gravar o honorário." : "O cliente ainda não tem honorário cadastrado.";
-        }
-        else
-        {
-            (Valor, Dia, Inicio, Fim, Indice, Observacao) = (Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Observacao ?? "");
-            SituacaoContrato = $"Honorário: {Formato.Moeda(c.Valor)} por mês, vencimento dia {c.DiaVencimento}.";
-        }
-    }
+    partial void OnCompetenciaDeChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnCompetenciaAteChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnSituacaoChanged(Opcao<FiltroSituacaoCobranca>? value) => _ = CarregarAsync();
+    partial void OnTipoChanged(Opcao<TipoCobranca?>? value) => _ = CarregarAsync();
 
     public async Task CarregarAsync()
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
-        _contratos = await app.Escritorio().ListarHonorariosAsync(empresa, sessao.Id);
-        var atual = Cliente?.Valor;
-        await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
-        Cliente = Clientes.FirstOrDefault(c => c.Valor == (EmbutidoNoCliente ? ClienteFixo : atual)) ?? Clientes[0];
-        MostrarContrato();
-        await CarregarCobrancasAsync();
-    }
-
-    private async Task CarregarCobrancasAsync()
-    {
-        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var todas = EmbutidoNoCliente || SomenteAbertas;
-        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, todas ? null : Ext.Dia(Competencia), SomenteAbertas, sessao.Id);
+        var de = Ext.Dia(CompetenciaDe);
+        var ate = CompetenciaAte is { } a ? DateOnly.FromDateTime(a) : de;
+        if (ate < de) ate = de;
+        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, de, false, sessao.Id, ate: ate);
         if (!EhAtual(g)) return;
-        if (EmbutidoNoCliente) itens = itens.Where(c => c.PessoaId == ClienteFixo).OrderByDescending(c => c.Competencia).ToList();
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        var foco = Contexto.ClienteEmFocoId;
+        var lista = itens.Where(c => (foco is null || c.PessoaId == foco) && (Tipo?.Valor is not { } t || c.Tipo == t) && (Situacao?.Valor switch
+        {
+            FiltroSituacaoCobranca.EmAberto => c.Situacao == SituacaoCobranca.Aberta,
+            FiltroSituacaoCobranca.Vencidas => c.Vencida(hoje),
+            FiltroSituacaoCobranca.Recebidas => c.Situacao == SituacaoCobranca.Recebida,
+            FiltroSituacaoCobranca.Canceladas => c.Situacao == SituacaoCobranca.Cancelada,
+            _ => true,
+        })).ToList();
+        ClienteDoFiltro = foco is null ? "Todos os clientes (escolha um no topo, em Cliente:, para ver só os dele)" : $"Só do cliente escolhido no topo: {lista.FirstOrDefault()?.PessoaNome ?? "sem cobranças no período"}";
+        var id = Selecionada?.C.Id;
         Cobrancas.Clear();
-        foreach (var c in itens) Cobrancas.Add(new CobrancaLinha(c));
-        Totais = $"{itens.Count} cobrança(s) · total {Formato.Moeda(itens.Where(c => c.Situacao != SituacaoCobranca.Cancelada).Sum(c => c.Valor))} · "
-                 + $"recebido {Formato.Moeda(itens.Sum(c => c.ValorRecebido ?? 0))} · em aberto {Formato.Moeda(itens.Where(c => c.Situacao == SituacaoCobranca.Aberta).Sum(c => c.Valor))}";
+        foreach (var c in lista) Cobrancas.Add(new CobrancaLinha(c));
+        Selecionada = Cobrancas.FirstOrDefault(c => c.C.Id == id);
+        var validas = lista.Where(c => c.Situacao != SituacaoCobranca.Cancelada).ToList();
+        Totais = $"{lista.Count} cobrança(s) · total {Formato.Moeda(validas.Sum(c => c.Valor))} · recebido {Formato.Moeda(lista.Sum(c => c.ValorRecebido ?? 0))} · "
+                 + $"em aberto {Formato.Moeda(validas.Where(c => c.Situacao == SituacaoCobranca.Aberta).Sum(c => c.Valor))} · "
+                 + $"vencido {Formato.Moeda(lista.Where(c => c.Vencida(hoje)).Sum(c => c.Valor))}";
     }
 
     [RelayCommand]
-    private Task GravarContratoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private Task NovoHonorarioAsync() => Lancamento.AbrirAsync(TipoCobranca.Honorario);
+
+    [RelayCommand]
+    private Task CobrancaAvulsaAsync() => Lancamento.AbrirAsync(TipoCobranca.Avulsa);
+
+    /// <summary>Gera, na competência "de", a cobrança do honorário da aba Contrato de cada cliente (mensal; anual no mês do início).</summary>
+    [RelayCommand]
+    private Task GerarDoContratoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (Cliente?.Valor is not { } pessoa) { Erros.Add("Escolha o cliente."); return; }
-        var r = await app.Escritorio().GravarHonorarioAsync(empresa, new ContratoHonorario(0, pessoa, Formato.LerValor(Valor) ?? 0, (int)(Dia ?? 0), Ext.Dia(Inicio),
-                                                                                           Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, string.IsNullOrWhiteSpace(Observacao) ? null : Observacao), usuario);
+        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(CompetenciaDe), usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
-        Mensagem = "Honorário gravado.";
+        Mensagem = r.Valor == 0 ? $"Nenhuma cobrança nova em {Ext.Dia(CompetenciaDe):MM/yyyy}: os clientes com honorário no contrato já têm a cobrança dessa competência."
+                                : $"{r.Valor} cobrança(s) gerada(s) em {Ext.Dia(CompetenciaDe):MM/yyyy} a partir do honorário do contrato dos clientes.";
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
-    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private void Baixar()
     {
-        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(Competencia), usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        SomenteAbertas = false;
-        await CarregarCobrancasAsync();
-        Mensagem = r.Valor == 0 ? "Nenhuma cobrança nova: todos os clientes com honorário já têm a cobrança deste mês." : $"{r.Valor} cobrança(s) gerada(s).";
-    }, Permissao.EscritorioHonorarios);
+        Erros.Clear();
+        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
+        if (c.Situacao != SituacaoCobranca.Aberta) { Erros.Add("Só cobranças em aberto podem ser baixadas."); return; }
+        Baixa.Abrir(c);
+    }
 
     [RelayCommand]
-    private Task ReceberAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private Task EstornarAsync() => Alterar(SituacaoCobranca.Aberta, "Baixa estornada: a cobrança voltou a ficar em aberto.", c => c.Situacao != SituacaoCobranca.Aberta);
+
+    [RelayCommand]
+    private Task CancelarAsync() => Alterar(SituacaoCobranca.Cancelada, "Cobrança cancelada.", c => c.Situacao == SituacaoCobranca.Aberta);
+
+    private Task Alterar(SituacaoCobranca nova, string msg, Func<CobrancaHonorario, bool> pode) => ExecutarAsync(async (app, empresa, usuario) =>
     {
         if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
-        var r = await app.Escritorio().ReceberAsync(empresa, c, Ext.Dia(DataRecebimento), Formato.LerValor(ValorRecebido) ?? 0, usuario);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarCobrancasAsync();
-        Mensagem = "Recebimento registrado.";
-    }, Permissao.EscritorioHonorarios);
-
-    [RelayCommand]
-    private Task CancelarAsync() => Alterar(SituacaoCobranca.Cancelada, "Cobrança cancelada.");
-
-    [RelayCommand]
-    private Task ReabrirAsync() => Alterar(SituacaoCobranca.Aberta, "Cobrança reaberta (recebimento desfeito).");
-
-    private Task Alterar(SituacaoCobranca nova, string msg) => ExecutarAsync(async (app, empresa, usuario) =>
-    {
-        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
+        if (!pode(c)) { Erros.Add(nova == SituacaoCobranca.Cancelada ? "Só cobranças em aberto podem ser canceladas." : "A cobrança já está em aberto."); return; }
         var r = await app.Escritorio().AlterarSituacaoAsync(empresa, c, nova, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        await CarregarCobrancasAsync();
+        await CarregarAsync();
         Mensagem = msg;
     }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    private Task ExcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
+        if (!await Contexto.ConfirmarAsync("Excluir cobrança", $"Excluir a cobrança de {c.PessoaNome} ({c.Competencia:MM/yyyy}, {Formato.Moeda(c.Valor)})?", "Excluir", "Cancelar")) return;
+        var r = await app.Escritorio().ExcluirCobrancaAsync(empresa, c, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Selecionada = null;
+        await CarregarAsync();
+        Mensagem = "Cobrança excluída.";
+    }, Permissao.EscritorioHonorarios);
+
+    internal async Task AposLancarAsync(string mensagem)
+    {
+        await CarregarAsync();
+        Mensagem = mensagem;
+    }
+}
+
+/// <summary>Janela "Novo honorário" / "Cobrança avulsa": cliente, competência, valor, dia do vencimento, frequência e parcelas, com a prévia.</summary>
+public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosViewModel tela) : ModuloViewModel(contexto), IComFicha
+{
+    public ObservableCollection<Opcao<long?>> Clientes { get; } = [];
+    public ObservableCollection<PreviaParcela> Previa { get; } = [];
+    public static IReadOnlyList<Opcao<FrequenciaParcelas>> Frequencias { get; } =
+        [.. Enum.GetValues<FrequenciaParcelas>().Select(f => new Opcao<FrequenciaParcelas>(f, f.Rotulo()))];
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(EhAvulsa), nameof(DicaDescricao))] private TipoCobranca _tipo;
+    [ObservableProperty] private bool _fichaAberta;
+    [ObservableProperty] private Opcao<long?>? _cliente;
+    [ObservableProperty] private string _descricao = "";
+    [ObservableProperty] private DateTime? _competencia = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private decimal? _dia = 10;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(MostraQuantidade))] private Opcao<FrequenciaParcelas>? _frequencia = Frequencias[1];
+    [ObservableProperty] private decimal? _quantidade = 12;
+    [ObservableProperty] private string _resumo = "";
+
+    public string TituloFicha => Tipo == TipoCobranca.Avulsa ? "Cobrança avulsa" : "Novo honorário";
+    public bool EhAvulsa => Tipo == TipoCobranca.Avulsa;
+    public string DicaDescricao => EhAvulsa ? "Serviço cobrado (ex.: abertura de empresa, IRPF, consultoria)" : "Opcional (ex.: honorário 2027)";
+    public bool MostraQuantidade => Frequencia?.Valor != FrequenciaParcelas.Unica;
+
+    partial void OnClienteChanged(Opcao<long?>? value) => AtualizarPrevia();
+    partial void OnCompetenciaChanged(DateTime? value) => AtualizarPrevia();
+    partial void OnValorChanged(string value) => AtualizarPrevia();
+    partial void OnDiaChanged(decimal? value) => AtualizarPrevia();
+    partial void OnFrequenciaChanged(Opcao<FrequenciaParcelas>? value) => AtualizarPrevia();
+    partial void OnQuantidadeChanged(decimal? value) => AtualizarPrevia();
+
+    public async Task AbrirAsync(TipoCobranca tipo)
+    {
+        if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
+        Erros.Clear();
+        Mensagem = null;
+        Tipo = tipo;
+        await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
+        Cliente = Clientes.FirstOrDefault(c => c.Valor == Contexto.ClienteEmFocoId) ?? Clientes[0];
+        (Descricao, Valor) = ("", "");
+        Frequencia = tipo == TipoCobranca.Avulsa ? Frequencias[0] : Frequencias[1];
+        Quantidade = tipo == TipoCobranca.Avulsa ? 1 : 12;
+        // honorário: valor e dia do contrato do cliente, se houver
+        if (tipo == TipoCobranca.Honorario && Cliente?.Valor is { } pessoa
+            && (await app.Escritorio().ListarHonorariosAsync(empresa, sessao.Id)).FirstOrDefault(h => h.PessoaId == pessoa) is { } h)
+            (Valor, Dia) = (Formato.Moeda(h.Valor), h.DiaVencimento);
+        AtualizarPrevia();
+        FichaAberta = true;
+    }
+
+    private IReadOnlyList<CobrancaHonorario> Parcelas() =>
+        RegrasEscritorio.Parcelas(Cliente?.Valor ?? 0, Ext.Dia(Competencia), Formato.LerValor(Valor) ?? 0, (int)(Dia ?? 10), Frequencia?.Valor ?? FrequenciaParcelas.Unica,
+                                  (int)(Quantidade ?? 1), Tipo, string.IsNullOrWhiteSpace(Descricao) ? null : Descricao.Trim());
+
+    private void AtualizarPrevia()
+    {
+        var p = Parcelas();
+        Previa.Clear();
+        foreach (var c in p.Take(60)) Previa.Add(new PreviaParcela(c.ParcelaTexto is { Length: > 0 } t ? t : "única", c.Competencia.ToString("MM/yyyy"), c.Vencimento.ToString("dd/MM/yyyy"), Formato.Moeda(c.Valor)));
+        Resumo = p.Count == 1 ? $"1 cobrança de {Formato.Moeda(p[0].Valor)}, vencimento {p[0].Vencimento:dd/MM/yyyy}."
+               : $"{p.Count} parcelas de {Formato.Moeda(p[0].Valor)} (total {Formato.Moeda(p.Sum(x => x.Valor))}), de {p[0].Competencia:MM/yyyy} a {p[^1].Competencia:MM/yyyy}, "
+                 + $"vencimento no dia {(int)(Dia ?? 10)} (nos meses mais curtos, no último dia).";
+    }
+
+    [RelayCommand]
+    private Task LancarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Cliente?.Valor is null) { Erros.Add("Escolha o cliente."); return; }
+        if (Dia is not (>= 1 and <= 31)) { Erros.Add("Dia do vencimento: de 1 a 31."); return; }
+        var r = await app.Escritorio().LancarCobrancasAsync(empresa, Parcelas(), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        FichaAberta = false;
+        await tela.AposLancarAsync(r.Valor == 1 ? $"{TituloFicha}: cobrança lançada." : $"{TituloFicha}: {r.Valor} parcelas lançadas.");
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    public void FecharFicha() => FichaAberta = false;
+}
+
+/// <summary>Janela "Baixar cobrança": data e valor recebidos e uma observação (forma de pagamento, juros, desconto...).</summary>
+public partial class BaixaCobrancaViewModel(IContexto contexto, HonorariosViewModel tela) : ModuloViewModel(contexto), IComFicha
+{
+    private CobrancaHonorario? _cobranca;
+    [ObservableProperty] private bool _fichaAberta;
+    [ObservableProperty] private string _descricaoCobranca = "";
+    [ObservableProperty] private DateTime? _data = DateTime.Today;
+    [ObservableProperty] private string _valor = "";
+    [ObservableProperty] private string _observacao = "";
+
+    public string TituloFicha => "Baixar cobrança";
+
+    public void Abrir(CobrancaHonorario c)
+    {
+        _cobranca = c;
+        Erros.Clear();
+        Mensagem = null;
+        DescricaoCobranca = $"{c.PessoaNome} · {(c.Descricao ?? c.Tipo.Rotulo())}{(c.ParcelaTexto is { Length: > 0 } p ? $" (parcela {p})" : "")} · competência {c.Competencia:MM/yyyy} · "
+                            + $"vencimento {c.Vencimento:dd/MM/yyyy} · {Formato.Moeda(c.Valor)}";
+        (Data, Valor, Observacao) = (DateTime.Today, Formato.Moeda(c.Valor), "");
+        FichaAberta = true;
+    }
+
+    [RelayCommand]
+    private Task ConfirmarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (_cobranca is not { } c) return;
+        var r = await app.Escritorio().ReceberAsync(empresa, c, Ext.Dia(Data), Formato.LerValor(Valor) ?? 0, usuario, observacao: Observacao);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        FichaAberta = false;
+        await tela.AposLancarAsync($"Baixa registrada: {Formato.Moeda(Formato.LerValor(Valor) ?? 0)} em {Ext.Dia(Data):dd/MM/yyyy}.");
+    }, Permissao.EscritorioHonorarios);
+
+    [RelayCommand]
+    public void FecharFicha() => FichaAberta = false;
 }
 
 // ---------------------------------------------------------------------------------------------- gerador de contratos
@@ -781,7 +951,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
     public ObservableCollection<Opcao<long?>> Partes { get; } = [];
     public static IReadOnlyList<Opcao<ModeloContrato>> Modelos { get; } = [new(ModeloContrato.Cliente, "Cliente: prestação de serviços contábeis")];
     public static IReadOnlyList<Opcao<Periodicidade>> Periodicidades { get; } = [.. Enum.GetValues<Periodicidade>().Select(p => new Opcao<Periodicidade>(p, p.Rotulo()))];
-    public static IReadOnlyList<string> Indices => HonorariosViewModel.Indices;
+    public static IReadOnlyList<string> Indices { get; } = ["NENHUM", "IPCA", "IGPM", "INPC", "SALARIO"];
     private IReadOnlyList<PessoaEscritorio> _pessoas = [];
 
     [ObservableProperty] private ContratoLinha? _selecionado;
@@ -1006,8 +1176,8 @@ public sealed class ParametrosViewModelEscritorio(IContexto contexto) : Parametr
 
     protected override IReadOnlyList<GrupoParametros> MontarGrupos() =>
     [
-        new("Clientes", "Cadastro dos clientes, módulos do contrato e honorários.", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
-        new("Honorários", "Valor, vencimento e reajuste de cada cliente (aba Honorários e cobranças do cliente).", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
+        new("Clientes", "Cadastro dos clientes, com o honorário e os módulos na aba Contrato.", [], [Atalho("Abrir Clientes", EscritorioTelas.Clientes)]),
+        new("Honorários", "Honorários com parcelas, cobranças avulsas e baixas (Financeiro › Honorários).", [], [Atalho("Abrir Honorários", EscritorioTelas.Honorarios)]),
         new("Contratos", "Contratos de prestação de serviços com os clientes.", [], [Atalho("Abrir Gerador de contratos", EscritorioTelas.Contratos)]),
         new("Tarefas", "Prazos, responsáveis e recorrência.", [], [Atalho("Abrir Tarefas e prazos", EscritorioTelas.Tarefas)]),
         new("Menus do programa", "Escolha os itens de menu que cada usuário vê (ou que o administrador esconde para todos).", [],

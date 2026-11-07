@@ -31,6 +31,32 @@ public class RegrasEscritorioTests
     }
 
     [Fact]
+    public void Honorario_anual_so_no_mes_do_inicio_e_especial_nunca_gera_sozinho()
+    {
+        ContratoHonorario[] contratos =
+        [
+            new(1, 10, 800m, 10, new DateOnly(2025, 1, 1), null, "NENHUM", null),
+            new(2, 20, 6000m, 15, new DateOnly(2025, 3, 1), null, "NENHUM", null, null, PeriodicidadeHonorario.Anual),
+            new(3, 30, 900m, 5, new DateOnly(2025, 1, 1), null, "NENHUM", null, null, PeriodicidadeHonorario.Especial),
+        ];
+        Assert.Equal([10L], RegrasEscritorio.GerarCobrancas(contratos, new DateOnly(2026, 2, 1), new HashSet<long>()).Select(c => c.PessoaId));
+        Assert.Equal([10L, 20L], RegrasEscritorio.GerarCobrancas(contratos, new DateOnly(2026, 3, 1), new HashSet<long>()).Select(c => c.PessoaId));
+    }
+
+    [Fact]
+    public void Parcelas_seguem_a_frequencia_e_o_vencimento_se_ajusta_ao_fim_do_mes()
+    {
+        var p = RegrasEscritorio.Parcelas(7, new DateOnly(2026, 12, 1), 500m, 31, FrequenciaParcelas.Mensal, 3);
+        Assert.Equal([new DateOnly(2026, 12, 1), new DateOnly(2027, 1, 1), new DateOnly(2027, 2, 1)], p.Select(x => x.Competencia));
+        Assert.Equal([new DateOnly(2026, 12, 31), new DateOnly(2027, 1, 31), new DateOnly(2027, 2, 28)], p.Select(x => x.Vencimento));
+        Assert.Equal(["1/3", "2/3", "3/3"], p.Select(x => x.ParcelaTexto));
+        var tri = RegrasEscritorio.Parcelas(7, new DateOnly(2026, 1, 1), 300m, 10, FrequenciaParcelas.Trimestral, 4);
+        Assert.Equal([1, 4, 7, 10], tri.Select(x => x.Competencia.Month));
+        var unica = Assert.Single(RegrasEscritorio.Parcelas(7, new DateOnly(2026, 5, 1), 1200m, 20, FrequenciaParcelas.Unica, 9, TipoCobranca.Avulsa, "IRPF"));
+        Assert.Equal(("", new DateOnly(2026, 5, 20), TipoCobranca.Avulsa, "IRPF"), (unica.ParcelaTexto, unica.Vencimento, unica.Tipo, unica.Descricao));
+    }
+
+    [Fact]
     public void Gerador_de_contratos_qualifica_as_partes_e_numera_as_clausulas()
     {
         var esc = new DadosEscritorio("Escritório Modelo Ltda", "11222333000181", "Rua A, 10", "Campinas", "SP");
@@ -173,6 +199,32 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.True((await svc.ReceberAsync(escritorio, cob, new DateOnly(2026, 3, 10), 900m, adm, ct)).Sucesso);
         Assert.Empty(await svc.ListarCobrancasAsync(escritorio, null, true, adm, ct));
         Assert.Single(await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1)));
+
+        // Financeiro › Honorários: parcelas (recusa a competência que já tem honorário), avulsas no mesmo mês, baixa com observação, estorno e exclusão
+        var repetida = await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 2, 1), 900m, 10, FrequenciaParcelas.Mensal, 3), adm, ct);
+        Assert.Contains("03/2026", Assert.Single(repetida.Erros));
+        Assert.Equal(3, (await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 4, 1), 950m, 31, FrequenciaParcelas.Mensal, 3), adm, ct)).Valor);
+        Assert.False((await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 3, 1), 300m, 10, FrequenciaParcelas.Unica, 1, TipoCobranca.Avulsa), adm, ct)).Sucesso);
+        for (var i = 0; i < 2; i++)
+            Assert.Equal(1, (await svc.LancarCobrancasAsync(escritorio, RegrasEscritorio.Parcelas(cli.Valor, new DateOnly(2026, 3, 1), 300m, 20, FrequenciaParcelas.Unica, 1, TipoCobranca.Avulsa, "Abertura de filial"), adm, ct)).Valor);
+        var ano = await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1));
+        Assert.Equal(6, ano.Count);
+        Assert.Equal(new DateOnly(2026, 4, 30), ano.Single(c => c.Competencia == new DateOnly(2026, 4, 1)).Vencimento);
+        Assert.Equal(["1/3", "2/3", "3/3"], ano.Where(c => c.Parcela is not null).OrderBy(c => c.Competencia).Select(c => c.ParcelaTexto));
+        var avulsa = ano.First(c => c.Tipo == TipoCobranca.Avulsa);
+        Assert.True((await svc.ReceberAsync(escritorio, avulsa, new DateOnly(2026, 3, 21), 310m, adm, ct, "Pix com juros")).Sucesso);
+        avulsa = (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 3, 1), false, adm, ct)).Single(c => c.Id == avulsa.Id);
+        Assert.Equal((SituacaoCobranca.Recebida, 310m, "Pix com juros"), (avulsa.Situacao, avulsa.ValorRecebido, avulsa.ObservacaoBaixa));
+        Assert.False((await svc.ExcluirCobrancaAsync(escritorio, avulsa, adm, ct)).Sucesso);     // recebida: estorne antes
+        Assert.True((await svc.AlterarSituacaoAsync(escritorio, avulsa, SituacaoCobranca.Aberta, adm, ct)).Sucesso);
+        Assert.True((await svc.ExcluirCobrancaAsync(escritorio, avulsa with { Situacao = SituacaoCobranca.Aberta }, adm, ct)).Sucesso);
+        Assert.Equal(5, (await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1))).Count);
+        // honorário anual no contrato do cliente e retirada do contrato
+        Assert.True((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 9000m, 15, new DateOnly(2026, 1, 1), null, "NENHUM", null, null, PeriodicidadeHonorario.Anual), adm, ct)).Sucesso);
+        Assert.Equal(PeriodicidadeHonorario.Anual, Assert.Single(await svc.ListarHonorariosAsync(escritorio, adm, ct)).Periodicidade);
+        Assert.Equal(0, (await svc.GerarCobrancasAsync(escritorio, new DateOnly(2026, 8, 1), adm, ct)).Valor);
+        Assert.True((await svc.ExcluirHonorarioAsync(escritorio, cli.Valor, adm, ct)).Sucesso);
+        Assert.Empty(await svc.ListarHonorariosAsync(escritorio, adm, ct));
 
         Assert.Equal(1, (await svc.IncluirProtocoloAsync(new Protocolo(0, escritorio, cli.Valor, 0, new DateOnly(2026, 3, 10), TipoProtocolo.Entrega, "Guia DAS", null, "Maria"), adm, ct)).Valor);
         Assert.Equal("Padaria Boa", Assert.Single(await svc.ListarProtocolosAsync(escritorio, adm, ct)).ClienteNome);

@@ -175,6 +175,7 @@ escritorio.protocolos=09-escritorio.md#protocolos-de-documentos
 escritorio.clientes=09-escritorio.md#clientes
 escritorio.contratos=09-escritorio.md#gerador-de-contratos
 escritorio.rel.honorarios=09-escritorio.md#relatorio-de-honorarios
+escritorio.honorarios=09-escritorio.md#honorarios-e-cobrancas
 
 ; ---- Gerencial
 erp.painel=10-gerencial.md#painel-do-empresario

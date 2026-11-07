@@ -1,58 +1,51 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Escritorio.Desktop.Views"
              x:Class="Vorticis.Escritorio.Desktop.Views.HonorariosView" x:DataType="vm:HonorariosViewModel">
+  <!-- Financeiro › Honorários: lista das cobranças (honorários e avulsas) por competência; Novo honorário, Cobrança avulsa e Baixar abrem janelas -->
   <DockPanel Margin="8">
-    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
-      <StackPanel Spacing="6">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <TextBlock Classes="titulo" Text="Honorário do cliente" VerticalAlignment="Center" />
-          <ComboBox ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" MinWidth="280" IsVisible="{Binding EscolheCliente}" />
-        </StackPanel>
-        <TextBlock Text="{Binding SituacaoContrato}" FontSize="12" />
-        <WrapPanel ItemSpacing="0" LineSpacing="6">
-          <TextBlock Text="Valor mensal" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" Margin="0,0,12,0" />
-          <TextBlock Text="Dia do vencimento" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="110" Margin="0,0,12,0" />
-          <TextBlock Text="Início" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="130" Margin="0,0,12,0" />
-          <TextBlock Text="Fim" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <CalendarDatePicker SelectedDate="{Binding Fim}" Width="130" Margin="0,0,12,0" />
-          <TextBlock Text="Reajuste" VerticalAlignment="Center" Margin="0,0,6,0" />
-          <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Indices}" SelectedItem="{Binding Indice}" Width="110" Margin="0,0,12,0" />
-          <Button Content="Gravar honorário" Classes="accent" Command="{Binding GravarContratoCommand}" />
-        </WrapPanel>
-      </StackPanel>
-    </Border>
-    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6" LineSpacing="6">
-      <TextBlock Classes="titulo" Text="Cobranças" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <TextBlock Text="Competência" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Margin="0,0,8,0" />
-      <CheckBox Content="Só em aberto" IsChecked="{Binding SomenteAbertas}" Margin="0,0,8,0" />
-      <Button Content="Gerar cobranças do mês" Command="{Binding GerarCommand}" IsEnabled="{Binding PodeEditar}"
-              ToolTip.Tip="Gera a cobrança da competência para todos os clientes com honorário vigente." />
+    <v:LancamentoCobrancaHost DataContext="{Binding Lancamento}" DockPanel.Dock="Top" />
+    <v:BaixaCobrancaHost DataContext="{Binding Baixa}" DockPanel.Dock="Top" />
+    <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Honorários" Margin="0,0,0,6" />
+    <WrapPanel DockPanel.Dock="Top" ItemSpacing="0" LineSpacing="6" Margin="0,0,0,6">
+      <TextBlock Text="Competência de" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <CalendarDatePicker Name="CompetenciaDe" SelectedDate="{Binding CompetenciaDe}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Margin="0,0,6,0" />
+      <TextBlock Text="até" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <CalendarDatePicker SelectedDate="{Binding CompetenciaAte}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" Margin="0,0,14,0" />
+      <TextBlock Text="Situação" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="130" Margin="0,0,14,0" />
+      <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="130" />
+    </WrapPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding ClienteDoFiltro}" FontSize="12" Foreground="{DynamicResource TxSutil}" Margin="0,0,0,6" />
+    <WrapPanel DockPanel.Dock="Top" ItemSpacing="6" LineSpacing="6" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
+      <Button Name="NovoHonorario" Content="Novo honorário" Classes="accent" Command="{Binding NovoHonorarioCommand}"
+              ToolTip.Tip="Lança o honorário de um cliente: competência, valor, dia do vencimento e as parcelas seguintes (mensal, trimestral, anual...)." />
+      <Button Name="CobrancaAvulsa" Content="Cobrança avulsa" Command="{Binding CobrancaAvulsaCommand}"
+              ToolTip.Tip="Cobra um serviço extra (abertura de empresa, IRPF, consultoria...), em uma ou mais parcelas." />
+      <Button Content="Gerar do contrato" Command="{Binding GerarDoContratoCommand}"
+              ToolTip.Tip="Gera, na competência 'de', a cobrança do honorário informado na aba Contrato de cada cliente (mensal; anual no mês do início)." />
+      <Button Name="BaixarCobranca" Content="Baixar" Command="{Binding BaixarCommand}" IsEnabled="{Binding TemSelecionada}"
+              ToolTip.Tip="Registra o recebimento da cobrança selecionada (data, valor e observação)." />
+      <Button Content="Estornar baixa" Command="{Binding EstornarCommand}" IsEnabled="{Binding TemSelecionada}" />
+      <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" IsEnabled="{Binding TemSelecionada}" />
+      <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding TemSelecionada}" />
     </WrapPanel>
     <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0">
-      <WrapPanel IsEnabled="{Binding PodeEditar}" ItemSpacing="8" LineSpacing="6">
-        <TextBlock Text="Recebido em" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding DataRecebimento}" Width="130" />
-        <TextBlock Text="Valor" VerticalAlignment="Center" />
-        <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorRecebido}" Width="110" />
-        <Button Content="Receber" Classes="accent" Command="{Binding ReceberCommand}" />
-        <Button Content="Reabrir" Command="{Binding ReabrirCommand}" />
-        <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" />
-      </WrapPanel>
       <TextBlock Text="{Binding Totais}" FontSize="12" />
       <c:MensagensView />
     </StackPanel>
-    <DataGrid ItemsSource="{Binding Cobrancas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+    <DataGrid Name="ListaCobrancas" ItemsSource="{Binding Cobrancas}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Cliente" Binding="{ReflectionBinding Cliente}" Width="*" />
-        <DataGridTextColumn Header="Competência" Binding="{ReflectionBinding Competencia}" Width="100" />
-        <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="100" />
+        <DataGridTextColumn Header="Tipo" Binding="{ReflectionBinding Tipo}" Width="90" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Parcela" Binding="{ReflectionBinding Parcela}" Width="85" />
+        <DataGridTextColumn Header="Competência" Binding="{ReflectionBinding Competencia}" Width="115" />
+        <DataGridTextColumn Header="Vencimento" Binding="{ReflectionBinding Vencimento}" Width="115" />
         <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor}" Width="110" />
-        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
-        <DataGridTextColumn Header="Recebimento" Binding="{ReflectionBinding Recebido}" Width="190" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="110" />
+        <DataGridTextColumn Header="Baixa" Binding="{ReflectionBinding Recebido}" Width="200" />
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

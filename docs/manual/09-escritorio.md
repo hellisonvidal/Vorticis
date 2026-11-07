@@ -26,7 +26,7 @@ Esta tela **não é o cadastro geral de empresas**: mostra só o escritório, se
 
 - O escritório recebe o **código 0001** (o primeiro da numeração das empresas) e entra **sozinho no cadastro de clientes como o cliente 0001**, o primeiro da lista, com os mesmos dados.
 - É do **cadastro de clientes** que o sistema todo é alimentado: os próximos clientes ficam com **0002**, **0003** e assim por diante, e cada um vai para os módulos que contratou.
-- Para fazer nos módulos a contabilidade, a folha ou o fiscal do próprio escritório, abra o cliente **0001** e marque os módulos na aba **Módulos do contrato**: vale para a própria empresa do escritório, sem criar outra.
+- Para fazer nos módulos a contabilidade, a folha ou o fiscal do próprio escritório, abra o cliente **0001** e marque os módulos na aba **Contrato**: vale para a própria empresa do escritório, sem criar outra.
 - O cliente 0001 não pode ser excluído (para não usá-lo, desmarque **Ativo**).
 
 ### Empresas cadastradas direto nos módulos
@@ -48,8 +48,21 @@ A tela mostra **todos os clientes cadastrados**, em ordem de código — o prime
 3. Complete o que faltar (contato, inscrição estadual, observação).
 4. **Salvar**. Cliente com tarefas, honorários, protocolos ou contratos não pode ser excluído: desmarque **Ativo**.
 
-### Módulos do contrato
-1. Na aba **Módulos do contrato**, marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**.
+### Contrato
+
+A aba **Contrato** tem o honorário do cliente e os módulos contratados.
+
+**Honorário:**
+1. Informe o **Valor do honorário** (em reais, com os centavos), o **Dia do vencimento** (1 a 31; nos meses mais curtos vale o último dia) e a **Periodicidade**:
+   - **Mensal**: cobrado todo mês;
+   - **Anual**: cobrado uma vez por ano, no mês em que o honorário começou;
+   - **Especial**: sem cobrança automática; as parcelas são lançadas em *Financeiro › Honorários*, no botão **Novo honorário**.
+2. **Salvar** grava o honorário junto com o cadastro do cliente. Para tirar o honorário do contrato, apague o valor e salve (as cobranças já lançadas continuam).
+
+As cobranças, as baixas e as cobranças avulsas ficam em [Financeiro › Honorários](#honorarios-e-cobrancas).
+
+**Módulos contratados:**
+1. Marque os módulos contratados: **Contabilidade**, **Fiscal**, **Folha de pagamento**, **Condomínio**, **Gerencial**.
 2. **Gravar**. Se o cliente ainda não é empresa, o sistema avisa: *"Este cadastro será compartilhado com os demais módulos do Vorticis (Contábil, Fiscal, Folha, Gerencial...). Deseja continuar?"* — confirme em **Continuar**. O cliente é cadastrado como empresa nesses módulos, com o mesmo código (sequência) em todos eles — o código aparece na própria aba e na mensagem depois de gravar, com os dados da aba Dados cadastrais (com Contabilidade marcada, o plano de contas modelo é importado). Se já existir empresa com o mesmo CNPJ, ela é atualizada e passa a aparecer também nos módulos marcados.
 3. Para isso, a aba Dados cadastrais precisa ter CNPJ, regime, natureza jurídica, CNAE, município IBGE, UF e início das atividades; o botão **Buscar na Receita** traz quase tudo. Só o **administrador** cadastra empresas nos módulos.
 
@@ -58,9 +71,6 @@ Nesta aba também fica o campo **Logo da empresa** (**Carregar logo...**, **Remo
 Esta aba é **o único lugar** em que se escolhe em quais módulos a empresa é usada: o Escritório gerencia tudo. Nos outros módulos o cadastro de empresas não mostra essa escolha (a empresa incluída lá fica ativa só naquele módulo e no Escritório), e eles também deixam de perguntar, ao entrar, se querem ativar empresas.
 
 Desmarcar um módulo aqui tira a empresa da lista daquele módulo, mas não apaga nada do que já foi feito nele: basta marcar de novo para ela voltar.
-
-### Honorários e cobranças
-Aba **Honorários e cobranças** do cliente selecionado (veja [Honorários e cobranças](#honorarios-e-cobrancas)): o honorário mostrado e gravado é o do cliente da lista, e as cobranças listadas são só as dele, de todos os meses.
 
 ## Carteira de clientes
 
@@ -113,26 +123,35 @@ A tela mostra a **lista dos contratos gravados**. A **ficha do contrato** abre n
 
 A lista de contratos gravados fica nesta tela (não há mais o Relatório de contratos).
 
-Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. O valor dos honorários cobrados mês a mês fica em [Honorários e cobranças](#honorarios-e-cobrancas).
+Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. O valor dos honorários cobrados fica em [Financeiro › Honorários](#honorarios-e-cobrancas).
 
 ## Honorários e cobranças
 
-**Onde fica:** *Cadastros › Clientes*, aba **Honorários e cobranças** do cliente selecionado.
+**Para que serve:** organizar os honorários do escritório: lançar os honorários com as parcelas, as cobranças avulsas de serviços extras e registrar as baixas (recebimentos).
+**Onde fica:** *Financeiro › Honorários*.
 
-### Honorário do cliente
-1. Selecione o **cliente** na lista do cadastro de clientes.
-2. Informe **Valor mensal**, **Dia do vencimento** (1 a 31; nos meses mais curtos vale o último dia), **Início**, **Fim** (se houver) e o índice de **Reajuste**.
-3. **Gravar honorário**. Cada cliente tem um honorário; gravar de novo altera o existente.
+A tela mostra as cobranças das **competências** escolhidas (*de* e *até*, mês/ano), de todos os clientes ou só do cliente escolhido no topo, em **Cliente:**. Filtre também pela **Situação** (todas, em aberto, vencidas, recebidas, canceladas) e pelo **Tipo** (honorários ou avulsas). A lista mostra o cliente, o tipo, a descrição, a parcela (1/12, 2/12...), a competência, o vencimento, o valor, a situação e a baixa; cobranças vencidas e não pagas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido, o que está em aberto e o vencido.
 
-### Cobranças do mês
+### Novo honorário
+1. Clique em **Novo honorário**. Na janela, escolha o **Cliente** (o escolhido no topo já vem marcado; se ele tem honorário na aba Contrato, o valor e o dia vêm preenchidos).
+2. Informe a **Competência** (mês/ano) da primeira parcela, o **Valor** (em reais) e o **Dia do vencimento**. Nos meses seguintes o vencimento fica no mesmo dia; nos meses mais curtos, no último dia (31 vira 28 ou 29 em fevereiro, 30 em abril...).
+3. Escolha a **Periodicidade** (parcela única, mensal, bimestral, trimestral, semestral ou anual) e quantas **parcelas**: o sistema cria as parcelas seguintes. A **prévia** mostra cada parcela com a competência, o vencimento e o valor antes de lançar.
+4. **Lançar**. Se o cliente já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses: escolha outra competência, menos parcelas, ou lance como cobrança avulsa.
 
-**Boleto:** o Vorticis ainda não emite boleto. O boleto registrado exige convênio de cobrança com o banco (arquivo CNAB de remessa e retorno ou a API do banco); enquanto isso, informe ao cliente a chave PIX ou os dados bancários do escritório e registre o recebimento aqui.
+### Cobrança avulsa
+Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consultoria...): clique em **Cobrança avulsa**, escolha o cliente, descreva o serviço em **Descrição** (obrigatória), informe a competência, o valor e o dia do vencimento e, se for parcelado, a periodicidade e as parcelas. **Lançar**. O mesmo cliente pode ter várias cobranças avulsas no mesmo mês.
 
-1. Escolha a **Competência** (mês/ano) e clique em **Gerar cobranças do mês**: o sistema cria uma cobrança para cada cliente com honorário vigente, com o vencimento no dia combinado. Rodar de novo não duplica.
-2. Para registrar o pagamento, selecione a cobrança, confira **Recebido em** e **Valor** e clique em **Receber**.
-3. **Reabrir** desfaz o recebimento; **Cancelar cobrança** cancela uma cobrança em aberto.
+### Gerar do contrato
+**Gerar do contrato** cria, na competência *de*, a cobrança do honorário informado na aba **Contrato** de cada cliente: os mensais todo mês, os anuais só no mês em que o honorário começou (os especiais não). Rodar de novo não duplica.
 
-A lista mostra as cobranças do cliente de todos os meses; marque **Só em aberto** para ver só as não recebidas. **Gerar cobranças do mês** gera a cobrança da competência para todos os clientes com honorário, não só para o selecionado. Cobranças vencidas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido e o que está em aberto.
+### Baixas
+1. Selecione a cobrança e clique em **Baixar** (ou dê um duplo clique nela).
+2. Confira **Recebido em** e o **Valor recebido** (pode ser diferente do valor da cobrança, com juros, multa ou desconto) e, se quiser, escreva uma **Observação** (Pix, boleto, com desconto...).
+3. **Confirmar baixa**.
+
+**Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto); **Cancelar cobrança** cancela uma cobrança em aberto; **Excluir** apaga uma cobrança em aberto ou cancelada (a recebida precisa ter a baixa estornada antes).
+
+**Boleto:** o Vorticis ainda não emite boleto. O boleto registrado exige convênio de cobrança com o banco (arquivo CNAB de remessa e retorno ou a API do banco); enquanto isso, informe ao cliente a chave PIX ou os dados bancários do escritório e registre a baixa aqui.
 
 ## Relatório de honorários
 

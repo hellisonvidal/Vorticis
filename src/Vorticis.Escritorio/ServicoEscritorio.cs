@@ -211,11 +211,11 @@ public sealed class ServicoEscritorio
     public async Task<List<ContratoHonorario>> ListarHonorariosAsync(long escritorio, long usuarioId, CancellationToken ct = default)
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
-                SELECT c.id, c.pessoa_id, c.valor, c.dia_vencimento, c.inicio, c.fim, c.indice_reajuste, c.observacao, p.nome
+                SELECT c.id, c.pessoa_id, c.valor, c.dia_vencimento, c.inicio, c.fim, c.indice_reajuste, c.observacao, p.nome, c.periodicidade
                   FROM escritorio.honorario_contrato c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE p.empresa_id = @e ORDER BY p.nome
                 """, r => new ContratoHonorario(r.GetInt64(0), r.GetInt64(1), r.GetDecimal(2), r.GetInt16(3), r.GetFieldValue<DateOnly>(4), r.Data(5),
-                                                r.GetString(6), r.Texto(7), r.GetString(8)),
+                                                r.GetString(6), r.Texto(7), r.GetString(8), RegrasEscritorio.PeriodicidadeHonorarioDe(r.GetString(9))),
                 ct, ("e", escritorio))
             : [];
 
@@ -224,31 +224,88 @@ public sealed class ServicoEscritorio
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         var erros = new List<string>();
         if (!await DoEscritorioAsync(escritorio, c.PessoaId, ct)) erros.Add("Escolha o cliente.");
-        if (c.Valor <= 0) erros.Add("Informe o valor mensal dos honorários.");
+        if (c.Valor <= 0) erros.Add("Informe o valor do honorário.");
         if (c.DiaVencimento is < 1 or > 31) erros.Add("Dia de vencimento: de 1 a 31.");
         if (c.Fim is { } f && f < c.Inicio) erros.Add("O fim do contrato não pode ser anterior ao início.");
         if (erros.Count > 0) return Resultado.Falha(erros);
         var r = await Tentar(() => _db.ExecutarAsync("""
-            INSERT INTO escritorio.honorario_contrato (empresa_id, pessoa_id, valor, dia_vencimento, inicio, fim, indice_reajuste, observacao)
-            VALUES (@e, @p, @v, @d, @i, @f, @ind, @o)
+            INSERT INTO escritorio.honorario_contrato (empresa_id, pessoa_id, valor, dia_vencimento, inicio, fim, indice_reajuste, observacao, periodicidade)
+            VALUES (@e, @p, @v, @d, @i, @f, @ind, @o, @per)
             ON CONFLICT (pessoa_id) DO UPDATE SET valor = EXCLUDED.valor, dia_vencimento = EXCLUDED.dia_vencimento, inicio = EXCLUDED.inicio,
-                   fim = EXCLUDED.fim, indice_reajuste = EXCLUDED.indice_reajuste, observacao = EXCLUDED.observacao
+                   fim = EXCLUDED.fim, indice_reajuste = EXCLUDED.indice_reajuste, observacao = EXCLUDED.observacao, periodicidade = EXCLUDED.periodicidade
             """, ct, ("e", escritorio), ("p", c.PessoaId), ("v", c.Valor), ("d", (short)c.DiaVencimento), ("i", c.Inicio), ("f", c.Fim), ("ind", c.IndiceReajuste),
-            ("o", c.Observacao)));
+            ("o", c.Observacao), ("per", c.Periodicidade.Sql())));
         return r.Sucesso ? Resultado.Ok() : Resultado.Falha(r.Erros);
+    }
+
+    /// <summary>Tira o honorário do contrato do cliente (as cobranças já lançadas continuam).</summary>
+    public async Task<Resultado> ExcluirHonorarioAsync(long escritorio, long pessoa, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
+        await _db.ExecutarAsync("DELETE FROM escritorio.honorario_contrato WHERE pessoa_id = @p AND empresa_id = @e", ct, ("p", pessoa), ("e", escritorio));
+        return Resultado.Ok();
+    }
+
+    /// <summary>
+    /// Financeiro › Honorários: lança as cobranças (parcelas de um honorário ou uma cobrança avulsa) de uma vez. Recusa tudo se o cliente
+    /// já tem honorário em alguma das competências (as avulsas podem ser várias no mesmo mês).
+    /// </summary>
+    public async Task<Resultado<int>> LancarCobrancasAsync(long escritorio, IReadOnlyList<CobrancaHonorario> novas, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        if (novas.Count == 0) return Resultado<int>.Falha("Nada a lançar.");
+        var erros = new List<string>();
+        if (novas.Select(n => n.PessoaId).Distinct().Count() != 1 || !await DoEscritorioAsync(escritorio, novas[0].PessoaId, ct)) erros.Add("Escolha o cliente.");
+        if (novas.Any(n => n.Valor <= 0)) erros.Add("Informe o valor (maior que zero).");
+        if (novas.Any(n => n.Tipo == TipoCobranca.Avulsa && string.IsNullOrWhiteSpace(n.Descricao))) erros.Add("Informe a descrição da cobrança avulsa (o serviço cobrado).");
+        if (erros.Count > 0) return Resultado<int>.Falha(erros);
+        var honorarios = novas.Where(n => n.Tipo == TipoCobranca.Honorario).Select(n => RegrasEscritorio.Mes(n.Competencia)).ToArray();
+        if (honorarios.Length > 0)
+        {
+            var ja = await _db.ListarAsync("""
+                SELECT competencia FROM escritorio.honorario_cobranca
+                 WHERE empresa_id = @e AND pessoa_id = @p AND tipo = 'HONORARIO' AND situacao <> 'CANCELADA' AND competencia = ANY(@c) ORDER BY competencia
+                """, r => r.GetFieldValue<DateOnly>(0), ct, ("e", escritorio), ("p", novas[0].PessoaId), ("c", honorarios));
+            if (ja.Count > 0)
+                return Resultado<int>.Falha($"O cliente já tem honorário lançado em {string.Join(", ", ja.Select(d => d.ToString("MM/yyyy")))}. "
+                                            + "Escolha outra competência, menos parcelas ou lance como cobrança avulsa.");
+        }
+        var n = await _db.ExecutarAsync("""
+            INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento, tipo, descricao, parcela, parcelas)
+            SELECT @e, @p, x.c, x.v, x.venc, x.t, NULLIF(x.d, ''), x.n, x.tot
+              FROM unnest(@comp::date[], @val::numeric[], @vencs::date[], @tipos::varchar[], @descs::varchar[], @ns::smallint[], @tots::smallint[])
+                   AS x(c, v, venc, t, d, n, tot)
+            """, ct, ("e", escritorio), ("p", novas[0].PessoaId),
+            ("comp", novas.Select(x => RegrasEscritorio.Mes(x.Competencia)).ToArray()), ("val", novas.Select(x => x.Valor).ToArray()),
+            ("vencs", novas.Select(x => x.Vencimento).ToArray()), ("tipos", novas.Select(x => x.Tipo.Sql()).ToArray()),
+            ("descs", novas.Select(x => x.Descricao?.Trim() ?? "").ToArray()), ("ns", novas.Select(x => (short?)x.Parcela).ToArray()),
+            ("tots", novas.Select(x => (short?)x.Parcelas).ToArray()));
+        return Resultado<int>.Ok(n);
+    }
+
+    /// <summary>Exclui a cobrança em aberto ou cancelada (a recebida precisa ter a baixa estornada antes).</summary>
+    public async Task<Resultado> ExcluirCobrancaAsync(long escritorio, CobrancaHonorario c, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
+        if (c.Situacao == SituacaoCobranca.Recebida) return Resultado.Falha("A cobrança já foi baixada: estorne a baixa antes de excluir.");
+        await _db.ExecutarAsync("DELETE FROM escritorio.honorario_cobranca WHERE id = @id AND empresa_id = @e AND situacao <> 'RECEBIDA'", ct, ("id", c.Id), ("e", escritorio));
+        return Resultado.Ok();
     }
 
     public async Task<List<CobrancaHonorario>> ListarCobrancasAsync(long escritorio, DateOnly? competencia, bool somenteAbertas, long usuarioId, CancellationToken ct = default,
                                                                     DateOnly? ate = null)
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
-                SELECT c.id, c.pessoa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, p.nome
+                SELECT c.id, c.pessoa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, p.nome,
+                       c.tipo, c.descricao, c.parcela, c.parcelas, c.observacao_baixa
                   FROM escritorio.honorario_cobranca c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE p.empresa_id = @e AND (@c::date IS NULL OR (CASE WHEN @ate::date IS NULL THEN c.competencia = @c ELSE c.competencia BETWEEN @c AND @ate END))
                    AND (NOT @a OR c.situacao = 'ABERTA')
                  ORDER BY c.vencimento, p.nome
                 """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
-                                                RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8)),
+                                                RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8),
+                                                RegrasEscritorio.TipoCobrancaDe(r.GetString(9)), r.Texto(10), r.IsDBNull(11) ? null : r.GetInt16(11),
+                                                r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13)),
                 ct, ("e", escritorio), ("c", competencia is { } d ? RegrasEscritorio.Mes(d) : null), ("ate", ate is { } x ? RegrasEscritorio.Mes(x) : null), ("a", somenteAbertas))
             : [];
 
@@ -259,7 +316,8 @@ public sealed class ServicoEscritorio
         competencia = RegrasEscritorio.Mes(competencia);
         var contratos = await ListarHonorariosAsync(escritorio, usuarioId, ct);
         if (contratos.Count == 0) return Resultado<int>.Falha("Nenhum contrato de honorários cadastrado.");
-        var ja = (await ListarCobrancasAsync(escritorio, competencia, false, usuarioId, ct)).Select(c => c.PessoaId).ToHashSet();
+        var ja = (await ListarCobrancasAsync(escritorio, competencia, false, usuarioId, ct))
+                 .Where(c => c.Tipo == TipoCobranca.Honorario && c.Situacao != SituacaoCobranca.Cancelada).Select(c => c.PessoaId).ToHashSet();
         var novas = RegrasEscritorio.GerarCobrancas(contratos, competencia, ja);
         foreach (var n in novas)
             await _db.ExecutarAsync("""
@@ -268,14 +326,16 @@ public sealed class ServicoEscritorio
         return Resultado<int>.Ok(novas.Count);
     }
 
-    public async Task<Resultado> ReceberAsync(long escritorio, CobrancaHonorario c, DateOnly data, decimal valor, long usuarioId, CancellationToken ct = default)
+    public async Task<Resultado> ReceberAsync(long escritorio, CobrancaHonorario c, DateOnly data, decimal valor, long usuarioId, CancellationToken ct = default,
+                                              string? observacao = null)
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         if (c.Situacao != SituacaoCobranca.Aberta) return Resultado.Falha("Só cobranças em aberto podem ser recebidas.");
         if (valor <= 0) return Resultado.Falha("Informe o valor recebido.");
         await _db.ExecutarAsync("""
-            UPDATE escritorio.honorario_cobranca SET situacao = 'RECEBIDA', recebido_em = @d, valor_recebido = @v WHERE id = @id AND empresa_id = @e AND situacao = 'ABERTA'
-            """, ct, ("d", data), ("v", valor), ("id", c.Id), ("e", escritorio));
+            UPDATE escritorio.honorario_cobranca SET situacao = 'RECEBIDA', recebido_em = @d, valor_recebido = @v, observacao_baixa = NULLIF(@o, '')
+             WHERE id = @id AND empresa_id = @e AND situacao = 'ABERTA'
+            """, ct, ("d", data), ("v", valor), ("o", observacao?.Trim() ?? ""), ("id", c.Id), ("e", escritorio));
         return Resultado.Ok();
     }
 
@@ -284,9 +344,10 @@ public sealed class ServicoEscritorio
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         if (nova == SituacaoCobranca.Recebida) return Resultado.Falha("Use Receber.");
-        await _db.ExecutarAsync("UPDATE escritorio.honorario_cobranca SET situacao = @s, recebido_em = NULL, valor_recebido = NULL WHERE id = @id AND empresa_id = @e",
-                                ct, ("s", nova.Sql()), ("id", c.Id), ("e", escritorio));
-        return Resultado.Ok();
+        var r = await Tentar(() => _db.ExecutarAsync("UPDATE escritorio.honorario_cobranca SET situacao = @s, recebido_em = NULL, valor_recebido = NULL, observacao_baixa = NULL WHERE id = @id AND empresa_id = @e",
+                                                     ct, ("s", nova.Sql()), ("id", c.Id), ("e", escritorio)));
+        return r.Sucesso ? Resultado.Ok()
+            : Resultado.Falha($"Não foi possível reabrir: o cliente já tem outro honorário em {c.Competencia:MM/yyyy}.");
     }
 
     // ------------------------------------------------------------------ protocolos

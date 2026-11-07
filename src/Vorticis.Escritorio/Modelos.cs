@@ -5,6 +5,15 @@ public enum Recorrencia { Nenhuma, Mensal, Anual }
 public enum SituacaoCobranca { Aberta, Recebida, Cancelada }
 public enum TipoProtocolo { Entrega, Recebimento }
 
+/// <summary>Periodicidade do honorário do cliente (aba Contrato): Especial não gera cobrança sozinha (é lançada no Financeiro).</summary>
+public enum PeriodicidadeHonorario { Mensal, Anual, Especial }
+
+/// <summary>Honorário (do contrato ou lançado com parcelas) ou cobrança avulsa (serviço extra).</summary>
+public enum TipoCobranca { Honorario, Avulsa }
+
+/// <summary>Intervalo entre as parcelas lançadas em Financeiro › Honorários (em meses; Única = uma parcela só).</summary>
+public enum FrequenciaParcelas { Unica = 0, Mensal = 1, Bimestral = 2, Trimestral = 3, Semestral = 6, Anual = 12 }
+
 /// <summary>
 /// Cliente e/ou fornecedor do escritório (cadastro próprio do módulo). O cliente tem os dados do cadastro de empresas (preenchidos pela
 /// consulta do CNPJ) e os <see cref="Modulos"/> do contrato: com algum módulo marcado, a empresa é cadastrada (ou atualizada) nos demais
@@ -35,11 +44,13 @@ public sealed record Tarefa(long Id, long EmpresaId, long? PessoaId, string Titu
 }
 
 public sealed record ContratoHonorario(long Id, long PessoaId, decimal Valor, int DiaVencimento, DateOnly Inicio, DateOnly? Fim, string IndiceReajuste,
-                                       string? Observacao, string? PessoaNome = null);
+                                       string? Observacao, string? PessoaNome = null, PeriodicidadeHonorario Periodicidade = PeriodicidadeHonorario.Mensal);
 
 public sealed record CobrancaHonorario(long Id, long PessoaId, DateOnly Competencia, decimal Valor, DateOnly Vencimento, SituacaoCobranca Situacao,
-                                       DateOnly? RecebidoEm, decimal? ValorRecebido, string? PessoaNome = null)
+                                       DateOnly? RecebidoEm, decimal? ValorRecebido, string? PessoaNome = null, TipoCobranca Tipo = TipoCobranca.Honorario,
+                                       string? Descricao = null, int? Parcela = null, int? Parcelas = null, string? ObservacaoBaixa = null)
 {
+    public string ParcelaTexto => Parcela is { } n && Parcelas is { } t ? $"{n}/{t}" : "";
     public bool Vencida(DateOnly hoje) => Situacao == SituacaoCobranca.Aberta && Vencimento < hoje;
 }
 
@@ -145,11 +156,48 @@ public static class RegrasEscritorio
     public static bool Vigente(ContratoHonorario c, DateOnly competencia)
         => Mes(c.Inicio) <= competencia && (c.Fim is null || Mes(c.Fim.Value) >= competencia);
 
+    /// <summary>O contrato gera cobrança na competência: mensal todo mês; anual só no mês do início; especial nunca (lançada no Financeiro).</summary>
+    public static bool CobraNaCompetencia(ContratoHonorario c, DateOnly competencia) => Vigente(c, competencia) && c.Periodicidade switch
+    {
+        PeriodicidadeHonorario.Mensal => true,
+        PeriodicidadeHonorario.Anual => competencia.Month == c.Inicio.Month,
+        _ => false,
+    };
+
+    /// <summary>
+    /// Parcelas de um honorário lançado no Financeiro: a primeira na competência informada e as seguintes a cada intervalo da frequência;
+    /// o vencimento fica no dia escolhido de cada mês (31 vira o último dia nos meses curtos).
+    /// </summary>
+    public static IReadOnlyList<CobrancaHonorario> Parcelas(long pessoa, DateOnly competencia, decimal valor, int dia, FrequenciaParcelas frequencia, int quantidade,
+                                                            TipoCobranca tipo = TipoCobranca.Honorario, string? descricao = null)
+    {
+        var n = frequencia == FrequenciaParcelas.Unica ? 1 : Math.Max(1, quantidade);
+        var passo = Math.Max(1, (int)frequencia);
+        return Enumerable.Range(0, n).Select(i =>
+        {
+            var comp = Mes(competencia).AddMonths(i * passo);
+            return new CobrancaHonorario(0, pessoa, comp, valor, NoDia(comp, dia), SituacaoCobranca.Aberta, null, null, null, tipo, descricao,
+                                         n > 1 ? i + 1 : null, n > 1 ? n : null);
+        }).ToList();
+    }
+
+    public static string Sql(this PeriodicidadeHonorario p) => p switch { PeriodicidadeHonorario.Anual => "ANUAL", PeriodicidadeHonorario.Especial => "ESPECIAL", _ => "MENSAL" };
+    public static PeriodicidadeHonorario PeriodicidadeHonorarioDe(string s) => s switch { "ANUAL" => PeriodicidadeHonorario.Anual, "ESPECIAL" => PeriodicidadeHonorario.Especial, _ => PeriodicidadeHonorario.Mensal };
+    public static string Rotulo(this PeriodicidadeHonorario p) => p switch { PeriodicidadeHonorario.Anual => "Anual", PeriodicidadeHonorario.Especial => "Especial", _ => "Mensal" };
+    public static string Sql(this TipoCobranca t) => t == TipoCobranca.Avulsa ? "AVULSA" : "HONORARIO";
+    public static TipoCobranca TipoCobrancaDe(string s) => s == "AVULSA" ? TipoCobranca.Avulsa : TipoCobranca.Honorario;
+    public static string Rotulo(this TipoCobranca t) => t == TipoCobranca.Avulsa ? "Avulsa" : "Honorário";
+    public static string Rotulo(this FrequenciaParcelas f) => f switch
+    {
+        FrequenciaParcelas.Mensal => "Mensal", FrequenciaParcelas.Bimestral => "Bimestral", FrequenciaParcelas.Trimestral => "Trimestral",
+        FrequenciaParcelas.Semestral => "Semestral", FrequenciaParcelas.Anual => "Anual", _ => "Parcela única",
+    };
+
     /// <summary>Cobranças da competência para os contratos vigentes cujo cliente ainda não tem cobrança nela.</summary>
     public static IReadOnlyList<CobrancaHonorario> GerarCobrancas(IEnumerable<ContratoHonorario> contratos, DateOnly competencia, IReadOnlySet<long> jaCobradas)
     {
         competencia = Mes(competencia);
-        return contratos.Where(c => Vigente(c, competencia) && !jaCobradas.Contains(c.PessoaId))
+        return contratos.Where(c => CobraNaCompetencia(c, competencia) && !jaCobradas.Contains(c.PessoaId))
                         .Select(c => new CobrancaHonorario(0, c.PessoaId, competencia, c.Valor, NoDia(competencia, c.DiaVencimento), SituacaoCobranca.Aberta, null, null, c.PessoaNome))
                         .ToList();
     }

@@ -2,7 +2,7 @@
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              xmlns:v="using:Vorticis.Escritorio.Desktop.Views"
              x:Class="Vorticis.Escritorio.Desktop.Views.ClienteFichaView" x:DataType="vm:ClientesEscritorioViewModel">
-  <!-- Ficha do cliente (janela aberta por cima da lista): Dados cadastrais, Módulos do contrato e Honorários e cobranças -->
+  <!-- Ficha do cliente (janela aberta por cima da lista): Dados cadastrais e Contrato (honorário e módulos contratados) -->
   <DockPanel>
     <c:RodapeFichaView DockPanel.Dock="Bottom" />
     <TabControl Name="AbasCliente" Margin="12,8,12,0">
@@ -67,8 +67,22 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Módulos do contrato">
+      <TabItem Header="Contrato">
+        <ScrollViewer>
         <StackPanel Spacing="8" Margin="0,8,0,0">
+          <TextBlock Classes="secao" Text="Honorário" FontWeight="SemiBold" />
+          <WrapPanel IsEnabled="{Binding EmEdicao}" ItemSpacing="0" LineSpacing="6">
+            <TextBlock Text="Valor do honorário" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <TextBox Name="ValorHonorario" c:Mascara.Tipo="Valor" Text="{Binding ValorHonorario}" Width="130" Watermark="R$ 0,00" Margin="0,0,14,0" />
+            <TextBlock Text="Dia do vencimento" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <NumericUpDown Value="{Binding DiaHonorario}" Minimum="1" Maximum="31" FormatString="0" Width="110" Margin="0,0,14,0" />
+            <TextBlock Text="Periodicidade" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox ItemsSource="{x:Static vm:ClientesEscritorioViewModel.PeriodicidadesHonorario}" SelectedItem="{Binding PeriodicidadeHonorario}" Width="130" />
+          </WrapPanel>
+          <TextBlock Text="{Binding SituacaoHonorario}" FontSize="12" TextWrapping="Wrap" />
+          <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                     Text="Mensal: cobrado todo mês. Anual: uma vez por ano, no mês em que começou. Especial: sem cobrança automática; lance as parcelas em Financeiro › Honorários. As cobranças, baixas e cobranças avulsas ficam em Financeiro › Honorários. Deixe o valor em branco para tirar o honorário do contrato." />
+          <TextBlock Classes="secao" Text="Módulos contratados" FontWeight="SemiBold" Margin="0,8,0,0" />
           <TextBlock TextWrapping="Wrap" Text="{Binding SituacaoModulos}" />
           <StackPanel Spacing="6" IsEnabled="{Binding EmEdicao}">
             <CheckBox Content="Contabilidade" IsChecked="{Binding ModContabil}" />
@@ -82,13 +96,7 @@
           <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
                      Text="Para cadastrar nos módulos, preencha na aba Dados cadastrais o CNPJ, o regime, a natureza jurídica, o CNAE, o município IBGE, a UF e o início das atividades (o botão Buscar na Receita traz quase tudo). Com Contabilidade marcada, o plano de contas modelo é importado. Desmarcar um módulo aqui não apaga nada no módulo." />
         </StackPanel>
-      </TabItem>
-      <TabItem Header="Honorários e cobranças">
-        <ContentControl Content="{Binding Honorarios}">
-          <ContentControl.ContentTemplate>
-            <DataTemplate x:DataType="vm:HonorariosViewModel"><v:HonorariosView /></DataTemplate>
-          </ContentControl.ContentTemplate>
-        </ContentControl>
+        </ScrollViewer>
       </TabItem>
     </TabControl>
   </DockPanel>

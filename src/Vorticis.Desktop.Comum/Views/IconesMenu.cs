@@ -177,6 +177,7 @@ public static class IconesMenu
         ["escritorio.contratos"] = "HandshakeOutline",
         ["escritorio.carteira"] = "BriefcaseAccountOutline",
         ["escritorio.rel.honorarios"] = "CashRegister",
+        ["escritorio.honorarios"] = "CashMultiple",
         ["erp.pedidos.venda"] = "CartOutline",
         ["erp.pedidos.compra"] = "CartPlus",
         ["erp.estoque"] = "PackageVariantClosedCheck",

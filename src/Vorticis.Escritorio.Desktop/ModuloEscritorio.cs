@@ -46,6 +46,8 @@ public sealed class ModuloEscritorio : IModuloDesktop
 
     public IReadOnlyList<ItemMenu> Menus { get; } =
     [
+        ItemMenu.Submenu("_Financeiro",
+            ItemMenu.Tela("Honorários", EscritorioTelas.Honorarios)),
         ItemMenu.Submenu("_Organização",
             ItemMenu.Tela("Tarefas e prazos", EscritorioTelas.Tarefas),
             ItemMenu.Tela("Protocolos de documentos", EscritorioTelas.Protocolos)),
@@ -60,7 +62,7 @@ public sealed class ModuloEscritorio : IModuloDesktop
     [
         new("Escritório", "Tarefas que se repetem", "Marque Repetir (todo mês ou todo ano) nas tarefas de obrigações: ao concluir, a próxima é criada sozinha. Ctrl+T abre as tarefas.", EscritorioTelas.Tarefas),
         new("Escritório", "Protocole o que entrega e recebe", "Registre em Protocolos cada documento entregue ao cliente ou recebido dele: fica a prova de quem recebeu e quando.", EscritorioTelas.Protocolos),
-        new("Escritório", "Cliente já vira empresa nos módulos", "Na aba Módulos do contrato do cliente, marque Contabilidade, Fiscal, Folha...: ele é cadastrado como empresa nesses módulos com o mesmo código.", EscritorioTelas.Clientes),
+        new("Escritório", "Cliente já vira empresa nos módulos", "Na aba Contrato do cliente, marque Contabilidade, Fiscal, Folha...: ele é cadastrado como empresa nesses módulos com o mesmo código.", EscritorioTelas.Clientes),
         new("Escritório", "Contrato pronto em PDF ou Word", "O Gerador de contratos monta o contrato de prestação de serviços com os dados do cliente e do escritório; o PDF pode sair assinado digitalmente.", EscritorioTelas.Contratos),
         new("Escritório", "Carteira de clientes", "Relatórios › Carteira de clientes mostra de uma vez as tarefas atrasadas e os honorários em aberto de cada cliente.", EscritorioTelas.Carteira),
     ];
@@ -90,6 +92,9 @@ public sealed class ModuloEscritorio : IModuloDesktop
         c.Instancia("Contratos", m => new ContratosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(EscritorioTelas.Contratos, "Relatórios › Gerador de contratos", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
+        c.Instancia("Honorarios", m => new HonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(EscritorioTelas.Honorarios, "Financeiro › Honorários", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
         c.Instancia("RelHonorarios", m => new RelHonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(EscritorioTelas.RelHonorarios, "Relatórios › Relatório de honorários", m => Pode(m, Permissao.EscritorioRelatorios));
         c.Instancia("ParametrosModulo", m => new ParametrosViewModelEscritorio(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)

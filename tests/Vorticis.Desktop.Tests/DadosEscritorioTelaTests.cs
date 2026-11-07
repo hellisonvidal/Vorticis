@@ -103,6 +103,61 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 vm.ClienteEmFoco = vm.ClientesNoSeletor[0];
                 await Calma(30);
                 Assert.Equal(2, tar.Lista.Count);
+
+                // Clientes › aba Contrato: valor, dia do vencimento e periodicidade do honorário gravados com o cliente
+                vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Clientes);
+                await Calma(30);
+                cli.Selecionado = cli.Lista.Single(l => l.P.Id == novo.Valor);
+                await Calma(10);
+                cli.AlterarCommand.Execute(null);
+                (cli.ValorHonorario, cli.DiaHonorario) = ("1.250,00", 31);
+                cli.PeriodicidadeHonorario = E.ViewModels.ClientesEscritorioViewModel.PeriodicidadesHonorario[0];
+                var abas = new E.Views.ClienteFichaView().FindControl<TabControl>("AbasCliente")!.Items.OfType<TabItem>().Select(t => t.Header as string).ToList();
+                Assert.Equal(["Dados cadastrais", "Contrato"], abas);
+                Assert.Contains("Contrato", abas);
+                Assert.DoesNotContain("Módulos do contrato", abas);
+                Assert.DoesNotContain("Honorários e cobranças", abas);
+                await cli.SalvarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.True(cli.EmConsulta, string.Join("; ", cli.Erros));
+                var contrato = Assert.Single(await esc.ListarHonorariosAsync(1, adm, ct));
+                Assert.Equal((1250m, 31, Vorticis.Escritorio.PeriodicidadeHonorario.Mensal), (contrato.Valor, contrato.DiaVencimento, contrato.Periodicidade));
+                Assert.Contains("1.250,00 por mês", cli.SituacaoHonorario);
+
+                // Financeiro › Honorários: Novo honorário com 3 parcelas (traz o valor do contrato), cobrança avulsa e baixa
+                vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Honorarios);
+                await Calma(30);
+                var hon = Assert.IsType<E.ViewModels.HonorariosViewModel>(vm.Conteudo);
+                hon.CompetenciaDe = new DateTime(2027, 1, 1);
+                hon.CompetenciaAte = new DateTime(2027, 12, 1);
+                vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == novo.Valor);
+                await hon.NovoHonorarioCommand.ExecuteAsync(null);
+                await Calma(10);
+                Assert.True(hon.Lancamento.FichaAberta);
+                Assert.Equal(novo.Valor, hon.Lancamento.Cliente?.Valor);                              // o cliente em foco já vem escolhido
+                Assert.Equal("1.250,00", hon.Lancamento.Valor);
+                hon.Lancamento.Competencia = new DateTime(2027, 1, 1);
+                hon.Lancamento.Quantidade = 3;
+                Assert.Equal(["31/01/2027", "28/02/2027", "31/03/2027"], hon.Lancamento.Previa.Select(p => p.Vencimento));
+                var wl = FichaPopup.Aberta(janela.JanelaDa(hon)!.GetLogicalDescendants().OfType<E.Views.LancamentoCobrancaHost>().Single())!;
+                if (pasta is not null) { wl.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wl.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_novo_honorario.png")); }
+                await hon.Lancamento.LancarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
+                await hon.CobrancaAvulsaCommand.ExecuteAsync(null);
+                (hon.Lancamento.Descricao, hon.Lancamento.Valor, hon.Lancamento.Competencia, hon.Lancamento.Dia) = ("Declaração de IRPF", "350,00", new DateTime(2027, 4, 1), 30);
+                await hon.Lancamento.LancarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.Equal(["Honorário", "Honorário", "Honorário", "Avulsa"], hon.Cobrancas.Select(c => c.Tipo));
+                hon.Selecionada = hon.Cobrancas[0];
+                hon.BaixarCommand.Execute(null);
+                Assert.True(hon.Baixa.FichaAberta);
+                hon.Baixa.Observacao = "Pix";
+                await hon.Baixa.ConfirmarCommand.ExecuteAsync(null);
+                await Calma(20);
+                Assert.Equal("Recebida", hon.Cobrancas[0].Situacao);
+                Assert.Contains("(Pix)", hon.Cobrancas[0].Recebido);
+                if (pasta is not null) { var wh = janela.JanelaDa(hon)!; wh.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wh.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_financeiro_honorarios.png")); }
                 return true;
             }
             finally
