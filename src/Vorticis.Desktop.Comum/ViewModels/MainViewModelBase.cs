@@ -44,6 +44,10 @@ public interface IContexto
     ModulosEmpresa ModuloAtual { get; }
     /// <summary>Alerta com campo de senha; devolve a senha digitada ou null se o usuário cancelar.</summary>
     Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar");
+    /// <summary>Cliente escolhido no seletor de clientes da barra (Escritório); null = todos os clientes.</summary>
+    long? ClienteEmFocoId => null;
+    /// <summary>Recarrega o seletor de clientes da barra (depois de incluir, alterar ou excluir um cliente).</summary>
+    Task RecarregarClientesSeletorAsync() => Task.CompletedTask;
     /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
     string DescricaoEmpresa { get; }
     /// <summary>Abre outra função (ver <see cref="TelasComuns"/> e as chaves de cada módulo), como pelo menu.</summary>
@@ -484,6 +488,42 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
 
     public VorticisApp? App { get; private set; }
     public long? EmpresaId => EmpresaSelecionada?.Id;
+
+    // ------------------------------------------------------------------ seletor de clientes (Escritório)
+
+    /// <summary>A barra mostra o seletor de clientes no lugar do de empresas (<see cref="IModuloDesktop.ClientesDoSeletor"/>).</summary>
+    public bool UsaSeletorDeClientes => Modulo.ClientesDoSeletor is not null;
+    public bool UsaSeletorDeEmpresas => !UsaSeletorDeClientes;
+    public ObservableCollection<ClienteNoSeletor> ClientesNoSeletor { get; } = [];
+    [ObservableProperty] private ClienteNoSeletor? _clienteEmFoco;
+    public long? ClienteEmFocoId => ClienteEmFoco is { Id: > 0 } c ? c.Id : null;
+    private bool _recarregandoClientes;
+
+    public async Task RecarregarClientesSeletorAsync()
+    {
+        if (Modulo.ClientesDoSeletor is not { } carregar || App is null || Sessao is null || EmpresaSelecionada is null) { ClientesNoSeletor.Clear(); return; }
+        var atual = ClienteEmFoco?.Id ?? 0;
+        var lista = await carregar(this);
+        _recarregandoClientes = true;
+        try
+        {
+            ClientesNoSeletor.Clear();
+            ClientesNoSeletor.Add(ClienteNoSeletor.Todos);
+            foreach (var c in lista) ClientesNoSeletor.Add(c);
+            ClienteEmFoco = ClientesNoSeletor.FirstOrDefault(c => c.Id == atual) ?? ClienteNoSeletor.Todos;
+        }
+        finally { _recarregandoClientes = false; }
+    }
+
+    partial void OnClienteEmFocoChanged(ClienteNoSeletor? value)
+    {
+        if (_recarregandoClientes) return;
+        _ = Disparar(async () =>
+        {
+            foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null && InstanciaAtiva(d.Nome)))
+                await def.AoTrocarEmpresa!(_instancias[def.Nome], true);
+        });
+    }
     public string ConnectionString => _connectionString;
 
     [ObservableProperty] private SessaoUsuario? _sessao;
@@ -665,6 +705,8 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _configuracaoInicialPendente = false;
         EmpresasPermitidas.Clear();
         EmpresaSelecionada = null;
+        ClientesNoSeletor.Clear();
+        ClienteEmFoco = null;
         _permissoes = PermissoesEfetivas.Nenhuma;
         _telaAtual = null;
         TituloTela = "";
@@ -1012,6 +1054,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             await AtualizarRecursosAsync();
             await AtualizarSituacaoPeriodoAsync();
             await AtualizarLogoRelatoriosAsync();
+            await RecarregarClientesSeletorAsync();
             foreach (var def in _catalogo.Instancias.Where(d => d.AoTrocarEmpresa is not null))
                 await def.AoTrocarEmpresa!(_instancias[def.Nome], InstanciaAtiva(def.Nome));
         });

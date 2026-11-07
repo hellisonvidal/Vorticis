@@ -130,6 +130,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
         if (!EhAtual(g)) return;
         _todos = lista;
         Filtrar();
+        if (Contexto.ClienteEmFocoId is { } foco && Lista.FirstOrDefault(l => l.P.Id == foco) is { } emFoco) Selecionado = emFoco;   // cliente em foco na barra
     }
 
     private bool DoPapel(PessoaEscritorio p) => clientes ? p.Cliente : p.Fornecedor;
@@ -255,6 +256,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
             ok = true;
             Modo = ModoCadastro.Consulta;
             await CarregarAsync();
+            await Contexto.RecarregarClientesSeletorAsync();   // o seletor de clientes da barra mostra o cadastro atualizado
             Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
                         if (clientes && Logo.Alterado && Selecionado?.P.EmpresaVinculadaId is { } empId)
             {
@@ -281,6 +283,7 @@ public abstract partial class PessoasViewModel(IContexto contexto, bool clientes
             ok = true;
             Selecionado = null;
             await CarregarAsync();
+            await Contexto.RecarregarClientesSeletorAsync();
             Mensagem = "Cadastro excluído.";
         }, Permissao.EscritorioTarefas);
         return ok;
@@ -342,6 +345,7 @@ public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(con
         var g = NovaGeracao();
         var itens = await app.Escritorio().CarteiraAsync(empresa, sessao.Id, DateOnly.FromDateTime(DateTime.Today));
         if (!EhAtual(g)) return;
+        if (Contexto.ClienteEmFocoId is { } foco) itens = itens.Where(c => c.PessoaId == foco).ToList();   // cliente em foco na barra
         Lista.Clear();
         foreach (var c in itens) Lista.Add(new ClienteLinha(c));
         Totais = $"{itens.Count} cliente(s) · honorários mensais {Formato.Moeda(itens.Sum(c => c.HonorarioMensal))} · em aberto {Formato.Moeda(itens.Sum(c => c.HonorariosEmAberto))} · "
@@ -403,6 +407,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         [.. Enum.GetValues<Recorrencia>().Select(r => new Opcao<Recorrencia>(r, r.Rotulo()))];
 
     [ObservableProperty] private Opcao<long?>? _filtroCliente;
+    private long? _foco;
     [ObservableProperty] private bool _somenteAbertas = true;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(TarefaGravada))] private TarefaLinha? _selecionada;
     [ObservableProperty] private Opcao<long?>? _cliente;
@@ -439,6 +444,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
         var filtro = FiltroCliente?.Valor;
+        if (Contexto.ClienteEmFocoId != _foco) filtro = _foco = Contexto.ClienteEmFocoId;   // o cliente em foco na barra vira o filtro
         var itens = await app.Escritorio().ListarTarefasAsync(empresa, filtro, SomenteAbertas, sessao.Id);
         var usuarios = await app.Escritorio().ListarUsuariosAsync();
         if (!EhAtual(g)) return;
@@ -568,7 +574,8 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
         var g = NovaGeracao();
         var itens = await app.Escritorio().ListarProtocolosAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
-        var atual = Cliente?.Valor;
+        if (Contexto.ClienteEmFocoId is { } foco) itens = itens.Where(p => p.PessoaId == foco).ToList();   // cliente em foco na barra
+        var atual = Cliente?.Valor ?? Contexto.ClienteEmFocoId;
         await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
         Cliente = Clientes.FirstOrDefault(c => c.Valor == atual) ?? Clientes[0];
         Lista.Clear();
@@ -828,6 +835,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         var contratos = await app.Escritorio().ListarContratosAsync(empresa, sessao.Id);
         var pessoas = await app.Escritorio().ListarPessoasAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
+        if (Contexto.ClienteEmFocoId is { } foco) contratos = contratos.Where(c => c.PessoaId == foco).ToList();   // cliente em foco na barra
         _pessoas = pessoas;
         PreencherPartes();
         var id = Selecionado?.C.Id;

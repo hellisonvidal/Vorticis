@@ -61,6 +61,12 @@ public interface IModuloDesktop
     /// <summary>Rótulo da escolha da empresa ativa na barra superior (o Escritório escolhe o escritório; o Condomínio, o condomínio).</summary>
     string RotuloEmpresaAtiva => "Empresa";
 
+    /// <summary>
+    /// Seletor de clientes no lugar do de empresas (o Escritório): a empresa de trabalho continua a do próprio escritório e a barra mostra
+    /// os clientes do cadastro do módulo, com "Todos os clientes" no alto; o cliente escolhido filtra as telas (<see cref="ViewModels.IContexto.ClienteEmFocoId"/>).
+    /// </summary>
+    Func<ViewModels.IContexto, Task<IReadOnlyList<ClienteNoSeletor>>>? ClientesDoSeletor => null;
+
     /// <summary>Mostra a aba Síndico no cadastro de empresas (só o Condomínio: o síndico pode assinar os livros contábeis e fiscais).</summary>
     bool UsaSindico => false;
 
@@ -102,4 +108,12 @@ public interface IModuloDesktop
 
     /// <summary>Declara as telas do módulo; chamado uma vez na criação da janela principal.</summary>
     void RegistrarTelas(CatalogoTelas catalogo);
+}
+
+/// <summary>Cliente na caixa de escolha da barra (Id 0 = todos os clientes).</summary>
+public sealed record ClienteNoSeletor(long Id, int Codigo, string Nome)
+{
+    public static ClienteNoSeletor Todos { get; } = new(0, 0, "Todos os clientes");
+    public string CodigoTexto => Id == 0 ? "" : Codigo.ToString("0000");
+    public override string ToString() => Id == 0 ? Nome : $"{CodigoTexto} – {Nome}";
 }

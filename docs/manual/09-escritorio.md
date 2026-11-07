@@ -1,6 +1,13 @@
 # Escritório
 
-Módulo **Vorticis Escritório** (ícone azul): o gerenciador **do próprio escritório contábil**. O Escritório **não é o cadastro geral de empresas**: o cadastro de **clientes** serve para acompanhar as empresas contratadas, e é a partir dele que o trabalho nas empresas começa. As empresas usadas nos demais módulos são os **clientes** cadastrados aqui: o cliente é levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O escolhido no topo, em **Clientes:**, é o **próprio escritório**, dono das tarefas, protocolos, honorários e contratos. O Escritório não tem cadastro de fornecedores.
+Módulo **Vorticis Escritório** (ícone azul): o gerenciador **do próprio escritório contábil**. O Escritório **não é o cadastro geral de empresas**: o cadastro de **clientes** serve para acompanhar as empresas contratadas, e é a partir dele que o trabalho nas empresas começa. As empresas usadas nos demais módulos são os **clientes** cadastrados aqui: o cliente é levado, já com os dados da Receita, para os módulos que ele contratou (Contabilidade, Fiscal, Folha, Condomínio, Gerencial). O Escritório não tem cadastro de fornecedores. O dono das tarefas, protocolos, honorários e contratos é sempre o **próprio escritório**.
+
+### Escolher o cliente no topo da tela
+
+No topo da tela, em **Cliente:**, ficam os clientes de *Cadastros › Clientes* (o escritório, 0001, é o primeiro), com **Todos os clientes** no alto da lista:
+- Escolha um cliente para que as telas do Escritório mostrem **só o que é dele**: as tarefas (*Tarefas e prazos*), os protocolos, os contratos, os honorários e a carteira. Em *Cadastros › Clientes*, a ficha dele já vem selecionada.
+- Escolha **Todos os clientes** para voltar a ver tudo.
+- Cliente incluído, alterado ou excluído em *Cadastros › Clientes* já aparece (ou sai) da lista na hora.
 
 Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): toda lista deste módulo tem busca rápida e filtros por coluna.
 

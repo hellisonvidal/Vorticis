@@ -27,7 +27,14 @@ public sealed class ModuloEscritorio : IModuloDesktop
     /// atendidas são cadastradas e levadas aos módulos. O escritório escolhido no topo aparece como "Clientes:".
     /// </summary>
     public string RotuloEmpresas => "Dados do escritório";
-    public string RotuloEmpresaAtiva => "Clientes";
+    public string RotuloEmpresaAtiva => "Cliente";
+
+    /// <summary>A barra mostra os clientes de Cadastros › Clientes (o escritório, 0001, é o primeiro); o escolhido filtra as telas do módulo.</summary>
+    public Func<IContexto, Task<IReadOnlyList<ClienteNoSeletor>>>? ClientesDoSeletor => async ctx =>
+        ctx.App is { } app && ctx.Sessao is { } sessao && ctx.EmpresaId is { } escritorio
+            ? (await app.Escritorio().ListarPessoasAsync(escritorio, sessao.Id)).Where(p => p.Cliente && p.Ativo).OrderBy(p => p.Codigo)
+                  .Select(p => new ClienteNoSeletor(p.Id, p.Codigo, p.Nome)).ToList()
+            : [];
 
     /// <summary>Usuários, controle de acesso e banco de dados (conexão, backup, restauração, limpeza) da suíte ficam no Escritório.</summary>
     public bool GerenciaSistema => true;

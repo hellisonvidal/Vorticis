@@ -384,7 +384,9 @@ public class MenusTests
         // Cadastros: Dados do escritório (primeiro: só o próprio escritório, não o cadastro geral de empresas) e Clientes; sem fornecedores
         Assert.Equal(TelasComuns.Empresas, cadastros[0]);
         Assert.Equal("Dados do escritório", vm.Menus[0].Filhos![0].Titulo);
-        Assert.Equal("Clientes:", vm.RotuloEmpresaAtiva);
+        Assert.Equal("Cliente:", vm.RotuloEmpresaAtiva);                     // o topo escolhe o cliente (seletor de clientes)
+        Assert.True(vm.UsaSeletorDeClientes);
+        Assert.False(new Vorticis.Fiscal.Desktop.MainViewModel().UsaSeletorDeClientes);
         Assert.Contains(Vorticis.Escritorio.Desktop.ViewModels.EscritorioTelas.Clientes, cadastros);
         Assert.Equal(["Dados do escritório", "Clientes"], vm.Menus[0].Filhos!.Where(i => i.Chave is not null && i.Chave != TelasComuns.Parametros && i.Chave != TelasComuns.Menus).Select(i => i.Titulo));
         Assert.False(vm.ConheceTela("escritorio.fornecedores"));

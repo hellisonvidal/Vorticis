@@ -75,6 +75,34 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 var wc = janela.JanelaDa(cli)!;
                 await Calma(5);
                 if (pasta is not null) { wc.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wc.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_clientes_0001.png")); }
+
+                // seletor de clientes da barra: os clientes do cadastro (não só o escritório), "Todos os clientes" no alto
+                var esc = Vorticis.Escritorio.ServicosEscritorio.De(vm.App!);
+                var novo = await esc.GravarPessoaAsync(1, new Vorticis.Escritorio.PessoaEscritorio(0, 2, true, false, "Padaria Pão Quente Ltda", null), adm, ct);
+                Assert.True(novo.Sucesso, string.Join("; ", novo.Erros));
+                await vm.RecarregarClientesSeletorAsync();
+                Assert.True(vm.UsaSeletorDeClientes);
+                Assert.Equal(["Todos os clientes", "0001 – Contabilidade Exemplo Ltda", "0002 – Padaria Pão Quente Ltda"], vm.ClientesNoSeletor.Select(c => c.ToString()));
+                Assert.Equal(1L, vm.EmpresaId);                                                         // a empresa de trabalho continua o escritório
+                await Calma(5);
+                Assert.True(janela.FindControl<ComboBox>("ClienteCabecalho")!.IsVisible);
+                Assert.False(janela.FindControl<ComboBox>("EmpresaCabecalho")!.IsVisible);
+
+                // o cliente em foco filtra as telas: Tarefas mostra só as dele
+                foreach (var (pessoa, titulo) in new (long?, string)[] { (novo.Valor, "DAS da padaria"), (primeiro.P.Id, "Balancete do escritório") })
+                    Assert.True((await esc.GravarTarefaAsync(new Vorticis.Escritorio.Tarefa(0, 1, pessoa, titulo, null, DateOnly.FromDateTime(DateTime.Today).AddDays(5), null, 2,
+                                                                                           Vorticis.Escritorio.SituacaoTarefa.Pendente, Vorticis.Escritorio.Recorrencia.Nenhuma), adm, ct)).Sucesso);
+                vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Tarefas);
+                await Calma(30);
+                var tar = Assert.IsType<E.ViewModels.TarefasViewModel>(vm.Conteudo);
+                Assert.Equal(2, tar.Lista.Count);
+                vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == novo.Valor);
+                await Calma(30);
+                Assert.Equal(["DAS da padaria"], tar.Lista.Select(t => t.T.Titulo));
+                if (pasta is not null) { janela.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); janela.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_seletor_clientes.png")); }
+                vm.ClienteEmFoco = vm.ClientesNoSeletor[0];
+                await Calma(30);
+                Assert.Equal(2, tar.Lista.Count);
                 return true;
             }
             finally
