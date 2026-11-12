@@ -59,6 +59,24 @@ public class RegrasEscritorioTests
     }
 
     [Fact]
+    public void Contrato_gera_parcelas_pelo_prazo_e_periodicidade()
+    {
+        Assert.Equal(new DateOnly(2028, 6, 30), RegrasEscritorio.FimPeloPrazo(new DateOnly(2027, 7, 1), 12));
+        Assert.Null(RegrasEscritorio.FimPeloPrazo(new DateOnly(2027, 7, 1), 0));
+        Assert.Equal(12, RegrasEscritorio.PrazoMeses(new DateOnly(2026, 9, 25), new DateOnly(2027, 9, 24)));
+        Assert.Equal(24, RegrasEscritorio.PrazoMeses(new DateOnly(2027, 1, 1), new DateOnly(2028, 12, 31)));
+        Assert.Null(RegrasEscritorio.PrazoMeses(new DateOnly(2027, 1, 1), null));
+        var c = new ContratoEscritorio(0, 3, 7, ModeloContrato.Cliente, "x", 250m, Periodicidade.Mensal, 5, new DateOnly(2026, 9, 25), null, "NENHUM", null, "-");
+        var mensal = RegrasEscritorio.ParcelasDoContrato(c, 12, vencimentoNoMesSeguinte: true);
+        Assert.Equal(12, mensal.Count);
+        Assert.Equal((new DateOnly(2026, 9, 1), new DateOnly(2026, 10, 5), "Contrato nº 3", "1/12"), (mensal[0].Competencia, mensal[0].Vencimento, mensal[0].Descricao, mensal[0].ParcelaTexto));
+        Assert.Equal(new DateOnly(2027, 8, 1), mensal[^1].Competencia);
+        var anual = RegrasEscritorio.ParcelasDoContrato(c with { Periodicidade = Periodicidade.Anual }, 24, vencimentoNoMesSeguinte: false);
+        Assert.Equal([new DateOnly(2026, 9, 5), new DateOnly(2027, 9, 5)], anual.Select(p => p.Vencimento));
+        Assert.Single(RegrasEscritorio.ParcelasDoContrato(c with { Periodicidade = Periodicidade.Unico }, 12, false));
+    }
+
+    [Fact]
     public void Regime_de_competencia_vence_no_mes_seguinte_e_a_vista_ja_entra_recebida()
     {
         var comp = RegrasEscritorio.Parcelas(7, new DateOnly(2026, 12, 1), 500m, 31, FrequenciaParcelas.Mensal, 3, vencimentoNoMesSeguinte: true);
@@ -249,6 +267,8 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         // exclusão em lote: as recebidas ficam; relançar as mesmas competências depois de excluir não acusa honorário já lançado
         var lote = await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1));
         Assert.Equal(lote.Count(c => c.Situacao != SituacaoCobranca.Recebida), (await svc.ExcluirCobrancasAsync(escritorio, lote.Select(c => c.Id).ToList(), adm, ct)).Valor);
+        Assert.All(await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2026, 5, 1), vencimentoAte: new DateOnly(2026, 5, 31)),
+                   x => Assert.Equal(5, x.Vencimento.Month));                                     // pesquisa pelo vencimento
         var sobra = await svc.ListarCobrancasAsync(escritorio, new DateOnly(2026, 1, 1), false, adm, ct, ate: new DateOnly(2026, 12, 1));
         Assert.All(sobra, c => Assert.Equal(SituacaoCobranca.Recebida, c.Situacao));
         Assert.Contains(sobra, c => c.Id == paga.Id);

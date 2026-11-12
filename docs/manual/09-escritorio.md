@@ -55,8 +55,9 @@ A aba **Contrato** tem o honorário do cliente e os módulos contratados.
 **Honorário:**
 1. Informe o **Valor do honorário** (em reais, com os centavos), o **Dia do vencimento** (1 a 31; nos meses mais curtos vale o último dia) e a **Periodicidade**:
    - **Mensal**: cobrado todo mês;
-   - **Anual**: cobrado uma vez por ano, no mês em que o honorário começou;
-   - **Especial**: sem cobrança automática; as parcelas são lançadas em *Financeiro › Honorários*, no botão **Novo honorário**.
+   - **Anual**: cobrado uma vez por ano;
+   - **Especial**: cobrança combinada caso a caso.
+   As parcelas são criadas no [Gerador de contratos](#gerador-de-contratos), no botão **Gerar parcelas do contrato**, ou em *Financeiro › Honorários*, no botão **Novo honorário** (que já traz o valor e o dia informados aqui).
 2. **Salvar** grava o honorário junto com o cadastro do cliente. Para tirar o honorário do contrato, apague o valor e salve (as cobranças já lançadas continuam).
 
 As cobranças, as baixas e as cobranças avulsas ficam em [Financeiro › Honorários](#honorarios-e-cobrancas).
@@ -114,14 +115,22 @@ A tela mostra a **lista dos protocolos** registrados (número, data, cliente, ti
 A tela mostra a **lista dos contratos gravados**. A **ficha do contrato** abre numa janela por cima da lista: **Novo contrato**, **Abrir ficha**, duplo clique ou **Enter** a abrem; **Gravar** grava e fecha a janela, e **Cancelar**, **Esc** ou o **X** fecham sem gravar.
 
 1. **Novo contrato**: o **Tipo** é *Cliente* (o cliente é o contratante e o escritório, o contratado).
-2. Escolha a **Parte** (do cadastro próprio do escritório), confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*), o **dia** do vencimento, a **vigência** (sem fim = prazo indeterminado), o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
-3. **Gerar texto** (botão na ficha): o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
-4. **Gravar**: o contrato recebe o próximo número do escritório e a janela fecha.
-5. Selecione-o na lista da tela e exporte:
+2. O **CONTRATANTE** já vem preenchido com o cliente escolhido no topo da tela, em **Cliente:** (troque, se precisar). Confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*) e o **dia** do vencimento.
+3. **Prazo**: em meses, **12** de padrão. O prazo preenche o fim da **vigência** (início em 01/07/2027 com 12 meses termina em 30/06/2028); **0** deixa o prazo indeterminado. Informe também o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
+4. **Gerar texto** (botão na ficha): o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
+5. **Gravar**: o contrato recebe o próximo número do escritório e a janela fecha.
+6. Selecione-o na lista da tela e exporte:
    - **Exportar PDF**: o texto e as linhas de assinatura das duas partes. Marque antes **Assinar digitalmente** para assinar o PDF com o certificado digital padrão do contador (ou do responsável), definido em *Configurações › Certificados digitais*; com certificado A3, o leitor pede o PIN.
    - **Exportar Word**: o mesmo contrato em arquivo .docx, para editar no Word ou no LibreOffice.
 
 A lista de contratos gravados fica nesta tela (não há mais o Relatório de contratos).
+
+### Gerar parcelas do contrato
+Na ficha do contrato, o botão **Gerar parcelas do contrato** cria as cobranças do contrato e as envia para [Financeiro › Honorários](#honorarios-e-cobrancas):
+1. Confira o valor, a periodicidade, o dia, o **Prazo** e o início da vigência. As parcelas começam no mês do início: mensal, uma por mês durante o prazo (12 meses = 12 parcelas); anual, uma a cada 12 meses; parcela única, uma só. Com prazo indeterminado, são geradas 12 meses.
+2. Em **Vencimento no**, marque **Competência (mês seguinte)** (a parcela de 03/2027 vence em abril) ou **Regime de caixa (mesmo mês)** (vence em março).
+3. Clique em **Gerar parcelas do contrato**. O sistema mostra quantas parcelas, o valor, o total e os vencimentos e pergunta se quer lançar. Confirme.
+Se o contratante já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses.
 
 Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. O valor dos honorários cobrados fica em [Financeiro › Honorários](#honorarios-e-cobrancas).
 
@@ -130,7 +139,7 @@ Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. 
 **Para que serve:** organizar os honorários do escritório: lançar os honorários com as parcelas, as cobranças avulsas de serviços extras e registrar as baixas (recebimentos).
 **Onde fica:** *Financeiro › Honorários*.
 
-A tela mostra as cobranças das **competências** escolhidas (*de* e *até*: digite o mês/ano, por exemplo 03/2027), de todos os clientes ou só do cliente escolhido no topo, em **Cliente:**. Filtre também pela **Situação** (todas, em aberto, vencidas, recebidas, canceladas) e pelo **Tipo** (honorários ou avulsas). A lista mostra o cliente, o tipo, a descrição, a parcela (1/12, 2/12...), a competência, o vencimento, o valor, a situação e a baixa; cobranças vencidas e não pagas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido, o que está em aberto e o vencido.
+A tela mostra as cobranças com **vencimento** entre as datas escolhidas (*de* e *até*: escolha no calendário ou digite a data; o padrão é o ano todo), de todos os clientes ou só do cliente escolhido no topo, em **Cliente:**. O botão **Carregar** busca de novo as cobranças lançadas, inclusive as parcelas geradas pelos contratos. Filtre também pela **Situação** (todas, em aberto, vencidas, recebidas, canceladas) e pelo **Tipo** (honorários ou avulsas). A lista mostra o cliente, o tipo, a descrição, a parcela (1/12, 2/12...), a competência, o vencimento, o valor, a situação e a baixa; cobranças vencidas e não pagas aparecem como **VENCIDA**. A linha de totais mostra o total, o recebido, o que está em aberto e o vencido.
 
 ### Novo honorário
 1. Clique em **Novo honorário**. Na janela, escolha o **Cliente** (o escolhido no topo já vem marcado; se ele tem honorário na aba Contrato, o valor e o dia vêm preenchidos).
@@ -150,9 +159,6 @@ Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consul
 
 ### Alterar uma cobrança
 Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **vencimento** (digite dia/mês/ano), o **valor** ou a **descrição** e clique em **Gravar**. Só cobranças em aberto podem ser alteradas (na recebida, estorne a baixa antes). O honorário não pode ir para uma competência em que o cliente já tem outro honorário.
-
-### Gerar do contrato
-**Gerar do contrato** cria, na competência *de*, a cobrança do honorário informado na aba **Contrato** de cada cliente: os mensais todo mês, os anuais só no mês em que o honorário começou (os especiais não). O vencimento fica no dia do contrato, no mês seguinte ou no mesmo mês da competência, conforme a caixa marcada em **Vencimento no**, no alto da tela: **Competência (mês seguinte)** ou **Regime de caixa (mesmo mês)**. São as mesmas caixas da janela de lançamento: marcar numa marca na outra. Rodar de novo não duplica.
 
 ### Baixas
 1. Selecione a cobrança e clique em **Baixar** (ou dê um duplo clique nela).

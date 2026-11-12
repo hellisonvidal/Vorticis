@@ -8,22 +8,17 @@
     <v:BaixaCobrancaHost DataContext="{Binding Baixa}" DockPanel.Dock="Top" />
     <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Honorários" Margin="0,0,0,6" />
     <WrapPanel DockPanel.Dock="Top" ItemSpacing="0" LineSpacing="6" Margin="0,0,0,6">
-      <TextBlock Text="Competência de" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <TextBox Name="CompetenciaDe" c:Mascara.Tipo="Competencia" Text="{Binding CompetenciaDeTexto}" Watermark="mm/aaaa" Width="100" Margin="0,0,6,0" />
+      <TextBlock Text="Vencimento de" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <CalendarDatePicker Name="VencimentoDe" SelectedDate="{Binding VencimentoDe}" Width="130" Margin="0,0,6,0" />
       <TextBlock Text="até" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <TextBox Name="CompetenciaAte" c:Mascara.Tipo="Competencia" Text="{Binding CompetenciaAteTexto}" Watermark="mm/aaaa" Width="100" Margin="0,0,14,0" />
+      <CalendarDatePicker Name="VencimentoAte" SelectedDate="{Binding VencimentoAte}" Width="130" Margin="0,0,14,0" />
       <TextBlock Text="Situação" VerticalAlignment="Center" Margin="0,0,6,0" />
       <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="130" Margin="0,0,14,0" />
       <TextBlock Text="Tipo" VerticalAlignment="Center" Margin="0,0,6,0" />
-      <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="130" />
+      <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Tipos}" SelectedItem="{Binding Tipo}" Width="130" Margin="0,0,14,0" />
+      <Button Name="CarregarCobrancas" Content="Carregar" Command="{Binding CarregarDadosCommand}"
+              ToolTip.Tip="Carrega as cobranças lançadas (as parcelas geradas pelos contratos, os honorários e as avulsas) com os filtros acima." />
     </WrapPanel>
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="16" Margin="0,0,0,6">
-      <TextBlock Text="Vencimento no" VerticalAlignment="Center" />
-      <CheckBox Name="RegimeCompetenciaTela" Content="Competência (mês seguinte)" IsChecked="{Binding Lancamento.RegimeCompetencia}"
-                ToolTip.Tip="O vencimento fica no mês seguinte ao da competência (ex.: honorário de 03/2027 vence em abril). Vale para Gerar do contrato e para os lançamentos." />
-      <CheckBox Name="RegimeCaixaTela" Content="Regime de caixa (mesmo mês)" IsChecked="{Binding Lancamento.RegimeCaixa}"
-                ToolTip.Tip="O vencimento fica no próprio mês da competência (ex.: honorário de 03/2027 vence em março). Vale para Gerar do contrato e para os lançamentos." />
-    </StackPanel>
     <TextBlock DockPanel.Dock="Top" Text="{Binding ClienteDoFiltro}" FontSize="12" Foreground="{DynamicResource TxSutil}" Margin="0,0,0,6" />
     <WrapPanel DockPanel.Dock="Top" ItemSpacing="6" LineSpacing="6" Margin="0,0,0,8" IsEnabled="{Binding PodeEditar}">
       <Button Name="NovoHonorario" Content="Novo honorário" Classes="accent" Command="{Binding NovoHonorarioCommand}"
@@ -32,8 +27,6 @@
               ToolTip.Tip="Cobra um serviço extra (abertura de empresa, IRPF, consultoria...), em uma ou mais parcelas." />
       <Button Name="AlterarCobranca" Content="Alterar" Command="{Binding AlterarCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Altera a competência, o vencimento, o valor e a descrição da cobrança selecionada (só as em aberto)." />
-      <Button Content="Gerar do contrato" Command="{Binding GerarDoContratoCommand}"
-              ToolTip.Tip="Gera, na competência 'de', a cobrança do honorário informado na aba Contrato de cada cliente (mensal; anual no mês do início), vencendo conforme Competência ou Regime de caixa." />
       <Button Name="BaixarCobranca" Content="Baixar" Command="{Binding BaixarCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Registra o recebimento da cobrança selecionada (data, valor e observação)." />
       <Button Content="Estornar baixa" Command="{Binding EstornarCommand}" IsEnabled="{Binding TemSelecionada}" />

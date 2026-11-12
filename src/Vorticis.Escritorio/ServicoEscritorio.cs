@@ -328,8 +328,12 @@ public sealed class ServicoEscritorio
         return n == 1 ? Resultado.Ok() : Resultado.Falha("Só cobranças em aberto podem ser alteradas: estorne a baixa antes.");
     }
 
+    /// <summary>
+    /// Cobranças do escritório: por competência (uma ou de <paramref name="competencia"/> a <paramref name="ate"/>) e/ou pelo vencimento entre
+    /// <paramref name="vencimentoDe"/> e <paramref name="vencimentoAte"/> (datas).
+    /// </summary>
     public async Task<List<CobrancaHonorario>> ListarCobrancasAsync(long escritorio, DateOnly? competencia, bool somenteAbertas, long usuarioId, CancellationToken ct = default,
-                                                                    DateOnly? ate = null)
+                                                                    DateOnly? ate = null, DateOnly? vencimentoDe = null, DateOnly? vencimentoAte = null)
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
                 SELECT c.id, c.pessoa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, p.nome,
@@ -337,12 +341,14 @@ public sealed class ServicoEscritorio
                   FROM escritorio.honorario_cobranca c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE p.empresa_id = @e AND (@c::date IS NULL OR (CASE WHEN @ate::date IS NULL THEN c.competencia = @c ELSE c.competencia BETWEEN @c AND @ate END))
                    AND (NOT @a OR c.situacao = 'ABERTA')
+                   AND (@vd::date IS NULL OR c.vencimento >= @vd) AND (@va::date IS NULL OR c.vencimento <= @va)
                  ORDER BY c.vencimento, p.nome
                 """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
                                                 RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8),
                                                 RegrasEscritorio.TipoCobrancaDe(r.GetString(9)), r.Texto(10), r.IsDBNull(11) ? null : r.GetInt16(11),
                                                 r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13)),
-                ct, ("e", escritorio), ("c", competencia is { } d ? RegrasEscritorio.Mes(d) : null), ("ate", ate is { } x ? RegrasEscritorio.Mes(x) : null), ("a", somenteAbertas))
+                ct, ("e", escritorio), ("c", competencia is { } d ? RegrasEscritorio.Mes(d) : null), ("ate", ate is { } x ? RegrasEscritorio.Mes(x) : null), ("a", somenteAbertas),
+                ("vd", vencimentoDe), ("va", vencimentoAte))
             : [];
 
     /// <summary>Gera as cobranças da competência para todos os contratos de honorários vigentes; devolve quantas foram geradas.</summary>

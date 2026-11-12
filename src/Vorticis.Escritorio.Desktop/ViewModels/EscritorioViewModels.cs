@@ -682,8 +682,9 @@ public enum FiltroSituacaoCobranca { Todas, EmAberto, Vencidas, Recebidas, Cance
 
 /// <summary>
 /// Financeiro › Honorários: as cobranças de honorários e avulsas de todos os clientes (ou do escolhido no topo), por competência.
-/// Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança avulsa, Alterar, Gerar do contrato (o honorário
-/// da aba Contrato de cada cliente), Baixar (recebimento), Estornar baixa, Cancelar e Excluir (uma ou várias cobranças marcadas na lista).
+/// Pesquisa pelo vencimento (de/até) e Carregar; Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança
+/// avulsa, Alterar, Baixar (recebimento), Estornar baixa, Cancelar e Excluir (uma ou várias marcadas). As parcelas dos contratos vêm do
+/// Gerador de contratos (Gerar parcelas do contrato).
 /// </summary>
 public partial class HonorariosViewModel : ModuloViewModel
 {
@@ -703,17 +704,14 @@ public partial class HonorariosViewModel : ModuloViewModel
     ];
     public static IReadOnlyList<Opcao<TipoCobranca?>> Tipos { get; } = [new(null, "Todos"), new(TipoCobranca.Honorario, "Honorários"), new(TipoCobranca.Avulsa, "Avulsas")];
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CompetenciaDeTexto))] private DateTime? _competenciaDe = new DateTime(DateTime.Today.Year, 1, 1);
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CompetenciaAteTexto))] private DateTime? _competenciaAte = new DateTime(DateTime.Today.Year, 12, 1);
+    /// <summary>Período da pesquisa: vencimento de/até (datas; padrão, o ano corrente).</summary>
+    [ObservableProperty] private DateTime? _vencimentoDe = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _vencimentoAte = new DateTime(DateTime.Today.Year, 12, 31);
     [ObservableProperty] private Opcao<FiltroSituacaoCobranca>? _situacao = Situacoes[0];
     [ObservableProperty] private Opcao<TipoCobranca?>? _tipo = Tipos[0];
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private CobrancaLinha? _selecionada;
     [ObservableProperty] private string _totais = "";
     [ObservableProperty] private string _clienteDoFiltro = "Todos os clientes";
-
-    /// <summary>Competências do filtro digitadas como mm/aaaa (o valor só muda quando o mês está completo).</summary>
-    public string CompetenciaDeTexto { get => CompetenciaDe?.ToString("MM/yyyy") ?? ""; set { if (Ext.LerMes(value) is { } d) CompetenciaDe = d; } }
-    public string CompetenciaAteTexto { get => CompetenciaAte?.ToString("MM/yyyy") ?? ""; set { if (Ext.LerMes(value) is { } d) CompetenciaAte = d; } }
 
     /// <summary>As cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias); Excluir age em todas.</summary>
     public IReadOnlyList<CobrancaLinha> Marcadas { get; set; } = [];
@@ -722,8 +720,8 @@ public partial class HonorariosViewModel : ModuloViewModel
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
 
-    partial void OnCompetenciaDeChanged(DateTime? value) => _ = CarregarAsync();
-    partial void OnCompetenciaAteChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnVencimentoDeChanged(DateTime? value) => _ = CarregarAsync();
+    partial void OnVencimentoAteChanged(DateTime? value) => _ = CarregarAsync();
     partial void OnSituacaoChanged(Opcao<FiltroSituacaoCobranca>? value) => _ = CarregarAsync();
     partial void OnTipoChanged(Opcao<TipoCobranca?>? value) => _ = CarregarAsync();
 
@@ -731,10 +729,10 @@ public partial class HonorariosViewModel : ModuloViewModel
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var de = Ext.Dia(CompetenciaDe);
-        var ate = CompetenciaAte is { } a ? DateOnly.FromDateTime(a) : de;
-        if (ate < de) ate = de;
-        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, de, false, sessao.Id, ate: ate);
+        DateOnly? de = VencimentoDe is { } d ? DateOnly.FromDateTime(d) : null;
+        DateOnly? ate = VencimentoAte is { } a ? DateOnly.FromDateTime(a) : null;
+        if (de is { } x && ate is { } y && y < x) ate = x;
+        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, sessao.Id, vencimentoDe: de, vencimentoAte: ate);
         if (!EhAtual(g)) return;
         var hoje = DateOnly.FromDateTime(DateTime.Today);
         var foco = Contexto.ClienteEmFocoId;
@@ -778,19 +776,14 @@ public partial class HonorariosViewModel : ModuloViewModel
         await Lancamento.AbrirAlteracaoAsync(c);
     }
 
-    /// <summary>
-    /// Gera, na competência "de", a cobrança do honorário da aba Contrato de cada cliente (mensal; anual no mês do início), com o vencimento
-    /// conforme as caixas Competência (mês seguinte) e Regime de caixa (mesmo mês), as mesmas da janela de lançamento.
-    /// </summary>
+    /// <summary>Carrega (de novo) as cobranças lançadas, com os filtros da tela: as geradas pelos contratos, os honorários e as avulsas.</summary>
     [RelayCommand]
-    private Task GerarDoContratoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    private async Task CarregarDadosAsync()
     {
-        var r = await app.Escritorio().GerarCobrancasAsync(empresa, Ext.Dia(CompetenciaDe), usuario, vencimentoNoMesSeguinte: Lancamento.RegimeCompetencia);
-        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Erros.Clear();
         await CarregarAsync();
-        Mensagem = r.Valor == 0 ? $"Nenhuma cobrança nova em {Ext.Dia(CompetenciaDe):MM/yyyy}: os clientes com honorário no contrato já têm a cobrança dessa competência."
-                                : $"{r.Valor} cobrança(s) gerada(s) em {Ext.Dia(CompetenciaDe):MM/yyyy} a partir do honorário do contrato dos clientes.";
-    }, Permissao.EscritorioHonorarios);
+        Mensagem = $"{Cobrancas.Count} cobrança(s) carregada(s).";
+    }
 
     [RelayCommand]
     private void Baixar()
@@ -1081,7 +1074,13 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
     [ObservableProperty] private Opcao<Periodicidade>? _periodicidade = Periodicidades[0];
     [ObservableProperty] private decimal? _dia = 10;
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-    [ObservableProperty] private DateTime? _fim;
+    [ObservableProperty] private DateTime? _fim = Ext.Dt(RegrasEscritorio.FimPeloPrazo(new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1), 12)!.Value);
+    /// <summary>Prazo do contrato em meses (padrão 12; 0 = indeterminado): preenche o fim da vigência e diz quantas parcelas o contrato gera.</summary>
+    [ObservableProperty] private decimal? _prazoMeses = 12;
+    /// <summary>Vencimento das parcelas geradas: no mês seguinte ao da competência (padrão) ou no mesmo mês (regime de caixa).</summary>
+    [ObservableProperty] private bool _regimeCompetencia = true;
+    [ObservableProperty] private bool _regimeCaixa;
+    private bool _carregandoFicha;
     [ObservableProperty] private string _indice = "IPCA";
     [ObservableProperty] private string _foro = "";
     [ObservableProperty] private string _texto = "";
@@ -1089,6 +1088,20 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
 
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
+
+    partial void OnPrazoMesesChanged(decimal? value) => AjustarFim();
+    partial void OnInicioChanged(DateTime? value) => AjustarFim();
+    partial void OnRegimeCompetenciaChanged(bool value) { if (RegimeCaixa == value) RegimeCaixa = !value; }
+    partial void OnRegimeCaixaChanged(bool value) { if (RegimeCompetencia == value) RegimeCompetencia = !value; }
+
+    private void AjustarFim()
+    {
+        if (_carregandoFicha || Inicio is null || PrazoMeses is not { } p) return;
+        Fim = RegrasEscritorio.FimPeloPrazo(Ext.Dia(Inicio), (int)p) is { } f ? Ext.Dt(f) : null;
+    }
+
+    /// <summary>Prazo usado nas parcelas: o informado ou, sem prazo (indeterminado), 12 meses.</summary>
+    private int PrazoParaParcelas => PrazoMeses is { } p and > 0 ? (int)p : 12;
 
     partial void OnModeloChanged(Opcao<ModeloContrato>? value)
     {
@@ -1102,7 +1115,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         var atual = Parte?.Valor;
         var cliente = Modelo?.Valor != ModeloContrato.Fornecedor;
         Partes.Clear();
-        Partes.Add(new Opcao<long?>(null, cliente ? "(escolha o cliente)" : "(escolha o fornecedor)"));
+        Partes.Add(new Opcao<long?>(null, cliente ? "(escolha o contratante)" : "(escolha o fornecedor)"));
         foreach (var p in _pessoas.Where(p => p.Ativo && (cliente ? p.Cliente : p.Fornecedor))) Partes.Add(new Opcao<long?>(p.Id, $"{p.Codigo} – {p.Nome}"));
         Parte = Partes.FirstOrDefault(p => p.Valor == atual) ?? Partes[0];
     }
@@ -1112,8 +1125,14 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         if (value?.C is not { } c) return;
         Modelo = Modelos.First(m => m.Valor == c.Modelo);
         Parte = Partes.FirstOrDefault(p => p.Valor == c.PessoaId) ?? Partes.FirstOrDefault();
-        (Objeto, Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) =
-            (c.Objeto, Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Foro ?? "", c.Texto, c.Ativo);
+        _carregandoFicha = true;
+        try
+        {
+            (Objeto, Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) =
+                (c.Objeto, Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Foro ?? "", c.Texto, c.Ativo);
+            PrazoMeses = RegrasEscritorio.PrazoMeses(c.Inicio, c.Fim) ?? 0;
+        }
+        finally { _carregandoFicha = false; }
         Periodicidade = Periodicidades.First(p => p.Valor == c.Periodicidade);
     }
 
@@ -1141,8 +1160,10 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
     private void Novo()
     {
         LimparFormulario();
+        // o contratante já vem com o cliente escolhido no topo (Cliente:)
+        if (Partes.FirstOrDefault(p => p.Valor is not null && p.Valor == Contexto.ClienteEmFocoId) is { } foco) Parte = foco;
         AbrirFichaNova();
-        Mensagem = "Escolha o tipo e a parte, preencha as condições e clique em Gerar texto.";
+        Mensagem = "Confira o contratante, preencha as condições e clique em Gerar texto.";
     }
 
     private void LimparFormulario()
@@ -1150,14 +1171,39 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         Selecionado = null;
         Modelo = Modelos[0];
         Objeto = GeradorContratos.ObjetoPadrao(ModeloContrato.Cliente);
-        (Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) = ("", 10, new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), null, "IPCA", "", "", true);
+        (Valor, Dia, Indice, Foro, Texto, Ativo) = ("", 10, "IPCA", "", "", true);
+        Inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        PrazoMeses = 12;
+        AjustarFim();
         Periodicidade = Periodicidades[0];
     }
+
+    /// <summary>
+    /// Gera as parcelas do contrato (valor, periodicidade, dia e prazo, a partir do mês do início) e lança no Financeiro › Honorários, depois
+    /// de confirmar. Recusa se o contratante já tem honorário em alguma das competências.
+    /// </summary>
+    [RelayCommand]
+    private Task GerarParcelasAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Parte?.Valor is null) { Erros.Add("Escolha o contratante."); return; }
+        var c = Montar(Selecionado?.C.Id ?? 0, Selecionado?.C.Numero ?? 0) with { Texto = "-" };
+        if (c.Valor <= 0) { Erros.Add("Informe o valor do contrato."); return; }
+        if (c.DiaVencimento is not (>= 1 and <= 31)) { Erros.Add("Informe o dia do vencimento (1 a 31)."); return; }
+        var parcelas = RegrasEscritorio.ParcelasDoContrato(c, PrazoParaParcelas, RegimeCompetencia);
+        var texto = parcelas.Count == 1
+            ? $"Lançar 1 cobrança de {Formato.Moeda(parcelas[0].Valor)} ({parcelas[0].Competencia:MM/yyyy}, vencimento {parcelas[0].Vencimento:dd/MM/yyyy}) em Financeiro › Honorários?"
+            : $"Lançar {parcelas.Count} parcelas de {Formato.Moeda(parcelas[0].Valor)} (total {Formato.Moeda(parcelas.Sum(p => p.Valor))}), de {parcelas[0].Competencia:MM/yyyy} a "
+              + $"{parcelas[^1].Competencia:MM/yyyy}, vencendo de {parcelas[0].Vencimento:dd/MM/yyyy} a {parcelas[^1].Vencimento:dd/MM/yyyy}, em Financeiro › Honorários?";
+        if (!await Contexto.ConfirmarAsync("Gerar parcelas do contrato", texto, "Gerar parcelas", "Cancelar")) return;
+        var r = await app.Escritorio().LancarCobrancasAsync(empresa, parcelas, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Mensagem = $"{r.Valor} parcela(s) lançada(s) em Financeiro › Honorários.";
+    }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
     private Task GerarTextoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (_pessoas.FirstOrDefault(p => p.Id == Parte?.Valor) is not { } pessoa) { Erros.Add(Modelo?.Valor == ModeloContrato.Fornecedor ? "Escolha o fornecedor." : "Escolha o cliente."); return; }
+        if (_pessoas.FirstOrDefault(p => p.Id == Parte?.Valor) is not { } pessoa) { Erros.Add(Modelo?.Valor == ModeloContrato.Fornecedor ? "Escolha o fornecedor." : "Escolha o contratante."); return; }
         var esc = await app.Escritorio().DadosEscritorioAsync(empresa);
         var c = Montar(Selecionado?.C.Id ?? 0, Selecionado?.C.Numero ?? 0) with { Texto = "-" };
         var erros = RegrasEscritorio.Validar(c);

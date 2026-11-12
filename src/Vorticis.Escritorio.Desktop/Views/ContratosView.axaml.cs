@@ -9,6 +9,6 @@ public partial class ContratosView : UserControl
     public ContratosView()
     {
         InitializeComponent();
-        FichaPopup.LigarCadastro(this, ListaContratos, () => new ContratoFichaView(), 640, 820);
+        FichaPopup.LigarCadastro(this, ListaContratos, () => new ContratoFichaView(), 680, 900);
     }
 }

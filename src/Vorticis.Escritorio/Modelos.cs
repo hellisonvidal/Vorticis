@@ -231,6 +231,35 @@ public static class RegrasEscritorio
     public static SituacaoCobranca SituacaoCobrancaDe(string s) => s switch { "RECEBIDA" => SituacaoCobranca.Recebida, "CANCELADA" => SituacaoCobranca.Cancelada, _ => SituacaoCobranca.Aberta };
     public static string Sql(this Periodicidade p) => p switch { Periodicidade.Anual => "ANUAL", Periodicidade.Unico => "UNICO", _ => "MENSAL" };
     public static Periodicidade PeriodicidadeDe(string s) => s switch { "ANUAL" => Periodicidade.Anual, "UNICO" => Periodicidade.Unico, _ => Periodicidade.Mensal };
+    /// <summary>
+    /// Parcelas do contrato para o Financeiro › Honorários: a partir do mês do início, durante o prazo (meses): mensal, uma por mês; anual,
+    /// uma a cada 12 meses; parcela única, uma só. O dia do vencimento é o do contrato, no mês seguinte (competência) ou no mesmo mês (caixa).
+    /// </summary>
+    public static IReadOnlyList<CobrancaHonorario> ParcelasDoContrato(ContratoEscritorio c, int prazoMeses, bool vencimentoNoMesSeguinte)
+    {
+        var prazo = Math.Max(1, prazoMeses);
+        var (freq, n) = c.Periodicidade switch
+        {
+            Periodicidade.Anual => (FrequenciaParcelas.Anual, (prazo + 11) / 12),
+            Periodicidade.Unico => (FrequenciaParcelas.Unica, 1),
+            _ => (FrequenciaParcelas.Mensal, prazo),
+        };
+        return Parcelas(c.PessoaId, c.Inicio, c.Valor, c.DiaVencimento ?? 10, freq, n, TipoCobranca.Honorario,
+                        c.Numero > 0 ? $"Contrato nº {c.Numero}" : "Contrato", vencimentoNoMesSeguinte);
+    }
+
+    /// <summary>Prazo em meses entre o início e o fim do contrato (fim no último dia do prazo); null se indeterminado.</summary>
+    public static int? PrazoMeses(DateOnly inicio, DateOnly? fim)
+    {
+        if (fim is not { } f) return null;
+        var depois = f.AddDays(1);
+        var meses = (depois.Year - inicio.Year) * 12 + depois.Month - inicio.Month + (depois.Day > inicio.Day ? 1 : 0);
+        return Math.Max(1, meses);
+    }
+
+    /// <summary>Fim do contrato pelo prazo: o dia anterior ao mesmo dia do início, <paramref name="meses"/> meses depois (0: indeterminado).</summary>
+    public static DateOnly? FimPeloPrazo(DateOnly inicio, int meses) => meses <= 0 ? null : inicio.AddMonths(meses).AddDays(-1);
+
     public static string Rotulo(this Periodicidade p) => p switch { Periodicidade.Anual => "Anual", Periodicidade.Unico => "Parcela única", _ => "Mensal" };
 
     /// <summary>Confere o cadastro do cliente/fornecedor do escritório (devolve os erros).</summary>

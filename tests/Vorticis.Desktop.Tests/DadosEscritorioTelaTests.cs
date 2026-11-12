@@ -128,8 +128,9 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Honorarios);
                 await Calma(30);
                 var hon = Assert.IsType<E.ViewModels.HonorariosViewModel>(vm.Conteudo);
-                hon.CompetenciaDe = new DateTime(2027, 1, 1);
-                hon.CompetenciaAte = new DateTime(2027, 12, 1);
+                // a pesquisa é pelo vencimento (datas)
+                hon.VencimentoDe = new DateTime(2027, 1, 1);
+                hon.VencimentoAte = new DateTime(2028, 12, 31);
                 vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == novo.Valor);
                 await hon.NovoHonorarioCommand.ExecuteAsync(null);
                 await Calma(10);
@@ -221,23 +222,37 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
                 Assert.Equal(3, hon.Cobrancas.Count(c => c.Tipo == "Honorário"));
 
-                // Gerar do contrato segue as mesmas caixas (marcadas na tela ou na janela): competência vence no mês seguinte, caixa no mesmo mês
-                var tela = janela.JanelaDa(hon)!;
-                tela.GetLogicalDescendants().OfType<CheckBox>().Single(c => c.Name == "RegimeCompetenciaTela").IsChecked = true;
-                await Calma(5);
-                Assert.True(hon.Lancamento.RegimeCompetencia);
-                Assert.False(hon.Lancamento.RegimeCaixa);
-                hon.CompetenciaDe = new DateTime(2027, 6, 1);
-                await hon.GerarDoContratoCommand.ExecuteAsync(null);
+                // Gerador de contratos: o contratante vem do cliente do topo, prazo padrão de 12 meses, e Gerar parcelas lança no Financeiro
+                vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == novo.Valor);
                 await Calma(20);
-                Assert.Equal("31/07/2027", hon.Cobrancas.Single(c => c.Tipo == "Honorário" && c.Competencia == "06/2027").Vencimento);
-                hon.Lancamento.RegimeCaixa = true;
-                hon.CompetenciaDe = new DateTime(2027, 8, 1);
-                await hon.GerarDoContratoCommand.ExecuteAsync(null);
+                vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Contratos);
+                await Calma(30);
+                var ctr = Assert.IsType<E.ViewModels.ContratosViewModel>(vm.Conteudo);
+                ctr.NovoCommand.Execute(null);
+                await Calma(10);
+                Assert.Equal(novo.Valor, ctr.Parte?.Valor);
+                Assert.Equal(12m, ctr.PrazoMeses);
+                ctr.Inicio = new DateTime(2027, 7, 1);
+                Assert.Equal(new DateTime(2028, 6, 30), ctr.Fim);
+                (ctr.Valor, ctr.Dia, ctr.RegimeCaixa) = ("300,00", 31, true);
+                Assert.False(ctr.RegimeCompetencia);
+                var geracao = ctr.GerarParcelasCommand.ExecuteAsync(null);
+                for (var i = 0; i < 50 && vm.Confirmacao is null; i++) await Calma(2);
+                Assert.Contains("12 parcelas", vm.Confirmacao!.Mensagem);
+                vm.ResponderConfirmacaoCommand.Execute(true);
+                await geracao;
+                Assert.Empty(ctr.Erros);
+                Assert.Contains("12 parcela(s) lançada(s)", ctr.Mensagem);
+                ctr.FichaAberta = false;
+                await hon.CarregarDadosCommand.ExecuteAsync(null);
+                var doContrato = hon.Cobrancas.Where(c => c.Descricao == "Contrato").ToList();
+                Assert.Equal(12, doContrato.Count);
+                Assert.Equal(("07/2027", "31/07/2027", "1/12"), (doContrato[0].Competencia, doContrato[0].Vencimento, doContrato[0].Parcela));
+                Assert.Equal(("06/2028", "30/06/2028"), (doContrato[^1].Competencia, doContrato[^1].Vencimento));
+                // o filtro por vencimento: só até 31/12/2027
+                hon.VencimentoAte = new DateTime(2027, 12, 31);
                 await Calma(20);
-                Assert.Equal("31/08/2027", hon.Cobrancas.Single(c => c.Tipo == "Honorário" && c.Competencia == "08/2027").Vencimento);
-                hon.CompetenciaDe = new DateTime(2027, 1, 1);
-                await Calma(20);
+                Assert.Equal(6, hon.Cobrancas.Count(c => c.Descricao == "Contrato"));
                 hon.Selecionada = hon.Cobrancas[0];
                 hon.BaixarCommand.Execute(null);
                 Assert.True(hon.Baixa.FichaAberta);
