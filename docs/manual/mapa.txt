@@ -111,6 +111,7 @@ retencoes=05-fiscal.md#retencoes-irrf-csrf-inss-iss
 guias=05-fiscal.md#guias-de-recolhimento
 dctfweb=05-fiscal.md#dctfweb-mit
 apuracaoibscbs=05-fiscal.md#ibs-e-cbs-reforma-tributaria
+fiscal.classificacaotributaria=05-fiscal.md#classificacao-tributaria-ibs-cbs
 simplesreforma=05-fiscal.md#simples-nacional-ibs-cbs-reforma
 relnotascentrocusto=05-fiscal.md#centros-de-custo
 efdicmsipi=05-fiscal.md#sped-efd-icms-ipi

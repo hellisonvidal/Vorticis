@@ -123,3 +123,40 @@ public class Reforma2027Tests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.False((await fiscal.Reforma.EncerrarAsync(empresa, new DateOnly(2026, 5, 1), false, adm, ct)).Sucesso);   // 2026 é informativo
     }
 }
+
+/// <summary>Telas da reforma: o lançamento da nota calcula o IBS/CBS/IS pela classificação; a classificação tributária é cadastrada no Fiscal.</summary>
+public class Reforma2027TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
+{
+    [Fact]
+    public async Task Item_da_nota_calcula_IBS_CBS_IS_pela_classificacao_e_a_tela_cadastra_classificacoes()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var empresa = await db.CriarEmpresaAsync(CnpjsDeTeste.Valido(97));
+        var adm = await db.AdminAsync();
+        var ctx = new ContextoDeTeste(db.App, adm, empresa);
+
+        var tela = new Vorticis.Fiscal.Desktop.ViewModels.ClassificacaoTributariaViewModel(ctx);
+        await tela.CarregarAsync();
+        Assert.Contains(tela.Lista, l => l.Codigo == "000001");
+        tela.NovaCommand.Execute(null);
+        (tela.Codigo, tela.Descricao, tela.Reducao, tela.GeraCredito) = ("200097", "Teste: alíquota reduzida em 60%", "60", false);
+        tela.Cst = tela.Csts.Single(c => c.Codigo == "200");
+        await tela.GravarCommand.ExecuteAsync(null);
+        Assert.Empty(tela.Erros);
+        Assert.Equal(("200", "60%", "Não"), (tela.Selecionada!.Cst, tela.Selecionada.Reducao, tela.Selecionada.Credito));
+
+        var nota = new Vorticis.Fiscal.Desktop.ViewModels.NotaEntradaViewModel(ctx) { DataLivro = new DateTime(2027, 3, 10) };
+        (nota.Item.Quantidade, nota.Item.Unitario, nota.Item.Icms, nota.Item.ClassTrib) = ("1", "1.000,00", "180,00", "200097");
+        await nota.CalcularReformaCommand.ExecuteAsync(null);
+        Assert.Equal("200", nota.Item.CstIbsCbs);
+        Assert.Equal("820", nota.Item.BcIbsCbs);                     // sem o ICMS na base
+        Assert.Equal("4,48", nota.Item.AliqCbs);                      // 11,2% × 40%
+        Assert.Equal("36,74", nota.Item.Cbs);
+        Assert.False(nota.Item.CreditaIbsCbs);                        // a classificação não gera crédito
+        var item = nota.Item.Montar(null, null);
+        Assert.Equal(("200", 36.74m, false), (item.Reforma!.Cst, item.Reforma.Cbs, item.CreditaIbsCbs));
+        await tela.ExcluirCommand.ExecuteAsync(null);
+        Assert.DoesNotContain(tela.Lista, l => l.Codigo == "200097");
+    }
+}

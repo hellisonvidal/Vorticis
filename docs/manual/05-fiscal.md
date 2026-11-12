@@ -31,6 +31,21 @@ A tela mostra a **lista dos produtos** (com filtro). A **ficha do produto** abre
 
 **Notas de saída:** crie uma regra do tipo **Saída** para o sistema sugerir o CFOP e o CST ao digitar um item, conforme o produto, o NCM, o cliente e o destino (*Dentro do estado* ou *Outro estado*). A sugestão aparece quando você busca o produto no item e pode ser alterada.
 
+**Reforma tributária (IBS/CBS):** em **Então**, a regra também pode trazer o **CST IBS/CBS** e a **Classificação (cClassTrib)** a sugerir nas notas de saída, e a caixa **Credita IBS/CBS**, que diz se as compras que caem na regra geram crédito de IBS e CBS (desmarque para uso e consumo pessoal, por exemplo). Na importação das notas de entrada, a caixa é aplicada ao item.
+
+## Classificação tributária (IBS/CBS)
+
+**Para que serve:** cadastrar as classificações tributárias (**cClassTrib**) do IBS e da CBS que as suas empresas usam, com o CST, a redução da alíquota e se a compra gera crédito. Na nota, a classificação faz o cálculo certo do IBS e da CBS (por exemplo, os itens com alíquota reduzida em 60% pagam só 40% da alíquota).
+**Onde fica:** *Cadastros › Classificação tributária (IBS/CBS)*. Vale para todas as empresas.
+
+1. Clique em **Nova** e informe o **código** de 6 dígitos da tabela oficial (publicada pela Receita Federal e pelo Comitê Gestor do IBS; na maior parte dos códigos, os 3 primeiros dígitos são o CST).
+2. Escolha o **CST do IBS/CBS** (000 tributação integral, 200 alíquota reduzida, 400 isenção, 410 imunidade e não incidência, 510 diferimento, 550 suspensão, 620 tributação monofásica...) e escreva a **descrição**.
+3. Informe a **Redução da alíquota (%)**: 60 para quem paga 40% da alíquota, 30 para quem paga 70%, 100 para alíquota zero. Deixe em branco quando não há redução.
+4. Desmarque **A compra gera crédito de IBS/CBS** quando a aquisição não dá direito a crédito.
+5. **Gravar**. Para tirar de uso sem apagar, desmarque **Ativa**; **Excluir** apaga (as notas já lançadas não mudam).
+
+A classificação **000001** (tributação integral) já vem cadastrada.
+
 ## Documentos de entrada e de saída (digitação)
 
 **Para que serve:** consultar as notas já lançadas e lançar à mão as que não têm XML (ou conferir um XML antes de gravar).
@@ -52,7 +67,10 @@ A nota tem abas na mesma janela: **Nota** (cabeçalho e itens), **Tributos**, **
 
 1. Aba **Nota**: modelo, série, número, **Emissão**, data de entrada/saída, chave de acesso (opcional) e natureza da operação. Digite o **CNPJ/CPF** do cliente/fornecedor (busca automática, ou **Buscar participante**). Se não existir, informe nome, UF e município para cadastrá-lo na hora. A data de entrada/saída acompanha a emissão.
 2. Ainda na aba **Nota**, logo abaixo do cabeçalho, ficam os **itens**: produto (código, descrição ou GTIN; **Buscar produto**), CFOP, quantidade, valor unitário, NCM, unidade, desconto, frete, seguro e outras despesas. **Adicionar item**, **Atualizar item selecionado** ou **Remover item selecionado**; a lista dos itens já lançados aparece embaixo.
-3. Aba **Tributos**: escolha um item na lista e confira **CFOP, CST/CSOSN, base, alíquota e valor de ICMS**, ICMS-ST, IPI, PIS, COFINS e, para serviço, ISS. Ao alterar a **base** ou a **alíquota**, o valor do tributo é recalculado (base × alíquota); você pode corrigir o valor à mão depois. **Calcular tributos** preenche pelas alíquotas do produto o que estiver em branco. Clique em **Aplicar ao item** para guardar; os **totais da nota** (rodapé da janela) são recalculados. Nas notas importadas de XML os tributos são só de leitura.
+3. Aba **Tributos**: escolha um item na lista e confira **CFOP, CST/CSOSN, base, alíquota e valor de ICMS**, ICMS-ST, IPI, PIS, COFINS e, para serviço, ISS. Ao alterar a **base** ou a **alíquota**, o valor do tributo é recalculado (base × alíquota); você pode corrigir o valor à mão depois. **Calcular tributos** preenche pelas alíquotas do produto o que estiver em branco (e, a partir de 2026, calcula também o IBS e a CBS). Clique em **Aplicar ao item** para guardar; os **totais da nota** (rodapé da janela) são recalculados, com o IBS, a CBS e o IS. Nas notas importadas de XML os tributos são só de leitura.
+   - **IBS, CBS e Imposto Seletivo (reforma tributária):** no mesmo item, informe a **Classificação (cClassTrib)** (ou só o **CST IBS/CBS**) e clique em **Calcular IBS/CBS/IS**. O sistema usa as alíquotas do ano da nota (2026: CBS 0,9% e IBS 0,1%; 2027: CBS 11,2% e IBS 0,05% + 0,05%), aplica a **redução** da classificação, zera o IBS/CBS nos CST que não tributam (isenção, imunidade, diferimento, suspensão) e usa como **base** o valor do item sem o ICMS, o ISS, o PIS e a COFINS. Sem CST, vale 000 (tributação integral, classificação 000001). Para produtos com **Imposto Seletivo** (a partir de 2027: bebidas, cigarros, veículos, bens minerais...), informe o CST, a classificação e a **alíquota do IS** antes de calcular. Os valores podem ser corrigidos à mão.
+   - **Credita IBS/CBS** (nota de entrada): marcado, o IBS e a CBS do item entram como crédito na apuração; a classificação sem crédito desmarca sozinha.
+   - Ao gravar, o sistema avisa se a nota de 2027 em diante ainda tem **PIS/COFINS** (substituídos pela CBS) ou **IPI** (zerado, salvo Zona Franca de Manaus) destacados, ou itens sem o CST do IBS/CBS.
 4. Aba **Parcelas**: escolha a **Forma de pagamento** ([cadastro](02-cadastros-comuns.md#formas-de-pagamento)) e as duplicatas são geradas pelos prazos dela, contados da emissão, sobre o total da nota. Se mudar os itens depois, clique em **Gerar pela forma** para refazer. Para parcelar à mão, informe o **número de parcelas**, o **primeiro vencimento** e o **intervalo em dias** e clique em **Gerar parcelas** (a última recebe a diferença de centavos; a soma tem de bater com o valor da nota). **Limpar parcelas** apaga a lista. Sem parcelas, a nota nova gera uma duplicata única *à vista* (veja [Duplicatas](#duplicatas-contas-a-pagar-e-a-receber)).
 5. Aba **Escrituração**: centro de custo, contas de débito e crédito e observações (veja abaixo, nas notas importadas).
 6. Confira o **total informado** (aba Nota, ao lado dos botões dos itens): precisa bater com a soma dos itens; em branco, vale a soma. Clique em **Gravar nota**.
@@ -62,7 +80,7 @@ A nota tem abas na mesma janela: **Nota** (cabeçalho e itens), **Tributos**, **
 - *Seu perfil só permite consultar*: peça ao administrador para marcar, no seu perfil, a permissão **Importar XML e digitar notas fiscais** (*Configurações › Usuários › Perfis*).
 - *Nota contabilizada*: desfaça a contabilização para alterar, ou use **Novo lançamento** para lançar outra.
 - *Nota aberta para consulta*: você abriu pelo botão **Consultar**; feche e use **Editar**.
-- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, CST, créditos de ICMS, IPI, PIS e COFINS, centro de custo, produto vinculado, contas e observações). Escolha o item na lista da aba **Nota** (ou da aba Tributos), ajuste na aba **Escrituração**, clique em **Aplicar ao item** e depois em **Gravar escrituração**. A coluna *Regra fiscal* mostra *Sem regra* nos itens que não encontraram regra; ao gravar a escrituração a marca sai.
+- *Nota importada de XML* (faixa amarela): os dados do XML não mudam; só a escrituração (CFOP de entrada, CST, créditos de ICMS, IPI, PIS, COFINS e IBS/CBS, centro de custo, produto vinculado, contas e observações). Escolha o item na lista da aba **Nota** (ou da aba Tributos), ajuste na aba **Escrituração**, clique em **Aplicar ao item** e depois em **Gravar escrituração**. A coluna *Regra fiscal* mostra *Sem regra* nos itens que não encontraram regra; ao gravar a escrituração a marca sai.
 
 ### Reaplicar regras (notas de entrada)
 Na tela de *Entrada*, **Reaplicar regras** refaz o CFOP, o CST e os créditos das notas **importadas e ainda não contabilizadas** do período filtrado, pelas regras de *Cadastros › Regras fiscais*. Itens sem regra que você já conferiu à mão são mantidos. Notas contabilizadas, ou de período fiscal fechado, não são alteradas.
@@ -369,8 +387,9 @@ As tabelas, alíquotas e limites vêm dos parâmetros legais vigentes no ano. É
 Para cada tributo informe a **conta de débito (despesa)** e a **conta de crédito (imposto a recolher)** e clique em **Salvar**; deixe as duas em branco para remover. São usadas por **Contabilizar provisão** nas apurações.
 
 Só ficam liberados os tributos que a empresa tem, conforme o regime em *Cadastros › Empresas* (Dados cadastrais):
-- **Simples Nacional e MEI:** somente o **DAS**.
+- **Simples Nacional e MEI:** o **DAS** (e o IBS e a CBS, para quem optar por recolhê-los fora do DAS).
 - **Lucro Presumido, Real ou Arbitrado:** **IRPJ, CSLL, PIS e COFINS**; mais **ICMS** (empresa com inscrição estadual, comércio ou indústria), **IPI** (indústria) e **ISS** (atividade de serviços), conforme a inscrição e a atividade (CNAE).
+- **Reforma tributária (todos os regimes acima e o Simples):** **IBS** e **CBS** (a conta de débito é a do **crédito a recuperar**, no ativo, e a de crédito, a do tributo **a recolher**) e, fora do Simples, **IS** (Imposto Seletivo: despesa e a recolher). De 2027 em diante elas são usadas na contabilização das notas e na compensação do encerramento da [apuração do IBS e da CBS](#ibs-e-cbs-reforma-tributaria).
 Um tributo bloqueado que já tenha contas gravadas continua liberado, para você poder corrigir ou limpar. A tela *Contas dos tributos* deixou de existir: as mesmas contas agora são mantidas aqui.
 
 ## Retenções e guias

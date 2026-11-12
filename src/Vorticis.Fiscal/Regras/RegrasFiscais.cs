@@ -114,7 +114,8 @@ public static class MotorRegrasFiscais
         {
             if (origem is not null && Cfop.Operacao(origem) != TipoOperacao.Saida) erros.Add("CFOP atual: informe 4 dígitos começando por 5, 6 ou 7.");
             if (destino is not null && Cfop.Operacao(destino) != TipoOperacao.Saida) erros.Add("CFOP sugerido: informe 4 dígitos começando por 5, 6 ou 7.");
-            if (destino is null && cstDestino is null) erros.Add("Informe o CFOP ou o CST a sugerir.");
+            if (destino is null && cstDestino is null && string.IsNullOrWhiteSpace(r.CstIbsCbs) && string.IsNullOrWhiteSpace(r.ClassTrib))
+                erros.Add("Informe o CFOP, o CST ou a classificação do IBS/CBS a sugerir.");
         }
         if (ncm is { Length: > 8 }) erros.Add("NCM: no máximo 8 dígitos (pode ser só o início, para valer para um grupo).");
         if (cstOrigem is { Length: > 4 }) erros.Add("CST/CSOSN de origem: no máximo 4 dígitos.");

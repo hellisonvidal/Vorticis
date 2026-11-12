@@ -34,6 +34,7 @@ public sealed class ModuloFiscal : IModuloDesktop
     [
         ItemMenu.Tela("Produtos", Telas.Produtos),
         ItemMenu.Tela("Regras fiscais", Telas.RegrasFiscais),
+        ItemMenu.Tela("Classificação tributária (IBS/CBS)", Telas.ClassificacaoTributaria),
         ItemMenu.Tela("Regras de contabilização", Telas.RegrasContabilizacao),
         ItemMenu.Tela("Centros de custo", Vorticis.Desktop.Comum.ViewModels.TelasComuns.CentrosCusto),
         ItemMenu.Tela("Formas de pagamento", Vorticis.Desktop.Comum.ViewModels.TelasComuns.FormasPagamento),
@@ -222,6 +223,9 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.PisCofins, "Apuração › PIS e COFINS", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("NotasPorCentro", m => new NotasPorCentroViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.NotasPorCentro, "Relatórios › Resumos › Notas por centro de custo", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("ClassificacaoTributaria", m => new ClassificacaoTributariaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ClassificacaoTributaria, "Cadastros › Classificação tributária (IBS/CBS)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalDocumentosConsultar),
+                  v => v.CarregarAsync());
         c.Instancia("IbsCbs", m => new ApuracaoIbsCbsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.IbsCbs, "Apuração › IBS e CBS (reforma tributária)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("SimplesReforma", m => new SimplesReformaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

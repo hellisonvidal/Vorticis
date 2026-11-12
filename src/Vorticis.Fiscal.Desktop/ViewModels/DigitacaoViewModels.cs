@@ -74,6 +74,10 @@ public sealed record ItemNotaLinha(ItemFiscal Item, string? ProdutoVinculado = n
     public string Ipi => Numeros.MoedaOuVazio(Item.Ipi);
     public string Pis => Numeros.MoedaOuVazio(Item.Pis);
     public string Cofins => Numeros.MoedaOuVazio(Item.Cofins);
+    public string Ibs => Numeros.MoedaOuVazio(Item.Reforma?.Ibs ?? 0);
+    public string Cbs => Numeros.MoedaOuVazio(Item.Reforma?.Cbs ?? 0);
+    public string ImpostoSeletivo => Numeros.MoedaOuVazio(Item.Reforma?.ImpostoSeletivo ?? 0);
+    public string CstIbsCbs => Item.Reforma?.Cst ?? "";
     public string Iss => Numeros.MoedaOuVazio(Item.Iss);
     public string CentroCusto => Item.CentroCustoCodigo ?? "";
     public string Regra => Item.SemRegra ? "Sem regra" : "";
@@ -116,6 +120,22 @@ public partial class ItemForm : ObservableObject
     [ObservableProperty] private string _bcIss = "";
     [ObservableProperty] private string _aliqIss = "";
     [ObservableProperty] private string _iss = "";
+    // reforma tributária: IBS (UF e município), CBS e Imposto Seletivo
+    [ObservableProperty] private string _cstIbsCbs = "";
+    [ObservableProperty] private string _classTrib = "";
+    [ObservableProperty] private string _reducaoIbsCbs = "";
+    [ObservableProperty] private string _bcIbsCbs = "";
+    [ObservableProperty] private string _aliqIbsUf = "";
+    [ObservableProperty] private string _ibsUf = "";
+    [ObservableProperty] private string _aliqIbsMun = "";
+    [ObservableProperty] private string _ibsMun = "";
+    [ObservableProperty] private string _aliqCbs = "";
+    [ObservableProperty] private string _cbs = "";
+    [ObservableProperty] private bool _creditaIbsCbs = true;
+    [ObservableProperty] private string _cstIs = "";
+    [ObservableProperty] private string _classTribIs = "";
+    [ObservableProperty] private string _aliqIs = "";
+    [ObservableProperty] private string _impostoSeletivo = "";
 
     public long? ProdutoId { get; set; }
     public string? Gtin { get; set; }
@@ -147,6 +167,17 @@ public partial class ItemForm : ObservableObject
     partial void OnAliqCofinsChanged(string value) => Recalcular(BcCofins, value, v => Cofins = v);
     partial void OnBcIssChanged(string value) => Recalcular(value, AliqIss, v => Iss = v);
     partial void OnAliqIssChanged(string value) => Recalcular(BcIss, value, v => Iss = v);
+    partial void OnBcIbsCbsChanged(string value)
+    {
+        Recalcular(value, AliqIbsUf, v => IbsUf = v);
+        Recalcular(value, AliqIbsMun, v => IbsMun = v);
+        Recalcular(value, AliqCbs, v => Cbs = v);
+        Recalcular(value, AliqIs, v => ImpostoSeletivo = v);
+    }
+    partial void OnAliqIbsUfChanged(string value) => Recalcular(BcIbsCbs, value, v => IbsUf = v);
+    partial void OnAliqIbsMunChanged(string value) => Recalcular(BcIbsCbs, value, v => IbsMun = v);
+    partial void OnAliqCbsChanged(string value) => Recalcular(BcIbsCbs, value, v => Cbs = v);
+    partial void OnAliqIsChanged(string value) => Recalcular(BcIbsCbs, value, v => ImpostoSeletivo = v);
     private static string? N(string? t) => string.IsNullOrWhiteSpace(t) ? null : t.Trim();
 
     public void Limpar() => Travado(LimparCampos);
@@ -155,6 +186,8 @@ public partial class ItemForm : ObservableObject
     {
         Produto = Descricao = Cfop = Ncm = Cest = CstIcms = BcIcms = AliqIcms = Icms = BcIcmsSt = IcmsSt = CstIpi = BcIpi = AliqIpi = Ipi = "";
         CstPis = BcPis = AliqPis = Pis = CstCofins = BcCofins = AliqCofins = Cofins = BcIss = AliqIss = Iss = Unitario = Desconto = Frete = Seguro = Outras = "";
+        CstIbsCbs = ClassTrib = ReducaoIbsCbs = BcIbsCbs = AliqIbsUf = IbsUf = AliqIbsMun = IbsMun = AliqCbs = Cbs = CstIs = ClassTribIs = AliqIs = ImpostoSeletivo = "";
+        CreditaIbsCbs = true;
         (Unidade, Origem, Quantidade, ProdutoId, Gtin) = ("UN", "0", "1", null, null);
     }
 
@@ -181,7 +214,41 @@ public partial class ItemForm : ObservableObject
         (CstPis, BcPis, AliqPis, Pis) = (i.CstPis ?? "", T(i.BcPis), T(i.AliqPis), T(i.Pis));
         (CstCofins, BcCofins, AliqCofins, Cofins) = (i.CstCofins ?? "", T(i.BcCofins), T(i.AliqCofins), T(i.Cofins));
         (BcIss, AliqIss, Iss) = (T(i.BcIss), T(i.AliqIss), T(i.Iss));
+        var r = i.Reforma;
+        (CstIbsCbs, ClassTrib, ReducaoIbsCbs, BcIbsCbs) = (r?.Cst ?? "", r?.ClassTrib ?? "", T(r?.Reducao ?? 0), T(r?.Base ?? 0));
+        (AliqIbsUf, IbsUf, AliqIbsMun, IbsMun, AliqCbs, Cbs) = (T(r?.AliqIbsUf ?? 0), T(r?.IbsUf ?? 0), T(r?.AliqIbsMun ?? 0), T(r?.IbsMun ?? 0), T(r?.AliqCbs ?? 0), T(r?.Cbs ?? 0));
+        (CstIs, ClassTribIs, AliqIs, ImpostoSeletivo) = (r?.CstIs ?? "", r?.ClassTribIs ?? "", T(r?.AliqIs ?? 0), T(r?.ImpostoSeletivo ?? 0));
+        CreditaIbsCbs = i.CreditaIbsCbs;
     }
+
+    /// <summary>
+    /// IBS, CBS e Imposto Seletivo pelas alíquotas do ano da nota: o CST (ou o da classificação escolhida) diz se tributa; a classificação traz a redução
+    /// da alíquota e se a entrada gera crédito. A base é o valor do item sem o ICMS, o ISS, o PIS e a COFINS. Sem CST, usa 000 (tributação integral).
+    /// </summary>
+    public void CalcularReforma(Vorticis.Fiscal.Reforma.AliquotasReforma? ano, IReadOnlyList<Vorticis.Fiscal.Reforma.ClassificacaoTributaria> classificacoes,
+                                IReadOnlyList<Vorticis.Fiscal.Reforma.CstReforma> csts, TipoOperacao operacao) => Travado(() =>
+    {
+        var cls = classificacoes.FirstOrDefault(c => c.Codigo == ClassTrib.Trim());
+        if (cls is not null && string.IsNullOrWhiteSpace(CstIbsCbs)) CstIbsCbs = cls.Cst;
+        if (string.IsNullOrWhiteSpace(CstIbsCbs)) CstIbsCbs = "000";
+        if (string.IsNullOrWhiteSpace(ClassTrib) && CstIbsCbs.Trim() == "000") ClassTrib = "000001";
+        var tributa = csts.FirstOrDefault(c => c.Codigo == CstIbsCbs.Trim())?.Tributa ?? true;
+        var reducao = cls?.ReducaoPct ?? D(ReducaoIbsCbs);
+        if (cls is not null && operacao == TipoOperacao.Entrada) CreditaIbsCbs = cls.GeraCredito;
+        var @base = Vorticis.Fiscal.Reforma.CalculadoraReforma.Base(Montar(null, null));
+        var t = Vorticis.Fiscal.Reforma.CalculadoraReforma.Calcular(@base, ano, CstIbsCbs.Trim(), N(ClassTrib), reducao, tributa, N(CstIs), N(ClassTribIs), D(AliqIs));
+        (ReducaoIbsCbs, BcIbsCbs, AliqIbsUf, IbsUf, AliqIbsMun, IbsMun, AliqCbs, Cbs) =
+            (T(t.Reducao), T(t.Base), T(t.AliqIbsUf), T(t.IbsUf), T(t.AliqIbsMun), T(t.IbsMun), T(t.AliqCbs), T(t.Cbs));
+        (AliqIs, ImpostoSeletivo) = (T(t.AliqIs), T(t.ImpostoSeletivo));
+        if (t.AliqIs == 0) (CstIs, ClassTribIs) = ("", "");
+    });
+
+    /// <summary>Grupo IBS/CBS/IS do item, ou null se nada foi informado.</summary>
+    private Vorticis.Fiscal.Documentos.TributosReforma? MontarReforma() =>
+        string.IsNullOrWhiteSpace(CstIbsCbs) && D(ImpostoSeletivo) == 0 && D(Cbs) == 0 && D(IbsUf) == 0 && D(IbsMun) == 0
+            ? null
+            : new(N(CstIbsCbs), N(ClassTrib), D(BcIbsCbs), D(AliqIbsUf), D(IbsUf), D(AliqIbsMun), D(IbsMun), D(AliqCbs), D(Cbs), D(ReducaoIbsCbs),
+                  N(CstIs), N(ClassTribIs), D(AliqIs), D(ImpostoSeletivo));
 
     /// <summary>Base padrão dos tributos: produtos - desconto + frete + seguro + outras despesas.</summary>
     public decimal BaseItem() => Dinheiro(D(Quantidade) * D(Unitario)) - D(Desconto) + D(Frete) + D(Seguro) + D(Outras);
@@ -211,7 +278,7 @@ public partial class ItemForm : ObservableObject
         0, N(Produto), N(Descricao), N(Ncm), N(Cest), Cfop.Trim(), N(Unidade), D(Quantidade), D(Unitario), 0, D(Desconto), D(Frete), D(Seguro), D(Outras), 0,
         N(CstIcms), N(Origem), D(BcIcms), D(AliqIcms), D(Icms), D(BcIcmsSt), D(IcmsSt), N(CstIpi), D(BcIpi), D(AliqIpi), D(Ipi),
         N(CstPis), D(BcPis), D(AliqPis), D(Pis), N(CstCofins), D(BcCofins), D(AliqCofins), D(Cofins), D(BcIss), D(AliqIss), D(Iss),
-        Gtin, ProdutoId, centroId, centroCodigo);
+        Gtin, ProdutoId, centroId, centroCodigo, Reforma: MontarReforma(), CreditaIbsCbs: CreditaIbsCbs);
 }
 
 /// <summary>
@@ -295,6 +362,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     [ObservableProperty] private bool _escCreditaIpi = true;
     [ObservableProperty] private bool _escCreditaPis = true;
     [ObservableProperty] private bool _escCreditaCofins = true;
+    [ObservableProperty] private bool _escCreditaIbsCbs = true;
     public bool EhEntrada => Operacao == TipoOperacao.Entrada;
     private bool _semCarga;
 
@@ -440,6 +508,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         CentroItem = Centros.FirstOrDefault(c => c.Id == value.Item.CentroCustoId) ?? Centros[0];
         EscProduto = value.ProdutoVinculado?.Split(" - ")[0] ?? "";
         (EscCreditaIcms, EscCreditaIpi, EscCreditaPis, EscCreditaCofins) = (value.Item.CreditaIcms, value.Item.CreditaIpi, value.Item.CreditaPis, value.Item.CreditaCofins);
+        EscCreditaIbsCbs = value.Item.CreditaIbsCbs;
     }
 
     /// <summary>Carga ao abrir: configuração (centros de custo), centros e notas digitadas do período.</summary>
@@ -637,7 +706,11 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         OnPropertyChanged(nameof(TemItensImobilizado));
         var t = CalcularTotais();
         Totais = $"Produtos {Numeros.Moeda(t.Produtos)} · Desconto {Numeros.Moeda(t.Desconto)} · Frete {Numeros.Moeda(t.Frete)} · IPI {Numeros.Moeda(t.Ipi)} · ICMS {Numeros.Moeda(t.Icms)} · " +
-                 $"ICMS-ST {Numeros.Moeda(t.IcmsSt)} · PIS {Numeros.Moeda(t.Pis)} · COFINS {Numeros.Moeda(t.Cofins)} · ISS {Numeros.Moeda(t.Iss)} · TOTAL DA NOTA {Numeros.Moeda(t.Total)}";
+                 $"ICMS-ST {Numeros.Moeda(t.IcmsSt)} · PIS {Numeros.Moeda(t.Pis)} · COFINS {Numeros.Moeda(t.Cofins)} · ISS {Numeros.Moeda(t.Iss)} · TOTAL DA NOTA {Numeros.Moeda(t.Total)}"
+                 + (Itens.Any(i => i.Item.Reforma is not null)
+                     ? $" · IBS {Numeros.Moeda(Itens.Sum(i => i.Item.Reforma?.Ibs ?? 0))} · CBS {Numeros.Moeda(Itens.Sum(i => i.Item.Reforma?.Cbs ?? 0))}"
+                       + (Itens.Sum(i => i.Item.Reforma?.ImpostoSeletivo ?? 0) is > 0 and var seletivo ? $" · IS {Numeros.Moeda(seletivo)}" : "")
+                     : "");
     }
 
     // ------------------------------------------------------------------ itens
@@ -662,11 +735,44 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (!r.Sucesso || r.Valor is not { } regra) return;
         if (regra.CfopDestino is { } cfop) Item.Cfop = cfop;
         if (regra.CstDestino is { } cst) Item.CstIcms = cst;
+        if (regra.CstIbsCbs is { } cstIbs) Item.CstIbsCbs = cstIbs;
+        if (regra.ClassTrib is { } cls) Item.ClassTrib = cls;
         Mensagem = "CFOP e CST sugeridos pela regra fiscal" + (string.IsNullOrWhiteSpace(regra.Descricao) ? "" : $" \"{regra.Descricao}\"") + ": confira antes de adicionar o item.";
     }
 
     [RelayCommand]
-    private void CalcularTributos() => Item.CalcularTributos();
+    private async Task CalcularTributosAsync()
+    {
+        Item.CalcularTributos();
+        // reforma tributária: com o CST do IBS/CBS informado (ou a partir de 2026), calcula também o IBS, a CBS e o IS
+        if (!string.IsNullOrWhiteSpace(Item.CstIbsCbs) || Data(DataLivro, default).Year >= 2026) await CalcularReformaAsync();
+    }
+
+    private Vorticis.Fiscal.Reforma.AliquotasReforma? _aliquotasReforma;
+    private IReadOnlyList<Vorticis.Fiscal.Reforma.ClassificacaoTributaria> _classificacoes = [];
+    private IReadOnlyList<Vorticis.Fiscal.Reforma.CstReforma> _csts = [];
+
+    /// <summary>Alíquotas do ano da nota, a tabela de CST e as classificações tributárias (carregadas uma vez por ano).</summary>
+    private async Task CarregarReformaAsync(VorticisApp app)
+    {
+        var ano = Data(DataLivro, default).Year;
+        if (_aliquotasReforma?.Ano == ano && _csts.Count > 0) return;
+        _aliquotasReforma = await app.Fiscal().Reforma.AliquotasDoAnoAsync(ano);
+        _csts = await app.Fiscal().Classificacoes.CstsAsync();
+        _classificacoes = await app.Fiscal().Classificacoes.ListarAsync(somenteAtivas: true);
+    }
+
+    /// <summary>Calcular IBS/CBS/IS: pelas alíquotas do ano da nota e pela classificação tributária do item.</summary>
+    [RelayCommand]
+    private async Task CalcularReformaAsync()
+    {
+        if (Contexto.App is not { } app) return;
+        await CarregarReformaAsync(app);
+        Item.CalcularReforma(_aliquotasReforma, _classificacoes, _csts, Operacao);
+        if (_aliquotasReforma is { } a)
+            Mensagem = $"IBS/CBS de {a.Ano}: CBS {a.Cbs:0.##}%, IBS UF {a.IbsUf:0.##}%, IBS município {a.IbsMun:0.##}%"
+                       + (a.ImpostoSeletivo ? "; Imposto Seletivo pela alíquota informada" : "") + ". Confira e clique em Aplicar ao item.";
+    }
 
     private ItemFiscal? MontarItem()
     {
@@ -750,6 +856,9 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         SelecionarSemCarregar(Lista.FirstOrDefault(d => d.Id == r.Valor));   // sem recarregar: a carga atrasada apagaria a mensagem de gravação
         DigitacaoAberta = false;                                            // gravou: o pop-up fecha e a grade já está atualizada
         Mensagem = "Nota gravada." + ImportacaoXmlViewModel.TextoContabilizacaoOnline(online);
+        // reforma tributária: avisos do ano (PIS/COFINS ou IPI depois da extinção, itens sem IBS/CBS)
+        await CarregarReformaAsync(app);
+        if (Vorticis.Fiscal.Reforma.CalculadoraReforma.Avisos(doc.Itens, _aliquotasReforma) is { Count: > 0 } avisos) Mensagem += " " + string.Join(" ", avisos);
         // itens de ativo imobilizado: abre o cadastro de bens (on-line) ou registra a pendência (em lote)
         if (doc.Operacao == TipoOperacao.Entrada)
             Mensagem += await Vorticis.Desktop.Comum.ViewModels.BensDasNotas.AposGravarNotasAsync(Contexto, app, empresa, usuario, [r.Valor]);
@@ -873,6 +982,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         {
             Cfop = cfop, ProdutoId = produtoId, CentroCustoId = CentroItem?.Id, CentroCustoCodigo = CentroItem?.Codigo, CstIcms = string.IsNullOrWhiteSpace(Item.CstIcms) ? sel.Item.CstIcms : Item.CstIcms.Trim(),
             CreditaIcms = EscCreditaIcms, CreditaIpi = EscCreditaIpi, CreditaPis = EscCreditaPis, CreditaCofins = EscCreditaCofins, SemRegra = false,
+            CreditaIbsCbs = EscCreditaIbsCbs,
         };
         var pos = Itens.IndexOf(sel);
         Itens[pos] = new ItemNotaLinha(novo, produtoNome);
@@ -904,7 +1014,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
         if (_documentoId == 0) { Erros.Add("Selecione uma nota na lista."); return; }
         var esc = new EscrituracaoDocumento(_documentoId, Texto(Observacoes), CentroDocumento?.Id, Texto(ContaDebito), Texto(ContaCredito),
             Itens.Select(i => new EscrituracaoItem(i.N, i.Item.Cfop, i.Item.ProdutoId, i.Item.CentroCustoId, i.Item.CstIcms,
-                i.Item.CreditaIcms, i.Item.CreditaIpi, i.Item.CreditaPis, i.Item.CreditaCofins)).ToList());
+                i.Item.CreditaIcms, i.Item.CreditaIpi, i.Item.CreditaPis, i.Item.CreditaCofins, i.Item.CreditaIbsCbs)).ToList());
         var r = await app.Fiscal().Digitacao.GravarEscrituracaoAsync(empresa, esc, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var id = _documentoId;

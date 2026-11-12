@@ -53,8 +53,8 @@ public static class CalculadoraReforma
             a.Add($"Em {ano.Ano} o PIS e a COFINS foram substituídos pela CBS: confira os itens com PIS/COFINS destacados.");
         if (!ano.Ipi && l.Any(i => i.Ipi != 0))
             a.Add($"Em {ano.Ano} o IPI está zerado (salvo produtos incentivados da Zona Franca de Manaus): confira os itens com IPI.");
-        if (ano.Ano >= 2026 && l.Any(i => i.Reforma is null || string.IsNullOrWhiteSpace(i.Reforma.Cst)))
-            a.Add("Há itens sem o CST do IBS/CBS: a partir de 2026 a nota deve destacar o IBS e a CBS por item.");
+        if (ano.Contabiliza && l.Any(i => i.Reforma is null || string.IsNullOrWhiteSpace(i.Reforma.Cst)))
+            a.Add($"Há itens sem o CST do IBS/CBS: em {ano.Ano} o IBS e a CBS devem ser destacados por item (use Calcular IBS/CBS/IS).");
         return a;
     }
 }

@@ -144,6 +144,10 @@
               <DataGridTextColumn Header="PIS" Binding="{ReflectionBinding Pis}" Width="80" />
               <DataGridTextColumn Header="COFINS" Binding="{ReflectionBinding Cofins}" Width="95" />
               <DataGridTextColumn Header="ISS" Binding="{ReflectionBinding Iss}" Width="80" />
+              <DataGridTextColumn Header="CST IBS/CBS" Binding="{ReflectionBinding CstIbsCbs}" Width="105" />
+              <DataGridTextColumn Header="IBS" Binding="{ReflectionBinding Ibs}" Width="80" />
+              <DataGridTextColumn Header="CBS" Binding="{ReflectionBinding Cbs}" Width="80" />
+              <DataGridTextColumn Header="IS" Binding="{ReflectionBinding ImpostoSeletivo}" Width="70" />
             </DataGrid.Columns>
           </DataGrid>
           <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -182,8 +186,33 @@
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ISS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIss}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ISS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Iss}" /></StackPanel>
               </UniformGrid>
+              <TextBlock Classes="grupo" Text="IBS, CBS e Imposto Seletivo (reforma tributária: destaque obrigatório a partir de 2026; PIS e COFINS acabam em 2027)" />
+              <UniformGrid Columns="8">
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IBS/CBS" /><TextBox Name="CampoCstIbsCbs" Text="{Binding Item.CstIbsCbs}" MaxLength="3" Watermark="000"
+                            ToolTip.Tip="000 tributação integral, 200 alíquota reduzida, 400 isenção, 410 imunidade e não incidência, 510 diferimento, 550 suspensão, 620 monofásica..." /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classificação (cClassTrib)" /><TextBox Name="CampoClassTrib" Text="{Binding Item.ClassTrib}" MaxLength="6" Watermark="000001"
+                            ToolTip.Tip="Código de 6 dígitos da tabela oficial; cadastre os que usa em Cadastros › Classificação tributária (IBS/CBS), com a redução e o crédito." /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Redução %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.ReducaoIbsCbs}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base IBS/CBS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoBcIbsCbs" Text="{Binding Item.BcIbsCbs}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IBS UF %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIbsUf}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IBS UF" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.IbsUf}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IBS mun. %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIbsMun}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IBS município" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.IbsMun}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. CBS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqCbs}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CBS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoCbs" Text="{Binding Item.Cbs}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IS" /><TextBox Text="{Binding Item.CstIs}" MaxLength="3" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classif. IS" /><TextBox Text="{Binding Item.ClassTribIs}" MaxLength="6" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIs}"
+                            ToolTip.Tip="Imposto Seletivo (a partir de 2027): bebidas, cigarros, veículos, bens minerais e outros prejudiciais à saúde ou ao meio ambiente." /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Imposto Seletivo" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.ImpostoSeletivo}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Crédito" />
+                  <CheckBox Name="CreditaIbsCbs" Content="Credita IBS/CBS" IsChecked="{Binding Item.CreditaIbsCbs}"
+                            ToolTip.Tip="Entrada: o IBS e a CBS do item entram como crédito na apuração. Desmarque para uso e consumo pessoal ou classificação sem crédito." /></StackPanel>
+              </UniformGrid>
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-                <Button Classes="mini" Content="Calcular tributos" Command="{Binding CalcularTributosCommand}" ToolTip.Tip="Preenche base e valor dos tributos que têm alíquota e valor em branco" />
+                <Button Classes="mini" Content="Calcular tributos" Command="{Binding CalcularTributosCommand}" ToolTip.Tip="Preenche base e valor dos tributos que têm alíquota e valor em branco; a partir de 2026, também o IBS, a CBS e o IS" />
+                <Button Classes="mini" Name="CalcularReforma" Content="Calcular IBS/CBS/IS" Command="{Binding CalcularReformaCommand}"
+                        ToolTip.Tip="Calcula o IBS, a CBS e o Imposto Seletivo pelas alíquotas do ano da nota e pela classificação tributária (redução e crédito)" />
                 <Button Classes="mini accent" Content="Aplicar ao item" Command="{Binding AtualizarItemCommand}" ToolTip.Tip="Grava no item selecionado os tributos digitados e recalcula os totais da nota" />
                 <Button Classes="mini" Content="Adicionar como novo item" Command="{Binding AdicionarItemCommand}" />
               </StackPanel>
@@ -241,6 +270,8 @@
                 <CheckBox Content="Credita IPI" IsChecked="{Binding EscCreditaIpi}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
                 <CheckBox Content="Credita PIS" IsChecked="{Binding EscCreditaPis}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
                 <CheckBox Content="Credita COFINS" IsChecked="{Binding EscCreditaCofins}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
+                <CheckBox Content="Credita IBS/CBS" IsChecked="{Binding EscCreditaIbsCbs}" VerticalAlignment="Bottom" Margin="8,0,0,0"
+                          ToolTip.Tip="Reforma tributária: o IBS e a CBS do item entram como crédito na apuração (desmarque para uso e consumo pessoal)." />
               </WrapPanel>
               <Grid ColumnDefinitions="*,2*,*,Auto">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP de escrituração (ex.: entrada 1.102)" /><TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding Item.Cfop}" /></StackPanel>

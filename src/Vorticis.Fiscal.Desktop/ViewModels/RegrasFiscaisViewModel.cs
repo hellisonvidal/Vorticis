@@ -58,6 +58,9 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloComFicha
     [ObservableProperty] private bool _creditaIpi = true;
     [ObservableProperty] private bool _creditaPis = true;
     [ObservableProperty] private bool _creditaCofins = true;
+    [ObservableProperty] private bool _creditaIbsCbs = true;
+    [ObservableProperty] private string _cstIbsCbs = "";
+    [ObservableProperty] private string _classTrib = "";
     [ObservableProperty] private string _contaDebito = "";
     [ObservableProperty] private string _contaCredito = "";
     [ObservableProperty] private bool _ativa = true;
@@ -83,6 +86,7 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloComFicha
         (Participante, Produto) = (r.ParticipanteId is null ? "" : r.ParticipanteNome ?? "", r.ProdutoId is null ? "" : r.ProdutoDescricao ?? "");
         Destino = r.Destino == "I" ? 1 : r.Destino == "X" ? 2 : 0;
         (CreditaIcms, CreditaIpi, CreditaPis, CreditaCofins, Ativa) = (r.CreditaIcms, r.CreditaIpi, r.CreditaPis, r.CreditaCofins, r.Ativo);
+        (CreditaIbsCbs, CstIbsCbs, ClassTrib) = (r.CreditaIbsCbs, r.CstIbsCbs ?? "", r.ClassTrib ?? "");
         (ContaDebito, ContaCredito) = (r.ContaDebito ?? "", r.ContaCredito ?? "");
     }
 
@@ -98,6 +102,7 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloComFicha
         Selecionada = null;
         (Ordem, Descricao, CfopOrigem, Participante, Ncm, Produto, CstOrigem, CfopDestino, CstDestino, ContaDebito, ContaCredito) = ("100", "", "", "", "", "", "", "", "", "", "");
         (Destino, CreditaIcms, CreditaIpi, CreditaPis, CreditaCofins, Ativa) = (0, true, true, true, true, true);
+        (CreditaIbsCbs, CstIbsCbs, ClassTrib) = (true, "", "");
         Erros.Clear();
         Mensagem = null;
     }
@@ -123,7 +128,9 @@ public partial class RegrasFiscaisViewModel(IContexto contexto) : ModuloComFicha
         if (!int.TryParse(Ordem.Trim(), out var ordem)) { Erros.Add("Ordem: informe um número."); return; }
         var op = Operacao == 0 ? TipoOperacao.Entrada : TipoOperacao.Saida;
         var regra = new RegraFiscal(Selecionada?.Regra.Id ?? 0, op, ordem, Ativa, Descricao, CfopOrigem, participanteId, Ncm, produtoId, CstOrigem,
-            Destino == 1 ? "I" : Destino == 2 ? "X" : null, CfopDestino, CstDestino, CreditaIcms, CreditaIpi, CreditaPis, CreditaCofins, ContaDebito, ContaCredito);
+            Destino == 1 ? "I" : Destino == 2 ? "X" : null, CfopDestino, CstDestino, CreditaIcms, CreditaIpi, CreditaPis, CreditaCofins, ContaDebito, ContaCredito,
+            CstIbsCbs: string.IsNullOrWhiteSpace(CstIbsCbs) ? null : CstIbsCbs.Trim(), ClassTrib: string.IsNullOrWhiteSpace(ClassTrib) ? null : ClassTrib.Trim(),
+            CreditaIbsCbs: CreditaIbsCbs);
         var r = await app.Fiscal().Regras.GravarAsync(empresa, regra, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();

@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:g="using:Vorticis.Fiscal.Desktop.Views" xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.ClassificacaoTributariaView" x:DataType="vm:ClassificacaoTributariaViewModel">
+  <!-- Cadastros › Classificação tributária (IBS/CBS): lista e ficha ao lado -->
+  <DockPanel Margin="8">
+    <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Classificação tributária (IBS/CBS)" Margin="0,0,0,4" />
+    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TxSutil}" Margin="0,0,0,8"
+               Text="Cadastre as classificações tributárias (cClassTrib) da tabela oficial da Receita Federal e do Comitê Gestor que suas empresas usam. Na nota, a classificação define o CST, a redução da alíquota do IBS e da CBS e se a compra gera crédito. Vale para todas as empresas." />
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <Border DockPanel.Dock="Right" Width="380" Margin="10,0,0,0" Padding="12" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="6">
+      <StackPanel Spacing="8" IsEnabled="{Binding PodeEditar}">
+        <TextBlock Text="Código (cClassTrib)" />
+        <TextBox Name="CodigoClassificacao" Text="{Binding Codigo}" MaxLength="6" Watermark="000001" />
+        <TextBlock Text="CST do IBS/CBS" />
+        <ComboBox ItemsSource="{Binding Csts}" SelectedItem="{Binding Cst}" HorizontalAlignment="Stretch" />
+        <TextBlock Text="Descrição" />
+        <TextBox Text="{Binding Descricao}" TextWrapping="Wrap" MinHeight="54" MaxLength="300" />
+        <TextBlock Text="Redução da alíquota (%)" />
+        <TextBox c:Mascara.Tipo="Valor" Text="{Binding Reducao}" Width="120" HorizontalAlignment="Left" Watermark="ex.: 60"
+                 ToolTip.Tip="Ex.: 60 para os itens com alíquota reduzida em 60% (pagam 40% da alíquota); 100 para alíquota zero." />
+        <CheckBox Content="A compra gera crédito de IBS/CBS" IsChecked="{Binding GeraCredito}" />
+        <CheckBox Content="Ativa" IsChecked="{Binding Ativo}" />
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0">
+          <Button Content="Nova" Command="{Binding NovaCommand}" />
+          <Button Name="GravarClassificacao" Content="Gravar" Classes="accent" Command="{Binding GravarCommand}" />
+          <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    <DataGrid g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="90" />
+        <DataGridTextColumn Header="CST" Binding="{ReflectionBinding Cst}" Width="65" />
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="*" />
+        <DataGridTextColumn Header="Redução" Binding="{ReflectionBinding Reducao}" Width="90" />
+        <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding Credito}" Width="80" />
+        <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="85" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

@@ -122,6 +122,7 @@ public static class IconesMenu
         ["guias"] = "BarcodeScan",
         ["dctfweb"] = "FileDelimitedOutline",
         ["apuracaoibscbs"] = "StarOutline",
+        ["fiscal.classificacaotributaria"] = "Star",
         ["simplesreforma"] = "Cash",
         ["relnotascentrocusto"] = "SitemapOutline",
         ["efdicmsipi"] = "FileCogOutline",

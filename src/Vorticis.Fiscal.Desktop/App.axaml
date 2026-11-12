@@ -14,6 +14,7 @@
     <DataTemplate DataType="vm:PlanejamentoTributarioViewModel"><v:PlanejamentoTributarioView /></DataTemplate>
     <DataTemplate DataType="vm:DctfWebViewModel"><v:DctfWebView /></DataTemplate>
     <DataTemplate DataType="vm:ApuracaoIbsCbsViewModel"><v:ApuracaoIbsCbsView /></DataTemplate>
+    <DataTemplate DataType="vm:ClassificacaoTributariaViewModel"><v:ClassificacaoTributariaView /></DataTemplate>
     <DataTemplate DataType="vm:SimplesReformaViewModel"><v:SimplesReformaView /></DataTemplate>
     <DataTemplate DataType="vm:NotasPorCentroViewModel"><v:NotasPorCentroView /></DataTemplate>
     <DataTemplate DataType="vm:DocumentosViewModel"><v:DocumentosView /></DataTemplate>

@@ -34,6 +34,10 @@
             <CheckBox Content="Credita IPI" IsChecked="{Binding CreditaIpi}" />
             <CheckBox Content="Credita PIS" IsChecked="{Binding CreditaPis}" />
             <CheckBox Content="Credita COFINS" IsChecked="{Binding CreditaCofins}" />
+            <CheckBox Content="Credita IBS/CBS" IsChecked="{Binding CreditaIbsCbs}" Margin="0,0,14,0"
+                      ToolTip.Tip="Reforma tributária: o IBS e a CBS do item entram como crédito (desmarque para uso e consumo pessoal)." />
+            <TextBox Text="{Binding CstIbsCbs}" Watermark="CST IBS/CBS" Width="110" MaxLength="3" Margin="0,0,6,0" />
+            <TextBox Text="{Binding ClassTrib}" Watermark="Classificação (cClassTrib)" Width="180" MaxLength="6" />
           </WrapPanel>
           <TextBlock Grid.Row="3" Text="Contabilização" VerticalAlignment="Center" />
           <WrapPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="5">
