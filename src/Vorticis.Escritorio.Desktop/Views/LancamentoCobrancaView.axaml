@@ -15,7 +15,7 @@
         <Style Selector="TextBlock.rot"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="Margin" Value="0,4,8,4" /></Style>
       </Grid.Styles>
       <TextBlock Classes="rot" Text="Cliente" />
-      <ComboBox Grid.Column="1" Name="ClienteCobranca" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" IsEnabled="{Binding EhNovo}"
+      <ComboBox Grid.Column="1" Name="ClienteCobranca" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" IsEnabled="False" ToolTip.Tip="O cliente escolhido no topo da tela (Cliente:). Para outro cliente, troque no topo."
                 HorizontalAlignment="Stretch" Margin="0,4" />
       <TextBlock Grid.Row="1" Classes="rot" Text="Descrição" />
       <TextBox Grid.Row="1" Grid.Column="1" Name="DescricaoCobranca" Text="{Binding Descricao}" Margin="0,4" MaxLength="200"

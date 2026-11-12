@@ -44,8 +44,10 @@ public interface IContexto
     ModulosEmpresa ModuloAtual { get; }
     /// <summary>Alerta com campo de senha; devolve a senha digitada ou null se o usuário cancelar.</summary>
     Task<string?> SolicitarSenhaAsync(string titulo, string mensagem, string textoSim = "Confirmar", string textoNao = "Cancelar");
-    /// <summary>Cliente escolhido no seletor de clientes da barra (Escritório); null = todos os clientes.</summary>
+    /// <summary>Cliente escolhido no seletor de clientes da barra (Escritório): as telas mostram só o que é dele (null: nenhum cliente).</summary>
     long? ClienteEmFocoId => null;
+    /// <summary>Nome do cliente escolhido no seletor da barra (Escritório).</summary>
+    string? ClienteEmFocoNome => null;
     /// <summary>Recarrega o seletor de clientes da barra (depois de incluir, alterar ou excluir um cliente).</summary>
     Task RecarregarClientesSeletorAsync() => Task.CompletedTask;
     /// <summary>Razão social e CNPJ da empresa ativa (cabeçalho dos relatórios).</summary>
@@ -497,6 +499,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
     public ObservableCollection<ClienteNoSeletor> ClientesNoSeletor { get; } = [];
     [ObservableProperty] private ClienteNoSeletor? _clienteEmFoco;
     public long? ClienteEmFocoId => ClienteEmFoco is { Id: > 0 } c ? c.Id : null;
+    public string? ClienteEmFocoNome => ClienteEmFoco is { Id: > 0 } c ? c.Nome : null;
     private bool _recarregandoClientes;
 
     public async Task RecarregarClientesSeletorAsync()
@@ -507,10 +510,10 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         _recarregandoClientes = true;
         try
         {
+            // sempre um cliente só (não há "todos os clientes"): o que estava escolhido ou o primeiro (o escritório, 0001)
             ClientesNoSeletor.Clear();
-            ClientesNoSeletor.Add(ClienteNoSeletor.Todos);
             foreach (var c in lista) ClientesNoSeletor.Add(c);
-            ClienteEmFoco = ClientesNoSeletor.FirstOrDefault(c => c.Id == atual) ?? ClienteNoSeletor.Todos;
+            ClienteEmFoco = ClientesNoSeletor.FirstOrDefault(c => c.Id == atual) ?? ClientesNoSeletor.FirstOrDefault();
         }
         finally { _recarregandoClientes = false; }
     }

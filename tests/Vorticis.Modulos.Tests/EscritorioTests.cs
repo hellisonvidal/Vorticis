@@ -100,7 +100,7 @@ public class RegrasEscritorioTests
         Assert.Contains("CONTRATADA: Escritório Modelo Ltda", texto);
         Assert.Contains("R$ 1.500,00 por mês, com vencimento no dia 10", texto);
         Assert.Contains("variação do IPCA", texto);
-        Assert.Contains("por prazo indeterminado", texto);
+        Assert.Contains("pelo prazo de 12 meses", texto);                       // sem fim informado: o prazo do contrato
         Assert.Contains("comarca de Campinas", texto);
         var forn = GeradorContratos.Gerar(esc, cli with { Cliente = false, Fornecedor = true }, c with { Modelo = ModeloContrato.Fornecedor });
         Assert.StartsWith("CONTRATANTE: Escritório Modelo Ltda", forn);
@@ -293,6 +293,27 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal(2, (await svc.GravarContratoAsync(escritorio, novo with { PessoaId = forn, Modelo = ModeloContrato.Fornecedor }, adm, ct)).Valor);
         var contratos = await svc.ListarContratosAsync(escritorio, adm, ct);
         Assert.Equal([2, 1], contratos.Select(c => c.Numero));
+
+        // parcelas do contrato: gerar (uma vez), estender e renovação automática ao vencer a última
+        var c1 = contratos.Single(c => c.Numero == 1);
+        Assert.Equal((12, false), (c1.PrazoMeses, c1.RenovacaoAutomatica));
+        c1 = c1 with { Inicio = new DateOnly(2030, 1, 1), Fim = new DateOnly(2030, 12, 31), RenovacaoAutomatica = true };
+        Assert.Equal(1, (await svc.GravarContratoAsync(escritorio, c1, adm, ct)).Valor);
+        Assert.Contains("renovando-se automaticamente", GeradorContratos.Gerar(esc, pessoas.Single(p => p.Id == cli.Valor), c1));
+        Assert.Equal(12, (await svc.GerarParcelasContratoAsync(escritorio, c1.Id, false, adm, ct)).Valor);
+        Assert.Contains("Estender parcelas", Assert.Single((await svc.GerarParcelasContratoAsync(escritorio, c1.Id, false, adm, ct)).Erros));
+        Assert.Equal(12, (await svc.EstenderParcelasContratoAsync(escritorio, c1.Id, adm, ct)).Valor);
+        var ps = await svc.ParcelasDoContratoAsync(escritorio, c1.Id, adm, ct);
+        Assert.Equal(24, ps.Count);
+        Assert.Equal((new DateOnly(2031, 12, 1), new DateOnly(2031, 12, 10)), (ps[^1].Competencia, ps[^1].Vencimento));
+        Assert.Equal(new DateOnly(2031, 12, 31), (await svc.ListarContratosAsync(escritorio, adm, ct)).Single(c => c.Id == c1.Id).Fim);
+        Assert.Equal(0, (await svc.RenovarContratosAsync(escritorio, new DateOnly(2031, 12, 9), adm, ct)).Valor);   // a última ainda não venceu
+        Assert.Equal(1, (await svc.RenovarContratosAsync(escritorio, new DateOnly(2031, 12, 10), adm, ct)).Valor);
+        Assert.Equal(36, (await svc.ParcelasDoContratoAsync(escritorio, c1.Id, adm, ct)).Count);
+        Assert.Equal(0, (await svc.RenovarContratosAsync(escritorio, new DateOnly(2032, 6, 1), adm, ct)).Valor);
+        Assert.All(await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: cli.Valor),
+                   c => Assert.Equal((c1.Id, "Contrato nº 1"), (c.ContratoId!.Value, c.Descricao)));
+        Assert.Empty(await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: forn));   // não mistura clientes
 
         // cliente com movimento não é excluído
         Assert.Contains("desmarque Ativo", (await svc.ExcluirPessoaAsync(escritorio, cli.Valor, adm, ct)).Erros[0]);

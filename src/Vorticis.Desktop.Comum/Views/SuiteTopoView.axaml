@@ -11,8 +11,8 @@
           <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,6,0" VerticalAlignment="Center" IsVisible="{Binding EhFaixa}">
             <TextBlock Text="{Binding Ativo.Vm.RotuloEmpresaAtiva}" Classes="su-sub" FontSize="12" VerticalAlignment="Center" />
             <ComboBox Name="ClienteSuite130" ItemsSource="{Binding Ativo.Vm.ClientesNoSeletor}" SelectedItem="{Binding Ativo.Vm.ClienteEmFoco}" IsVisible="{Binding Ativo.Vm.UsaSeletorDeClientes}"
-                      MinWidth="170" MaxWidth="380" FontSize="12.5" MinHeight="26" Padding="10,1" CornerRadius="8" PlaceholderText="Todos os clientes"
-                      ToolTip.Tip="Cliente em foco: as telas do Escritório mostram só o que é dele. Todos os clientes mostra tudo." />
+                      MinWidth="170" MaxWidth="380" FontSize="12.5" MinHeight="26" Padding="10,1" CornerRadius="8" PlaceholderText="Escolha o cliente"
+                      ToolTip.Tip="Cliente em foco: as telas do Escritório mostram só o que é dele." />
             <ComboBox IsVisible="{Binding Ativo.Vm.UsaSeletorDeEmpresas}" ItemsSource="{Binding Ativo.Vm.EmpresasPermitidas}" SelectedItem="{Binding Ativo.Vm.EmpresaSelecionada}" MinWidth="130" MaxWidth="230"
                       MinHeight="26" Padding="8,1" FontSize="12" PlaceholderText="Nenhuma empresa" CornerRadius="8">
               <ComboBox.ItemTemplate>
@@ -112,8 +112,8 @@
           </ComboBox>
           <TextBlock Text="{Binding Ativo.Vm.RotuloEmpresaAtiva}" Classes="su-sub" FontSize="12" VerticalAlignment="Center" />
           <ComboBox Name="ClienteSuite160" ItemsSource="{Binding Ativo.Vm.ClientesNoSeletor}" SelectedItem="{Binding Ativo.Vm.ClienteEmFoco}" IsVisible="{Binding Ativo.Vm.UsaSeletorDeClientes}"
-                    MinWidth="200" MaxWidth="380" FontSize="12.5" MinHeight="26" Padding="10,1" CornerRadius="8" PlaceholderText="Todos os clientes"
-                    ToolTip.Tip="Cliente em foco: as telas do Escritório mostram só o que é dele. Todos os clientes mostra tudo." />
+                    MinWidth="200" MaxWidth="380" FontSize="12.5" MinHeight="26" Padding="10,1" CornerRadius="8" PlaceholderText="Escolha o cliente"
+                    ToolTip.Tip="Cliente em foco: as telas do Escritório mostram só o que é dele." />
           <ComboBox IsVisible="{Binding Ativo.Vm.UsaSeletorDeEmpresas}" ItemsSource="{Binding Ativo.Vm.EmpresasPermitidas}" SelectedItem="{Binding Ativo.Vm.EmpresaSelecionada}" MinWidth="160" MaxWidth="320"
                     PlaceholderText="Nenhuma empresa" CornerRadius="8">
             <ComboBox.ItemTemplate>

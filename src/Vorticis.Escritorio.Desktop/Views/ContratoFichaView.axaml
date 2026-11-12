@@ -1,62 +1,82 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.ContratoFichaView" x:DataType="vm:ContratosViewModel">
-  <!-- Ficha do contrato (janela aberta pela tela Gerador de contratos): condições, geração do texto e gravação -->
+  <!-- Ficha do contrato (janela aberta pela tela Gerador de contratos): aba Condições (com as parcelas) e aba Texto do contrato -->
   <DockPanel>
     <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
-    <c:MensagensView DockPanel.Dock="Bottom" Margin="16,0" />
-    <Border Padding="16,10">
-      <DockPanel>
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
-          <TextBlock Classes="rotulo" Text="Tipo" />
-          <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Modelos}" SelectedItem="{Binding Modelo}" HorizontalAlignment="Stretch" />
-          <TextBlock Grid.Row="1" Classes="rotulo" Text="Contratante" />
-          <ComboBox Grid.Row="1" Grid.Column="1" Name="Contratante" ItemsSource="{Binding Partes}" SelectedItem="{Binding Parte}" HorizontalAlignment="Stretch"
-                    ToolTip.Tip="Já vem com o cliente escolhido no topo da tela (Cliente:)." />
-          <TextBlock Grid.Row="2" Classes="rotulo" Text="Objeto" />
-          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Objeto}" TextWrapping="Wrap" Height="60" AcceptsReturn="False" />
-          <TextBlock Grid.Row="3" Classes="rotulo" Text="Valor" />
-          <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="110" />
-            <ComboBox ItemsSource="{x:Static vm:ContratosViewModel.Periodicidades}" SelectedItem="{Binding Periodicidade}" Width="140" />
-            <TextBlock Text="dia" VerticalAlignment="Center" />
-            <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="100" />
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="16,0,16,4" />
+    <TabControl Name="AbasContrato" Margin="12,6,12,0">
+      <TabItem Header="Condições">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10" Margin="4,8,8,8">
+            <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsEnabled="{Binding PodeEditar}">
+              <TextBlock Classes="rotulo" Text="Tipo" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Modelos}" SelectedItem="{Binding Modelo}" HorizontalAlignment="Stretch" />
+              <TextBlock Grid.Row="1" Classes="rotulo" Text="Contratante" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="1" Grid.Column="1" Name="Contratante" ItemsSource="{Binding Partes}" SelectedItem="{Binding Parte}" HorizontalAlignment="Stretch"
+                        IsEnabled="False" ToolTip.Tip="O cliente escolhido no topo da tela (Cliente:). Para outro cliente, troque no topo." />
+              <TextBlock Grid.Row="2" Classes="rotulo" Text="Objeto" VerticalAlignment="Top" Margin="0,6,0,0" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Objeto}" TextWrapping="Wrap" MinHeight="64" AcceptsReturn="False" />
+              <TextBlock Grid.Row="3" Classes="rotulo" Text="Valor" VerticalAlignment="Center" />
+              <WrapPanel Grid.Row="3" Grid.Column="1" ItemSpacing="6" LineSpacing="6">
+                <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" />
+                <ComboBox ItemsSource="{x:Static vm:ContratosViewModel.Periodicidades}" SelectedItem="{Binding Periodicidade}" Width="140" />
+                <TextBlock Text="dia" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" FormatString="0" Width="110" />
+              </WrapPanel>
+              <TextBlock Grid.Row="4" Classes="rotulo" Text="Prazo" VerticalAlignment="Center" />
+              <WrapPanel Grid.Row="4" Grid.Column="1" ItemSpacing="8" LineSpacing="6">
+                <NumericUpDown Name="PrazoMeses" Value="{Binding PrazoMeses}" Minimum="1" Maximum="120" FormatString="0" Width="110"
+                               ToolTip.Tip="Prazo do contrato em meses (padrão 12). Preenche o fim da vigência e diz quantas parcelas o contrato gera." />
+                <TextBlock Text="meses" VerticalAlignment="Center" />
+                <CheckBox Name="RenovacaoAutomatica" Content="Renovação automática" IsChecked="{Binding RenovacaoAutomatica}" Margin="12,0,0,0"
+                          ToolTip.Tip="Quando vencer a última parcela, o contrato lança sozinho as parcelas do prazo seguinte em Financeiro › Honorários." />
+              </WrapPanel>
+              <TextBlock Grid.Row="5" Classes="rotulo" Text="Vigência" VerticalAlignment="Center" />
+              <WrapPanel Grid.Row="5" Grid.Column="1" ItemSpacing="6" LineSpacing="6">
+                <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" />
+                <TextBlock Text="a" VerticalAlignment="Center" />
+                <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" />
+              </WrapPanel>
+              <TextBlock Grid.Row="6" Classes="rotulo" Text="Reajuste" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Indices}" SelectedItem="{Binding Indice}" Width="140" />
+              <TextBlock Grid.Row="7" Classes="rotulo" Text="Foro" VerticalAlignment="Center" />
+              <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Foro}" Watermark="Comarca (em branco: a do escritório)" />
+              <CheckBox Grid.Row="8" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
+            </Grid>
+
+            <Border BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="6" Padding="12,10" IsEnabled="{Binding PodeEditar}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Parcelas no Financeiro › Honorários" FontWeight="SemiBold" />
+                <WrapPanel ItemSpacing="16" LineSpacing="6">
+                  <TextBlock Text="Vencimento no" VerticalAlignment="Center" />
+                  <CheckBox Content="Competência (mês seguinte)" IsChecked="{Binding RegimeCompetencia}"
+                            ToolTip.Tip="As parcelas vencem no mês seguinte ao da competência (ex.: 03/2027 vence em abril)." />
+                  <CheckBox Content="Regime de caixa (mesmo mês)" IsChecked="{Binding RegimeCaixa}"
+                            ToolTip.Tip="As parcelas vencem no próprio mês da competência (ex.: 03/2027 vence em março)." />
+                </WrapPanel>
+                <TextBlock Name="ResumoParcelas" Text="{Binding ResumoParcelas}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TxSutil}" />
+                <WrapPanel ItemSpacing="8" LineSpacing="6">
+                  <Button Name="GerarParcelas" Content="Gerar parcelas do contrato" Classes="accent" Command="{Binding GerarParcelasCommand}"
+                          ToolTip.Tip="Grava o contrato e lança as parcelas do prazo (a partir do mês do início) em Financeiro › Honorários." />
+                  <Button Name="EstenderParcelas" Content="Estender parcelas" Command="{Binding EstenderParcelasCommand}"
+                          ToolTip.Tip="Lança mais um prazo de parcelas, a partir da competência seguinte à da última parcela, e estende a vigência." />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
-          <TextBlock Grid.Row="4" Classes="rotulo" Text="Prazo" />
-          <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <NumericUpDown Name="PrazoMeses" Value="{Binding PrazoMeses}" Minimum="0" Maximum="120" FormatString="0" Width="110"
-                           ToolTip.Tip="Prazo do contrato em meses (padrão 12). Preenche o fim da vigência; 0 deixa o prazo indeterminado." />
-            <TextBlock Text="meses (0 = indeterminado)" VerticalAlignment="Center" />
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="Texto do contrato">
+        <DockPanel Margin="4,8,8,8">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+            <Button Content="Gerar texto" Command="{Binding GerarTextoCommand}" IsEnabled="{Binding PodeEditar}"
+                    ToolTip.Tip="Monta o texto do contrato com os dados do escritório, do cliente e as condições da aba Condições." />
+            <TextBlock Text="O texto pode ser ajustado antes de gravar." VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TxSutil}" />
           </StackPanel>
-          <TextBlock Grid.Row="5" Classes="rotulo" Text="Vigência" />
-          <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="130" />
-            <TextBlock Text="a" VerticalAlignment="Center" />
-            <CalendarDatePicker SelectedDate="{Binding Fim}" Width="130" Watermark="indeterminado" />
-          </StackPanel>
-          <TextBlock Grid.Row="6" Classes="rotulo" Text="Reajuste" />
-          <ComboBox Grid.Row="6" Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Indices}" SelectedItem="{Binding Indice}" Width="130" />
-          <TextBlock Grid.Row="7" Classes="rotulo" Text="Foro" />
-          <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Foro}" Watermark="Comarca (em branco: a do escritório)" />
-          <CheckBox Grid.Row="8" Grid.Column="1" Content="Ativo" IsChecked="{Binding Ativo}" />
-          <TextBlock Grid.Row="9" Classes="rotulo" Text="Vencimento no" />
-          <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal" Spacing="16">
-            <CheckBox Content="Competência (mês seguinte)" IsChecked="{Binding RegimeCompetencia}"
-                      ToolTip.Tip="As parcelas geradas vencem no mês seguinte ao da competência (ex.: 03/2027 vence em abril)." />
-            <CheckBox Content="Regime de caixa (mesmo mês)" IsChecked="{Binding RegimeCaixa}"
-                      ToolTip.Tip="As parcelas geradas vencem no próprio mês da competência (ex.: 03/2027 vence em março)." />
-          </StackPanel>
-        </Grid>
-      
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0" IsEnabled="{Binding PodeEditar}">
-          <Button Content="Gerar texto" Command="{Binding GerarTextoCommand}"
-                  ToolTip.Tip="Monta o texto do contrato com os dados do escritório, do cliente e as condições acima." />
-          <Button Name="GerarParcelas" Content="Gerar parcelas do contrato" Command="{Binding GerarParcelasCommand}"
-                  ToolTip.Tip="Cria as parcelas do contrato (valor, periodicidade, dia e prazo, a partir do início) e lança no Financeiro › Honorários." />
-        </StackPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Texto do contrato (pode ser ajustado antes de gravar)" FontWeight="SemiBold" Margin="0,8,0,4" />
-        <TextBox Text="{Binding Texto}" AcceptsReturn="True" TextWrapping="Wrap" IsEnabled="{Binding PodeEditar}" MinHeight="160" />
-      </DockPanel>
-    </Border>
+          <TextBox Text="{Binding Texto}" AcceptsReturn="True" TextWrapping="Wrap" IsEnabled="{Binding PodeEditar}" MinHeight="200" />
+        </DockPanel>
+      </TabItem>
+    </TabControl>
   </DockPanel>
 </UserControl>

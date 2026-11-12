@@ -11,15 +11,15 @@ public static class TabelasEscritorio
 
     public static TabelaRelatorio Honorarios(IReadOnlyList<CobrancaHonorario> cobrancas, DateOnly hoje)
     {
-        var lista = cobrancas.OrderBy(c => c.Competencia).ThenBy(c => c.PessoaNome).ToList();
-        var linhas = lista.Select(c => L(false, c.Competencia.ToString("MM/yyyy"), c.PessoaNome ?? "", c.Vencimento, c.Valor,
+        var lista = cobrancas.OrderBy(c => c.Vencimento).ThenBy(c => c.PessoaNome).ToList();
+        var linhas = lista.Select(c => L(false, c.Vencimento, c.PessoaNome ?? "", c.Descricao ?? c.Tipo.Rotulo(), c.Valor,
                                          c.Vencida(hoje) ? "Vencida" : c.Situacao.Rotulo(), c.RecebidoEm, c.ValorRecebido ?? 0m)).ToList();
         var validas = lista.Where(c => c.Situacao != SituacaoCobranca.Cancelada).ToList();
         linhas.Add(L(true, "TOTAL", $"{validas.Count} cobrança(s); em aberto {Vorticis.Domain.Comum.Formato.Moeda(validas.Where(c => c.Situacao == SituacaoCobranca.Aberta).Sum(c => c.Valor))}",
                      null, validas.Sum(c => c.Valor), "", null, lista.Sum(c => c.ValorRecebido ?? 0m)));
         return new TabelaRelatorio(TituloHonorarios,
         [
-            new("Competência", LarguraCm: 2), new("Cliente"), new("Vencimento", TipoColuna.Data), new("Valor", TipoColuna.Valor), new("Situação", LarguraCm: 2),
+            new("Vencimento", TipoColuna.Data), new("Cliente"), new("Descrição"), new("Valor", TipoColuna.Valor), new("Situação", LarguraCm: 2),
             new("Recebido em", TipoColuna.Data), new("Valor recebido", TipoColuna.Valor),
         ], linhas);
     }

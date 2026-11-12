@@ -496,8 +496,8 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
     {
         if (Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa) return;
         var g = NovaGeracao();
-        var filtro = FiltroCliente?.Valor;
-        if (Contexto.ClienteEmFocoId != _foco) filtro = _foco = Contexto.ClienteEmFocoId;   // o cliente em foco na barra vira o filtro
+        // a tela é sempre do cliente escolhido no topo (Cliente:): não mistura clientes
+        var filtro = _foco = Contexto.ClienteEmFocoId ?? FiltroCliente?.Valor;
         var itens = await app.Escritorio().ListarTarefasAsync(empresa, filtro, SomenteAbertas, sessao.Id);
         var usuarios = await app.Escritorio().ListarUsuariosAsync();
         if (!EhAtual(g)) return;
@@ -506,7 +506,7 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         {
             var clienteAtual = Cliente?.Valor;
             await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(tarefa interna do escritório)");
-            await ListaPessoas.Preencher(FiltroClientes, app, empresa, sessao.Id, "Todos os clientes");
+            await ListaPessoas.Preencher(FiltroClientes, app, empresa, sessao.Id, "(escolha o cliente no topo)");
             Cliente = Clientes.FirstOrDefault(c => c.Valor == clienteAtual) ?? Clientes[0];
             FiltroCliente = FiltroClientes.FirstOrDefault(c => c.Valor == filtro) ?? FiltroClientes[0];
         }
@@ -628,7 +628,7 @@ public partial class ProtocolosViewModel(IContexto contexto) : ModuloViewModel(c
         var itens = await app.Escritorio().ListarProtocolosAsync(empresa, sessao.Id);
         if (!EhAtual(g)) return;
         if (Contexto.ClienteEmFocoId is { } foco) itens = itens.Where(p => p.PessoaId == foco).ToList();   // cliente em foco na barra
-        var atual = Cliente?.Valor ?? Contexto.ClienteEmFocoId;
+        var atual = Contexto.ClienteEmFocoId ?? Cliente?.Valor;   // o protocolo é sempre do cliente escolhido no topo
         await ListaPessoas.Preencher(Clientes, app, empresa, sessao.Id, "(escolha o cliente)");
         Cliente = Clientes.FirstOrDefault(c => c.Valor == atual) ?? Clientes[0];
         Lista.Clear();
@@ -711,7 +711,7 @@ public partial class HonorariosViewModel : ModuloViewModel
     [ObservableProperty] private Opcao<TipoCobranca?>? _tipo = Tipos[0];
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private CobrancaLinha? _selecionada;
     [ObservableProperty] private string _totais = "";
-    [ObservableProperty] private string _clienteDoFiltro = "Todos os clientes";
+    [ObservableProperty] private string _clienteDoFiltro = "";
 
     /// <summary>As cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias); Excluir age em todas.</summary>
     public IReadOnlyList<CobrancaLinha> Marcadas { get; set; } = [];
@@ -732,11 +732,14 @@ public partial class HonorariosViewModel : ModuloViewModel
         DateOnly? de = VencimentoDe is { } d ? DateOnly.FromDateTime(d) : null;
         DateOnly? ate = VencimentoAte is { } a ? DateOnly.FromDateTime(a) : null;
         if (de is { } x && ate is { } y && y < x) ate = x;
-        var itens = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, sessao.Id, vencimentoDe: de, vencimentoAte: ate);
+        // contratos com renovação automática cuja última parcela venceu lançam as parcelas do prazo seguinte
+        if (Contexto.Pode(Permissao.EscritorioHonorarios)) await app.Escritorio().RenovarContratosAsync(empresa, DateOnly.FromDateTime(DateTime.Today), sessao.Id);
+        // a tela é sempre de um cliente só: o escolhido no topo (Cliente:)
+        var foco = Contexto.ClienteEmFocoId;
+        var itens = foco is null ? [] : await app.Escritorio().ListarCobrancasAsync(empresa, null, false, sessao.Id, vencimentoDe: de, vencimentoAte: ate, pessoa: foco);
         if (!EhAtual(g)) return;
         var hoje = DateOnly.FromDateTime(DateTime.Today);
-        var foco = Contexto.ClienteEmFocoId;
-        var lista = itens.Where(c => (foco is null || c.PessoaId == foco) && (Tipo?.Valor is not { } t || c.Tipo == t) && (Situacao?.Valor switch
+        var lista = itens.Where(c => c.PessoaId == foco && (Tipo?.Valor is not { } t || c.Tipo == t) && (Situacao?.Valor switch
         {
             FiltroSituacaoCobranca.EmAberto => c.Situacao == SituacaoCobranca.Aberta,
             FiltroSituacaoCobranca.Vencidas => c.Vencida(hoje),
@@ -744,7 +747,7 @@ public partial class HonorariosViewModel : ModuloViewModel
             FiltroSituacaoCobranca.Canceladas => c.Situacao == SituacaoCobranca.Cancelada,
             _ => true,
         })).ToList();
-        ClienteDoFiltro = foco is null ? "Todos os clientes (escolha um no topo, em Cliente:, para ver só os dele)" : $"Só do cliente escolhido no topo: {lista.FirstOrDefault()?.PessoaNome ?? "sem cobranças no período"}";
+        ClienteDoFiltro = foco is null ? "Escolha o cliente no topo da tela (Cliente:)." : $"Cobranças do cliente escolhido no topo: {Contexto.ClienteEmFocoNome}";
         var id = Selecionada?.C.Id;
         Marcadas = [];
         Cobrancas.Clear();
@@ -1075,8 +1078,12 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
     [ObservableProperty] private decimal? _dia = 10;
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _fim = Ext.Dt(RegrasEscritorio.FimPeloPrazo(new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1), 12)!.Value);
-    /// <summary>Prazo do contrato em meses (padrão 12; 0 = indeterminado): preenche o fim da vigência e diz quantas parcelas o contrato gera.</summary>
+    /// <summary>Prazo do contrato em meses (padrão 12): preenche o fim da vigência e diz quantas parcelas o contrato gera.</summary>
     [ObservableProperty] private decimal? _prazoMeses = 12;
+    /// <summary>Ao vencer a última parcela, o contrato lança sozinho as parcelas do prazo seguinte.</summary>
+    [ObservableProperty] private bool _renovacaoAutomatica;
+    /// <summary>As parcelas já lançadas pelo contrato (quantas e até quando).</summary>
+    [ObservableProperty] private string _resumoParcelas = "";
     /// <summary>Vencimento das parcelas geradas: no mês seguinte ao da competência (padrão) ou no mesmo mês (regime de caixa).</summary>
     [ObservableProperty] private bool _regimeCompetencia = true;
     [ObservableProperty] private bool _regimeCaixa;
@@ -1100,8 +1107,18 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         Fim = RegrasEscritorio.FimPeloPrazo(Ext.Dia(Inicio), (int)p) is { } f ? Ext.Dt(f) : null;
     }
 
-    /// <summary>Prazo usado nas parcelas: o informado ou, sem prazo (indeterminado), 12 meses.</summary>
     private int PrazoParaParcelas => PrazoMeses is { } p and > 0 ? (int)p : 12;
+
+    private async Task AtualizarResumoParcelasAsync()
+    {
+        if (Selecionado?.C is not { } c || Contexto.App is not { } app || Contexto.Sessao is not { } sessao || Contexto.EmpresaId is not { } empresa)
+        { ResumoParcelas = "Nenhuma parcela lançada. Gerar parcelas do contrato grava o contrato e lança as parcelas do prazo."; return; }
+        var ps = await app.Escritorio().ParcelasDoContratoAsync(empresa, c.Id, sessao.Id);
+        ResumoParcelas = ps.Count == 0
+            ? "Nenhuma parcela lançada. Gerar parcelas do contrato lança as parcelas do prazo."
+            : $"{ps.Count} parcela(s) lançada(s), de {ps[0].Competencia:MM/yyyy} a {ps[^1].Competencia:MM/yyyy} (última vence em {ps[^1].Vencimento:dd/MM/yyyy}). "
+              + (c.RenovacaoAutomatica ? "Com a renovação automática, o prazo seguinte é lançado sozinho quando a última vencer." : "Estender parcelas lança o prazo seguinte.");
+    }
 
     partial void OnModeloChanged(Opcao<ModeloContrato>? value)
     {
@@ -1130,10 +1147,11 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         {
             (Objeto, Valor, Dia, Inicio, Fim, Indice, Foro, Texto, Ativo) =
                 (c.Objeto, Formato.Num(c.Valor), c.DiaVencimento, Ext.Dt(c.Inicio), c.Fim is { } f ? Ext.Dt(f) : null, c.IndiceReajuste, c.Foro ?? "", c.Texto, c.Ativo);
-            PrazoMeses = RegrasEscritorio.PrazoMeses(c.Inicio, c.Fim) ?? 0;
+            (PrazoMeses, RenovacaoAutomatica) = (c.PrazoMeses, c.RenovacaoAutomatica);
         }
         finally { _carregandoFicha = false; }
         Periodicidade = Periodicidades.First(p => p.Valor == c.Periodicidade);
+        _ = AtualizarResumoParcelasAsync();
     }
 
     public async Task CarregarAsync()
@@ -1154,7 +1172,8 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
 
     private ContratoEscritorio Montar(long id = 0, int numero = 0) =>
         new(id, numero, Parte?.Valor ?? 0, Modelo?.Valor ?? ModeloContrato.Cliente, Objeto, Formato.LerValor(Valor) ?? 0, Periodicidade?.Valor ?? Escritorio.Periodicidade.Mensal,
-            Dia is { } d ? (int)d : null, Ext.Dia(Inicio), Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, Foro, Texto, Ativo);
+            Dia is { } d ? (int)d : null, Ext.Dia(Inicio), Fim is { } f ? DateOnly.FromDateTime(f) : null, Indice, Foro, Texto, Ativo,
+            PrazoMeses: PrazoParaParcelas, RenovacaoAutomatica: RenovacaoAutomatica);
 
     [RelayCommand]
     private void Novo()
@@ -1163,7 +1182,7 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         // o contratante já vem com o cliente escolhido no topo (Cliente:)
         if (Partes.FirstOrDefault(p => p.Valor is not null && p.Valor == Contexto.ClienteEmFocoId) is { } foco) Parte = foco;
         AbrirFichaNova();
-        Mensagem = "Confira o contratante, preencha as condições e clique em Gerar texto.";
+        Mensagem = "Preencha as condições; Gerar parcelas do contrato grava e lança as parcelas, e a aba Texto do contrato gera o texto.";
     }
 
     private void LimparFormulario()
@@ -1171,34 +1190,71 @@ public partial class ContratosViewModel(IContexto contexto) : ModuloComFichaView
         Selecionado = null;
         Modelo = Modelos[0];
         Objeto = GeradorContratos.ObjetoPadrao(ModeloContrato.Cliente);
-        (Valor, Dia, Indice, Foro, Texto, Ativo) = ("", 10, "IPCA", "", "", true);
+        (Valor, Dia, Indice, Foro, Texto, Ativo, RenovacaoAutomatica) = ("", 10, "IPCA", "", "", true, false);
         Inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         PrazoMeses = 12;
         AjustarFim();
+        ResumoParcelas = "Nenhuma parcela lançada. Gerar parcelas do contrato grava o contrato e lança as parcelas do prazo.";
         Periodicidade = Periodicidades[0];
     }
 
     /// <summary>
-    /// Gera as parcelas do contrato (valor, periodicidade, dia e prazo, a partir do mês do início) e lança no Financeiro › Honorários, depois
-    /// de confirmar. Recusa se o contratante já tem honorário em alguma das competências.
+    /// Gerar parcelas do contrato: grava o contrato (com o texto, se ainda não houver) e lança as parcelas do prazo (valor, periodicidade e
+    /// dia, a partir do mês do início) em Financeiro › Honorários, depois de confirmar. Recusa se o contrato já tem parcelas.
     /// </summary>
     [RelayCommand]
     private Task GerarParcelasAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (Parte?.Valor is null) { Erros.Add("Escolha o contratante."); return; }
-        var c = Montar(Selecionado?.C.Id ?? 0, Selecionado?.C.Numero ?? 0) with { Texto = "-" };
-        if (c.Valor <= 0) { Erros.Add("Informe o valor do contrato."); return; }
-        if (c.DiaVencimento is not (>= 1 and <= 31)) { Erros.Add("Informe o dia do vencimento (1 a 31)."); return; }
-        var parcelas = RegrasEscritorio.ParcelasDoContrato(c, PrazoParaParcelas, RegimeCompetencia);
-        var texto = parcelas.Count == 1
-            ? $"Lançar 1 cobrança de {Formato.Moeda(parcelas[0].Valor)} ({parcelas[0].Competencia:MM/yyyy}, vencimento {parcelas[0].Vencimento:dd/MM/yyyy}) em Financeiro › Honorários?"
-            : $"Lançar {parcelas.Count} parcelas de {Formato.Moeda(parcelas[0].Valor)} (total {Formato.Moeda(parcelas.Sum(p => p.Valor))}), de {parcelas[0].Competencia:MM/yyyy} a "
-              + $"{parcelas[^1].Competencia:MM/yyyy}, vencendo de {parcelas[0].Vencimento:dd/MM/yyyy} a {parcelas[^1].Vencimento:dd/MM/yyyy}, em Financeiro › Honorários?";
-        if (!await Contexto.ConfirmarAsync("Gerar parcelas do contrato", texto, "Gerar parcelas", "Cancelar")) return;
-        var r = await app.Escritorio().LancarCobrancasAsync(empresa, parcelas, usuario);
+        if (_pessoas.FirstOrDefault(p => p.Id == Parte?.Valor) is not { } pessoa) { Erros.Add("Escolha o cliente no topo da tela (Cliente:)."); return; }
+        var previa = Montar(Selecionado?.C.Id ?? 0, Selecionado?.C.Numero ?? 0) with { Texto = "-" };
+        if (previa.Valor <= 0) { Erros.Add("Informe o valor do contrato."); return; }
+        if (previa.DiaVencimento is not (>= 1 and <= 31)) { Erros.Add("Informe o dia do vencimento (1 a 31)."); return; }
+        var parcelas = RegrasEscritorio.ParcelasDoContrato(previa, PrazoParaParcelas, RegimeCompetencia);
+        if (!await Contexto.ConfirmarAsync("Gerar parcelas do contrato", TextoConfirmacao(parcelas), "Gerar parcelas", "Cancelar")) return;
+        if (string.IsNullOrWhiteSpace(Texto)) Texto = GeradorContratos.Gerar(await app.Escritorio().DadosEscritorioAsync(empresa), pessoa, previa);
+        var g = await app.Escritorio().GravarContratoAsync(empresa, Montar(Selecionado?.C.Id ?? 0), usuario);
+        if (!g.Sucesso) { MostrarResultado(g, ""); return; }
+        await RecarregarMantendoFichaAsync(g.Valor);
+        if (Selecionado?.C is not { } c) return;
+        var r = await app.Escritorio().GerarParcelasContratoAsync(empresa, c.Id, RegimeCompetencia, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
-        Mensagem = $"{r.Valor} parcela(s) lançada(s) em Financeiro › Honorários.";
+        await AtualizarResumoParcelasAsync();
+        Mensagem = $"Contrato nº {c.Numero} gravado: {r.Valor} parcela(s) lançada(s) em Financeiro › Honorários.";
     }, Permissao.EscritorioHonorarios);
+
+    /// <summary>Estender parcelas: lança mais um prazo, a partir da competência seguinte à da última parcela, e estende a vigência.</summary>
+    [RelayCommand]
+    private Task EstenderParcelasAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionado?.C is not { } c) { Erros.Add("Grave o contrato e gere as parcelas antes de estender."); return; }
+        var ps = await app.Escritorio().ParcelasDoContratoAsync(empresa, c.Id, usuario);
+        if (ps.Count == 0) { Erros.Add("O contrato ainda não tem parcelas: use Gerar parcelas do contrato."); return; }
+        var proximas = RegrasEscritorio.ProximasParcelas(c with { PrazoMeses = PrazoParaParcelas }, ps[^1]);
+        if (!await Contexto.ConfirmarAsync("Estender parcelas do contrato", TextoConfirmacao(proximas), "Estender", "Cancelar")) return;
+        if (PrazoParaParcelas != c.PrazoMeses)
+        {
+            var g = await app.Escritorio().GravarContratoAsync(empresa, Montar(c.Id), usuario);
+            if (!g.Sucesso) { MostrarResultado(g, ""); return; }
+        }
+        var r = await app.Escritorio().EstenderParcelasContratoAsync(empresa, c.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await RecarregarMantendoFichaAsync(c.Numero);
+        Mensagem = $"{r.Valor} parcela(s) a mais lançada(s) em Financeiro › Honorários; a vigência foi estendida.";
+    }, Permissao.EscritorioHonorarios);
+
+    private static string TextoConfirmacao(IReadOnlyList<CobrancaHonorario> parcelas) => parcelas.Count == 1
+        ? $"Lançar 1 cobrança de {Formato.Moeda(parcelas[0].Valor)} ({parcelas[0].Competencia:MM/yyyy}, vencimento {parcelas[0].Vencimento:dd/MM/yyyy}) em Financeiro › Honorários?"
+        : $"Lançar {parcelas.Count} parcelas de {Formato.Moeda(parcelas[0].Valor)} (total {Formato.Moeda(parcelas.Sum(p => p.Valor))}), de {parcelas[0].Competencia:MM/yyyy} a "
+          + $"{parcelas[^1].Competencia:MM/yyyy}, vencendo de {parcelas[0].Vencimento:dd/MM/yyyy} a {parcelas[^1].Vencimento:dd/MM/yyyy}, em Financeiro › Honorários?";
+
+    /// <summary>Recarrega a lista e reabre na ficha o contrato de número <paramref name="numero"/> (sem fechar a janela).</summary>
+    private async Task RecarregarMantendoFichaAsync(int numero)
+    {
+        Selecionado = null;
+        await CarregarAsync();
+        Selecionado = Lista.FirstOrDefault(l => l.C.Numero == numero);
+        await AtualizarResumoParcelasAsync();
+    }
 
     [RelayCommand]
     private Task GerarTextoAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -1294,7 +1350,7 @@ public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) :
 
     public ObservableCollection<LinhaRelatorioEscritorio> Linhas { get; } = [];
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
-    [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 1);
+    [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 31);
 
     public abstract string Titulo { get; }
     protected override string TituloRelatorio => Titulo;
@@ -1313,7 +1369,7 @@ public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) :
     }
 }
 
-/// <summary>Relatórios › Honorários › Relatório de honorários (cobranças das competências do período).</summary>
+/// <summary>Relatórios › Relatório de honorários: as cobranças do cliente escolhido no topo com vencimento no período (datas).</summary>
 public sealed partial class RelHonorariosViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
 {
     public override string Titulo => TabelasEscritorio.TituloHonorarios;
@@ -1322,11 +1378,13 @@ public sealed partial class RelHonorariosViewModel(IContexto contexto) : Relator
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        var ini = RegrasEscritorio.Mes(Ext.Dia(Inicio));
-        var fim = RegrasEscritorio.Mes(Ext.Dia(Fim));
-        var cobrancas = await app.Escritorio().ListarCobrancasAsync(empresa, ini, false, usuario, ate: fim);
-        Exibir(TabelasEscritorio.Honorarios(cobrancas, DateOnly.FromDateTime(DateTime.Today)), $"Competências de {ini:MM/yyyy} a {fim:MM/yyyy}");
-        Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança nas competências escolhidas." : null;
+        if (Contexto.ClienteEmFocoId is not { } cliente) { Erros.Add("Escolha o cliente no topo da tela (Cliente:)."); return; }
+        var ini = Ext.Dia(Inicio);
+        var fim = Ext.Dia(Fim);
+        if (fim < ini) { Erros.Add("A data final não pode ser anterior à inicial."); return; }
+        var cobrancas = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, usuario, vencimentoDe: ini, vencimentoAte: fim, pessoa: cliente);
+        Exibir(TabelasEscritorio.Honorarios(cobrancas, DateOnly.FromDateTime(DateTime.Today)), $"Cliente: {Contexto.ClienteEmFocoNome} · vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}");
+        Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança do cliente com vencimento no período." : null;
     }, Permissao.EscritorioRelatorios);
 }
 

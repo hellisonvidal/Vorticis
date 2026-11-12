@@ -273,15 +273,17 @@ public sealed class ServicoEscritorio
         // à vista: a cobrança já entra recebida (data do pagamento = vencimento)
         var n = await _db.ExecutarAsync("""
             INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento, tipo, descricao, parcela, parcelas,
-                                                       situacao, recebido_em, valor_recebido, observacao_baixa)
+                                                       situacao, recebido_em, valor_recebido, observacao_baixa, contrato_id)
             SELECT @e, @p, x.c, x.v, x.venc, x.t, NULLIF(x.d, ''), x.n, x.tot,
-                   CASE WHEN x.pago IS NULL THEN 'ABERTA' ELSE 'RECEBIDA' END, x.pago, CASE WHEN x.pago IS NULL THEN NULL ELSE x.v END, NULLIF(x.o, '')
+                   CASE WHEN x.pago IS NULL THEN 'ABERTA' ELSE 'RECEBIDA' END, x.pago, CASE WHEN x.pago IS NULL THEN NULL ELSE x.v END, NULLIF(x.o, ''),
+                   (SELECT k.id FROM escritorio.contrato k WHERE k.id = x.k AND k.empresa_id = @e AND k.pessoa_id = @p)
               FROM unnest(@comp::date[], @val::numeric[], @vencs::date[], @tipos::varchar[], @descs::varchar[], @ns::smallint[], @tots::smallint[],
-                          @pagos::date[], @obs::varchar[])
-                   AS x(c, v, venc, t, d, n, tot, pago, o)
+                          @pagos::date[], @obs::varchar[], @ks::bigint[])
+                   AS x(c, v, venc, t, d, n, tot, pago, o, k)
             """, ct, ("e", escritorio), ("p", novas[0].PessoaId),
             ("pagos", novas.Select(x => x.Situacao == SituacaoCobranca.Recebida ? x.RecebidoEm : null).ToArray()),
             ("obs", novas.Select(x => x.Situacao == SituacaoCobranca.Recebida ? x.ObservacaoBaixa ?? "" : "").ToArray()),
+            ("ks", novas.Select(x => x.ContratoId).ToArray()),
             ("comp", novas.Select(x => RegrasEscritorio.Mes(x.Competencia)).ToArray()), ("val", novas.Select(x => x.Valor).ToArray()),
             ("vencs", novas.Select(x => x.Vencimento).ToArray()), ("tipos", novas.Select(x => x.Tipo.Sql()).ToArray()),
             ("descs", novas.Select(x => x.Descricao?.Trim() ?? "").ToArray()), ("ns", novas.Select(x => (short?)x.Parcela).ToArray()),
@@ -333,22 +335,23 @@ public sealed class ServicoEscritorio
     /// <paramref name="vencimentoDe"/> e <paramref name="vencimentoAte"/> (datas).
     /// </summary>
     public async Task<List<CobrancaHonorario>> ListarCobrancasAsync(long escritorio, DateOnly? competencia, bool somenteAbertas, long usuarioId, CancellationToken ct = default,
-                                                                    DateOnly? ate = null, DateOnly? vencimentoDe = null, DateOnly? vencimentoAte = null)
+                                                                    DateOnly? ate = null, DateOnly? vencimentoDe = null, DateOnly? vencimentoAte = null, long? pessoa = null)
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
                 SELECT c.id, c.pessoa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, p.nome,
-                       c.tipo, c.descricao, c.parcela, c.parcelas, c.observacao_baixa
+                       c.tipo, c.descricao, c.parcela, c.parcelas, c.observacao_baixa, c.contrato_id
                   FROM escritorio.honorario_cobranca c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE p.empresa_id = @e AND (@c::date IS NULL OR (CASE WHEN @ate::date IS NULL THEN c.competencia = @c ELSE c.competencia BETWEEN @c AND @ate END))
                    AND (NOT @a OR c.situacao = 'ABERTA')
                    AND (@vd::date IS NULL OR c.vencimento >= @vd) AND (@va::date IS NULL OR c.vencimento <= @va)
+                   AND (@pes::bigint IS NULL OR c.pessoa_id = @pes)
                  ORDER BY c.vencimento, p.nome
                 """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
                                                 RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8),
                                                 RegrasEscritorio.TipoCobrancaDe(r.GetString(9)), r.Texto(10), r.IsDBNull(11) ? null : r.GetInt16(11),
-                                                r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13)),
+                                                r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13), r.IsDBNull(14) ? null : r.GetInt64(14)),
                 ct, ("e", escritorio), ("c", competencia is { } d ? RegrasEscritorio.Mes(d) : null), ("ate", ate is { } x ? RegrasEscritorio.Mes(x) : null), ("a", somenteAbertas),
-                ("vd", vencimentoDe), ("va", vencimentoAte))
+                ("vd", vencimentoDe), ("va", vencimentoAte), ("pes", pessoa))
             : [];
 
     /// <summary>Gera as cobranças da competência para todos os contratos de honorários vigentes; devolve quantas foram geradas.</summary>
@@ -443,12 +446,13 @@ public sealed class ServicoEscritorio
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
                 SELECT c.id, c.numero, c.pessoa_id, c.modelo, c.objeto, c.valor, c.periodicidade, c.dia_vencimento, c.inicio, c.fim, c.indice_reajuste, c.foro, c.texto,
-                       c.situacao = 'ATIVO', p.nome
+                       c.situacao = 'ATIVO', p.nome, c.prazo_meses, c.renovacao_automatica
                   FROM escritorio.contrato c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE c.empresa_id = @e ORDER BY c.numero DESC
                 """, r => new ContratoEscritorio(r.GetInt64(0), r.GetInt32(1), r.GetInt64(2), r.GetString(3) == "CLIENTE" ? ModeloContrato.Cliente : ModeloContrato.Fornecedor,
                                                  r.GetString(4), r.GetDecimal(5), RegrasEscritorio.PeriodicidadeDe(r.GetString(6)), r.IsDBNull(7) ? null : r.GetInt16(7),
-                                                 r.GetFieldValue<DateOnly>(8), r.Data(9), r.GetString(10), r.Texto(11), r.GetString(12), r.GetBoolean(13), r.GetString(14)),
+                                                 r.GetFieldValue<DateOnly>(8), r.Data(9), r.GetString(10), r.Texto(11), r.GetString(12), r.GetBoolean(13), r.GetString(14),
+                                                 r.GetInt16(15), r.GetBoolean(16)),
                 ct, ("e", escritorio))
             : [];
 
@@ -467,16 +471,19 @@ public sealed class ServicoEscritorio
             ("e", escritorio), ("id", c.Id), ("p", c.PessoaId), ("m", c.Modelo == ModeloContrato.Cliente ? "CLIENTE" : "FORNECEDOR"), ("obj", c.Objeto.Trim()), ("v", c.Valor),
             ("per", c.Periodicidade.Sql()), ("dia", c.DiaVencimento is { } d ? (short)d : null), ("i", c.Inicio), ("f", c.Fim), ("ind", c.IndiceReajuste),
             ("foro", string.IsNullOrWhiteSpace(c.Foro) ? null : c.Foro.Trim()), ("txt", c.Texto), ("sit", c.Ativo ? "ATIVO" : "ENCERRADO"),
+            ("prazo", (short)Math.Clamp(c.PrazoMeses, 1, 120)), ("renova", c.RenovacaoAutomatica),
         ];
         return await Tentar(async () => c.Id == 0
             ? await _db.EscalarAsync<int>("""
-                INSERT INTO escritorio.contrato (empresa_id, numero, pessoa_id, modelo, objeto, valor, periodicidade, dia_vencimento, inicio, fim, indice_reajuste, foro, texto, situacao)
-                VALUES (@e, (SELECT COALESCE(MAX(numero), 0) + 1 FROM escritorio.contrato WHERE empresa_id = @e), @p, @m, @obj, @v, @per, @dia, @i, @f, @ind, @foro, @txt, @sit)
+                INSERT INTO escritorio.contrato (empresa_id, numero, pessoa_id, modelo, objeto, valor, periodicidade, dia_vencimento, inicio, fim, indice_reajuste, foro, texto, situacao,
+                                                 prazo_meses, renovacao_automatica)
+                VALUES (@e, (SELECT COALESCE(MAX(numero), 0) + 1 FROM escritorio.contrato WHERE empresa_id = @e), @p, @m, @obj, @v, @per, @dia, @i, @f, @ind, @foro, @txt, @sit,
+                        @prazo, @renova)
                 RETURNING numero
                 """, ct, campos)
             : await _db.EscalarAsync<int?>("""
                 UPDATE escritorio.contrato SET pessoa_id = @p, modelo = @m, objeto = @obj, valor = @v, periodicidade = @per, dia_vencimento = @dia, inicio = @i, fim = @f,
-                       indice_reajuste = @ind, foro = @foro, texto = @txt, situacao = @sit
+                       indice_reajuste = @ind, foro = @foro, texto = @txt, situacao = @sit, prazo_meses = @prazo, renovacao_automatica = @renova
                  WHERE id = @id AND empresa_id = @e RETURNING numero
                 """, ct, campos) ?? throw new ViolacaoRegraException("Contrato não encontrado."));
     }
@@ -486,6 +493,72 @@ public sealed class ServicoEscritorio
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         await _db.ExecutarAsync("DELETE FROM escritorio.contrato WHERE id = @id AND empresa_id = @e", ct, ("id", id), ("e", escritorio));
         return Resultado.Ok();
+    }
+
+    // ------------------------------------------------------------------ parcelas do contrato
+
+    private async Task<ContratoEscritorio?> ContratoAsync(long escritorio, long contratoId, long usuarioId, CancellationToken ct)
+        => (await ListarContratosAsync(escritorio, usuarioId, ct)).FirstOrDefault(c => c.Id == contratoId);
+
+    /// <summary>Cobranças já lançadas pelo contrato (não canceladas), da primeira à última competência.</summary>
+    public async Task<List<CobrancaHonorario>> ParcelasDoContratoAsync(long escritorio, long contratoId, long usuarioId, CancellationToken ct = default)
+        => await PodeVerAsync(usuarioId, escritorio, ct)
+            ? await _db.ListarAsync("""
+                SELECT id, pessoa_id, competencia, valor, vencimento, situacao, parcela, parcelas
+                  FROM escritorio.honorario_cobranca
+                 WHERE empresa_id = @e AND contrato_id = @k AND situacao <> 'CANCELADA' ORDER BY competencia, id
+                """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
+                                                RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), null, null, null, TipoCobranca.Honorario, null,
+                                                r.IsDBNull(6) ? null : r.GetInt16(6), r.IsDBNull(7) ? null : r.GetInt16(7), null, contratoId),
+                ct, ("e", escritorio), ("k", contratoId))
+            : [];
+
+    /// <summary>
+    /// Gerar parcelas do contrato: lança as parcelas do prazo a partir do mês do início, ligadas ao contrato. Recusa se o contrato já tem
+    /// parcelas (use Estender parcelas) ou se o cliente já tem honorário em alguma das competências.
+    /// </summary>
+    public async Task<Resultado<int>> GerarParcelasContratoAsync(long escritorio, long contratoId, bool vencimentoNoMesSeguinte, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        if (await ContratoAsync(escritorio, contratoId, usuarioId, ct) is not { } c) return Resultado<int>.Falha("Grave o contrato antes de gerar as parcelas.");
+        if ((await ParcelasDoContratoAsync(escritorio, contratoId, usuarioId, ct)).Count > 0)
+            return Resultado<int>.Falha("O contrato já tem parcelas lançadas: use Estender parcelas para lançar o prazo seguinte.");
+        return await LancarCobrancasAsync(escritorio, RegrasEscritorio.ParcelasDoContrato(c, c.PrazoMeses, vencimentoNoMesSeguinte), usuarioId, ct);
+    }
+
+    /// <summary>
+    /// Estender parcelas: lança mais um prazo do contrato, a partir da competência seguinte à da última parcela (mesmo vencimento), e
+    /// estende o fim da vigência até o fim desse prazo.
+    /// </summary>
+    public async Task<Resultado<int>> EstenderParcelasContratoAsync(long escritorio, long contratoId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        if (await ContratoAsync(escritorio, contratoId, usuarioId, ct) is not { } c) return Resultado<int>.Falha("Contrato não encontrado.");
+        if ((await ParcelasDoContratoAsync(escritorio, contratoId, usuarioId, ct)).LastOrDefault() is not { } ultima)
+            return Resultado<int>.Falha("O contrato ainda não tem parcelas: use Gerar parcelas do contrato.");
+        var novas = RegrasEscritorio.ProximasParcelas(c, ultima);
+        var r = await LancarCobrancasAsync(escritorio, novas, usuarioId, ct);
+        if (!r.Sucesso) return r;
+        var fim = RegrasEscritorio.Mes(novas[^1].Competencia).AddMonths(RegrasEscritorio.PassoMeses(c.Periodicidade)).AddDays(-1);
+        await _db.ExecutarAsync("UPDATE escritorio.contrato SET fim = GREATEST(COALESCE(fim, @f), @f) WHERE id = @id AND empresa_id = @e",
+                                ct, ("f", fim), ("id", contratoId), ("e", escritorio));
+        return r;
+    }
+
+    /// <summary>
+    /// Renovação automática: para cada contrato ativo com a renovação marcada cuja última parcela já venceu (até <paramref name="hoje"/>),
+    /// lança as parcelas do prazo seguinte. Devolve quantos contratos foram renovados.
+    /// </summary>
+    public async Task<Resultado<int>> RenovarContratosAsync(long escritorio, DateOnly hoje, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        var renovados = 0;
+        foreach (var c in (await ListarContratosAsync(escritorio, usuarioId, ct)).Where(c => c.Ativo && c.RenovacaoAutomatica))
+        {
+            if ((await ParcelasDoContratoAsync(escritorio, c.Id, usuarioId, ct)).LastOrDefault() is not { } ultima || ultima.Vencimento > hoje) continue;
+            if ((await EstenderParcelasContratoAsync(escritorio, c.Id, usuarioId, ct)).Sucesso) renovados++;
+        }
+        return Resultado<int>.Ok(renovados);
     }
 
     // ------------------------------------------------------------------ carteira

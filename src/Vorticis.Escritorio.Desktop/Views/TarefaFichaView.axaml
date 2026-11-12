@@ -16,7 +16,7 @@
         <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
         <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" IsEnabled="{Binding PodeEditar}">
           <TextBlock Classes="rotulo" Text="Cliente" />
-          <ComboBox Grid.Column="1" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" HorizontalAlignment="Stretch" />
+          <ComboBox Grid.Column="1" ItemsSource="{Binding Clientes}" SelectedItem="{Binding Cliente}" HorizontalAlignment="Stretch" IsEnabled="False" ToolTip.Tip="O cliente escolhido no topo da tela (Cliente:). Para outro cliente, troque no topo." />
           <TextBlock Grid.Row="1" Classes="rotulo" Text="Tarefa" />
           <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Titulo}" MaxLength="150" />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Vencimento" />

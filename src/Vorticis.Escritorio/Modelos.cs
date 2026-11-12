@@ -48,7 +48,7 @@ public sealed record ContratoHonorario(long Id, long PessoaId, decimal Valor, in
 
 public sealed record CobrancaHonorario(long Id, long PessoaId, DateOnly Competencia, decimal Valor, DateOnly Vencimento, SituacaoCobranca Situacao,
                                        DateOnly? RecebidoEm, decimal? ValorRecebido, string? PessoaNome = null, TipoCobranca Tipo = TipoCobranca.Honorario,
-                                       string? Descricao = null, int? Parcela = null, int? Parcelas = null, string? ObservacaoBaixa = null)
+                                       string? Descricao = null, int? Parcela = null, int? Parcelas = null, string? ObservacaoBaixa = null, long? ContratoId = null)
 {
     public string ParcelaTexto => Parcela is { } n && Parcelas is { } t ? $"{n}/{t}" : "";
     public bool Vencida(DateOnly hoje) => Situacao == SituacaoCobranca.Aberta && Vencimento < hoje;
@@ -67,7 +67,7 @@ public enum Periodicidade { Mensal, Anual, Unico }
 /// <summary>Contrato gerado pelo escritório para um cliente (prestação de serviços contábeis) ou um fornecedor.</summary>
 public sealed record ContratoEscritorio(long Id, int Numero, long PessoaId, ModeloContrato Modelo, string Objeto, decimal Valor, Periodicidade Periodicidade,
                                         int? DiaVencimento, DateOnly Inicio, DateOnly? Fim, string IndiceReajuste, string? Foro, string Texto, bool Ativo = true,
-                                        string? PessoaNome = null);
+                                        string? PessoaNome = null, int PrazoMeses = 12, bool RenovacaoAutomatica = false);
 
 /// <summary>Dados do escritório (a empresa ativa no módulo) que entram no contrato.</summary>
 public sealed record DadosEscritorio(string RazaoSocial, string Cnpj, string? Endereco, string? Municipio, string? Uf);
@@ -105,7 +105,8 @@ public static class GeradorContratos
         var (contratante, contratada) = c.Modelo == ModeloContrato.Cliente ? (outra, esc) : (esc, outra);
         var valor = c.Valor.ToString("N2", Vorticis.Domain.Comum.Formato.PtBr);
         var venc = c.DiaVencimento is { } dia && c.Periodicidade != Periodicidade.Unico ? $", com vencimento no dia {dia}" : "";
-        var vigencia = c.Fim is { } f ? $"de {c.Inicio:dd/MM/yyyy} a {f:dd/MM/yyyy}" : $"a partir de {c.Inicio:dd/MM/yyyy}, por prazo indeterminado";
+        var vigencia = (c.Fim is { } f ? $"de {c.Inicio:dd/MM/yyyy} a {f:dd/MM/yyyy}" : $"a partir de {c.Inicio:dd/MM/yyyy}, pelo prazo de {c.PrazoMeses} meses")
+                       + (c.RenovacaoAutomatica ? $", renovando-se automaticamente por iguais períodos de {c.PrazoMeses} meses, salvo manifestação em contrário de qualquer das partes" : "");
         var reajuste = c.IndiceReajuste == "NENHUM" ? "O valor não terá reajuste automático; eventual alteração será acordada por escrito entre as partes."
             : c.IndiceReajuste == "SALARIO" ? "O valor será reajustado anualmente na mesma proporção do salário mínimo nacional."
             : $"O valor será reajustado anualmente pela variação do {c.IndiceReajuste} acumulada nos últimos 12 meses.";
@@ -235,7 +236,7 @@ public static class RegrasEscritorio
     /// Parcelas do contrato para o Financeiro › Honorários: a partir do mês do início, durante o prazo (meses): mensal, uma por mês; anual,
     /// uma a cada 12 meses; parcela única, uma só. O dia do vencimento é o do contrato, no mês seguinte (competência) ou no mesmo mês (caixa).
     /// </summary>
-    public static IReadOnlyList<CobrancaHonorario> ParcelasDoContrato(ContratoEscritorio c, int prazoMeses, bool vencimentoNoMesSeguinte)
+    public static IReadOnlyList<CobrancaHonorario> ParcelasDoContrato(ContratoEscritorio c, int prazoMeses, bool vencimentoNoMesSeguinte, DateOnly? aPartirDe = null)
     {
         var prazo = Math.Max(1, prazoMeses);
         var (freq, n) = c.Periodicidade switch
@@ -244,8 +245,22 @@ public static class RegrasEscritorio
             Periodicidade.Unico => (FrequenciaParcelas.Unica, 1),
             _ => (FrequenciaParcelas.Mensal, prazo),
         };
-        return Parcelas(c.PessoaId, c.Inicio, c.Valor, c.DiaVencimento ?? 10, freq, n, TipoCobranca.Honorario,
-                        c.Numero > 0 ? $"Contrato nº {c.Numero}" : "Contrato", vencimentoNoMesSeguinte);
+        return Parcelas(c.PessoaId, aPartirDe ?? c.Inicio, c.Valor, c.DiaVencimento ?? 10, freq, n, TipoCobranca.Honorario,
+                        c.Numero > 0 ? $"Contrato nº {c.Numero}" : "Contrato", vencimentoNoMesSeguinte)
+               .Select(p => p with { ContratoId = c.Id > 0 ? c.Id : null }).ToList();
+    }
+
+    /// <summary>Meses entre uma parcela e a seguinte, pela periodicidade do contrato.</summary>
+    public static int PassoMeses(Periodicidade p) => p == Periodicidade.Anual ? 12 : 1;
+
+    /// <summary>
+    /// Próximo bloco de parcelas do contrato (Estender parcelas e renovação automática): começa na competência seguinte à da última parcela
+    /// e mantém o vencimento da última (mês seguinte ou mesmo mês da competência).
+    /// </summary>
+    public static IReadOnlyList<CobrancaHonorario> ProximasParcelas(ContratoEscritorio c, CobrancaHonorario ultima)
+    {
+        var noMesSeguinte = Mes(ultima.Vencimento) > Mes(ultima.Competencia);
+        return ParcelasDoContrato(c, c.PrazoMeses, noMesSeguinte, Mes(ultima.Competencia).AddMonths(PassoMeses(c.Periodicidade)));
     }
 
     /// <summary>Prazo em meses entre o início e o fim do contrato (fim no último dia do prazo); null se indeterminado.</summary>

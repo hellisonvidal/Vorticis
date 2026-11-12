@@ -76,13 +76,14 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 await Calma(5);
                 if (pasta is not null) { wc.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wc.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_clientes_0001.png")); }
 
-                // seletor de clientes da barra: os clientes do cadastro (não só o escritório), "Todos os clientes" no alto
+                // seletor de clientes da barra: os clientes do cadastro (não só o escritório), sempre um escolhido (sem "todos os clientes")
                 var esc = Vorticis.Escritorio.ServicosEscritorio.De(vm.App!);
                 var novo = await esc.GravarPessoaAsync(1, new Vorticis.Escritorio.PessoaEscritorio(0, 2, true, false, "Padaria Pão Quente Ltda", null), adm, ct);
                 Assert.True(novo.Sucesso, string.Join("; ", novo.Erros));
                 await vm.RecarregarClientesSeletorAsync();
                 Assert.True(vm.UsaSeletorDeClientes);
-                Assert.Equal(["Todos os clientes", "0001 – Contabilidade Exemplo Ltda", "0002 – Padaria Pão Quente Ltda"], vm.ClientesNoSeletor.Select(c => c.ToString()));
+                Assert.Equal(["0001 – Contabilidade Exemplo Ltda", "0002 – Padaria Pão Quente Ltda"], vm.ClientesNoSeletor.Select(c => c.ToString()));
+                Assert.Equal(primeiro.P.Id, vm.ClienteEmFocoId);                                         // o escritório (0001) vem escolhido
                 Assert.Equal(1L, vm.EmpresaId);                                                         // a empresa de trabalho continua o escritório
                 await Calma(5);
                 Assert.True(janela.FindControl<ComboBox>("ClienteCabecalho")!.IsVisible);
@@ -95,14 +96,14 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Tarefas);
                 await Calma(30);
                 var tar = Assert.IsType<E.ViewModels.TarefasViewModel>(vm.Conteudo);
-                Assert.Equal(2, tar.Lista.Count);
+                Assert.Equal(["Balancete do escritório"], tar.Lista.Select(t => t.T.Titulo));           // nunca mistura clientes
                 vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == novo.Valor);
                 await Calma(30);
                 Assert.Equal(["DAS da padaria"], tar.Lista.Select(t => t.T.Titulo));
                 if (pasta is not null) { janela.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); janela.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_seletor_clientes.png")); }
                 vm.ClienteEmFoco = vm.ClientesNoSeletor[0];
                 await Calma(30);
-                Assert.Equal(2, tar.Lista.Count);
+                Assert.Equal(["Balancete do escritório"], tar.Lista.Select(t => t.T.Titulo));
 
                 // Clientes › aba Contrato: valor, dia do vencimento e periodicidade do honorário gravados com o cliente
                 vm.AbrirCommand.Execute(E.ViewModels.EscritorioTelas.Clientes);
@@ -158,14 +159,14 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 await Calma(20);
                 Assert.False(hon.Lancamento.FichaAberta, string.Join("; ", hon.Lancamento.Erros));
 
-                // uma segunda cobrança avulsa sem fechar a tela, escolhendo o cliente e digitando a competência na janela
-                vm.ClienteEmFoco = vm.ClientesNoSeletor.Single(c => c.Id == 0);
-                await Calma(20);
+                // uma segunda cobrança avulsa sem fechar a tela, digitando a competência na janela; o cliente é o do topo e não pode ser trocado
                 await hon.CobrancaAvulsaCommand.ExecuteAsync(null);
                 await Calma(10);
                 Assert.True(hon.Lancamento.FichaAberta);
                 var w2 = FichaPopup.Aberta(janela.JanelaDa(hon)!.GetLogicalDescendants().OfType<E.Views.LancamentoCobrancaHost>().Single())!;
-                w2.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ClienteCobranca").SelectedItem = hon.Lancamento.Clientes.Single(c => c.Valor == novo.Valor);
+                var comboCliente = w2.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ClienteCobranca");
+                Assert.False(comboCliente.IsEnabled);
+                Assert.Equal(novo.Valor, hon.Lancamento.Cliente?.Valor);
                 w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "DescricaoCobranca").Text = "Alteração contratual";
                 w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "CompetenciaCobranca").Text = "05/2027";
                 w2.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Name == "ValorCobranca").Text = "200,00";
@@ -234,25 +235,41 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 Assert.Equal(12m, ctr.PrazoMeses);
                 ctr.Inicio = new DateTime(2027, 7, 1);
                 Assert.Equal(new DateTime(2028, 6, 30), ctr.Fim);
-                (ctr.Valor, ctr.Dia, ctr.RegimeCaixa) = ("300,00", 31, true);
+                (ctr.Valor, ctr.Dia, ctr.RegimeCaixa, ctr.RenovacaoAutomatica) = ("300,00", 31, true, true);
                 Assert.False(ctr.RegimeCompetencia);
-                var geracao = ctr.GerarParcelasCommand.ExecuteAsync(null);
-                for (var i = 0; i < 50 && vm.Confirmacao is null; i++) await Calma(2);
-                Assert.Contains("12 parcelas", vm.Confirmacao!.Mensagem);
-                vm.ResponderConfirmacaoCommand.Execute(true);
-                await geracao;
+                var wf = FichaPopup.Aberta(janela.JanelaDa(ctr)!.GetLogicalDescendants().OfType<E.Views.ContratosView>().Single())!;
+                Assert.False(wf.GetLogicalDescendants().OfType<ComboBox>().First(c => c.Name == "Contratante").IsEnabled);
+                Assert.Equal(["Condições", "Texto do contrato"], wf.GetLogicalDescendants().OfType<TabControl>().First(t => t.Name == "AbasContrato").Items.OfType<TabItem>().Select(t => t.Header as string));
+                if (pasta is not null) { wf.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wf.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_contrato_ficha.png")); }
+                async Task Confirmar(Task comando, string trecho)
+                {
+                    for (var i = 0; i < 50 && vm.Confirmacao is null; i++) await Calma(2);
+                    Assert.Contains(trecho, vm.Confirmacao!.Mensagem);
+                    vm.ResponderConfirmacaoCommand.Execute(true);
+                    await comando;
+                }
+                await Confirmar(ctr.GerarParcelasCommand.ExecuteAsync(null), "12 parcelas");               // grava o contrato e lança as parcelas
                 Assert.Empty(ctr.Erros);
                 Assert.Contains("12 parcela(s) lançada(s)", ctr.Mensagem);
+                Assert.True(ctr.FichaAberta);
+                var numero = ctr.Selecionado!.C.Numero;
+                Assert.Contains("12 parcela(s) lançada(s), de 07/2027 a 06/2028", ctr.ResumoParcelas);
+                await Confirmar(ctr.GerarParcelasCommand.ExecuteAsync(null), "12 parcelas");               // de novo: recusa (use Estender)
+                Assert.Contains(ctr.Erros, e => e.Contains("Estender parcelas"));
+                await Confirmar(ctr.EstenderParcelasCommand.ExecuteAsync(null), "de 07/2028 a 06/2029");   // estende mais 12 meses
+                Assert.Empty(ctr.Erros);
+                Assert.Equal(new DateTime(2029, 6, 30), ctr.Fim);
+                Assert.Contains("24 parcela(s)", ctr.ResumoParcelas);
                 ctr.FichaAberta = false;
                 await hon.CarregarDadosCommand.ExecuteAsync(null);
-                var doContrato = hon.Cobrancas.Where(c => c.Descricao == "Contrato").ToList();
-                Assert.Equal(12, doContrato.Count);
+                var doContrato = hon.Cobrancas.Where(c => c.Descricao == $"Contrato nº {numero}").ToList();
+                Assert.Equal(18, doContrato.Count);                                                        // vencimentos até 31/12/2028
                 Assert.Equal(("07/2027", "31/07/2027", "1/12"), (doContrato[0].Competencia, doContrato[0].Vencimento, doContrato[0].Parcela));
-                Assert.Equal(("06/2028", "30/06/2028"), (doContrato[^1].Competencia, doContrato[^1].Vencimento));
+                Assert.Equal(("06/2028", "30/06/2028"), (doContrato[11].Competencia, doContrato[11].Vencimento));
                 // o filtro por vencimento: só até 31/12/2027
                 hon.VencimentoAte = new DateTime(2027, 12, 31);
                 await Calma(20);
-                Assert.Equal(6, hon.Cobrancas.Count(c => c.Descricao == "Contrato"));
+                Assert.Equal(6, hon.Cobrancas.Count(c => c.Descricao == $"Contrato nº {numero}"));
                 hon.Selecionada = hon.Cobrancas[0];
                 hon.BaixarCommand.Execute(null);
                 Assert.True(hon.Baixa.FichaAberta);
