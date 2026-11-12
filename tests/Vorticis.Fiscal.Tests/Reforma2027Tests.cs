@@ -76,6 +76,20 @@ public class Reforma2027Tests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
     }
 
     [Fact]
+    public void Importacao_le_a_reducao_de_aliquota_e_o_grupo_do_Imposto_Seletivo()
+    {
+        var xml = XmlsDeTeste.Nfe(XmlsDeTeste.CnpjFornecedor, CnpjsDeTeste.Valido(96), 1, 90, new DateOnly(2027, 2, 10), [new ItemNfe("5102", 1_000m)])
+            .Replace("</COFINS></imposto>", "</COFINS><IS><CSTIS>000</CSTIS><cClassTribIS>000001</cClassTribIS><vBCIS>1000.00</vBCIS><pIS>10.0000</pIS><vIS>100.00</vIS></IS>" +
+                "<IBSCBS><CST>200</CST><cClassTrib>200034</cClassTrib><gIBSCBS><vBC>1000.00</vBC><gIBSUF><pIBSUF>0.0200</pIBSUF><vIBSUF>0.20</vIBSUF></gIBSUF>" +
+                "<gIBSMun><pIBSMun>0.0200</pIBSMun><vIBSMun>0.20</vIBSMun></gIBSMun><vIBS>0.40</vIBS><gCBS><pCBS>11.2000</pCBS><gRed><pRedAliq>60.0000</pRedAliq><pAliqEfet>4.4800</pAliqEfet></gRed>" +
+                "<vCBS>44.80</vCBS></gCBS></gIBSCBS></IBSCBS></imposto>");
+        var doc = Assert.IsType<LeituraDocumento>(LeitorXmlFiscal.Ler(XmlsDeTeste.Bytes(xml))).Documento;
+        var r = doc.Itens[0].Reforma!;
+        Assert.Equal(("200", "200034", 60m, 44.80m), (r.Cst, r.ClassTrib, r.Reducao, r.Cbs));
+        Assert.Equal(("000", 10m, 100m), (r.CstIs, r.AliqIs, r.ImpostoSeletivo));
+    }
+
+    [Fact]
     public void Classificacao_tributaria_valida_codigo_cst_e_reducao()
     {
         Assert.Empty(ServicoClassificacaoTributaria.Validar(new ClassificacaoTributaria("200034", "200", "Redução de 60%", 60m)));
