@@ -1,3 +1,24 @@
+# Vorticis 1.0.9
+
+## Novidades desta versão
+
+### Fiscal: reforma tributária pronta para 2027
+- **Alíquotas e regras de 2026 a 2033** nos parâmetros legais: em 2027, CBS de 11,2% (alíquota de referência de 11,3% calculada pelo TCU, menos 0,1 ponto; confira a resolução do Senado), IBS de 0,05% (UF) e 0,05% (município), fim do PIS e da COFINS, IPI zerado (salvo Zona Franca de Manaus) e início do Imposto Seletivo.
+- **Lançamento de notas de entrada e saída:** cada item ganha o grupo **IBS, CBS e Imposto Seletivo** (CST, classificação tributária, redução, base, alíquotas e valores) e a caixa **Credita IBS/CBS**. O botão **Calcular IBS/CBS/IS** calcula pelas alíquotas do ano da nota e pela classificação (base sem ICMS, ISS, PIS e COFINS). A grade e os totais da nota mostram o IBS, a CBS e o IS, e o sistema avisa se a nota de 2027 em diante ainda tem PIS/COFINS ou IPI.
+- **Cadastros › Classificação tributária (IBS/CBS):** os códigos cClassTrib que você usa, com o CST, a redução da alíquota e se a compra gera crédito.
+- **Regras fiscais:** CST e classificação do IBS/CBS a sugerir nas saídas e o crédito de IBS/CBS nas entradas.
+- **Importação de XML:** além do grupo IBS/CBS, lê a redução de alíquota e o Imposto Seletivo dos itens.
+- **Apuração › IBS e CBS:** crédito só dos itens que creditam, saldo credor do mês anterior, Imposto Seletivo e, de 2027 em diante, **Encerrar** (o saldo credor passa para o mês seguinte) e **Reabrir**.
+
+### Ligação com o Contábil
+- De 2027 em diante, a contabilização das notas separa o IBS e a CBS: na venda, o cliente é debitado pelo valor mais o IBS/CBS e os tributos vão para as contas a recolher; na compra, o crédito vai para as contas a recuperar. O Imposto Seletivo da venda vai para a despesa e para a conta a recolher.
+- O encerramento da apuração lança na contabilidade a compensação dos créditos com os débitos.
+- As contas ficam em *Cadastros › Regras de contabilização*, aba **Provisões de impostos** (tributos IBS, CBS e IS).
+
+Para atualizar, rode o **Setup-Vorticis-1.0.9.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.0.8
 
 ## Novidades desta versão
@@ -170,12 +191,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.8.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.9.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.8.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.9.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
