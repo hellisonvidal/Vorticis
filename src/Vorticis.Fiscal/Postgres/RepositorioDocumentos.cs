@@ -174,11 +174,13 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                 {
                     await using var ibs = new NpgsqlCommand("""
                         UPDATE fiscal.documento_item SET tem_ibscbs = TRUE, cst_ibscbs = @cst, c_class_trib = @cls, vl_bc_ibscbs = @bc, aliq_ibs_uf = @auf,
-                               vl_ibs_uf = @vuf, aliq_ibs_mun = @amun, vl_ibs_mun = @vmun, aliq_cbs = @acbs, vl_cbs = @vcbs
+                               vl_ibs_uf = @vuf, aliq_ibs_mun = @amun, vl_ibs_mun = @vmun, aliq_cbs = @acbs, vl_cbs = @vcbs,
+                               reducao_ibscbs = @red, cst_is = @cis, c_class_trib_is = @clis, aliq_is = @ais, vl_is = @vis
                          WHERE documento_id = @d AND n_item = @n
                         """, con, tx)
                         .Com("d", documentoId).Com("n", i.Numero).ComTexto("cst", Cortar(rf.Cst, 3)).ComTexto("cls", Cortar(rf.ClassTrib, 6)).Com("bc", rf.Base)
-                        .Com("auf", rf.AliqIbsUf).Com("vuf", rf.IbsUf).Com("amun", rf.AliqIbsMun).Com("vmun", rf.IbsMun).Com("acbs", rf.AliqCbs).Com("vcbs", rf.Cbs);
+                        .Com("auf", rf.AliqIbsUf).Com("vuf", rf.IbsUf).Com("amun", rf.AliqIbsMun).Com("vmun", rf.IbsMun).Com("acbs", rf.AliqCbs).Com("vcbs", rf.Cbs)
+                        .Com("red", rf.Reducao).ComTexto("cis", Cortar(rf.CstIs, 3)).ComTexto("clis", Cortar(rf.ClassTribIs, 6)).Com("ais", rf.AliqIs).Com("vis", rf.ImpostoSeletivo);
                     await ibs.ExecuteNonQueryAsync(ct);
                 }
 
@@ -438,7 +440,9 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         i.cst_cofins, CASE WHEN i.credita_cofins THEN i.vl_bc_cofins ELSE 0 END, i.aliq_cofins, CASE WHEN i.credita_cofins THEN i.vl_cofins ELSE 0 END,
         i.vl_bc_iss, i.aliq_iss, i.vl_iss,
         i.gtin, i.produto_id, i.centro_custo_id, cci.codigo, i.cfop,
-        i.credita_icms, i.credita_ipi, i.credita_pis, i.credita_cofins, i.sem_regra
+        i.credita_icms, i.credita_ipi, i.credita_pis, i.credita_cofins, i.sem_regra,
+        i.tem_ibscbs, i.cst_ibscbs, i.c_class_trib, i.vl_bc_ibscbs, i.aliq_ibs_uf, i.vl_ibs_uf, i.aliq_ibs_mun, i.vl_ibs_mun, i.aliq_cbs, i.vl_cbs,
+        i.reducao_ibscbs, i.cst_is, i.c_class_trib_is, i.aliq_is, i.vl_is, i.credita_ibscbs
         """;
 
     internal static ItemFiscal LerItemSql(NpgsqlDataReader r, int o) => new(
@@ -449,7 +453,13 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
         r.GetDecimal(o + 27), r.GetDecimal(o + 28), r.GetDecimal(o + 29), r.Texto(o + 30), r.GetDecimal(o + 31), r.GetDecimal(o + 32),
         r.GetDecimal(o + 33), r.GetDecimal(o + 34), r.GetDecimal(o + 35), r.GetDecimal(o + 36),
         r.Texto(o + 37), r.LongOuNulo(o + 38), r.LongOuNulo(o + 39), r.Texto(o + 40), r.Texto(o + 41),
-        r.GetBoolean(o + 42), r.GetBoolean(o + 43), r.GetBoolean(o + 44), r.GetBoolean(o + 45), r.GetBoolean(o + 46));
+        r.GetBoolean(o + 42), r.GetBoolean(o + 43), r.GetBoolean(o + 44), r.GetBoolean(o + 45), r.GetBoolean(o + 46),
+        r.GetBoolean(o + 47) || r.GetDecimal(o + 61) != 0
+            ? new TributosReforma(r.Texto(o + 48), r.Texto(o + 49), r.GetDecimal(o + 50), r.GetDecimal(o + 51), r.GetDecimal(o + 52), r.GetDecimal(o + 53),
+                                  r.GetDecimal(o + 54), r.GetDecimal(o + 55), r.GetDecimal(o + 56), r.GetDecimal(o + 57), r.Texto(o + 58), r.Texto(o + 59),
+                                  r.GetDecimal(o + 60), r.GetDecimal(o + 61))
+            : null,
+        r.GetBoolean(o + 62));
 
     public async Task<IReadOnlyList<ItemFiscal>> ListarItensDoDocumentoAsync(long documentoId, CancellationToken ct)
     {

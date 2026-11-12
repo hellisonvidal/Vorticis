@@ -302,17 +302,20 @@ A *Parte B* mostra o razão dos prejuízos e da base negativa. O **código da EC
 
 ## IBS e CBS (reforma tributária)
 
-**Para que serve:** acompanhar, já na transição da reforma tributária do consumo, o **IBS** (estados e municípios) e a **CBS** (União) destacados nas notas fiscais, e conferir o saldo do mês.
+**Para que serve:** apurar o **IBS** (estados e municípios), a **CBS** (União) e o **Imposto Seletivo (IS)** destacados nas notas fiscais, levar o saldo credor de um mês para o outro e lançar a compensação na contabilidade.
 **Onde fica:** *Apuração › IBS e CBS (reforma tributária)*.
 
-A partir de 2026 a NF-e traz, em cada item, o grupo **IBS/CBS**: o CST e a classificação tributária, a base de cálculo, o IBS da UF, o IBS do município e a CBS. Ao importar o XML, o Fiscal guarda esses valores junto com o item.
+A partir de 2026 a NF-e traz, em cada item, o grupo **IBS/CBS**: o CST e a classificação tributária, a base de cálculo, o IBS da UF, o IBS do município e a CBS (e, de 2027 em diante, o Imposto Seletivo dos produtos prejudiciais à saúde ou ao meio ambiente). Ao importar o XML, ou ao digitar a nota, o Fiscal guarda esses valores junto com o item.
 
-1. Importe as notas do mês (saídas e entradas) pelo XML.
-2. Escolha a **Competência** e clique em **Apurar**. A tabela mostra os **débitos** das saídas, os **créditos** das entradas, o **saldo a recolher** e o **saldo credor** de CBS e de IBS (UF, município e total).
-3. Os avisos abaixo do título apontam as notas sem o grupo IBS/CBS (as de entrada não geram crédito) e a CBS destacada diferente da esperada pela alíquota de referência do ano.
-4. Exporte em PDF, Excel ou CSV para conferir ou arquivar.
+1. Abra *Apuração › IBS e CBS (reforma tributária)*.
+2. Escolha a **Competência** e clique em **Apurar**. A tabela mostra os **débitos** das saídas, os **créditos** das entradas (só dos itens que creditam), o **saldo credor do mês anterior**, o **saldo a recolher** e o **saldo credor para o mês seguinte** de CBS e de IBS (UF, município e total), e o **Imposto Seletivo** das saídas (que não gera crédito).
+3. Os avisos apontam as notas sem o grupo IBS/CBS (as de entrada não geram crédito), os itens marcados para não creditar e a CBS destacada diferente da esperada pela alíquota do ano.
+4. De **2027** em diante, clique em **Encerrar** para fechar o mês: os saldos ficam gravados e o saldo credor passa para o mês seguinte. Com **Contabilizar a compensação** marcado, o sistema lança na contabilidade a parte dos débitos quitada com os créditos (débito em IBS/CBS a recolher e crédito em IBS/CBS a recuperar). Os meses são encerrados em ordem.
+5. **Reabrir** desfaz o encerramento do último mês encerrado. Se a compensação foi contabilizada, estorne o lançamento na contabilidade.
 
-**Transição:** em **2026** (ano de teste) as alíquotas são de 0,9% de CBS e 0,1% de IBS, os valores são informativos e compensáveis com o PIS e a COFINS, e o recolhimento é dispensado para quem cumpre as obrigações acessórias. De **2027** em diante a CBS substitui o PIS e a COFINS, e entre 2029 e 2032 o ICMS e o ISS diminuem enquanto o IBS aumenta, até 2033. As alíquotas de cada ano ficam nos parâmetros legais do programa e são atualizadas conforme forem definidas. Esta apuração é um apoio: a apuração oficial será feita pelos sistemas da Receita Federal e do Comitê Gestor do IBS.
+**Contas contábeis:** em *Cadastros › Regras de contabilização*, aba **Provisões de impostos**, cadastre os tributos **IBS** e **CBS** (a conta de despesa é a do **crédito a recuperar**, no ativo, e a de passivo, a do tributo **a recolher**) e o **IS** (despesa e a recolher). De 2027 em diante, ao contabilizar as notas, o IBS e a CBS entram em partidas próprias: na venda, o cliente é debitado pelo valor da nota mais o IBS/CBS (cobrados "por fora") e o IBS/CBS vão para a conta a recolher; na compra, o crédito dos itens que creditam vai para a conta a recuperar e o fornecedor é creditado pelo total; o Imposto Seletivo da venda vai para a despesa e para a conta a recolher.
+
+**Transição:** em **2026** (ano de teste) as alíquotas são de 0,9% de CBS e 0,1% de IBS, os valores são informativos e compensáveis com o PIS e a COFINS: a apuração não é encerrada nem contabilizada. Em **2027** e **2028** a CBS é a alíquota de referência menos 0,1 ponto (o Tribunal de Contas da União calculou a referência em 11,3%, o que dá 11,2%, e o Senado a fixa por resolução), o IBS é de 0,05% para a UF e 0,05% para o município, o **PIS e a COFINS deixam de existir**, o **IPI fica zerado** (salvo produtos incentivados da Zona Franca de Manaus) e começa o **Imposto Seletivo**. De 2029 a 2032 o ICMS e o ISS diminuem enquanto o IBS aumenta, até 2033. As alíquotas e as regras de cada ano ficam nos **parâmetros legais** do programa (chave REFORMA_IBS_CBS) e devem ser conferidas com a resolução do Senado e com os atos do Comitê Gestor. Esta apuração é um apoio: a apuração oficial é feita pelos sistemas da Receita Federal e do Comitê Gestor do IBS.
 
 ## Simples Nacional × IBS/CBS (reforma)
 

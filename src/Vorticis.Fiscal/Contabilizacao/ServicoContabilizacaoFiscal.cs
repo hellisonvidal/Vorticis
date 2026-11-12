@@ -125,9 +125,22 @@ public sealed class ServicoContabilizacaoFiscal(IRepositorioContabilizacao repos
         // Nota com duplicatas: a contrapartida é a conta de fornecedores (entrada) ou de clientes (saída) dos Parâmetros do Fiscal.
         var comDuplicata = duplicatas is null || docs.Count == 0 ? new HashSet<long>() : await duplicatas.DocumentosComDuplicataAsync(empresaId, docs.Select(d => d.Id), ct);
         var config = comDuplicata.Count == 0 ? null : await duplicatas!.ObterConfiguracaoAsync(empresaId, ct);
+        // reforma tributária: nos anos em que IBS/CBS são contabilizados, as contas dos tributos (por ano das notas)
+        var contasReforma = new Dictionary<int, ContasReforma?>();
+        if (ContasReformaDoAno is { } buscar)
+            foreach (var ano in docs.Select(d => d.DataLivro.Year).Distinct()) contasReforma[ano] = await buscar(empresaId, ano, ct);
         return docs.Select(d => MotorContabilizacao.Montar(empresaId, d, itens[d.Id].ToList(), regras, usaCentro,
-            comDuplicata.Contains(d.Id) ? config?.ContaParticipante(d.Operacao == TipoOperacao.Entrada ? TipoDuplicata.Pagar : TipoDuplicata.Receber) : null)).ToList();
+            comDuplicata.Contains(d.Id) ? config?.ContaParticipante(d.Operacao == TipoOperacao.Entrada ? TipoDuplicata.Pagar : TipoDuplicata.Receber) : null,
+            contasReforma.GetValueOrDefault(d.DataLivro.Year))).ToList();
     }
+
+    /// <summary>
+    /// Contas do IBS, da CBS e do IS do ano (null nos anos em que a reforma ainda não é contabilizada, como 2026). Ligado pelos serviços fiscais
+    /// aos parâmetros da reforma e às contas da aba Provisões de impostos.
+    /// </summary>
+    public Func<long, int, CancellationToken, Task<ContasReforma?>>? ContasReformaDoAno { get; set; }
+
+
 
     /// <summary>
     /// Gera os lançamentos das notas prontas (as demais voltam como pendências) e as marca como contabilizadas. Os lançamentos

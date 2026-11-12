@@ -18,6 +18,12 @@ public sealed record PropostaContabilizacao(DocumentoFiscal Documento, Lancament
     public bool Pronta => Lancamento is not null && Erros.Count == 0;
 }
 
+/// <summary>
+/// Contas da reforma tributária (códigos), da aba Provisões de impostos: IBS e CBS a recuperar (crédito das entradas, ativo) e a recolher (débito das
+/// saídas, passivo) e o Imposto Seletivo (despesa e a recolher). Só se aplicam nos anos em que IBS/CBS são contabilizados (2027 em diante).
+/// </summary>
+public sealed record ContasReforma(string? IbsRecuperar, string? IbsRecolher, string? CbsRecuperar, string? CbsRecolher, string? IsDespesa, string? IsRecolher);
+
 /// <summary>Escolha da regra e montagem do lançamento de uma nota. Regras puras, testáveis sem banco.</summary>
 public static class MotorContabilizacao
 {
@@ -56,8 +62,13 @@ public static class MotorContabilizacao
     /// Com <paramref name="contaParticipante"/> (conta de fornecedores na entrada, de clientes na saída — nota com duplicatas), ela é a contrapartida da nota
     /// (crédito na entrada, débito na saída), exceto quando a nota ou uma regra específica do participante já define a conta.
     /// </summary>
+    /// <para>
+    /// Com <paramref name="reforma"/> (ano em que IBS/CBS são "por fora" e contabilizados), os tributos da reforma entram em partidas próprias:
+    /// na saída, D na conta de débito da nota (cliente) e C IBS/CBS a recolher, mais o Imposto Seletivo (D despesa, C a recolher); na entrada, só dos
+    /// itens que creditam, D IBS/CBS a recuperar e C na conta de crédito da nota (fornecedor).
+    /// </para>
     public static PropostaContabilizacao Montar(long empresaId, DocumentoFiscal doc, IReadOnlyList<ItemFiscal> itens, IReadOnlyList<RegraContabilizacao> regras,
-                                                bool usaCentroCusto = false, string? contaParticipante = null)
+                                                bool usaCentroCusto = false, string? contaParticipante = null, ContasReforma? reforma = null)
     {
         var erros = new List<string>();
         if (doc.Situacao != SituacaoDocumento.Autorizada)
@@ -97,9 +108,48 @@ public static class MotorContabilizacao
             partidas.Add(new PartidaProposta(regra.ContaCredito, IndicadorDC.C, valor, historico, entrada ? null : centro, doc.ParticipanteCodigo, doc.Numero));
         }
         if (erros.Count == 0 && partidas.Count == 0) erros.Add($"Documento {doc.Numero} sem valor a contabilizar.");
+        if (erros.Count == 0 && reforma is not null) PartidasReforma(doc, itens, reforma, partidas, erros);
         if (erros.Count > 0) return new(doc, null, erros);
 
         var origem = doc.Modelo == ModeloDocumento.NFSe ? OrigemLancamento.NFSe : OrigemLancamento.NFe;
         return new(doc, new LancamentoProposto(empresaId, doc.DataLivro, origem, partidas, DocumentoOrigemId: doc.Id), []);
     }
+
+    private static void PartidasReforma(DocumentoFiscal doc, IReadOnlyList<ItemFiscal> itens, ContasReforma c, List<PartidaProposta> partidas, List<string> erros)
+    {
+        var entrada = doc.Operacao == TipoOperacao.Entrada;
+        var lista = itens.Where(i => i.Reforma is not null && (!entrada || i.CreditaIbsCbs)).ToList();
+        var ibs = Dinheiro.Arredondar(lista.Sum(i => i.Reforma!.Ibs));
+        var cbs = Dinheiro.Arredondar(lista.Sum(i => i.Reforma!.Cbs));
+        var seletivo = entrada ? 0 : Dinheiro.Arredondar(itens.Sum(i => i.Reforma?.ImpostoSeletivo ?? 0));
+        if (ibs <= 0 && cbs <= 0 && seletivo <= 0) return;
+        string? Exigir(string? conta, string nome)
+        {
+            if (string.IsNullOrWhiteSpace(conta)) erros.Add($"Documento {doc.Numero}: configure a conta de {nome} em Cadastros › Regras de contabilização, aba Provisões de impostos.");
+            return conta?.Trim();
+        }
+        var historico = $"NF {doc.Numero} - {doc.NomeParticipante}";
+        // contrapartida: a mesma conta do participante usada pela nota (débito na saída, crédito na entrada)
+        var principal = partidas.FirstOrDefault(p => p.DC == (entrada ? IndicadorDC.C : IndicadorDC.D))?.CodigoConta;
+        if (principal is null) return;
+        if (ibs + cbs > 0)
+        {
+            var (contaIbs, contaCbs) = entrada
+                ? (Exigir(c.IbsRecuperar, "IBS a recuperar"), Exigir(c.CbsRecuperar, "CBS a recuperar"))
+                : (Exigir(c.IbsRecolher, "IBS a recolher"), Exigir(c.CbsRecolher, "CBS a recolher"));
+            if (erros.Count > 0) return;
+            var dc = entrada ? IndicadorDC.D : IndicadorDC.C;
+            if (ibs > 0) partidas.Add(new PartidaProposta(contaIbs!, dc, ibs, $"{historico} · IBS", null, doc.ParticipanteCodigo, doc.Numero));
+            if (cbs > 0) partidas.Add(new PartidaProposta(contaCbs!, dc, cbs, $"{historico} · CBS", null, doc.ParticipanteCodigo, doc.Numero));
+            partidas.Add(new PartidaProposta(principal, entrada ? IndicadorDC.C : IndicadorDC.D, ibs + cbs, $"{historico} · IBS/CBS", null, doc.ParticipanteCodigo, doc.Numero));
+        }
+        if (seletivo > 0)
+        {
+            var (desp, rec) = (Exigir(c.IsDespesa, "despesa do Imposto Seletivo"), Exigir(c.IsRecolher, "Imposto Seletivo a recolher"));
+            if (erros.Count > 0) return;
+            partidas.Add(new PartidaProposta(desp!, IndicadorDC.D, seletivo, $"{historico} · Imposto Seletivo", null, doc.ParticipanteCodigo, doc.Numero));
+            partidas.Add(new PartidaProposta(rec!, IndicadorDC.C, seletivo, $"{historico} · Imposto Seletivo", null, doc.ParticipanteCodigo, doc.Numero));
+        }
+    }
+
 }

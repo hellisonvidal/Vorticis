@@ -75,10 +75,10 @@ public class RegrasEParametrosTests(BancoDeTeste db) : IClassFixture<BancoDeTest
     [Fact]
     public void Tributos_liberados_seguem_o_regime_e_a_atividade()
     {
-        Assert.Equal(["DAS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.SimplesNacional, "123", "4751201"));
-        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ICMS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroPresumido, "123", "4751-2/01"));
-        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IPI"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroReal, null, "2599301"));
-        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ISS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroPresumido, null, "6911701"));
+        Assert.Equal(["DAS", "IBS", "CBS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.SimplesNacional, "123", "4751201"));
+        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IBS", "CBS", "IS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroPresumido, "123", "4751-2/01"));
+        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IPI", "IBS", "CBS", "IS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroReal, null, "2599301"));
+        Assert.Equal(["IRPJ", "CSLL", "PIS", "COFINS", "ISS", "IBS", "CBS", "IS"], ServicoProvisoes.TributosDoRegime(RegimeTributario.LucroPresumido, null, "6911701"));
         Assert.Empty(ServicoProvisoes.TributosDoRegime(RegimeTributario.ImuneIsenta, "1", "6911701"));
     }
 

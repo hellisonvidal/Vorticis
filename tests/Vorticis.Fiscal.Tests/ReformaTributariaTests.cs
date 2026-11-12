@@ -48,7 +48,7 @@ public class ReformaTributariaTests(BancoDeTeste db) : IClassFixture<BancoDeTest
         Assert.Equal(90m, a.CbsEsperada);
         Assert.Contains(a.Avisos(), x => x.Contains("sem o grupo IBS/CBS"));
         Assert.DoesNotContain(a.Avisos(), x => x.Contains("diferente da esperada"));
-        Assert.Equal(4, a.Tabela().Linhas.Count);
+        Assert.Equal(5, a.Tabela().Linhas.Count);
         var vazio = (await db.App.Fiscal().Reforma.ApurarAsync(empresa, new DateOnly(2026, 5, 1), adm, ct)).Valor!;
         Assert.Equal((0m, 0m), (vazio.CbsAPagar, vazio.IbsAPagar));
     }

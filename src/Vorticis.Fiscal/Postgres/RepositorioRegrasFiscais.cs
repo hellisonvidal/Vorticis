@@ -14,13 +14,13 @@ public sealed class RepositorioRegrasFiscais(NpgsqlDataSource ds) : IRepositorio
     private const string Colunas = """
         r.id, r.tipo_operacao, r.ordem, r.ativo, r.descricao, r.cfop_origem, r.participante_id, r.ncm, r.produto_id, r.cst_origem, r.destino,
         r.cfop_destino, r.cst_destino, r.credita_icms, r.credita_ipi, r.credita_pis, r.credita_cofins, r.conta_debito, r.conta_credito, r.centro_custo_id,
-        p.nome, pr.descricao
+        p.nome, pr.descricao, r.cst_ibscbs, r.c_class_trib, r.credita_ibscbs
         """;
 
     private static RegraFiscal Ler(NpgsqlDataReader r) => new(
         r.GetInt64(0), ModelosExtensions.OperacaoDe(r.GetString(1)), r.GetInt32(2), r.GetBoolean(3), r.Texto(4), r.Texto(5), r.LongOuNulo(6), r.Texto(7), r.LongOuNulo(8),
         r.Texto(9), r.Texto(10), r.Texto(11), r.Texto(12), r.GetBoolean(13), r.GetBoolean(14), r.GetBoolean(15), r.GetBoolean(16), r.Texto(17), r.Texto(18),
-        r.LongOuNulo(19), r.Texto(20), r.Texto(21));
+        r.LongOuNulo(19), r.Texto(20), r.Texto(21), r.Texto(22), r.Texto(23), r.GetBoolean(24));
 
     private const string Juncoes = """
         FROM fiscal.regra_fiscal r
@@ -77,21 +77,26 @@ public sealed class RepositorioRegrasFiscais(NpgsqlDataSource ds) : IRepositorio
             await using var cmd = g.Id == 0
                 ? new NpgsqlCommand("""
                     INSERT INTO fiscal.regra_fiscal (empresa_id, tipo_operacao, ordem, ativo, descricao, cfop_origem, participante_id, ncm, produto_id, cst_origem, destino,
-                        cfop_destino, cst_destino, credita_icms, credita_ipi, credita_pis, credita_cofins, conta_debito, conta_credito, centro_custo_id)
-                    VALUES (@e, @op, @ordem, @ativo, @desc, @co, @part, @ncm, @prod, @cso, @dest, @cd, @cstd, @ci, @cip, @cp, @cc, @cdeb, @ccred, @cent)
+                        cfop_destino, cst_destino, credita_icms, credita_ipi, credita_pis, credita_cofins, conta_debito, conta_credito, centro_custo_id,
+                        cst_ibscbs, c_class_trib, credita_ibscbs)
+                    VALUES (@e, @op, @ordem, @ativo, @desc, @co, @part, @ncm, @prod, @cso, @dest, @cd, @cstd, @ci, @cip, @cp, @cc, @cdeb, @ccred, @cent,
+                            @cibs, @cls, @cribs)
                     RETURNING id
                     """, con, tx)
                 : new NpgsqlCommand("""
                     UPDATE fiscal.regra_fiscal SET tipo_operacao = @op, ordem = @ordem, ativo = @ativo, descricao = @desc, cfop_origem = @co, participante_id = @part,
                         ncm = @ncm, produto_id = @prod, cst_origem = @cso, destino = @dest, cfop_destino = @cd, cst_destino = @cstd, credita_icms = @ci,
-                        credita_ipi = @cip, credita_pis = @cp, credita_cofins = @cc, conta_debito = @cdeb, conta_credito = @ccred, centro_custo_id = @cent
+                        credita_ipi = @cip, credita_pis = @cp, credita_cofins = @cc, conta_debito = @cdeb, conta_credito = @ccred, centro_custo_id = @cent,
+                        cst_ibscbs = @cibs, c_class_trib = @cls, credita_ibscbs = @cribs
                      WHERE id = @id AND empresa_id = @e RETURNING id
                     """, con, tx).Com("id", g.Id);
             cmd.Com("e", empresaId).Com("op", g.Operacao.Codigo()).Com("ordem", g.Ordem).Com("ativo", g.Ativo).ComTexto("desc", g.Descricao)
                .ComTexto("co", g.CfopOrigem).Com("part", NpgsqlDbType.Bigint, g.ParticipanteId).ComTexto("ncm", g.Ncm).Com("prod", NpgsqlDbType.Bigint, g.ProdutoId)
                .ComTexto("cso", g.CstOrigem).ComTexto("dest", g.Destino).ComTexto("cd", g.CfopDestino).ComTexto("cstd", g.CstDestino)
                .Com("ci", g.CreditaIcms).Com("cip", g.CreditaIpi).Com("cp", g.CreditaPis).Com("cc", g.CreditaCofins)
-               .ComTexto("cdeb", g.ContaDebito).ComTexto("ccred", g.ContaCredito).Com("cent", NpgsqlDbType.Bigint, g.CentroCustoId);
+               .ComTexto("cdeb", g.ContaDebito).ComTexto("ccred", g.ContaCredito).Com("cent", NpgsqlDbType.Bigint, g.CentroCustoId)
+               .ComTexto("cibs", string.IsNullOrWhiteSpace(g.CstIbsCbs) ? null : g.CstIbsCbs.Trim()).ComTexto("cls", string.IsNullOrWhiteSpace(g.ClassTrib) ? null : g.ClassTrib.Trim())
+               .Com("cribs", g.CreditaIbsCbs);
             var id = await cmd.ExecuteScalarAsync(ct) as long? ?? throw new ViolacaoRegraException("Regra não encontrada.");
             await tx.CommitAsync(ct);
             return id;
@@ -144,13 +149,14 @@ public sealed class RepositorioRegrasFiscais(NpgsqlDataSource ds) : IRepositorio
     internal static NpgsqlCommand ComandoAplicarItem(NpgsqlConnection con, NpgsqlTransaction tx, long documentoId, int nItem, string cfopXml, string? cstXml, DecisaoFiscal d, bool centroAtivo)
         => new NpgsqlCommand("""
             UPDATE fiscal.documento_item SET cfop_escrituracao = @ce, cst_icms_escrituracao = @cst, credita_icms = @ci, credita_ipi = @cip, credita_pis = @cp,
-                   credita_cofins = @cc, sem_regra = @sr, regra_fiscal_id = @rid, centro_custo_id = COALESCE(@cent, centro_custo_id)
+                   credita_cofins = @cc, sem_regra = @sr, regra_fiscal_id = @rid, centro_custo_id = COALESCE(@cent, centro_custo_id),
+                   credita_ibscbs = @cibs
              WHERE documento_id = @d AND n_item = @n
             """, con, tx)
             .Com("d", documentoId).Com("n", nItem).ComTexto("ce", d.Cfop == cfopXml ? null : d.Cfop)
             .ComTexto("cst", d.CstIcms is null || d.CstIcms == cstXml ? null : d.CstIcms)
             .Com("ci", d.CreditaIcms).Com("cip", d.CreditaIpi).Com("cp", d.CreditaPis).Com("cc", d.CreditaCofins).Com("sr", d.SemRegra)
-            .Com("rid", NpgsqlDbType.Bigint, d.RegraId).Com("cent", NpgsqlDbType.Bigint, centroAtivo ? d.CentroCustoId : null);
+            .Com("rid", NpgsqlDbType.Bigint, d.RegraId).Com("cent", NpgsqlDbType.Bigint, centroAtivo ? d.CentroCustoId : null).Com("cibs", d.CreditaIbsCbs);
 
     internal static async Task AplicarContasDoDocumentoAsync(NpgsqlConnection con, NpgsqlTransaction tx, long documentoId, string? debito, string? credito, CancellationToken ct)
     {

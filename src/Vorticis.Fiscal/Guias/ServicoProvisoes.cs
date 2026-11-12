@@ -29,7 +29,14 @@ public interface IRepositorioProvisoes
 public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IRepositorioContabilizacao contas, IRepositorioSimples simples, IRepositorioLucro lucro,
                                      ServicoLancamento lancamentos, Autorizador autorizador)
 {
-    public static readonly IReadOnlyList<string> Tributos = ["DAS", "IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IPI", "ISS"];
+    /// <summary>
+    /// Tributos com contas configuráveis. Para IBS e CBS (reforma tributária), a conta "de despesa" é a do crédito a recuperar (ativo) e a de passivo,
+    /// a do tributo a recolher; para o IS (Imposto Seletivo), despesa e passivo.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Tributos = ["DAS", "IRPJ", "CSLL", "PIS", "COFINS", "ICMS", "IPI", "ISS", "IBS", "CBS", "IS"];
+
+    /// <summary>Tributos da reforma tributária do consumo (de 2027 em diante, contabilizados nota a nota e compensados no encerramento da apuração).</summary>
+    public static readonly IReadOnlyList<string> TributosReforma = ["IBS", "CBS", "IS"];
 
     /// <summary>
     /// Tributos cuja provisão a empresa pode contabilizar, pelo regime e pelo cadastro: Simples Nacional e MEI recolhem tudo no DAS; Lucro Presumido, Real e
@@ -38,7 +45,7 @@ public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IReposit
     /// </summary>
     public static IReadOnlyList<string> TributosDoRegime(Vorticis.Application.Cadastros.RegimeTributario? regime, string? inscricaoEstadual, string? cnae)
     {
-        if (regime is Vorticis.Application.Cadastros.RegimeTributario.SimplesNacional or Vorticis.Application.Cadastros.RegimeTributario.MEI) return ["DAS"];
+        if (regime is Vorticis.Application.Cadastros.RegimeTributario.SimplesNacional or Vorticis.Application.Cadastros.RegimeTributario.MEI) return ["DAS", "IBS", "CBS"];
         if (regime is not (Vorticis.Application.Cadastros.RegimeTributario.LucroPresumido or Vorticis.Application.Cadastros.RegimeTributario.LucroReal
                            or Vorticis.Application.Cadastros.RegimeTributario.LucroArbitrado)) return [];
         var lista = new List<string> { "IRPJ", "CSLL", "PIS", "COFINS" };
@@ -50,6 +57,7 @@ public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IReposit
         if (comIe || industria || comercio) lista.Add("ICMS");
         if (industria) lista.Add("IPI");
         if (divisao >= 0 && !industria && !comercio) lista.Add("ISS");
+        lista.AddRange(TributosReforma);   // reforma tributária: IBS, CBS e Imposto Seletivo (2027 em diante)
         return lista;
     }
 
@@ -105,6 +113,28 @@ public sealed class ServicoProvisoes(IRepositorioProvisoes repositorio, IReposit
             partidas.Add(new PartidaProposta(c.ContaPassivo, IndicadorDC.C, valor, $"{historico} · {tributo}"));
         }
         if (partidas.Count == 0) return Resultado<long>.Falha("Não há valor a pagar para provisionar.");
+        var r = await lancamentos.EfetivarAsync(new LancamentoProposto(empresaId, data, OrigemLancamento.ApuracaoTributo, partidas), usuarioId, ct);
+        return r.Sucesso ? Resultado<long>.Ok(r.Valor.Id) : Resultado<long>.Falha(r.Erros);
+    }
+
+    /// <summary>
+    /// Encerramento da apuração do IBS e da CBS: compensa os créditos com os débitos (D tributo a recolher, C tributo a recuperar), com as contas
+    /// configuradas para IBS e CBS na aba Provisões de impostos.
+    /// </summary>
+    public async Task<Resultado<long>> ContabilizarCompensacaoReformaAsync(long empresaId, DateOnly data, decimal cbs, decimal ibs, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<long>(usuarioId, empresaId, Permissao.FiscalApurar, ct) is { } negado) return negado;
+        var configuradas = (await repositorio.ListarContasAsync(empresaId, ct)).ToDictionary(c => c.Tributo);
+        var partidas = new List<PartidaProposta>();
+        foreach (var (tributo, valor) in new[] { ("CBS", cbs), ("IBS", ibs) }.Where(i => i.Item2 > 0))
+        {
+            if (!configuradas.TryGetValue(tributo, out var c))
+                return Resultado<long>.Falha($"Configure as contas do {tributo} (a recuperar e a recolher) em Cadastros › Regras de contabilização, aba Provisões de impostos.");
+            var historico = $"Compensação de créditos do {tributo} · apuração {data:MM/yyyy}";
+            partidas.Add(new PartidaProposta(c.ContaPassivo, IndicadorDC.D, valor, historico));
+            partidas.Add(new PartidaProposta(c.ContaDespesa, IndicadorDC.C, valor, historico));
+        }
+        if (partidas.Count == 0) return Resultado<long>.Falha("Não há créditos a compensar.");
         var r = await lancamentos.EfetivarAsync(new LancamentoProposto(empresaId, data, OrigemLancamento.ApuracaoTributo, partidas), usuarioId, ct);
         return r.Sucesso ? Resultado<long>.Ok(r.Valor.Id) : Resultado<long>.Falha(r.Erros);
     }

@@ -159,10 +159,13 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                         valor_produto, valor_desconto, valor_frete, valor_seguro, valor_outras, valor_contabil, cst_icms, origem_mercadoria,
                         vl_bc_icms, aliq_icms, vl_icms, vl_bc_icms_st, vl_icms_st, cst_ipi, vl_bc_ipi, aliq_ipi, vl_ipi,
                         cst_pis, vl_bc_pis, aliq_pis, vl_pis, cst_cofins, vl_bc_cofins, aliq_cofins, vl_cofins, vl_bc_iss, aliq_iss, vl_iss,
-                        produto_id, gtin, centro_custo_id)
+                        produto_id, gtin, centro_custo_id,
+                        tem_ibscbs, cst_ibscbs, c_class_trib, vl_bc_ibscbs, aliq_ibs_uf, vl_ibs_uf, aliq_ibs_mun, vl_ibs_mun, aliq_cbs, vl_cbs,
+                        reducao_ibscbs, cst_is, c_class_trib_is, aliq_is, vl_is, credita_ibscbs)
                     VALUES (@d, @n, @cod, @desc, @ncm, @cest, @cfop, @un, @qtd, @vu, @vp, @vd, @vf, @vs, @vo, @vc, @cst, @orig,
                         @bc, @aliq, @icms, @bcst, @st, @cipi, @bcipi, @aipi, @ipi, @cpis, @bcpis, @apis, @pis, @ccof, @bccof, @acof, @cof,
-                        @bciss, @aiss, @iss, @prod, @gtin, @cc)
+                        @bciss, @aiss, @iss, @prod, @gtin, @cc,
+                        @rtem, @rcst, @rcls, @rbc, @rauf, @rvuf, @ramun, @rvmun, @racbs, @rvcbs, @rred, @rcis, @rclis, @rais, @rvis, @rcred)
                     """, con, tx)
                     .Com("d", id).Com("n", i.Numero).ComTexto("cod", i.CodProduto).ComTexto("desc", i.Descricao).ComTexto("ncm", i.Ncm).ComTexto("cest", i.Cest)
                     .Com("cfop", i.Cfop).ComTexto("un", i.Unidade).Com("qtd", i.Quantidade).Com("vu", i.ValorUnitario).Com("vp", i.ValorProduto).Com("vd", i.Desconto)
@@ -173,6 +176,11 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                     .ComTexto("ccof", i.CstCofins).Com("bccof", i.BcCofins).Com("acof", i.AliqCofins).Com("cof", i.Cofins)
                     .Com("bciss", i.BcIss).Com("aiss", i.AliqIss).Com("iss", i.Iss)
                     .Com("prod", NpgsqlDbType.Bigint, i.ProdutoId).ComTexto("gtin", i.Gtin).Com("cc", NpgsqlDbType.Bigint, i.CentroCustoId);
+                var rf = i.Reforma;
+                item.Com("rtem", rf is not null && !string.IsNullOrWhiteSpace(rf.Cst)).ComTexto("rcst", rf?.Cst).ComTexto("rcls", rf?.ClassTrib)
+                    .Com("rbc", rf?.Base ?? 0).Com("rauf", rf?.AliqIbsUf ?? 0).Com("rvuf", rf?.IbsUf ?? 0).Com("ramun", rf?.AliqIbsMun ?? 0).Com("rvmun", rf?.IbsMun ?? 0)
+                    .Com("racbs", rf?.AliqCbs ?? 0).Com("rvcbs", rf?.Cbs ?? 0).Com("rred", rf?.Reducao ?? 0).ComTexto("rcis", rf?.CstIs).ComTexto("rclis", rf?.ClassTribIs)
+                    .Com("rais", rf?.AliqIs ?? 0).Com("rvis", rf?.ImpostoSeletivo ?? 0).Com("rcred", i.CreditaIbsCbs);
                 await item.ExecuteNonQueryAsync(ct);
             }
 
@@ -288,11 +296,12 @@ public sealed class RepositorioDigitacao(NpgsqlDataSource ds) : IRepositorioDigi
                     UPDATE fiscal.documento_item SET cfop_escrituracao = CASE WHEN @cfop = cfop THEN NULL ELSE @cfop END, produto_id = @p, centro_custo_id = @cc,
                            cst_icms_escrituracao = CASE WHEN @cst::text IS NULL THEN cst_icms_escrituracao WHEN @cst = cst_icms THEN NULL ELSE @cst END,
                            credita_icms = COALESCE(@ci, credita_icms), credita_ipi = COALESCE(@cip, credita_ipi), credita_pis = COALESCE(@cp, credita_pis),
-                           credita_cofins = COALESCE(@cf, credita_cofins), sem_regra = FALSE
+                           credita_cofins = COALESCE(@cf, credita_cofins), credita_ibscbs = COALESCE(@cib, credita_ibscbs), sem_regra = FALSE
                      WHERE documento_id = @d AND n_item = @n RETURNING cod_produto
                     """, con, tx).Com("d", esc.DocumentoId).Com("n", i.Numero).ComTexto("cfop", i.Cfop).Com("p", NpgsqlDbType.Bigint, i.ProdutoId)
                                  .Com("cc", NpgsqlDbType.Bigint, i.CentroCustoId).ComTexto("cst", i.CstIcms).Com("ci", NpgsqlDbType.Boolean, i.CreditaIcms)
-                                 .Com("cip", NpgsqlDbType.Boolean, i.CreditaIpi).Com("cp", NpgsqlDbType.Boolean, i.CreditaPis).Com("cf", NpgsqlDbType.Boolean, i.CreditaCofins))
+                                 .Com("cip", NpgsqlDbType.Boolean, i.CreditaIpi).Com("cp", NpgsqlDbType.Boolean, i.CreditaPis).Com("cf", NpgsqlDbType.Boolean, i.CreditaCofins)
+                                 .Com("cib", NpgsqlDbType.Boolean, i.CreditaIbsCbs))
                 {
                     var r = await it.ExecuteScalarAsync(ct);
                     if (r is null) throw new ViolacaoRegraException($"Item {i.Numero} não encontrado na nota.");

@@ -26,7 +26,8 @@ public sealed record DocumentoDigitado(
 /// e se credita ICMS/IPI/PIS/COFINS (nulo = não altera). Gravar a escrituração tira a marca "sem regra" do item (foi conferido).
 /// </summary>
 public sealed record EscrituracaoItem(int Numero, string? Cfop, long? ProdutoId, long? CentroCustoId, string? CstIcms = null,
-                                      bool? CreditaIcms = null, bool? CreditaIpi = null, bool? CreditaPis = null, bool? CreditaCofins = null);
+                                      bool? CreditaIcms = null, bool? CreditaIpi = null, bool? CreditaPis = null, bool? CreditaCofins = null,
+                                      bool? CreditaIbsCbs = null);
 
 /// <summary>
 /// Campos de escrituração, editáveis inclusive nas notas importadas: observações, centro de custo, contas de contabilização

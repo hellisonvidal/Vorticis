@@ -1,7 +1,186 @@
 {
   "vigencia_inicio": "2026-01-01",
-  "fundamento": "EC 132/2023; LC 214/2025, arts. 343 a 346 (transição): em 2026, CBS de 0,9% e IBS de 0,1% destacados no documento fiscal, compensáveis com PIS/COFINS e dispensados de recolhimento se cumpridas as obrigações acessórias",
+  "fundamento": "EC 132/2023; LC 214/2025 (transição, arts. 343 e seguintes): CBS e IBS de teste em 2026; de 2027 em diante, CBS plena e PIS/COFINS extintos",
   "anos": [
-    { "ano": 2026, "cbs": 0.9, "ibs_uf": 0.1, "ibs_mun": 0.0, "observacao": "Ano de teste: valores informativos, compensáveis com PIS e COFINS." }
+    {
+      "ano": 2026,
+      "cbs": 0.9,
+      "ibs_uf": 0.1,
+      "ibs_mun": 0.0,
+      "pis_cofins": true,
+      "ipi": true,
+      "imposto_seletivo": false,
+      "contabiliza": false,
+      "observacao": "Ano de teste: CBS 0,9% e IBS 0,1% destacados no documento, compensáveis com PIS e COFINS; não há recolhimento nem contabilização."
+    },
+    {
+      "ano": 2027,
+      "cbs": 11.2,
+      "ibs_uf": 0.05,
+      "ibs_mun": 0.05,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "CBS cobrada: alíquota de referência (11,3%, calculada pelo TCU) menos 0,1 ponto; IBS de 0,05% (UF) e 0,05% (município). PIS e COFINS extintos; IPI zerado, salvo produtos incentivados da Zona Franca de Manaus; começa o Imposto Seletivo. Confira a resolução do Senado e ajuste aqui, se necessário."
+    },
+    {
+      "ano": 2028,
+      "cbs": 11.2,
+      "ibs_uf": 0.05,
+      "ibs_mun": 0.05,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "Mesmas regras de 2027. Confira a resolução do Senado."
+    },
+    {
+      "ano": 2029,
+      "cbs": 11.3,
+      "ibs_uf": null,
+      "ibs_mun": null,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "2029: o IBS sobe e o ICMS e o ISS caem gradualmente até 2033; as alíquotas do IBS serão fixadas pelo Senado e pelos entes. Cadastre-as aqui quando publicadas."
+    },
+    {
+      "ano": 2030,
+      "cbs": 11.3,
+      "ibs_uf": null,
+      "ibs_mun": null,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "2030: o IBS sobe e o ICMS e o ISS caem gradualmente até 2033; as alíquotas do IBS serão fixadas pelo Senado e pelos entes. Cadastre-as aqui quando publicadas."
+    },
+    {
+      "ano": 2031,
+      "cbs": 11.3,
+      "ibs_uf": null,
+      "ibs_mun": null,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "2031: o IBS sobe e o ICMS e o ISS caem gradualmente até 2033; as alíquotas do IBS serão fixadas pelo Senado e pelos entes. Cadastre-as aqui quando publicadas."
+    },
+    {
+      "ano": 2032,
+      "cbs": 11.3,
+      "ibs_uf": null,
+      "ibs_mun": null,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "2032: o IBS sobe e o ICMS e o ISS caem gradualmente até 2033; as alíquotas do IBS serão fixadas pelo Senado e pelos entes. Cadastre-as aqui quando publicadas."
+    },
+    {
+      "ano": 2033,
+      "cbs": 11.3,
+      "ibs_uf": null,
+      "ibs_mun": null,
+      "pis_cofins": false,
+      "ipi": false,
+      "imposto_seletivo": true,
+      "contabiliza": true,
+      "observacao": "2033: o IBS sobe e o ICMS e o ISS caem gradualmente até 2033; as alíquotas do IBS serão fixadas pelo Senado e pelos entes. Cadastre-as aqui quando publicadas."
+    }
+  ],
+  "cst": [
+    {
+      "codigo": "000",
+      "descricao": "Tributação integral",
+      "tributa": true
+    },
+    {
+      "codigo": "010",
+      "descricao": "Tributação com alíquotas uniformes",
+      "tributa": true
+    },
+    {
+      "codigo": "011",
+      "descricao": "Tributação com alíquotas uniformes reduzidas",
+      "tributa": true
+    },
+    {
+      "codigo": "200",
+      "descricao": "Alíquota reduzida",
+      "tributa": true
+    },
+    {
+      "codigo": "210",
+      "descricao": "Redução de alíquota com redutor de base de cálculo",
+      "tributa": true
+    },
+    {
+      "codigo": "220",
+      "descricao": "Alíquota fixa",
+      "tributa": true
+    },
+    {
+      "codigo": "221",
+      "descricao": "Alíquota fixa proporcional",
+      "tributa": true
+    },
+    {
+      "codigo": "222",
+      "descricao": "Redução de base de cálculo",
+      "tributa": true
+    },
+    {
+      "codigo": "400",
+      "descricao": "Isenção",
+      "tributa": false
+    },
+    {
+      "codigo": "410",
+      "descricao": "Imunidade e não incidência",
+      "tributa": false
+    },
+    {
+      "codigo": "510",
+      "descricao": "Diferimento",
+      "tributa": false
+    },
+    {
+      "codigo": "515",
+      "descricao": "Diferimento com redução de alíquota",
+      "tributa": false
+    },
+    {
+      "codigo": "550",
+      "descricao": "Suspensão",
+      "tributa": false
+    },
+    {
+      "codigo": "620",
+      "descricao": "Tributação monofásica",
+      "tributa": false
+    },
+    {
+      "codigo": "800",
+      "descricao": "Transferência de crédito",
+      "tributa": false
+    },
+    {
+      "codigo": "810",
+      "descricao": "Ajustes",
+      "tributa": false
+    },
+    {
+      "codigo": "820",
+      "descricao": "Tributação em declaração de regime específico",
+      "tributa": false
+    },
+    {
+      "codigo": "830",
+      "descricao": "Exclusão da base de cálculo",
+      "tributa": false
+    }
   ]
 }

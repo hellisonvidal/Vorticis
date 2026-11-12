@@ -12,11 +12,16 @@
         <TextBlock Text="Competência" VerticalAlignment="Center" />
         <c:SeletorCompetencia Competencia="{Binding Competencia}" />
         <Button Content="Apurar" Command="{Binding ApurarCommand}" Classes="accent" />
+        <Button Name="EncerrarReforma" Content="Encerrar" Command="{Binding EncerrarCommand}" IsEnabled="{Binding PodeEncerrar}"
+                ToolTip.Tip="De 2027 em diante: grava os saldos do mês (o credor passa ao mês seguinte)." />
+        <CheckBox Content="Contabilizar a compensação" IsChecked="{Binding Contabilizar}" VerticalAlignment="Center"
+                  ToolTip.Tip="Lança D IBS/CBS a recolher e C IBS/CBS a recuperar pelo valor compensado (contas em Regras de contabilização › Provisões de impostos)." />
+        <Button Content="Reabrir" Command="{Binding ReabrirCommand}" IsEnabled="{Binding PodeReabrir}" />
         <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
         <c:BarraExportacaoView />
       </StackPanel>
       <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray"
-                 Text="Soma o IBS e a CBS destacados nos itens das NF-e importadas (grupo IBSCBS): débitos das saídas menos créditos das entradas. Apuração assistida para a transição da reforma tributária." />
+                 Text="Soma o IBS, a CBS e o Imposto Seletivo destacados nos itens das notas (importadas ou digitadas): débitos das saídas menos créditos das entradas (só dos itens que creditam) menos o saldo credor do mês anterior. Em 2026 é informativa; de 2027 em diante pode ser encerrada." />
       <c:MensagensView />
       <TextBlock Text="{Binding AvisosTexto}" Classes="erro" TextWrapping="Wrap" IsVisible="{Binding AvisosTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </StackPanel>

@@ -57,6 +57,7 @@ public sealed class ServicosFiscais
         Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
         NotasPorCentro = new ServicoNotasPorCentro(ds, autorizador);
         Reforma = new Reforma.ServicoReformaTributaria(ds, Parametros, autorizador);
+        Classificacoes = new Reforma.ServicoClassificacaoTributaria(ds, Parametros, autorizador);
         SimplesReforma = new Reforma.ServicoSimplesReforma(Simples, Reforma, repoSimples, repoDocumentos, Parametros, autorizador);
         DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
@@ -65,6 +66,16 @@ public sealed class ServicosFiscais
         ImportacaoEfdIcms = new ServicoImportacaoEfd(TipoArquivoSped.EfdIcmsIpi, repoImportacaoEfd, app.HistoricoImportacaoSped, autorizador);
         ImportacaoEfdContribuicoes = new ServicoImportacaoEfd(TipoArquivoSped.EfdContribuicoes, repoImportacaoEfd, app.HistoricoImportacaoSped, autorizador);
         Provisoes = new ServicoProvisoes(new RepositorioProvisoes(ds), repoContabilizacao, repoSimples, repoLucro, app.Lancamentos, autorizador);
+        Reforma.ContabilizarCompensacao = Provisoes.ContabilizarCompensacaoReformaAsync;
+        var repoProvisoes = new RepositorioProvisoes(ds);
+        Contabilizacao.ContasReformaDoAno = async (empresa, ano, ct) =>
+        {
+            if ((await Reforma.AliquotasDoAnoAsync(ano, ct)) is not { Contabiliza: true }) return null;
+            var contas = (await repoProvisoes.ListarContasAsync(empresa, ct)).ToDictionary(c => c.Tributo);
+            string? D(string t) => contas.GetValueOrDefault(t)?.ContaDespesa;
+            string? P(string t) => contas.GetValueOrDefault(t)?.ContaPassivo;
+            return new Contabilizacao.ContasReforma(D("IBS"), P("IBS"), D("CBS"), P("CBS"), D("IS"), P("IS"));
+        };
     }
 
     public IParametrosFiscais Parametros { get; }
@@ -84,6 +95,7 @@ public sealed class ServicosFiscais
     public Fechamento.ServicoFechamentoFiscal Fechamento { get; }
     public ServicoNotasPorCentro NotasPorCentro { get; }
     public Reforma.ServicoReformaTributaria Reforma { get; }
+    public Reforma.ServicoClassificacaoTributaria Classificacoes { get; }
     public Reforma.ServicoSimplesReforma SimplesReforma { get; }
     public Dctf.ServicoDctfWeb DctfWeb { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }

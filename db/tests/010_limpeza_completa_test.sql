@@ -14,7 +14,8 @@ BEGIN
     FOR r IN SELECT n.nspname AS s, c.relname AS t FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
               WHERE c.relkind = 'r' AND n.nspname IN ('core', 'contabil', 'fiscal', 'folha', 'imobilizado', 'erp', 'escritorio', 'condominio')
                 AND (n.nspname, c.relname) NOT IN (('core', 'auditoria'), ('core', 'parametro_legal'), ('core', 'perfil'),
-                                                   ('core', 'perfil_permissao'), ('imobilizado', 'grupo'), ('core', 'configuracao_sistema'))
+                                                   ('core', 'perfil_permissao'), ('imobilizado', 'grupo'), ('core', 'configuracao_sistema'),
+                                                   ('fiscal', 'classificacao_tributaria'))
     LOOP
         EXECUTE format('SELECT count(*) FROM %I.%I', r.s, r.t) INTO v_n;
         IF v_n > 0 THEN RAISE EXCEPTION 'a limpeza deixou % linha(s) em %.%', v_n, r.s, r.t; END IF;

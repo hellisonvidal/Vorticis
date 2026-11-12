@@ -14,7 +14,7 @@ public sealed record RegraFiscal(
     long Id, TipoOperacao Operacao, int Ordem, bool Ativo, string? Descricao, string? CfopOrigem, long? ParticipanteId, string? Ncm, long? ProdutoId,
     string? CstOrigem, string? Destino, string? CfopDestino, string? CstDestino, bool CreditaIcms = true, bool CreditaIpi = true, bool CreditaPis = true,
     bool CreditaCofins = true, string? ContaDebito = null, string? ContaCredito = null, long? CentroCustoId = null,
-    string? ParticipanteNome = null, string? ProdutoDescricao = null);
+    string? ParticipanteNome = null, string? ProdutoDescricao = null, string? CstIbsCbs = null, string? ClassTrib = null, bool CreditaIbsCbs = true);
 
 /// <summary>Dados do item usados para escolher a regra.</summary>
 public sealed record ItemParaRegra(string Cfop, long? ParticipanteId, string? Ncm, long? ProdutoId, string? CstIcms, string? Destino = null);
@@ -22,7 +22,7 @@ public sealed record ItemParaRegra(string Cfop, long? ParticipanteId, string? Nc
 /// <summary>Escrituração decidida para um item de entrada. <see cref="SemRegra"/>: nenhuma regra serviu e valeu a conversão padrão (5/6/7 para 1/2/3).</summary>
 public sealed record DecisaoFiscal(
     string Cfop, string? CstIcms, bool CreditaIcms, bool CreditaIpi, bool CreditaPis, bool CreditaCofins, string? ContaDebito, string? ContaCredito,
-    long? CentroCustoId, long? RegraId, bool SemRegra);
+    long? CentroCustoId, long? RegraId, bool SemRegra, bool CreditaIbsCbs = true, string? CstIbsCbs = null, string? ClassTrib = null);
 
 public static class MotorRegrasFiscais
 {
@@ -55,7 +55,7 @@ public static class MotorRegrasFiscais
             return new DecisaoFiscal(item.Cfop, null, true, true, true, true, null, null, null, null, false);   // NFS-e ou CFOP que já é de entrada: nada a converter
         return Localizar(regras, TipoOperacao.Entrada, item) is { } r
             ? new DecisaoFiscal(r.CfopDestino ?? CfopPadraoEntrada(item.Cfop), r.CstDestino, r.CreditaIcms, r.CreditaIpi, r.CreditaPis, r.CreditaCofins,
-                                r.ContaDebito, r.ContaCredito, r.CentroCustoId, r.Id, false)
+                                r.ContaDebito, r.ContaCredito, r.CentroCustoId, r.Id, false, r.CreditaIbsCbs, r.CstIbsCbs, r.ClassTrib)
             : new DecisaoFiscal(CfopPadraoEntrada(item.Cfop), null, true, true, true, true, null, null, null, null, true);
     }
 
