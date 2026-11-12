@@ -1,3 +1,23 @@
+# Vorticis 1.0.8
+
+## Novidades desta versão
+
+### Escritório: um cliente de cada vez
+- Saiu a opção **Todos os clientes** do topo: o Escritório trabalha sempre com o cliente escolhido em **Cliente:** (o escritório, 0001, vem escolhido). Tarefas, protocolos, contratos, honorários, o relatório de honorários e a carteira mostram só o que é dele.
+- Nas janelas de inclusão (tarefa, protocolo, contrato, honorário e cobrança avulsa), o cliente é o do topo e não pode ser trocado: assim as informações de um cliente não se misturam com as de outro.
+
+### Escritório › Gerador de contratos
+- A ficha do contrato foi reorganizada em duas abas, **Condições** e **Texto do contrato**, sem textos sobrepostos.
+- **Prazo** de 12 meses por padrão (de 1 a 120) e a caixa **Renovação automática**: quando vence a última parcela, o contrato lança sozinho as parcelas do prazo seguinte em *Financeiro › Honorários*. O texto do contrato inclui a cláusula de renovação.
+- **Gerar parcelas do contrato** grava o contrato e lança as parcelas uma vez; **Estender parcelas** lança mais um prazo, a partir da competência seguinte à da última parcela, e estende a vigência. O quadro da ficha mostra quantas parcelas já foram lançadas e até quando.
+
+### Escritório › Relatório de honorários
+- O período é pelo **vencimento**, com datas (dia/mês/ano), e não mais pela competência.
+
+Para atualizar, rode o **Setup-Vorticis-1.0.8.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.0.7
 
 ## Novidades desta versão
@@ -150,12 +170,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.7.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.8.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.7.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.8.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
