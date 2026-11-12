@@ -115,7 +115,7 @@ A tela mostra a **lista dos protocolos** registrados (número, data, cliente, ti
 A tela mostra a **lista dos contratos gravados**. A **ficha do contrato** abre numa janela por cima da lista: **Novo contrato**, **Abrir ficha**, duplo clique ou **Enter** a abrem; **Gravar** grava e fecha a janela, e **Cancelar**, **Esc** ou o **X** fecham sem gravar.
 
 1. **Novo contrato**: o **Tipo** é *Cliente* (o cliente é o contratante e o escritório, o contratado).
-2. O **CONTRATANTE** já vem preenchido com o cliente escolhido no topo da tela, em **Cliente:** (troque, se precisar). Confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*) e o **dia** do vencimento.
+2. O **Contratante** já vem preenchido com o cliente escolhido no topo da tela, em **Cliente:** (troque, se precisar). Confira o **Objeto**, informe o **Valor**, a periodicidade (*Mensal*, *Anual* ou *Parcela única*) e o **dia** do vencimento.
 3. **Prazo**: em meses, **12** de padrão. O prazo preenche o fim da **vigência** (início em 01/07/2027 com 12 meses termina em 30/06/2028); **0** deixa o prazo indeterminado. Informe também o índice de **Reajuste** e o **Foro** (em branco: a cidade do escritório).
 4. **Gerar texto** (botão na ficha): o contrato sai com a qualificação das partes e as cláusulas de objeto, preço, reajuste, vigência, obrigações, rescisão e foro. Ajuste o texto se precisar.
 5. **Gravar**: o contrato recebe o próximo número do escritório e a janela fecha.

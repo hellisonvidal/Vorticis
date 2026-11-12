@@ -10,7 +10,7 @@
         <Grid DockPanel.Dock="Top" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding PodeEditar}">
           <TextBlock Classes="rotulo" Text="Tipo" />
           <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:ContratosViewModel.Modelos}" SelectedItem="{Binding Modelo}" HorizontalAlignment="Stretch" />
-          <TextBlock Grid.Row="1" Classes="rotulo" Text="CONTRATANTE" />
+          <TextBlock Grid.Row="1" Classes="rotulo" Text="Contratante" />
           <ComboBox Grid.Row="1" Grid.Column="1" Name="Contratante" ItemsSource="{Binding Partes}" SelectedItem="{Binding Parte}" HorizontalAlignment="Stretch"
                     ToolTip.Tip="Já vem com o cliente escolhido no topo da tela (Cliente:)." />
           <TextBlock Grid.Row="2" Classes="rotulo" Text="Objeto" />

@@ -1,3 +1,21 @@
+# Vorticis 1.0.7
+
+## Novidades desta versão
+
+### Escritório › Gerador de contratos
+- O campo **Parte** passou a se chamar **Contratante** e já vem com o cliente escolhido no topo da tela, em **Cliente:**.
+- **Prazo** do contrato em meses (12 de padrão): preenche o fim da vigência; 0 deixa o prazo indeterminado.
+- **Gerar parcelas do contrato:** cria as parcelas do contrato (mensal, anual ou parcela única, durante o prazo, a partir do mês do início) e lança em *Financeiro › Honorários*, com o vencimento por **Competência (mês seguinte)** ou **Regime de caixa (mesmo mês)** e confirmação antes de lançar.
+
+### Escritório › Financeiro › Honorários
+- A pesquisa passa a ser pelo **vencimento** (datas de/até); a competência digitada fica só na inclusão de honorários e cobranças avulsas.
+- Botão **Carregar**, que busca as cobranças lançadas, inclusive as parcelas geradas pelos contratos.
+- Saiu o botão **Gerar do contrato**: as parcelas vêm do Gerador de contratos.
+
+Para atualizar, rode o **Setup-Vorticis-1.0.7.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.0.6
 
 ## Novidades desta versão
@@ -132,12 +150,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.6.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.0.7.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.6.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.7.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 
