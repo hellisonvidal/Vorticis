@@ -1,3 +1,34 @@
+# Vorticis 1.4.0
+
+## Novidades desta versão
+
+### Folha
+- **Vencimentos de contratos e férias** (*Relatórios*): contratos de experiência e a termo perto do fim (com o que fazer: prorrogar ou encerrar) e a data em que as férias precisam começar para não serem pagas em dobro.
+- **Admitidos e desligados** (*Relatórios*): movimentação do período, com motivo, líquido da rescisão e a rotatividade.
+- **Empréstimos consignados** (*Cálculos › Folha*): contratos dos funcionários, parcelas lançadas na folha da competência (rubrica 2013), quitação automática e margem consignável (35% da remuneração disponível).
+- **Conferência do INSS (DCTFWeb)** (*Obrigações*): contribuições da competência (segurados, patronal, RAT, terceiros, salário-família) separando a folha do mês e o 13º, para conferir com a DCTFWeb antes do DARF.
+
+### Fiscal
+- **DIFAL (uso e consumo e ativo)** (*Apuração*): diferencial de alíquota das compras de outro estado, com base dupla ou única.
+- **Conferência de tributação** (*Relatórios › Livros e apuração*): itens das notas com NCM, origem, CST, CFOP ou alíquota diferentes do cadastro do produto.
+
+### Contábil
+- **Lançamentos programados** (*Lançamentos › Contábeis*): aluguel, pró-labore, seguros e outros lançamentos mensais cadastrados uma vez e gerados a cada mês com um clique, sem duplicar.
+- **Balancete consolidado** (*Relatórios › Contábeis*): soma de um grupo de empresas com o mesmo plano, com as contas a eliminar.
+
+### Escritório
+- **Gerar das obrigações** (*Tarefas e prazos*): cria as tarefas do mês do cliente a partir do calendário de obrigações da empresa dele.
+- **Produtividade da equipe** e **Certificados digitais a vencer** (*Relatórios*).
+- **Reajuste anual dos honorários** (*Financeiro › Honorários*): aplica o percentual do índice ao honorário, aos contratos e às cobranças em aberto do cliente.
+
+### Gerencial
+- **Orçamentos de venda**: o pedido pode ser gravado como orçamento, com validade, e virar pedido com **Aprovar orçamento**.
+- **Vendedor e comissão** no pedido e o relatório **Comissões de vendedores**.
+
+Para atualizar, use **Configurações › Atualizações do sistema** ou rode o **Setup-Vorticis-1.4.0.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.3.0
 
 ## Novidades desta versão
