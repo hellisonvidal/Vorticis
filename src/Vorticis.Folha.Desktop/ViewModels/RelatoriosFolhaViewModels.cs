@@ -220,3 +220,63 @@ public partial class InformeRendimentosViewModel(IContexto contexto) : Relatorio
         Mensagem = "Comprovantes gerados: " + ArquivosGerados.Salvar($"comprovante_rendimentos_{AnoEscolhido}{sufixo}.pdf", r.Valor.Conteudo);
     }, Permissao.FolhaRelatorios);
 }
+
+/// <summary>Folha › Relatórios › Vencimentos de contratos e férias: prazos de experiência/contratos a termo e férias a conceder.</summary>
+public partial class VencimentosPessoalViewModel(IContexto contexto) : RelatorioViewModel(contexto)
+{
+    [ObservableProperty] private decimal? _dias = 60;
+    [ObservableProperty] private TabelaRelatorio? _tabela;
+    private DateOnly _hoje;
+
+    protected override string TituloRelatorio => "Vencimentos de contratos e férias";
+    protected override string NomeArquivo => $"vencimentos_pessoal_{_hoje:yyyyMMdd}";
+    protected override string Parametros => $"Prazos até {_hoje.AddDays((int)(Dias ?? 0)):dd/MM/yyyy}";
+    protected override bool Paisagem => true;
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() => Tabela is null ? [] : [Tabela];
+
+    public void Limpar() { Tabela = null; TemDados = false; }
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        _hoje = DateOnly.FromDateTime(DateTime.Today);
+        var r = await app.Folha().Relatorios.VencimentosAsync(empresa, _hoje, (int)(Dias ?? 60), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Tabela = r.Valor;
+        TemDados = r.Valor.Linhas.Count > 0;
+        AtualizarPermissoesExportacao();
+        Mensagem = r.Valor.Linhas.Count == 0 ? "Nenhum contrato ou férias vencendo no prazo escolhido." : r.Valor.Rodape ?? "";
+    }, Permissao.FolhaRelatorios);
+}
+
+/// <summary>Folha › Relatórios › Admitidos e desligados: movimentação de pessoal do período e rotatividade.</summary>
+public partial class AdmitidosDesligadosViewModel(IContexto contexto) : RelatorioViewModel(contexto)
+{
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private TabelaRelatorio? _tabela;
+    [ObservableProperty] private TabelaRelatorio? _tabela2;
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    protected override string TituloRelatorio => "Admitidos e desligados";
+    protected override string NomeArquivo => $"admitidos_desligados_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override bool Paisagem => true;
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() => new[] { Tabela, Tabela2 }.OfType<TabelaRelatorio>().ToArray();
+
+    public void Limpar() { Tabela = Tabela2 = null; TemDados = false; }
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = DateOnly.FromDateTime(Inicio ?? new DateTime(DateTime.Today.Year, 1, 1));
+        var fim = DateOnly.FromDateTime(Fim ?? DateTime.Today);
+        var r = await app.Folha().Relatorios.AdmitidosDesligadosAsync(empresa, ini, fim, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        _periodo = (ini, fim);
+        (Tabela, Tabela2) = (r.Valor[0], r.Valor[1]);
+        TemDados = true;
+        AtualizarPermissoesExportacao();
+        Mensagem = r.Valor[1].Rodape ?? "";
+    }, Permissao.FolhaRelatorios);
+}

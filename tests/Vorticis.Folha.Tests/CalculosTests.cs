@@ -317,3 +317,54 @@ public class InformeRendimentosTests
         Assert.Empty(ApuracaoInformeRendimentos.Apurar(calculos, inc, 2024));
     }
 }
+
+public class ControlesPessoalTests
+{
+    private static Funcionario F(long id, string nome, string admissao) => FolhaIntegracaoTests.Novo(id.ToString(), nome, "52998224725", 2000m, admissao) with { Id = id };
+
+    [Fact]
+    public void Vencimentos_de_experiencia_e_ferias()
+    {
+        var hoje = new DateOnly(2026, 6, 1);
+        var funcionarios = new[]
+        {
+            F(1, "Experiência 45", "2026-05-01") with { TipoContrato = "EXPERIENCIA", TerminoContrato = new DateOnly(2026, 6, 14) },
+            F(2, "Experiência longe", "2026-05-20") with { TipoContrato = "EXPERIENCIA", TerminoContrato = new DateOnly(2026, 8, 17) },
+            F(3, "Férias vencendo", "2024-07-01"),   // 1º período 01/07/2024–30/06/2025; concessivo até 30/06/2026; gozo de 30 dias até 01/06/2026
+            F(4, "Férias em dobro", "2023-01-10"),   // 1º período: concessivo terminou em 09/01/2025
+            F(5, "Férias gozadas", "2024-07-01"),
+            F(6, "Desligado", "2020-01-01") with { Situacao = "DESLIGADO", Desligamento = new DateOnly(2026, 1, 1) },
+        };
+        var ferias = new[]
+        {
+            new FeriasRegistro(1, 5, "Férias gozadas", new(2024, 7, 1), new(2025, 6, 30), new(2026, 1, 5), 30, 0, 0, new(2026, 1, 3), "CALCULADA", 1000m),
+            new FeriasRegistro(2, 4, "Férias em dobro", new(2024, 1, 10), new(2025, 1, 9), new(2025, 3, 1), 30, 0, 0, new(2025, 2, 27), "CALCULADA", 1000m),
+        };
+        var v = ControlesPessoal.Vencimentos(funcionarios, ferias, hoje, 30);
+        var exp = Assert.Single(v, x => x.FuncionarioId == 1);
+        Assert.Equal(("Contrato de experiência", 13), (exp.Tipo, exp.Dias));
+        Assert.Contains("prorrogada", exp.Observacao);
+        Assert.DoesNotContain(v, x => x.FuncionarioId is 2 or 5 or 6);
+        var fer = Assert.Single(v, x => x.FuncionarioId == 3);
+        Assert.Equal((new DateOnly(2026, 6, 1), "Vence hoje"), (fer.Limite, fer.Situacao));
+        var dobro = Assert.Single(v, x => x.FuncionarioId == 4);   // só o 1º período (o 2º foi gozado)
+        Assert.Equal("Em dobro", dobro.Situacao);
+    }
+
+    [Fact]
+    public void Admitidos_desligados_e_rotatividade()
+    {
+        var funcionarios = new[]
+        {
+            F(1, "Antigo", "2020-01-01"), F(2, "Antigo 2", "2021-01-01"),
+            F(3, "Novo", "2026-02-10"),
+            F(4, "Saiu", "2022-01-01") with { Situacao = "DESLIGADO", Desligamento = new DateOnly(2026, 3, 31) },
+        };
+        var resc = new[] { new RescisaoRegistro(1, 4, "Saiu", MotivoRescisao.PedidoDemissao, new(2026, 3, 31), TipoAviso.Trabalhado, 0, 0, new(2026, 4, 9), "CALCULADA", 2500m, 0) };
+        var (adm, desl, quadro, rot) = ControlesPessoal.AdmitidosDesligados(funcionarios, resc, new(2026, 1, 1), new(2026, 6, 30));
+        Assert.Equal("Novo", Assert.Single(adm).Nome);
+        var d = Assert.Single(desl);
+        Assert.Equal(("Pedido de demissão", 2500m), (d.Motivo, d.LiquidoRescisao));
+        Assert.Equal((3, 33.33m), (quadro, rot));
+    }
+}

@@ -72,7 +72,10 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("Resumo da folha", FolhaTelas.Resumo),
             ItemMenu.Tela("Encargos patronais", FolhaTelas.Encargos),
             ItemMenu.Tela("Provisões", FolhaTelas.Provisoes),
-            ItemMenu.Tela("Informe de rendimentos", FolhaTelas.InformeRendimentos)),
+            ItemMenu.Tela("Informe de rendimentos", FolhaTelas.InformeRendimentos),
+            ItemMenu.Separador,
+            ItemMenu.Tela("Vencimentos de contratos e férias", FolhaTelas.Vencimentos),
+            ItemMenu.Tela("Admitidos e desligados", FolhaTelas.AdmitidosDesligados)),
     ];
 
     /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
@@ -84,6 +87,7 @@ public sealed class ModuloFolha : IModuloDesktop
         new("Folha", "FGTS Digital vence no dia 20", "A guia do FGTS Digital vence no dia 20 do mês seguinte (antecipa se não for dia útil). Confira o demonstrativo antes de emitir a guia no portal.", FolhaTelas.FgtsDigital),
         new("Folha", "Tabelas da previdência à mão", "Cadastros › Tabelas legais › Tabelas da previdência social mostra as faixas do INSS, o teto, o salário-família e o FGTS da competência, prontas para imprimir.", FolhaTelas.TabelasPrevidencia),
         new("Folha", "Pró-labore não tem FGTS", "O pró-labore do sócio paga INSS de contribuinte individual (11%, até o teto) e o patronal fora do Simples; não há FGTS nem 13º.", FolhaTelas.ProLabore),
+        new("Folha", "Prazos de pessoal", "Abra Relatórios › Vencimentos de contratos e férias toda semana: contrato de experiência vencido vira prazo indeterminado e férias fora do prazo são pagas em dobro.", FolhaTelas.Vencimentos),
         new("Folha", "Provisões todo mês", "Calcule as provisões de férias e 13º todo mês: a contabilidade fica com o passivo certo e o custo da folha não salta em dezembro.", FolhaTelas.Provisoes),
     ];
 
@@ -182,5 +186,9 @@ public sealed class ModuloFolha : IModuloDesktop
             .Tela(FolhaTelas.Provisoes, "Relatórios › Provisões de férias e 13º", m => Pode(m, Permissao.FolhaRelatorios, Permissao.FolhaCalcular));
         c.Instancia(nameof(MainViewModel.InformeRendimentos), m => new InformeRendimentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.InformeRendimentos, "Relatórios › Informe de rendimentos", m => Pode(m, Permissao.FolhaRelatorios));
+        c.Instancia(nameof(MainViewModel.VencimentosPessoal), m => new VencimentosPessoalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.Vencimentos, "Relatórios › Vencimentos de contratos e férias", m => Pode(m, Permissao.FolhaRelatorios));
+        c.Instancia(nameof(MainViewModel.AdmitidosDesligados), m => new AdmitidosDesligadosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.AdmitidosDesligados, "Relatórios › Admitidos e desligados", m => Pode(m, Permissao.FolhaRelatorios));
     }
 }

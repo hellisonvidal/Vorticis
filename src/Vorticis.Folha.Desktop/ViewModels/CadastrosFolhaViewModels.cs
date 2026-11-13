@@ -29,6 +29,8 @@ public static class FolhaTelas
     public const string Rescisoes = "folha.rescisoes";
     public const string Provisoes = "folha.provisoes";
     public const string InformeRendimentos = "folha.informe_rendimentos";
+    public const string Vencimentos = "folha.vencimentos";
+    public const string AdmitidosDesligados = "folha.admitidos_desligados";
     public const string Contabilizacao = "folha.contabilizacao";
     public const string ContabilizacaoEventos = "folha.contabilizacao.eventos";
     public const string EventosContabeis = "folha.eventoscontabeis";

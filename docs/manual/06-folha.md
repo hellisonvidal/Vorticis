@@ -359,3 +359,26 @@ O comprovante de rendimentos (modelo da Receita Federal, IN RFB 2.060/2021) deve
 - Confira a incidência de IRRF das rubricas que você criou: uma rubrica marcada sem incidência sai como rendimento isento.
 - Se houver pensão alimentícia, complete o comprovante com o CPF e o nome do beneficiário.
 - Previdência complementar, planos de saúde e outros pagamentos não lançados na folha não aparecem: acrescente-os à mão quando houver.
+
+## Vencimentos de contratos e férias
+
+Mostra os prazos de pessoal que vencem nos próximos dias, para não perder nenhum:
+
+- **Contratos de experiência** (e os demais a prazo: determinado, aprendizagem e estágio) que terminam no período. A experiência pode durar no máximo 90 dias e ser prorrogada uma única vez dentro desse limite; se o funcionário continuar trabalhando depois do término, o contrato passa a prazo indeterminado.
+- **Férias a conceder:** para cada período aquisitivo completo com saldo, a data em que o gozo precisa começar para terminar dentro do período concessivo. Passado o período concessivo, as férias são pagas em dobro (CLT, art. 137) e a linha aparece como **Em dobro**.
+
+### Passo a passo
+
+1. Abra *Relatórios › Vencimentos de contratos e férias*.
+2. Informe quantos **dias** à frente quer ver (60, por padrão) e clique em **Mostrar**.
+3. Os prazos já vencidos aparecem em destaque. A coluna **O que fazer** explica a providência (prorrogar ou encerrar a experiência, programar as férias).
+
+Dica: abra este relatório toda semana.
+
+## Admitidos e desligados
+
+Relação da movimentação de pessoal no período escolhido:
+
+1. Abra *Relatórios › Admitidos e desligados*, escolha as datas e clique em **Gerar**.
+2. A primeira tabela mostra os **admitidos** (data de admissão, cargo e salário); a segunda, os **desligados** (data, motivo e o valor líquido da rescisão calculada).
+3. No rodapé aparecem o quadro de funcionários no início do período e a **rotatividade**: a média entre admitidos e desligados dividida pelo quadro inicial.

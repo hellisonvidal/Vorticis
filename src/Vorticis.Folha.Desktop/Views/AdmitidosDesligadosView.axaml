@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Folha.Desktop.Views"
+             x:Class="Vorticis.Folha.Desktop.Views.AdmitidosDesligadosView"
+             x:DataType="vm:AdmitidosDesligadosViewModel">
+  <DockPanel Margin="8">
+    <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Admitidos e desligados" VerticalAlignment="Center" Margin="0,0,10,0" />
+      <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Margin="0,0,6,0" />
+      <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,10,0" />
+      <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,10,0" />
+      <c:BarraExportacaoView />
+    </WrapPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <Grid RowDefinitions="*,8,*">
+      <v:TabelaRelatorioGrid Tabela="{Binding Tabela}" />
+      <v:TabelaRelatorioGrid Grid.Row="2" Tabela="{Binding Tabela2}" />
+    </Grid>
+  </DockPanel>
+</UserControl>

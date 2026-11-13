@@ -189,6 +189,13 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
         Ok(comprovantes);
         Assert.True(comprovantes.Valor.Paginas >= 2);
         Assert.Contains("Não há rendimentos", (await rel.ComprovantesRendimentosAsync(empresa, anoPago + 1, adm, Ct)).Erros[0]);
+        // Controles de pessoal: vencimentos (prazos) e admitidos/desligados
+        Ok(await rel.VencimentosAsync(empresa, DateOnly.FromDateTime(DateTime.Today), 60, adm, Ct));
+        Assert.Contains("0 a 730", (await rel.VencimentosAsync(empresa, DateOnly.FromDateTime(DateTime.Today), 999, adm, Ct)).Erros[0]);
+        var movs = await rel.AdmitidosDesligadosAsync(empresa, new DateOnly(2000, 1, 1), DateOnly.FromDateTime(DateTime.Today), adm, Ct);
+        Ok(movs);
+        Assert.Contains("Admitidos", movs.Valor[0].Titulo);
+        Assert.True(movs.Valor[0].Linhas.Count >= 3);   // Maria, João e o total
 
         // Contabilização: precisa de regras, depois lança, não duplica e desfaz por estorno
         var contab = db.Folha.Contabilizacao;

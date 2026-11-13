@@ -134,6 +134,41 @@ public sealed class ServicoRelatoriosFolha(IRepositorioCadastrosFolha cadastros,
             await CabecalhoAsync(empresaId, $"Competência {Competencia(competencia)}", ct), blocos)));
     }
 
+    // ------------------------------------------------------------------ controles de pessoal
+
+    /// <summary>Contratos a termo e férias que vencem nos próximos <paramref name="dias"/> dias (e os já vencidos).</summary>
+    public async Task<Resultado<TabelaRelatorio>> VencimentosAsync(long empresaId, DateOnly hoje, int dias, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(empresaId, usuarioId, ct) is { } negado) return Resultado<TabelaRelatorio>.Falha(negado);
+        if (dias is < 0 or > 730) return Resultado<TabelaRelatorio>.Falha("Informe de 0 a 730 dias.");
+        var lista = ControlesPessoal.Vencimentos(await cadastros.ListarFuncionariosAsync(empresaId, ct), await movimento.ListarFeriasAsync(empresaId, null, ct), hoje, dias);
+        var linhas = lista.Select(v => new LinhaRelatorio([v.Matricula, v.Nome, v.Tipo, v.Limite, v.Situacao, v.Observacao], Destaque: v.Dias < 0)).ToList();
+        return Resultado<TabelaRelatorio>.Ok(new TabelaRelatorio("Vencimentos de contratos e férias",
+            [new("Matrícula", TipoColuna.Texto, 1.8), new("Funcionário", TipoColuna.Texto, 5), new("Prazo", TipoColuna.Texto, 4), new("Data limite", TipoColuna.Data, 2.3),
+             new("Situação", TipoColuna.Texto, 3), new("O que fazer")],
+            linhas, $"{lista.Count} prazo(s) até {hoje.AddDays(dias):dd/MM/yyyy}; em destaque, os vencidos."));
+    }
+
+    /// <summary>Relação de admitidos e desligados do período, com a rotatividade.</summary>
+    public async Task<Resultado<IReadOnlyList<TabelaRelatorio>>> AdmitidosDesligadosAsync(long empresaId, DateOnly inicio, DateOnly fim, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(empresaId, usuarioId, ct) is { } negado) return Resultado<IReadOnlyList<TabelaRelatorio>>.Falha(negado);
+        if (fim < inicio) return Resultado<IReadOnlyList<TabelaRelatorio>>.Falha("Data final anterior à inicial.");
+        var (adm, desl, quadro, rot) = ControlesPessoal.AdmitidosDesligados((await cadastros.ListarFuncionariosAsync(empresaId, ct)).ToList(),
+                                                                            await movimento.ListarRescisoesAsync(empresaId, ct), inicio, fim);
+        var admitidos = new TabelaRelatorio($"Admitidos ({adm.Count})",
+            [new("Admissão", TipoColuna.Data, 2.3), new("Matrícula", TipoColuna.Texto, 1.8), new("Funcionário"), new("Cargo", TipoColuna.Texto, 4), new("Salário", V)],
+            [.. adm.Select(a => new LinhaRelatorio([a.Data, a.Matricula, a.Nome, a.Cargo ?? "", a.Salario])),
+             new LinhaRelatorio(["", "", "TOTAL", "", adm.Sum(a => a.Salario)], Destaque: true)]);
+        var desligados = new TabelaRelatorio($"Desligados ({desl.Count})",
+            [new("Desligamento", TipoColuna.Data, 2.3), new("Matrícula", TipoColuna.Texto, 1.8), new("Funcionário"), new("Motivo", TipoColuna.Texto, 5), new("Salário", V),
+             new("Líquido da rescisão", V)],
+            [.. desl.Select(d => new LinhaRelatorio([d.Data, d.Matricula, d.Nome, d.Motivo ?? "", d.Salario, d.LiquidoRescisao])),
+             new LinhaRelatorio(["", "", "TOTAL", "", desl.Sum(d => d.Salario), desl.Sum(d => d.LiquidoRescisao ?? 0)], Destaque: true)],
+            $"Quadro no início do período: {quadro} funcionário(s). Rotatividade: {Formato.Num(rot)}% (média de admitidos e desligados dividida pelo quadro inicial).");
+        return Resultado<IReadOnlyList<TabelaRelatorio>>.Ok([admitidos, desligados]);
+    }
+
     // ------------------------------------------------------------------ informe de rendimentos
 
     /// <summary>Apura os informes de rendimentos do ano-calendário (pagamentos de janeiro a dezembro, regime de caixa).</summary>
