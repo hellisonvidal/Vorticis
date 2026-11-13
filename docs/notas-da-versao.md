@@ -1,3 +1,19 @@
+# Vorticis 1.1.0
+
+## Novidades desta versão
+
+### Telas de lançamento
+- **Contábil › Lançamentos:** botão **Copiar**, que abre um lançamento novo com as mesmas partidas do selecionado (contas, valores, histórico, documento, centro de custo e participante), para lançamentos que se repetem todo mês. O original não muda.
+- **Fiscal › Notas de entrada e de saída:** botão **Copiar**, que abre uma nota nova com o cliente/fornecedor, os itens e os tributos (inclusive IBS, CBS e Imposto Seletivo) da selecionada, sem número, chave e parcelas.
+- **Competências digitáveis:** os campos de mês/ano que não aceitavam digitação passaram a ser escolhidos por mês e ano (Fiscal: ajustes de ICMS, inventário e relação de ajustes; Folha: pró-labore; Condomínio: rateio, cobranças e prestação de contas).
+
+### Revisão geral
+- Compilação sem nenhum aviso e todos os testes automáticos (mais de 840) passando em todos os módulos, inclusive os testes do banco de dados.
+
+Para atualizar, rode o **Setup-Vorticis-1.1.0.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.0.9
 
 ## Novidades desta versão
@@ -191,12 +207,12 @@ Primeira versão para uso no dia a dia. A partir dela, cada atualização ganha 
 
 ## Como instalar ou atualizar
 
-1. Baixe o **Setup-Vorticis-1.0.9.exe** desta página e execute. Não precisa de senha de administrador do Windows.
+1. Baixe o **Setup-Vorticis-1.1.0.exe** desta página e execute. Não precisa de senha de administrador do Windows.
 2. Escolha os módulos. O instalador prepara o banco de dados sozinho.
 3. Na primeira vez, entre com **vorticis / vorticis** e cadastre o administrador do escritório: a partir daí esse acesso deixa de valer.
 4. Para atualizar no futuro, rode o instalador da versão nova por cima: **os dados são preservados** e o banco é atualizado sozinho na primeira abertura.
 
-Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.0.9.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
+Quem prefere não instalar pode usar o **VorticisSuiteEmpresarial-portatil-1.1.0.zip**: descompacte numa pasta e abra o `VorticisSuite.exe`.
 
 **Antes de começar:** em *Configurações › Backup*, escolha a pasta das cópias de segurança (de preferência num disco externo ou numa pasta sincronizada com a nuvem) e faça uma cópia ao fim de cada dia de trabalho.
 

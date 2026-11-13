@@ -1,6 +1,6 @@
 ﻿; Instalador da suíte Vorticis (Inno Setup 6): Contábil, Fiscal e Folha de Pagamento. Gerado pelo CI (job "instalador-windows").
 ; Entrada: ..\publish (VorticisContabil.exe, VorticisFiscal.exe, VorticisFolha.exe + pasta pgsql com os binários do PostgreSQL).
-; Compilar: iscc /DVersao=1.0.9 instalador\Vorticis.iss
+; Compilar: iscc /DVersao=1.1.0 instalador\Vorticis.iss
 
 #ifndef Versao
   #define Versao "0.0.0"
