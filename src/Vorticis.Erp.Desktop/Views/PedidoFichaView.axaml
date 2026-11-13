@@ -8,7 +8,22 @@
       <StackPanel Spacing="6" Margin="0,0,16,8">
         <StackPanel Spacing="6" Margin="0,0,16,8">
           <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" />
-          <Button Content="Cancelar pedido" Command="{Binding CancelarCommand}" IsEnabled="{Binding EmAberto}" HorizontalAlignment="Left" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Cancelar pedido" Command="{Binding CancelarCommand}" IsEnabled="{Binding EmAberto}" HorizontalAlignment="Left" />
+            <Button Content="Aprovar orçamento" Command="{Binding AprovarCommand}" IsVisible="{Binding Venda}" IsEnabled="{Binding PodeEditar}"
+                    ToolTip.Tip="Transforma o orçamento selecionado em pedido de venda em aberto, com a data de hoje." />
+          </StackPanel>
+          <Border BorderBrush="#99C9C2" BorderThickness="1" CornerRadius="4" Padding="6" IsVisible="{Binding Venda}" IsEnabled="{Binding EmAberto}">
+            <WrapPanel Orientation="Horizontal">
+              <CheckBox Content="Orçamento (ainda não aprovado)" IsChecked="{Binding Orcamento}" Margin="0,0,10,0" />
+              <TextBlock Text="Válido até" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <CalendarDatePicker SelectedDate="{Binding Validade}" Width="135" IsEnabled="{Binding Orcamento}" Margin="0,0,10,0" />
+              <TextBlock Text="Vendedor" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBox Text="{Binding Vendedor}" Width="170" Margin="0,0,10,0" />
+              <TextBlock Text="Comissão %" VerticalAlignment="Center" Margin="0,0,6,0" />
+              <TextBox c:Mascara.Tipo="Valor" Text="{Binding Comissao}" Width="70" />
+            </WrapPanel>
+          </Border>
           <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" IsEnabled="{Binding EmAberto}">
             <TextBlock Classes="rotulo" Text="{Binding RotuloParticipante}" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding Participantes}" SelectedItem="{Binding Participante}" HorizontalAlignment="Stretch" />

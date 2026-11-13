@@ -25,6 +25,19 @@ A tela mostra a **lista dos pedidos** do período. A **ficha do pedido** abre nu
    - Compra: **Receber mercadorias** grava a nota de entrada do fornecedor, gera as contas a pagar e dá entrada no estoque pelo custo do pedido.
 5. Depois de faturado ou recebido, o pedido não muda mais. Para corrigir a nota, use *Notas fiscais de saída/entrada*.
 
+### Orçamentos de venda
+
+Para mandar um orçamento ao cliente antes de fechar a venda:
+
+1. No **Novo pedido** de venda, marque **Orçamento (ainda não aprovado)** e informe até quando ele vale em **Válido até**.
+2. Inclua os itens e clique em **Gravar pedido**. Na lista, a situação aparece como *Orçamento*. Um orçamento não pode ser faturado e não conta como pedido em aberto.
+3. Quando o cliente aprovar, abra o orçamento e clique em **Aprovar orçamento**: ele vira pedido *Em aberto* com a data de hoje, pronto para faturar. Orçamento vencido não pode ser aprovado: altere a validade (e confira os preços) antes.
+4. Se o cliente recusar, use **Cancelar pedido**.
+
+### Vendedor e comissão
+
+Na ficha do pedido de venda, informe o **Vendedor** e a **Comissão %**. O relatório *Relatórios › Comissões de vendedores* soma, por vendedor, as vendas faturadas no período (pela data do faturamento) e a comissão de cada pedido.
+
 **Importante:** o Gerencial ainda não transmite a NF-e para a SEFAZ (*Emissão de NF-e na SEFAZ — em breve*). Emita a nota no seu emissor e use o mesmo número aqui. Para notas de compra com XML, prefira *Compras › Importação de XML*.
 
 ## Estoque
@@ -72,6 +85,7 @@ O Gerencial não mostra o calendário de obrigações (é rotina do escritório 
 
 - **Relatório de vendas** e **Relatório de compras**: as notas autorizadas de saída ou de entrada do período, agrupadas por nota, por cliente/fornecedor ou por mês, com valor total e tributos.
 - **Curva ABC de vendas** e **Curva ABC de compras**: os produtos (ou os clientes e fornecedores) do período em ordem de valor, com a participação de cada um. A classe A soma os primeiros 80% do valor, a B vai até 95% e a C é o restante: concentre a negociação, o estoque e a cobrança na classe A.
+- **Comissões de vendedores**: as vendas faturadas no período por vendedor, com a quantidade de pedidos, o total vendido, o percentual médio e a comissão a pagar.
 - **Relatório de recebimentos**: os recebimentos (baixas das contas a receber) do período, com juros, multa, descontos e a conta usada.
 - **Financeiro**: *Relatório de contas a pagar*, *Relatório de contas a receber*, *Posição por vencimento* e *Relatório de pagamentos*.
 

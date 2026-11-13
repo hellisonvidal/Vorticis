@@ -3,7 +3,7 @@ using Vorticis.Domain.Comum;
 namespace Vorticis.Erp;
 
 public enum TipoPedido { Venda, Compra }
-public enum SituacaoPedido { Aberto, Concluido, Cancelado }
+public enum SituacaoPedido { Aberto, Concluido, Cancelado, Orcamento }
 
 public sealed record ItemPedido(long ProdutoId, decimal Quantidade, decimal ValorUnitario, decimal Desconto = 0, string? ProdutoDescricao = null, int ProdutoCodigo = 0)
 {
@@ -12,7 +12,8 @@ public sealed record ItemPedido(long ProdutoId, decimal Quantidade, decimal Valo
 
 public sealed record Pedido(long Id, TipoPedido Tipo, int Numero, DateOnly Data, long ParticipanteId, SituacaoPedido Situacao, int Parcelas, int IntervaloDias,
                             DateOnly? PrimeiroVencimento, string? Observacao, IReadOnlyList<ItemPedido> Itens, string? ParticipanteNome = null,
-                            long? DocumentoId = null, DateOnly? ConcluidoEm = null)
+                            long? DocumentoId = null, DateOnly? ConcluidoEm = null, DateOnly? Validade = null, string? Vendedor = null,
+                            decimal ComissaoPct = 0)
 {
     public decimal Total => Itens.Sum(i => i.Total);
 }
@@ -63,14 +64,28 @@ public static class RegrasErp
         if (p.Itens.Any(i => i.Desconto > Dinheiro.Arredondar(i.Quantidade * i.ValorUnitario))) erros.Add("O desconto não pode passar do valor do item.");
         if (p.Parcelas is < 1 or > 120) erros.Add("Parcelas: de 1 a 120.");
         if (p.IntervaloDias is < 0 or > 365) erros.Add("Intervalo entre parcelas: de 0 a 365 dias.");
+        if (p.ComissaoPct is < 0 or > 100) erros.Add("Comissão: de 0 a 100%.");
+        if (p.Situacao == SituacaoPedido.Orcamento && p.Tipo != TipoPedido.Venda) erros.Add("Orçamento só existe para vendas.");
+        if (p.Validade is { } v && v < p.Data) erros.Add("A validade do orçamento não pode ser anterior à data.");
         return erros;
     }
 
     public static string Sql(this TipoPedido t) => t == TipoPedido.Venda ? "VENDA" : "COMPRA";
-    public static SituacaoPedido SituacaoDe(string s) => s switch { "CONCLUIDO" => SituacaoPedido.Concluido, "CANCELADO" => SituacaoPedido.Cancelado, _ => SituacaoPedido.Aberto };
+    public static SituacaoPedido SituacaoDe(string s) => s switch
+    {
+        "CONCLUIDO" => SituacaoPedido.Concluido, "CANCELADO" => SituacaoPedido.Cancelado, "ORCAMENTO" => SituacaoPedido.Orcamento, _ => SituacaoPedido.Aberto,
+    };
+
+    /// <summary>Comissão de cada vendedor sobre as vendas faturadas (pedidos concluídos) do período.</summary>
+    public static IReadOnlyList<(string Vendedor, int Pedidos, decimal Vendas, decimal Comissao)> Comissoes(IEnumerable<Pedido> pedidos, DateOnly inicio, DateOnly fim)
+        => pedidos.Where(p => p.Tipo == TipoPedido.Venda && p.Situacao == SituacaoPedido.Concluido && p.ConcluidoEm is { } c && c >= inicio && c <= fim)
+                  .GroupBy(p => string.IsNullOrWhiteSpace(p.Vendedor) ? "(sem vendedor)" : p.Vendedor.Trim(), StringComparer.CurrentCultureIgnoreCase)
+                  .Select(g => (g.Key, g.Count(), g.Sum(p => p.Total), g.Sum(p => Dinheiro.Arredondar(p.Total * p.ComissaoPct / 100m))))
+                  .OrderByDescending(x => x.Item4).ThenBy(x => x.Key).ToList();
     public static string Rotulo(this SituacaoPedido s, TipoPedido t) => s switch
     {
-        SituacaoPedido.Concluido => t == TipoPedido.Venda ? "Faturado" : "Recebido", SituacaoPedido.Cancelado => "Cancelado", _ => "Em aberto",
+        SituacaoPedido.Concluido => t == TipoPedido.Venda ? "Faturado" : "Recebido", SituacaoPedido.Cancelado => "Cancelado",
+        SituacaoPedido.Orcamento => "Orçamento", _ => "Em aberto",
     };
 
     /// <summary>Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23), sem traço.</summary>

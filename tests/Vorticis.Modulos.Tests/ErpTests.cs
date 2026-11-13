@@ -95,7 +95,7 @@ public class ErpIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.True(nfEntrada.Sucesso, string.Join("; ", nfEntrada.Erros));
 
         var venda = await erp.GravarPedidoAsync(empresa, new Pedido(0, TipoPedido.Venda, 0, hoje, cli, SituacaoPedido.Aberto, 2, 30, hoje.AddDays(30), null,
-                                                                    [new ItemPedido(prod.Valor, 40, 5m, 10m)]), adm, ct);
+                                                                    [new ItemPedido(prod.Valor, 40, 5m, 10m)], Vendedor: "Ana", ComissaoPct: 5m), adm, ct);
         var pv = Assert.Single(await erp.ListarPedidosAsync(empresa, TipoPedido.Venda, hoje, hoje, adm, ct));
         Assert.Equal(190m, pv.Total);
         var nfSaida = await erp.ConcluirPedidoAsync(empresa, pv, (await erp.ProximoNumeroNotaAsync(empresa, ct)).ToString(), "1", null, hoje, adm, ct);
@@ -112,6 +112,23 @@ public class ErpIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         var painel = await erp.PainelAsync(empresa, hoje, adm, ct);
         Assert.True(painel.Sucesso, string.Join("; ", painel.Erros));
         Assert.Equal((190m, 200m, 190m), (painel.Valor.Vendas, painel.Valor.Compras, painel.Valor.ReceberAberto));
+
+        // comissões sobre as vendas faturadas e orçamento que vira pedido
+        var com = await erp.ComissoesAsync(empresa, hoje, hoje, adm, ct);
+        Assert.True(com.Sucesso, string.Join("; ", com.Erros));
+        Assert.Equal(("Ana", 9.5m), ((string)com.Valor.Linhas[0].Valores[0]!, (decimal)com.Valor.Linhas[0].Valores[4]!));
+        var orc = await erp.GravarPedidoAsync(empresa, new Pedido(0, TipoPedido.Venda, 0, hoje, cli, SituacaoPedido.Orcamento, 1, 30, null, null,
+                                                                  [new ItemPedido(prod.Valor, 1, 5m)], Validade: hoje.AddDays(10)), adm, ct);
+        Assert.True(orc.Sucesso, string.Join("; ", orc.Erros));
+        var po = (await erp.ListarPedidosAsync(empresa, TipoPedido.Venda, hoje, hoje, adm, ct)).Single(p => p.Id == orc.Valor);
+        Assert.Equal(SituacaoPedido.Orcamento, po.Situacao);
+        Assert.False((await erp.ConcluirPedidoAsync(empresa, po, "999", "1", null, hoje, adm, ct)).Sucesso);   // orçamento não fatura
+        Assert.Contains("venceu", (await erp.AprovarOrcamentoAsync(empresa, po, hoje.AddDays(11), adm, ct)).Erros[0]);
+        Assert.True((await erp.AprovarOrcamentoAsync(empresa, po, hoje, adm, ct)).Sucesso);
+        var aprovado = (await erp.ListarPedidosAsync(empresa, TipoPedido.Venda, hoje, hoje, adm, ct)).Single(p => p.Id == orc.Valor);
+        Assert.Equal(SituacaoPedido.Aberto, aprovado.Situacao);
+        Assert.True((await erp.CancelarPedidoAsync(empresa, aprovado, adm, ct)).Sucesso);
+        Assert.False((await erp.GravarPedidoAsync(empresa, po with { Id = 0, Tipo = TipoPedido.Compra }, adm, ct)).Sucesso);   // orçamento só de venda
 
         Assert.False((await erp.GravarVeiculoAsync(empresa, new Veiculo(0, "XX-1", null, "CAMINHAO", "SP", 0, 0), adm, ct)).Sucesso);
         Assert.True((await erp.GravarVeiculoAsync(empresa, new Veiculo(0, "abc1d23", null, "CAMINHAO", "SP", 5000, 10000), adm, ct)).Sucesso);

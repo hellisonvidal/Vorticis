@@ -1,3 +1,4 @@
+using Vorticis.Application.Relatorios;
 using Vorticis.Application.Seguranca;
 using Vorticis.Domain.Comum;
 using Vorticis.Domain.Seguranca;
@@ -75,11 +76,13 @@ public sealed class ServicoErp(VorticisApp app)
             """, r => (Pedido: r.GetInt64(0), Item: new ItemPedido(r.GetInt64(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4), r.GetString(5), r.GetInt32(6))),
             ct, ("e", empresa), ("t", tipo.Sql()), ("i", inicio), ("f", fim))).ToLookup(x => x.Pedido, x => x.Item);
         return await _db.ListarAsync("""
-            SELECT x.id, x.numero, x.data, x.participante_id, x.situacao, x.parcelas, x.intervalo_dias, x.primeiro_vencimento, x.observacao, p.nome, x.documento_id, x.concluido_em
+            SELECT x.id, x.numero, x.data, x.participante_id, x.situacao, x.parcelas, x.intervalo_dias, x.primeiro_vencimento, x.observacao, p.nome, x.documento_id, x.concluido_em,
+                   x.validade, x.vendedor, x.comissao_pct
               FROM erp.pedido x JOIN core.participante p ON p.id = x.participante_id
              WHERE x.empresa_id = @e AND x.tipo = @t AND x.data BETWEEN @i AND @f ORDER BY x.numero DESC
             """, r => new Pedido(r.GetInt64(0), tipo, r.GetInt32(1), r.GetFieldValue<DateOnly>(2), r.GetInt64(3), RegrasErp.SituacaoDe(r.GetString(4)),
-                                 r.GetInt16(5), r.GetInt16(6), r.Data(7), r.Texto(8), [.. itens[r.GetInt64(0)]], r.GetString(9), r.Id(10), r.Data(11)),
+                                 r.GetInt16(5), r.GetInt16(6), r.Data(7), r.Texto(8), [.. itens[r.GetInt64(0)]], r.GetString(9), r.Id(10), r.Data(11),
+                                 r.Data(12), r.Texto(13), r.GetDecimal(14)),
             ct, ("e", empresa), ("t", tipo.Sql()), ("i", inicio), ("f", fim));
     }
 
@@ -98,19 +101,26 @@ public sealed class ServicoErp(VorticisApp app)
                 long id;
                 await using (var cmd = new Npgsql.NpgsqlCommand(p.Id == 0
                     ? """
-                      INSERT INTO erp.pedido (empresa_id, tipo, numero, data, participante_id, parcelas, intervalo_dias, primeiro_vencimento, observacao)
-                      VALUES (@e, @t, (SELECT COALESCE(MAX(numero), 0) + 1 FROM erp.pedido WHERE empresa_id = @e AND tipo = @t), @d, @p, @n, @iv, @pv, @o) RETURNING id
+                      INSERT INTO erp.pedido (empresa_id, tipo, numero, data, participante_id, parcelas, intervalo_dias, primeiro_vencimento, observacao,
+                                              situacao, validade, vendedor, comissao_pct)
+                      VALUES (@e, @t, (SELECT COALESCE(MAX(numero), 0) + 1 FROM erp.pedido WHERE empresa_id = @e AND tipo = @t), @d, @p, @n, @iv, @pv, @o,
+                              @sit, @val, @vend, @com) RETURNING id
                       """
                     : """
-                      UPDATE erp.pedido SET data = @d, participante_id = @p, parcelas = @n, intervalo_dias = @iv, primeiro_vencimento = @pv, observacao = @o
-                       WHERE id = @id AND empresa_id = @e RETURNING id
+                      UPDATE erp.pedido SET data = @d, participante_id = @p, parcelas = @n, intervalo_dias = @iv, primeiro_vencimento = @pv, observacao = @o,
+                             validade = @val, vendedor = @vend, comissao_pct = @com
+                       WHERE id = @id AND empresa_id = @e AND situacao IN ('ABERTO', 'ORCAMENTO') RETURNING id
                       """, con, tx))
                 {
                     cmd.Parameters.AddWithValue("e", empresa); cmd.Parameters.AddWithValue("t", p.Tipo.Sql()); cmd.Parameters.AddWithValue("d", p.Data);
                     cmd.Parameters.AddWithValue("p", p.ParticipanteId); cmd.Parameters.AddWithValue("n", (short)p.Parcelas); cmd.Parameters.AddWithValue("iv", (short)p.IntervaloDias);
                     cmd.Parameters.AddWithValue("pv", NpgsqlTypes.NpgsqlDbType.Date, (object?)p.PrimeiroVencimento ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("o", (object?)p.Observacao ?? DBNull.Value); cmd.Parameters.AddWithValue("id", p.Id);
-                    id = (long)(await cmd.ExecuteScalarAsync(ct) ?? throw new Domain.Comum.ViolacaoRegraException("Pedido não encontrado."));
+                    cmd.Parameters.AddWithValue("sit", p.Situacao == SituacaoPedido.Orcamento ? "ORCAMENTO" : "ABERTO");
+                    cmd.Parameters.AddWithValue("val", NpgsqlTypes.NpgsqlDbType.Date, (object?)p.Validade ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("vend", NpgsqlTypes.NpgsqlDbType.Varchar, string.IsNullOrWhiteSpace(p.Vendedor) ? DBNull.Value : p.Vendedor.Trim());
+                    cmd.Parameters.AddWithValue("com", p.ComissaoPct);
+                    id = (long)(await cmd.ExecuteScalarAsync(ct) ?? throw new Domain.Comum.ViolacaoRegraException("Pedido não encontrado ou já concluído ou cancelado."));
                 }
                 await using (var del = new Npgsql.NpgsqlCommand("DELETE FROM erp.pedido_item WHERE pedido_id = @id", con, tx))
                 {
@@ -137,9 +147,34 @@ public sealed class ServicoErp(VorticisApp app)
     public async Task<Resultado> CancelarPedidoAsync(long empresa, Pedido p, long usuario, CancellationToken ct = default)
     {
         if (await Negar(usuario, empresa, PermissaoDo(p.Tipo), ct) is { } n) return Resultado.Falha(n);
-        if (p.Situacao != SituacaoPedido.Aberto) return Resultado.Falha("Só pedidos em aberto podem ser cancelados.");
+        if (p.Situacao is not (SituacaoPedido.Aberto or SituacaoPedido.Orcamento)) return Resultado.Falha("Só pedidos em aberto e orçamentos podem ser cancelados.");
         await _db.ExecutarAsync("UPDATE erp.pedido SET situacao = 'CANCELADO' WHERE id = @id AND empresa_id = @e", ct, ("id", p.Id), ("e", empresa));
         return Resultado.Ok();
+    }
+
+    /// <summary>Comissões de vendedores: vendas faturadas (pedidos concluídos) de <paramref name="inicio"/> a <paramref name="fim"/>, pela data do faturamento.</summary>
+    public async Task<Resultado<TabelaRelatorio>> ComissoesAsync(long empresa, DateOnly inicio, DateOnly fim, long usuario, CancellationToken ct = default)
+    {
+        if (await Negar(usuario, empresa, Permissao.ErpVendas, ct) is { } n) return Resultado<TabelaRelatorio>.Falha(n);
+        if (fim < inicio) return Resultado<TabelaRelatorio>.Falha("Data final anterior à inicial.");
+        var pedidos = await ListarPedidosAsync(empresa, TipoPedido.Venda, inicio.AddYears(-2), fim, usuario, ct);
+        var c = RegrasErp.Comissoes(pedidos, inicio, fim);
+        var linhas = c.Select(x => new LinhaRelatorio([x.Vendedor, (long)x.Pedidos, x.Vendas, x.Vendas == 0 ? 0m : Math.Round(x.Comissao * 100m / x.Vendas, 2), x.Comissao])).ToList();
+        linhas.Add(new LinhaRelatorio(["TOTAL", (long)c.Sum(x => x.Pedidos), c.Sum(x => x.Vendas), null, c.Sum(x => x.Comissao)], Destaque: true));
+        return Resultado<TabelaRelatorio>.Ok(new TabelaRelatorio("Comissões de vendedores",
+            [new("Vendedor"), new("Pedidos", TipoColuna.Inteiro), new("Vendas faturadas", TipoColuna.Valor), new("% médio", TipoColuna.Valor), new("Comissão", TipoColuna.Valor)],
+            linhas, "Vendas faturadas no período (data do faturamento do pedido). A comissão de cada pedido é o percentual informado nele sobre o total do pedido."));
+    }
+
+    /// <summary>Aprova o orçamento: vira pedido de venda em aberto, com a data de hoje (a validade não pode ter passado).</summary>
+    public async Task<Resultado> AprovarOrcamentoAsync(long empresa, Pedido p, DateOnly hoje, long usuario, CancellationToken ct = default)
+    {
+        if (await Negar(usuario, empresa, PermissaoDo(p.Tipo), ct) is { } n) return Resultado.Falha(n);
+        if (p.Situacao != SituacaoPedido.Orcamento) return Resultado.Falha("Selecione um orçamento.");
+        if (p.Validade is { } v && v < hoje) return Resultado.Falha($"O orçamento venceu em {v:dd/MM/yyyy}: altere a validade (e confira os preços) antes de aprovar.");
+        var k = await _db.ExecutarAsync("UPDATE erp.pedido SET situacao = 'ABERTO', data = @d WHERE id = @id AND empresa_id = @e AND situacao = 'ORCAMENTO'",
+                                        ct, ("d", hoje), ("id", p.Id), ("e", empresa));
+        return k == 1 ? Resultado.Ok() : Resultado.Falha("Orçamento não encontrado.");
     }
 
     /// <summary>Número sugerido para a próxima nota de saída digitada (série 1).</summary>

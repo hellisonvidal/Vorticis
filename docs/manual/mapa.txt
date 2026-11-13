@@ -195,6 +195,7 @@ escritorio.honorarios=09-escritorio.md#honorarios-e-cobrancas
 erp.painel=10-gerencial.md#painel-do-empresario
 erp.pedidos.venda=10-gerencial.md#pedidos-de-venda-e-de-compra
 erp.pedidos.compra=10-gerencial.md#pedidos-de-venda-e-de-compra
+erp.comissoes=10-gerencial.md#vendedor-e-comissao
 erp.estoque=10-gerencial.md#estoque
 erp.monitor.notas=10-gerencial.md#monitor-de-notas-fiscais
 erp.monitor.cobrancas=10-gerencial.md#monitor-de-cobrancas

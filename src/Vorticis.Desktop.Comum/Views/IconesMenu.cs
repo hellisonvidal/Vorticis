@@ -200,6 +200,7 @@ public static class IconesMenu
         ["erp.monitor.notas"] = "MonitorEye",
         ["erp.monitor.cobrancas"] = "BellRingOutline",
         ["erp.painel"] = "ViewDashboard",
+        ["erp.comissoes"] = "AccountStarOutline",
         ["condominio.unidades"] = "HomeGroup",
         ["condominio.reservas"] = "CalendarStarOutline",
         ["condominio.taxas"] = "PercentCircleOutline",

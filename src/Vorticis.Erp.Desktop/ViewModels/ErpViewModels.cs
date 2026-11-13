@@ -17,6 +17,7 @@ public static class ErpTelas
     public const string Transporte = "erp.transporte";
     public const string MonitorNotas = "erp.monitor.notas";
     public const string MonitorCobrancas = "erp.monitor.cobrancas";
+    public const string Comissoes = "erp.comissoes";
 }
 
 internal static class Ext
@@ -141,8 +142,12 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
     [ObservableProperty] private string _serieNota = "1";
     [ObservableProperty] private string _chaveNota = "";
     [ObservableProperty] private string _totalPedido = "";
+    [ObservableProperty] private bool _orcamento;
+    [ObservableProperty] private DateTime? _validade;
+    [ObservableProperty] private string _vendedor = "";
+    [ObservableProperty] private string _comissao = "";
 
-    public bool EmAberto => Selecionado is null || Selecionado.P.Situacao == SituacaoPedido.Aberto;
+    public bool EmAberto => Selecionado is null || Selecionado.P.Situacao is SituacaoPedido.Aberto or SituacaoPedido.Orcamento;
     public bool PodeEditar => Contexto.Pode(Venda ? Permissao.ErpVendas : Permissao.ErpCompras);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
 
@@ -160,6 +165,8 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         if (value?.P is not { } p) return;
         Participante = Participantes.FirstOrDefault(o => o.Id == p.ParticipanteId);
         (Data, Parcelas, Intervalo, PrimeiroVencimento, Observacao) = (Ext.Dt(p.Data), p.Parcelas, p.IntervaloDias, p.PrimeiroVencimento is { } v ? Ext.Dt(v) : null, p.Observacao ?? "");
+        (Orcamento, Validade, Vendedor, Comissao) = (p.Situacao == SituacaoPedido.Orcamento, p.Validade is { } va ? Ext.Dt(va) : null, p.Vendedor ?? "",
+                                                     p.ComissaoPct > 0 ? Formato.Num(p.ComissaoPct) : "");
         Itens.Clear();
         foreach (var i in p.Itens) Itens.Add(new ItemLinha(i));
         Totalizar();
@@ -198,6 +205,7 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
     {
         Selecionado = null;
         (Participante, Data, Parcelas, Intervalo, PrimeiroVencimento, Observacao) = (null, DateTime.Today, 1, 30, null, "");
+        (Orcamento, Validade, Vendedor, Comissao) = (false, null, "", "");
         Itens.Clear();
         Totalizar();
     }
@@ -224,9 +232,24 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         if (ItemSelecionado is { } i && EmAberto) { Itens.Remove(i); Totalizar(); }
     }
 
-    private Pedido Montar(long empresa) => new(Selecionado?.P.Id ?? 0, Tipo, 0, Ext.Dia(Data), Participante?.Id ?? 0, SituacaoPedido.Aberto, (int)(Parcelas ?? 1),
+    private Pedido Montar(long empresa) => new(Selecionado?.P.Id ?? 0, Tipo, 0, Ext.Dia(Data), Participante?.Id ?? 0,
+                                               Venda && Orcamento ? SituacaoPedido.Orcamento : SituacaoPedido.Aberto, (int)(Parcelas ?? 1),
                                                (int)(Intervalo ?? 30), PrimeiroVencimento is { } v ? DateOnly.FromDateTime(v) : null,
-                                               string.IsNullOrWhiteSpace(Observacao) ? null : Observacao, Itens.Select(i => i.I).ToList());
+                                               string.IsNullOrWhiteSpace(Observacao) ? null : Observacao, Itens.Select(i => i.I).ToList(),
+                                               Validade: Venda && Orcamento && Validade is { } va ? DateOnly.FromDateTime(va) : null,
+                                               Vendedor: Venda ? Vendedor : null, ComissaoPct: Venda ? Formato.LerValor(Comissao) ?? 0 : 0);
+
+    [RelayCommand]
+    private Task AprovarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionado?.P is not { Situacao: SituacaoPedido.Orcamento } p) { Erros.Add("Selecione um orçamento na lista."); return; }
+        if (!await Contexto.ConfirmarAsync("Aprovar orçamento", $"Aprovar o orçamento nº {p.Numero} ({Formato.Moeda(p.Total)}) e transformá-lo em pedido de venda?")) return;
+        var r = await app.Erp().AprovarOrcamentoAsync(empresa, p, DateOnly.FromDateTime(DateTime.Today), usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        Mensagem = $"Orçamento nº {p.Numero} aprovado: agora é um pedido em aberto, pronto para faturar.";
+        FichaAberta = false;
+    }, Permissao.ErpVendas);
 
     [RelayCommand]
     private Task GravarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -235,7 +258,7 @@ public abstract partial class PedidosViewModel(IContexto contexto, TipoPedido ti
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         await CarregarAsync();
         Selecionado = Lista.FirstOrDefault(l => l.P.Id == r.Valor);
-        Mensagem = $"Pedido nº {Selecionado?.Numero} gravado.";
+        Mensagem = Venda && Orcamento ? $"Orçamento nº {Selecionado?.Numero} gravado." : $"Pedido nº {Selecionado?.Numero} gravado.";
         FichaAberta = false;
     }, Venda ? Permissao.ErpVendas : Permissao.ErpCompras);
 
@@ -606,4 +629,29 @@ public partial class TransporteViewModel(IContexto contexto) : ModuloComFichaVie
         Mensagem = "Documento de transporte gravado.";
         FichaAberta = false;
     }, Permissao.ErpTransporte);
+}
+
+/// <summary>Relatórios › Comissões de vendedores: vendas faturadas do período por vendedor, com a comissão de cada pedido.</summary>
+public partial class ComissoesViewModel(IContexto contexto) : Vorticis.Fiscal.Desktop.ViewModels.RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+
+    protected override string TituloRelatorio => "Comissões de vendedores";
+    protected override string Parametros => $"Faturamento de {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy}";
+    protected override string NomeArquivo => $"comissoes_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = DateOnly.FromDateTime(Inicio ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var fim = DateOnly.FromDateTime(Fim ?? DateTime.Today);
+        var r = await app.Erp().ComissoesAsync(empresa, ini, fim, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (ini, fim);
+        Mostrar(r.Valor);
+        Mensagem = r.Valor.Linhas.Count <= 1 ? "Nenhuma venda faturada no período." : "Escolha o formato em Exportar: PDF, Excel (.xlsx) ou CSV.";
+    }, Permissao.ErpVendas);
 }

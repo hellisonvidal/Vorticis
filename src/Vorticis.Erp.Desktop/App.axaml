@@ -10,6 +10,7 @@
   <Application.DataTemplates>
     <c:TemplatesComuns />
     <DataTemplate DataType="vm:PainelViewModel"><v:PainelView /></DataTemplate>
+    <DataTemplate DataType="vm:ComissoesViewModel"><v:ComissoesView /></DataTemplate>
     <DataTemplate DataType="vm:PedidosVendaViewModel"><v:PedidosView /></DataTemplate>
     <DataTemplate DataType="vm:PedidosCompraViewModel"><v:PedidosView /></DataTemplate>
     <DataTemplate DataType="vm:EstoqueViewModel"><v:EstoqueView /></DataTemplate>
