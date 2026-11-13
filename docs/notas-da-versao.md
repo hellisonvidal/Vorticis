@@ -1,3 +1,20 @@
+# Vorticis 1.3.0
+
+## Novidades desta versão
+
+### Folha: informe de rendimentos
+- Nova tela **Relatórios › Informe de rendimentos**: o comprovante anual de rendimentos e de imposto retido de cada funcionário, no modelo da Receita Federal, para entregar até o último dia útil de fevereiro.
+- Os valores vêm da folha, das férias, do 13º e das rescisões pagos no ano, conforme a incidência de imposto de renda de cada rubrica. A tela mostra os rendimentos tributáveis, o INSS, a pensão, o IRRF, as indenizações, os rendimentos isentos e o 13º salário com o seu imposto, com exportação para PDF, Excel e CSV.
+- **Comprovantes (PDF)** gera o comprovante de todos os funcionários (um por página) ou de um só.
+- Saiu do menu o item "RAIS e DIRF (em breve)": as duas declarações foram substituídas pelo eSocial e pela EFD-Reinf.
+
+### Fiscal e Gerencial: curva ABC
+- **Curva ABC de vendas** e **Curva ABC de compras** (no Fiscal em *Relatórios › Resumos*; no Gerencial em *Relatórios*): produtos, ou clientes e fornecedores, em ordem de valor, com a participação de cada um e a classe A, B ou C. A classe A reúne os poucos itens que fazem 80% do movimento.
+
+Para atualizar, use **Configurações › Atualizações do sistema** ou rode o **Setup-Vorticis-1.3.0.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.2.0
 
 ## Novidades desta versão

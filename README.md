@@ -230,7 +230,7 @@ foreach ($p in "Vorticis.Desktop", "Vorticis.Fiscal.Desktop", "Vorticis.Folha.De
   dotnet publish "src/$p" -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 }
 Move-Item pgsql publish/pgsql
-& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=1.2.0 instalador/Vorticis.iss   # gera saida\Setup-Vorticis-1.2.0.exe
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DVersao=1.3.0 instalador/Vorticis.iss   # gera saida\Setup-Vorticis-1.3.0.exe
 ```
 
 ## Testes
