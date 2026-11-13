@@ -232,6 +232,20 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal(0, (await svc.GerarTarefasDeObrigacoesAsync(escritorio, cli.Valor, itens, adm, adm, ct)).Valor);
         Assert.Contains(await svc.ListarTarefasAsync(escritorio, cli.Valor, true, adm, ct), x => x.Titulo.StartsWith("DAS – ") && x.Vencimento == new DateOnly(2026, 5, 20));
 
+        // reajuste anual: honorário do cliente e cobranças de honorário em aberto a partir da data
+        Assert.True((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 1000m, 10, new DateOnly(2026, 1, 1), null, "IPCA", null), adm, ct)).Sucesso);
+        Assert.True((await svc.LancarCobrancasAsync(escritorio,
+            [new CobrancaHonorario(0, cli.Valor, new DateOnly(2026, 6, 1), 1000m, new DateOnly(2026, 7, 10), SituacaoCobranca.Aberta, null, null),
+             new CobrancaHonorario(0, cli.Valor, new DateOnly(2026, 1, 1), 1000m, new DateOnly(2026, 2, 10), SituacaoCobranca.Aberta, null, null)], adm, ct)).Sucesso);
+        Assert.Contains("percentual", (await svc.ReajustarHonorariosAsync(escritorio, cli.Valor, 0, new DateOnly(2026, 6, 1), "IPCA", adm, ct)).Erros[0]);
+        var reaj = await svc.ReajustarHonorariosAsync(escritorio, cli.Valor, 4.5m, new DateOnly(2026, 6, 1), "IPCA", adm, ct);
+        Assert.True(reaj.Sucesso, string.Join("; ", reaj.Erros));
+        Assert.Equal((1045m, 1), (reaj.Valor.NovoValor, reaj.Valor.Cobrancas));
+        var cobs = await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, pessoa: cli.Valor);
+        Assert.Equal(1045m, cobs.Single(c => c.Competencia == new DateOnly(2026, 6, 1)).Valor);
+        Assert.Equal(1000m, cobs.Single(c => c.Competencia == new DateOnly(2026, 1, 1)).Valor);
+        foreach (var c in cobs) Assert.True((await svc.ExcluirCobrancaAsync(escritorio, c, adm, ct)).Sucesso);
+
         Assert.True((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 900m, 10, new DateOnly(2026, 1, 1), null, "IPCA", null), adm, ct)).Sucesso);
         Assert.Equal(1, (await svc.GerarCobrancasAsync(escritorio, new DateOnly(2026, 3, 1), adm, ct)).Valor);
         Assert.Equal(0, (await svc.GerarCobrancasAsync(escritorio, new DateOnly(2026, 3, 1), adm, ct)).Valor);

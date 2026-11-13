@@ -712,6 +712,29 @@ public enum FiltroSituacaoCobranca { Todas, EmAberto, Vencidas, Recebidas, Cance
 /// </summary>
 public partial class HonorariosViewModel : ModuloViewModel
 {
+    public static IReadOnlyList<string> Indices { get; } = ["IPCA", "IGP-M", "INPC", "Salário mínimo", "Outro"];
+    [ObservableProperty] private string _percentualReajuste = "";
+    [ObservableProperty] private string _indiceReajuste = "IPCA";
+    [ObservableProperty] private DateTime? _reajusteAPartirDe = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    /// <summary>Reajuste anual do cliente em foco: honorário, contratos ativos e cobranças de honorário em aberto a partir da data.</summary>
+    [RelayCommand]
+    private Task ReajustarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Contexto.ClienteEmFocoId is not { } pessoa) { Erros.Add("Escolha o cliente no topo da tela (Cliente:)."); return; }
+        if (Numeros.LerValor(PercentualReajuste) is not { } pct || pct == 0) { Erros.Add("Informe o percentual do reajuste (acumulado do índice em 12 meses)."); return; }
+        var data = Ext.Dia(ReajusteAPartirDe);
+        if (!await Contexto.ConfirmarAsync("Reajustar honorários",
+                $"Reajustar em {Vorticis.Domain.Comum.Formato.Num(pct)}% ({IndiceReajuste}) o honorário de {Contexto.ClienteEmFocoNome} e as cobranças de honorário em aberto com vencimento a partir de {data:dd/MM/yyyy}?"))
+            return;
+        var r = await app.Escritorio().ReajustarHonorariosAsync(empresa, pessoa, pct, data, IndiceReajuste, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        PercentualReajuste = "";
+        Mensagem = (r.Valor.NovoValor is { } v ? $"Honorário reajustado para {Vorticis.Domain.Comum.Formato.Moeda(v)}. " : "O cliente não tem honorário na aba Contrato. ")
+                   + $"{r.Valor.Cobrancas} cobrança(s) em aberto atualizada(s).";
+    }, Permissao.EscritorioHonorarios);
+
     public HonorariosViewModel(IContexto contexto) : base(contexto)
     {
         Lancamento = new LancamentoCobrancaViewModel(contexto, this);

@@ -179,6 +179,14 @@ Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **v
 
 **Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto); **Cancelar cobrança** cancela uma cobrança em aberto.
 
+### Reajuste anual
+
+Uma vez por ano, no aniversário do contrato, aplique o reajuste do índice combinado (IPCA, IGP-M, INPC, salário mínimo ou outro):
+
+1. Com o cliente escolhido no topo, informe em **Reajuste %** o percentual acumulado do índice nos últimos 12 meses (por exemplo, 4,83), escolha o índice e a data **a partir de**.
+2. Clique em **Reajustar** e confirme.
+3. O sistema atualiza o valor do honorário do cliente (aba **Contrato** do cadastro, com uma anotação na observação), o valor dos contratos ativos do *Gerador de contratos* e as **cobranças de honorário em aberto** com vencimento a partir da data. Cobranças já recebidas, canceladas e avulsas não mudam.
+
 ### Excluir cobranças (uma ou várias)
 1. Marque as cobranças na lista: clique na primeira e use **Ctrl + clique** para marcar outras ou **Shift + clique** para marcar um intervalo.
 2. Clique em **Excluir**. O sistema pergunta se quer mesmo excluir, com a quantidade e o total das cobranças marcadas.

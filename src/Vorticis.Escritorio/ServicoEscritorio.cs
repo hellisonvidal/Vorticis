@@ -260,6 +260,31 @@ public sealed class ServicoEscritorio
     }
 
     /// <summary>Tira o honorário do contrato do cliente (as cobranças já lançadas continuam).</summary>
+    /// <summary>
+    /// Reajuste anual do honorário do cliente pelo percentual do índice (acumulado em 12 meses): atualiza o valor do honorário (aba Contrato),
+    /// dos contratos ativos do Gerador de contratos e das cobranças de honorário em aberto com vencimento a partir de <paramref name="aPartirDe"/>.
+    /// </summary>
+    public async Task<Resultado<(decimal? NovoValor, int Cobrancas)>> ReajustarHonorariosAsync(long escritorio, long pessoaId, decimal percentual, DateOnly aPartirDe,
+                                                                                             string indice, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<(decimal?, int)>.Falha(negado);
+        if (percentual == 0 || percentual is < -50 or > 100) return Resultado<(decimal?, int)>.Falha("Informe o percentual do reajuste (por exemplo, 4,83).");
+        if (!await DoEscritorioAsync(escritorio, pessoaId, ct)) return Resultado<(decimal?, int)>.Falha("Cliente não encontrado no cadastro do escritório.");
+        var fator = 1 + percentual / 100m;
+        var nota = $"Reajuste de {percentual.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))}% ({indice}) a partir de {aPartirDe:dd/MM/yyyy}.";
+        var novo = await _db.EscalarAsync<decimal?>("""
+            UPDATE escritorio.honorario_contrato SET valor = round(valor * @f, 2), observacao = left(concat_ws(' ', NULLIF(observacao, ''), @n), 500)
+             WHERE empresa_id = @e AND pessoa_id = @p RETURNING valor
+            """, ct, ("f", fator), ("n", nota), ("e", escritorio), ("p", pessoaId));
+        await _db.ExecutarAsync("UPDATE escritorio.contrato SET valor = round(valor * @f, 2) WHERE empresa_id = @e AND pessoa_id = @p AND situacao = 'ATIVO'",
+                                ct, ("f", fator), ("e", escritorio), ("p", pessoaId));
+        var n = await _db.ExecutarAsync("""
+            UPDATE escritorio.honorario_cobranca SET valor = round(valor * @f, 2)
+             WHERE empresa_id = @e AND pessoa_id = @p AND tipo = 'HONORARIO' AND situacao = 'ABERTA' AND vencimento >= @d
+            """, ct, ("f", fator), ("e", escritorio), ("p", pessoaId), ("d", aPartirDe));
+        return Resultado<(decimal?, int)>.Ok((novo, n));
+    }
+
     public async Task<Resultado> ExcluirHonorarioAsync(long escritorio, long pessoa, long usuarioId, CancellationToken ct = default)
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);

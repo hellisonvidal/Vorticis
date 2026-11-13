@@ -33,6 +33,14 @@
       <Button Content="Cancelar cobrança" Command="{Binding CancelarCommand}" IsEnabled="{Binding TemSelecionada}" />
       <Button Name="ExcluirCobrancas" Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding TemSelecionada}"
               ToolTip.Tip="Exclui as cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias), depois de confirmar." />
+      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
+      <TextBlock Text="Reajuste %" VerticalAlignment="Center" />
+      <TextBox c:Mascara.Tipo="Valor" Text="{Binding PercentualReajuste}" Width="80" />
+      <ComboBox ItemsSource="{x:Static vm:HonorariosViewModel.Indices}" SelectedItem="{Binding IndiceReajuste}" Width="110" />
+      <TextBlock Text="a partir de" VerticalAlignment="Center" />
+      <CalendarDatePicker SelectedDate="{Binding ReajusteAPartirDe}" Width="135" />
+      <Button Content="Reajustar" Command="{Binding ReajustarCommand}"
+              ToolTip.Tip="Aplica o percentual ao honorário do cliente (aba Contrato), aos contratos ativos e às cobranças de honorário em aberto a partir da data." />
     </WrapPanel>
     <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,6,0,0">
       <TextBlock Text="{Binding Totais}" FontSize="12" />
