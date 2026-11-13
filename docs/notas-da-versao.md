@@ -1,3 +1,18 @@
+# Vorticis 1.2.0
+
+## Novidades desta versão
+
+### Fiscal: opções nos campos de código
+- Ao digitar uma nota manualmente, os campos de código têm a **lupa (ou F4)** com a lista de opções: **origem da mercadoria**, **CST do ICMS e CSOSN** (Simples Nacional), **CST do IPI**, **CST do PIS e da COFINS**, **unidade**, **CST do IBS/CBS e do Imposto Seletivo** e **classificação tributária**.
+- As mesmas listas aparecem no cadastro de **Produtos** (unidade e CST de entrada e de saída) e nas **Regras fiscais**.
+
+### Atualização por dentro do programa
+- Nova tela **Configurações › Atualizações do sistema**: mostra a versão instalada e a mais nova, com as novidades, e o botão **Atualizar agora** baixa o instalador, fecha o programa e instala a nova versão sem perder os dados. Procura no site do Vorticis ou, se não houver, nas versões publicadas no GitHub.
+
+Para atualizar, use **Configurações › Atualizações do sistema** ou rode o **Setup-Vorticis-1.2.0.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.1.0
 
 ## Novidades desta versão
