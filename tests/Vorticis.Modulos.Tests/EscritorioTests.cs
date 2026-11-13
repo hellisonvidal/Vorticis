@@ -349,3 +349,37 @@ public class TarefasDeObrigacoesTests
         Assert.Equal(new DateOnly(2027, 4, 15), x.Vencimento);
     }
 }
+
+public class ProdutividadeECertificadosTests
+{
+    [Fact]
+    public void Produtividade_por_responsavel()
+    {
+        Tarefa T(string resp, int dia, SituacaoTarefa s, int? concluidaDia = null)
+            => new(0, 1, null, "T", null, new DateOnly(2026, 3, dia), 1, 2, s, Recorrencia.Nenhuma, null, resp,
+                   concluidaDia is { } c ? new DateTimeOffset(2026, 3, c, 12, 0, 0, TimeSpan.Zero) : null);
+        var tarefas = new[]
+        {
+            T("Ana", 10, SituacaoTarefa.Concluida, 9), T("Ana", 10, SituacaoTarefa.Concluida, 12), T("Ana", 5, SituacaoTarefa.Pendente),
+            T("Bia", 25, SituacaoTarefa.Pendente), T("Bia", 20, SituacaoTarefa.Cancelada), T("Bia", 2, SituacaoTarefa.Concluida, 1),
+            new Tarefa(0, 1, null, "fora", null, new DateOnly(2026, 5, 1), 1, 2, SituacaoTarefa.Pendente, Recorrencia.Nenhuma, null, "Ana"),
+        };
+        var t = TabelasEscritorio.Produtividade(tarefas, new(2026, 3, 1), new(2026, 3, 31), new(2026, 3, 15));
+        var ana = t.Linhas.Single(l => (string)l.Valores[0]! == "Ana").Valores;
+        Assert.Equal([3L, 2L, 1L, 1L, 1L, 0L, 50m], ana.Skip(1));
+        var bia = t.Linhas.Single(l => (string)l.Valores[0]! == "Bia").Valores;
+        Assert.Equal([2L, 1L, 1L, 0L, 0L, 1L, 100m], bia.Skip(1));
+        Assert.Equal(5L, t.Linhas[^1].Valores[1]);
+    }
+
+    [Fact]
+    public void Certificados_ate_a_data()
+    {
+        var agora = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero);
+        Vorticis.Application.Sistema.CertificadoDigital C(int dias, long? emp) => new(dias, "A1", "Cert", "Titular", null, "AC", agora.AddYears(-1), agora.AddDays(dias), "x", emp);
+        var t = TabelasEscritorio.CertificadosAVencer([C(-5, 7), C(20, null), C(200, 7)], new Dictionary<long, string> { [7] = "Padaria" }, new DateOnly(2026, 5, 1), agora);
+        Assert.Equal(2, t.Linhas.Count);
+        Assert.Equal(("Padaria", true), ((string)t.Linhas[0].Valores[0]!, t.Linhas[0].Destaque));
+        Assert.Equal("(do escritório)", t.Linhas[1].Valores[0]);
+    }
+}

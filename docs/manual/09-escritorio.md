@@ -195,3 +195,18 @@ Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **v
 ## Parâmetros
 
 *Cadastros › Parâmetros* traz atalhos para o cadastro de clientes, os honorários, o gerador de contratos, as tarefas e os **Menus do programa** (que ficam em *Configurações › Menus do programa*; veja [Menus do programa](02-cadastros-comuns.md#menus-do-programa)).
+
+## Produtividade da equipe
+
+**Para que serve:** ver quem está em dia com as tarefas.
+**Onde fica:** *Relatórios › Produtividade da equipe*.
+
+Escolha o período (pelo **vencimento** das tarefas) e clique em **Gerar**. Para cada responsável, a tabela mostra quantas tarefas venceram no período, quantas foram concluídas, quantas **no prazo** (concluídas até o dia do vencimento) e **com atraso**, as **atrasadas em aberto**, as que ainda **vão vencer** e o **% no prazo**. As tarefas canceladas ficam de fora. O relatório soma as tarefas de todos os clientes e pode ser exportado para PDF, Excel e CSV.
+
+## Certificados digitais a vencer
+
+**Para que serve:** renovar os certificados digitais dos clientes antes que vençam (sem certificado não há transmissão de SPED, eSocial, DCTFWeb nem emissão de notas).
+**Onde fica:** *Relatórios › Certificados digitais a vencer* (somente o administrador).
+
+Informe até que data quer ver (60 dias à frente, por padrão) e clique em **Gerar**: aparecem os certificados cadastrados em *Configurações › Certificados digitais* com validade até essa data, com a empresa, o titular, o tipo, a validade e a situação. Os já vencidos aparecem em destaque.
+

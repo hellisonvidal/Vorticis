@@ -185,6 +185,8 @@ public static class IconesMenu
         ["escritorio.clientes"] = "AccountBoxMultipleOutline",
         ["escritorio.fornecedores"] = "TruckOutline",
         ["escritorio.tarefas"] = "ClipboardCheckMultipleOutline",
+        ["escritorio.rel.produtividade"] = "AccountTieOutline",
+        ["escritorio.rel.certificados"] = "CalendarAlert",
         ["escritorio.protocolos"] = "FolderArrowLeftRightOutline",
         ["escritorio.contratos"] = "HandshakeOutline",
         ["escritorio.carteira"] = "BriefcaseAccountOutline",

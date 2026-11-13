@@ -18,6 +18,8 @@ public static class EscritorioTelas
     public const string Clientes = "escritorio.clientes";
     public const string Contratos = "escritorio.contratos";
     public const string RelHonorarios = "escritorio.rel.honorarios";
+    public const string RelProdutividade = "escritorio.rel.produtividade";
+    public const string RelCertificados = "escritorio.rel.certificados";
     public const string Honorarios = "escritorio.honorarios";
 }
 
@@ -1407,6 +1409,46 @@ public sealed partial class RelHonorariosViewModel(IContexto contexto) : Relator
         var cobrancas = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, usuario, vencimentoDe: ini, vencimentoAte: fim, pessoa: cliente);
         Exibir(TabelasEscritorio.Honorarios(cobrancas, DateOnly.FromDateTime(DateTime.Today)), $"Cliente: {Contexto.ClienteEmFocoNome} · vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}");
         Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança do cliente com vencimento no período." : null;
+    }, Permissao.EscritorioRelatorios);
+}
+
+/// <summary>Relatórios › Produtividade da equipe: tarefas do período por responsável (no prazo, com atraso, em aberto).</summary>
+public sealed partial class RelProdutividadeViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
+{
+    public override string Titulo => "Produtividade da equipe";
+    protected override string NomeArquivo => "produtividade_equipe";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Ext.Dia(Inicio);
+        var fim = Ext.Dia(Fim);
+        if (fim < ini) { Erros.Add("A data final não pode ser anterior à inicial."); return; }
+        var tarefas = await app.Escritorio().ListarTarefasAsync(empresa, null, false, usuario);
+        Exibir(TabelasEscritorio.Produtividade(tarefas, ini, fim, DateOnly.FromDateTime(DateTime.Today)), $"Vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}");
+        Mensagem = null;
+    }, Permissao.EscritorioRelatorios);
+}
+
+/// <summary>Relatórios › Certificados digitais a vencer: validade até a data final (administrador).</summary>
+public sealed partial class RelCertificadosViewModel : RelatorioEscritorioViewModel
+{
+    public RelCertificadosViewModel(IContexto contexto) : base(contexto) { Inicio = DateTime.Today; Fim = DateTime.Today.AddDays(60); }
+
+    public override string Titulo => "Certificados digitais a vencer";
+    protected override string NomeArquivo => "certificados_a_vencer";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Contexto.Sessao is not { } sessao) return;
+        var r = await app.Certificados.ListarAsync(sessao);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var empresas = (await app.Usuarios.EmpresasPermitidasAsync(sessao)).ToDictionary(e => e.Id, e => e.RazaoSocial);
+        var ate = Ext.Dia(Fim);
+        var t = TabelasEscritorio.CertificadosAVencer(r.Valor, empresas, ate, DateTimeOffset.Now);
+        Exibir(t, $"Validade até {ate:dd/MM/yyyy}");
+        Mensagem = t.Linhas.Count == 0 ? $"Nenhum certificado vence até {ate:dd/MM/yyyy}." : null;
     }, Permissao.EscritorioRelatorios);
 }
 

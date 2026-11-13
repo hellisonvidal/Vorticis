@@ -187,6 +187,8 @@ escritorio.protocolos=09-escritorio.md#protocolos-de-documentos
 escritorio.clientes=09-escritorio.md#clientes
 escritorio.contratos=09-escritorio.md#gerador-de-contratos
 escritorio.rel.honorarios=09-escritorio.md#relatorio-de-honorarios
+escritorio.rel.produtividade=09-escritorio.md#produtividade-da-equipe
+escritorio.rel.certificados=09-escritorio.md#certificados-digitais-a-vencer
 escritorio.honorarios=09-escritorio.md#honorarios-e-cobrancas
 
 ; ---- Gerencial

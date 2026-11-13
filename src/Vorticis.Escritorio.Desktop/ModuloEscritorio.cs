@@ -54,7 +54,9 @@ public sealed class ModuloEscritorio : IModuloDesktop
         ItemMenu.Submenu("_Relatórios",
             ItemMenu.Tela("Gerador de contratos", EscritorioTelas.Contratos),
             ItemMenu.Tela("Carteira de clientes", EscritorioTelas.Carteira),
-            ItemMenu.Tela("Relatório de honorários", EscritorioTelas.RelHonorarios)),
+            ItemMenu.Tela("Relatório de honorários", EscritorioTelas.RelHonorarios),
+            ItemMenu.Tela("Produtividade da equipe", EscritorioTelas.RelProdutividade),
+            ItemMenu.Tela("Certificados digitais a vencer", EscritorioTelas.RelCertificados)),
     ];
 
     /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
@@ -97,6 +99,10 @@ public sealed class ModuloEscritorio : IModuloDesktop
             .Tela(EscritorioTelas.Honorarios, "Financeiro › Honorários", m => Pode(m, Permissao.EscritorioHonorarios, Permissao.EscritorioRelatorios), v => v.CarregarAsync());
         c.Instancia("RelHonorarios", m => new RelHonorariosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
             .Tela(EscritorioTelas.RelHonorarios, "Relatórios › Relatório de honorários", m => Pode(m, Permissao.EscritorioRelatorios));
+        c.Instancia("RelProdutividade", m => new RelProdutividadeViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(EscritorioTelas.RelProdutividade, "Relatórios › Produtividade da equipe", m => Pode(m, Permissao.EscritorioRelatorios));
+        c.Instancia("RelCertificados", m => new RelCertificadosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao())
+            .Tela(EscritorioTelas.RelCertificados, "Relatórios › Certificados digitais a vencer", m => m.Sessao?.Administrador == true);
         c.Instancia("ParametrosModulo", m => new ParametrosViewModelEscritorio(m), aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
     }

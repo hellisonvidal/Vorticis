@@ -402,7 +402,7 @@ public class MenusTests
         var org = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Organização");
         Assert.Equal(["Tarefas e prazos", "Protocolos de documentos"], org.Filhos!.Select(i => i.Titulo));
         var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
-        Assert.Equal(["Gerador de contratos", "Carteira de clientes", "Relatório de honorários"], rel.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Gerador de contratos", "Carteira de clientes", "Relatório de honorários", "Produtividade da equipe", "Certificados digitais a vencer"], rel.Filhos!.Select(i => i.Titulo));
         Assert.DoesNotContain(Folhas(vm.Menus), i => i.Titulo == "Relatório de contratos");
         Assert.All(Folhas(vm.Menus).Where(i => i.Chave is not null && i.Chave != TelasComuns.Sair), i => Assert.True(vm.ConheceTela(i.Chave!), i.Chave));
     }
