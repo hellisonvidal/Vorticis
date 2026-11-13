@@ -280,3 +280,19 @@ public partial class AdmitidosDesligadosViewModel(IContexto contexto) : Relatori
         Mensagem = r.Valor[1].Rodape ?? "";
     }, Permissao.FolhaRelatorios);
 }
+
+/// <summary>Obrigações › Conferência do INSS (DCTFWeb): contribuições da competência por apuração e por funcionário.</summary>
+public partial class ConferenciaInssViewModel(IContexto contexto) : RelatorioFolhaBase(contexto)
+{
+    protected override string TituloRelatorio => "Conferência do INSS para a DCTFWeb";
+    protected override string NomeArquivo => $"conferencia_inss_{CompGerada:yyyyMM}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Folha().Relatorios.ConferenciaInssAsync(empresa, Comp, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Mostrar(r.Valor);
+        Mensagem = r.Valor[0].Linhas.Count == 0 ? "Não há folha calculada nesta competência." : r.Valor[0].Rodape ?? "";
+    }, Permissao.FolhaRelatorios);
+}

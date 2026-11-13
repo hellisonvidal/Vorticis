@@ -134,6 +134,49 @@ public sealed class ServicoRelatoriosFolha(IRepositorioCadastrosFolha cadastros,
             await CabecalhoAsync(empresaId, $"Competência {Competencia(competencia)}", ct), blocos)));
     }
 
+    // ------------------------------------------------------------------ conferência do INSS (DCTFWeb)
+
+    /// <summary>
+    /// Conferência das contribuições previdenciárias da competência para a DCTFWeb: descontado dos segurados, patronal, RAT x FAP e terceiros,
+    /// menos o salário-família, separando a folha do mês (com férias e rescisões) e o 13º salário (declaração anual, em dezembro).
+    /// </summary>
+    public async Task<Resultado<IReadOnlyList<TabelaRelatorio>>> ConferenciaInssAsync(long empresaId, DateOnly competencia, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(empresaId, usuarioId, ct) is { } negado) return Resultado<IReadOnlyList<TabelaRelatorio>>.Falha(negado);
+        competencia = new DateOnly(competencia.Year, competencia.Month, 1);
+        var calculos = await movimento.ListarCalculosAsync(empresaId, competencia, null, false, ct);
+        var grupos = new (string Nome, Func<CalculoGravado, bool> Filtro)[]
+        {
+            ("Folha do mês (salários, férias e rescisões)", c => c.Tipo is not (TipoFolha.Decimo1 or TipoFolha.Decimo2)),
+            ("13º salário (DCTFWeb anual)", c => c.Tipo is TipoFolha.Decimo1 or TipoFolha.Decimo2),
+        };
+        var linhas = new List<LinhaRelatorio>();
+        foreach (var (nome, filtro) in grupos)
+        {
+            var cs = calculos.Where(filtro).ToList();
+            if (cs.Count == 0) continue;
+            var seg = cs.Sum(c => c.Inss); var pat = cs.Sum(c => c.EncInssPatronal); var rat = cs.Sum(c => c.EncRat); var ter = cs.Sum(c => c.EncTerceiros);
+            var sf = cs.Sum(c => c.SalarioFamilia);
+            linhas.Add(new LinhaRelatorio([nome, cs.Select(c => c.FuncionarioId).Distinct().Count(), cs.Sum(c => c.BaseInss), seg, pat, rat, ter, sf, seg + pat + rat + ter - sf]));
+        }
+        if (linhas.Count > 1)
+            linhas.Add(new LinhaRelatorio(["TOTAL", null, linhas.Sum(l => (decimal)l.Valores[2]!), linhas.Sum(l => (decimal)l.Valores[3]!), linhas.Sum(l => (decimal)l.Valores[4]!),
+                                           linhas.Sum(l => (decimal)l.Valores[5]!), linhas.Sum(l => (decimal)l.Valores[6]!), linhas.Sum(l => (decimal)l.Valores[7]!),
+                                           linhas.Sum(l => (decimal)l.Valores[8]!)], Destaque: true));
+        var resumo = new TabelaRelatorio($"Contribuições previdenciárias – competência {Competencia(competencia)}",
+            [new("Apuração", TipoColuna.Texto, 6), new("Funcionários", TipoColuna.Inteiro, 2), new("Base de cálculo", V), new("Descontado dos segurados", V),
+             new("Patronal", V), new("RAT x FAP", V), new("Terceiros", V), new("(–) Salário-família", V), new("A declarar", V)],
+            linhas, "Confira com o total da DCTFWeb gerada pelo eSocial (eventos S-1200, S-2299 e S-1299) antes de emitir o DARF, que vence no dia 20 do mês seguinte. "
+                    + "Pró-labore, contribuintes individuais e retenções sobre notas (EFD-Reinf) entram na DCTFWeb por fora desta folha.");
+        var porFunc = calculos.GroupBy(c => (c.Matricula, c.FuncionarioNome)).OrderBy(g => g.Key.FuncionarioNome)
+            .Select(g => new LinhaRelatorio([g.Key.Matricula, g.Key.FuncionarioNome, string.Join(", ", g.Select(c => c.Tipo.Descricao()).Distinct()),
+                                             g.Sum(c => c.BaseInss), g.Sum(c => c.Inss), g.Sum(c => c.EncargosPrevidenciarios), g.Sum(c => c.SalarioFamilia)])).ToList();
+        var detalhe = new TabelaRelatorio("Por funcionário",
+            [new("Matrícula", TipoColuna.Texto, 1.8), new("Funcionário"), new("Cálculos", TipoColuna.Texto, 4), new("Base INSS", V), new("Descontado", V),
+             new("Patronal + RAT + terceiros", V), new("Salário-família", V)], porFunc);
+        return Resultado<IReadOnlyList<TabelaRelatorio>>.Ok([resumo, detalhe]);
+    }
+
     // ------------------------------------------------------------------ controles de pessoal
 
     /// <summary>Contratos a termo e férias que vencem nos próximos <paramref name="dias"/> dias (e os já vencidos).</summary>

@@ -163,6 +163,7 @@ folha.provisoes=06-folha.md#provisoes-de-ferias-e-13o
 folha.informe_rendimentos=06-folha.md#informe-de-rendimentos
 folha.vencimentos=06-folha.md#vencimentos-de-contratos-e-ferias
 folha.consignado=06-folha.md#emprestimos-consignados
+folha.conferencia_inss=06-folha.md#conferencia-do-inss-dctfweb
 folha.admitidos_desligados=06-folha.md#admitidos-e-desligados
 folha.contabilizacao=06-folha.md#contabilizacao-da-folha
 folha.contabilizacao.eventos=06-folha.md#contabilizacao-por-eventos

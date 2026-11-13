@@ -277,7 +277,7 @@ public class MenusTests
         Assert.Contains(cadastros, i => i.Chave == "folha.funcionarios");
         Assert.DoesNotContain(cadastros, i => i.Chave is TelasComuns.Clientes or TelasComuns.Fornecedores);
         Assert.True(vm.UsaPeriodo);
-        Assert.Equal(["DCTFWeb e INSS (em breve)"], proprios.Where(i => !i.Habilitado).Select(i => i.Titulo));
+        Assert.DoesNotContain(proprios, i => !i.Habilitado);
         Assert.All(vm.Atalhos.Where(a => a.Chave is not null), a => Assert.True(vm.ConheceTela(a.Chave!), a.Chave));
         // Folha e Pró-labore são submenus de Cálculos
         var calculos = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Cálculos");

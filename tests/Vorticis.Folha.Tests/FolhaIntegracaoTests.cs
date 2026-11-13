@@ -174,6 +174,11 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
         Assert.Equal(m.Liquido + j.Liquido, (decimal)resumo.Valor[0].Linhas[^1].Valores[4]!);
         var encargos = await rel.EncargosAsync(empresa, competencia, adm, Ct);
         Ok(encargos);
+        var confInss = await rel.ConferenciaInssAsync(empresa, competencia, adm, Ct);
+        Ok(confInss);
+        var linhaMes = confInss.Valor[0].Linhas[0];
+        Assert.Equal((m.Inss + j.Inss, m.Inss + j.Inss + m.EncargosPrevidenciarios + j.EncargosPrevidenciarios - m.SalarioFamilia - j.SalarioFamilia),
+                     ((decimal)linhaMes.Valores[3]!, (decimal)linhaMes.Valores[8]!));
         Assert.Equal(m.Fgts + j.Fgts, (decimal)encargos.Valor.Linhas[^1].Valores[6]!);
 
         // Informe de rendimentos do ano em que a folha foi paga (regime de caixa)

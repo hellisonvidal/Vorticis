@@ -64,7 +64,7 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
                 ItemMenu.Tela("Transmissão", FolhaTelas.Transmissao)),
             ItemMenu.Tela("FGTS Digital", FolhaTelas.FgtsDigital),
-            ItemMenu.EmBreve("DCTFWeb e INSS")),
+            ItemMenu.Tela("Conferência do INSS (DCTFWeb)", FolhaTelas.ConferenciaInss)),
         ItemMenu.Submenu("_Integrações",
             ItemMenu.Submenu("Importar",
                 ItemMenu.Tela("Importar eSocial", FolhaTelas.ImportarEsocial))),
@@ -190,6 +190,8 @@ public sealed class ModuloFolha : IModuloDesktop
             .Tela(FolhaTelas.Provisoes, "Relatórios › Provisões de férias e 13º", m => Pode(m, Permissao.FolhaRelatorios, Permissao.FolhaCalcular));
         c.Instancia(nameof(MainViewModel.InformeRendimentos), m => new InformeRendimentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.InformeRendimentos, "Relatórios › Informe de rendimentos", m => Pode(m, Permissao.FolhaRelatorios));
+        c.Instancia(nameof(MainViewModel.ConferenciaInss), m => new ConferenciaInssViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.ConferenciaInss, "Obrigações › Conferência do INSS (DCTFWeb)", m => Pode(m, Permissao.FolhaRelatorios));
         c.Instancia(nameof(MainViewModel.VencimentosPessoal), m => new VencimentosPessoalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.Vencimentos, "Relatórios › Vencimentos de contratos e férias", m => Pode(m, Permissao.FolhaRelatorios));
         c.Instancia(nameof(MainViewModel.AdmitidosDesligados), m => new AdmitidosDesligadosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())

@@ -31,6 +31,7 @@ public static class FolhaTelas
     public const string InformeRendimentos = "folha.informe_rendimentos";
     public const string Vencimentos = "folha.vencimentos";
     public const string Consignado = "folha.consignado";
+    public const string ConferenciaInss = "folha.conferencia_inss";
     public const string AdmitidosDesligados = "folha.admitidos_desligados";
     public const string Contabilizacao = "folha.contabilizacao";
     public const string ContabilizacaoEventos = "folha.contabilizacao.eventos";

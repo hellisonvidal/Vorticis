@@ -164,6 +164,7 @@ public static class IconesMenu
         ["folha.informe_rendimentos"] = "CardAccountDetails",
         ["folha.vencimentos"] = "CalendarClock",
         ["folha.consignado"] = "CashMultiple",
+        ["folha.conferencia_inss"] = "FileSendOutline",
         ["folha.admitidos_desligados"] = "AccountMultiple",
         ["folha.contabilizacao"] = "BookArrowRightOutline",
         ["folha.contabilizacao.eventos"] = "BookCheckOutline",

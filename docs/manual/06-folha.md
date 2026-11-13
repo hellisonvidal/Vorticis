@@ -404,3 +404,14 @@ Depois que a primeira parcela foi descontada, só a quantidade de parcelas, a si
 ### Margem consignável
 
 Clique em **Margem consignável** para ver, por funcionário, a remuneração da última folha mensal calculada, os descontos obrigatórios (INSS, IRRF e pensão), a remuneração disponível, a margem para empréstimos (35% da disponível, conforme o parâmetro legal), as parcelas ativas e a margem livre. Quem passou da margem aparece em destaque. A tabela pode ser exportada.
+
+## Conferência do INSS (DCTFWeb)
+
+Antes de transmitir a DCTFWeb e emitir o DARF das contribuições previdenciárias (vencimento no dia 20 do mês seguinte), confira os valores da folha:
+
+1. Abra *Obrigações › Conferência do INSS (DCTFWeb)*, escolha a **competência** e clique em **Gerar**.
+2. A primeira tabela mostra, separados, a **folha do mês** (salários, férias e rescisões) e o **13º salário** (que vai na DCTFWeb anual, em dezembro): a base de cálculo, o INSS descontado dos segurados, a contribuição patronal, o RAT ajustado pelo FAP, os terceiros, o salário-família a deduzir e o valor a declarar.
+3. A segunda tabela mostra os mesmos valores por funcionário.
+4. Compare o total com a DCTFWeb gerada pelo eSocial. Se não bater, confira se todos os eventos (S-1200, S-2299) foram transmitidos e se o movimento foi fechado (S-1299).
+
+O pró-labore, os contribuintes individuais e as retenções sobre notas fiscais (EFD-Reinf) também entram na DCTFWeb, mas não fazem parte desta tela.
