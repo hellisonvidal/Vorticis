@@ -41,8 +41,12 @@ public sealed class ServicosFiscais
         Documentos = new ServicoDocumentosFiscais(repoDocumentos, autorizador);
         Digitacao = new ServicoDigitacaoFiscal(new RepositorioDigitacao(ds), repoDocumentos, autorizador);
         ParticipantesNota = new ServicoParticipanteNota(app);
-        Produtos = new ServicoProdutos(new RepositorioProdutos(ds), autorizador);
-        Regras = new Regras.ServicoRegrasFiscais(new RepositorioRegrasFiscais(ds), autorizador);
+        var repoProdutos = new RepositorioProdutos(ds);
+        Produtos = new ServicoProdutos(repoProdutos, autorizador);
+        ConferenciaTributacao = new Relatorios.ServicoConferenciaTributacao(repoDocumentos, repoProdutos, autorizador);
+        var repoRegras = new RepositorioRegrasFiscais(ds);
+        Regras = new Regras.ServicoRegrasFiscais(repoRegras, autorizador);
+        Difal = new Relatorios.ServicoDifal(repoDocumentos, repoRegras, autorizador);
         Contabilizacao = new ServicoContabilizacaoFiscal(repoContabilizacao, repoDocumentos, app.Lancamentos, autorizador, repoDuplicatas, app.Pendencias);
         Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador, app.Pendencias);
         app.Pendencias.RegistrarProcessador(Contabilizacao.ProcessadorPendencias);
@@ -97,6 +101,8 @@ public sealed class ServicosFiscais
     public ServicoNotasPorCentro NotasPorCentro { get; }
     public Reforma.ServicoReformaTributaria Reforma { get; }
     public Reforma.ServicoClassificacaoTributaria Classificacoes { get; }
+    public Relatorios.ServicoConferenciaTributacao ConferenciaTributacao { get; }
+    public Relatorios.ServicoDifal Difal { get; }
     public ServicoTabelasFiscais Tabelas { get; }
     public Reforma.ServicoSimplesReforma SimplesReforma { get; }
     public Dctf.ServicoDctfWeb DctfWeb { get; }

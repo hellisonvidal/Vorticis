@@ -434,6 +434,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 - **Resumos** (*Relatórios › Resumos*):
   - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
   - **Curva ABC de vendas** e **Curva ABC de compras**: ordena os produtos (ou, em *Por cliente/fornecedor*, quem comprou ou vendeu) pelo valor das notas autorizadas do período e mostra a participação de cada um no total e o percentual acumulado. A **classe A** reúne os que somam os primeiros 80% do valor, a **classe B** vai até 95% e a **classe C** é o restante. Use a classe A para decidir onde negociar preço, cuidar do estoque e cobrar primeiro: poucos itens fazem a maior parte do movimento. O rodapé mostra quantos itens e quanto valor há em cada classe.
+  - **Conferência de tributação** (*Relatórios › Livros e apuração*): compara cada item das notas autorizadas do período com o cadastro do produto (encontrado pelo código ou, se não houver código, pela descrição) e lista as divergências: **NCM**, **origem**, **CST do ICMS** (de entrada ou de saída), a natureza do **CFOP** (os três últimos dígitos, sem olhar se é dentro ou fora do estado) e, nas vendas dentro do estado, as **alíquotas de ICMS e IPI**. Corrija a nota ou o cadastro, conforme o caso. Itens de fornecedores com código próprio que não existe no cadastro ficam de fora.
   - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Planejamento tributário**: informe os dados do ano e compare Simples × Presumido × Real, com exportação; veja [Planejamento tributário](#planejamento-tributario).
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.
@@ -522,3 +523,27 @@ Antes, faça a [apuração de PIS e COFINS](#pis-e-cofins) do mês. Ambas as tel
 ## Contabilização
 
 A integração das notas e das apurações com o Contábil é descrita em [Regras de contabilização](#regras-de-contabilizacao), [Contabilizar notas fiscais](#contabilizar-notas-fiscais) e [Contabilização das provisões de impostos](#contabilizacao-das-provisoes-de-impostos).
+
+## DIFAL (uso e consumo e ativo)
+
+Quem compra de outro estado mercadoria para **uso e consumo** ou para o **ativo imobilizado** deve ao seu estado o diferencial de alíquota do ICMS (DIFAL): a diferença entre a alíquota interna do seu estado e a alíquota interestadual da nota.
+
+### Passo a passo
+
+1. Abra *Apuração › DIFAL (uso e consumo e ativo)*.
+2. Escolha o período (datas de entrada).
+3. Informe a **alíquota interna** do ICMS do seu estado (com o adicional do fundo de pobreza, se houver).
+4. Deixe marcada a **Base dupla (por dentro)**, usada pela maioria dos estados. Desmarque se o seu estado calcula pela base única (valor da nota vezes a diferença das alíquotas).
+5. Clique em **Calcular**.
+
+### O que entra
+
+- Notas de entrada autorizadas, de fornecedor de outro estado, com CFOP **2551** ou **2552** (ativo imobilizado) e **2556** ou **2557** (uso e consumo).
+- A alíquota interestadual é a destacada na nota. Se a nota não destaca ICMS (fornecedor do Simples Nacional, por exemplo), o sistema usa a da Resolução do Senado: 4% para mercadoria importada; 7% quando o fornecedor é do Sul ou Sudeste (menos Espírito Santo) e a sua empresa é do Norte, Nordeste, Centro-Oeste ou Espírito Santo; 12% nos demais casos.
+- O rodapé separa o total de uso e consumo e o de ativo imobilizado.
+
+### Cuidados
+
+- Confira a alíquota interna de cada produto: alguns têm alíquota própria por NCM.
+- Empresas do Simples Nacional também pagam o DIFAL nessas compras; confira as regras e o prazo do seu estado.
+- O DIFAL calculado aqui é para conferência e para a guia; lance-o na apuração do ICMS conforme a legislação do seu estado.

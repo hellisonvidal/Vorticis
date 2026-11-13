@@ -78,6 +78,61 @@ public class RegrasDocumentosTests
     }
 
     [Fact]
+    public void Conferencia_de_tributacao_aponta_divergencias_com_o_cadastro()
+    {
+        var produto = new Vorticis.Fiscal.Produtos.Produto(1, 10, "Parafuso", "UN", "73181500", null, null, "0", "00", "1102", "5102", "00", "00", 18m, 5m, 0, 0);
+        LinhaItemFiscal I(long doc, TipoOperacao op, string cfop, string? cod, string? desc, string? ncm, string? cst, decimal aliq = 18m, decimal aliqIpi = 5m)
+        {
+            var l = Linha(doc, op, cfop, 100m);
+            return l with { Item = l.Item with { CodProduto = cod, Descricao = desc, Ncm = ncm, CstIcms = cst, AliqIcms = aliq, AliqIpi = aliqIpi, Origem = "0" } };
+        }
+        var itens = new[]
+        {
+            I(1, TipoOperacao.Saida, "5102", "10", "Parafuso", "73181500", "000"),            // tudo certo (CST com origem)
+            I(2, TipoOperacao.Saida, "6102", "10", "Parafuso", "73181500", "00"),             // interestadual: CFOP 6102 casa com 5102
+            I(3, TipoOperacao.Saida, "5405", "10", "Parafuso", "73181600", "60", 12m, 0),     // NCM, CST, CFOP, alíquotas
+            I(4, TipoOperacao.Entrada, "1102", null, "PARAFUSO", "73181500", "00"),           // achado pela descrição, ok
+            I(5, TipoOperacao.Saida, "5102", "999", "Outro", "1", "90"),                       // produto fora do cadastro
+        };
+        var d = Vorticis.Fiscal.Relatorios.ConferenciaTributacao.Conferir(itens, [produto]);
+        Assert.All(d, x => Assert.Equal("1", x.Numero));
+        Assert.Equal(["NCM", "CST do ICMS (saída)", "Natureza do CFOP", "Alíquota do ICMS %", "Alíquota do IPI %"], d.Select(x => x.Campo));
+        Assert.True(Vorticis.Fiscal.Relatorios.ConferenciaTributacao.MesmoCst("060", "60"));
+        Assert.False(Vorticis.Fiscal.Relatorios.ConferenciaTributacao.MesmoCst("102", "101"));
+    }
+
+    [Fact]
+    public void Difal_base_dupla_e_unica()
+    {
+        LinhaItemFiscal E(long doc, string cfop, decimal valor, string uf, decimal aliq = 0, string? origem = null, SituacaoDocumento sit = SituacaoDocumento.Autorizada)
+        {
+            var l = Linha(doc, TipoOperacao.Entrada, cfop, valor, sit: sit);
+            return l with { Uf = uf, Item = l.Item with { AliqIcms = aliq, Origem = origem } };
+        }
+        var itens = new[]
+        {
+            E(1, "2556", 1000m, "SP", 12m),                   // uso e consumo de SP para BA com 12% destacado
+            E(2, "2551", 1000m, "SP"),                        // ativo sem destaque: SP (Sul/Sudeste) -> BA = 7%
+            E(3, "2556", 1000m, "SP", origem: "1"),           // importado: 4%
+            E(4, "2102", 1000m, "SP", 12m),                   // revenda: fora
+            E(5, "2556", 1000m, "BA", 12m),                   // mesma UF: fora
+            E(6, "2556", 1000m, "SP", 12m, sit: SituacaoDocumento.Cancelada),
+        };
+        var d = Vorticis.Fiscal.Relatorios.CalculoDifal.Calcular(itens, "BA", 20.5m, baseDupla: true);
+        Assert.Equal(3, d.Count);
+        // base dupla: (1000 - 120) / (1 - 0,205) = 1.106,92; DIFAL = 1.106,92 x 20,5% - 120 = 106,92
+        Assert.Equal((12m, 120m, 1106.92m, 106.92m), (d[0].AliqInterestadual, d[0].IcmsOrigem, d[0].BaseDifal, d[0].Difal));
+        Assert.Equal(7m, d.Single(l => l.Numero == "1" && l.Cfop == "2551").AliqInterestadual);
+        Assert.Equal(4m, d.Single(l => l.Produto == null && l.AliqInterestadual == 4m).AliqInterestadual);
+        var unica = Vorticis.Fiscal.Relatorios.CalculoDifal.Calcular(itens, "BA", 20.5m, baseDupla: false);
+        Assert.Equal(85m, unica[0].Difal);   // 1000 x (20,5% - 12%)
+        Assert.Equal(12m, Vorticis.Fiscal.Relatorios.CalculoDifal.AliquotaInterestadual("BA", "SP", "0"));
+        Assert.Equal(7m, Vorticis.Fiscal.Relatorios.CalculoDifal.AliquotaInterestadual("PR", "ES", "0"));
+        var t = Vorticis.Fiscal.Relatorios.CalculoDifal.Tabela(d, true);
+        Assert.Equal(d.Sum(l => l.Difal), t.Linhas[^1].Valores[11]);
+    }
+
+    [Fact]
     public void Curva_abc_classifica_por_valor_acumulado()
     {
         var itens = new[]

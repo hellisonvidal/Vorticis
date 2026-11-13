@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.DifalView"
+             x:DataType="vm:DifalViewModel">
+  <!-- Apuração › DIFAL (uso e consumo e ativo) -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Classes="titulo" Text="DIFAL – uso e consumo e ativo" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Margin="0,0,6,0" />
+        <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,10,0" />
+        <TextBlock Text="Alíquota interna %" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <NumericUpDown Value="{Binding AliquotaInterna}" Minimum="1" Maximum="39" Increment="0.5" FormatString="0.##" Width="110" Margin="0,0,10,0" />
+        <CheckBox Content="Base dupla (por dentro)" IsChecked="{Binding BaseDupla}" Margin="0,0,10,0" />
+        <Button Content="Calcular" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Entradas autorizadas de outra UF com CFOP 2551, 2552 (ativo) e 2556, 2557 (uso e consumo). Informe a alíquota interna do ICMS da sua UF (com o fundo de pobreza, se houver) e desmarque a base dupla se o seu estado usa base única." />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

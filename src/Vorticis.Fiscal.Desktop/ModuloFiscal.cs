@@ -73,6 +73,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             ItemMenu.Tela("PIS e COFINS", Telas.PisCofins),
             ItemMenu.Tela("IBS e CBS (reforma tributária)", Telas.IbsCbs),
             ItemMenu.Tela("Simples Nacional × IBS/CBS (reforma)", Telas.SimplesReforma),
+            ItemMenu.Tela("DIFAL (uso e consumo e ativo)", Telas.Difal),
             ItemMenu.EmBreve("ICMS e IPI"),
             ItemMenu.Separador,
             ItemMenu.Tela("Histórico de receita e folha", Telas.BaseMensal),
@@ -99,7 +100,8 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Relação de ajustes da apuração", Telas.RelacaoAjustes),
                 ItemMenu.Tela("Apuração do IPI", Telas.ApuracaoIpiSped),
                 ItemMenu.Tela("Apuração do ICMS-ST", Telas.ApuracaoIcmsSt),
-                ItemMenu.Tela("Conferência da EFD ICMS/IPI", Telas.ConferenciaEfd)),
+                ItemMenu.Tela("Conferência da EFD ICMS/IPI", Telas.ConferenciaEfd),
+                ItemMenu.Tela("Conferência de tributação", Telas.ConferenciaTributacao)),
             ItemMenu.Submenu("_Resumos",
                 ItemMenu.Tela("Resumo de vendas", Telas.ResumoVendas),
                 ItemMenu.Tela("Resumo de compras", Telas.ResumoCompras),
@@ -253,6 +255,10 @@ public sealed class ModuloFiscal : IModuloDesktop
                   v => v.CarregarAsync());
         c.Instancia("IbsCbs", m => new ApuracaoIbsCbsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.IbsCbs, "Apuração › IBS e CBS (reforma tributária)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("ConferenciaTributacao", m => new ConferenciaTributacaoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ConferenciaTributacao, "Relatórios › Livros e apuração › Conferência de tributação", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("Difal", m => new DifalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.Difal, "Apuração › DIFAL (uso e consumo e ativo)", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("SimplesReforma", m => new SimplesReformaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.SimplesReforma, "Apuração › Simples Nacional × IBS/CBS (reforma)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("DctfWeb", m => new DctfWebViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),

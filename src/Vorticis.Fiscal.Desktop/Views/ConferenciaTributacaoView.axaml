@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.ConferenciaTributacaoView"
+             x:DataType="vm:ConferenciaTributacaoViewModel">
+  <!-- Relatórios › Livros e apuração › Conferência de tributação -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Classes="titulo" Text="Conferência de tributação" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Margin="0,0,6,0" />
+        <TextBlock Text="a" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Margin="0,0,10,0" />
+        <ComboBox ItemsSource="{x:Static vm:ConferenciaTributacaoViewModel.Operacoes}" SelectedIndex="{Binding Operacao}" Width="170" Margin="0,0,10,0" />
+        <Button Content="Conferir" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Compara cada item das notas autorizadas com o cadastro do produto (pelo código ou pela descrição): NCM, origem, CST do ICMS, natureza do CFOP e, nas vendas dentro do estado, as alíquotas de ICMS e IPI." />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

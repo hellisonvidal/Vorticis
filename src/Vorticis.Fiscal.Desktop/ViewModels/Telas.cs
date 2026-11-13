@@ -59,6 +59,8 @@ public static class Telas
     public const string ResumoCompras = "resumocompras";
     public const string CurvaAbcVendas = "curvaabcvendas";
     public const string CurvaAbcCompras = "curvaabccompras";
+    public const string Difal = "difal";
+    public const string ConferenciaTributacao = "conferenciatributacao";
     public const string RelRecebimentos = "relrecebimentos";
     public const string RelPagamentos = "relpagamentos";
 }

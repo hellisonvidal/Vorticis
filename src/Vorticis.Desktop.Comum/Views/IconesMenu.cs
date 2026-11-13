@@ -141,6 +141,8 @@ public static class IconesMenu
         ["resumocfop"] = "FormatListNumberedRtl",
         ["curvaabcvendas"] = "FilterVariant",
         ["curvaabccompras"] = "FormatListBulleted",
+        ["difal"] = "ScaleUnbalanced",
+        ["conferenciatributacao"] = "ClipboardCheckMultipleOutline",
         ["relduplicatasapagar"] = "CashFast",
         ["relduplicatasareceber"] = "CashRefund",
         ["relposicaoduplicatas"] = "CalendarClock",

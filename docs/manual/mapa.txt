@@ -144,6 +144,8 @@ resumovendas=05-fiscal.md#relatorios-fiscais
 resumocompras=05-fiscal.md#relatorios-fiscais
 curvaabcvendas=05-fiscal.md#relatorios-fiscais
 curvaabccompras=05-fiscal.md#relatorios-fiscais
+difal=05-fiscal.md#difal-uso-e-consumo-e-ativo
+conferenciatributacao=05-fiscal.md#relatorios-fiscais
 
 ; ---- Folha
 folha.funcionarios=06-folha.md#cadastro-de-funcionarios

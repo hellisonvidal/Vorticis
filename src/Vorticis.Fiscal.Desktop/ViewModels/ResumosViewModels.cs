@@ -109,3 +109,61 @@ public abstract partial class CurvaAbcViewModel(IContexto contexto, TipoOperacao
 public sealed class CurvaAbcVendasViewModel(IContexto contexto) : CurvaAbcViewModel(contexto, TipoOperacao.Saida);
 
 public sealed class CurvaAbcComprasViewModel(IContexto contexto) : CurvaAbcViewModel(contexto, TipoOperacao.Entrada);
+
+/// <summary>Apuração › DIFAL: diferencial de alíquota nas entradas de outra UF para uso e consumo e ativo imobilizado.</summary>
+public partial class DifalViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private decimal? _aliquotaInterna = 18m;
+    [ObservableProperty] private bool _baseDupla = true;
+
+    protected override string TituloRelatorio => "DIFAL – uso e consumo e ativo imobilizado";
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy} · alíquota interna {AliquotaInterna:0.##}%";
+    protected override string NomeArquivo => $"difal_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var fim = Data(Fim, ini);
+        var r = await app.Fiscal().Difal.CalcularAsync(empresa, ini, fim, AliquotaInterna ?? 0, BaseDupla, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (ini, fim);
+        Mostrar(CalculoDifal.Tabela(r.Valor.Linhas, BaseDupla));
+        Mensagem = r.Valor.Linhas.Count == 0
+            ? $"Nenhuma entrada de outra UF para uso e consumo ou ativo (CFOP 2551, 2552, 2556, 2557) no período. UF da empresa: {r.Valor.Uf}."
+            : $"DIFAL a recolher para {r.Valor.Uf}: {Vorticis.Domain.Comum.Formato.Moeda(r.Valor.Linhas.Sum(l => l.Difal))}.";
+    }, Permissao.FiscalRelatorios);
+}
+
+/// <summary>Relatórios › Livros e apuração › Conferência de tributação: itens das notas que divergem do cadastro do produto.</summary>
+public partial class ConferenciaTributacaoViewModel(IContexto contexto) : RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    public static IReadOnlyList<string> Operacoes { get; } = ["Entradas e saídas", "Só saídas", "Só entradas"];
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private int _operacao;
+
+    protected override string TituloRelatorio => "Conferência de tributação";
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy} · {Operacoes[Operacao]}";
+    protected override string NomeArquivo => $"conferencia_tributacao_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1));
+        var fim = Data(Fim, ini);
+        TipoOperacao? op = Operacao switch { 1 => TipoOperacao.Saida, 2 => TipoOperacao.Entrada, _ => null };
+        var r = await app.Fiscal().ConferenciaTributacao.ConferirAsync(empresa, ini, fim, op, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (ini, fim);
+        Mostrar(ConferenciaTributacao.Tabela(r.Valor));
+        Mensagem = r.Valor.Count == 0 ? "Nenhuma divergência entre as notas e o cadastro dos produtos." : $"{r.Valor.Count} divergência(s) encontrada(s).";
+    }, Permissao.FiscalRelatorios);
+}
