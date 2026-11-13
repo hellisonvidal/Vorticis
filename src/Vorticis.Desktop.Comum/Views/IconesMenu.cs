@@ -42,6 +42,7 @@ public static class IconesMenu
         ["historicos"] = "TextBoxOutline",
         ["bloqueiolancamentos"] = "LockOutline",
         ["lancamento"] = "NotebookEditOutline",
+        ["lancamentosprogramados"] = "CalendarSync",
         ["saldosiniciais"] = "FlagOutline",
         ["importarlancamentos"] = "FileImportOutline",
         ["reorganizarlancamentos"] = "SortVariant",

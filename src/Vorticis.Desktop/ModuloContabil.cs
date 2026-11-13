@@ -39,6 +39,7 @@ public sealed class ModuloContabil : IModuloDesktop
         ItemMenu.Submenu("_Lançamentos",
             ItemMenu.Submenu("_Contábeis",
                 ItemMenu.Tela("Lançamento contábil", Telas.Lancamento, "Ctrl+L"),
+                ItemMenu.Tela("Lançamentos programados", Telas.LancamentosProgramados),
                 ItemMenu.Tela("Saldos iniciais (implantação)", Telas.SaldosIniciais),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Reorganizar lançamentos", Telas.ReorganizarLancamentos)),
@@ -149,6 +150,10 @@ public sealed class ModuloContabil : IModuloDesktop
         c.Instancia("ParametrosModulo", m => new ParametrosContabilViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", ComAcesso, v => v.CarregarAsync());
+
+        c.Instancia(nameof(MainViewModel.LancamentosProgramados), m => new LancamentosProgramadosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoLimpar: v => { v.Lista.Clear(); v.Novo(); }, aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.LancamentosProgramados, "Lançamentos › Lançamentos programados", m => m.Pode(Permissao.LancamentoIncluir), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Lancamento), m => new LancamentoViewModel(m), aoTrocarEmpresa: (v, _) => v.AoTrocarEmpresaAsync())
             .Tela(Telas.Lancamento, "Lançamentos › Lançamento contábil",

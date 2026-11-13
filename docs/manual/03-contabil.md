@@ -162,6 +162,26 @@ Disponível quando a empresa usa estorno de lançamentos (configuração acima).
 - Para remover um lançamento já gravado use **Excluir** (veja acima); com estorno ligado, também é possível estornar.
 - Se a empresa exige o nº do documento, informe-o em todas as partidas.
 
+## Lançamentos programados
+
+Para os lançamentos que se repetem todo mês com o mesmo valor (aluguel, pró-labore fixo, honorários contábeis, seguros, parcelas de empréstimo), cadastre uma vez e gere a cada mês com um clique.
+
+### Cadastrar
+
+1. Abra *Lançamentos › Contábeis › Lançamentos programados*.
+2. Preencha a **Descrição**, a **Conta a débito** e a **Conta a crédito** (lupa ou F4), o **Valor**, o **Histórico**, o **Dia** do lançamento e a **Primeira competência**. Informe a **Última** só se o lançamento tiver data para acabar (por exemplo, um contrato de 12 meses).
+3. No histórico, escreva `{competencia}` onde quiser o mês e o ano: "Aluguel {competencia}" vira "Aluguel 03/2027".
+4. Clique em **Gravar**. Para alterar, clique na linha, mude e grave de novo; desmarque **Ativo** para suspender sem apagar.
+
+### Gerar os lançamentos do mês
+
+1. Escolha a **Competência** e clique em **Gerar lançamentos da competência**.
+2. Cada lançamento programado vigente vira um lançamento contábil no dia escolhido (nos meses mais curtos, no último dia). A coluna **Último gerado** mostra até quando já foi gerado.
+3. Gerar de novo a mesma competência não duplica nada. Se você excluir um lançamento gerado, a competência pode ser gerada outra vez.
+4. Se uma conta não existir, não for analítica ou o período estiver fechado, aquele lançamento não é gerado e o aviso aparece no rodapé; os demais seguem.
+
+Excluir um lançamento programado não apaga os lançamentos já gerados.
+
 ## Saldos iniciais
 
 **Para que serve:** carregar o saldo de cada conta ao implantar o sistema.

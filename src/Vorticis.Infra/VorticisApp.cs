@@ -73,6 +73,7 @@ public sealed class VorticisApp : IAsyncDisposable
         Backup = new ServicoBackup(new BackupPostgres(connectionString));
         Auditoria = new ServicoAuditoria(new RepositorioAuditoria(ds));
         Obrigacoes = new ServicoObrigacoes(new RepositorioObrigacoes(ds), autorizador);
+        LancamentosProgramados = new Contabil.ServicoLancamentosProgramados(ds, Lancamentos, autorizador);
         Migrador = new Migrador(ds);
         Pendencias = new ServicoPendencias(new RepositorioPendencias(ds), autorizador);
         PreferenciasMenu = new ServicoPreferenciasMenu(new RepositorioPreferenciasMenu(ds));
@@ -124,6 +125,7 @@ public sealed class VorticisApp : IAsyncDisposable
     public ServicoBackup Backup { get; }
     public ServicoAuditoria Auditoria { get; }
     public ServicoObrigacoes Obrigacoes { get; }
+    public Contabil.ServicoLancamentosProgramados LancamentosProgramados { get; }
     public IRepositorioEmpresa RepositorioEmpresas { get; }
     public IConsultasContabeis Consultas { get; }
     public Migrador Migrador { get; }

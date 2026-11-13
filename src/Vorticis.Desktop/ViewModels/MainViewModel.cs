@@ -25,6 +25,7 @@ public sealed class MainViewModel() : MainViewModelBase(new ModuloContabil())
     public ImportacaoExtratoViewModel ImportacaoExtratos => Instancia<ImportacaoExtratoViewModel>();
     public ImportacaoLancamentosPadraoViewModel ImportacaoLancamentos => Instancia<ImportacaoLancamentosPadraoViewModel>();
     public HistoricosViewModel Historicos => Instancia<HistoricosViewModel>();
+    public LancamentosProgramadosViewModel LancamentosProgramados => Instancia<LancamentosProgramadosViewModel>();
     public ExportacaoLancamentosViewModel ExportacaoLancamentos => Instancia<ExportacaoLancamentosViewModel>();
     public DmplViewModel Dmpl => Instancia<DmplViewModel>();
     public DlpaViewModel Dlpa => Instancia<DlpaViewModel>();

@@ -39,7 +39,7 @@ public class MigracaoProcuracaoTests
         {
             await using var con = new NpgsqlConnection(cs);
             await con.OpenAsync(TestContext.Current.CancellationToken);
-            var scripts = Directory.GetFiles(PastaDb(), "0*.sql").Order().ToList();
+            var scripts = Directory.GetFiles(PastaDb(), "*.sql").Where(f => char.IsDigit(Path.GetFileName(f)[0])).Order().ToList();
             foreach (var f in scripts.Where(f => string.CompareOrdinal(Path.GetFileName(f), "052") < 0))
                 await ExecutarAsync(con, await File.ReadAllTextAsync(f, TestContext.Current.CancellationToken));
 

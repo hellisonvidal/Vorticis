@@ -34,7 +34,7 @@ jobs:
       - name: Testes SQL das migrações
         run: |
           createdb -h localhost -U postgres vorticis_sql
-          cat db/0*.sql db/tests/*.sql | psql -h localhost -U postgres -d vorticis_sql -v ON_ERROR_STOP=1 -q
+          cat db/[0-9]*.sql db/tests/*.sql | psql -h localhost -U postgres -d vorticis_sql -v ON_ERROR_STOP=1 -q
       - name: Build
         run: dotnet build -c Release
       - name: Testes (.NET)

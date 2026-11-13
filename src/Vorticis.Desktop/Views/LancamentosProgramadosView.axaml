@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.LancamentosProgramadosView"
+             x:DataType="vm:LancamentosProgramadosViewModel">
+  <!-- Lançamentos › Contábeis › Lançamentos programados -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Lançamentos programados" />
+      <WrapPanel Orientation="Horizontal">
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Descrição" FontSize="11" />
+          <TextBox Text="{Binding Descricao}" Width="200" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Conta a débito" FontSize="11" />
+          <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaDebito}" Width="140" Watermark="código ou reduzido" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Conta a crédito" FontSize="11" />
+          <TextBox c:Pesquisa.Fonte="Conta" Text="{Binding ContaCredito}" Width="140" Watermark="código ou reduzido" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Valor" FontSize="11" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="120" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Histórico ({competencia} vira o mês/ano)" FontSize="11" />
+          <TextBox Text="{Binding Historico}" Width="280" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Dia" FontSize="11" />
+          <NumericUpDown Value="{Binding Dia}" Minimum="1" Maximum="31" Increment="1" FormatString="0" Width="90" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Primeira competência" FontSize="11" />
+          <c:SeletorCompetencia Competencia="{Binding Inicio}" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Última (opcional)" FontSize="11" />
+          <c:SeletorCompetencia Competencia="{Binding Fim}" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Centro de custo" FontSize="11" />
+          <TextBox c:Pesquisa.Fonte="CentroCusto" Text="{Binding CentroCusto}" Width="110" /></StackPanel>
+        <CheckBox Content="Ativo" IsChecked="{Binding Ativo}" VerticalAlignment="Bottom" Margin="0,0,10,10" />
+      </WrapPanel>
+      <WrapPanel Orientation="Horizontal">
+        <Button Content="Novo" Command="{Binding NovoCommand}" Margin="0,0,6,0" />
+        <Button Content="Gravar" Command="{Binding GravarCommand}" Classes="accent" IsEnabled="{Binding PodeLancar}" Margin="0,0,6,0" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeLancar}" Margin="0,0,16,0" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" Margin="0,0,6,0" />
+        <Button Content="Gerar lançamentos da competência" Command="{Binding GerarCommand}" IsEnabled="{Binding PodeLancar}" />
+      </WrapPanel>
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <DataGrid Name="ListaProgramados" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Descrição" Binding="{ReflectionBinding Descricao}" Width="200" />
+        <DataGridTextColumn Header="Débito" Binding="{ReflectionBinding ContaDebito}" Width="120" />
+        <DataGridTextColumn Header="Crédito" Binding="{ReflectionBinding ContaCredito}" Width="120" />
+        <DataGridTextColumn Header="Valor" Binding="{ReflectionBinding Valor, StringFormat={}{0:N2}}" Width="110" />
+        <DataGridTextColumn Header="Dia" Binding="{ReflectionBinding Dia}" Width="60" />
+        <DataGridTextColumn Header="Histórico" Binding="{ReflectionBinding Historico}" Width="*" />
+        <DataGridTextColumn Header="Início" Binding="{ReflectionBinding Inicio, StringFormat={}{0:MM/yyyy}}" Width="90" />
+        <DataGridTextColumn Header="Fim" Binding="{ReflectionBinding Fim, StringFormat={}{0:MM/yyyy}}" Width="90" />
+        <DataGridTextColumn Header="Último gerado" Binding="{ReflectionBinding UltimaGerada, StringFormat={}{0:MM/yyyy}}" Width="110" />
+        <DataGridCheckBoxColumn Header="Ativo" Binding="{ReflectionBinding Ativo}" Width="70" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>
