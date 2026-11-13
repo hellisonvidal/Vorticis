@@ -43,6 +43,7 @@ public static class IconesMenu
         ["bloqueiolancamentos"] = "LockOutline",
         ["lancamento"] = "NotebookEditOutline",
         ["lancamentosprogramados"] = "CalendarSync",
+        ["balanceteconsolidado"] = "HomeCity",
         ["saldosiniciais"] = "FlagOutline",
         ["importarlancamentos"] = "FileImportOutline",
         ["reorganizarlancamentos"] = "SortVariant",

@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Desktop.ViewModels"
+             x:Class="Vorticis.Desktop.Views.ConsolidadoView"
+             x:DataType="vm:ConsolidadoViewModel">
+  <!-- Relatórios › Contábeis › Balancete consolidado -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Classes="titulo" Text="Balancete consolidado" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <TextBlock Text="Data-base" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding Data}" Width="140" Margin="0,0,10,0" />
+        <TextBlock Text="Contas a eliminar" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <TextBox Text="{Binding Eliminar}" Width="280" Watermark="códigos separados por ponto e vírgula" Margin="0,0,10,0" />
+        <Button Content="Gerar" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <TextBlock Text="Empresas do grupo (mesmo plano de contas):" FontSize="11" />
+      <ItemsControl ItemsSource="{Binding Empresas}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:EmpresaDoGrupo">
+            <CheckBox Content="{Binding Nome}" IsChecked="{Binding Marcada}" Margin="0,0,14,0" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <c:GradeTabelaView Tabela="{Binding Tabela}" />
+  </DockPanel>
+</UserControl>

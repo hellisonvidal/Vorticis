@@ -17,6 +17,21 @@ public sealed class ServicoRelatorios(IConsultasContabeis consultas, Autorizador
         return Resultado<IReadOnlyList<LinhaBalancete>>.Ok(Balancete.Montar(plano, movimentos, incluirZeradas));
     }
 
+    /// <summary>Balancete consolidado das <paramref name="empresas"/> na data, com as contas a eliminar (o usuário precisa ver o balancete de todas).</summary>
+    public async Task<Resultado<IReadOnlyList<LinhaConsolidada>>> ConsolidadoAsync(IReadOnlyList<long> empresas, DateOnly data, IReadOnlyCollection<string> contasEliminar,
+                                                                                  long usuarioId, CancellationToken ct = default)
+    {
+        if (empresas.Count < 2) return Resultado<IReadOnlyList<LinhaConsolidada>>.Falha("Escolha pelo menos duas empresas do grupo.");
+        var balancetes = new List<IReadOnlyList<LinhaBalancete>>();
+        foreach (var e in empresas)
+        {
+            var r = await BalanceteAsync(e, new DateOnly(data.Year, 1, 1), data, usuarioId, false, ct);
+            if (!r.Sucesso) return Resultado<IReadOnlyList<LinhaConsolidada>>.Falha(r.Erros);
+            balancetes.Add(r.Valor);
+        }
+        return Resultado<IReadOnlyList<LinhaConsolidada>>.Ok(Consolidacao.Consolidar(balancetes, contasEliminar));
+    }
+
     /// <summary>Detalhamento do balancete por participante (plano com participantes): saldos de cada cliente/fornecedor na conta.</summary>
     public async Task<Resultado<IReadOnlyList<MovimentoParticipante>>> ParticipantesBalanceteAsync(long empresaId, DateOnly inicio, DateOnly fim,
                                                                                                  long usuarioId, CancellationToken ct = default)

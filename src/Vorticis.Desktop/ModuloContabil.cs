@@ -83,6 +83,7 @@ public sealed class ModuloContabil : IModuloDesktop
                 ItemMenu.Tela("Livro Diário", Telas.Diario),
                 ItemMenu.Tela("Livro Razão", Telas.Razao),
                 ItemMenu.Tela("Balancete de verificação", Telas.Balancete, "Ctrl+B"),
+                ItemMenu.Tela("Balancete consolidado (grupo de empresas)", Telas.Consolidado),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Balanço Patrimonial", Telas.Balanco),
                 ItemMenu.Tela("Demonstração do Resultado (DRE)", Telas.Dre),
@@ -160,6 +161,9 @@ public sealed class ModuloContabil : IModuloDesktop
                   m => m.Pode(Permissao.LancamentoIncluir) || m.Pode(Permissao.LancamentoEstornar), v => v.CarregarAsync())
             // o estorno fica na própria tela de lançamento
             .Tela(Telas.Estorno, "Lançamentos › Lançamento contábil", m => m.Pode(Permissao.LancamentoEstornar), v => v.CarregarAsync());
+
+        c.Instancia(nameof(MainViewModel.Consolidado), m => new ConsolidadoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(Telas.Consolidado, "Relatórios › Contábeis › Balancete consolidado (grupo de empresas)", m => m.Pode(Permissao.RelatorioBalancete), v => v.CarregarAsync());
 
         c.Instancia(nameof(MainViewModel.Balancete), m => new BalanceteViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(),
                     aoLimpar: v => v.Linhas.Clear())

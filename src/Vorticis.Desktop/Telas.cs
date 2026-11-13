@@ -8,6 +8,7 @@ public static class Telas
 {
     public const string Lancamento = "lancamento";
     public const string LancamentosProgramados = "lancamentosprogramados";
+    public const string Consolidado = "balanceteconsolidado";
     public const string Estorno = "estorno";
     public const string Periodos = "periodos";
     public const string ReorganizarLancamentos = "reorganizarlancamentos";

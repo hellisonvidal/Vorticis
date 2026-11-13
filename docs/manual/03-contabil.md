@@ -431,6 +431,23 @@ Todos os relatórios contábeis (Balancete, Razão, Balanço, DRE, DMPL, DLPA, D
 
 Observações: no **Balanço** só importa a data (as colunas são os saldos na mesma data de cada ano; 28/02 vira 29/02 nos anos bissextos). No **Balancete** e na **Contabilização por centro de custo** os valores são saldos (positivo = devedor, negativo = credor). Na **Receita por centro de custo** cada centro mostra três linhas por ano: *Receita*, *Custos e despesas* e *Margem*. No **Orçado x Realizado** cada conta mostra o *Orçado* e o *Realizado* de cada ano (a opção **Mês a mês** não tem comparação; desmarque-a para comparar). No **Razão** a comparação resume a conta escolhida em saldo anterior, débitos, créditos e saldo final. Na **DMPL** é usada a coluna *Total*. Quando uma linha não existe em um dos anos, o valor aparece zerado e a variação % fica em branco.
 
+## Balancete consolidado (grupo de empresas)
+
+Para grupos de empresas que usam o **mesmo plano de contas** (holding e controladas, filiais com CNPJ próprio), o balancete consolidado soma os saldos de todas, conta a conta, e elimina as contas que só existem por causa das operações entre elas.
+
+### Passo a passo
+
+1. Abra *Relatórios › Contábeis › Balancete consolidado (grupo de empresas)*.
+2. Marque as **empresas do grupo** (pelo menos duas; a empresa aberta já vem marcada). Só aparecem as empresas que você pode acessar.
+3. Escolha a **Data-base** (os saldos são os do fim desse dia).
+4. Em **Contas a eliminar**, informe os códigos das contas entre as empresas, separados por ponto e vírgula: investimentos em controladas, mútuos, contas correntes e clientes/fornecedores do próprio grupo. Uma conta sintética elimina também todas as que estão abaixo dela.
+5. Clique em **Gerar**. A tabela mostra o saldo de cada empresa, a coluna **Eliminações** e o **Consolidado** (saldo devedor positivo e credor negativo), com exportação para PDF, Excel e CSV.
+
+### Cuidados
+
+- As contas são casadas pelo código: se uma empresa usa outro plano, converta-o antes (*Plano de contas › converter para a máscara*) ou use o mesmo modelo.
+- As eliminações zeram o saldo inteiro das contas escolhidas; confira se o saldo de um lado (por exemplo, o investimento) bate com o do outro (o patrimônio líquido da controlada) antes de apresentar o consolidado.
+
 ## Relatórios gerenciais
 
 O menu só aparece quando o parâmetro **Contabilidade gerencial** está ligado em *Cadastros › Parâmetros* (grupo *Centros de custo e contabilidade gerencial*). Ao ligar ou desligar e salvar, o menu muda na hora.
