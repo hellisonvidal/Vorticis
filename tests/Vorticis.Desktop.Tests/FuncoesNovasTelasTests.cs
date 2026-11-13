@@ -134,7 +134,7 @@ public class FuncoesNovasTelasTests(BancoDeTeste db, SessaoHeadless headless) : 
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r, CancellationToken ct) => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
         {
-            Content = new StringContent("""{"versao":"1.1.0","publicada":"10/11/2026","instalador":"https://vorticis.exemplo/downloads/Setup-Vorticis-1.1.0.exe","notas":"- Histórico de alterações\n- Backup automático diário\n- Bloqueio por inatividade\n- Exportar qualquer lista"}""",
+            Content = new StringContent("""{"versao":"9.9.0","publicada":"10/11/2026","instalador":"https://vorticis.exemplo/downloads/Setup-Vorticis-9.9.0.exe","notas":"- Histórico de alterações\n- Backup automático diário\n- Bloqueio por inatividade\n- Exportar qualquer lista"}""",
                                         System.Text.Encoding.UTF8, "application/json"),
         });
     }

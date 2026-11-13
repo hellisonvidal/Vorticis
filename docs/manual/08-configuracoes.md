@@ -73,16 +73,16 @@ Recomeça o sistema **do zero**: apaga **todas** as empresas com tudo o que é d
 
 A trilha é gravada pelo próprio banco de dados e não pode ser apagada pelo sistema. A lista também tem a barra de busca, os filtros e o botão **Exportar**.
 
-## Verificar atualizações
+## Atualizações do sistema
 
-**Para que serve:** saber se já saiu uma versão nova do Vorticis e baixá-la.
-**Onde fica:** *Ajuda › Verificar atualizações*, em todos os módulos.
+**Para que serve:** saber se já saiu uma versão nova do Vorticis e atualizar o programa por dentro dele mesmo.
+**Onde fica:** *Configurações › Atualizações do sistema*, em todos os módulos.
 
-1. A tela mostra a **versão instalada** e consulta o site do Vorticis: aparece **Você já usa a versão mais nova** ou **Há uma versão nova**, com o que mudou.
-2. Com versão nova, clique em **Baixar a versão nova**: o navegador baixa o instalador.
-3. Feche o Vorticis em todos os computadores e rode o instalador por cima da instalação: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+1. A tela mostra a **versão instalada** e procura a última versão publicada (no site do Vorticis ou, sem site configurado, na página de versões do Vorticis no GitHub): aparece **Você já usa a versão mais nova** ou **Há uma versão nova**, com o que mudou.
+2. Com versão nova, feche o Vorticis nos **outros computadores** e clique em **Atualizar agora**. Confirme: o sistema baixa o instalador (a barra mostra o andamento) e o executa por cima da instalação. O Vorticis fecha durante a atualização e abre de novo ao terminar, já na versão nova. Os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+3. Se preferir, **Baixar no navegador** baixa o instalador para você executar depois.
 
-O programa também consulta o site uma vez a cada abertura e, se houver versão nova, avisa na barra de baixo. Sem internet, ou sem o endereço do site configurado na instalação, nada acontece.
+O programa também procura uma vez a cada abertura e, se houver versão nova, avisa na barra de baixo. Sem internet, nada acontece. A atualização automática funciona no Windows; nos outros sistemas o instalador é só baixado.
 
 ## Conexão com o banco de dados
 

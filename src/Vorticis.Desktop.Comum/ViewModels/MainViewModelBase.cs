@@ -94,7 +94,7 @@ public static class TelasComuns
     public const string Preferencias = "preferencias";
     /// <summary>Configurações › Histórico de alterações (trilha de auditoria; administrador).</summary>
     public const string Auditoria = "auditoria";
-    /// <summary>Ajuda › Verificar atualizações (site do Vorticis).</summary>
+    /// <summary>Configurações › Atualizações do sistema (site do Vorticis ou GitHub).</summary>
     public const string Atualizacoes = "atualizacoes";
     public const string Dicas = "dicas";
     /// <summary>Centros de custo da empresa: o mesmo cadastro no Contábil e no Fiscal (as notas levam o centro aos lançamentos).</summary>
@@ -272,7 +272,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         c.Instancia("Dicas", m => new DicasViewModel(m))
             .Tela(TelasComuns.Dicas, "Ajuda › Dicas", null, v => { v.Carregar(); return Task.CompletedTask; });
         c.Instancia("Atualizacoes", m => new AtualizacoesViewModel(m))
-            .Tela(TelasComuns.Atualizacoes, "Ajuda › Verificar atualizações", null, v => v.VerificarAsync());
+            .Tela(TelasComuns.Atualizacoes, "Configurações › Atualizações do sistema", null, v => v.VerificarAsync());
         c.Instancia("Auditoria", m => new AuditoriaViewModel(m))
             .Tela(TelasComuns.Auditoria, "Configurações › Histórico de alterações", Admin, v => v.CarregarAsync());
         c.Instancia("Preferencias", m => new PreferenciasViewModel(m))
@@ -321,6 +321,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
             foreach (var i in sistema[..3]) yield return i;
         }
         yield return ItemMenu.Tela("Histórico de alterações", TelasComuns.Auditoria);   // todos os módulos (só o administrador abre)
+        yield return ItemMenu.Tela("Atualizações do sistema", TelasComuns.Atualizacoes);
         // No Escritório os parâmetros ficam só em Cadastros › Parâmetros (não em Configurações gerais)
         ItemMenu[] gerais = [ItemMenu.Tela("Preferências", TelasComuns.Preferencias), ItemMenu.Tela("Menus do programa", TelasComuns.Menus)];
         yield return Modulo.ModuloEmpresa == Vorticis.Application.Cadastros.ModulosEmpresa.Escritorio
@@ -384,7 +385,6 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
                 ItemMenu.Tela("Dicas", TelasComuns.Dicas),
                 ItemMenu.Separador,
                 ItemMenu.Tela("Licença e registro", TelasComuns.Licenca),
-                ItemMenu.Tela("Verificar atualizações", TelasComuns.Atualizacoes),
                 ItemMenu.Tela($"Sobre o {Modulo.Nome}", TelasComuns.Sobre)),
         ];
     }
@@ -1115,7 +1115,7 @@ public abstract partial class MainViewModelBase : ObservableObject, IContexto, I
         try
         {
             if (await Task.Run(() => Atualizacoes.ConsultarAsync()) is { } info && Atualizacoes.MaisNova(info.Versao, SobreViewModel.Versao))
-                Status = $"Há uma versão nova do Vorticis ({info.Versao}). Veja em Ajuda › Verificar atualizações.";
+                Status = $"Há uma versão nova do Vorticis ({info.Versao}). Atualize em Configurações › Atualizações do sistema.";
         }
         catch (Exception) { /* sem internet ou site fora do ar: tenta na próxima abertura */ }
     }
