@@ -139,6 +139,8 @@ public static class IconesMenu
         ["resumovendas"] = "CartArrowUp",
         ["resumocompras"] = "CartArrowDown",
         ["resumocfop"] = "FormatListNumberedRtl",
+        ["curvaabcvendas"] = "FilterVariant",
+        ["curvaabccompras"] = "FormatListBulleted",
         ["relduplicatasapagar"] = "CashFast",
         ["relduplicatasareceber"] = "CashRefund",
         ["relposicaoduplicatas"] = "CalendarClock",

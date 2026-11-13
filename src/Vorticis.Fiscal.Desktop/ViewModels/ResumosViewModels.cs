@@ -75,3 +75,37 @@ public abstract partial class RelatorioBaixasViewModel(IContexto contexto, TipoD
 public sealed class RelRecebimentosViewModel(IContexto contexto) : RelatorioBaixasViewModel(contexto, TipoDuplicata.Receber);
 
 public sealed class RelPagamentosViewModel(IContexto contexto) : RelatorioBaixasViewModel(contexto, TipoDuplicata.Pagar);
+
+/// <summary>Relatórios › Curva ABC de vendas / de compras: produtos ou clientes/fornecedores classificados pela participação no valor.</summary>
+public abstract partial class CurvaAbcViewModel(IContexto contexto, TipoOperacao operacao) : RelatorioFiscalViewModel(contexto)
+{
+    private (DateOnly Ini, DateOnly Fim) _periodo;
+
+    public static IReadOnlyList<string> Agrupamentos => CurvaAbc.Agrupamentos;
+
+    [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
+    [ObservableProperty] private DateTime? _fim = DateTime.Today;
+    [ObservableProperty] private int _agrupamento;
+
+    public string Titulo => operacao == TipoOperacao.Saida ? "Curva ABC de vendas" : "Curva ABC de compras";
+    protected override string TituloRelatorio => Titulo;
+    protected override string Parametros => $"Período: {_periodo.Ini:dd/MM/yyyy} a {_periodo.Fim:dd/MM/yyyy} · {Agrupamentos[Agrupamento]}";
+    protected override string NomeArquivo => $"curva_abc_{(operacao == TipoOperacao.Saida ? "vendas" : "compras")}_{_periodo.Ini:yyyyMMdd}_{_periodo.Fim:yyyyMMdd}";
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var ini = Data(Inicio, new DateOnly(DateTime.Today.Year, 1, 1));
+        var fim = Data(Fim, ini);
+        var porParticipante = Agrupamento == 1;
+        var r = await app.Fiscal().Documentos.CurvaAbcAsync(empresa, operacao, ini, fim, porParticipante, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); Limpar(); return; }
+        _periodo = (ini, fim);
+        Mostrar(CurvaAbc.Tabela(r.Valor, operacao, porParticipante));
+        Mensagem = r.Valor.Count == 0 ? "Nenhuma nota autorizada no período." : "Comece pelos itens da classe A: são poucos e somam a maior parte do valor.";
+    }, Permissao.FiscalRelatorios);
+}
+
+public sealed class CurvaAbcVendasViewModel(IContexto contexto) : CurvaAbcViewModel(contexto, TipoOperacao.Saida);
+
+public sealed class CurvaAbcComprasViewModel(IContexto contexto) : CurvaAbcViewModel(contexto, TipoOperacao.Entrada);

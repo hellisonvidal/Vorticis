@@ -440,6 +440,16 @@ public sealed class ServicoDocumentosFiscais(IRepositorioDocumentos repositorio,
         return Resultado<IReadOnlyList<ResumoCfop>>.Ok(LivrosFiscais.ResumirPorCfop(itens));
     }
 
+    /// <summary>Curva ABC das vendas (<paramref name="operacao"/> = Saída) ou das compras do período, por produto ou por participante.</summary>
+    public async Task<Resultado<IReadOnlyList<Relatorios.LinhaCurvaAbc>>> CurvaAbcAsync(long empresaId, TipoOperacao operacao, DateOnly inicio, DateOnly fim,
+                                                                                    bool porParticipante, long usuarioId, CancellationToken ct = default)
+    {
+        if (await autorizador.NegarAsync<IReadOnlyList<Relatorios.LinhaCurvaAbc>>(usuarioId, empresaId, Permissao.FiscalRelatorios, ct) is { } negado) return negado;
+        if (fim < inicio) return Resultado<IReadOnlyList<Relatorios.LinhaCurvaAbc>>.Falha("Data final anterior à inicial.");
+        var itens = await repositorio.ListarItensAsync(empresaId, inicio, fim, operacao, ct);
+        return Resultado<IReadOnlyList<Relatorios.LinhaCurvaAbc>>.Ok(Relatorios.CurvaAbc.Montar(itens, porParticipante));
+    }
+
     public async Task<Resultado<int>> ExcluirAsync(long empresaId, IReadOnlyCollection<long> ids, long usuarioId, CancellationToken ct = default)
     {
         if (await autorizador.NegarAsync<int>(usuarioId, empresaId, Permissao.FiscalDocumentosImportar, ct) is { } negado) return negado;

@@ -104,6 +104,8 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Resumo de vendas", Telas.ResumoVendas),
                 ItemMenu.Tela("Resumo de compras", Telas.ResumoCompras),
                 ItemMenu.Tela("Resumo por CFOP", Telas.ResumoCfop),
+                ItemMenu.Tela("Curva ABC de vendas", Telas.CurvaAbcVendas),
+                ItemMenu.Tela("Curva ABC de compras", Telas.CurvaAbcCompras),
                 ItemMenu.Tela("Notas por centro de custo", Telas.NotasPorCentro)),
             ItemMenu.Separador,
             ItemMenu.Submenu("_Duplicatas",
@@ -320,6 +322,10 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.ResumoVendas, "Relatórios › Resumos › Resumo de vendas", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ResumoCompras", m => new ResumoComprasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ResumoCompras, "Relatórios › Resumos › Resumo de compras", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("CurvaAbcVendas", m => new CurvaAbcVendasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.CurvaAbcVendas, "Relatórios › Resumos › Curva ABC de vendas", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("CurvaAbcCompras", m => new CurvaAbcComprasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.CurvaAbcCompras, "Relatórios › Resumos › Curva ABC de compras", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelRecebimentos", m => new RelRecebimentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.RelRecebimentos, "Relatórios › Duplicatas › Relatório de recebimentos", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("RelPagamentos", m => new RelPagamentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

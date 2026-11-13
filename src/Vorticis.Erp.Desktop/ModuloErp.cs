@@ -55,6 +55,8 @@ public sealed class ModuloErp : IModuloDesktop
             ItemMenu.Tela("Relatório de vendas", F.Telas.ResumoVendas),
             ItemMenu.Tela("Relatório de compras", F.Telas.ResumoCompras),
             ItemMenu.Tela("Relatório de recebimentos", F.Telas.RelRecebimentos),
+            ItemMenu.Tela("Curva ABC de vendas", F.Telas.CurvaAbcVendas),
+            ItemMenu.Tela("Curva ABC de compras", F.Telas.CurvaAbcCompras),
             ItemMenu.Separador,
             ItemMenu.Submenu("_Financeiro",
                 ItemMenu.Tela("Relatório de contas a pagar", F.Telas.RelDuplicatasPagar),
@@ -134,6 +136,10 @@ public sealed class ModuloErp : IModuloDesktop
             .Tela(F.Telas.ResumoVendas, "Relatórios › Relatório de vendas", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ResumoCompras", m => new F.ResumoComprasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(F.Telas.ResumoCompras, "Relatórios › Relatório de compras", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("CurvaAbcVendas", m => new F.CurvaAbcVendasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(F.Telas.CurvaAbcVendas, "Relatórios › Curva ABC de vendas", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("CurvaAbcCompras", m => new F.CurvaAbcComprasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(F.Telas.CurvaAbcCompras, "Relatórios › Curva ABC de compras", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ParametrosModulo", m => new F.ParametrosFiscalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());

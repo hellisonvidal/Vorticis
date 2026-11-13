@@ -433,6 +433,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
 - **Livro de Registro de Entradas** e **de Saídas** (*Relatórios › Livros*): uma linha por nota e CFOP; notas canceladas aparecem sem valores. Informe o período e **Gerar**.
 - **Resumos** (*Relatórios › Resumos*):
   - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
+  - **Curva ABC de vendas** e **Curva ABC de compras**: ordena os produtos (ou, em *Por cliente/fornecedor*, quem comprou ou vendeu) pelo valor das notas autorizadas do período e mostra a participação de cada um no total e o percentual acumulado. A **classe A** reúne os que somam os primeiros 80% do valor, a **classe B** vai até 95% e a **classe C** é o restante. Use a classe A para decidir onde negociar preço, cuidar do estoque e cobrar primeiro: poucos itens fazem a maior parte do movimento. O rodapé mostra quantos itens e quanto valor há em cada classe.
   - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Planejamento tributário**: informe os dados do ano e compare Simples × Presumido × Real, com exportação; veja [Planejamento tributário](#planejamento-tributario).
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.

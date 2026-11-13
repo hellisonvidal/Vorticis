@@ -71,6 +71,7 @@ O Gerencial não mostra o calendário de obrigações (é rotina do escritório 
 **Onde fica:** *Relatórios*. Todos aparecem na tela e exportam em PDF, Excel e CSV.
 
 - **Relatório de vendas** e **Relatório de compras**: as notas autorizadas de saída ou de entrada do período, agrupadas por nota, por cliente/fornecedor ou por mês, com valor total e tributos.
+- **Curva ABC de vendas** e **Curva ABC de compras**: os produtos (ou os clientes e fornecedores) do período em ordem de valor, com a participação de cada um. A classe A soma os primeiros 80% do valor, a B vai até 95% e a C é o restante: concentre a negociação, o estoque e a cobrança na classe A.
 - **Relatório de recebimentos**: os recebimentos (baixas das contas a receber) do período, com juros, multa, descontos e a conta usada.
 - **Financeiro**: *Relatório de contas a pagar*, *Relatório de contas a receber*, *Posição por vencimento* e *Relatório de pagamentos*.
 

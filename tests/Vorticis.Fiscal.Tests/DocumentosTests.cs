@@ -70,6 +70,37 @@ public class RegrasDocumentosTests
             new ItemFiscal(1, null, null, null, null, cfop, null, 1, valor, valor, 0, 0, 0, 0, valor + ipi, null, null, icms > 0 ? valor : 0, 18, icms, 0, 0,
                 null, 0, 0, ipi, null, 0, 0, 0, null, 0, 0, 0, 0, 0, 0));
 
+    private static LinhaItemFiscal Venda(long doc, string prod, decimal valor, string cliente, decimal qtd = 1, SituacaoDocumento sit = SituacaoDocumento.Autorizada)
+    {
+        var l = Linha(doc, TipoOperacao.Saida, "5102", valor, sit: sit);
+        return l with { ParticipanteNome = cliente, ParticipanteDocumento = cliente == "Ana" ? "52998224725" : "11222333000181",
+                        Item = l.Item with { CodProduto = prod, Descricao = "Produto " + prod, Quantidade = qtd } };
+    }
+
+    [Fact]
+    public void Curva_abc_classifica_por_valor_acumulado()
+    {
+        var itens = new[]
+        {
+            Venda(1, "P1", 500m, "Ana", 5), Venda(2, "P1", 200m, "Bia", 2),   // P1 = 700 (70%)
+            Venda(3, "P2", 150m, "Bia"),                                      // P2 = 150 (85% acumulado: começa em 70% -> A)
+            Venda(4, "P3", 100m, "Bia"),                                      // P3 = 100 (começa em 85% -> B)
+            Venda(5, "P4", 50m, "Ana"),                                       // P4 = 50 (começa em 95% -> C)
+            Venda(6, "P5", 9999m, "Ana", sit: SituacaoDocumento.Cancelada),   // cancelada fica de fora
+        };
+        var abc = Vorticis.Fiscal.Relatorios.CurvaAbc.Montar(itens, porParticipante: false);
+        Assert.Equal(["P1", "P2", "P3", "P4"], abc.Select(l => l.Codigo));
+        Assert.Equal("AABC", new string([.. abc.Select(l => l.Classe)]));
+        Assert.Equal((7m, 2, 70m, 70m), (abc[0].Quantidade, abc[0].Notas, abc[0].Percentual, abc[0].Acumulado));
+        Assert.Equal(100m, abc[^1].Acumulado);
+        var porCliente = Vorticis.Fiscal.Relatorios.CurvaAbc.Montar(itens, porParticipante: true);
+        Assert.Equal([("Bia", 450m), ("Ana", 550m)], porCliente.Select(l => (l.Descricao, l.Valor)).OrderBy(x => x.Valor));
+        var tabela = Vorticis.Fiscal.Relatorios.CurvaAbc.Tabela(abc, TipoOperacao.Saida, false);
+        Assert.Equal(1000m, tabela.Linhas[^1].Valores[4]);
+        Assert.Contains("Classe A: 2 item(ns)", tabela.Rodape);
+        Assert.Empty(Vorticis.Fiscal.Relatorios.CurvaAbc.Montar([], false));
+    }
+
     [Fact]
     public void Livro_agrupa_por_documento_e_cfop_e_zera_cancelados()
     {

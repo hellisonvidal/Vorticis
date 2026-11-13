@@ -233,7 +233,7 @@ public class MenusTests
         var vm = new Vorticis.Fiscal.Desktop.MainViewModel();
         var rel = Assert.Single(vm.Menus, m => m.Titulo.Replace("_", "") == "Relatórios");
         var resumos = Assert.Single(rel.Filhos!, m => m.Titulo.Replace("_", "") == "Resumos");
-        Assert.Equal(["Resumo de vendas", "Resumo de compras", "Resumo por CFOP", "Notas por centro de custo"], resumos.Filhos!.Select(i => i.Titulo));
+        Assert.Equal(["Resumo de vendas", "Resumo de compras", "Resumo por CFOP", "Curva ABC de vendas", "Curva ABC de compras", "Notas por centro de custo"], resumos.Filhos!.Select(i => i.Titulo));
     }
 
     [Fact]

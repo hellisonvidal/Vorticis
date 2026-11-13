@@ -27,6 +27,7 @@
     <DataTemplate DataType="fvm:RelDuplicatasReceberViewModel"><fv:RelatorioDuplicatasView /></DataTemplate>
     <DataTemplate DataType="fvm:RelPosicaoDuplicatasViewModel"><fv:RelatorioDuplicatasView /></DataTemplate>
     <DataTemplate DataType="fvm:ResumoNotasViewModel"><fv:ResumoNotasView /></DataTemplate>
+    <DataTemplate DataType="fvm:CurvaAbcViewModel"><fv:CurvaAbcView /></DataTemplate>
     <DataTemplate DataType="fvm:RelatorioBaixasViewModel"><fv:RelatorioBaixasView /></DataTemplate>
   </Application.DataTemplates>
   <Application.Styles>

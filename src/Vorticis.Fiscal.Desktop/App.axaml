@@ -35,6 +35,7 @@
     <DataTemplate DataType="vm:RelatorioItensNotasViewModel"><v:RelatorioItensNotasView /></DataTemplate>
     <DataTemplate DataType="vm:ResumoCfopViewModel"><v:ResumoCfopView /></DataTemplate>
     <DataTemplate DataType="vm:ResumoNotasViewModel"><v:ResumoNotasView /></DataTemplate>
+    <DataTemplate DataType="vm:CurvaAbcViewModel"><v:CurvaAbcView /></DataTemplate>
     <DataTemplate DataType="vm:RelatorioBaixasViewModel"><v:RelatorioBaixasView /></DataTemplate>
     <DataTemplate DataType="vm:RegrasContabilizacaoViewModel"><v:RegrasContabilizacaoView /></DataTemplate>
     <DataTemplate DataType="vm:ContabilizarNotasViewModel"><v:ContabilizarNotasView /></DataTemplate>
