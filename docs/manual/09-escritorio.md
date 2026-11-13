@@ -93,6 +93,14 @@ A tela mostra a **lista das tarefas** (vencimento, cliente, tarefa, responsável
 4. Feita a tarefa, selecione-a e clique em **Concluir** (na lista ou na ficha). Se ela se repete, a próxima é criada sozinha com o novo vencimento (mesmo dia do mês seguinte ou do ano seguinte; no mês mais curto, o último dia).
 5. **Excluir** apaga a tarefa (pede confirmação).
 
+### Gerar as tarefas das obrigações do cliente
+
+Com o cliente escolhido no topo, clique em **Gerar das obrigações**: o sistema consulta o *Calendário de obrigações* da empresa do cliente (DAS, DCTFWeb, EFD, FGTS Digital, eSocial, ECD, ECF e as obrigações personalizadas, conforme o regime e se há empregados) e cria uma tarefa para cada obrigação que vence no **mês de trabalho** (a faixa cinza do topo), com o vencimento, prioridade alta e o responsável escolhido na ficha (ou você).
+
+- Não cria a mesma tarefa duas vezes (mesmo cliente, título e vencimento): clique de novo à vontade depois de mudar algo no calendário.
+- Obrigações já marcadas como cumpridas no calendário ficam de fora.
+- O cliente precisa ter módulos contratados (aba **Contrato** do cadastro), porque é aí que a empresa dele é criada nos demais módulos.
+
 Use a lista no topo para ver as tarefas de um cliente ou de todos, e **Só as em aberto** para esconder as concluídas e canceladas. Tarefas vencidas e não concluídas aparecem como **ATRASADA**.
 
 ## Protocolos de documentos

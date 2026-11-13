@@ -199,6 +199,27 @@ public sealed class ServicoEscritorio
         return nova.Sucesso ? Resultado<long?>.Ok(nova.Valor) : Resultado<long?>.Falha(nova.Erros);
     }
 
+    /// <summary>
+    /// Tarefas do cliente a partir do calendário de obrigações da empresa dele (só as ainda não cumpridas): uma por obrigação e competência,
+    /// sem repetir a que já existe (mesmo cliente, título e vencimento). Devolve quantas criou.
+    /// </summary>
+    public async Task<Resultado<int>> GerarTarefasDeObrigacoesAsync(long escritorio, long pessoaId, IEnumerable<Vorticis.Application.Obrigacoes.ItemObrigacao> obrigacoes,
+                                                                    long? responsavelId, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioTarefas, ct) is { } negado) return Resultado<int>.Falha(negado);
+        var existentes = (await ListarTarefasAsync(escritorio, pessoaId, false, usuarioId, ct)).Select(t => (t.Titulo, t.Vencimento)).ToHashSet();
+        var n = 0;
+        foreach (var o in RegrasEscritorio.TarefasDeObrigacoes(obrigacoes))
+        {
+            if (!existentes.Add((o.Titulo, o.Vencimento))) continue;
+            var r = await GravarTarefaAsync(new Tarefa(0, escritorio, pessoaId, o.Titulo, o.Descricao, o.Vencimento, responsavelId, 1, SituacaoTarefa.Pendente,
+                                                       Recorrencia.Nenhuma), usuarioId, ct);
+            if (!r.Sucesso) return Resultado<int>.Falha(r.Erros);
+            n++;
+        }
+        return Resultado<int>.Ok(n);
+    }
+
     public async Task<Resultado> ExcluirTarefaAsync(long escritorio, long id, long usuarioId, CancellationToken ct = default)
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioTarefas, ct) is { } negado) return Resultado.Falha(negado);

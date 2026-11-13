@@ -141,6 +141,13 @@ public static class GeradorContratos
 /// <summary>Regras puras do escritório: recorrência das tarefas e vencimento dos honorários.</summary>
 public static class RegrasEscritorio
 {
+    /// <summary>Título, descrição e vencimento da tarefa de cada obrigação ainda não cumprida ("DCTFWeb – 03/2027").</summary>
+    public static IEnumerable<(string Titulo, string? Descricao, DateOnly Vencimento)> TarefasDeObrigacoes(IEnumerable<Vorticis.Application.Obrigacoes.ItemObrigacao> itens)
+        => itens.Where(i => i.Status != Vorticis.Application.Obrigacoes.StatusObrigacao.Cumprida)
+                .Select(i => ($"{i.Ocorrencia.Definicao.Nome} – {i.Ocorrencia.CompetenciaTexto}",
+                              (string?)$"{i.Ocorrencia.Definicao.Orgao}. Gerada pelo calendário de obrigações; marque como cumprida lá também.", i.Ocorrencia.Vencimento))
+                .Select(t => (t.Item1.Length > 150 ? t.Item1[..150] : t.Item1, t.Item2, t.Vencimento));
+
     public static DateOnly Mes(DateOnly d) => new(d.Year, d.Month, 1);
 
     /// <summary>Dia do mês limitado ao último dia (31 em fevereiro vira 28/29).</summary>

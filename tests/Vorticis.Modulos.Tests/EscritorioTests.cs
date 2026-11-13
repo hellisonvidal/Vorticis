@@ -224,6 +224,14 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.NotNull(prox.Valor);
         Assert.Equal(new DateOnly(2026, 4, 15), Assert.Single(await svc.ListarTarefasAsync(escritorio, null, true, adm, ct)).Vencimento);
 
+        // tarefas a partir das obrigações: cria as não cumpridas e não repete
+        var def = new Vorticis.Domain.Obrigacoes.DefinicaoObrigacao("DAS", "DAS", "Receita Federal", default, default, default, 20, 1, 0, 0, default, default, false);
+        var itens = new[] { new Vorticis.Application.Obrigacoes.ItemObrigacao(new Vorticis.Domain.Obrigacoes.OcorrenciaObrigacao(def, new(2026, 4), new DateOnly(2026, 5, 20)),
+                                                                             Vorticis.Application.Obrigacoes.StatusObrigacao.Pendente, null, null, 10) };
+        Assert.Equal(1, (await svc.GerarTarefasDeObrigacoesAsync(escritorio, cli.Valor, itens, adm, adm, ct)).Valor);
+        Assert.Equal(0, (await svc.GerarTarefasDeObrigacoesAsync(escritorio, cli.Valor, itens, adm, adm, ct)).Valor);
+        Assert.Contains(await svc.ListarTarefasAsync(escritorio, cli.Valor, true, adm, ct), x => x.Titulo.StartsWith("DAS – ") && x.Vencimento == new DateOnly(2026, 5, 20));
+
         Assert.True((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 900m, 10, new DateOnly(2026, 1, 1), null, "IPCA", null), adm, ct)).Sucesso);
         Assert.Equal(1, (await svc.GerarCobrancasAsync(escritorio, new DateOnly(2026, 3, 1), adm, ct)).Valor);
         Assert.Equal(0, (await svc.GerarCobrancasAsync(escritorio, new DateOnly(2026, 3, 1), adm, ct)).Valor);
@@ -323,5 +331,21 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.False((await svc.GravarHonorarioAsync(escritorio, new ContratoHonorario(0, cli.Valor, 1m, 1, new DateOnly(2026, 1, 1), null, "NENHUM", null), outro, ct)).Sucesso);
         Assert.Empty(await svc.ListarTarefasAsync(escritorio, null, false, outro, ct));
         Assert.Empty(await svc.ListarPessoasAsync(escritorio, outro, ct));
+    }
+}
+
+public class TarefasDeObrigacoesTests
+{
+    [Fact]
+    public void Gera_titulo_e_vencimento_das_nao_cumpridas()
+    {
+        var def = new Vorticis.Domain.Obrigacoes.DefinicaoObrigacao("DCTFWEB", "DCTFWeb", "Receita Federal", default, default, default, 15, 1, 0, 0, default, default, false);
+        Vorticis.Application.Obrigacoes.ItemObrigacao Item(int mes, Vorticis.Application.Obrigacoes.StatusObrigacao st)
+            => new(new Vorticis.Domain.Obrigacoes.OcorrenciaObrigacao(def, new Vorticis.Domain.Obrigacoes.Competencia(2027, mes), new DateOnly(2027, mes + 1, 15)), st, null, null, 10);
+        var t = RegrasEscritorio.TarefasDeObrigacoes([Item(3, Vorticis.Application.Obrigacoes.StatusObrigacao.Pendente),
+                                                      Item(4, Vorticis.Application.Obrigacoes.StatusObrigacao.Cumprida)]).ToList();
+        var x = Assert.Single(t);
+        Assert.StartsWith("DCTFWeb – ", x.Titulo);
+        Assert.Equal(new DateOnly(2027, 4, 15), x.Vencimento);
     }
 }

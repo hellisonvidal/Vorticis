@@ -12,6 +12,8 @@
       <Button Name="NovaTarefa" Content="Nova tarefa" Classes="accent" Command="{Binding NovaCommand}" IsEnabled="{Binding PodeEditar}" />
       <Button Name="AbrirTarefa" Content="Abrir" Command="{Binding AbrirCommand}" ToolTip.Tip="Abre a tarefa selecionada (ou dê duplo clique / Enter na lista)" />
       <Button Content="Concluir" Command="{Binding ConcluirCommand}" IsEnabled="{Binding PodeEditar}" />
+      <Button Content="Gerar das obrigações" Command="{Binding GerarObrigacoesCommand}" IsEnabled="{Binding PodeEditar}"
+              ToolTip.Tip="Cria as tarefas do mês de trabalho com as obrigações do cliente (calendário de obrigações da empresa dele)" />
       <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeEditar}" />
       <TextBlock Text="Seu perfil permite apenas consultar." Classes="erro" IsVisible="{Binding !PodeEditar}" VerticalAlignment="Center" />
     </StackPanel>

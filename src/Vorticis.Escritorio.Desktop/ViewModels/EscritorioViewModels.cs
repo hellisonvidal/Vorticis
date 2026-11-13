@@ -548,6 +548,28 @@ public partial class TarefasViewModel(IContexto contexto) : ModuloViewModel(cont
         Mensagem = "Tarefa gravada.";
     }, Permissao.EscritorioTarefas);
 
+    /// <summary>Cria as tarefas do mês de trabalho a partir do calendário de obrigações da empresa do cliente em foco.</summary>
+    [RelayCommand]
+    private Task GerarObrigacoesAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Contexto.ClienteEmFocoId is not { } pessoaId || Contexto.Sessao is not { } sessao) { Erros.Add("Escolha o cliente no topo da tela."); return; }
+        var pessoa = (await app.Escritorio().ListarPessoasAsync(empresa, usuario)).FirstOrDefault(p => p.Id == pessoaId);
+        if (pessoa?.EmpresaVinculadaId is not { } vinculada)
+        {
+            Erros.Add("O cliente ainda não tem módulos contratados (aba Contrato do cadastro): sem isso, o sistema não sabe as obrigações dele.");
+            return;
+        }
+        var mes = new DateOnly(Contexto.PeriodoTrabalho.Year, Contexto.PeriodoTrabalho.Month, 1);
+        var obr = await app.Obrigacoes.ListarAsync(usuario, vinculada, mes, mes.AddMonths(1).AddDays(-1), DateOnly.FromDateTime(DateTime.Today));
+        if (!obr.Sucesso) { MostrarResultado(obr, ""); return; }
+        var r = await app.Escritorio().GerarTarefasDeObrigacoesAsync(empresa, pessoaId, obr.Valor, Responsavel?.Valor ?? sessao.Id, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        await CarregarAsync();
+        Mensagem = r.Valor == 0
+            ? $"Nenhuma tarefa nova: as obrigações de {mes:MM/yyyy} de {pessoa.Nome} já estão na lista ou foram cumpridas."
+            : $"{r.Valor} tarefa(s) criada(s) com as obrigações que vencem em {mes:MM/yyyy}.";
+    }, Permissao.EscritorioTarefas);
+
     [RelayCommand]
     private Task ConcluirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
