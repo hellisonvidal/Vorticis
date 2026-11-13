@@ -492,5 +492,17 @@ public class LancamentosNotasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
         await vm.SalvarCommand.ExecuteAsync(null);
         Assert.Empty(vm.Erros);
         Assert.Equal("Maria Pessoa Física", await db.EscalarAsync<string>("SELECT nome FROM core.participante WHERE empresa_id = @e AND cpf_cnpj = '52998224725'", ("e", empresa)));
+
+        // Copiar: nota nova com o participante e os itens da selecionada; a original continua
+        vm.Selecionada = vm.Lista.Single(d => d.Numero == "55");
+        await vm.CopiarCommand.ExecuteAsync(null);
+        Assert.True(vm.DigitacaoAberta);
+        Assert.Equal(("", "Nova nota fiscal de entrada"), (vm.Numero, vm.TituloPopup));
+        Assert.Equal("Parafuso", Assert.Single(vm.Itens).Item.Descricao);
+        vm.Numero = "57";
+        await vm.SalvarCommand.ExecuteAsync(null);
+        Assert.Empty(vm.Erros);
+        Assert.Equal(3, vm.Lista.Count);
+        Assert.Contains(vm.Lista, d => d.Numero == "55");
     }
 }

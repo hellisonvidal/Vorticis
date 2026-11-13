@@ -26,7 +26,7 @@
           </StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2">
             <TextBlock Text="Informar na EFD de" FontSize="12" />
-            <CalendarDatePicker SelectedDate="{Binding CompetenciaEfd}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+            <c:SeletorCompetencia Competencia="{Binding CompetenciaEfd}" />
           </StackPanel>
           <StackPanel Margin="0,0,10,6" Spacing="2">
             <TextBlock Text="Conta contábil do estoque" FontSize="12" />

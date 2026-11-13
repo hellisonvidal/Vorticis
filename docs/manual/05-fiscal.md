@@ -59,6 +59,7 @@ Ao abrir, a tela mostra a **grade das notas lançadas** (digitadas e importadas)
 - **Novo lançamento:** abre a digitação de uma nota em branco numa janela à parte (pop-up).
 - **Editar** (ou dois cliques na nota, ou Enter): abre a nota para alterar.
 - **Consultar:** abre a nota só para leitura.
+- **Copiar:** abre uma nota **nova** com o cliente/fornecedor, os itens e os tributos da selecionada (sem número, chave de acesso e parcelas), para notas que se repetem. Informe o número, confira as datas e grave; a nota original não muda. A cópia de uma nota importada vira nota digitada.
 - **Excluir:** apaga a nota e as duplicatas dela (notas contabilizadas devem ter a contabilização desfeita antes; nota com duplicata já baixada só pode ser excluída depois de estornar as baixas).
 - **Importar XML:** importa arquivos, pastas ou .zip em lote (veja [Importação de XML](#importacao-de-xml-nf-e-nfc-e-nfs-e)); as notas aparecem na grade.
 

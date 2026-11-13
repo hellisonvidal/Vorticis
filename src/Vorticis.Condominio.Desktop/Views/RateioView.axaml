@@ -21,7 +21,7 @@
       </StackPanel>
       <StackPanel Margin="0,0,10,6" Spacing="2">
         <TextBlock Text="Competência" FontSize="12" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
       </StackPanel>
       <StackPanel Margin="0,0,10,6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
         <Button Content="Prévia" Command="{Binding VerPreviaCommand}" />

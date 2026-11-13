@@ -7,7 +7,7 @@
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Classes="titulo" Text="{Binding Titulo}" VerticalAlignment="Center" />
         <TextBlock Text="Competência" VerticalAlignment="Center" />
-        <CalendarDatePicker SelectedDate="{Binding Competencia}" SelectedDateFormat="Custom" CustomDateFormatString="MM/yyyy" Width="120" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" />
       </StackPanel>
       <TextBlock FontSize="11" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" Text="{Binding Orientacao}" />
       <StackPanel Orientation="Horizontal" Spacing="6">

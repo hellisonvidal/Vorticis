@@ -313,7 +313,7 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     public ObservableCollection<CentroOpcao> Centros { get; } = [new CentroOpcao(null, "(sem centro de custo)")];
     public ItemForm Item { get; } = new();
 
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand))] [NotifyCanExecuteChangedFor(nameof(EditarCommand))] [NotifyCanExecuteChangedFor(nameof(VisualizarCommand))] private DocumentoLinha? _selecionada;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ExcluirCommand))] [NotifyCanExecuteChangedFor(nameof(EditarCommand))] [NotifyCanExecuteChangedFor(nameof(VisualizarCommand))] [NotifyCanExecuteChangedFor(nameof(CopiarCommand))] private DocumentoLinha? _selecionada;
     [ObservableProperty] private DateTime? _filtroInicio = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _filtroFim = DateTime.Today;
     [ObservableProperty] private int _modelo;
@@ -1049,6 +1049,28 @@ public abstract partial class DigitacaoDocumentoViewModel(IContexto contexto) : 
     /// <summary>Duplo clique / Enter / botão Editar: carrega a nota do banco (descartando alterações não gravadas) e abre o pop-up.</summary>
     [RelayCommand(CanExecute = nameof(TemSelecionada))]
     private Task EditarAsync() => AbrirSelecionadaAsync(consulta: false);
+
+    /// <summary>
+    /// Copiar: abre uma nota nova com o participante, os itens e os tributos da selecionada (sem número, chave e parcelas), para notas que se
+    /// repetem. A nota original não muda; a cópia é sempre uma nota digitada.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(TemSelecionada))]
+    private Task CopiarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        if (Selecionada is not { } s) return;
+        await CarregarDocumentoAsync(s.Id);
+        if (_documentoId != s.Id) return;
+        _documentoId = 0;
+        (Numero, Chave) = ("", "");
+        (Contabilizado, Importada, SomenteConsulta) = (false, false, false);
+        Parcelas.Clear();
+        for (var i = 0; i < Itens.Count; i++)   // os itens viram itens digitados (sem o CFOP do XML e a marca "sem regra")
+            Itens[i] = new ItemNotaLinha(Itens[i].Item with { CfopOriginal = null, SemRegra = false }, Itens[i].ProdutoVinculado);
+        AtualizarTotais();
+        OnPropertyChanged(nameof(TituloPopup));
+        Mensagem = $"Cópia da nota {s.Numero}: informe o número, confira as datas, os itens e as parcelas e clique em \"Gravar nota\" (a original não muda).";
+        DigitacaoAberta = true;
+    }, Permissao.FiscalDocumentosImportar);
 
     /// <summary>Botão Consultar: abre a nota no pop-up só para leitura.</summary>
     [RelayCommand(CanExecute = nameof(TemSelecionada))]

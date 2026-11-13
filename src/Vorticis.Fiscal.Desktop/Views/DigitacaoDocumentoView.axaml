@@ -38,6 +38,8 @@
     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,4">
       <Button Classes="mini accent" Content="Novo lançamento" Command="{Binding NovoCommand}" IsEnabled="{Binding PodeManter}" />
       <Button Classes="mini" Content="Editar" Command="{Binding EditarCommand}" />
+      <Button Classes="mini" Name="CopiarNota" Content="Copiar" Command="{Binding CopiarCommand}"
+              ToolTip.Tip="Abre uma nota nova com o participante, os itens e os tributos da selecionada (para notas que se repetem)" />
       <Button Classes="mini" Content="Consultar" Command="{Binding VisualizarCommand}" />
       <Button Classes="mini" Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeManter}" />
       <Button Classes="mini accent" Content="Importar XML ▾" IsEnabled="{Binding Importador.PodeIniciar}"

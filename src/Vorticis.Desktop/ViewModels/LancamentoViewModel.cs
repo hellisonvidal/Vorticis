@@ -149,6 +149,20 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         await EditarAsync(e);
     }
 
+    /// <summary>
+    /// Copiar: abre um lançamento novo com as mesmas partidas do selecionado (contas, valores, histórico, documento, centro de custo e
+    /// participante), para lançamentos que se repetem. Ajuste a data e o que precisar e salve: o original não muda.
+    /// </summary>
+    [RelayCommand]
+    private async Task CopiarSelecionadoAsync()
+    {
+        Erros.Clear(); Mensagem = "";
+        if (EfetuadoSelecionado is not { } e) { Erros.Add("Selecione na grade o lançamento a copiar."); return; }
+        if (!Contexto.Pode(Permissao.LancamentoIncluir)) { Erros.Add("Sem permissão para incluir lançamentos."); return; }
+        await EditarAsync(e, copia: true);
+        if (Erros.Count == 0) Mensagem = $"Cópia do lançamento nº {e.Numero}: confira a data e os valores e salve (o original não muda).";
+    }
+
     /// <summary>Abre o selecionado só para consulta.</summary>
     [RelayCommand]
     private async Task ConsultarSelecionadoAsync()
@@ -317,14 +331,15 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
     /// Duplo clique num lançamento efetuado: carrega as partidas na digitação para alterar. Débito e crédito únicos
     /// cabem numa linha; os demais abrem com uma conta por linha (partidas simples).
     /// </summary>
-    public Task EditarAsync(LancamentoEfetuadoLinha efetuado, bool somenteLeitura = false) => ExecutarAsync(async (app, empresa, usuario) =>
+    public Task EditarAsync(LancamentoEfetuadoLinha efetuado, bool somenteLeitura = false, bool copia = false) => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (efetuado.Estornado && !somenteLeitura) { Erros.Add($"O lançamento nº {efetuado.Numero} está estornado e não pode ser alterado."); return; }
-        if (!somenteLeitura && !Contexto.Pode(Permissao.LancamentoEstornar)) { Erros.Add("Alterar um lançamento exige permissão para estornar."); return; }
+        if (copia) somenteLeitura = false;
+        if (efetuado.Estornado && !somenteLeitura && !copia) { Erros.Add($"O lançamento nº {efetuado.Numero} está estornado e não pode ser alterado."); return; }
+        if (!somenteLeitura && !copia && !Contexto.Pode(Permissao.LancamentoEstornar)) { Erros.Add("Alterar um lançamento exige permissão para estornar."); return; }
         var r = await app.Lancamentos.ObterAsync(empresa, efetuado.Id, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var l = r.Valor;
-        if (l.Origem != OrigemLancamento.Manual && !somenteLeitura)
+        if (l.Origem != OrigemLancamento.Manual && !somenteLeitura && !copia)
         {
             Erros.Add($"O lançamento nº {efetuado.Numero} não foi digitado manualmente e não pode ser alterado aqui{(UsaEstorno ? ": corrija-o por estorno" : "; desfaça-o no módulo de origem")}.");
             return;
@@ -333,7 +348,7 @@ public partial class LancamentoViewModel : ModuloViewModel, Comum.ViewModels.IAl
         var umaLinha = ps.Count == 2 && ps[0].DC == IndicadorDC.D && ps[1].DC == IndicadorDC.C && ps[0].Valor == ps[1].Valor
                        && ps[0].Historico == ps[1].Historico && ps[0].CodigoCentroCusto == ps[1].CodigoCentroCusto
                        && ps[0].NumeroArquivo == ps[1].NumeroArquivo;
-        Editando = efetuado;
+        Editando = copia ? null : efetuado;           // cópia: um lançamento novo
         SomenteLeitura = somenteLeitura;
         EfetuadoSelecionado = efetuado;
         Data = l.Data.ToDateTime(TimeOnly.MinValue);

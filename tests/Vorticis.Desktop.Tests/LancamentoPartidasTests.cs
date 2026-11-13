@@ -100,6 +100,25 @@ public class LancamentoPartidasTests(BancoDeTeste db, SessaoHeadless headless) :
     }
 
     [Fact]
+    public async Task Copiar_abre_um_lancamento_novo_com_as_mesmas_partidas()
+    {
+        var (vm, _, _) = await CriarAsync();
+        var p = vm.Principal!;
+        (p.Data, p.Conta, p.ContaCredito, p.Valor, p.Historico) = ("11/03/2026", "1.1.01.001", "3.1.01.001", "50,00", "Aluguel de março");
+        await vm.SalvarCommand.ExecuteAsync(null);
+        vm.EfetuadoSelecionado = Assert.Single(vm.Efetuados);
+        await vm.CopiarSelecionadoCommand.ExecuteAsync(null);
+        Assert.Empty(vm.Erros);
+        Assert.True(vm.DigitacaoAberta);
+        Assert.False(vm.EmEdicao);                                         // é um lançamento novo
+        Assert.Equal(("1.1.01.001", "3.1.01.001", "50,00", "Aluguel de março"), (vm.Principal!.Conta, vm.Principal.ContaCredito, vm.Principal.Valor, vm.Principal.Historico));
+        vm.Principal.Data = "11/04/2026";
+        await vm.SalvarCommand.ExecuteAsync(null);
+        Assert.Empty(vm.Erros);
+        Assert.Equal(2, vm.Efetuados.Count);                               // o original continua
+    }
+
+    [Fact]
     public async Task Centro_de_custo_so_aparece_quando_a_empresa_usa()
     {
         var (vm, empresa, _) = await CriarAsync();

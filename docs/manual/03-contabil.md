@@ -134,6 +134,7 @@ Dê **duplo clique** (ou Enter) no lançamento da lista, ou clique em **Editar**
 - **Desligada:** não há estorno. O próprio lançamento é alterado, **com o mesmo número**, e a alteração fica registrada na *Auditoria*.
 
 **Consultar** abre só para leitura. Só lançamentos digitados à mão podem ser editados.
+**Copiar** abre um lançamento **novo** com as mesmas partidas do selecionado (contas, valores, histórico, documento, centro de custo e participante): útil para lançamentos que se repetem todo mês. Ajuste a data e o que precisar e salve; o lançamento original não muda (vale também para lançamentos de outros módulos ou estornados).
 
 ### Excluir um lançamento
 1. Selecione o lançamento na lista e clique em **Excluir**.
