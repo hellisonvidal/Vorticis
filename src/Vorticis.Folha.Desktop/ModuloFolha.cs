@@ -46,6 +46,7 @@ public sealed class ModuloFolha : IModuloDesktop
         ItemMenu.Submenu("C_álculos",
             ItemMenu.Submenu("_Folha",
                 ItemMenu.Tela("Eventos variáveis", FolhaTelas.Eventos),
+                ItemMenu.Tela("Empréstimos consignados", FolhaTelas.Consignado),
                 ItemMenu.Tela("Cálculo da folha mensal", FolhaTelas.FolhaMensal),
                 ItemMenu.Tela("Férias", FolhaTelas.Ferias),
                 ItemMenu.Tela("13º salário", FolhaTelas.Decimo),
@@ -132,6 +133,9 @@ public sealed class ModuloFolha : IModuloDesktop
         c.Instancia(nameof(MainViewModel.Eventos), m => new EventosVariaveisViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
             .Tela(FolhaTelas.Eventos, "Cálculos › Folha › Eventos variáveis", Ver, v => v.CarregarAsync());
+        c.Instancia(nameof(MainViewModel.Consignado), m => new ConsignadoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(FolhaTelas.Consignado, "Cálculos › Folha › Empréstimos consignados", Ver, v => v.CarregarAsync());
         c.Instancia(nameof(MainViewModel.FolhaMensal), m => new FolhaMensalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
                     aoLimpar: v => { v.Calculos.Clear(); v.Itens.Clear(); },
                     aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)

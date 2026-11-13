@@ -163,6 +163,7 @@ public static class IconesMenu
         ["folha.provisoes"] = "PiggyBankOutline",
         ["folha.informe_rendimentos"] = "CardAccountDetails",
         ["folha.vencimentos"] = "CalendarClock",
+        ["folha.consignado"] = "CashMultiple",
         ["folha.admitidos_desligados"] = "AccountMultiple",
         ["folha.contabilizacao"] = "BookArrowRightOutline",
         ["folha.contabilizacao.eventos"] = "BookCheckOutline",

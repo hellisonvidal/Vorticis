@@ -382,3 +382,25 @@ Relação da movimentação de pessoal no período escolhido:
 1. Abra *Relatórios › Admitidos e desligados*, escolha as datas e clique em **Gerar**.
 2. A primeira tabela mostra os **admitidos** (data de admissão, cargo e salário); a segunda, os **desligados** (data, motivo e o valor líquido da rescisão calculada).
 3. No rodapé aparecem o quadro de funcionários no início do período e a **rotatividade**: a média entre admitidos e desligados dividida pelo quadro inicial.
+
+## Empréstimos consignados
+
+Controle dos empréstimos consignados em folha (Lei nº 10.820/2003, inclusive o Crédito do Trabalhador): o banco informa o contrato e a empresa desconta a parcela todo mês e repassa.
+
+### Cadastrar o contrato
+
+1. Abra *Cálculos › Folha › Empréstimos consignados*.
+2. Escolha o **Funcionário** e informe a **Instituição financeira**, o número do **Contrato**, o **Valor da parcela**, a quantidade de **Parcelas** e a competência do **1º desconto**.
+3. Clique em **Gravar**. Para corrigir, clique no contrato na lista, altere e grave de novo; **Novo** limpa os campos.
+
+Depois que a primeira parcela foi descontada, só a quantidade de parcelas, a situação e a observação podem mudar. Para encerrar um contrato antes do fim (quitação antecipada ou desligamento), mude a **Situação** para *Quitado* ou *Cancelado*. Contratos sem parcela descontada podem ser excluídos.
+
+### Descontar as parcelas do mês
+
+1. Escolha a **Competência** e clique em **Lançar parcelas da competência**.
+2. O sistema lança, em *Eventos variáveis*, a parcela de cada contrato ativo na rubrica **2013 – Empréstimo consignado**, com a instituição, o contrato e o número da parcela na observação. Um contrato não recebe duas parcelas na mesma competência.
+3. Calcule a folha normalmente: o desconto aparece no holerite. Quando a última parcela é lançada, o contrato fica *Quitado*.
+
+### Margem consignável
+
+Clique em **Margem consignável** para ver, por funcionário, a remuneração da última folha mensal calculada, os descontos obrigatórios (INSS, IRRF e pensão), a remuneração disponível, a margem para empréstimos (35% da disponível, conforme o parâmetro legal), as parcelas ativas e a margem livre. Quem passou da margem aparece em destaque. A tabela pode ser exportada.

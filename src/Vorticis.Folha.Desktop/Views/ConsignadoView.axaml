@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Folha.Desktop.Views"
+             xmlns:cad="using:Vorticis.Folha.Cadastros"
+             x:Class="Vorticis.Folha.Desktop.Views.ConsignadoView"
+             x:DataType="vm:ConsignadoViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Empréstimos consignados" />
+      <WrapPanel Orientation="Horizontal">
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Funcionário" FontSize="11" />
+          <ComboBox ItemsSource="{Binding Funcionarios}" SelectedItem="{Binding Funcionario}" Width="240">
+            <ComboBox.ItemTemplate><DataTemplate x:DataType="cad:Funcionario"><TextBlock Text="{Binding Nome}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Instituição financeira" FontSize="11" />
+          <TextBox Text="{Binding Instituicao}" Width="200" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Contrato" FontSize="11" />
+          <TextBox Text="{Binding Contrato}" Width="140" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Valor da parcela" FontSize="11" />
+          <TextBox c:Mascara.Tipo="Valor" Text="{Binding ValorParcela}" Width="120" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Parcelas" FontSize="11" />
+          <NumericUpDown Value="{Binding Parcelas}" Minimum="1" Maximum="120" Increment="1" FormatString="0" Width="110" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="1º desconto (competência)" FontSize="11" />
+          <c:SeletorCompetencia Competencia="{Binding PrimeiraCompetencia}" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Situação" FontSize="11" />
+          <ComboBox ItemsSource="{x:Static vm:ConsignadoViewModel.Situacoes}" SelectedItem="{Binding Situacao}" Width="130" /></StackPanel>
+        <StackPanel Margin="0,0,10,6" Spacing="2"><TextBlock Text="Observação" FontSize="11" />
+          <TextBox Text="{Binding Observacao}" Width="220" /></StackPanel>
+      </WrapPanel>
+      <WrapPanel Orientation="Horizontal">
+        <Button Content="Novo" Command="{Binding NovoCommand}" Margin="0,0,6,0" />
+        <Button Content="Gravar" Command="{Binding GravarCommand}" Classes="accent" IsEnabled="{Binding PodeLancar}" Margin="0,0,6,0" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" IsEnabled="{Binding PodeLancar}" Margin="0,0,16,0" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <c:SeletorCompetencia Competencia="{Binding Competencia}" Margin="0,0,6,0" />
+        <Button Content="Lançar parcelas da competência" Command="{Binding LancarParcelasCommand}" IsEnabled="{Binding PodeLancar}" Margin="0,0,6,0" />
+        <Button Content="Margem consignável" Command="{Binding MargemCommand}" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <Grid RowDefinitions="*,8,*">
+      <DataGrid Name="ListaConsignados" ItemsSource="{Binding Contratos}" SelectedItem="{Binding Selecionado}" IsReadOnly="True" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Funcionário" Binding="{ReflectionBinding FuncionarioNome}" Width="220" />
+          <DataGridTextColumn Header="Instituição" Binding="{ReflectionBinding Instituicao}" Width="*" />
+          <DataGridTextColumn Header="Contrato" Binding="{ReflectionBinding Contrato}" Width="120" />
+          <DataGridTextColumn Header="Parcela" Binding="{ReflectionBinding ValorParcela, StringFormat={}{0:N2}}" Width="110" />
+          <DataGridTextColumn Header="Descontadas" Binding="{ReflectionBinding ParcelasTexto}" Width="100" />
+          <DataGridTextColumn Header="Saldo devedor" Binding="{ReflectionBinding SaldoDevedor, StringFormat={}{0:N2}}" Width="120" />
+          <DataGridTextColumn Header="Situação" Binding="{ReflectionBinding Situacao}" Width="100" />
+        </DataGrid.Columns>
+      </DataGrid>
+      <v:TabelaRelatorioGrid Grid.Row="2" Tabela="{Binding Tabela}" />
+    </Grid>
+  </DockPanel>
+</UserControl>

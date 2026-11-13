@@ -42,6 +42,7 @@ public static class RubricasPadrao
     public const string InssDecimo = "2010";
     public const string IrrfDecimo = "2011";
     public const string AdiantamentoDecimo = "2012";
+    public const string Consignado = "2013";
 
     public const string BaseInss = "9001";
     public const string BaseIrrf = "9002";
@@ -95,6 +96,7 @@ public static class RubricasPadrao
         D(InssDecimo, "INSS sobre 13º salário", "9201", inss: "22"),
         D(IrrfDecimo, "IRRF sobre 13º salário", "9203"),
         D(AdiantamentoDecimo, "Adiantamento de 13º salário (1ª parcela)", "9200"),
+        D(Consignado, "Empréstimo consignado", "9253"),
 
         I(BaseInss, "Base de cálculo do INSS"),
         I(BaseIrrf, "Base de cálculo do IRRF (rendimento tributável)"),

@@ -197,6 +197,23 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
         Assert.Contains("Admitidos", movs.Valor[0].Titulo);
         Assert.True(movs.Valor[0].Linhas.Count >= 3);   // Maria, João e o total
 
+        // Consignado: contrato, parcela lançada como evento na competência seguinte (a atual está fechada), margem
+        var cons = db.Folha.Consignado;
+        var prox = competencia.AddMonths(1);
+        var idCons = await cons.GravarAsync(empresa, new ContratoConsignado(0, maria, "Banco Teste", "C-1", 250m, 2, prox), adm, Ct);
+        Ok(idCons);
+        Assert.Contains("já está cadastrado", (await cons.GravarAsync(empresa, new ContratoConsignado(0, maria, "Banco Teste", "C-1", 250m, 2, prox), adm, Ct)).Erros[0]);
+        var lanc1 = await cons.LancarParcelasAsync(empresa, prox, adm, Ct);
+        Ok(lanc1);
+        Assert.Equal((1, 250m), (lanc1.Valor.Lancadas, lanc1.Valor.Total));
+        Assert.Equal(0, (await cons.LancarParcelasAsync(empresa, prox, adm, Ct)).Valor.Lancadas);   // não lança de novo
+        Assert.Contains((await folha.ListarEventosAsync(empresa, prox, adm, Ct)), e => e.RubricaCodigo == "2013" && e.Valor == 250m);
+        Assert.Contains("parcelas descontadas", (await cons.ExcluirAsync(empresa, idCons.Valor, adm, Ct)).Erros[0]);
+        var margens = await cons.MargensAsync(empresa, prox, adm, Ct);
+        Ok(margens);
+        var mm = margens.Valor.Single(x => x.FuncionarioId == maria);
+        Assert.Equal((250m, Vorticis.Folha.Regras.RegrasConsignado.Margem(m.TotalProventos, m.Inss + m.Irrf, 35m)), (mm.Comprometido, mm.Margem));
+
         // Contabilização: precisa de regras, depois lança, não duplica e desfaz por estorno
         var contab = db.Folha.Contabilizacao;
         var semRegra = await contab.ContabilizarAsync(empresa, competencia, "FOLHA", adm, Ct);

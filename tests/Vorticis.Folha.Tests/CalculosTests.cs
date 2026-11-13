@@ -368,3 +368,22 @@ public class ControlesPessoalTests
         Assert.Equal((3, 33.33m), (quadro, rot));
     }
 }
+
+public class ConsignadoRegrasTests
+{
+    [Fact]
+    public void Parcela_da_competencia_e_margem()
+    {
+        var c = new ContratoConsignado(1, 1, "Banco", "123", 300m, 3, new DateOnly(2026, 3, 1));
+        Assert.Null(RegrasConsignado.ParcelaDaCompetencia(c, new DateOnly(2026, 2, 1)));          // antes do 1º desconto
+        Assert.Equal(1, RegrasConsignado.ParcelaDaCompetencia(c, new DateOnly(2026, 3, 1)));
+        var depois = c with { ParcelasDescontadas = 1, UltimaCompetencia = new DateOnly(2026, 3, 1) };
+        Assert.Null(RegrasConsignado.ParcelaDaCompetencia(depois, new DateOnly(2026, 3, 1)));     // não lança duas vezes no mês
+        Assert.Equal(2, RegrasConsignado.ParcelaDaCompetencia(depois, new DateOnly(2026, 4, 1)));
+        Assert.Null(RegrasConsignado.ParcelaDaCompetencia(c with { ParcelasDescontadas = 3 }, new DateOnly(2026, 9, 1)));
+        Assert.Null(RegrasConsignado.ParcelaDaCompetencia(c with { Situacao = "CANCELADO" }, new DateOnly(2026, 4, 1)));
+        Assert.Equal(900m, c.SaldoDevedor);
+        Assert.Equal(875m, RegrasConsignado.Margem(3000m, 500m, 35m));                            // 35% de 2.500
+        Assert.Equal("Informe o valor da parcela.", RegrasConsignado.Validar(c with { ValorParcela = 0 }));
+    }
+}

@@ -32,6 +32,7 @@
     <DataTemplate DataType="vm:TabelasPrevidenciaViewModel"><v:TabelasPrevidenciaView /></DataTemplate>
     <DataTemplate DataType="vm:FgtsDigitalViewModel"><v:FgtsDigitalView /></DataTemplate>
     <DataTemplate DataType="vm:ProvisoesFolhaViewModel"><v:ProvisoesFolhaView /></DataTemplate>
+    <DataTemplate DataType="vm:ConsignadoViewModel"><v:ConsignadoView /></DataTemplate>
     <DataTemplate DataType="vm:AdmitidosDesligadosViewModel"><v:AdmitidosDesligadosView /></DataTemplate>
     <DataTemplate DataType="vm:VencimentosPessoalViewModel"><v:VencimentosPessoalView /></DataTemplate>
     <DataTemplate DataType="vm:InformeRendimentosViewModel"><v:InformeRendimentosView /></DataTemplate>
