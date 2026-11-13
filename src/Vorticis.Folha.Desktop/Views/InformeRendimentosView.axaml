@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Folha.Desktop.ViewModels"
+             xmlns:v="using:Vorticis.Folha.Desktop.Views"
+             x:Class="Vorticis.Folha.Desktop.Views.InformeRendimentosView"
+             x:DataType="vm:InformeRendimentosViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Classes="titulo" Text="Informe de rendimentos" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <TextBlock Text="Ano-calendário" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <NumericUpDown Value="{Binding Ano}" Minimum="2000" Maximum="2100" Increment="1" FormatString="0" Width="120" Margin="0,0,10,0" />
+        <Button Content="Mostrar" Command="{Binding GerarCommand}" Classes="accent" Margin="0,0,10,0" />
+        <ComboBox ItemsSource="{Binding Funcionarios}" SelectedItem="{Binding Funcionario}" MinWidth="240" Margin="0,0,6,0"
+                  ToolTip.Tip="Comprovante de todos os funcionários (um por página) ou só de um" />
+        <Button Content="Comprovantes (PDF)" Command="{Binding ComprovantesCommand}" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Comprovante de rendimentos pagos e de imposto sobre a renda retido na fonte (IN RFB 2.060/2021), a entregar ao funcionário até o último dia útil de fevereiro. Entram os valores pagos no ano (regime de caixa), pela incidência de IRRF de cada rubrica." />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" />
+    <v:TabelaRelatorioGrid Tabela="{Binding Tabela}" />
+  </DockPanel>
+</UserControl>

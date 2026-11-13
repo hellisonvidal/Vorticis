@@ -28,6 +28,7 @@ public static class FolhaTelas
     public const string Decimo = "folha.decimo";
     public const string Rescisoes = "folha.rescisoes";
     public const string Provisoes = "folha.provisoes";
+    public const string InformeRendimentos = "folha.informe_rendimentos";
     public const string Contabilizacao = "folha.contabilizacao";
     public const string ContabilizacaoEventos = "folha.contabilizacao.eventos";
     public const string EventosContabeis = "folha.eventoscontabeis";

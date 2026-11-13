@@ -176,6 +176,20 @@ public class FolhaIntegracaoTests(BancoFolha db) : IClassFixture<BancoFolha>
         Ok(encargos);
         Assert.Equal(m.Fgts + j.Fgts, (decimal)encargos.Valor.Linhas[^1].Valores[6]!);
 
+        // Informe de rendimentos do ano em que a folha foi paga (regime de caixa)
+        var anoPago = ApuracaoInformeRendimentos.Pagamento(m).Year;
+        var informes = await rel.InformesRendimentosAsync(empresa, anoPago, adm, Ct);
+        Ok(informes);
+        var im = informes.Valor.Single(i => i.FuncionarioId == maria);
+        Assert.Equal((m.TotalProventos, m.Inss, m.Irrf), (im.Rendimentos, im.Previdencia, im.Irrf));
+        var ij = informes.Valor.Single(i => i.FuncionarioId == joao);
+        Assert.Equal((j.Inss, j.Irrf), (ij.Previdencia, ij.Irrf));
+        Assert.Empty((await rel.InformesRendimentosAsync(empresa, anoPago + 1, adm, Ct)).Valor);
+        var comprovantes = await rel.ComprovantesRendimentosAsync(empresa, anoPago, adm, Ct);
+        Ok(comprovantes);
+        Assert.True(comprovantes.Valor.Paginas >= 2);
+        Assert.Contains("Não há rendimentos", (await rel.ComprovantesRendimentosAsync(empresa, anoPago + 1, adm, Ct)).Erros[0]);
+
         // Contabilização: precisa de regras, depois lança, não duplica e desfaz por estorno
         var contab = db.Folha.Contabilizacao;
         var semRegra = await contab.ContabilizarAsync(empresa, competencia, "FOLHA", adm, Ct);

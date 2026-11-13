@@ -158,6 +158,7 @@ folha.ferias=06-folha.md#ferias
 folha.decimo=06-folha.md#13o-salario
 folha.rescisoes=06-folha.md#rescisoes
 folha.provisoes=06-folha.md#provisoes-de-ferias-e-13o
+folha.informe_rendimentos=06-folha.md#informe-de-rendimentos
 folha.contabilizacao=06-folha.md#contabilizacao-da-folha
 folha.contabilizacao.eventos=06-folha.md#contabilizacao-por-eventos
 folha.eventoscontabeis=06-folha.md#contabilizacao-por-eventos

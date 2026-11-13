@@ -159,6 +159,7 @@ public static class IconesMenu
         ["folha.decimo"] = "GiftOutline",
         ["folha.rescisoes"] = "AccountArrowRightOutline",
         ["folha.provisoes"] = "PiggyBankOutline",
+        ["folha.informe_rendimentos"] = "CardAccountDetails",
         ["folha.contabilizacao"] = "BookArrowRightOutline",
         ["folha.contabilizacao.eventos"] = "BookCheckOutline",
         ["folha.eventoscontabeis"] = "BookEditOutline",

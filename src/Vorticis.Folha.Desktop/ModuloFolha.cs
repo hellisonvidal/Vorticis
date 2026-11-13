@@ -63,8 +63,7 @@ public sealed class ModuloFolha : IModuloDesktop
                 ItemMenu.Tela("Geração dos eventos", FolhaTelas.ESocial),
                 ItemMenu.Tela("Transmissão", FolhaTelas.Transmissao)),
             ItemMenu.Tela("FGTS Digital", FolhaTelas.FgtsDigital),
-            ItemMenu.EmBreve("DCTFWeb e INSS"),
-            ItemMenu.EmBreve("RAIS e DIRF")),
+            ItemMenu.EmBreve("DCTFWeb e INSS")),
         ItemMenu.Submenu("_Integrações",
             ItemMenu.Submenu("Importar",
                 ItemMenu.Tela("Importar eSocial", FolhaTelas.ImportarEsocial))),
@@ -72,7 +71,8 @@ public sealed class ModuloFolha : IModuloDesktop
             ItemMenu.Tela("Holerites e recibos", FolhaTelas.Holerites),
             ItemMenu.Tela("Resumo da folha", FolhaTelas.Resumo),
             ItemMenu.Tela("Encargos patronais", FolhaTelas.Encargos),
-            ItemMenu.Tela("Provisões", FolhaTelas.Provisoes)),
+            ItemMenu.Tela("Provisões", FolhaTelas.Provisoes),
+            ItemMenu.Tela("Informe de rendimentos", FolhaTelas.InformeRendimentos)),
     ];
 
     /// <summary>Ajuda › Dicas: as dicas deste módulo (as gerais vêm do casco).</summary>
@@ -180,5 +180,7 @@ public sealed class ModuloFolha : IModuloDesktop
             .Tela(FolhaTelas.Encargos, "Relatórios › Encargos patronais", m => Pode(m, Permissao.FolhaRelatorios));
         c.Instancia(nameof(MainViewModel.Provisoes), m => new ProvisoesFolhaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(), aoLimpar: v => v.Limpar())
             .Tela(FolhaTelas.Provisoes, "Relatórios › Provisões de férias e 13º", m => Pode(m, Permissao.FolhaRelatorios, Permissao.FolhaCalcular));
+        c.Instancia(nameof(MainViewModel.InformeRendimentos), m => new InformeRendimentosViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoesExportacao(), aoLimpar: v => v.Limpar())
+            .Tela(FolhaTelas.InformeRendimentos, "Relatórios › Informe de rendimentos", m => Pode(m, Permissao.FolhaRelatorios));
     }
 }

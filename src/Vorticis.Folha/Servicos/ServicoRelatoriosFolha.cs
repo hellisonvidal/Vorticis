@@ -134,6 +134,84 @@ public sealed class ServicoRelatoriosFolha(IRepositorioCadastrosFolha cadastros,
             await CabecalhoAsync(empresaId, $"Competência {Competencia(competencia)}", ct), blocos)));
     }
 
+    // ------------------------------------------------------------------ informe de rendimentos
+
+    /// <summary>Apura os informes de rendimentos do ano-calendário (pagamentos de janeiro a dezembro, regime de caixa).</summary>
+    public async Task<Resultado<IReadOnlyList<InformeRendimentos>>> InformesRendimentosAsync(long empresaId, int ano, long usuarioId, CancellationToken ct = default)
+    {
+        if (await NegarAsync(empresaId, usuarioId, ct) is { } negado) return Resultado<IReadOnlyList<InformeRendimentos>>.Falha(negado);
+        if (ano is < 2000 or > 2100) return Resultado<IReadOnlyList<InformeRendimentos>>.Falha("Informe o ano-calendário.");
+        var calculos = new List<CalculoGravado>();
+        for (var c = new DateOnly(ano - 1, 12, 1); c <= new DateOnly(ano, 12, 1); c = c.AddMonths(1))
+            calculos.AddRange(await movimento.ListarCalculosAsync(empresaId, c, null, true, ct));
+        var incidencias = (await cadastros.ListarRubricasAsync(empresaId, ct)).ToDictionary(r => r.Codigo, r => r.IncIrrf);
+        return Resultado<IReadOnlyList<InformeRendimentos>>.Ok(ApuracaoInformeRendimentos.Apurar(calculos, incidencias, ano));
+    }
+
+    /// <summary>Tabela da tela: um funcionário por linha com os valores dos quadros 3, 4 e 5 do comprovante.</summary>
+    public static TabelaRelatorio TabelaInformes(IReadOnlyList<InformeRendimentos> informes, int ano)
+    {
+        var linhas = informes.Select(i => new LinhaRelatorio([i.Matricula, i.Nome, Domain.Cadastros.Cpf.Formatar(i.Cpf), i.Rendimentos, i.Previdencia, i.Pensao, i.Irrf,
+                                                             i.Indenizacoes, i.OutrosIsentos, i.Decimo, i.IrrfDecimo])).ToList();
+        linhas.Add(new LinhaRelatorio(["", "TOTAL", "", informes.Sum(i => i.Rendimentos), informes.Sum(i => i.Previdencia), informes.Sum(i => i.Pensao), informes.Sum(i => i.Irrf),
+                                       informes.Sum(i => i.Indenizacoes), informes.Sum(i => i.OutrosIsentos), informes.Sum(i => i.Decimo), informes.Sum(i => i.IrrfDecimo)], Destaque: true));
+        return new TabelaRelatorio($"Informe de rendimentos – ano-calendário {ano}",
+            [new("Matrícula", TipoColuna.Texto, 1.8), new("Funcionário"), new("CPF", TipoColuna.Texto, 3), new("Rendimentos tributáveis", V), new("Previdência oficial", V),
+             new("Pensão alimentícia", V), new("IRRF", V), new("Indenizações (rescisão)", V), new("Outros isentos", V), new("13º salário (líquido)", V), new("IRRF sobre 13º", V)],
+            linhas, "Regime de caixa: entram os valores pagos no ano. Sem data de pagamento, a folha mensal conta como paga no 5º dia útil do mês seguinte.");
+    }
+
+    /// <summary>Comprovantes de rendimentos (modelo da IN RFB 2.060/2021) em PDF: de todos os funcionários (um por página) ou de um só.</summary>
+    public async Task<Resultado<ArquivoGerado>> ComprovantesRendimentosAsync(long empresaId, int ano, long usuarioId, CancellationToken ct = default, long? funcionarioId = null)
+    {
+        var r = await InformesRendimentosAsync(empresaId, ano, usuarioId, ct);
+        if (!r.Sucesso) return Resultado<ArquivoGerado>.Falha(r.Erros);
+        var informes = r.Valor.Where(i => funcionarioId is null || i.FuncionarioId == funcionarioId).ToList();
+        if (informes.Count == 0) return Resultado<ArquivoGerado>.Falha($"Não há rendimentos pagos em {ano} para gerar o comprovante.");
+        var e = await cadastros.ObterEmpresaAsync(empresaId, ct);
+        var fonte = e is null ? "" : $"Nome empresarial: {e.RazaoSocial}\nCNPJ: {ServicoLivros.FormatarCnpj(e.Cnpj)}";
+        Coluna[] cols = [new("Descrição", 13.2), new("Valor (R$)", 3.6, Alinhamento.Direita)];
+        static LinhaTabela L(string d, decimal v) => new([d, Formato.Moeda(v)]);
+        var blocos = new List<Bloco>();
+        foreach (var i in informes)
+        {
+            blocos.Add(new Bloco(Titulo: "1. Fonte pagadora pessoa jurídica", Texto: fonte, NovaPagina: blocos.Count > 0));
+            blocos.Add(new Bloco(Titulo: "2. Pessoa física beneficiária dos rendimentos",
+                                 Texto: $"CPF: {Domain.Cadastros.Cpf.Formatar(i.Cpf)}   Nome completo: {i.Nome}\nNatureza do rendimento: rendimentos do trabalho assalariado"));
+            blocos.Add(new Bloco(Titulo: "3. Rendimentos tributáveis, deduções e imposto sobre a renda retido na fonte", Colunas: cols, Linhas:
+            [
+                L("01. Total dos rendimentos (inclusive férias)", i.Rendimentos), L("02. Contribuição previdenciária oficial", i.Previdencia),
+                L("03. Contribuições a entidades de previdência complementar e a fundos de aposentadoria programada individual (Fapi)", 0),
+                L("04. Pensão alimentícia (preencher também o quadro 7)", i.Pensao), L("05. Imposto sobre a renda retido na fonte", i.Irrf),
+            ]));
+            blocos.Add(new Bloco(Titulo: "4. Rendimentos isentos e não tributáveis", Colunas: cols, Linhas:
+            [
+                L("01. Parcela isenta dos proventos de aposentadoria, reserva remunerada, reforma e pensão (65 anos ou mais)", 0),
+                L("02. Parcela isenta do 13º salário de aposentadoria, reserva remunerada, reforma e pensão (65 anos ou mais)", 0),
+                L("03. Diárias e ajudas de custo", 0),
+                L("04. Pensão e proventos de aposentadoria ou reforma por moléstia grave e aposentadoria ou reforma por acidente em serviço", 0),
+                L("05. Lucros e dividendos apurados a partir de 1996, pagos por pessoa jurídica (lucro real, presumido ou arbitrado)", 0),
+                L("06. Valores pagos ao titular ou sócio da microempresa ou empresa de pequeno porte, exceto pró-labore, aluguéis ou serviços prestados", 0),
+                L("07. Indenizações por rescisão de contrato de trabalho, inclusive a título de PDV, e por acidente de trabalho", i.Indenizacoes),
+                L("08. Juros de mora recebidos, devidos pelo atraso no pagamento de remuneração por exercício de emprego, cargo ou função", 0),
+                L("09. Outros (especificar no quadro 7)", i.OutrosIsentos),
+            ]));
+            blocos.Add(new Bloco(Titulo: "5. Rendimentos sujeitos à tributação exclusiva (rendimento líquido)", Colunas: cols, Linhas:
+            [
+                L("01. 13º (décimo terceiro) salário", i.Decimo), L("02. Imposto sobre a renda retido na fonte sobre 13º (décimo terceiro) salário", i.IrrfDecimo),
+                L("03. Outros", 0),
+            ]));
+            blocos.Add(new Bloco(Titulo: "6. Rendimentos recebidos acumuladamente (art. 12-A da Lei nº 7.713, de 1988)", Texto: "Não houve."));
+            var compl = string.Join("\n", i.DetalheOutros.Select(d => $"Rendimento isento (quadro 4, linha 09): {d.Descricao} – {Formato.Moeda(d.Valor)}"));
+            if (i.Pensao > 0) compl += (compl.Length > 0 ? "\n" : "") + $"Pensão alimentícia descontada: {Formato.Moeda(i.Pensao)} (informe o CPF e o nome do beneficiário).";
+            blocos.Add(new Bloco(Titulo: "7. Informações complementares", Texto: compl.Length > 0 ? compl : "—"));
+            blocos.Add(new Bloco(Titulo: "8. Responsável pelas informações",
+                                 Texto: $"Data: {DateTime.Today:dd/MM/yyyy}\n\n_______________________________________\nAssinatura"));
+        }
+        return Resultado<ArquivoGerado>.Ok(gerador.Gerar(new DocumentoRelatorio("Comprovante de rendimentos pagos e de imposto sobre a renda retido na fonte",
+            [$"Ministério da Fazenda – Secretaria da Receita Federal do Brasil", $"Imposto sobre a renda da pessoa física – exercício {ano + 1}, ano-calendário {ano}"], blocos)));
+    }
+
     // ------------------------------------------------------------------ tabelas
 
     private static readonly TipoColuna V = TipoColuna.Valor;

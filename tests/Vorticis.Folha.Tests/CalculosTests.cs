@@ -1,3 +1,4 @@
+using Vorticis.Folha.Cadastros;
 using Vorticis.Folha.Regras;
 
 namespace Vorticis.Folha.Tests;
@@ -272,5 +273,47 @@ public class CalculosTests
         Assert.Equal(new DateOnly(2026, 4, 5), Calendario.Pascoa(2026));
         Assert.Contains(new DateOnly(2026, 4, 3), Calendario.FeriadosNacionais(2026));
         Assert.Equal((26, 5), Calendario.DiasUteisEDescanso(2026, 3));
+    }
+}
+
+public class InformeRendimentosTests
+{
+    private static CalculoGravado Calc(long func, TipoFolha tipo, DateOnly comp, DateOnly? pago, decimal baseIrrf, params ItemGravado[] itens)
+        => new(func, func, func.ToString(), "Func " + func, "52998224725", comp, tipo, null, pago, null, null, itens.Where(i => i.Tipo == 'P').Sum(i => i.Valor),
+               itens.Where(i => i.Tipo == 'D').Sum(i => i.Valor), 0, 0, baseIrrf, 0, itens.Where(i => i.Codigo == "2001").Sum(i => i.Valor),
+               itens.Where(i => i.Codigo == "2002").Sum(i => i.Valor), 0, 0, 0, 0, 0, itens);
+
+    private static ItemGravado I(string cod, char tipo, decimal v) => new(cod, Vorticis.Folha.Regras.RubricasPadrao.EhPadrao(cod) ? Vorticis.Folha.Regras.RubricasPadrao.Obter(cod).Descricao : "Rubrica " + cod, tipo, 0, v, "");
+
+    [Fact]
+    public void Informe_soma_pelo_pagamento_e_separa_quadros()
+    {
+        var calculos = new[]
+        {
+            // salário de dezembro/2025 sem data: pago em janeiro/2026 (entra em 2026)
+            Calc(1, TipoFolha.Mensal, new(2025, 12, 1), null, 0, I("1000", 'P', 3000), I("2001", 'D', 250), I("2002", 'D', 40)),
+            // salário de dezembro/2026 pago em 05/01/2027: fica fora de 2026
+            Calc(1, TipoFolha.Mensal, new(2026, 12, 1), new(2027, 1, 5), 0, I("1000", 'P', 3000), I("2001", 'D', 250)),
+            // folha de março com falta, salário-família e rubrica própria isenta e pensão
+            Calc(1, TipoFolha.Mensal, new(2026, 3, 1), new(2026, 4, 5), 0, I("1000", 'P', 3000), I("2003", 'D', 100), I("1008", 'P', 65),
+                 I("7777", 'P', 200), I("2007", 'D', 300), I("2001", 'D', 240), I("2002", 'D', 30)),
+            // 13º: 1ª parcela ignorada; 2ª parcela pelo líquido (base do IRRF)
+            Calc(1, TipoFolha.Decimo1, new(2026, 11, 1), new(2026, 11, 30), 0, I("1020", 'P', 1500)),
+            Calc(1, TipoFolha.Decimo2, new(2026, 12, 1), new(2026, 12, 20), 2700, I("1021", 'P', 3000), I("2010", 'D', 300), I("2011", 'D', 25)),
+            // rescisão de outro funcionário: aviso indenizado isento e 13º proporcional menos o INSS sobre ele
+            Calc(2, TipoFolha.Rescisao, new(2026, 6, 1), new(2026, 6, 10), 0, I("1030", 'P', 1000), I("1031", 'P', 2000), I("1036", 'P', 900),
+                 I("2010", 'D', 70), I("2001", 'D', 80)),
+        };
+        var inc = new Dictionary<string, string> { ["7777"] = "00" };
+        var r = ApuracaoInformeRendimentos.Apurar(calculos, inc, 2026);
+        var a = r.Single(i => i.FuncionarioId == 1);
+        Assert.Equal(3000m + 3000m - 100m, a.Rendimentos);
+        Assert.Equal((490m, 70m, 300m), (a.Previdencia, a.Irrf, a.Pensao));
+        Assert.Equal((2700m, 25m), (a.Decimo, a.IrrfDecimo));
+        Assert.Equal(265m, a.OutrosIsentos);
+        Assert.Contains(a.DetalheOutros, d => d.Descricao == "Rubrica 7777" && d.Valor == 200m);
+        var b = r.Single(i => i.FuncionarioId == 2);
+        Assert.Equal((1000m, 2000m, 830m, 80m), (b.Rendimentos, b.Indenizacoes, b.Decimo, b.Previdencia));
+        Assert.Empty(ApuracaoInformeRendimentos.Apurar(calculos, inc, 2024));
     }
 }

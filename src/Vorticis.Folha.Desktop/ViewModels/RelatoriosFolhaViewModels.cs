@@ -168,3 +168,55 @@ public partial class FgtsDigitalViewModel(IContexto contexto) : RelatorioFolhaBa
         Mensagem = "Registro da guia excluído.";
     }, Permissao.FolhaCalcular);
 }
+
+/// <summary>
+/// Folha › Relatórios › Informe de rendimentos: valores do comprovante anual de cada funcionário (IN RFB 2.060/2021) na tela,
+/// com exportação, e os comprovantes em PDF para entregar (de todos ou de um funcionário).
+/// </summary>
+public partial class InformeRendimentosViewModel(IContexto contexto) : RelatorioViewModel(contexto)
+{
+    [ObservableProperty] private decimal? _ano = contexto.PeriodoTrabalho.Year - (contexto.PeriodoTrabalho.Month <= 6 ? 1 : 0);
+    [ObservableProperty] private TabelaRelatorio? _tabela;
+    [ObservableProperty] private OpcaoFuncionarioHolerite? _funcionario;
+    public System.Collections.ObjectModel.ObservableCollection<OpcaoFuncionarioHolerite> Funcionarios { get; } = [new(null, "Todos os funcionários")];
+
+    private int AnoGerado { get; set; }
+    private int AnoEscolhido => (int)(Ano ?? 0);
+
+    protected override string TituloRelatorio => "Informe de rendimentos";
+    protected override string NomeArquivo => $"informe_rendimentos_{AnoGerado}";
+    protected override string Parametros => $"Ano-calendário {AnoGerado}";
+    protected override bool Paisagem => true;
+    protected override IReadOnlyList<TabelaRelatorio> Tabelas() => Tabela is null ? [] : [Tabela];
+
+    public void Limpar()
+    {
+        Tabela = null; TemDados = false;
+        while (Funcionarios.Count > 1) Funcionarios.RemoveAt(1);
+        Funcionario = Funcionarios[0];
+    }
+
+    [RelayCommand]
+    private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var r = await app.Folha().Relatorios.InformesRendimentosAsync(empresa, AnoEscolhido, usuario);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        Limpar();
+        AnoGerado = AnoEscolhido;
+        foreach (var i in r.Valor) Funcionarios.Add(new(i.FuncionarioId, $"{i.Matricula} – {i.Nome}"));
+        Tabela = Vorticis.Folha.Servicos.ServicoRelatoriosFolha.TabelaInformes(r.Valor, AnoGerado);
+        TemDados = r.Valor.Count > 0;
+        AtualizarPermissoesExportacao();
+        Mensagem = r.Valor.Count == 0 ? $"Não há rendimentos pagos em {AnoGerado}." : $"{r.Valor.Count} funcionário(s) com rendimentos em {AnoGerado}.";
+    }, Permissao.FolhaRelatorios);
+
+    [RelayCommand]
+    private Task ComprovantesAsync() => ExecutarAsync(async (app, empresa, usuario) =>
+    {
+        var id = Funcionario?.Id;
+        var r = await app.Folha().Relatorios.ComprovantesRendimentosAsync(empresa, AnoEscolhido, usuario, funcionarioId: id);
+        if (!r.Sucesso) { MostrarResultado(r, ""); return; }
+        var sufixo = id is null ? "" : "_" + new string([.. Funcionario!.Texto.TakeWhile(c => c != ' ')]);
+        Mensagem = "Comprovantes gerados: " + ArquivosGerados.Salvar($"comprovante_rendimentos_{AnoEscolhido}{sufixo}.pdf", r.Valor.Conteudo);
+    }, Permissao.FolhaRelatorios);
+}

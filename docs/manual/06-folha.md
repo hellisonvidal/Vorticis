@@ -334,3 +334,28 @@ Com exportação para PDF, Excel e CSV:
 - **Provisões**: veja [Provisões de férias e 13º](#provisoes-de-ferias-e-13o).
 
 Em todos, escolha a **competência** (período de apuração: mês e ano, sem dia) e clique em **Gerar**. A tela já abre na competência de trabalho da faixa cinza. O mesmo seletor de mês e ano é usado em Eventos variáveis, Contabilização, eSocial e Transmissão.
+
+## Informe de rendimentos
+
+O comprovante de rendimentos (modelo da Receita Federal, IN RFB 2.060/2021) deve ser entregue a cada funcionário até o último dia útil de fevereiro, com os valores pagos no ano anterior. Ele é usado pelo funcionário na declaração do imposto de renda.
+
+### Passo a passo
+
+1. Abra *Relatórios › Informe de rendimentos*.
+2. Em **Ano-calendário**, informe o ano dos pagamentos (por exemplo, 2026 para entregar em fevereiro de 2027) e clique em **Mostrar**.
+3. Confira a tabela: uma linha por funcionário com os rendimentos tributáveis, a previdência oficial (INSS), a pensão alimentícia, o IRRF, as indenizações da rescisão, os outros rendimentos isentos e o 13º salário com o seu IRRF. A tabela pode ser exportada para PDF, Excel e CSV.
+4. Na lista ao lado, deixe **Todos os funcionários** (um comprovante por página) ou escolha um funcionário e clique em **Comprovantes (PDF)**.
+5. Assine e entregue o comprovante ao funcionário.
+
+### Como os valores são apurados
+
+- Entram os valores **pagos** no ano (regime de caixa), pela data de pagamento de cada cálculo. Quando a folha mensal não tem data de pagamento, ela conta como paga no 5º dia útil do mês seguinte: o salário de dezembro entra no ano seguinte.
+- A incidência de imposto de renda de cada rubrica (cadastro de rubricas) define o quadro: tributável, 13º salário ou pensão. Os proventos sem incidência são isentos: na rescisão, como indenizações (aviso prévio indenizado, férias indenizadas); fora dela, em "Outros" (por exemplo, salário-família e abono pecuniário de férias), detalhados nas informações complementares.
+- O 13º salário aparece pelo valor líquido (depois do INSS, dos dependentes e da pensão), com o imposto retido sobre ele. A 1ª parcela não é somada à parte: ela já está no 13º da 2ª parcela.
+- O INSS descontado do 13º não entra na linha da previdência oficial.
+
+### Cuidados
+
+- Confira a incidência de IRRF das rubricas que você criou: uma rubrica marcada sem incidência sai como rendimento isento.
+- Se houver pensão alimentícia, complete o comprovante com o CPF e o nome do beneficiário.
+- Previdência complementar, planos de saúde e outros pagamentos não lançados na folha não aparecem: acrescente-os à mão quando houver.
