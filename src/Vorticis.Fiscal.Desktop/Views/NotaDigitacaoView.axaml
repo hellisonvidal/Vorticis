@@ -91,8 +91,8 @@
               <UniformGrid Columns="9">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="NCM" /><TextBox c:Pesquisa.Fonte="Ncm" Text="{Binding Item.Ncm}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CEST" /><TextBox Text="{Binding Item.Cest}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Un." /><TextBox Text="{Binding Item.Unidade}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Orig." /><TextBox Text="{Binding Item.Origem}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Un." /><TextBox c:Pesquisa.Fonte="Unidade" Text="{Binding Item.Unidade}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Orig." /><TextBox c:Pesquisa.Fonte="Origem" Text="{Binding Item.Origem}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Desconto" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Desconto}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Frete" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Frete}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Seguro" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Seguro}" /></StackPanel>
@@ -155,7 +155,7 @@
               <TextBlock Classes="grupo" Text="ICMS e ICMS-ST do item selecionado (base × alíquota recalcula o valor; o valor pode ser corrigido à mão)" />
               <UniformGrid Columns="8">
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CFOP" /><TextBox c:Pesquisa.Fonte="Cfop" Name="CampoCfopTrib" Text="{Binding Item.Cfop}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN" /><TextBox Text="{Binding Item.CstIcms}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN" /><TextBox c:Pesquisa.Fonte="CstIcms" Text="{Binding Item.CstIcms}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base ICMS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoBcIcms" Text="{Binding Item.BcIcms}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. ICMS %" /><TextBox c:Mascara.Tipo="Valor" Name="CampoAliqIcms" Text="{Binding Item.AliqIcms}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="ICMS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoIcms" Text="{Binding Item.Icms}" /></StackPanel>
@@ -164,18 +164,18 @@
               </UniformGrid>
               <TextBlock Classes="grupo" Text="IPI" />
               <UniformGrid Columns="8">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IPI" /><TextBox Text="{Binding Item.CstIpi}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IPI" /><TextBox c:Pesquisa.Fonte="CstIpi" Text="{Binding Item.CstIpi}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base IPI" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcIpi}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IPI %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIpi}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IPI" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Ipi}" /></StackPanel>
               </UniformGrid>
               <TextBlock Classes="grupo" Text="PIS e COFINS" />
               <UniformGrid Columns="8">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST PIS" /><TextBox Text="{Binding Item.CstPis}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST PIS" /><TextBox c:Pesquisa.Fonte="CstPisCofins" Text="{Binding Item.CstPis}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base PIS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcPis}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. PIS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqPis}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="PIS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Pis}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST COFINS" /><TextBox Text="{Binding Item.CstCofins}" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST COFINS" /><TextBox c:Pesquisa.Fonte="CstPisCofins" Text="{Binding Item.CstCofins}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base COFINS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.BcCofins}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. COFINS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqCofins}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="COFINS" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.Cofins}" /></StackPanel>
@@ -188,9 +188,9 @@
               </UniformGrid>
               <TextBlock Classes="grupo" Text="IBS, CBS e Imposto Seletivo (reforma tributária: destaque obrigatório a partir de 2026; PIS e COFINS acabam em 2027)" />
               <UniformGrid Columns="8">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IBS/CBS" /><TextBox Name="CampoCstIbsCbs" Text="{Binding Item.CstIbsCbs}" MaxLength="3" Watermark="000"
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IBS/CBS" /><TextBox c:Pesquisa.Fonte="CstIbsCbs" Name="CampoCstIbsCbs" Text="{Binding Item.CstIbsCbs}" MaxLength="3" Watermark="000"
                             ToolTip.Tip="000 tributação integral, 200 alíquota reduzida, 400 isenção, 410 imunidade e não incidência, 510 diferimento, 550 suspensão, 620 monofásica..." /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classificação (cClassTrib)" /><TextBox Name="CampoClassTrib" Text="{Binding Item.ClassTrib}" MaxLength="6" Watermark="000001"
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classificação (cClassTrib)" /><TextBox c:Pesquisa.Fonte="ClassTrib" Name="CampoClassTrib" Text="{Binding Item.ClassTrib}" MaxLength="6" Watermark="000001"
                             ToolTip.Tip="Código de 6 dígitos da tabela oficial; cadastre os que usa em Cadastros › Classificação tributária (IBS/CBS), com a redução e o crédito." /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Redução %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.ReducaoIbsCbs}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Base IBS/CBS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoBcIbsCbs" Text="{Binding Item.BcIbsCbs}" /></StackPanel>
@@ -200,8 +200,8 @@
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="IBS município" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.IbsMun}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. CBS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqCbs}" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CBS" /><TextBox c:Mascara.Tipo="Valor" Name="CampoCbs" Text="{Binding Item.Cbs}" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IS" /><TextBox Text="{Binding Item.CstIs}" MaxLength="3" /></StackPanel>
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classif. IS" /><TextBox Text="{Binding Item.ClassTribIs}" MaxLength="6" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST IS" /><TextBox c:Pesquisa.Fonte="CstIbsCbs" Text="{Binding Item.CstIs}" MaxLength="3" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Classif. IS" /><TextBox c:Pesquisa.Fonte="ClassTrib" Text="{Binding Item.ClassTribIs}" MaxLength="6" /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Alíq. IS %" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.AliqIs}"
                             ToolTip.Tip="Imposto Seletivo (a partir de 2027): bebidas, cigarros, veículos, bens minerais e outros prejudiciais à saúde ou ao meio ambiente." /></StackPanel>
                 <StackPanel Classes="campo"><TextBlock Classes="rot" Text="Imposto Seletivo" /><TextBox c:Mascara.Tipo="Valor" Text="{Binding Item.ImpostoSeletivo}" /></StackPanel>
@@ -265,7 +265,7 @@
             <StackPanel IsVisible="{Binding Importada}" Spacing="3">
               <TextBlock Classes="grupo" Text="Item selecionado (escolha na lista da aba Nota)" />
               <WrapPanel IsVisible="{Binding EhEntrada}" Margin="4,0">
-                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN de escrituração" /><TextBox Text="{Binding Item.CstIcms}" Width="110" /></StackPanel>
+                <StackPanel Classes="campo"><TextBlock Classes="rot" Text="CST/CSOSN de escrituração" /><TextBox c:Pesquisa.Fonte="CstIcms" Text="{Binding Item.CstIcms}" Width="110" /></StackPanel>
                 <CheckBox Content="Credita ICMS" IsChecked="{Binding EscCreditaIcms}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
                 <CheckBox Content="Credita IPI" IsChecked="{Binding EscCreditaIpi}" VerticalAlignment="Bottom" Margin="8,0,0,0" />
                 <CheckBox Content="Credita PIS" IsChecked="{Binding EscCreditaPis}" VerticalAlignment="Bottom" Margin="8,0,0,0" />

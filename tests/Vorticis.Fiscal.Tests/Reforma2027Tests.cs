@@ -174,3 +174,21 @@ public class Reforma2027TelasTests(BancoDeTeste db) : IClassFixture<BancoDeTeste
         Assert.DoesNotContain(tela.Lista, l => l.Codigo == "200097");
     }
 }
+
+/// <summary>Tabelas de códigos (opções da lupa/F4) do lançamento manual das notas.</summary>
+public class TabelasDeCodigosTests
+{
+    [Fact]
+    public async Task Tabelas_trazem_origem_cst_csosn_ipi_pis_cofins_e_unidades()
+    {
+        var t = new Vorticis.Fiscal.Comum.ServicoTabelasFiscais(new Vorticis.Fiscal.Comum.ParametrosEmbutidos.Provedor());
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Equal(9, (await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Origem, ct)).Count);
+        Assert.Contains(await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstIcms, ct), c => c.Codigo == "60");
+        Assert.Contains(await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Csosn, ct), c => c.Codigo == "102");
+        Assert.Contains(await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstIpi, ct), c => c.Codigo == "50");
+        Assert.Contains(await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstPisCofins, ct), c => c.Codigo == "70");
+        Assert.Contains(await t.ListarAsync(Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Unidade, ct), c => c.Codigo == "KG");
+        Assert.Empty(await t.ListarAsync("inexistente", ct));
+    }
+}

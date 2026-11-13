@@ -165,6 +165,29 @@ public sealed class ModuloFiscal : IModuloDesktop
                 foreach (var g in regras.Valor) { Usar(g.CfopOrigem, "Regras fiscais"); Usar(g.CfopDestino, "Regras fiscais"); }
             return usos.OrderBy(u => u.Key, StringComparer.Ordinal).Select(u => new Vorticis.Desktop.Comum.Views.ItemPesquisa(u.Key, "cadastrado em " + string.Join(" e ", u.Value))).ToList();
         });
+        // Opções dos campos de código da nota (tabelas oficiais do parâmetro TABELAS_FISCAIS e da reforma tributária): lupa ou F4.
+        void Tabela(string fonte, params string[] tabelas) => Vorticis.Desktop.Comum.Views.Pesquisa.Registrar(fonte, async (ctx, ct) =>
+        {
+            if (ctx.App is not { } app) return [];
+            var l = new List<Vorticis.Desktop.Comum.Views.ItemPesquisa>();
+            foreach (var t in tabelas)
+                l.AddRange((await app.Fiscal().Tabelas.ListarAsync(t, ct)).Select(c => new Vorticis.Desktop.Comum.Views.ItemPesquisa(c.Codigo, c.Descricao)));
+            return l;
+        });
+        Tabela("Origem", Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Origem);
+        Tabela("CstIcms", Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstIcms, Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Csosn);
+        Tabela("CstIpi", Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstIpi);
+        Tabela("CstPisCofins", Vorticis.Fiscal.Comum.ServicoTabelasFiscais.CstPisCofins);
+        Tabela("Unidade", Vorticis.Fiscal.Comum.ServicoTabelasFiscais.Unidade);
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("CstIbsCbs", async (ctx, ct) =>
+            ctx.App is { } app
+                ? (await app.Fiscal().Classificacoes.CstsAsync(ct)).Select(c => new Vorticis.Desktop.Comum.Views.ItemPesquisa(c.Codigo, c.Descricao)).ToList()
+                : []);
+        Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("ClassTrib", async (ctx, ct) =>
+            ctx.App is { } app
+                ? (await app.Fiscal().Classificacoes.ListarAsync(somenteAtivas: true, ct)).Select(c => new Vorticis.Desktop.Comum.Views.ItemPesquisa(c.Codigo,
+                    $"CST {c.Cst} · {c.Descricao}" + (c.ReducaoPct > 0 ? $" · redução de {c.ReducaoPct:0.##}%" : "") + (c.GeraCredito ? "" : " · sem crédito"))).ToList()
+                : []);
         Vorticis.Desktop.Comum.Views.Pesquisa.Registrar("CodigoAjuste", async (ctx, ct) =>
             ctx.App is { } app && ctx.EmpresaId is { } e && ctx.Sessao is { } s
             && await app.Fiscal().OutrosLancamentosEfd.CodigosAjusteAsync(e, null, s.Id, ct) is { Sucesso: true } r

@@ -1,0 +1,426 @@
+{
+ "vigencia_inicio": "2000-01-01",
+ "fundamento": "Tabelas de códigos da NF-e e do SPED: origem da mercadoria, CST do ICMS (Convênio SINIEF s/nº de 1970, Ajuste SINIEF), CSOSN, CST do IPI e CST do PIS/COFINS (IN RFB e Guia da EFD-Contribuições)",
+ "tabelas": {
+  "origem": [
+   {
+    "codigo": "0",
+    "descricao": "Nacional, exceto as indicadas nos códigos 3, 4, 5 e 8"
+   },
+   {
+    "codigo": "1",
+    "descricao": "Estrangeira – importação direta, exceto a indicada no código 6"
+   },
+   {
+    "codigo": "2",
+    "descricao": "Estrangeira – adquirida no mercado interno, exceto a indicada no código 7"
+   },
+   {
+    "codigo": "3",
+    "descricao": "Nacional, com conteúdo de importação superior a 40% e inferior ou igual a 70%"
+   },
+   {
+    "codigo": "4",
+    "descricao": "Nacional, produzida conforme os processos produtivos básicos"
+   },
+   {
+    "codigo": "5",
+    "descricao": "Nacional, com conteúdo de importação inferior ou igual a 40%"
+   },
+   {
+    "codigo": "6",
+    "descricao": "Estrangeira – importação direta, sem similar nacional, constante da lista da CAMEX"
+   },
+   {
+    "codigo": "7",
+    "descricao": "Estrangeira – adquirida no mercado interno, sem similar nacional, constante da lista da CAMEX"
+   },
+   {
+    "codigo": "8",
+    "descricao": "Nacional, com conteúdo de importação superior a 70%"
+   }
+  ],
+  "cst_icms": [
+   {
+    "codigo": "00",
+    "descricao": "Tributada integralmente"
+   },
+   {
+    "codigo": "02",
+    "descricao": "Tributação monofásica própria sobre combustíveis"
+   },
+   {
+    "codigo": "10",
+    "descricao": "Tributada e com cobrança do ICMS por substituição tributária"
+   },
+   {
+    "codigo": "15",
+    "descricao": "Tributação monofásica própria e com responsabilidade pela retenção sobre combustíveis"
+   },
+   {
+    "codigo": "20",
+    "descricao": "Com redução de base de cálculo"
+   },
+   {
+    "codigo": "30",
+    "descricao": "Isenta ou não tributada e com cobrança do ICMS por substituição tributária"
+   },
+   {
+    "codigo": "40",
+    "descricao": "Isenta"
+   },
+   {
+    "codigo": "41",
+    "descricao": "Não tributada"
+   },
+   {
+    "codigo": "50",
+    "descricao": "Suspensão"
+   },
+   {
+    "codigo": "51",
+    "descricao": "Diferimento"
+   },
+   {
+    "codigo": "53",
+    "descricao": "Tributação monofásica sobre combustíveis com recolhimento diferido"
+   },
+   {
+    "codigo": "60",
+    "descricao": "ICMS cobrado anteriormente por substituição tributária"
+   },
+   {
+    "codigo": "61",
+    "descricao": "Tributação monofásica sobre combustíveis cobrada anteriormente"
+   },
+   {
+    "codigo": "70",
+    "descricao": "Com redução de base de cálculo e cobrança do ICMS por substituição tributária"
+   },
+   {
+    "codigo": "90",
+    "descricao": "Outras"
+   }
+  ],
+  "csosn": [
+   {
+    "codigo": "101",
+    "descricao": "Simples Nacional – tributada com permissão de crédito"
+   },
+   {
+    "codigo": "102",
+    "descricao": "Simples Nacional – tributada sem permissão de crédito"
+   },
+   {
+    "codigo": "103",
+    "descricao": "Simples Nacional – isenção do ICMS para faixa de receita bruta"
+   },
+   {
+    "codigo": "201",
+    "descricao": "Simples Nacional – com permissão de crédito e com cobrança do ICMS por ST"
+   },
+   {
+    "codigo": "202",
+    "descricao": "Simples Nacional – sem permissão de crédito e com cobrança do ICMS por ST"
+   },
+   {
+    "codigo": "203",
+    "descricao": "Simples Nacional – isenção para faixa de receita bruta e com cobrança do ICMS por ST"
+   },
+   {
+    "codigo": "300",
+    "descricao": "Simples Nacional – imune"
+   },
+   {
+    "codigo": "400",
+    "descricao": "Simples Nacional – não tributada"
+   },
+   {
+    "codigo": "500",
+    "descricao": "Simples Nacional – ICMS cobrado anteriormente por ST ou por antecipação"
+   },
+   {
+    "codigo": "900",
+    "descricao": "Simples Nacional – outros"
+   }
+  ],
+  "cst_ipi": [
+   {
+    "codigo": "00",
+    "descricao": "Entrada com recuperação de crédito"
+   },
+   {
+    "codigo": "01",
+    "descricao": "Entrada tributada com alíquota zero"
+   },
+   {
+    "codigo": "02",
+    "descricao": "Entrada isenta"
+   },
+   {
+    "codigo": "03",
+    "descricao": "Entrada não tributada"
+   },
+   {
+    "codigo": "04",
+    "descricao": "Entrada imune"
+   },
+   {
+    "codigo": "05",
+    "descricao": "Entrada com suspensão"
+   },
+   {
+    "codigo": "49",
+    "descricao": "Outras entradas"
+   },
+   {
+    "codigo": "50",
+    "descricao": "Saída tributada"
+   },
+   {
+    "codigo": "51",
+    "descricao": "Saída tributada com alíquota zero"
+   },
+   {
+    "codigo": "52",
+    "descricao": "Saída isenta"
+   },
+   {
+    "codigo": "53",
+    "descricao": "Saída não tributada"
+   },
+   {
+    "codigo": "54",
+    "descricao": "Saída imune"
+   },
+   {
+    "codigo": "55",
+    "descricao": "Saída com suspensão"
+   },
+   {
+    "codigo": "99",
+    "descricao": "Outras saídas"
+   }
+  ],
+  "cst_pis_cofins": [
+   {
+    "codigo": "01",
+    "descricao": "Operação tributável com alíquota básica"
+   },
+   {
+    "codigo": "02",
+    "descricao": "Operação tributável com alíquota diferenciada"
+   },
+   {
+    "codigo": "03",
+    "descricao": "Operação tributável com alíquota por unidade de medida de produto"
+   },
+   {
+    "codigo": "04",
+    "descricao": "Operação tributável monofásica – revenda a alíquota zero"
+   },
+   {
+    "codigo": "05",
+    "descricao": "Operação tributável por substituição tributária"
+   },
+   {
+    "codigo": "06",
+    "descricao": "Operação tributável a alíquota zero"
+   },
+   {
+    "codigo": "07",
+    "descricao": "Operação isenta da contribuição"
+   },
+   {
+    "codigo": "08",
+    "descricao": "Operação sem incidência da contribuição"
+   },
+   {
+    "codigo": "09",
+    "descricao": "Operação com suspensão da contribuição"
+   },
+   {
+    "codigo": "49",
+    "descricao": "Outras operações de saída"
+   },
+   {
+    "codigo": "50",
+    "descricao": "Crédito vinculado exclusivamente a receita tributada no mercado interno"
+   },
+   {
+    "codigo": "51",
+    "descricao": "Crédito vinculado exclusivamente a receita não tributada no mercado interno"
+   },
+   {
+    "codigo": "52",
+    "descricao": "Crédito vinculado exclusivamente a receita de exportação"
+   },
+   {
+    "codigo": "53",
+    "descricao": "Crédito vinculado a receitas tributadas e não tributadas no mercado interno"
+   },
+   {
+    "codigo": "54",
+    "descricao": "Crédito vinculado a receitas tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "55",
+    "descricao": "Crédito vinculado a receitas não tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "56",
+    "descricao": "Crédito vinculado a receitas tributadas e não tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "60",
+    "descricao": "Crédito presumido – aquisição vinculada exclusivamente a receita tributada no mercado interno"
+   },
+   {
+    "codigo": "61",
+    "descricao": "Crédito presumido – aquisição vinculada exclusivamente a receita não tributada no mercado interno"
+   },
+   {
+    "codigo": "62",
+    "descricao": "Crédito presumido – aquisição vinculada exclusivamente a receita de exportação"
+   },
+   {
+    "codigo": "63",
+    "descricao": "Crédito presumido – aquisição vinculada a receitas tributadas e não tributadas no mercado interno"
+   },
+   {
+    "codigo": "64",
+    "descricao": "Crédito presumido – aquisição vinculada a receitas tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "65",
+    "descricao": "Crédito presumido – aquisição vinculada a receitas não tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "66",
+    "descricao": "Crédito presumido – aquisição vinculada a receitas tributadas e não tributadas no mercado interno e de exportação"
+   },
+   {
+    "codigo": "67",
+    "descricao": "Crédito presumido – outras operações"
+   },
+   {
+    "codigo": "70",
+    "descricao": "Operação de aquisição sem direito a crédito"
+   },
+   {
+    "codigo": "71",
+    "descricao": "Operação de aquisição com isenção"
+   },
+   {
+    "codigo": "72",
+    "descricao": "Operação de aquisição com suspensão"
+   },
+   {
+    "codigo": "73",
+    "descricao": "Operação de aquisição a alíquota zero"
+   },
+   {
+    "codigo": "74",
+    "descricao": "Operação de aquisição sem incidência da contribuição"
+   },
+   {
+    "codigo": "75",
+    "descricao": "Operação de aquisição por substituição tributária"
+   },
+   {
+    "codigo": "98",
+    "descricao": "Outras operações de entrada"
+   },
+   {
+    "codigo": "99",
+    "descricao": "Outras operações"
+   }
+  ],
+  "unidade": [
+   {
+    "codigo": "UN",
+    "descricao": "Unidade"
+   },
+   {
+    "codigo": "PC",
+    "descricao": "Peça"
+   },
+   {
+    "codigo": "CX",
+    "descricao": "Caixa"
+   },
+   {
+    "codigo": "KG",
+    "descricao": "Quilograma"
+   },
+   {
+    "codigo": "G",
+    "descricao": "Grama"
+   },
+   {
+    "codigo": "T",
+    "descricao": "Tonelada"
+   },
+   {
+    "codigo": "L",
+    "descricao": "Litro"
+   },
+   {
+    "codigo": "ML",
+    "descricao": "Mililitro"
+   },
+   {
+    "codigo": "M",
+    "descricao": "Metro"
+   },
+   {
+    "codigo": "M2",
+    "descricao": "Metro quadrado"
+   },
+   {
+    "codigo": "M3",
+    "descricao": "Metro cúbico"
+   },
+   {
+    "codigo": "PAR",
+    "descricao": "Par"
+   },
+   {
+    "codigo": "DZ",
+    "descricao": "Dúzia"
+   },
+   {
+    "codigo": "FD",
+    "descricao": "Fardo"
+   },
+   {
+    "codigo": "PCT",
+    "descricao": "Pacote"
+   },
+   {
+    "codigo": "RL",
+    "descricao": "Rolo"
+   },
+   {
+    "codigo": "SC",
+    "descricao": "Saco"
+   },
+   {
+    "codigo": "KIT",
+    "descricao": "Kit"
+   },
+   {
+    "codigo": "JG",
+    "descricao": "Jogo"
+   },
+   {
+    "codigo": "H",
+    "descricao": "Hora"
+   },
+   {
+    "codigo": "SV",
+    "descricao": "Serviço"
+   }
+  ]
+ }
+}

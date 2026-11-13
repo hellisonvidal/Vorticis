@@ -58,6 +58,7 @@ public sealed class ServicosFiscais
         NotasPorCentro = new ServicoNotasPorCentro(ds, autorizador);
         Reforma = new Reforma.ServicoReformaTributaria(ds, Parametros, autorizador);
         Classificacoes = new Reforma.ServicoClassificacaoTributaria(ds, Parametros, autorizador);
+        Tabelas = new ServicoTabelasFiscais(Parametros);
         SimplesReforma = new Reforma.ServicoSimplesReforma(Simples, Reforma, repoSimples, repoDocumentos, Parametros, autorizador);
         DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
@@ -96,6 +97,7 @@ public sealed class ServicosFiscais
     public ServicoNotasPorCentro NotasPorCentro { get; }
     public Reforma.ServicoReformaTributaria Reforma { get; }
     public Reforma.ServicoClassificacaoTributaria Classificacoes { get; }
+    public ServicoTabelasFiscais Tabelas { get; }
     public Reforma.ServicoSimplesReforma SimplesReforma { get; }
     public Dctf.ServicoDctfWeb DctfWeb { get; }
     public ServicoOutrosLancamentosEfd OutrosLancamentosEfd { get; }

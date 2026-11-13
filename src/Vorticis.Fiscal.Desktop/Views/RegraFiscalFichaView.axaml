@@ -23,21 +23,21 @@
             <TextBox c:Pesquisa.Fonte="Participante" Text="{Binding Participante}" Watermark="Fornecedor/cliente (nome ou CNPJ)" Width="240" Margin="0,0,6,0" />
             <TextBox c:Pesquisa.Fonte="Ncm" Text="{Binding Ncm}" Watermark="NCM ou início" Width="120" Margin="0,0,6,0" />
             <TextBox c:Pesquisa.Fonte="Produto" Text="{Binding Produto}" Watermark="Produto (código ou descrição)" Width="220" Margin="0,0,6,0" />
-            <TextBox Text="{Binding CstOrigem}" Watermark="CST/CSOSN do XML" Width="130" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="CstIcms" Text="{Binding CstOrigem}" Watermark="CST/CSOSN do XML" Width="130" Margin="0,0,6,0" />
             <ComboBox ItemsSource="{x:Static vm:RegrasFiscaisViewModel.Destinos}" SelectedIndex="{Binding Destino}" Width="150" ToolTip.Tip="Só para regras de saída" />
           </WrapPanel>
           <TextBlock Grid.Row="2" Text="Então" VerticalAlignment="Center" />
           <WrapPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5">
             <TextBox c:Pesquisa.Fonte="Cfop" Text="{Binding CfopDestino}" Watermark="CFOP a usar" Width="110" Margin="0,0,6,0" />
-            <TextBox Text="{Binding CstDestino}" Watermark="CST/CSOSN a usar" Width="130" Margin="0,0,14,0" />
+            <TextBox c:Pesquisa.Fonte="CstIcms" Text="{Binding CstDestino}" Watermark="CST/CSOSN a usar" Width="130" Margin="0,0,14,0" />
             <CheckBox Content="Credita ICMS" IsChecked="{Binding CreditaIcms}" />
             <CheckBox Content="Credita IPI" IsChecked="{Binding CreditaIpi}" />
             <CheckBox Content="Credita PIS" IsChecked="{Binding CreditaPis}" />
             <CheckBox Content="Credita COFINS" IsChecked="{Binding CreditaCofins}" />
             <CheckBox Content="Credita IBS/CBS" IsChecked="{Binding CreditaIbsCbs}" Margin="0,0,14,0"
                       ToolTip.Tip="Reforma tributária: o IBS e a CBS do item entram como crédito (desmarque para uso e consumo pessoal)." />
-            <TextBox Text="{Binding CstIbsCbs}" Watermark="CST IBS/CBS" Width="110" MaxLength="3" Margin="0,0,6,0" />
-            <TextBox Text="{Binding ClassTrib}" Watermark="Classificação (cClassTrib)" Width="180" MaxLength="6" />
+            <TextBox c:Pesquisa.Fonte="CstIbsCbs" Text="{Binding CstIbsCbs}" Watermark="CST IBS/CBS" Width="110" MaxLength="3" Margin="0,0,6,0" />
+            <TextBox c:Pesquisa.Fonte="ClassTrib" Text="{Binding ClassTrib}" Watermark="Classificação (cClassTrib)" Width="180" MaxLength="6" />
           </WrapPanel>
           <TextBlock Grid.Row="3" Text="Contabilização" VerticalAlignment="Center" />
           <WrapPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="5">
