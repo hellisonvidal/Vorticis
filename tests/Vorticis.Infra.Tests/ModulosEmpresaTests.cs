@@ -52,4 +52,23 @@ public class ModulosEmpresaTests(BancoDeTeste db) : IClassFixture<BancoDeTeste>
         Assert.Equal(ModulosEmpresa.Folha, (await db.App.Empresas.ObterAsync(soContabil, ct))!.Modulos);
         Assert.False((await db.App.Empresas.AlterarAsync(alt with { Modulos = ModulosEmpresa.Nenhum }, ct)).Sucesso);
     }
+
+    [Fact]
+    public async Task Seletores_de_empresa_listam_em_ordem_crescente_de_codigo_e_nao_por_nome()
+    {
+        BancoDeTeste.ExigirBanco();
+        var ct = TestContext.Current.CancellationToken;
+        var adm = new SessaoUsuario(await db.AdminAsync(), "admin_teste", "Admin de Teste", true, false);
+        // o nome da primeira cadastrada vem DEPOIS no alfabeto: a ordem do seletor tem de seguir o código (id), não o nome
+        var r1 = await db.App.Empresas.CadastrarAsync(Nova("04252011000110", ModulosEmpresa.Todos) with { RazaoSocial = "ZZZ Ordem Primeira LTDA" }, ct);
+        var r2 = await db.App.Empresas.CadastrarAsync(Nova("07526557000100", ModulosEmpresa.Todos) with { RazaoSocial = "AAA Ordem Segunda LTDA" }, ct);
+        Assert.True(r1.Sucesso && r2.Sucesso, string.Join("; ", r1.Erros.Concat(r2.Erros)));
+        Assert.True(r1.Valor < r2.Valor);
+
+        static void Crescente(IReadOnlyList<long> ids) => Assert.Equal(ids.OrderBy(x => x), ids);
+        var doModulo = (await db.App.Usuarios.EmpresasDoModuloAsync(adm, ModulosEmpresa.Fiscal, ct)).Select(e => e.Id).ToList();
+        Assert.True(doModulo.IndexOf(r1.Valor) < doModulo.IndexOf(r2.Valor));
+        Crescente(doModulo);
+        Crescente((await db.App.Usuarios.EmpresasPermitidasAsync(adm, ct)).Select(e => e.Id).ToList());
+    }
 }

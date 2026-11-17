@@ -259,7 +259,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
               FROM core.usuario_empresa ue
               JOIN core.empresa e ON e.id = ue.empresa_id
               JOIN core.perfil p ON p.id = ue.perfil_id
-             WHERE ue.usuario_id = @u ORDER BY e.razao_social
+             WHERE ue.usuario_id = @u ORDER BY e.id
             """).Com("u", usuarioId);
         var res = new List<AcessoEmpresa>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -275,7 +275,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
               LEFT JOIN core.usuario_empresa ue ON ue.empresa_id = e.id AND ue.usuario_id = @u
               LEFT JOIN core.perfil p ON p.id = ue.perfil_id
              WHERE e.ativa AND (@adm OR ue.perfil_id IS NOT NULL)
-             ORDER BY e.razao_social
+             ORDER BY e.id
             """).Com("u", usuarioId).Com("adm", administrador);
         var res = new List<EmpresaPermitida>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -298,7 +298,7 @@ public sealed class RepositorioUsuarios(NpgsqlDataSource ds) : IRepositorioUsuar
                AND (@adm OR EXISTS (SELECT 1 FROM core.usuario u WHERE u.id = @u AND (u.modulos IS NULL OR u.modulos & @bit <> 0)))
                -- no Escritório a escolha do topo é só o próprio escritório (as empresas dos clientes ficam no cadastro de clientes)
                AND (@bit <> 8 OR e.escritorio_proprio)
-             ORDER BY e.razao_social
+             ORDER BY e.id
             """).Com("u", usuarioId).Com("adm", administrador).Com("ativas", ativas).Com("bit", (short)modulo);
         var res = new List<EmpresaPermitida>();
         await using var r = await cmd.ExecuteReaderAsync(ct);

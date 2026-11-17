@@ -227,7 +227,7 @@ public sealed class RepositorioEmpresa(NpgsqlDataSource ds) : IRepositorioEmpres
 
     public async Task<IReadOnlyList<EmpresaResumo>> ListarAsync(CancellationToken ct)
     {
-        await using var cmd = ds.CreateCommand("SELECT id, cnpj, razao_social FROM core.empresa WHERE ativa ORDER BY razao_social");
+        await using var cmd = ds.CreateCommand("SELECT id, cnpj, razao_social FROM core.empresa WHERE ativa ORDER BY id");
         var res = new List<EmpresaResumo>();
         await using var r = await cmd.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct)) res.Add(new EmpresaResumo(r.GetInt64(0), r.GetString(1), r.GetString(2)));
