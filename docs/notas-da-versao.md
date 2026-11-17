@@ -1,3 +1,25 @@
+# Vorticis 1.4.1
+
+## Novidades desta versão
+
+### Fiscal: Simples Nacional a partir de 2027
+- **Opção IBS/CBS do Simples:** registre, para cada semestre, se a empresa recolhe o IBS e a CBS dentro do DAS ou pelo regime regular (com vigência, data do pedido e protocolo). O programa avisa quando o pedido está fora da janela; os prazos de opção e cancelamento entram no calendário de obrigações.
+- **DAS a partir de 01/2027:** a CBS ocupa o lugar do PIS e da COFINS e aparece o IBS na memória de cálculo. No regime regular, a parte do IBS e da CBS sai do DAS e vai para *Apuração › IBS e CBS*.
+- **Limites:** sublimite de R$ 3,6 milhões também para o IBS, limite de exportação, excesso de até 20% e acima de 20%, e limite de início de atividade, com alertas na apuração.
+- **Créditos de IBS/CBS das entradas** separados por fornecedores do Simples.
+- **Conferência do PGDAS-D:** receitas da competência separadas e o IBS/CBS das notas, para comparar com o PGDAS-D pré-preenchido. A partir de 2027 a DEFIS passa a ser a informação anual dentro do PGDAS-D.
+- **Atenção:** os percentuais da repartição de 2027 por anexo e faixa estão nos parâmetros legais (SIMPLES_NACIONAL, vigência 2027) como ponto de partida; confira com a Resolução CGSN 190/2026 e ajuste na tela de parâmetros legais.
+
+### Em todos os módulos
+- O seletor de empresas lista sempre em ordem crescente de código (0001, 0002...), como no Escritório.
+
+### Contábil
+- **Plano de contas em outra máscara:** os zeros à esquerda seguem sempre a largura de cada nível da máscara, sem mensagem de aviso.
+
+Para atualizar, rode o **Setup-Vorticis-1.4.1.exe** por cima da versão instalada: os dados são preservados.
+
+---
+
 # Vorticis 1.4.0
 
 ## Novidades desta versão
