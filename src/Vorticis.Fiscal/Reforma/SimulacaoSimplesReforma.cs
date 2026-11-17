@@ -42,7 +42,8 @@ public sealed record LinhaSimulacao(int Ano, string Fase, decimal DasAtual, deci
 }
 
 public sealed record SimulacaoSimples(BaseSimulacao Base, AnexoSimples Anexo, int Faixa, decimal AliquotaEfetiva, decimal AliquotaAplicada, decimal DasAnual,
-                                      decimal PisCofinsAnual, decimal IcmsIssAnual, IReadOnlyList<LinhaSimulacao> Linhas, CronogramaReforma Cronograma, IReadOnlyList<string> Avisos)
+                                      decimal PisCofinsAnual, decimal IcmsIssAnual, IReadOnlyList<LinhaSimulacao> Linhas, CronogramaReforma Cronograma, IReadOnlyList<string> Avisos,
+                                      OpcaoIbsCbs? OpcaoAtual = null)
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
     private static string P(decimal? v) => v is { } x ? x.ToString("N2", PtBr) + "%" : "—";
@@ -63,6 +64,7 @@ public sealed record SimulacaoSimples(BaseSimulacao Base, AnexoSimples Anexo, in
                 new(["Parte do DAS que é ICMS e ISS", Formato.Moeda(IcmsIssAnual)]),
                 new(["Peso de PIS, COFINS, ICMS e ISS no DAS", P(ParteConsumoNoDas)]),
                 new(["Redução de alíquota considerada na opção fora do DAS", P(Base.ReducaoAliquota)]),
+                new(["Opção da empresa hoje (Cadastros › Opção IBS/CBS do Simples)", OpcaoAtual?.Rotulo() ?? "—"]),
             ]);
         var linhas = Linhas.Select(l => new LinhaRelatorio([l.Ano.ToString(CultureInfo.InvariantCulture), l.Fase, l.DasAtual, l.DasDentro, l.DiferencaDentro, P(LinhaSimulacao.Percentual(l.DiferencaDentro, l.DasAtual)),
             l.DasFora, l.CbsFora, l.IbsFora, l.TotalFora, l.DiferencaFora, P(LinhaSimulacao.Percentual(l.DiferencaFora, l.DasAtual)), l.CreditoClienteDentro, l.CreditoClienteFora, l.Melhor])).ToList();

@@ -21,6 +21,8 @@ public static class Telas
     public const string IbsCbs = "apuracaoibscbs";
     public const string ClassificacaoTributaria = "fiscal.classificacaotributaria";
     public const string SimplesReforma = "simplesreforma";
+    public const string OpcaoIbsCbs = "opcaoibscbs";
+    public const string ConferenciaPgdas = "conferenciapgdas";
     public const string NotasPorCentro = "relnotascentrocusto";
     public const string FechamentoFiscal = "fiscal.fechamento";
     public const string AjustesEntrada = "fiscal.ajustes.entrada";

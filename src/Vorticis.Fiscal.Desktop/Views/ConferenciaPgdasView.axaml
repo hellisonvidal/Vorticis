@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.ConferenciaPgdasView"
+             x:DataType="vm:ConferenciaPgdasViewModel">
+  <!-- Relatórios › Livros e apuração › Conferência do PGDAS-D -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Classes="titulo" Text="Conferência do PGDAS-D" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <TextBlock Text="Competência" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <CalendarDatePicker SelectedDate="{Binding CompetenciaData}" Width="140" Margin="0,0,10,0" />
+        <TextBlock Text="Serviços" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <ComboBox ItemsSource="{x:Static vm:ApuracaoSimplesViewModel.RotulosAtividadesServicos}" SelectedIndex="{Binding AtividadeServicos}" Width="300" Margin="0,0,10,0" />
+        <Button Content="Conferir" Command="{Binding ConferirCommand}" Classes="accent" Margin="0,0,10,0" />
+        <c:BarraExportacaoView />
+      </WrapPanel>
+      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
+                 Text="Receitas do mês pelas notas emitidas, por anexo e atividade, com ou sem substituição tributária, ISS retido e exportação, e o IBS e a CBS dos documentos. Compare com o PGDAS-D pré-preenchido pela Receita (até o dia 10)." />
+    </StackPanel>
+    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+    <ScrollViewer>
+      <ItemsControl ItemsSource="{Binding Exibidas}" />
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

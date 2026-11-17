@@ -52,7 +52,8 @@ public class ApuracaoSimplesIntegracaoTests(BancoDeTeste db) : IClassFixture<Ban
         Assert.Equal(325_000m, fev.Rbt12);
 
         // parâmetro legal semeado em core.parametro_legal
-        Assert.Equal(1L, await db.EscalarAsync<long>("SELECT count(*) FROM core.parametro_legal WHERE chave = 'SIMPLES_NACIONAL'"));
+        // (duas vigências: a de 2018 semeada na primeira consulta e a de 2027 da migração 102)
+        Assert.Equal(2L, await db.EscalarAsync<long>("SELECT count(*) FROM core.parametro_legal WHERE chave = 'SIMPLES_NACIONAL'"));
 
         // sem receita; sem permissão
         Assert.False((await svc.CalcularAsync(empresa, jan, [], null, null, adm, ct)).Sucesso);

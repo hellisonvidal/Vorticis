@@ -11,8 +11,18 @@ public sealed record FaixaSimples(decimal Ate, decimal Aliquota, decimal Deduzir
 /// <summary>Tabelas do Simples Nacional (LC 123/2006) por vigência; os valores vêm dos parâmetros legais, nunca do código.</summary>
 public sealed record TabelaSimples(
     DateOnly VigenciaInicio, string Fundamento, decimal LimiteRbt12, decimal SublimiteIcmsIss, decimal LimiteFatorR, decimal MinimoDas,
-    IReadOnlyDictionary<AnexoSimples, IReadOnlyList<FaixaSimples>> Anexos)
+    IReadOnlyDictionary<AnexoSimples, IReadOnlyList<FaixaSimples>> Anexos,
+    decimal? LimiteExportacao = null, decimal? ExcessoPct = null, decimal? LimiteInicioAtividadeMensal = null, bool SublimiteIncluiIbs = false,
+    bool ReceitaExcluiIbsCbsRegimeRegular = false, bool ReparticaoAConferir = false, string? Observacao = null)
 {
+    /// <summary>Tabela com a repartição do DAS pelo IBS e pela CBS (a partir de 2027).</summary>
+    public bool TemIbsCbs => Anexos.Values.SelectMany(f => f).Any(f => f.Reparticao.ContainsKey("CBS") || f.Reparticao.ContainsKey("IBS"));
+
+    /// <summary>Limite acima do qual o excesso do sublimite vale já (acima de 20%); sem a regra do excesso, é o próprio sublimite.</summary>
+    public decimal SublimiteComExcesso => SublimiteIcmsIss * (1m + (ExcessoPct ?? 0m) / 100m);
+
+    public decimal LimiteComExcesso => LimiteRbt12 * (1m + (ExcessoPct ?? 0m) / 100m);
+
     public FaixaSimples Faixa(AnexoSimples anexo, decimal rbt12)
     {
         var faixas = Anexos[anexo];
@@ -25,6 +35,9 @@ public sealed record TabelaSimples(
         var i = faixas.ToList().FindIndex(f => rbt12 <= f.Ate);
         return (i < 0 ? faixas.Count : i + 1);
     }
+
+    private static decimal? N(JsonElement e, string nome) => e.TryGetProperty(nome, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal() : null;
+    private static bool B(JsonElement e, string nome) => e.TryGetProperty(nome, out var v) && v.ValueKind == JsonValueKind.True;
 
     public static TabelaSimples Carregar(string json)
     {
@@ -40,6 +53,8 @@ public sealed record TabelaSimples(
         }
         return new TabelaSimples(DateOnly.ParseExact(r.GetProperty("vigencia_inicio").GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture),
             r.GetProperty("fundamento").GetString() ?? "", D(r.GetProperty("limite_rbt12")), D(r.GetProperty("sublimite_icms_iss")),
-            D(r.GetProperty("limite_fator_r")), D(r.GetProperty("minimo_das")), anexos);
+            D(r.GetProperty("limite_fator_r")), D(r.GetProperty("minimo_das")), anexos,
+            N(r, "limite_exportacao"), N(r, "excesso_pct"), N(r, "limite_inicio_atividade_mensal"), B(r, "sublimite_inclui_ibs"), B(r, "receita_exclui_ibscbs_regime_regular"),
+            B(r, "reparticao_a_conferir"), r.TryGetProperty("observacao", out var o) ? o.GetString() : null);
     }
 }

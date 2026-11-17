@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Vorticis.Domain.Seguranca;
 using Vorticis.Fiscal.Guias;
 using Vorticis.Fiscal.Relatorios;
+using Vorticis.Fiscal.Reforma;
 using Vorticis.Fiscal.Simples;
 
 namespace Vorticis.Fiscal.Desktop.ViewModels;
@@ -70,6 +71,8 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
     [ObservableProperty] private bool _novaExportacao;
     [ObservableProperty] private string _situacao = "";
     [ObservableProperty] private string _avisosTexto = "";
+    /// <summary>Opção do semestre da competência pelo IBS/CBS (cabeçalho da tela), de 2027 em diante.</summary>
+    [ObservableProperty] private string _opcaoTexto = "";
 
     public bool PodeApurar => Contexto.Pode(Permissao.FiscalApurar);
     public bool PodeContabilizar => _apuracaoId is not null && !_provisaoContabilizada;
@@ -83,6 +86,17 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
     {
         base.AtualizarPermissoes();
         OnPropertyChanged(nameof(PodeApurar));
+    }
+
+    /// <summary>Mostra no cabeçalho como a empresa recolhe o IBS/CBS no semestre da competência.</summary>
+    public Task CarregarAsync() => ExecutarAsync(async (app, empresa, usuario) => await AtualizarOpcaoAsync(app, empresa, usuario));
+
+    private async Task AtualizarOpcaoAsync(Vorticis.Infra.VorticisApp app, long empresa, long usuario)
+    {
+        var comp = Competencia();
+        if (comp < Vorticis.Fiscal.Reforma.ServicoOpcaoIbsCbs.PrimeiraVigencia) { OpcaoTexto = ""; return; }
+        var r = await app.Fiscal().Opcao.AtualAsync(empresa, comp, usuario);
+        OpcaoTexto = r.Sucesso ? $"IBS/CBS no semestre: {r.Valor.Rotulo()}" : "";
     }
 
     private DateOnly Competencia() => Data(CompetenciaData, _competencia) is var d ? new DateOnly(d.Year, d.Month, 1) : _competencia;
@@ -115,6 +129,7 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
     private Task SugerirAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var comp = Competencia();
+        await AtualizarOpcaoAsync(app, empresa, usuario);
         var r = await app.Fiscal().Simples.PrepararAsync(empresa, comp, AtividadesServicos[Math.Max(0, AtividadeServicos)], usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         Receitas.Clear();
@@ -159,6 +174,7 @@ public partial class ApuracaoSimplesViewModel(IContexto contexto) : RelatorioFis
     private Task CalcularAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
         var (rbt, folha) = Acumulados();
+        await AtualizarOpcaoAsync(app, empresa, usuario);
         var r = await app.Fiscal().Simples.CalcularAsync(empresa, Competencia(), ReceitasInformadas(), rbt, folha, usuario);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         MostrarCalculo(r.Valor);

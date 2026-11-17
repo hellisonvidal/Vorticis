@@ -105,6 +105,28 @@ public class ObrigacoesTests
     }
 
     [Fact]
+    public void Calendario_do_Simples_2027_tem_a_opcao_do_IBS_CBS_o_cancelamento_e_troca_a_DEFIS_pelo_PGDAS_D()
+    {
+        // 2º semestre: opção em março (até 31/03) e cancelamento até 31/05, a partir de 2027
+        Assert.Equal(D(2027, 3, 31), Def("SIMPLES_IBSCBS_S2").Vencimento(new(2027, 0)));
+        Assert.Equal(D(2027, 5, 31), Def("SIMPLES_IBSCBS_S2_CANC").Vencimento(new(2027, 0)));
+        // 1º semestre: setembro do ano anterior; o de 2027 tem prazos próprios da Res. CGSN 194/2026
+        Assert.Equal(D(2027, 9, 30), Def("SIMPLES_IBSCBS_S1").Vencimento(new(2027, 0)));
+        Assert.Equal(D(2026, 10, 30), Def("SIMPLES_IBSCBS_S1_2027").Vencimento(new(2026, 0)));
+        Assert.Equal(D(2026, 12, 20), Def("SIMPLES_IBSCBS_S1_2027_CANC").Vencimento(new(2026, 0)));
+        Assert.All(new[] { "SIMPLES_IBSCBS_S1", "SIMPLES_IBSCBS_S2", "SIMPLES_IBSCBS_S2_CANC" }, c => Assert.True(Def(c).AplicaA(RegimesObrigacao.Simples, false) && !Def(c).AplicaA(RegimesObrigacao.Presumido, true)));
+
+        var marco27 = CalendarioObrigacoes.Ocorrencias(CatalogoObrigacoes.Federais, D(2027, 3, 1), D(2027, 3, 31));
+        Assert.Contains(marco27, o => o.Definicao.Codigo == "SIMPLES_IBSCBS_S2" && o.Vencimento == D(2027, 3, 31));
+        Assert.Contains(marco27, o => o.Definicao.Codigo == "PGDASD_INFO_ANUAL" && o.Vencimento == D(2027, 3, 31));   // no lugar da DEFIS
+        Assert.DoesNotContain(marco27, o => o.Definicao.Codigo == "DEFIS");
+        Assert.DoesNotContain(CalendarioObrigacoes.Ocorrencias(CatalogoObrigacoes.Federais, D(2026, 3, 1), D(2026, 3, 31)), o => o.Definicao.Codigo is "PGDASD_INFO_ANUAL" or "SIMPLES_IBSCBS_S2");
+        Assert.Contains(CalendarioObrigacoes.Ocorrencias(CatalogoObrigacoes.Federais, D(2026, 3, 1), D(2026, 3, 31)), o => o.Definicao.Codigo == "DEFIS");     // até 2026 continua a DEFIS
+        Assert.Contains(CalendarioObrigacoes.Ocorrencias(CatalogoObrigacoes.Federais, D(2026, 10, 1), D(2026, 12, 31)), o => o.Definicao.Codigo == "SIMPLES_IBSCBS_S1_2027_CANC");
+        Assert.DoesNotContain(CalendarioObrigacoes.Ocorrencias(CatalogoObrigacoes.Federais, D(2027, 10, 1), D(2027, 12, 31)), o => o.Definicao.Codigo == "SIMPLES_IBSCBS_S1_2027_CANC");
+    }
+
+    [Fact]
     public void Filtros_por_regime_e_empregados()
     {
         Assert.True(Def("DAS").AplicaA(RegimesObrigacao.Simples, false));

@@ -64,6 +64,8 @@ public class FiscalViewsTests(SessaoHeadless headless)
                 (new DctfWebViewModel(ctx), new DctfWebView()),
                 (new ApuracaoIbsCbsViewModel(ctx), new ApuracaoIbsCbsView()),
                 (new SimplesReformaViewModel(ctx), new SimplesReformaView()),
+                (new OpcaoIbsCbsViewModel(ctx), new OpcaoIbsCbsView()),
+                (new ConferenciaPgdasViewModel(ctx), new ConferenciaPgdasView()),
                 (new NotasPorCentroViewModel(ctx), new NotasPorCentroView()),
             };
             foreach (var (vm, view) in pares)
@@ -85,6 +87,29 @@ public class FiscalViewsTests(SessaoHeadless headless)
             Dispatcher.UIThread.RunJobs();
             Assert.NotNull(jt.CaptureRenderedFrame());
             jt.Close();
+            await Task.CompletedTask;
+            return true;
+        }, TestContext.Current.CancellationToken));
+        Assert.True(concluido);
+    }
+
+    [Fact]
+    public async Task Opcao_IBS_CBS_do_Simples_abre_a_ficha_em_janela_com_as_duas_opcoes()
+    {
+        var concluido = await ForaDaSessao(headless.Sessao.Dispatch(async () =>
+        {
+            var vm = new OpcaoIbsCbsViewModel(new Vorticis.Fiscal.Desktop.MainViewModel());
+            Assert.Equal(["Dentro do DAS", "Regime regular (IBS/CBS fora do DAS)"], OpcaoIbsCbsViewModel.Opcoes);
+            Assert.Equal(1, vm.Vigencia!.Value.Day);
+            Assert.Contains(vm.Vigencia.Value.Month, new[] { 1, 7 });   // sempre o início de um semestre
+            vm.AbrirFichaCommand.Execute(null);                          // sem seleção: avisa e não abre
+            Assert.False(vm.FichaAberta);
+            Assert.Contains("Selecione", vm.Erros.Single());
+            vm.NovaCommand.Execute(null);
+            Assert.True(vm.FichaAberta);
+            Assert.Equal("Nova opção do IBS/CBS", vm.TituloFicha);
+            vm.FecharFicha();
+            Assert.False(vm.FichaAberta);
             await Task.CompletedTask;
             return true;
         }, TestContext.Current.CancellationToken));

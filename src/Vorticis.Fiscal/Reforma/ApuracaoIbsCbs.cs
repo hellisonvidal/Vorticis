@@ -65,8 +65,15 @@ public sealed record ApuracaoReformaEncerrada(long Id, DateOnly Competencia, dec
 /// </summary>
 public sealed record ApuracaoReforma(DateOnly Competencia, TotaisReforma Debitos, TotaisReforma Creditos, int SaidasSemGrupo, int EntradasSemGrupo,
                                      AliquotasReforma? Referencia, decimal SaldoAnteriorCbs = 0, decimal SaldoAnteriorIbs = 0,
-                                     ApuracaoReformaEncerrada? Encerrada = null, int ItensSemCredito = 0)
+                                     ApuracaoReformaEncerrada? Encerrada = null, int ItensSemCredito = 0, TotaisReforma? CreditosSimples = null,
+                                     OpcaoIbsCbs? OpcaoSimples = null)
 {
+    /// <summary>
+    /// Parte dos créditos das entradas que vem de fornecedores do Simples Nacional: o crédito é o IBS/CBS informado no documento (fornecedor com o IBS/CBS dentro do
+    /// DAS) ou o valor cheio (fornecedor no regime regular); a apuração toma sempre o que está no grupo IBS/CBS da nota.
+    /// </summary>
+    public TotaisReforma CreditosDeSimples => CreditosSimples ?? TotaisReforma.Zero;
+
     private decimal CreditoCbs => Creditos.Cbs + SaldoAnteriorCbs;
     private decimal CreditoIbs => Creditos.Ibs + SaldoAnteriorIbs;
     public decimal CbsAPagar => Math.Max(0, Debitos.Cbs - CreditoCbs);
@@ -91,6 +98,12 @@ public sealed record ApuracaoReforma(DateOnly Competencia, TotaisReforma Debitos
         if (ItensSemCredito > 0) a.Add($"{ItensSemCredito} item(ns) de entrada marcado(s) para não creditar IBS/CBS (uso e consumo pessoal ou classificação sem crédito).");
         if (CbsEsperada is { } e && Math.Abs(e - Debitos.Cbs) > 0.05m * Math.Max(1, e))
             a.Add($"CBS destacada nas saídas ({Formato.Moeda(Debitos.Cbs)}) diferente da esperada pela alíquota de referência de {Referencia!.Cbs:0.##}% ({Formato.Moeda(e)}): confira a classificação tributária dos itens (reduções, isenções, imunidades).");
+        if (OpcaoSimples == OpcaoIbsCbs.DentroDoDas)
+            a.Add("Empresa do Simples Nacional com o IBS e a CBS dentro do DAS neste semestre: as saídas já estão no DAS; esta apuração serve de conferência e não gera recolhimento separado. Para recolher fora do DAS, registre a opção em Cadastros › Opção IBS/CBS do Simples.");
+        else if (OpcaoSimples == OpcaoIbsCbs.RegimeRegular)
+            a.Add("Empresa do Simples Nacional no regime regular do IBS e da CBS neste semestre: o IBS e a CBS são recolhidos por esta apuração (débitos das saídas − créditos das entradas), fora do DAS.");
+        if (CreditosDeSimples.Notas > 0)
+            a.Add($"{CreditosDeSimples.Notas} nota(s) de entrada de fornecedores do Simples Nacional geram crédito de {Formato.Moeda(CreditosDeSimples.Cbs)} de CBS e {Formato.Moeda(CreditosDeSimples.Ibs)} de IBS, pelo valor informado no documento.");
         if (Referencia is null) a.Add($"Sem alíquotas de referência cadastradas para {Competencia.Year} nos parâmetros legais.");
         else if (Referencia.Observacao is { Length: > 0 } o) a.Add(o);
         if (Encerrada is { } enc) a.Add($"Apuração encerrada em {enc.EncerradaEm:dd/MM/yyyy HH:mm}{(enc.LancamentoId is not null ? ", com o lançamento de compensação na contabilidade" : "")}.");
@@ -108,6 +121,8 @@ public sealed record ApuracaoReforma(DateOnly Competencia, TotaisReforma Debitos
             new(["Saldo a recolher", CbsAPagar, null, null, IbsAPagar], true),
             new(["Saldo credor para o mês seguinte", CbsCredor, null, null, IbsCredor]),
         };
+        if (CreditosDeSimples.Notas > 0)
+            linhas.Insert(2, L($"      dos quais de fornecedores do Simples Nacional ({CreditosDeSimples.Notas} notas)", CreditosDeSimples.Cbs, CreditosDeSimples.IbsUf, CreditosDeSimples.IbsMun));
         if (ImpostoSeletivo > 0) linhas.Add(new(["Imposto Seletivo das saídas (a recolher, sem crédito)", ImpostoSeletivo, null, null, null], true));
         return new TabelaRelatorio($"IBS e CBS · {Competencia:MM/yyyy}",
             [new("Apuração", TipoColuna.Texto, 8), new("CBS", TipoColuna.Valor, 3), new("IBS UF", TipoColuna.Valor, 3), new("IBS município", TipoColuna.Valor, 3),
@@ -120,7 +135,7 @@ public sealed record ApuracaoReforma(DateOnly Competencia, TotaisReforma Debitos
 /// de XML com o grupo IBSCBS ou digitadas). Em 2026 a apuração é informativa; de 2027 em diante pode ser encerrada: o saldo credor passa ao mês
 /// seguinte e a compensação dos créditos com os débitos é lançada na contabilidade. FISCAL_APURAR (encerrar) ou FISCAL_RELATORIOS (consultar).
 /// </summary>
-public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFiscais parametros, Autorizador autorizador)
+public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFiscais parametros, Autorizador autorizador, ServicoOpcaoIbsCbs? opcaoSimples = null)
 {
     public const string Chave = "REFORMA_IBS_CBS";
 
@@ -147,6 +162,7 @@ public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFis
         var tot = new Dictionary<string, TotaisReforma>();
         var sem = new Dictionary<string, int>();
         var semCredito = 0;
+        var creditosSimples = TotaisReforma.Zero;
         await using (var cmd = ds.CreateCommand("""
             SELECT d.tipo_operacao,
                    count(DISTINCT d.id) FILTER (WHERE i.tem_ibscbs)::int,
@@ -156,7 +172,12 @@ public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFis
                    COALESCE(sum(i.vl_ibs_mun) FILTER (WHERE d.tipo_operacao = 'S' OR i.credita_ibscbs), 0),
                    (count(DISTINCT d.id) - count(DISTINCT d.id) FILTER (WHERE i.tem_ibscbs))::int,
                    COALESCE(sum(i.vl_is), 0),
-                   count(*) FILTER (WHERE d.tipo_operacao = 'E' AND i.tem_ibscbs AND NOT i.credita_ibscbs)::int
+                   count(*) FILTER (WHERE d.tipo_operacao = 'E' AND i.tem_ibscbs AND NOT i.credita_ibscbs)::int,
+                   COALESCE(sum(i.vl_bc_ibscbs) FILTER (WHERE d.tipo_operacao = 'E' AND i.credita_ibscbs AND d.emitente_simples), 0),
+                   COALESCE(sum(i.vl_cbs) FILTER (WHERE d.tipo_operacao = 'E' AND i.credita_ibscbs AND d.emitente_simples), 0),
+                   COALESCE(sum(i.vl_ibs_uf) FILTER (WHERE d.tipo_operacao = 'E' AND i.credita_ibscbs AND d.emitente_simples), 0),
+                   COALESCE(sum(i.vl_ibs_mun) FILTER (WHERE d.tipo_operacao = 'E' AND i.credita_ibscbs AND d.emitente_simples), 0),
+                   count(DISTINCT d.id) FILTER (WHERE d.tipo_operacao = 'E' AND i.tem_ibscbs AND i.credita_ibscbs AND d.emitente_simples)::int
               FROM fiscal.documento d JOIN fiscal.documento_item i ON i.documento_id = d.id
              WHERE d.empresa_id = @e AND d.situacao = 'AUTORIZADA' AND date_trunc('month', d.data_entrada_saida) = @m
              GROUP BY d.tipo_operacao
@@ -167,7 +188,7 @@ public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFis
                 var saida = r.GetString(0) == "S";
                 tot[r.GetString(0)] = new TotaisReforma(r.GetInt32(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4), r.GetDecimal(5), saida ? r.GetDecimal(7) : 0);
                 sem[r.GetString(0)] = r.GetInt32(6);
-                if (!saida) semCredito = r.GetInt32(8);
+                if (!saida) { semCredito = r.GetInt32(8); creditosSimples = new TotaisReforma(r.GetInt32(13), r.GetDecimal(9), r.GetDecimal(10), r.GetDecimal(11), r.GetDecimal(12)); }
             }
         var (antCbs, antIbs) = (0m, 0m);
         await using (var cmd = ds.CreateCommand("""
@@ -176,7 +197,19 @@ public sealed class ServicoReformaTributaria(NpgsqlDataSource ds, IParametrosFis
         await using (var r = await cmd.ExecuteReaderAsync(ct))
             if (await r.ReadAsync(ct)) (antCbs, antIbs) = (r.GetDecimal(0), r.GetDecimal(1));
         return new ApuracaoReforma(mes, tot.GetValueOrDefault("S", TotaisReforma.Zero), tot.GetValueOrDefault("E", TotaisReforma.Zero),
-            sem.GetValueOrDefault("S"), sem.GetValueOrDefault("E"), await AliquotasDoAnoAsync(mes.Year, ct), antCbs, antIbs, await EncerradaAsync(empresa, mes, ct), semCredito);
+            sem.GetValueOrDefault("S"), sem.GetValueOrDefault("E"), await AliquotasDoAnoAsync(mes.Year, ct), antCbs, antIbs, await EncerradaAsync(empresa, mes, ct), semCredito,
+            creditosSimples, await OpcaoDoSimplesAsync(empresa, mes, ct));
+    }
+
+    /// <summary>Opção do semestre, se a empresa é do Simples Nacional ou MEI no mês (a partir de 2027); null para os demais regimes.</summary>
+    private async Task<OpcaoIbsCbs?> OpcaoDoSimplesAsync(long empresa, DateOnly mes, CancellationToken ct)
+    {
+        if (opcaoSimples is null || mes < ServicoOpcaoIbsCbs.PrimeiraVigencia) return null;
+        await using var cmd = ds.CreateCommand("""
+            SELECT regime::text FROM core.empresa_regime
+             WHERE empresa_id = @e AND vigencia_inicio <= @m AND (vigencia_fim IS NULL OR vigencia_fim >= @m) ORDER BY vigencia_inicio DESC LIMIT 1
+            """).Com("e", empresa).Com("m", mes);
+        return await cmd.ExecuteScalarAsync(ct) is "SIMPLES_NACIONAL" or "MEI" ? await opcaoSimples.NaDataAsync(empresa, mes, ct) : null;
     }
 
     private async Task<ApuracaoReformaEncerrada?> EncerradaAsync(long empresa, DateOnly mes, CancellationToken ct)

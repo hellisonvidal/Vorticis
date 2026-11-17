@@ -13,12 +13,14 @@ public static class ClassificadorReceita
     // Vendas de produção do estabelecimento (indústria): x.101, x.103, x.105, x.107, x.109, x.111, x.113, x.115, x.116, x.118 e x.124 (industrialização por encomenda).
     private static readonly HashSet<string> FinalIndustria = ["101", "103", "105", "107", "109", "111", "113", "115", "116", "118", "124"];
 
-    public static ReceitaSimples? Classificar(LinhaItemFiscal l, AtividadeSimples atividadeServicos)
+    /// <param name="excluirIbsCbs">Empresa no regime regular do IBS/CBS: a receita bruta do Simples não inclui o IBS e a CBS recolhidos fora do DAS.</param>
+    public static ReceitaSimples? Classificar(LinhaItemFiscal l, AtividadeSimples atividadeServicos, bool excluirIbsCbs = false)
     {
         if (l.Situacao != SituacaoDocumento.Autorizada) return null;
         var cfop = l.Item.Cfop;
         // Valor da receita bruta: sem IPI e sem ICMS-ST cobrado como substituto (não integram a receita do vendedor).
         var valor = Dinheiro.Arredondar(l.Item.ValorContabil - l.Item.Ipi - l.Item.IcmsSt);
+        if (excluirIbsCbs && l.Item.Reforma is { } ibscbs) valor = Dinheiro.Arredondar(valor - ibscbs.IbsCbs);
 
         if (l.Operacao == TipoOperacao.Entrada)
         {
@@ -41,8 +43,8 @@ public static class ClassificadorReceita
         return new ReceitaSimples(atividade, valor, tratamento, null);
     }
 
-    public static IReadOnlyList<ReceitaSimples> Sugerir(IEnumerable<LinhaItemFiscal> itens, AtividadeSimples atividadeServicos) =>
-        itens.Select(i => Classificar(i, atividadeServicos)).OfType<ReceitaSimples>()
+    public static IReadOnlyList<ReceitaSimples> Sugerir(IEnumerable<LinhaItemFiscal> itens, AtividadeSimples atividadeServicos, bool excluirIbsCbs = false) =>
+        itens.Select(i => Classificar(i, atividadeServicos, excluirIbsCbs)).OfType<ReceitaSimples>()
              .GroupBy(r => (r.Atividade, r.Tratamento, r.Descricao))
              .Select(g => new ReceitaSimples(g.Key.Atividade, g.Sum(r => r.Valor), g.Key.Tratamento, g.Key.Descricao))
              .OrderBy(r => r.Atividade).ThenBy(r => r.Tratamento).ToList();

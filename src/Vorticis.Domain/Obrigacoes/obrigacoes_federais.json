@@ -360,8 +360,128 @@
    "Simples"
   ],
   "dependeEmpregados": false,
-  "descricao": "Até 31 de março do ano seguinte ao ano-calendário.",
-  "anoFim": null
+  "descricao": "Até 31 de março do ano seguinte ao ano-calendário (até o ano-calendário de 2025). Em 2027 a DEFIS é substituída pelas informações socioeconômicas anuais dentro do PGDAS-D.",
+  "anoFim": 2026
+ },
+ {
+  "codigo": "PGDASD_INFO_ANUAL",
+  "nome": "PGDAS-D - Informações socioeconômicas anuais (substitui a DEFIS)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 31,
+  "mesesApos": 0,
+  "mesVencimento": 3,
+  "anosApos": 1,
+  "ajuste": "Posterga",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "De janeiro a 31 de março do ano seguinte ao ano-calendário, dentro do PGDAS-D (a partir de 2027; no lugar da DEFIS). Conferir o dia final na resolução do CGSN.",
+  "anoFim": null,
+  "anoInicio": 2027
+ },
+ {
+  "codigo": "SIMPLES_IBSCBS_S1",
+  "nome": "Opção pelo regime regular do IBS/CBS (1º semestre)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 30,
+  "mesesApos": 0,
+  "mesVencimento": 9,
+  "anosApos": 0,
+  "ajuste": "Nenhum",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "Em setembro do ano anterior ao semestre (Res. CGSN 190/2026). O 1º semestre de 2027 tem prazo próprio (30/10/2026). Sem pedido, o IBS e a CBS ficam dentro do DAS.",
+  "anoFim": null,
+  "anoInicio": 2027
+ },
+ {
+  "codigo": "SIMPLES_IBSCBS_S2",
+  "nome": "Opção pelo regime regular do IBS/CBS (2º semestre)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 31,
+  "mesesApos": 0,
+  "mesVencimento": 3,
+  "anosApos": 0,
+  "ajuste": "Nenhum",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "De 1º a 31 de março, com efeitos de 1º de julho a 31 de dezembro (Res. CGSN 190/2026). A opção vale até ser renunciada.",
+  "anoFim": null,
+  "anoInicio": 2027
+ },
+ {
+  "codigo": "SIMPLES_IBSCBS_S2_CANC",
+  "nome": "Cancelamento da opção pelo regime regular do IBS/CBS (2º semestre)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 31,
+  "mesesApos": 0,
+  "mesVencimento": 5,
+  "anosApos": 0,
+  "ajuste": "Nenhum",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "Até 31 de maio, para voltar ao IBS/CBS dentro do DAS no 2º semestre (Res. CGSN 190/2026).",
+  "anoFim": null,
+  "anoInicio": 2027
+ },
+ {
+  "codigo": "SIMPLES_IBSCBS_S1_2027",
+  "nome": "Opção pelo regime regular do IBS/CBS (1º semestre de 2027)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 30,
+  "mesesApos": 0,
+  "mesVencimento": 10,
+  "anosApos": 0,
+  "ajuste": "Nenhum",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "Prazo prorrogado pela Res. CGSN 194/2026: até 30/10/2026. Vale só para o 1º semestre de 2027.",
+  "anoFim": 2026,
+  "anoInicio": 2026
+ },
+ {
+  "codigo": "SIMPLES_IBSCBS_S1_2027_CANC",
+  "nome": "Cancelamento da opção pelo regime regular do IBS/CBS (1º semestre de 2027)",
+  "orgao": "RFB / CGSN",
+  "modulo": "Fiscal",
+  "periodicidade": "Anual",
+  "regra": "DiaFixo",
+  "dia": 20,
+  "mesesApos": 0,
+  "mesVencimento": 12,
+  "anosApos": 0,
+  "ajuste": "Nenhum",
+  "regimes": [
+   "Simples"
+  ],
+  "dependeEmpregados": false,
+  "descricao": "De 03/11 a 20/12/2026 (Res. CGSN 194/2026). Vale só para o 1º semestre de 2027.",
+  "anoFim": 2026,
+  "anoInicio": 2026
  },
  {
   "codigo": "DASN_SIMEI",

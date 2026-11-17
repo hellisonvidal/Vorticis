@@ -288,6 +288,8 @@ Como fica a contabilidade: se o extrato foi importado contra a própria conta de
 4. **Calcular**: mostra alíquota efetiva, valor do DAS e a repartição por tributo, com memória de cálculo.
 5. **Salvar apuração**. **Contabilizar provisão** lança a despesa e o passivo (precisa das [contas das provisões](#contabilizacao-das-provisoes-de-impostos), em Cadastros › Regras de contabilização, aba Provisões de impostos); **Desfazer provisão** estorna.
 
+**A partir de 2027:** o DAS passa a ter CBS e IBS e a empresa escolhe, por semestre, como recolhê-los; veja [Simples Nacional a partir de 2027](#simples-nacional-a-partir-de-2027).
+
 **PGDAS-D:** o Vorticis calcula o DAS, mas a transmissão da declaração continua no portal do Simples Nacional (PGDAS-D). A integração direta exige o contrato do *Integra Contador* do SERPRO (chaves de acesso pagas) e procuração eletrônica; ela ainda não está disponível.
 
 **Dica:** preencha antes o [Histórico de receita e folha](#historico-de-receita-e-folha) com os meses anteriores ao uso do sistema. Confira as tabelas de alíquotas com a legislação vigente.
@@ -357,6 +359,70 @@ A partir de 2026 a NF-e traz, em cada item, o grupo **IBS/CBS**: o CST e a class
 **Como ler:** em **2026** nada muda no valor pago: o IBS e a CBS são só informativos (0,9% de CBS e 0,1% de IBS), compensáveis com o PIS e a COFINS. Em **2027** o PIS e a COFINS acabam e a CBS entra. De **2029 a 2032** o ICMS e o ISS diminuem a cada ano enquanto o IBS aumenta, e em **2033** a reforma está completa. Um resultado de B **negativo** nas colunas de CBS ou IBS é saldo credor (as compras superam as vendas).
 
 **Cuidados:** é uma estimativa. Usa a receita e as compras dos últimos 12 meses como se fossem iguais nos anos seguintes e as alíquotas de referência dos parâmetros legais do programa (CBS 8,8% e IBS 17,7%), que só valem depois de fixadas por lei e pelo Senado. As tabelas do Simples para a reforma ainda serão definidas pelo Comitê Gestor do Simples Nacional; por isso a escolha A mantém a carga de hoje. Consulte o contador responsável antes de decidir.
+
+## Simples Nacional a partir de 2027
+
+**Para que serve:** preparar a empresa do Simples Nacional para as regras de **1º de janeiro de 2027** (LC 214/2025, LC 227/2026 e Resoluções do CGSN 186, 190 e 194/2026): o **IBS** e a **CBS** passam a fazer parte do cálculo do DAS, e a empresa escolhe, **a cada semestre**, como recolhê-los.
+
+**O que muda para o Simples:**
+- As **alíquotas e as faixas dos Anexos I a V continuam as mesmas** em 2027 e 2028. O que muda é a **repartição interna do DAS**: a **CBS** ocupa o lugar do PIS e da COFINS e aparece o **IBS** (em 2027 e 2028 ele é só de teste, valor muito pequeno). De 2029 a 2033 as partes de ICMS e ISS passam aos poucos para o IBS, até acabarem em 2033.
+- A empresa escolhe o **semestre** a semestre: **IBS/CBS dentro do DAS** (padrão, não precisa pedir nada) ou **regime regular** (paga o IBS e a CBS fora do DAS, pelos débitos das vendas menos os créditos das compras; os clientes aproveitam o crédito cheio). A escolha vale até ser desfeita.
+- Os **limites** passam a ser: sublimite de **R$ 3.600.000,00**, que agora vale também para o IBS (acima dele, IBS, ICMS e ISS saem do DAS; a CBS continua nele); limite adicional de **R$ 3.600.000,00** para a receita de exportação; limite geral de **R$ 4.800.000,00**. Excesso de **até 20%** (R$ 4.320.000,00 no sublimite) vale só a partir de janeiro do ano seguinte; acima de 20%, a partir do mês seguinte. Em início de atividade o limite é de **R$ 300.000,00 por mês** de atividade, contando o mês iniciado como inteiro.
+- A **receita bruta** do Simples não inclui o IBS e a CBS pagos no regime regular. A receita é reconhecida **na emissão do documento fiscal**, mesmo na entrega futura; notas de débito e de crédito que alteram valores anteriores entram no mês em que são emitidas.
+
+### Registrar a opção do semestre
+
+**Onde fica:** *Cadastros › Opção IBS/CBS do Simples*.
+
+1. Clique em **Nova**. Abre a janela da ficha.
+2. Em **Início do semestre**, escolha 1º de janeiro (1º semestre) ou 1º de julho (2º semestre). Qualquer data é ajustada para o início do semestre.
+3. Em **Como recolhe o IBS e a CBS**, escolha *Dentro do DAS* ou *Regime regular (IBS/CBS fora do DAS)*.
+4. Informe a **Data do pedido**, o **Protocolo** e, se quiser, uma **Observação**. Clique em **Gravar**.
+5. Se o pedido estiver **fora do prazo**, o sistema grava mesmo assim e mostra um **aviso** com o prazo correto (confira se o pedido vale). Os prazos vêm dos parâmetros legais, não do programa.
+
+Cada linha da lista é um semestre; ela vale até a seguinte ("vale até ser renunciada"). Para voltar ao DAS depois de um período no regime regular, grave uma nova linha com *Dentro do DAS* no semestre desejado (isso é o **cancelamento**, que também tem prazo). **Excluir** apaga a linha e devolve o valor da anterior. Quem não registrou nada está **dentro do DAS**.
+
+**Prazos (confira sempre com a resolução do CGSN):**
+- **2º semestre** (efeitos de 1º/7 a 31/12): pedido de **1º a 31 de março**; cancelamento até **31 de maio**.
+- **1º semestre** (efeitos de 1º/1 a 30/6): pedido em **setembro do ano anterior**.
+- **1º semestre de 2027** (prazos especiais da Resolução CGSN 194/2026): opção pelo Simples até 15/10/2026; opção pelo regime regular até **30/10/2026**; cancelamento de **03/11 a 20/12/2026**.
+- Empresas abertas de **1º/10 a 31/12/2026** escolhem na própria inscrição do CNPJ: o sistema não cobra prazo do pedido.
+
+Esses prazos aparecem também no calendário de *Obrigações* (*Opção pelo regime regular do IBS/CBS (1º e 2º semestre)* e os cancelamentos). A **DEFIS** vale até 2026; de 2027 em diante o calendário mostra *PGDAS-D - Informações socioeconômicas anuais* (de janeiro a março, dentro do PGDAS-D).
+
+### Conferir a repartição nos parâmetros legais
+
+A repartição de 2027 (quanto de cada faixa do DAS é IRPJ, CSLL, CBS, IBS, CPP, ICMS, ISS e IPI) fica em **parâmetros legais**, chave **SIMPLES_NACIONAL**, vigência **01/01/2027**, anexo por anexo e faixa por faixa. **Atenção:** os percentuais que vêm no programa são uma **semente** (a repartição de 2018 com PIS + COFINS somados na CBS e IBS zerado). **Confira com a Resolução CGSN 190/2026 (anexos)** e ajuste cada faixa antes de apurar de verdade. Enquanto não for conferida, a apuração mostra um aviso. Os valores de sublimite, exportação, excesso de 20% e início de atividade estão no mesmo parâmetro.
+
+### Apurar o DAS a partir de 01/2027
+
+**Onde fica:** *Apuração › Simples Nacional (DAS)*. Os passos são os de [Apuração do Simples Nacional (DAS)](#apuracao-do-simples-nacional-das); o que muda:
+1. No alto da tela aparece a opção do semestre: *IBS/CBS no semestre: Dentro do DAS* ou *Regime regular*.
+2. **Dentro do DAS:** o DAS inclui as parcelas de CBS e de IBS. A memória de cálculo mostra, em cada anexo, o valor de **cada tributo (IRPJ, CSLL, CBS, IBS, CPP...)**.
+3. **Regime regular:** as parcelas de **IBS e CBS saem do DAS** (DAS = total menos essas parcelas) e a memória diz quanto ficou de fora. O IBS e a CBS desse semestre são apurados em *Apuração › IBS e CBS* (veja abaixo). Ao usar **Sugerir pelas notas**, a receita já vem **sem o IBS e a CBS** destacados nas notas.
+4. A receita do mês é a das notas **emitidas** no mês.
+5. Os **avisos** mostram o que passou do sublimite, do limite geral, da exportação ou do limite de início de atividade (a receita do ano vem do histórico, das apurações salvas e do mês).
+
+### Apuração do IBS/CBS no regime regular
+
+**Onde fica:** *Apuração › IBS e CBS (reforma tributária)*; os passos são os da seção [IBS e CBS](#ibs-e-cbs-reforma-tributaria).
+- Para empresa do Simples **no regime regular**, é essa apuração que gera o valor a recolher (débitos das saídas menos créditos das entradas). Para quem está **dentro do DAS**, ela serve só de conferência e um aviso explica isso.
+- Os **créditos das entradas** são sempre os valores do grupo IBS/CBS da nota, qualquer que seja o regime do fornecedor: se o fornecedor está no Simples dentro do DAS, o crédito é o valor informado no documento; se está no regime regular, é o valor cheio. O relatório mostra a linha **dos quais de fornecedores do Simples Nacional** (o sistema identifica o fornecedor do Simples pelo código de regime da NF-e importada).
+
+### Conferência do PGDAS-D
+
+**Onde fica:** *Relatórios › Livros e apuração › Conferência do PGDAS-D*.
+
+A Receita Federal pode **pré-preencher a receita do PGDAS-D** com as NF-e, NFC-e e NFS-e até o **dia 10**. Para comparar:
+1. Escolha a **Competência** e, em **Serviços**, a atividade usada nos serviços.
+2. Clique em **Conferir**. A tabela mostra a receita do mês por **anexo e atividade**, separada em *sem substituição nem retenção*, *com substituição tributária*, *monofásico*, *ISS retido* e *exportação*, e o **IBS e a CBS** dos documentos.
+3. Compare com o PGDAS-D. **O IBS e a CBS pré-preenchidos só podem ser corrigidos corrigindo o documento fiscal** (cancelamento, nota de ajuste ou substituição), nunca direto no PGDAS-D.
+4. Os avisos lembram as notas de saída sem o grupo IBS/CBS. Exporte em PDF, Excel ou CSV.
+
+### Outras observações
+- **MEI:** a partir de 2027 o MEI também precisa emitir documentos fiscais (NFS-e nacional para serviços e Nota Fiscal Fácil para mercadorias). O Vorticis não apura o MEI; oriente o cliente a se preparar.
+- **Simulador:** *Apuração › Simples Nacional × IBS/CBS (reforma)* mostra, na primeira tabela, a opção atual da empresa; a conta continua sendo uma estimativa com os parâmetros legais.
+- **Ainda a conferir:** repartição por faixa (Resolução CGSN 190/2026), tratamento da exportação (aqui CBS e IBS saem do DAS) e a janela de cancelamento do 1º semestre a partir de 2028.
 
 ## Histórico de receita e folha
 
@@ -435,6 +501,7 @@ Todos têm tela, filtro de período e exportação em PDF, Excel e CSV.
   - **Resumo de vendas** e **Resumo de compras**: soma das notas autorizadas de saída (vendas) ou de entrada (compras) do período, com quantidade de notas, valor total, ICMS, IPI, PIS+COFINS e ISS. Escolha como agrupar: *Por nota*, *Por cliente/fornecedor* ou *Por mês*. Notas canceladas ou denegadas ficam de fora.
   - **Curva ABC de vendas** e **Curva ABC de compras**: ordena os produtos (ou, em *Por cliente/fornecedor*, quem comprou ou vendeu) pelo valor das notas autorizadas do período e mostra a participação de cada um no total e o percentual acumulado. A **classe A** reúne os que somam os primeiros 80% do valor, a **classe B** vai até 95% e a **classe C** é o restante. Use a classe A para decidir onde negociar preço, cuidar do estoque e cobrar primeiro: poucos itens fazem a maior parte do movimento. O rodapé mostra quantos itens e quanto valor há em cada classe.
   - **Conferência de tributação** (*Relatórios › Livros e apuração*): compara cada item das notas autorizadas do período com o cadastro do produto (encontrado pelo código ou, se não houver código, pela descrição) e lista as divergências: **NCM**, **origem**, **CST do ICMS** (de entrada ou de saída), a natureza do **CFOP** (os três últimos dígitos, sem olhar se é dentro ou fora do estado) e, nas vendas dentro do estado, as **alíquotas de ICMS e IPI**. Corrija a nota ou o cadastro, conforme o caso. Itens de fornecedores com código próprio que não existe no cadastro ficam de fora.
+  - **Conferência do PGDAS-D** (*Relatórios › Livros e apuração*): receitas da competência por anexo, atividade e tratamento, com o IBS/CBS dos documentos, para comparar com o PGDAS-D pré-preenchido; veja [Conferência do PGDAS-D](#conferencia-do-pgdas-d).
   - **Resumo por CFOP**: totais por CFOP e sentido.
 - **Planejamento tributário**: informe os dados do ano e compare Simples × Presumido × Real, com exportação; veja [Planejamento tributário](#planejamento-tributario).
 - **Produtos cadastrados** e **Itens das notas fiscais**: listagens com filtros.

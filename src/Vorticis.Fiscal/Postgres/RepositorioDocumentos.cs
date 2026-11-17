@@ -108,16 +108,16 @@ public sealed class RepositorioDocumentos(NpgsqlDataSource ds) : IRepositorioDoc
                     natureza_operacao, situacao, emitente_documento, emitente_nome, emitente_uf, destinatario_documento, destinatario_nome,
                     destinatario_uf, participante_id, valor_produtos, valor_desconto, valor_frete, valor_seguro, valor_outras, valor_total,
                     vl_bc_icms, vl_icms, vl_bc_icms_st, vl_icms_st, vl_ipi, vl_pis, vl_cofins, vl_iss, iss_retido,
-                    vl_ret_pis, vl_ret_cofins, vl_ret_csll, vl_irrf, vl_ret_prev, xml_original, sha256, importado_por)
+                    vl_ret_pis, vl_ret_cofins, vl_ret_csll, vl_irrf, vl_ret_prev, xml_original, sha256, importado_por, emitente_simples)
                 VALUES (@e, @mod, @chave, @op, @num, @serie, @emi, @es, @nat, @sit, @ed, @en, @eu, @dd, @dn, @du, @part, @vprod, @vdesc, @vfrete,
                     @vseg, @voutras, @vtotal, @bcicms, @icms, @bcst, @st, @ipi, @pis, @cofins, @iss, @issret,
-                    @rpis, @rcofins, @rcsll, @irrf, @rprev, @xml, @sha, @usu)
+                    @rpis, @rcofins, @rcsll, @irrf, @rprev, @xml, @sha, @usu, @esimples)
                 RETURNING id
                 """, con, tx)
                 .Com("e", empresaId).Com("mod", d.Modelo.Codigo()).Com("chave", d.Chave).Com("op", ident.Operacao.Codigo())
                 .Com("num", d.Numero).Com("serie", d.Serie).Com("emi", d.Emissao).Com("es", d.DataLivro).ComTexto("nat", Cortar(d.NaturezaOperacao, 200))
                 .Com("sit", situacao.Codigo())
-                .ComTexto("ed", d.Emitente.Documento).ComTexto("en", Cortar(d.Emitente.Nome, 150)).ComTexto("eu", d.Emitente.Uf)
+                .Com("esimples", NpgsqlDbType.Boolean, d.Emitente.OptanteSimples).ComTexto("ed", d.Emitente.Documento).ComTexto("en", Cortar(d.Emitente.Nome, 150)).ComTexto("eu", d.Emitente.Uf)
                 .ComTexto("dd", d.Destinatario?.Documento).ComTexto("dn", Cortar(d.Destinatario?.Nome, 150)).ComTexto("du", d.Destinatario?.Uf)
                 .Com("part", NpgsqlDbType.Bigint, participanteId)
                 .Com("vprod", t.Produtos).Com("vdesc", t.Desconto).Com("vfrete", t.Frete).Com("vseg", t.Seguro).Com("voutras", t.Outras).Com("vtotal", t.Total)

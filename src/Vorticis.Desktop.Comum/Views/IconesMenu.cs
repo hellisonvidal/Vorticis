@@ -126,6 +126,8 @@ public static class IconesMenu
         ["apuracaoibscbs"] = "StarOutline",
         ["fiscal.classificacaotributaria"] = "Star",
         ["simplesreforma"] = "Cash",
+        ["opcaoibscbs"] = "CalendarCheck",
+        ["conferenciapgdas"] = "CheckCircle",
         ["relnotascentrocusto"] = "SitemapOutline",
         ["efdicmsipi"] = "FileCogOutline",
         ["efdcontribuicoes"] = "FileChartOutline",

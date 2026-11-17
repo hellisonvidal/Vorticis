@@ -16,7 +16,7 @@ public sealed record SugestaoSimulacao(decimal Receita12, decimal Compras12, dec
 /// tabelas do Simples em SIMPLES_NACIONAL. FISCAL_APURAR ou FISCAL_RELATORIOS.
 /// </summary>
 public sealed class ServicoSimplesReforma(ServicoSimplesNacional simples, ServicoReformaTributaria reforma, IRepositorioSimples repositorioSimples, IRepositorioDocumentos documentos,
-                                          IParametrosFiscais parametros, Autorizador autorizador)
+                                          IParametrosFiscais parametros, Autorizador autorizador, ServicoOpcaoIbsCbs? opcao = null)
 {
     public const string Chave = "REFORMA_SIMPLES";
 
@@ -62,6 +62,7 @@ public sealed class ServicoSimplesReforma(ServicoSimplesNacional simples, Servic
         var comp = new DateOnly(hoje.Year, hoje.Month, 1);
         var tabela = await simples.TabelaAsync(comp, ct);
         var mensal = CalculadoraSimples.Calcular(tabela, new EntradaSimples(comp, [new ReceitaSimples(b.Atividade, Dinheiro.Arredondar(b.Receita12 / 12m))], b.Receita12, b.Folha12));
-        return Resultado<SimulacaoSimples>.Ok(CalculoSimulacaoSimples.Simular(b, mensal, await CronogramaAsync(ct)));
+        var simulacao = CalculoSimulacaoSimples.Simular(b, mensal, await CronogramaAsync(ct));
+        return Resultado<SimulacaoSimples>.Ok(simulacao with { OpcaoAtual = opcao is null ? null : await opcao.NaDataAsync(empresa, comp, ct) });
     }
 }

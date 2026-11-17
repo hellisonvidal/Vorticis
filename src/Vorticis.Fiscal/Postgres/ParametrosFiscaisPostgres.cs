@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using Npgsql;
 using NpgsqlTypes;
@@ -24,19 +23,20 @@ public sealed class ParametrosFiscaisPostgres(NpgsqlDataSource ds) : IParametros
             if (await cmd.ExecuteScalarAsync(ct) is string json) return json;
             if (tentativa == 0) await SemearAsync(chave, ct);
         }
-        return ParametrosEmbutidos.Json(chave);
+        return ParametrosEmbutidos.Json(chave, data);
     }
 
     private async Task SemearAsync(string chave, CancellationToken ct)
     {
-        var json = ParametrosEmbutidos.Json(chave);
-        using var doc = JsonDocument.Parse(json);
-        var vigencia = DateOnly.ParseExact(doc.RootElement.GetProperty("vigencia_inicio").GetString()!, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var fundamento = doc.RootElement.TryGetProperty("fundamento", out var f) ? f.GetString() ?? chave : chave;
-        await using var cmd = ds.CreateCommand("""
-            INSERT INTO core.parametro_legal (chave, vigencia_inicio, valor, fundamento_legal) VALUES (@c, @v, @j, @f)
-            ON CONFLICT (chave, vigencia_inicio) DO NOTHING
-            """).Com("c", chave).Com("v", vigencia).Com("j", NpgsqlDbType.Jsonb, json).Com("f", fundamento.Length > 250 ? fundamento[..250] : fundamento);
-        await cmd.ExecuteNonQueryAsync(ct);
+        foreach (var (vigencia, json) in ParametrosEmbutidos.Vigencias(chave))
+        {
+            using var doc = JsonDocument.Parse(json);
+            var fundamento = doc.RootElement.TryGetProperty("fundamento", out var f) ? f.GetString() ?? chave : chave;
+            await using var cmd = ds.CreateCommand("""
+                INSERT INTO core.parametro_legal (chave, vigencia_inicio, valor, fundamento_legal) VALUES (@c, @v, @j, @f)
+                ON CONFLICT (chave, vigencia_inicio) DO NOTHING
+                """).Com("c", chave).Com("v", vigencia).Com("j", NpgsqlDbType.Jsonb, json).Com("f", fundamento.Length > 250 ? fundamento[..250] : fundamento);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
     }
 }

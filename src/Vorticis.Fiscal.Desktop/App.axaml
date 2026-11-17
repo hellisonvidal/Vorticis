@@ -36,6 +36,8 @@
     <DataTemplate DataType="vm:ResumoCfopViewModel"><v:ResumoCfopView /></DataTemplate>
     <DataTemplate DataType="vm:ResumoNotasViewModel"><v:ResumoNotasView /></DataTemplate>
     <DataTemplate DataType="vm:ConferenciaTributacaoViewModel"><v:ConferenciaTributacaoView /></DataTemplate>
+    <DataTemplate DataType="vm:ConferenciaPgdasViewModel"><v:ConferenciaPgdasView /></DataTemplate>
+    <DataTemplate DataType="vm:OpcaoIbsCbsViewModel"><v:OpcaoIbsCbsView /></DataTemplate>
     <DataTemplate DataType="vm:DifalViewModel"><v:DifalView /></DataTemplate>
     <DataTemplate DataType="vm:CurvaAbcViewModel"><v:CurvaAbcView /></DataTemplate>
     <DataTemplate DataType="vm:RelatorioBaixasViewModel"><v:RelatorioBaixasView /></DataTemplate>

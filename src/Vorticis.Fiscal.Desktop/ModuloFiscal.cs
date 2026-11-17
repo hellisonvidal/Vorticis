@@ -35,6 +35,7 @@ public sealed class ModuloFiscal : IModuloDesktop
         ItemMenu.Tela("Produtos", Telas.Produtos),
         ItemMenu.Tela("Regras fiscais", Telas.RegrasFiscais),
         ItemMenu.Tela("Classificação tributária (IBS/CBS)", Telas.ClassificacaoTributaria),
+        ItemMenu.Tela("Opção IBS/CBS do Simples", Telas.OpcaoIbsCbs),
         ItemMenu.Tela("Regras de contabilização", Telas.RegrasContabilizacao),
         ItemMenu.Tela("Centros de custo", Vorticis.Desktop.Comum.ViewModels.TelasComuns.CentrosCusto),
         ItemMenu.Tela("Formas de pagamento", Vorticis.Desktop.Comum.ViewModels.TelasComuns.FormasPagamento),
@@ -101,7 +102,8 @@ public sealed class ModuloFiscal : IModuloDesktop
                 ItemMenu.Tela("Apuração do IPI", Telas.ApuracaoIpiSped),
                 ItemMenu.Tela("Apuração do ICMS-ST", Telas.ApuracaoIcmsSt),
                 ItemMenu.Tela("Conferência da EFD ICMS/IPI", Telas.ConferenciaEfd),
-                ItemMenu.Tela("Conferência de tributação", Telas.ConferenciaTributacao)),
+                ItemMenu.Tela("Conferência de tributação", Telas.ConferenciaTributacao),
+                ItemMenu.Tela("Conferência do PGDAS-D", Telas.ConferenciaPgdas)),
             ItemMenu.Submenu("_Resumos",
                 ItemMenu.Tela("Resumo de vendas", Telas.ResumoVendas),
                 ItemMenu.Tela("Resumo de compras", Telas.ResumoCompras),
@@ -133,6 +135,7 @@ public sealed class ModuloFiscal : IModuloDesktop
         new("Fiscal", "DCTFWeb com o recibo guardado", "Depois de transmitir a DCTFWeb no e-CAC, registre o recibo em Apuração › Obrigações › DCTFWeb: o mês transmitido não reabre por engano.", Telas.DctfWeb),
         new("Fiscal", "Planeje o regime antes de janeiro", "A opção pelo Simples Nacional vai até o último dia útil de janeiro e o regime do Lucro Presumido é definido no primeiro pagamento do ano: simule antes em Apuração › Planejamento tributário.", Telas.Planejamento),
         new("Fiscal", "Fator R decide o anexo", "Nos serviços sujeitos ao Fator R, folha dos 12 meses de 28% ou mais da receita leva ao Anexo III (mais barato); abaixo disso, Anexo V.", Telas.Simples),
+        new("Fiscal", "Simples Nacional em 2027", "Cada semestre a empresa escolhe recolher o IBS e a CBS dentro do DAS (padrão) ou pelo regime regular. Registre a opção em Cadastros › Opção IBS/CBS do Simples e confira o prazo: março para o 2º semestre e setembro para o 1º.", Telas.OpcaoIbsCbs),
         new("Fiscal", "Histórico de receita e folha", "Para empresas que começaram a usar o sistema no meio do ano, informe a receita e a folha dos meses anteriores: o RBT12 e o Fator R dependem disso.", Telas.BaseMensal),
     ];
 
@@ -241,7 +244,7 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Vorticis.Desktop.Comum.ViewModels.TelasComuns.Parametros, "Cadastros › Parâmetros", m => m.TemAcessoNaEmpresa, v => v.CarregarAsync());
 
         c.Instancia("Simples", m => new ApuracaoSimplesViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
-            .Tela(Telas.Simples, "Apuração › Simples Nacional", m => m.Pode(Permissao.FiscalApurar));
+            .Tela(Telas.Simples, "Apuração › Simples Nacional", m => m.Pode(Permissao.FiscalApurar), v => v.CarregarAsync());
         c.Instancia("Presumido", m => new ApuracaoPresumidoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Presumido, "Apuração › Lucro Presumido", m => m.Pode(Permissao.FiscalApurar));
         c.Instancia("Real", m => new ApuracaoRealViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
@@ -257,6 +260,11 @@ public sealed class ModuloFiscal : IModuloDesktop
             .Tela(Telas.IbsCbs, "Apuração › IBS e CBS (reforma tributária)", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("ConferenciaTributacao", m => new ConferenciaTributacaoViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.ConferenciaTributacao, "Relatórios › Livros e apuração › Conferência de tributação", m => m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("ConferenciaPgdas", m => new ConferenciaPgdasViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
+            .Tela(Telas.ConferenciaPgdas, "Relatórios › Livros e apuração › Conferência do PGDAS-D", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios));
+        c.Instancia("OpcaoIbsCbs", m => new OpcaoIbsCbsViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes(),
+                    aoTrocarEmpresa: (v, ativa) => ativa ? v.CarregarAsync() : Task.CompletedTask)
+            .Tela(Telas.OpcaoIbsCbs, "Cadastros › Opção IBS/CBS do Simples", m => m.Pode(Permissao.FiscalApurar) || m.Pode(Permissao.FiscalRelatorios), v => v.CarregarAsync());
         c.Instancia("Difal", m => new DifalViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())
             .Tela(Telas.Difal, "Apuração › DIFAL (uso e consumo e ativo)", m => m.Pode(Permissao.FiscalRelatorios));
         c.Instancia("SimplesReforma", m => new SimplesReformaViewModel(m), atualizarPermissoes: v => v.AtualizarPermissoes())

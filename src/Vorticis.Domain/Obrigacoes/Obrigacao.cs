@@ -37,7 +37,7 @@ public readonly record struct Competencia(int Ano, int Mes)
 public sealed record DefinicaoObrigacao(
     string Codigo, string Nome, string Orgao, ModuloObrigacao Modulo, Periodicidade Periodicidade, TipoRegra Regra, int Dia,
     int MesesApos, int MesVencimento, int AnosApos, AjusteNaoUtil Ajuste, RegimesObrigacao Regimes, bool DependeEmpregados,
-    string? Descricao = null, int? AnoFim = null, bool Personalizada = false, string Esfera = "Federal")
+    string? Descricao = null, int? AnoFim = null, bool Personalizada = false, string Esfera = "Federal", int? AnoInicio = null)
 {
     /// <summary>Vencimento da competência já ajustado para dia útil conforme a regra.</summary>
     public DateOnly Vencimento(Competencia c)
@@ -82,8 +82,8 @@ public sealed record DefinicaoObrigacao(
 
     private static string Mes(int m) => System.Globalization.CultureInfo.GetCultureInfo("pt-BR").DateTimeFormat.GetMonthName(m);
 
-    /// <summary>Vigente no ano do vencimento.</summary>
-    public bool VigenteEm(DateOnly vencimento) => AnoFim is null || vencimento.Year <= AnoFim;
+    /// <summary>Vigente no ano do vencimento (entre <see cref="AnoInicio"/> e <see cref="AnoFim"/>).</summary>
+    public bool VigenteEm(DateOnly vencimento) => (AnoFim is null || vencimento.Year <= AnoFim) && (AnoInicio is null || vencimento.Year >= AnoInicio);
 
     public bool AplicaA(RegimesObrigacao regime, bool temEmpregados) =>
         (Regimes & regime) != 0 && (!DependeEmpregados || temEmpregados);
@@ -127,7 +127,7 @@ public static class CatalogoObrigacoes
 {
     private sealed record Dto(string Codigo, string Nome, string Orgao, string Modulo, string Periodicidade, string Regra, int Dia,
                               int MesesApos, int MesVencimento, int AnosApos, string Ajuste, string[] Regimes, bool DependeEmpregados,
-                              string? Descricao, int? AnoFim);
+                              string? Descricao, int? AnoFim, int? AnoInicio = null);
 
     private static readonly Lazy<IReadOnlyList<DefinicaoObrigacao>> _federais = new(Carregar);
 
@@ -140,7 +140,7 @@ public static class CatalogoObrigacoes
         var dtos = JsonSerializer.Deserialize<List<Dto>>(s, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
         return dtos.Select(d => new DefinicaoObrigacao(d.Codigo, d.Nome, d.Orgao, Enum.Parse<ModuloObrigacao>(d.Modulo), Enum.Parse<Periodicidade>(d.Periodicidade),
                 Enum.Parse<TipoRegra>(d.Regra), d.Dia, d.MesesApos, d.MesVencimento, d.AnosApos, Enum.Parse<AjusteNaoUtil>(d.Ajuste),
-                d.Regimes.Aggregate(RegimesObrigacao.Nenhum, (a, r) => a | Enum.Parse<RegimesObrigacao>(r)), d.DependeEmpregados, d.Descricao, d.AnoFim))
+                d.Regimes.Aggregate(RegimesObrigacao.Nenhum, (a, r) => a | Enum.Parse<RegimesObrigacao>(r)), d.DependeEmpregados, d.Descricao, d.AnoFim, AnoInicio: d.AnoInicio))
             .ToList();
     }
 }

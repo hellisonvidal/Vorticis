@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views"
+             xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.OpcaoIbsCbsFichaView"
+             x:DataType="vm:OpcaoIbsCbsViewModel">
+  <!-- Ficha da opção do semestre pelo IBS/CBS, aberta em janela pela tela Opção IBS/CBS do Simples -->
+  <DockPanel>
+    <c:RodapeFichaSimplesView DockPanel.Dock="Bottom" SalvarCommand="{Binding GravarCommand}" SalvarTexto="Gravar" />
+    <ScrollViewer Padding="16,10">
+      <StackPanel Spacing="8" Margin="0,0,16,8">
+        <WrapPanel IsEnabled="{Binding PodeManter}">
+          <StackPanel Margin="0,0,10,6" Spacing="2">
+            <TextBlock Text="Início do semestre (1º/1 ou 1º/7)" FontSize="12" />
+            <CalendarDatePicker SelectedDate="{Binding Vigencia}" Width="160" />
+          </StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2">
+            <TextBlock Text="Como recolhe o IBS e a CBS" FontSize="12" />
+            <ComboBox ItemsSource="{x:Static vm:OpcaoIbsCbsViewModel.Opcoes}" SelectedIndex="{Binding Opcao}" Width="300" />
+          </StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2">
+            <TextBlock Text="Data do pedido" FontSize="12" />
+            <CalendarDatePicker SelectedDate="{Binding DataPedido}" Width="160" />
+          </StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2">
+            <TextBlock Text="Protocolo" FontSize="12" />
+            <TextBox Text="{Binding Protocolo}" Width="220" MaxLength="60" />
+          </StackPanel>
+          <StackPanel Margin="0,0,10,6" Spacing="2">
+            <TextBlock Text="Observação" FontSize="12" />
+            <TextBox Text="{Binding Observacao}" Width="560" MaxLength="500" />
+          </StackPanel>
+        </WrapPanel>
+        <TextBlock Text="A opção vale até ser renunciada. Pedido fora do prazo aparece como aviso depois de gravar; o prazo vem dos parâmetros legais." TextWrapping="Wrap" FontSize="12" />
+        <c:MensagensView />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

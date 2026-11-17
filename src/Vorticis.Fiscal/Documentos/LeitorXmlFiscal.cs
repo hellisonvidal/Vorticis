@@ -120,7 +120,7 @@ public static class LeitorXmlFiscal
         var doc = Cnpj.SomenteDigitos(Valor(e, "CNPJ") ?? Valor(e, "CPF"));
         var cMun = Valor(end, "cMun");
         return new ParteDocumento(doc.Length == 0 ? null : doc, Valor(e, "xNome"), Valor(end, "UF") ?? UfDe(cMun), cMun, Valor(end, "xMun"),
-                                  Valor(e, "IE"));
+                                  Valor(e, "IE"), int.TryParse(Valor(e, "CRT"), out var crt) ? crt : null);
     }
 
     private static ItemFiscal LerItemNfe(XElement det)

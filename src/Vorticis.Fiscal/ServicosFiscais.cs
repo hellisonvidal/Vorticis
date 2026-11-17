@@ -51,7 +51,8 @@ public sealed class ServicosFiscais
         Duplicatas = new ServicoDuplicatas(repoDuplicatas, app.Lancamentos, app.Conciliacao, autorizador, app.Pendencias);
         app.Pendencias.RegistrarProcessador(Contabilizacao.ProcessadorPendencias);
         app.Pendencias.RegistrarProcessador(Duplicatas.ProcessadorPendencias);
-        Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador);
+        Opcao = new Reforma.ServicoOpcaoIbsCbs(ds, Parametros, autorizador);
+        Simples = new ServicoSimplesNacional(repoSimples, repoDocumentos, Parametros, autorizador, Opcao);
         Retencoes = new ServicoRetencoes(repoRetencoes, repoDocumentos, Parametros, autorizador);
         Lucro = new ServicoLucro(repoLucro, repoDocumentos, repoRetencoes, Parametros, autorizador);
         var repoGuias = new RepositorioGuias(ds);
@@ -60,10 +61,10 @@ public sealed class ServicosFiscais
         Efd = new ServicoEfd(new RepositorioEfd(ds), autorizador, app.AssinadorSped);
         Fechamento = new Fechamento.ServicoFechamentoFiscal(ds, autorizador);
         NotasPorCentro = new ServicoNotasPorCentro(ds, autorizador);
-        Reforma = new Reforma.ServicoReformaTributaria(ds, Parametros, autorizador);
+        Reforma = new Reforma.ServicoReformaTributaria(ds, Parametros, autorizador, Opcao);
         Classificacoes = new Reforma.ServicoClassificacaoTributaria(ds, Parametros, autorizador);
         Tabelas = new ServicoTabelasFiscais(Parametros);
-        SimplesReforma = new Reforma.ServicoSimplesReforma(Simples, Reforma, repoSimples, repoDocumentos, Parametros, autorizador);
+        SimplesReforma = new Reforma.ServicoSimplesReforma(Simples, Reforma, repoSimples, repoDocumentos, Parametros, autorizador, Opcao);
         DctfWeb = new Dctf.ServicoDctfWeb(ds, repoGuias, Fechamento, autorizador);
         OutrosLancamentosEfd = new ServicoOutrosLancamentosEfd(ds, autorizador);
         Planejamento = new Planejamento.ServicoPlanejamento(ds, repoSimples, Parametros, autorizador);
@@ -92,6 +93,8 @@ public sealed class ServicosFiscais
     public ServicoContabilizacaoFiscal Contabilizacao { get; }
     public ServicoDuplicatas Duplicatas { get; }
     public ServicoSimplesNacional Simples { get; }
+    /// <summary>Opção do Simples Nacional pelo IBS/CBS por semestre (dentro do DAS ou regime regular).</summary>
+    public Reforma.ServicoOpcaoIbsCbs Opcao { get; }
     public ServicoLucro Lucro { get; }
     public ServicoRetencoes Retencoes { get; }
     public ServicoGuias Guias { get; }

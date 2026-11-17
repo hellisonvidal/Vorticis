@@ -33,7 +33,11 @@ public static class ModelosExtensions
 
 /// <summary>Emitente, destinatário (NF-e) ou prestador/tomador (NFS-e).</summary>
 public sealed record ParteDocumento(string? Documento, string? Nome, string? Uf, string? CodMunicipioIbge = null, string? Municipio = null,
-                                    string? InscricaoEstadual = null);
+                                    string? InscricaoEstadual = null, int? Crt = null)
+{
+    /// <summary>Emitente optante do Simples Nacional (CRT 1 ou 2 da NF-e); null quando a nota não informa o regime.</summary>
+    public bool? OptanteSimples => Crt switch { 1 or 2 => true, 3 => false, _ => null };
+}
 
 /// <summary>Item da nota com CFOP, NCM, CST e tributos. NFS-e tem um único item, com o CFOP convencional <see cref="Cfop.Servico"/>.</summary>
 public sealed record ItemFiscal(

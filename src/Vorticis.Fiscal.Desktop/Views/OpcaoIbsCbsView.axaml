@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:g="using:Vorticis.Fiscal.Desktop.Views" xmlns:vm="using:Vorticis.Fiscal.Desktop.ViewModels"
+             x:Class="Vorticis.Fiscal.Desktop.Views.OpcaoIbsCbsView" x:DataType="vm:OpcaoIbsCbsViewModel">
+  <!-- Cadastros › Opção IBS/CBS do Simples (histórico por semestre) -->
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBlock Classes="titulo" Text="Opção IBS/CBS do Simples Nacional" />
+      <TextBlock Text="{Binding SituacaoAtual}" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Nova" Command="{Binding NovaCommand}" />
+        <Button Name="AbrirFicha" Content="Abrir ficha" Command="{Binding AbrirFichaCommand}" ToolTip.Tip="Mostra a ficha do semestre selecionado (ou dê duplo clique / Enter na lista)" />
+        <Button Content="Excluir" Command="{Binding ExcluirCommand}" />
+      </StackPanel>
+      <TextBlock Text="{Binding AvisosTexto}" TextWrapping="Wrap" IsVisible="{Binding AvisosTexto, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <c:MensagensView />
+    </StackPanel>
+    <DataGrid Name="ListaOpcoes" g:GradesFiscais.Ajustar="True" ItemsSource="{Binding Lista}" SelectedItem="{Binding Selecionada}" IsReadOnly="True" AutoGenerateColumns="False">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Semestre" Binding="{ReflectionBinding Semestre}" Width="180" />
+        <DataGridTextColumn Header="Opção" Binding="{ReflectionBinding Opcao}" Width="*" />
+        <DataGridTextColumn Header="Vigência" Binding="{ReflectionBinding Vigencia}" Width="220" />
+        <DataGridTextColumn Header="Data do pedido" Binding="{ReflectionBinding Pedido}" Width="120" />
+        <DataGridTextColumn Header="Protocolo" Binding="{ReflectionBinding Protocolo}" Width="160" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

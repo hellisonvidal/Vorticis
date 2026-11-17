@@ -1,0 +1,66 @@
+{
+ "vigencia_inicio": "2026-01-01",
+ "fundamento": "LC 214/2025; LC 227/2026; Res. CGSN 186/2026, 190/2026 e 194/2026 (opção do semestre pelo IBS/CBS dentro do DAS ou pelo regime regular)",
+ "padrao": "DENTRO_DO_DAS",
+ "observacao": "CONFERIR as janelas com a Resolução CGSN 190/2026 e 194/2026 antes de cada semestre. Edite as datas em Cadastros > Parâmetros legais, chave SIMPLES_OPCAO_IBSCBS.",
+ "regras": [
+  {
+   "semestre": 1,
+   "opcao_de": {
+    "mes": 9,
+    "dia": 1,
+    "ano_relativo": -1
+   },
+   "opcao_ate": {
+    "mes": 9,
+    "dia": 30,
+    "ano_relativo": -1
+   },
+   "cancelamento_de": null,
+   "cancelamento_ate": null,
+   "descricao": "1º semestre (1º/1 a 30/6): opção em setembro do ano anterior; cancelamento do 1º semestre ainda sem janela cadastrada (conferir)."
+  },
+  {
+   "semestre": 2,
+   "opcao_de": {
+    "mes": 3,
+    "dia": 1,
+    "ano_relativo": 0
+   },
+   "opcao_ate": {
+    "mes": 3,
+    "dia": 31,
+    "ano_relativo": 0
+   },
+   "cancelamento_de": {
+    "mes": 3,
+    "dia": 1,
+    "ano_relativo": 0
+   },
+   "cancelamento_ate": {
+    "mes": 5,
+    "dia": 31,
+    "ano_relativo": 0
+   },
+   "descricao": "2º semestre (1º/7 a 31/12): opção de 1º a 31 de março; efeitos de 1º/7; cancelamento até 31 de maio."
+  }
+ ],
+ "excecoes": [
+  {
+   "ano": 2027,
+   "semestre": 1,
+   "opcao_simples_ate": "2026-10-15",
+   "opcao_regime_regular_de": "2026-09-01",
+   "opcao_regime_regular_ate": "2026-10-30",
+   "cancelamento_de": "2026-11-03",
+   "cancelamento_ate": "2026-12-20",
+   "fundamento": "Res. CGSN 194/2026 (DOU 28/09/2026)",
+   "observacao": "Prazos prorrogados para o 1º semestre de 2027. O início do prazo da opção pelo regime regular (01/09/2026) deve ser conferido."
+  }
+ ],
+ "abertura_cnpj": {
+  "de": "2026-10-01",
+  "ate": "2026-12-31",
+  "observacao": "Empresas abertas de 01/10 a 31/12/2026 escolhem na inscrição; o pedido não precisa estar nas janelas."
+ }
+}
