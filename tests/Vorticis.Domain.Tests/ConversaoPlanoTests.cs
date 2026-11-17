@@ -15,19 +15,15 @@ public class ConversaoPlanoTests
         Assert.True(p.Possivel, string.Join("; ", p.Erros));
         Assert.Equal(["1", "1.1", "1.1.01", "1.1.01.001", "1.1.01.012"], p.Itens.Select(i => i.Novo));
         Assert.Equal(3, p.Mudancas);                 // raiz e 2º nível já estavam certos
-        Assert.Equal(0, p.Avisos);
-        Assert.All(p.Itens, i => Assert.Null(i.Aviso));
     }
 
     [Fact]
-    public void Retira_zeros_a_esquerda_quando_a_largura_diminui_e_avisa()
+    public void Retira_zeros_a_esquerda_quando_a_largura_diminui_sem_aviso()
     {
         var p = ConversaoPlano.Simular(Contas("01", "01.01", "01.01.001"), M("9.9.99"));
         Assert.True(p.Possivel, string.Join("; ", p.Erros));
         Assert.Equal(["1", "1.1", "1.1.01"], p.Itens.Select(i => i.Novo));
-        Assert.All(p.Itens, i => Assert.NotNull(i.Aviso));
-        Assert.Contains("perde zeros", p.Itens[0].Aviso);
-        Assert.Equal(3, p.Avisos);
+        Assert.Equal(3, p.Mudancas);                 // zeros à esquerda ajustados são normais: só "código novo", sem aviso
     }
 
     [Fact]

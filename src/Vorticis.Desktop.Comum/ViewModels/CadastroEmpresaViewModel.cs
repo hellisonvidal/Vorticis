@@ -483,9 +483,8 @@ public partial class CadastroEmpresaViewModel(MainViewModelBase main) : Cadastro
             if (previa.Valor.Mudancas > 0)
             {
                 var exemplos = string.Join("\n", previa.Valor.Itens.Where(i => i.Muda).Take(6).Select(i => $"   {i.Antigo}  →  {i.Novo}"));
-                var avisos = previa.Valor.Avisos > 0 ? $"\n\nAtenção: {previa.Valor.Avisos} conta(s) perdem zeros à esquerda em algum nível." : "";
                 if (!await Contexto.ConfirmarAsync("Converter o plano de contas",
-                        $"A máscara mudou para {mascaraNova.Texto}. {previa.Valor.Mudancas} conta(s) do plano terão o código convertido, por exemplo:\n{exemplos}{avisos}\n\n" +
+                        $"A máscara mudou para {mascaraNova.Texto}. {previa.Valor.Mudancas} conta(s) do plano terão o código convertido, por exemplo:\n{exemplos}\n\n" +
                         "Os lançamentos e saldos continuam nas mesmas contas e a mudança fica na trilha de auditoria. Para ver todas as contas antes, use Cadastros › Plano de contas › Converter máscara.",
                         "Converter o plano", "Cancelar"))
                     return false;

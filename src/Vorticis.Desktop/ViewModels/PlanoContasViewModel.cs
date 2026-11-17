@@ -35,10 +35,10 @@ public sealed record ContaLinha(ContaDetalhe Conta)
     public string Situacao => Conta.Ativa ? "" : "Inativa";
 }
 
-/// <summary>Linha da prévia de conversão: código atual → código novo, com o aviso quando a conta perde zeros.</summary>
+/// <summary>Linha da prévia de conversão: código atual → código novo.</summary>
 public sealed record LinhaPrevia(string Antigo, string Novo, string Situacao)
 {
-    public static LinhaPrevia De(ItemConversao i) => new(i.Antigo, i.Novo, i.Aviso is { } a ? "Atenção: " + a : i.Muda ? "Muda" : "Igual");
+    public static LinhaPrevia De(ItemConversao i) => new(i.Antigo, i.Novo, i.Muda ? "Código novo" : "Igual");
 }
 
 /// <summary>Conta sintética que pode ser o grupo onde as contas dos participantes são alocadas.</summary>
@@ -170,7 +170,6 @@ public partial class PlanoContasViewModel(IContexto contexto) : CadastroViewMode
         }
         else
             resumo($"Máscara {previa.Mascara}: {previa.Itens.Count} conta(s), {previa.Mudancas} com código novo" +
-                   (previa.Avisos > 0 ? $", {previa.Avisos} com aviso (perdem zeros à esquerda)" : "") +
                    (previa.Itens.Count > 500 ? ". A lista mostra as 500 primeiras." : "."));
     }
 

@@ -14,14 +14,14 @@ Veja também [Filtros nas listas](01-primeiros-passos.md#filtros-nas-listas): to
 2. Para importar de uma planilha, veja [Importar plano de contas](#importar-plano-de-contas).
 
 ### Usar um modelo em outra máscara
-Na tela *Escolher o plano de contas*, depois de selecionar o modelo, digite em **Máscara dos códigos (opcional)** a máscara que você quer (ex.: `9.9.99.999`; a lista *Sugestões* ajuda) e clique em **Ver prévia**. A prévia mostra, conta a conta, o código do modelo e o código que ele terá na sua máscara. Cada nível é completado com zeros à esquerda (`1.1.1` vira `1.1.01` numa máscara `9.9.99`); se algum nível não couber, ou se dois códigos ficarem iguais, a prévia avisa o problema e **nada é convertido**. Estando tudo certo, **Usar este plano** grava na empresa a cópia convertida do modelo (o plano passa a ser "próprio", com o nome do modelo e a máscara) e as contas de encerramento acompanham os novos códigos.
+Na tela *Escolher o plano de contas*, depois de selecionar o modelo, digite em **Máscara dos códigos (opcional)** a máscara que você quer (ex.: `9.9.99.999`; a lista *Sugestões* ajuda) e clique em **Ver prévia**. A prévia mostra, conta a conta, o código do modelo e o código que ele terá na sua máscara. Os zeros à esquerda sempre acompanham a largura de cada nível: são completados (`1.1.1` vira `1.1.01` numa máscara `9.9.99`) ou retirados (`001` vira `01`), sem aviso; se algum nível não couber, ou se dois códigos ficarem iguais, a prévia avisa o problema e **nada é convertido**. Estando tudo certo, **Usar este plano** grava na empresa a cópia convertida do modelo (o plano passa a ser "próprio", com o nome do modelo e a máscara) e as contas de encerramento acompanham os novos códigos.
 
 ### Criar novo plano
 Na tela *Escolher o plano de contas*, clique em **Criar novo plano**, informe o **nome** do plano e a **máscara** (ex.: `9.9.99.999`, com pelo menos 2 níveis) e clique em **Criar plano**. O plano nasce vazio, só com os grupos principais (Ativo, Passivo, Patrimônio líquido, Receitas e Custos e despesas); use **Incluir** para cadastrar as demais contas, que seguem a máscara. Como substitui o plano da empresa, só é possível enquanto não há lançamentos.
 
 ### Converter máscara
 **Onde fica:** botão **Converter máscara** na tela do plano (também serve para planos com lançamentos).
-1. Digite a máscara desejada e clique em **Ver prévia**. A lista mostra cada conta com o **código atual**, o **código novo** e a situação (*Muda*, *Igual* ou *Atenção*, quando um nível perde zeros à esquerda).
+1. Digite a máscara desejada e clique em **Ver prévia**. A lista mostra cada conta com o **código atual**, o **código novo** e a situação (*Código novo* ou *Igual*). Ajustar os zeros à esquerda de cada nível à largura da máscara (por exemplo, `001` virar `01`) é normal e **não gera aviso**; só aparece problema (e nada é convertido) quando algum nível não cabe, dois códigos ficam iguais ou a hierarquia se quebra.
 2. Se o resumo apontar problemas (nível que não cabe na nova largura, mudança do número de níveis, códigos repetidos ou conta fora da sua superior), **nada é convertido**: corrija a máscara e veja a prévia de novo.
 3. Sem problemas, clique em **Converter plano** e confirme. Todos os códigos são trocados de uma vez; se algo falhar, nada muda.
 

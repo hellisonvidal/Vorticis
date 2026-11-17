@@ -5,8 +5,8 @@ namespace Vorticis.Domain.Contabil;
 /// <summary>Conta a converter: só o que importa para recodificar (o identificador pode ser 0 para modelos).</summary>
 public sealed record ContaParaConverter(long Id, string Codigo);
 
-/// <summary>Uma linha da prévia: código atual → código na nova máscara. <see cref="Aviso"/> não impede a conversão.</summary>
-public sealed record ItemConversao(long Id, string Antigo, string Novo, string? Aviso = null)
+/// <summary>Uma linha da prévia: código atual → código na nova máscara.</summary>
+public sealed record ItemConversao(long Id, string Antigo, string Novo)
 {
     public bool Muda => Antigo != Novo;
 }
@@ -16,13 +16,12 @@ public sealed record PreviaConversao(string Mascara, IReadOnlyList<ItemConversao
 {
     public bool Possivel => Erros.Count == 0;
     public int Mudancas => Itens.Count(i => i.Muda);
-    public int Avisos => Itens.Count(i => i.Aviso is not null);
 }
 
 /// <summary>
 /// Conversão do plano de contas para outra máscara (ex.: 9.9.99.999 → 9.99.999.9999). Regras, nível a nível: o código é
 /// completado com zeros à esquerda até a largura do nível, ou tem os zeros à esquerda retirados (001 → 1) quando a largura
-/// diminui — nesse caso a conta recebe um aviso. A conversão só é possível quando (1) todo nível cabe na largura nova, (2) o
+/// diminui; ajustar zeros à esquerda é sempre normal e não gera aviso (só dígitos significativos que não cabem são erro). A conversão só é possível quando (1) todo nível cabe na largura nova, (2) o
 /// número de níveis da conta não muda, (3) nenhum código novo se repete e (4) cada conta continua abaixo da mesma superior.
 /// Se qualquer regra falhar, nada é convertido (conversão ambígua é recusada, nunca adivinhada).
 /// </summary>
@@ -46,7 +45,7 @@ public static class ConversaoPlano
                 continue;
             }
             novoPorAntigo[antigo] = r.Valor;
-            itens.Add(new ItemConversao(c.Id, antigo, r.Valor, AvisoDeZeros(antigo, r.Valor)));
+            itens.Add(new ItemConversao(c.Id, antigo, r.Valor));
         }
 
         foreach (var g in itens.GroupBy(i => i.Novo).Where(g => g.Count() > 1).Take(10))
@@ -83,17 +82,6 @@ public static class ConversaoPlano
 
     private static int Niveis(string codigo) => codigo.Split(codigo.Where(ch => !char.IsAsciiDigit(ch)).Distinct().ToArray(), StringSplitOptions.RemoveEmptyEntries).Length;
 
-
-    /// <summary>Aviso quando algum nível perde zeros à esquerda (a largura do nível diminuiu).</summary>
-    private static string? AvisoDeZeros(string antigo, string novo)
-    {
-        var a = antigo.Split('.');
-        var n = novo.Split('.');
-        if (a.Length != n.Length) return null;
-        for (var i = 0; i < a.Length; i++)
-            if (a[i].Length > n[i].Length) return $"o nível {i + 1} perde zeros à esquerda ({a[i]} → {n[i]})";
-        return null;
-    }
 
     /// <summary>
     /// Plano novo e vazio para uma máscara: só os grupos de nível 1 (sintéticos), prontos para receber subcontas.
