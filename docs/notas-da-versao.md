@@ -1,3 +1,17 @@
+# Vorticis 1.4.2
+
+## Novidades desta versão
+
+### Escritório
+- **Lançamento de honorários:** corrigido o layout da janela *Novo honorário / Cobrança avulsa / Alterar cobrança* para manter os botões **Cancelar** e **Lançar/Gravar** sempre fixos no rodapé, sem sobreposição pela grade de prévia das parcelas.
+- **Honorários do contrato:** as parcelas geradas pelos contratos passam a ser identificadas apenas como **Honorários**.
+- **Baixa múltipla com juros e multa opcionais:** selecione dois ou mais títulos em aberto na lista de *Financeiro › Honorários* (`Ctrl` ou `Shift` + clique) e clique em **Baixar** para carregar todos os títulos selecionados de uma vez, com campos opcionais de **Juros** e **Multa** somados automaticamente ao valor recebido.
+- **Novo layout dos relatórios do Escritório:** telas *Relatório de honorários*, *Produtividade da equipe*, *Certificados digitais a vencer* e *Carteira de clientes* aprimoradas com cartões de resumo no topo, filtros organizados, filtro por situação nos honorários, colunas fiéis a cada relatório, valores alinhados à direita e destaque visual em vencidos e totais.
+
+Para atualizar, rode o **Setup-Vorticis-1.4.2.exe** por cima da versão instalada: os dados são preservados e o banco é atualizado sozinho na primeira abertura.
+
+---
+
 # Vorticis 1.4.1
 
 ## Novidades desta versão
