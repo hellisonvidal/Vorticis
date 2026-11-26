@@ -1,19 +1,69 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.RelatorioEscritorioView" x:DataType="vm:RelatorioEscritorioViewModel">
-  <!-- Relatórios › Relatório de honorários: cobranças do cliente escolhido no topo, pelo vencimento (datas) -->
-  <DockPanel Margin="8">
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-      <TextBlock Classes="titulo" Text="{Binding Titulo}" VerticalAlignment="Center" />
-      <TextBlock Text="Vencimento de" VerticalAlignment="Center" Name="RotuloPeriodo" />
-      <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="140" Name="Inicio" />
-      <TextBlock Text="a" VerticalAlignment="Center" Name="RotuloA" />
-      <CalendarDatePicker SelectedDate="{Binding Fim}" Width="140" Name="Fim" />
-      <Button Content="Gerar" Command="{ReflectionBinding GerarCommand}" Classes="accent" />
-      <Rectangle Width="1" Fill="{DynamicResource Linha}" Margin="6,4" />
-      <c:BarraExportacaoView />
+  <!-- Relatórios do Escritório (Honorários, Produtividade da equipe e Certificados digitais a vencer): filtros claros, cartões de resumo e grade fiel à exportação -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.kpiValor">
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
+    </Style>
+    <Style Selector="TextBlock.kpiValor.alerta">
+      <Setter Property="Foreground" Value="{DynamicResource TxErro}" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel Margin="10,8">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+      <StackPanel Spacing="2">
+        <TextBlock Classes="titulo" Text="{Binding Titulo}" />
+        <TextBlock Text="{Binding Subtitulo}" FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Border Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="8" Padding="12,8">
+        <WrapPanel ItemSpacing="8" LineSpacing="6">
+          <TextBlock Text="{Binding RotuloPeriodo}" VerticalAlignment="Center" Name="RotuloPeriodo" />
+          <CalendarDatePicker SelectedDate="{Binding Inicio}" Width="138" Name="Inicio" IsVisible="{Binding UsaDataInicial}" />
+          <TextBlock Text="até" VerticalAlignment="Center" Name="RotuloA" IsVisible="{Binding UsaDataInicial}" />
+          <CalendarDatePicker SelectedDate="{Binding Fim}" Width="138" Name="Fim" />
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding MostraFiltroSituacao}">
+            <TextBlock Text="Situação" VerticalAlignment="Center" Margin="4,0,0,0" />
+            <ComboBox Name="FiltroSituacaoRelatorio" ItemsSource="{x:Static vm:RelHonorariosViewModel.Situacoes}" SelectedItem="{ReflectionBinding Situacao}" Width="135" />
+          </StackPanel>
+          <Button Name="BotaoGerar" Content="Gerar" Command="{ReflectionBinding GerarCommand}" Classes="accent" />
+          <Rectangle Width="1" Height="22" Fill="{DynamicResource Linha}" Margin="4,2" />
+          <c:BarraExportacaoView VerticalAlignment="Center" />
+        </WrapPanel>
+      </Border>
+
+      <ItemsControl Name="PainelIndicadores" ItemsSource="{Binding Indicadores}" IsVisible="{Binding TemIndicadores}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="1" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:IndicadorRelatorio">
+            <Border Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="8"
+                    Padding="12,8" Margin="0,0,8,0">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Rotulo}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TxSutil}" />
+                <TextBlock Text="{Binding Valor}" Classes="kpiValor" Classes.alerta="{Binding Destaque}" />
+                <TextBlock Text="{Binding Detalhe}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <TextBlock Text="{Binding ParametrosTela}" IsVisible="{Binding TemParametros}" FontSize="12" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TxTitulo}" />
     </StackPanel>
-    <c:MensagensView DockPanel.Dock="Bottom" Margin="0,6,0,0" />
+
+    <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+      <TextBlock Text="{Binding RodapeTela}" IsVisible="{Binding TemRodape}" FontSize="11.5" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+      <c:MensagensView />
+    </StackPanel>
+
     <DataGrid Name="Grade" ItemsSource="{Binding Linhas}" IsReadOnly="True" AutoGenerateColumns="False" />
   </DockPanel>
 </UserControl>

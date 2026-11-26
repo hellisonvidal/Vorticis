@@ -5,7 +5,7 @@ using Vorticis.Escritorio.Desktop.ViewModels;
 
 namespace Vorticis.Escritorio.Desktop.Views;
 
-/// <summary>Financeiro › Honorários: duplo clique ou Enter numa cobrança em aberto abre a baixa; as linhas marcadas vão para Excluir.</summary>
+/// <summary>Financeiro › Honorários: duplo clique ou Enter abre a baixa; as linhas selecionadas vão para Baixar e Excluir.</summary>
 public partial class HonorariosView : UserControl
 {
     public HonorariosView()
@@ -18,7 +18,7 @@ public partial class HonorariosView : UserControl
         };
         ListaCobrancas.KeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && DataContext is HonorariosViewModel { Selecionada: not null } vm) { vm.BaixarCommand.Execute(null); e.Handled = true; }
+            if (e.Key == Key.Enter && DataContext is HonorariosViewModel { TemSelecionada: true } vm) { vm.BaixarCommand.Execute(null); e.Handled = true; }
         };
     }
 }
@@ -26,11 +26,11 @@ public partial class HonorariosView : UserControl
 /// <summary>Ponto da tela que abre a janela "Novo honorário" / "Cobrança avulsa" (DataContext: LancamentoCobrancaViewModel).</summary>
 public sealed class LancamentoCobrancaHost : UserControl
 {
-    public LancamentoCobrancaHost() => FichaPopup.Ligar(this, () => new LancamentoCobrancaView(), 640, 640);
+    public LancamentoCobrancaHost() => FichaPopup.Ligar(this, () => new LancamentoCobrancaView(), 640, 680);
 }
 
-/// <summary>Ponto da tela que abre a janela "Baixar cobrança" (DataContext: BaixaCobrancaViewModel).</summary>
+/// <summary>Ponto da tela que abre a janela "Baixar cobrança(s)" (DataContext: BaixaCobrancaViewModel).</summary>
 public sealed class BaixaCobrancaHost : UserControl
 {
-    public BaixaCobrancaHost() => FichaPopup.Ligar(this, () => new BaixaCobrancaView(), 560, 380);
+    public BaixaCobrancaHost() => FichaPopup.Ligar(this, () => new BaixaCobrancaView(), 600, 520);
 }

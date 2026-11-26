@@ -48,9 +48,11 @@ public sealed record ContratoHonorario(long Id, long PessoaId, decimal Valor, in
 
 public sealed record CobrancaHonorario(long Id, long PessoaId, DateOnly Competencia, decimal Valor, DateOnly Vencimento, SituacaoCobranca Situacao,
                                        DateOnly? RecebidoEm, decimal? ValorRecebido, string? PessoaNome = null, TipoCobranca Tipo = TipoCobranca.Honorario,
-                                       string? Descricao = null, int? Parcela = null, int? Parcelas = null, string? ObservacaoBaixa = null, long? ContratoId = null)
+                                       string? Descricao = null, int? Parcela = null, int? Parcelas = null, string? ObservacaoBaixa = null, long? ContratoId = null,
+                                       decimal Juros = 0m, decimal Multa = 0m)
 {
     public string ParcelaTexto => Parcela is { } n && Parcelas is { } t ? $"{n}/{t}" : "";
+    public decimal Encargos => Juros + Multa;
     public bool Vencida(DateOnly hoje) => Situacao == SituacaoCobranca.Aberta && Vencimento < hoje;
 }
 
@@ -216,7 +218,7 @@ public static class RegrasEscritorio
         competencia = Mes(competencia);
         var mesVenc = vencimentoNoMesSeguinte ? competencia.AddMonths(1) : competencia;
         return contratos.Where(c => CobraNaCompetencia(c, competencia) && !jaCobradas.Contains(c.PessoaId))
-                        .Select(c => new CobrancaHonorario(0, c.PessoaId, competencia, c.Valor, NoDia(mesVenc, c.DiaVencimento), SituacaoCobranca.Aberta, null, null, c.PessoaNome))
+                        .Select(c => new CobrancaHonorario(0, c.PessoaId, competencia, c.Valor, NoDia(mesVenc, c.DiaVencimento), SituacaoCobranca.Aberta, null, null, c.PessoaNome, Descricao: "Honorários"))
                         .ToList();
     }
 
@@ -253,8 +255,36 @@ public static class RegrasEscritorio
             _ => (FrequenciaParcelas.Mensal, prazo),
         };
         return Parcelas(c.PessoaId, aPartirDe ?? c.Inicio, c.Valor, c.DiaVencimento ?? 10, freq, n, TipoCobranca.Honorario,
-                        c.Numero > 0 ? $"Contrato nº {c.Numero}" : "Contrato", vencimentoNoMesSeguinte)
+                        "Honorários", vencimentoNoMesSeguinte)
                .Select(p => p with { ContratoId = c.Id > 0 ? c.Id : null }).ToList();
+    }
+
+    /// <summary>
+    /// Rateia uma baixa (única ou múltipla) entre os títulos selecionados, proporcionalmente ao valor de cada título e ajustando
+    /// eventual diferença de centavos no último título para fechar exatamente o total recebido, os juros e a multa.
+    /// </summary>
+    public static IReadOnlyList<(CobrancaHonorario Cobranca, decimal ValorRecebido, decimal Juros, decimal Multa)> RatearBaixa(
+        IReadOnlyList<CobrancaHonorario> cobrancas, decimal valorTotal, decimal jurosTotal = 0m, decimal multaTotal = 0m)
+    {
+        if (cobrancas.Count == 0) return [];
+        if (cobrancas.Count == 1) return [(cobrancas[0], valorTotal, jurosTotal, multaTotal)];
+        var principalTotal = cobrancas.Sum(c => c.Valor);
+        var padrao = valorTotal == principalTotal + jurosTotal + multaTotal;
+        var resultado = new List<(CobrancaHonorario, decimal, decimal, decimal)>(cobrancas.Count);
+        decimal jAcum = 0m, mAcum = 0m, vAcum = 0m;
+        for (var i = 0; i < cobrancas.Count; i++)
+        {
+            var c = cobrancas[i];
+            var ultimo = i == cobrancas.Count - 1;
+            var j = ultimo ? jurosTotal - jAcum : principalTotal > 0 ? Math.Round(jurosTotal * c.Valor / principalTotal, 2, MidpointRounding.AwayFromZero) : 0m;
+            var m = ultimo ? multaTotal - mAcum : principalTotal > 0 ? Math.Round(multaTotal * c.Valor / principalTotal, 2, MidpointRounding.AwayFromZero) : 0m;
+            var v = ultimo ? valorTotal - vAcum
+                  : padrao ? c.Valor + j + m
+                  : principalTotal > 0 ? Math.Round(valorTotal * c.Valor / principalTotal, 2, MidpointRounding.AwayFromZero) : 0m;
+            jAcum += j; mAcum += m; vAcum += v;
+            resultado.Add((c, v, j, m));
+        }
+        return resultado;
     }
 
     /// <summary>Meses entre uma parcela e a seguinte, pela periodicidade do contrato.</summary>

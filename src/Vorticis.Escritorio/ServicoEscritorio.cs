@@ -385,7 +385,7 @@ public sealed class ServicoEscritorio
         => await PodeVerAsync(usuarioId, escritorio, ct)
             ? await _db.ListarAsync("""
                 SELECT c.id, c.pessoa_id, c.competencia, c.valor, c.vencimento, c.situacao, c.recebido_em, c.valor_recebido, p.nome,
-                       c.tipo, c.descricao, c.parcela, c.parcelas, c.observacao_baixa, c.contrato_id
+                       c.tipo, c.descricao, c.parcela, c.parcelas, c.observacao_baixa, c.contrato_id, c.juros, c.multa
                   FROM escritorio.honorario_cobranca c JOIN escritorio.pessoa p ON p.id = c.pessoa_id
                  WHERE p.empresa_id = @e AND (@c::date IS NULL OR (CASE WHEN @ate::date IS NULL THEN c.competencia = @c ELSE c.competencia BETWEEN @c AND @ate END))
                    AND (NOT @a OR c.situacao = 'ABERTA')
@@ -395,7 +395,8 @@ public sealed class ServicoEscritorio
                 """, r => new CobrancaHonorario(r.GetInt64(0), r.GetInt64(1), r.GetFieldValue<DateOnly>(2), r.GetDecimal(3), r.GetFieldValue<DateOnly>(4),
                                                 RegrasEscritorio.SituacaoCobrancaDe(r.GetString(5)), r.Data(6), r.Valor(7), r.GetString(8),
                                                 RegrasEscritorio.TipoCobrancaDe(r.GetString(9)), r.Texto(10), r.IsDBNull(11) ? null : r.GetInt16(11),
-                                                r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13), r.IsDBNull(14) ? null : r.GetInt64(14)),
+                                                r.IsDBNull(12) ? null : r.GetInt16(12), r.Texto(13), r.IsDBNull(14) ? null : r.GetInt64(14),
+                                                r.GetDecimal(15), r.GetDecimal(16)),
                 ct, ("e", escritorio), ("c", competencia is { } d ? RegrasEscritorio.Mes(d) : null), ("ate", ate is { } x ? RegrasEscritorio.Mes(x) : null), ("a", somenteAbertas),
                 ("vd", vencimentoDe), ("va", vencimentoAte), ("pes", pessoa))
             : [];
@@ -413,22 +414,43 @@ public sealed class ServicoEscritorio
         var novas = RegrasEscritorio.GerarCobrancas(contratos, competencia, ja, vencimentoNoMesSeguinte);
         foreach (var n in novas)
             await _db.ExecutarAsync("""
-                INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento) VALUES (@e, @p, @c, @v, @venc) ON CONFLICT DO NOTHING
-                """, ct, ("e", escritorio), ("p", n.PessoaId), ("c", n.Competencia), ("v", n.Valor), ("venc", n.Vencimento));
+                INSERT INTO escritorio.honorario_cobranca (empresa_id, pessoa_id, competencia, valor, vencimento, descricao)
+                VALUES (@e, @p, @c, @v, @venc, @d) ON CONFLICT DO NOTHING
+                """, ct, ("e", escritorio), ("p", n.PessoaId), ("c", n.Competencia), ("v", n.Valor), ("venc", n.Vencimento), ("d", n.Descricao));
         return Resultado<int>.Ok(novas.Count);
     }
 
     public async Task<Resultado> ReceberAsync(long escritorio, CobrancaHonorario c, DateOnly data, decimal valor, long usuarioId, CancellationToken ct = default,
-                                              string? observacao = null)
+                                              string? observacao = null, decimal juros = 0m, decimal multa = 0m)
     {
-        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
-        if (c.Situacao != SituacaoCobranca.Aberta) return Resultado.Falha("Só cobranças em aberto podem ser recebidas.");
-        if (valor <= 0) return Resultado.Falha("Informe o valor recebido.");
-        await _db.ExecutarAsync("""
-            UPDATE escritorio.honorario_cobranca SET situacao = 'RECEBIDA', recebido_em = @d, valor_recebido = @v, observacao_baixa = NULLIF(@o, '')
-             WHERE id = @id AND empresa_id = @e AND situacao = 'ABERTA'
-            """, ct, ("d", data), ("v", valor), ("o", observacao?.Trim() ?? ""), ("id", c.Id), ("e", escritorio));
-        return Resultado.Ok();
+        var r = await ReceberLoteAsync(escritorio, [c], data, valor, usuarioId, ct, observacao, juros, multa);
+        return r.Sucesso ? Resultado.Ok() : Resultado.Falha(r.Erros);
+    }
+
+    /// <summary>
+    /// Baixa uma ou várias cobranças em aberto de uma vez, rateando eventual valor de juros e multa proporcionalmente entre os títulos.
+    /// </summary>
+    public async Task<Resultado<int>> ReceberLoteAsync(long escritorio, IReadOnlyList<CobrancaHonorario> cobrancas, DateOnly data, decimal valorTotal, long usuarioId,
+                                                       CancellationToken ct = default, string? observacao = null, decimal juros = 0m, decimal multa = 0m)
+    {
+        if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado<int>.Falha(negado);
+        if (cobrancas.Count == 0) return Resultado<int>.Falha("Selecione ao menos uma cobrança em aberto.");
+        if (cobrancas.Any(c => c.Situacao != SituacaoCobranca.Aberta)) return Resultado<int>.Falha("Só cobranças em aberto podem ser recebidas.");
+        if (juros < 0 || multa < 0) return Resultado<int>.Falha("Juros e multa não podem ser negativos.");
+        if (valorTotal <= 0) return Resultado<int>.Falha("Informe o valor recebido.");
+        var rateio = RegrasEscritorio.RatearBaixa(cobrancas, valorTotal, juros, multa);
+        if (rateio.Any(x => x.ValorRecebido <= 0)) return Resultado<int>.Falha("O valor recebido deve ser positivo para todos os títulos selecionados.");
+        var n = await _db.ExecutarAsync("""
+            UPDATE escritorio.honorario_cobranca AS c
+               SET situacao = 'RECEBIDA', recebido_em = @d, valor_recebido = x.v, juros = x.j, multa = x.m, observacao_baixa = NULLIF(@o, '')
+              FROM unnest(@ids::bigint[], @vals::numeric[], @juros::numeric[], @multas::numeric[]) AS x(id, v, j, m)
+             WHERE c.id = x.id AND c.empresa_id = @e AND c.situacao = 'ABERTA'
+            """, ct, ("d", data), ("o", observacao?.Trim() ?? ""), ("e", escritorio),
+            ("ids", rateio.Select(x => x.Cobranca.Id).ToArray()),
+            ("vals", rateio.Select(x => x.ValorRecebido).ToArray()),
+            ("juros", rateio.Select(x => x.Juros).ToArray()),
+            ("multas", rateio.Select(x => x.Multa).ToArray()));
+        return Resultado<int>.Ok(n);
     }
 
     /// <summary>Volta a cobrança para "em aberto" (estorno do recebimento) ou cancela uma cobrança em aberto.</summary>
@@ -436,8 +458,11 @@ public sealed class ServicoEscritorio
     {
         if (await NegarAsync(usuarioId, escritorio, Permissao.EscritorioHonorarios, ct) is { } negado) return Resultado.Falha(negado);
         if (nova == SituacaoCobranca.Recebida) return Resultado.Falha("Use Receber.");
-        var r = await Tentar(() => _db.ExecutarAsync("UPDATE escritorio.honorario_cobranca SET situacao = @s, recebido_em = NULL, valor_recebido = NULL, observacao_baixa = NULL WHERE id = @id AND empresa_id = @e",
-                                                     ct, ("s", nova.Sql()), ("id", c.Id), ("e", escritorio)));
+        var r = await Tentar(() => _db.ExecutarAsync("""
+            UPDATE escritorio.honorario_cobranca
+               SET situacao = @s, recebido_em = NULL, valor_recebido = NULL, juros = 0, multa = 0, observacao_baixa = NULL
+             WHERE id = @id AND empresa_id = @e
+            """, ct, ("s", nova.Sql()), ("id", c.Id), ("e", escritorio)));
         return r.Sucesso ? Resultado.Ok()
             : Resultado.Falha($"Não foi possível reabrir: o cliente já tem outro honorário em {c.Competencia:MM/yyyy}.");
     }

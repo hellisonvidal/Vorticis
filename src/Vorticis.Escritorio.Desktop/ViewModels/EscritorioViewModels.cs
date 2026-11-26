@@ -371,9 +371,13 @@ public sealed partial class ClientesEscritorioViewModel(IContexto contexto) : Pe
 
 // ---------------------------------------------------------------------------------------------- carteira
 
+/// <summary>Quadro de resumo exibido no topo dos relatórios e da carteira do Escritório.</summary>
+public sealed record IndicadorRelatorio(string Rotulo, string Valor, string Detalhe = "", bool Destaque = false);
+
 public sealed record ClienteLinha(ClienteEscritorio C)
 {
     public int Codigo => C.Codigo;
+    public string CodigoTexto => C.Codigo.ToString("0000");
     public string Nome => C.Nome;
     public string Documento => C.Documento switch
     {
@@ -392,6 +396,7 @@ public sealed record ClienteLinha(ClienteEscritorio C)
 public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(contexto)
 {
     public ObservableCollection<ClienteLinha> Lista { get; } = [];
+    public ObservableCollection<IndicadorRelatorio> Indicadores { get; } = [];
     [ObservableProperty] private string _totais = "";
 
     public async Task CarregarAsync()
@@ -403,8 +408,17 @@ public partial class CarteiraViewModel(IContexto contexto) : ModuloViewModel(con
         if (Contexto.ClienteEmFocoId is { } foco) itens = itens.Where(c => c.PessoaId == foco).ToList();   // cliente em foco na barra
         Lista.Clear();
         foreach (var c in itens) Lista.Add(new ClienteLinha(c));
-        Totais = $"{itens.Count} cliente(s) · honorários mensais {Formato.Moeda(itens.Sum(c => c.HonorarioMensal))} · em aberto {Formato.Moeda(itens.Sum(c => c.HonorariosEmAberto))} · "
-                 + $"{itens.Sum(c => c.TarefasAtrasadas)} tarefa(s) atrasada(s)";
+        var mensal = itens.Sum(c => c.HonorarioMensal);
+        var aberto = itens.Sum(c => c.HonorariosEmAberto);
+        var pendentes = itens.Sum(c => c.TarefasPendentes);
+        var atrasadas = itens.Sum(c => c.TarefasAtrasadas);
+        Indicadores.Clear();
+        Indicadores.Add(new("Clientes ativos", itens.Count.ToString(), Contexto.ClienteEmFocoId is not null ? "Cliente selecionado no topo" : "Carteira ativa do escritório"));
+        Indicadores.Add(new("Honorários mensais", $"R$ {Formato.Moeda(mensal)}", $"{itens.Count(c => c.HonorarioMensal > 0)} com contrato vigente"));
+        Indicadores.Add(new("Em aberto", $"R$ {Formato.Moeda(aberto)}", $"{itens.Count(c => c.HonorariosEmAberto > 0)} cliente(s) com saldo", aberto > 0));
+        Indicadores.Add(new("Tarefas abertas", pendentes.ToString(), atrasadas > 0 ? $"{atrasadas} atrasada(s)" : "Nenhuma atrasada", atrasadas > 0));
+        Totais = $"{itens.Count} cliente(s) · honorários mensais {Formato.Moeda(mensal)} · em aberto {Formato.Moeda(aberto)} · "
+                 + $"{atrasadas} tarefa(s) atrasada(s)";
     }
 
     [RelayCommand]
@@ -690,13 +704,26 @@ public sealed record CobrancaLinha(CobrancaHonorario C)
 {
     public string Cliente => C.PessoaNome ?? "";
     public string Tipo => C.Tipo.Rotulo();
-    public string Descricao => C.Descricao ?? (C.Tipo == TipoCobranca.Honorario ? "Honorário" : "");
+    public string Descricao => C.Descricao ?? (C.Tipo == TipoCobranca.Honorario ? "Honorários" : "");
     public string Parcela => C.ParcelaTexto;
     public string Competencia => C.Competencia.ToString("MM/yyyy");
     public string Vencimento => C.Vencimento.ToString("dd/MM/yyyy");
     public string Valor => Formato.Moeda(C.Valor);
     public string Situacao => C.Vencida(DateOnly.FromDateTime(DateTime.Today)) ? "VENCIDA" : C.Situacao.Rotulo();
-    public string Recebido => C.RecebidoEm is { } d ? $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}{(C.ObservacaoBaixa is { } o ? $" ({o})" : "")}" : "";
+    public string Recebido
+    {
+        get
+        {
+            if (C.RecebidoEm is not { } d) return "";
+            var detalhes = string.Join(" · ", new[]
+            {
+                C.Juros > 0 ? $"juros {Formato.Moeda(C.Juros)}" : null,
+                C.Multa > 0 ? $"multa {Formato.Moeda(C.Multa)}" : null,
+                C.ObservacaoBaixa,
+            }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            return $"{d:dd/MM/yyyy} – {Formato.Moeda(C.ValorRecebido ?? 0)}{(detalhes.Length > 0 ? $" ({detalhes})" : "")}";
+        }
+    }
 }
 
 /// <summary>Parcela na prévia do lançamento (Financeiro › Honorários › Novo honorário / Cobrança avulsa).</summary>
@@ -707,8 +734,8 @@ public enum FiltroSituacaoCobranca { Todas, EmAberto, Vencidas, Recebidas, Cance
 /// <summary>
 /// Financeiro › Honorários: as cobranças de honorários e avulsas de todos os clientes (ou do escolhido no topo), por competência.
 /// Pesquisa pelo vencimento (de/até) e Carregar; Novo honorário (com parcelas: competência, valor, dia do vencimento e frequência), Cobrança
-/// avulsa, Alterar, Baixar (recebimento), Estornar baixa, Cancelar e Excluir (uma ou várias marcadas). As parcelas dos contratos vêm do
-/// Gerador de contratos (Gerar parcelas do contrato).
+/// avulsa, Alterar, Baixar (uma ou várias selecionadas, com juros e multa opcionais), Estornar baixa, Cancelar e Excluir (uma ou várias marcadas).
+/// As parcelas dos contratos vêm do Gerador de contratos (Gerar parcelas do contrato).
 /// </summary>
 public partial class HonorariosViewModel : ModuloViewModel
 {
@@ -759,11 +786,16 @@ public partial class HonorariosViewModel : ModuloViewModel
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemSelecionada))] private CobrancaLinha? _selecionada;
     [ObservableProperty] private string _totais = "";
     [ObservableProperty] private string _clienteDoFiltro = "";
+    private IReadOnlyList<CobrancaLinha> _marcadas = [];
 
-    /// <summary>As cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias); Excluir age em todas.</summary>
-    public IReadOnlyList<CobrancaLinha> Marcadas { get; set; } = [];
+    /// <summary>As cobranças marcadas na lista (Ctrl ou Shift + clique marcam várias); Baixar e Excluir agem em todas.</summary>
+    public IReadOnlyList<CobrancaLinha> Marcadas
+    {
+        get => _marcadas;
+        set { _marcadas = value; OnPropertyChanged(nameof(TemSelecionada)); }
+    }
 
-    public bool TemSelecionada => Selecionada is not null;
+    public bool TemSelecionada => Selecionada is not null || _marcadas.Count > 0;
     public bool PodeEditar => Contexto.Pode(Permissao.EscritorioHonorarios);
     public void AtualizarPermissoes() => OnPropertyChanged(nameof(PodeEditar));
 
@@ -839,9 +871,11 @@ public partial class HonorariosViewModel : ModuloViewModel
     private void Baixar()
     {
         Erros.Clear();
-        if (Selecionada?.C is not { } c) { Erros.Add("Selecione a cobrança na lista."); return; }
-        if (c.Situacao != SituacaoCobranca.Aberta) { Erros.Add("Só cobranças em aberto podem ser baixadas."); return; }
-        Baixa.Abrir(c);
+        var escolhidas = Marcadas.Count > 0 ? Marcadas.Select(l => l.C).ToList() : Selecionada?.C is { } c ? [c] : [];
+        if (escolhidas.Count == 0) { Erros.Add("Selecione a cobrança na lista (Ctrl ou Shift + clique selecionam várias)."); return; }
+        var abertas = escolhidas.Where(x => x.Situacao == SituacaoCobranca.Aberta).ToList();
+        if (abertas.Count == 0) { Erros.Add("Só cobranças em aberto podem ser baixadas."); return; }
+        Baixa.Abrir(abertas, escolhidas.Count - abertas.Count);
     }
 
     [RelayCommand]
@@ -1047,37 +1081,111 @@ public partial class LancamentoCobrancaViewModel(IContexto contexto, HonorariosV
     public void FecharFicha() => FichaAberta = false;
 }
 
-/// <summary>Janela "Baixar cobrança": data e valor recebidos e uma observação (forma de pagamento, juros, desconto...).</summary>
+/// <summary>Título listado na janela de baixa múltipla.</summary>
+public sealed record ItemBaixa(string Competencia, string Descricao, string Vencimento, string Valor);
+
+/// <summary>Janela "Baixar cobrança(s)": baixa um ou vários títulos selecionados, com juros e multa opcionais e observação.</summary>
 public partial class BaixaCobrancaViewModel(IContexto contexto, HonorariosViewModel tela) : ModuloViewModel(contexto), IComFicha
 {
-    private CobrancaHonorario? _cobranca;
+    private IReadOnlyList<CobrancaHonorario> _cobrancas = [];
+    private bool _atualizandoValor;
+
+    public ObservableCollection<ItemBaixa> Itens { get; } = [];
+
     [ObservableProperty] private bool _fichaAberta;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TituloFicha), nameof(EmLote), nameof(Unica), nameof(RotuloValorRecebido))] private int _quantidade;
     [ObservableProperty] private string _descricaoCobranca = "";
+    [ObservableProperty] private string _valorPrincipal = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemAvisoIgnoradas))] private string _avisoIgnoradas = "";
     [ObservableProperty] private DateTime? _data = DateTime.Today;
+    [ObservableProperty] private string _juros = "";
+    [ObservableProperty] private string _multa = "";
     [ObservableProperty] private string _valor = "";
     [ObservableProperty] private string _observacao = "";
 
-    public string TituloFicha => "Baixar cobrança";
+    public string TituloFicha => Quantidade > 1 ? $"Baixar {Quantidade} cobranças" : "Baixar cobrança";
+    public bool EmLote => Quantidade > 1;
+    public bool Unica => Quantidade <= 1;
+    public bool TemAvisoIgnoradas => !string.IsNullOrWhiteSpace(AvisoIgnoradas);
+    public string RotuloValorRecebido => EmLote ? "Total recebido" : "Valor recebido";
 
-    public void Abrir(CobrancaHonorario c)
+    partial void OnJurosChanged(string value) => RecalcularTotal();
+    partial void OnMultaChanged(string value) => RecalcularTotal();
+
+    private void RecalcularTotal()
     {
-        _cobranca = c;
+        if (_cobrancas.Count == 0 || _atualizandoValor) return;
+        var j = Formato.LerValor(Juros) ?? 0m;
+        var m = Formato.LerValor(Multa) ?? 0m;
+        if (j < 0 || m < 0) return;
+        _atualizandoValor = true;
+        try { Valor = Formato.Moeda(_cobrancas.Sum(x => x.Valor) + j + m); }
+        finally { _atualizandoValor = false; }
+    }
+
+    public void Abrir(CobrancaHonorario c) => Abrir([c]);
+
+    public void Abrir(IReadOnlyList<CobrancaHonorario> cobrancas, int ignoradas = 0)
+    {
+        _cobrancas = cobrancas;
+        Quantidade = cobrancas.Count;
         Erros.Clear();
         Mensagem = null;
-        DescricaoCobranca = $"{c.PessoaNome} · {(c.Descricao ?? c.Tipo.Rotulo())}{(c.ParcelaTexto is { Length: > 0 } p ? $" (parcela {p})" : "")} · competência {c.Competencia:MM/yyyy} · "
-                            + $"vencimento {c.Vencimento:dd/MM/yyyy} · {Formato.Moeda(c.Valor)}";
-        (Data, Valor, Observacao) = (DateTime.Today, Formato.Moeda(c.Valor), "");
+        Itens.Clear();
+        foreach (var item in cobrancas)
+        {
+            var desc = (item.Descricao ?? (item.Tipo == TipoCobranca.Honorario ? "Honorários" : item.Tipo.Rotulo()))
+                       + (item.ParcelaTexto is { Length: > 0 } p ? $" ({p})" : "");
+            Itens.Add(new ItemBaixa(item.Competencia.ToString("MM/yyyy"), desc, item.Vencimento.ToString("dd/MM/yyyy"), Formato.Moeda(item.Valor)));
+        }
+        var principal = cobrancas.Sum(x => x.Valor);
+        ValorPrincipal = $"R$ {Formato.Moeda(principal)}";
+        if (cobrancas.Count == 1)
+        {
+            var c = cobrancas[0];
+            DescricaoCobranca = $"{c.PessoaNome} · {(c.Descricao ?? (c.Tipo == TipoCobranca.Honorario ? "Honorários" : c.Tipo.Rotulo()))}"
+                                + $"{(c.ParcelaTexto is { Length: > 0 } p ? $" (parcela {p})" : "")} · competência {c.Competencia:MM/yyyy} · "
+                                + $"vencimento {c.Vencimento:dd/MM/yyyy} · R$ {Formato.Moeda(c.Valor)}";
+        }
+        else
+        {
+            DescricaoCobranca = $"{cobrancas[0].PessoaNome} · {cobrancas.Count} títulos selecionados · soma dos títulos: R$ {Formato.Moeda(principal)}";
+        }
+        AvisoIgnoradas = ignoradas > 0 ? $"{ignoradas} cobrança(s) já baixada(s) ou cancelada(s) na seleção foi(ram) ignorada(s)." : "";
+        _atualizandoValor = true;
+        try
+        {
+            Data = DateTime.Today;
+            (Juros, Multa, Observacao) = ("", "", "");
+            Valor = Formato.Moeda(principal);
+        }
+        finally { _atualizandoValor = false; }
         FichaAberta = true;
     }
 
     [RelayCommand]
     private Task ConfirmarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
     {
-        if (_cobranca is not { } c) return;
-        var r = await app.Escritorio().ReceberAsync(empresa, c, Ext.Dia(Data), Formato.LerValor(Valor) ?? 0, usuario, observacao: Observacao);
+        if (_cobrancas.Count == 0) return;
+        decimal juros = 0m, multa = 0m;
+        if (!string.IsNullOrWhiteSpace(Juros))
+        {
+            if (Formato.LerValor(Juros) is not { } j || j < 0) { Erros.Add("Informe um valor válido para os juros."); return; }
+            juros = j;
+        }
+        if (!string.IsNullOrWhiteSpace(Multa))
+        {
+            if (Formato.LerValor(Multa) is not { } m || m < 0) { Erros.Add("Informe um valor válido para a multa."); return; }
+            multa = m;
+        }
+        var valorTotal = Formato.LerValor(Valor) ?? 0m;
+        var r = await app.Escritorio().ReceberLoteAsync(empresa, _cobrancas, Ext.Dia(Data), valorTotal, usuario, observacao: Observacao, juros: juros, multa: multa);
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         FichaAberta = false;
-        await tela.AposLancarAsync($"Baixa registrada: {Formato.Moeda(Formato.LerValor(Valor) ?? 0)} em {Ext.Dia(Data):dd/MM/yyyy}.");
+        var texto = r.Valor == 1
+            ? $"Baixa registrada: {Formato.Moeda(valorTotal)} em {Ext.Dia(Data):dd/MM/yyyy}."
+            : $"Baixa registrada para {r.Valor} cobranças: total {Formato.Moeda(valorTotal)} em {Ext.Dia(Data):dd/MM/yyyy}.";
+        await tela.AposLancarAsync(texto);
     }, Permissao.EscritorioHonorarios);
 
     [RelayCommand]
@@ -1389,30 +1497,48 @@ public sealed record LinhaRelatorioEscritorio(string[] V, bool Destaque)
     public string V8 => V.ElementAtOrDefault(8) ?? "";
 }
 
-/// <summary>Base dos relatórios do Escritório: a tabela exportável é mostrada na grade e exportada em PDF, Excel e CSV.</summary>
+/// <summary>Base dos relatórios do Escritório: a tabela exportável é mostrada na grade, com indicadores de resumo, e exportada em PDF, Excel e CSV.</summary>
 public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) : RelatorioViewModel(contexto)
 {
     private TabelaRelatorio? _tabela;
     private string _parametros = "";
 
     public ObservableCollection<LinhaRelatorioEscritorio> Linhas { get; } = [];
+    public ObservableCollection<IndicadorRelatorio> Indicadores { get; } = [];
     [ObservableProperty] private DateTime? _inicio = new DateTime(DateTime.Today.Year, 1, 1);
     [ObservableProperty] private DateTime? _fim = new DateTime(DateTime.Today.Year, 12, 31);
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemParametros))] private string _parametrosTela = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TemRodape))] private string _rodapeTela = "";
 
     public abstract string Titulo { get; }
+    public abstract string Subtitulo { get; }
+    public abstract IReadOnlyList<ColunaRelatorio> ColunasPadrao { get; }
+    public IReadOnlyList<ColunaRelatorio> ColunasAtuais => _tabela?.Colunas ?? ColunasPadrao;
+    public virtual bool UsaDataInicial => true;
+    public virtual bool MostraFiltroSituacao => false;
+    public virtual string RotuloPeriodo => UsaDataInicial ? "Vencimento de" : "Validade até";
+    public bool TemIndicadores => Indicadores.Count > 0;
+    public bool TemParametros => !string.IsNullOrWhiteSpace(ParametrosTela);
+    public bool TemRodape => !string.IsNullOrWhiteSpace(RodapeTela);
     protected override string TituloRelatorio => Titulo;
     protected override string Parametros => _parametros;
     protected override bool Paisagem => true;
     protected override IReadOnlyList<TabelaRelatorio> Tabelas() => _tabela is null ? [] : [_tabela];
 
-    protected void Exibir(TabelaRelatorio t, string parametros)
+    public event Action? TabelaAlterada;
+
+    protected void Exibir(TabelaRelatorio t, string parametros, IReadOnlyList<IndicadorRelatorio>? indicadores = null)
     {
-        (_tabela, _parametros) = (t, parametros);
+        (_tabela, _parametros, ParametrosTela, RodapeTela) = (t, parametros, parametros, t.Rodape ?? "");
+        Indicadores.Clear();
+        if (indicadores is not null) foreach (var ind in indicadores) Indicadores.Add(ind);
+        OnPropertyChanged(nameof(TemIndicadores));
         Linhas.Clear();
         foreach (var l in t.Linhas)
             Linhas.Add(new LinhaRelatorioEscritorio(l.Valores.Select((v, i) => ExportacaoRelatorio.Texto(v, t.Colunas[i].Tipo)).ToArray(), l.Destaque));
         TemDados = true;
         AtualizarPermissoesExportacao();
+        TabelaAlterada?.Invoke();
     }
 }
 
@@ -1420,7 +1546,13 @@ public abstract partial class RelatorioEscritorioViewModel(IContexto contexto) :
 public sealed partial class RelHonorariosViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
 {
     public override string Titulo => TabelasEscritorio.TituloHonorarios;
+    public override string Subtitulo => "Cobranças de honorários e serviços avulsos do cliente escolhido no topo, filtradas pela data de vencimento.";
+    public override IReadOnlyList<ColunaRelatorio> ColunasPadrao => TabelasEscritorio.ColunasHonorarios;
+    public override bool MostraFiltroSituacao => true;
     protected override string NomeArquivo => "relatorio_honorarios";
+
+    public static IReadOnlyList<Opcao<FiltroSituacaoCobranca>> Situacoes { get; } = HonorariosViewModel.Situacoes;
+    [ObservableProperty] private Opcao<FiltroSituacaoCobranca>? _situacao = Situacoes[0];
 
     [RelayCommand]
     private Task GerarAsync() => ExecutarAsync(async (app, empresa, usuario) =>
@@ -1429,16 +1561,43 @@ public sealed partial class RelHonorariosViewModel(IContexto contexto) : Relator
         var ini = Ext.Dia(Inicio);
         var fim = Ext.Dia(Fim);
         if (fim < ini) { Erros.Add("A data final não pode ser anterior à inicial."); return; }
-        var cobrancas = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, usuario, vencimentoDe: ini, vencimentoAte: fim, pessoa: cliente);
-        Exibir(TabelasEscritorio.Honorarios(cobrancas, DateOnly.FromDateTime(DateTime.Today)), $"Cliente: {Contexto.ClienteEmFocoNome} · vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}");
-        Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança do cliente com vencimento no período." : null;
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        var todas = await app.Escritorio().ListarCobrancasAsync(empresa, null, false, usuario, vencimentoDe: ini, vencimentoAte: fim, pessoa: cliente);
+        var cobrancas = todas.Where(c => Situacao?.Valor switch
+        {
+            FiltroSituacaoCobranca.EmAberto => c.Situacao == SituacaoCobranca.Aberta,
+            FiltroSituacaoCobranca.Vencidas => c.Vencida(hoje),
+            FiltroSituacaoCobranca.Recebidas => c.Situacao == SituacaoCobranca.Recebida,
+            FiltroSituacaoCobranca.Canceladas => c.Situacao == SituacaoCobranca.Cancelada,
+            _ => true,
+        }).ToList();
+        var validas = cobrancas.Where(c => c.Situacao != SituacaoCobranca.Cancelada).ToList();
+        var faturado = validas.Sum(c => c.Valor);
+        var recebido = cobrancas.Sum(c => c.ValorRecebido ?? 0m);
+        var encargos = cobrancas.Sum(c => c.Encargos);
+        var emAberto = validas.Where(c => c.Situacao == SituacaoCobranca.Aberta).Sum(c => c.Valor);
+        var vencidas = cobrancas.Where(c => c.Vencida(hoje)).ToList();
+        var vencido = vencidas.Sum(c => c.Valor);
+        IndicadorRelatorio[] kpis =
+        [
+            new("Total faturado", $"R$ {Formato.Moeda(faturado)}", $"{validas.Count} cobrança(s) válida(s)"),
+            new("Total recebido", $"R$ {Formato.Moeda(recebido)}", encargos > 0 ? $"Inclui R$ {Formato.Moeda(encargos)} de juros/multa" : $"{cobrancas.Count(c => c.Situacao == SituacaoCobranca.Recebida)} baixada(s)"),
+            new("Em aberto", $"R$ {Formato.Moeda(emAberto)}", $"{validas.Count(c => c.Situacao == SituacaoCobranca.Aberta)} a receber", emAberto > 0),
+            new("Em atraso", $"R$ {Formato.Moeda(vencido)}", vencidas.Count > 0 ? $"{vencidas.Count} título(s) vencido(s)" : "Nenhum título vencido", vencidas.Count > 0),
+        ];
+        var filtroSit = Situacao is { Valor: not FiltroSituacaoCobranca.Todas } s ? $" · situação: {s.Texto}" : "";
+        Exibir(TabelasEscritorio.Honorarios(cobrancas, hoje),
+               $"Cliente: {Contexto.ClienteEmFocoNome} · vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}{filtroSit}", kpis);
+        Mensagem = cobrancas.Count == 0 ? "Nenhuma cobrança do cliente para os filtros informados." : null;
     }, Permissao.EscritorioRelatorios);
 }
 
 /// <summary>Relatórios › Produtividade da equipe: tarefas do período por responsável (no prazo, com atraso, em aberto).</summary>
 public sealed partial class RelProdutividadeViewModel(IContexto contexto) : RelatorioEscritorioViewModel(contexto)
 {
-    public override string Titulo => "Produtividade da equipe";
+    public override string Titulo => TabelasEscritorio.TituloProdutividade;
+    public override string Subtitulo => "Tarefas de todos os clientes do escritório por responsável, com entregas no prazo, atrasos e pendências.";
+    public override IReadOnlyList<ColunaRelatorio> ColunasPadrao => TabelasEscritorio.ColunasProdutividade;
     protected override string NomeArquivo => "produtividade_equipe";
 
     [RelayCommand]
@@ -1447,9 +1606,25 @@ public sealed partial class RelProdutividadeViewModel(IContexto contexto) : Rela
         var ini = Ext.Dia(Inicio);
         var fim = Ext.Dia(Fim);
         if (fim < ini) { Erros.Add("A data final não pode ser anterior à inicial."); return; }
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
         var tarefas = await app.Escritorio().ListarTarefasAsync(empresa, null, false, usuario);
-        Exibir(TabelasEscritorio.Produtividade(tarefas, ini, fim, DateOnly.FromDateTime(DateTime.Today)), $"Vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy}");
-        Mensagem = null;
+        var doPeriodo = tarefas.Where(t => t.Vencimento >= ini && t.Vencimento <= fim && t.Situacao != SituacaoTarefa.Cancelada).ToList();
+        var concl = doPeriodo.Where(t => t.Situacao == SituacaoTarefa.Concluida).ToList();
+        var noPrazo = concl.Count(t => t.ConcluidaEm is { } c && DateOnly.FromDateTime(c.LocalDateTime) <= t.Vencimento);
+        var comAtraso = concl.Count - noPrazo;
+        var atrasadas = doPeriodo.Count(t => t.Atrasada(hoje));
+        var aVencer = doPeriodo.Count - concl.Count - atrasadas;
+        var pct = concl.Count == 0 ? 0m : Math.Round(noPrazo * 100m / concl.Count, 1);
+        var resps = doPeriodo.Select(t => t.ResponsavelNome ?? "(sem responsável)").Distinct().Count();
+        IndicadorRelatorio[] kpis =
+        [
+            new("Tarefas no período", doPeriodo.Count.ToString(), $"{resps} responsável(is)"),
+            new("Concluídas no prazo", noPrazo.ToString(), $"{Formato.Num(pct)}% das concluídas"),
+            new("Concluídas com atraso", comAtraso.ToString(), $"{concl.Count} concluída(s) ao todo", comAtraso > 0),
+            new("Atrasadas em aberto", atrasadas.ToString(), $"{aVencer} ainda a vencer", atrasadas > 0),
+        ];
+        Exibir(TabelasEscritorio.Produtividade(tarefas, ini, fim, hoje), $"Vencimento de {ini:dd/MM/yyyy} a {fim:dd/MM/yyyy} · todos os clientes", kpis);
+        Mensagem = doPeriodo.Count == 0 ? "Nenhuma tarefa com vencimento no período selecionado." : null;
     }, Permissao.EscritorioRelatorios);
 }
 
@@ -1458,7 +1633,10 @@ public sealed partial class RelCertificadosViewModel : RelatorioEscritorioViewMo
 {
     public RelCertificadosViewModel(IContexto contexto) : base(contexto) { Inicio = DateTime.Today; Fim = DateTime.Today.AddDays(60); }
 
-    public override string Titulo => "Certificados digitais a vencer";
+    public override string Titulo => TabelasEscritorio.TituloCertificados;
+    public override string Subtitulo => "Certificados digitais do escritório e dos clientes com validade até a data informada.";
+    public override IReadOnlyList<ColunaRelatorio> ColunasPadrao => TabelasEscritorio.ColunasCertificados;
+    public override bool UsaDataInicial => false;
     protected override string NomeArquivo => "certificados_a_vencer";
 
     [RelayCommand]
@@ -1469,8 +1647,20 @@ public sealed partial class RelCertificadosViewModel : RelatorioEscritorioViewMo
         if (!r.Sucesso) { MostrarResultado(r, ""); return; }
         var empresas = (await app.Usuarios.EmpresasPermitidasAsync(sessao)).ToDictionary(e => e.Id, e => e.RazaoSocial);
         var ate = Ext.Dia(Fim);
-        var t = TabelasEscritorio.CertificadosAVencer(r.Valor, empresas, ate, DateTimeOffset.Now);
-        Exibir(t, $"Validade até {ate:dd/MM/yyyy}");
+        var agora = DateTimeOffset.Now;
+        var filtrados = r.Valor.Where(c => DateOnly.FromDateTime(c.ValidoAte.LocalDateTime) <= ate).ToList();
+        var vencidos = filtrados.Count(c => c.DiasParaVencer(agora) < 0);
+        var ate30 = filtrados.Count(c => c.DiasParaVencer(agora) is >= 0 and <= 30);
+        var apos30 = filtrados.Count - vencidos - ate30;
+        IndicadorRelatorio[] kpis =
+        [
+            new("Certificados listados", filtrados.Count.ToString(), $"Validade até {ate:dd/MM/yyyy}"),
+            new("Já vencidos", vencidos.ToString(), vencidos > 0 ? "Renovação imediata necessária" : "Nenhum vencido", vencidos > 0),
+            new("Vencem em até 30 dias", ate30.ToString(), ate30 > 0 ? "Providenciar renovação" : "Nenhum nos próximos 30 dias", ate30 > 0),
+            new("Vencem após 30 dias", apos30.ToString(), "Dentro do período consultado"),
+        ];
+        var t = TabelasEscritorio.CertificadosAVencer(r.Valor, empresas, ate, agora);
+        Exibir(t, $"Validade até {ate:dd/MM/yyyy}", kpis);
         Mensagem = t.Linhas.Count == 0 ? $"Nenhum certificado vence até {ate:dd/MM/yyyy}." : null;
     }, Permissao.EscritorioRelatorios);
 }

@@ -1,27 +1,75 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.BaixaCobrancaView" x:DataType="vm:BaixaCobrancaViewModel">
-  <!-- Janela Baixar cobrança: data, valor recebido e observação -->
-  <DockPanel Margin="20,16">
-    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
-      <c:MensagensView />
-      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-        <Button Content="Cancelar" Command="{Binding FecharFichaCommand}" />
-        <Button Name="ConfirmarBaixa" Content="Confirmar baixa" Classes="accent" Command="{Binding ConfirmarCommand}" />
+  <!-- Janela Baixar cobrança(s): um ou vários títulos selecionados, com juros e multa opcionais -->
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" ClipToBounds="True">
+      <StackPanel Spacing="10" Margin="20,14,20,10">
+        <TextBlock Text="{Binding DescricaoCobranca}" TextWrapping="Wrap" FontWeight="SemiBold" Foreground="{DynamicResource TxForte}" />
+        <TextBlock Text="{Binding AvisoIgnoradas}" IsVisible="{Binding TemAvisoIgnoradas}" FontSize="12" Foreground="{DynamicResource TxAviso}" TextWrapping="Wrap" />
+
+        <Border IsVisible="{Binding EmLote}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+          <StackPanel>
+            <Border Background="{DynamicResource FundoSuave}" Padding="10,6" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="85,*,95,100">
+                <TextBlock Text="Competência" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource TxSutil}" />
+                <TextBlock Grid.Column="1" Text="Descrição" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource TxSutil}" Margin="6,0" />
+                <TextBlock Grid.Column="2" Text="Vencimento" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource TxSutil}" />
+                <TextBlock Grid.Column="3" Text="Valor" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource TxSutil}" TextAlignment="Right" />
+              </Grid>
+            </Border>
+            <ScrollViewer MaxHeight="135" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding Itens}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ItemBaixa">
+                    <Border Padding="10,5" BorderBrush="{DynamicResource Linha}" BorderThickness="0,0,0,1">
+                      <Grid ColumnDefinitions="85,*,95,100">
+                        <TextBlock Text="{Binding Competencia}" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Descricao}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="6,0" />
+                        <TextBlock Grid.Column="2" Text="{Binding Vencimento}" FontSize="12" />
+                        <TextBlock Grid.Column="3" Text="{Binding Valor}" FontSize="12" TextAlignment="Right" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="155,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+          <TextBlock Text="Recebido em" VerticalAlignment="Center" Margin="0,4,8,4" />
+          <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Data}" Width="140" Margin="0,4" />
+
+          <TextBlock Grid.Row="1" Text="Juros (opcional)" VerticalAlignment="Center" Margin="0,4,8,4" />
+          <TextBox Grid.Row="1" Grid.Column="1" Name="JurosBaixa" c:Mascara.Tipo="Valor" Text="{Binding Juros}" Width="140" HorizontalAlignment="Left"
+                   Watermark="R$ 0,00" Margin="0,4" />
+
+          <TextBlock Grid.Row="2" Text="Multa (opcional)" VerticalAlignment="Center" Margin="0,4,8,4" />
+          <TextBox Grid.Row="2" Grid.Column="1" Name="MultaBaixa" c:Mascara.Tipo="Valor" Text="{Binding Multa}" Width="140" HorizontalAlignment="Left"
+                   Watermark="R$ 0,00" Margin="0,4" />
+
+          <TextBlock Grid.Row="3" Text="{Binding RotuloValorRecebido}" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,4,8,4" />
+          <TextBox Grid.Row="3" Grid.Column="1" Name="ValorBaixa" c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="140" HorizontalAlignment="Left"
+                   Margin="0,4" />
+
+          <TextBlock Grid.Row="4" Text="Observação" VerticalAlignment="Center" Margin="0,4,8,4" />
+          <TextBox Grid.Row="4" Grid.Column="1" Name="ObservacaoBaixa" Text="{Binding Observacao}" MaxLength="200"
+                   Watermark="Pix, boleto, transferência, com desconto..." Margin="0,4" />
+        </Grid>
+
+        <TextBlock FontSize="11.5" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap"
+                   Text="Os campos de juros e multa são opcionais e somam automaticamente ao valor recebido (na baixa múltipla, são rateados entre os títulos selecionados). Errou? Use Estornar baixa para reabrir." />
       </StackPanel>
-    </StackPanel>
-    <StackPanel Spacing="8">
-      <TextBlock Text="{Binding DescricaoCobranca}" TextWrapping="Wrap" FontWeight="SemiBold" />
-      <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto">
-        <TextBlock Text="Recebido em" VerticalAlignment="Center" Margin="0,4,8,4" />
-        <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Data}" Width="140" Margin="0,4" />
-        <TextBlock Grid.Row="1" Text="Valor recebido" VerticalAlignment="Center" Margin="0,4,8,4" />
-        <TextBox Grid.Row="1" Grid.Column="1" c:Mascara.Tipo="Valor" Text="{Binding Valor}" Width="140" HorizontalAlignment="Left" Margin="0,4" />
-        <TextBlock Grid.Row="2" Text="Observação" VerticalAlignment="Center" Margin="0,4,8,4" />
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Observacao}" MaxLength="200" Watermark="Pix, boleto, com juros, com desconto..." Margin="0,4" />
-      </Grid>
-      <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap"
-                 Text="O valor recebido pode ser diferente do valor da cobrança (juros, multa ou desconto). Errou? Use Estornar baixa: a cobrança volta a ficar em aberto." />
-    </StackPanel>
-  </DockPanel>
+    </ScrollViewer>
+    <Border Grid.Row="1" Background="{DynamicResource FundoJanela}" BorderBrush="{DynamicResource Linha}" BorderThickness="0,1,0,0" Padding="20,10">
+      <StackPanel Spacing="8">
+        <c:MensagensView />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button Content="Cancelar" Command="{Binding FecharFichaCommand}" MinWidth="96" HorizontalContentAlignment="Center" />
+          <Button Name="ConfirmarBaixa" Content="Confirmar baixa" Classes="accent" Command="{Binding ConfirmarCommand}" MinWidth="120" HorizontalContentAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
 </UserControl>

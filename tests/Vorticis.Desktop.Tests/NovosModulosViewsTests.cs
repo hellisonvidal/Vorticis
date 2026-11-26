@@ -26,6 +26,8 @@ public class NovosModulosViewsTests(SessaoHeadless headless)
         yield return (new E.ViewModels.ClientesEscritorioViewModel(esc), new E.Views.ClientesView());
         yield return (new E.ViewModels.ContratosViewModel(esc), new E.Views.ContratosView());
         yield return (new E.ViewModels.RelHonorariosViewModel(esc), new E.Views.RelatorioEscritorioView());
+        yield return (new E.ViewModels.RelProdutividadeViewModel(esc), new E.Views.RelatorioEscritorioView());
+        yield return (new E.ViewModels.RelCertificadosViewModel(esc), new E.Views.RelatorioEscritorioView());
         yield return (new E.ViewModels.HonorariosViewModel(esc), new E.Views.HonorariosView());
         var erp = new R.MainViewModel();
         yield return (new R.ViewModels.PainelViewModel(erp), new R.Views.PainelView());

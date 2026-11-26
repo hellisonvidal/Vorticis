@@ -1,22 +1,62 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Vorticis.Desktop.Comum.Views" xmlns:vm="using:Vorticis.Escritorio.Desktop.ViewModels"
              x:Class="Vorticis.Escritorio.Desktop.Views.CarteiraView" x:DataType="vm:CarteiraViewModel">
-  <DockPanel Margin="8">
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-      <TextBlock Classes="titulo" Text="Carteira de clientes" VerticalAlignment="Center" />
-      <Button Content="Atualizar" Command="{Binding AtualizarCommand}" />
-      <TextBlock Text="{Binding Totais}" VerticalAlignment="Center" FontSize="12" />
+  <UserControl.Styles>
+    <Style Selector="TextBlock.kpiValor">
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource TxTitulo}" />
+    </Style>
+    <Style Selector="TextBlock.kpiValor.alerta">
+      <Setter Property="Foreground" Value="{DynamicResource TxErro}" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel Margin="10,8">
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Content="Atualizar" Command="{Binding AtualizarCommand}" VerticalAlignment="Center" />
+        <StackPanel Spacing="2">
+          <TextBlock Classes="titulo" Text="Carteira de clientes" />
+          <TextBlock Text="Visão consolidada dos clientes ativos do escritório, com honorários mensais, valores em aberto e prazos de tarefas."
+                     FontSize="12" Foreground="{DynamicResource TxSutil}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+
+      <ItemsControl ItemsSource="{Binding Indicadores}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="1" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:IndicadorRelatorio">
+            <Border Background="{DynamicResource FundoCartao}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" CornerRadius="8"
+                    Padding="12,8" Margin="0,0,8,0">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Rotulo}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TxSutil}" />
+                <TextBlock Text="{Binding Valor}" Classes="kpiValor" Classes.alerta="{Binding Destaque}" />
+                <TextBlock Text="{Binding Detalhe}" FontSize="11" Foreground="{DynamicResource TxSutil}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </StackPanel>
-    <c:MensagensView DockPanel.Dock="Bottom" />
+
+    <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+      <TextBlock Text="{Binding Totais}" FontSize="11.5" Foreground="{DynamicResource TxSutil}" />
+      <c:MensagensView />
+    </StackPanel>
+
     <DataGrid ItemsSource="{Binding Lista}" IsReadOnly="True" AutoGenerateColumns="False">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding Codigo}" Width="70" />
-        <DataGridTextColumn Header="CNPJ/CPF" Binding="{ReflectionBinding Documento}" Width="150" />
+        <DataGridTextColumn Header="Código" Binding="{ReflectionBinding CodigoTexto}" Width="80" />
+        <DataGridTextColumn Header="CNPJ/CPF" Binding="{ReflectionBinding Documento}" Width="155" />
         <DataGridTextColumn Header="Cliente" Binding="{ReflectionBinding Nome}" Width="*" />
-        <DataGridTextColumn Header="Regime" Binding="{ReflectionBinding Regime}" Width="130" />
-        <DataGridTextColumn Header="Tarefas abertas" Binding="{ReflectionBinding Tarefas}" Width="150" />
-        <DataGridTextColumn Header="Honorário mensal" Binding="{ReflectionBinding Honorario}" Width="130" />
-        <DataGridTextColumn Header="Em aberto" Binding="{ReflectionBinding EmAberto}" Width="110" />
+        <DataGridTextColumn Header="Regime" Binding="{ReflectionBinding Regime}" Width="135" />
+        <DataGridTextColumn Header="Tarefas abertas" Binding="{ReflectionBinding Tarefas}" Width="155" />
+        <DataGridTextColumn Header="Honorário mensal" Binding="{ReflectionBinding Honorario}" Width="135" CellStyleClasses="num numerica" />
+        <DataGridTextColumn Header="Em aberto" Binding="{ReflectionBinding EmAberto}" Width="115" CellStyleClasses="num numerica" />
         <DataGridTextColumn Header="Contato" Binding="{ReflectionBinding Contato}" Width="240" />
       </DataGrid.Columns>
     </DataGrid>

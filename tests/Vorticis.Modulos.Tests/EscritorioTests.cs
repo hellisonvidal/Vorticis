@@ -69,11 +69,37 @@ public class RegrasEscritorioTests
         var c = new ContratoEscritorio(0, 3, 7, ModeloContrato.Cliente, "x", 250m, Periodicidade.Mensal, 5, new DateOnly(2026, 9, 25), null, "NENHUM", null, "-");
         var mensal = RegrasEscritorio.ParcelasDoContrato(c, 12, vencimentoNoMesSeguinte: true);
         Assert.Equal(12, mensal.Count);
-        Assert.Equal((new DateOnly(2026, 9, 1), new DateOnly(2026, 10, 5), "Contrato nº 3", "1/12"), (mensal[0].Competencia, mensal[0].Vencimento, mensal[0].Descricao, mensal[0].ParcelaTexto));
+        Assert.Equal((new DateOnly(2026, 9, 1), new DateOnly(2026, 10, 5), "Honorários", "1/12"), (mensal[0].Competencia, mensal[0].Vencimento, mensal[0].Descricao, mensal[0].ParcelaTexto));
         Assert.Equal(new DateOnly(2027, 8, 1), mensal[^1].Competencia);
         var anual = RegrasEscritorio.ParcelasDoContrato(c with { Periodicidade = Periodicidade.Anual }, 24, vencimentoNoMesSeguinte: false);
         Assert.Equal([new DateOnly(2026, 9, 5), new DateOnly(2027, 9, 5)], anual.Select(p => p.Vencimento));
         Assert.Single(RegrasEscritorio.ParcelasDoContrato(c with { Periodicidade = Periodicidade.Unico }, 12, false));
+    }
+
+    [Fact]
+    public void Rateio_da_baixa_multipla_distribui_juros_e_multa_sem_diferenca_de_centavos()
+    {
+        CobrancaHonorario C(long id, decimal v) => new(id, 7, new DateOnly(2027, (int)id, 1), v, new DateOnly(2027, (int)id, 10), SituacaoCobranca.Aberta, null, null, "Padaria");
+        var tres = new[] { C(1, 100m), C(2, 100m), C(3, 100m) };
+        var r = RegrasEscritorio.RatearBaixa(tres, 311m, jurosTotal: 1m, multaTotal: 10m);
+        Assert.Equal(3, r.Count);
+        Assert.Equal([0.33m, 0.33m, 0.34m], r.Select(x => x.Juros));
+        Assert.Equal([3.33m, 3.33m, 3.34m], r.Select(x => x.Multa));
+        Assert.Equal(311m, r.Sum(x => x.ValorRecebido));
+
+        var rel = TabelasEscritorio.Honorarios(
+        [
+            new(1, 7, new DateOnly(2027, 1, 1), 1000m, new DateOnly(2027, 1, 10), SituacaoCobranca.Recebida, new DateOnly(2027, 1, 15), 1035m, "Padaria",
+                Descricao: "Honorários", Parcela: 1, Parcelas: 12, Juros: 15m, Multa: 20m),
+            new(2, 7, new DateOnly(2027, 2, 1), 1000m, new DateOnly(2027, 2, 10), SituacaoCobranca.Aberta, null, null, "Padaria", Descricao: "Honorários"),
+        ], new DateOnly(2027, 3, 1));
+        Assert.Equal(9, rel.Colunas.Count);
+        Assert.Equal("Competência", rel.Colunas[0].Titulo);
+        Assert.Equal("Juros / multa", rel.Colunas[5].Titulo);
+        Assert.Equal((35m, 1035m), ((decimal)rel.Linhas[0].Valores[5]!, (decimal)rel.Linhas[0].Valores[8]!));
+        Assert.True(rel.Linhas[1].Destaque);     // vencida em destaque
+        Assert.Null(rel.Linhas[1].Valores[8]);   // em aberto não exibe 0,00 em Valor recebido
+        Assert.Equal((2000m, 35m, 1035m), ((decimal)rel.Linhas[^1].Valores[4]!, (decimal)rel.Linhas[^1].Valores[5]!, (decimal)rel.Linhas[^1].Valores[8]!));
     }
 
     [Fact]
@@ -333,8 +359,20 @@ public class EscritorioIntegracaoTests(BancoDeTeste db) : IClassFixture<BancoDeT
         Assert.Equal(1, (await svc.RenovarContratosAsync(escritorio, new DateOnly(2031, 12, 10), adm, ct)).Valor);
         Assert.Equal(36, (await svc.ParcelasDoContratoAsync(escritorio, c1.Id, adm, ct)).Count);
         Assert.Equal(0, (await svc.RenovarContratosAsync(escritorio, new DateOnly(2032, 6, 1), adm, ct)).Valor);
-        Assert.All(await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: cli.Valor),
-                   c => Assert.Equal((c1.Id, "Contrato nº 1"), (c.ContratoId!.Value, c.Descricao)));
+        var cobsContrato = await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: cli.Valor);
+        Assert.All(cobsContrato, c => Assert.Equal((c1.Id, "Honorários"), (c.ContratoId!.Value, c.Descricao)));
+
+        // baixa múltipla com juros e multa opcionais e estorno zerando encargos
+        var loteBaixa = cobsContrato.Take(2).ToList();
+        var rb = await svc.ReceberLoteAsync(escritorio, loteBaixa, new DateOnly(2030, 2, 15), 1830m, adm, ct, "Pix lote", juros: 10m, multa: 20m);
+        Assert.True(rb.Sucesso, string.Join("; ", rb.Erros));
+        Assert.Equal(2, rb.Valor);
+        var baixadas = (await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: cli.Valor))
+                       .Where(c => loteBaixa.Any(b => b.Id == c.Id)).ToList();
+        Assert.All(baixadas, c => Assert.Equal((SituacaoCobranca.Recebida, 915m, 5m, 10m, "Pix lote"), (c.Situacao, c.ValorRecebido, c.Juros, c.Multa, c.ObservacaoBaixa)));
+        Assert.True((await svc.AlterarSituacaoAsync(escritorio, baixadas[0], SituacaoCobranca.Aberta, adm, ct)).Sucesso);
+        var reaberta = (await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: cli.Valor)).Single(c => c.Id == baixadas[0].Id);
+        Assert.Equal((SituacaoCobranca.Aberta, 0m, 0m), (reaberta.Situacao, reaberta.Juros, reaberta.Multa));
         Assert.Empty(await svc.ListarCobrancasAsync(escritorio, null, false, adm, ct, vencimentoDe: new DateOnly(2030, 1, 1), pessoa: forn));   // não mistura clientes
 
         // cliente com movimento não é excluído

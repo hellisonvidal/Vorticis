@@ -262,22 +262,32 @@ public class DadosEscritorioTelaTests(BancoDeTeste db, SessaoHeadless headless) 
                 Assert.Contains("24 parcela(s)", ctr.ResumoParcelas);
                 ctr.FichaAberta = false;
                 await hon.CarregarDadosCommand.ExecuteAsync(null);
-                var doContrato = hon.Cobrancas.Where(c => c.Descricao == $"Contrato nº {numero}").ToList();
+                var doContrato = hon.Cobrancas.Where(c => c.C.ContratoId is not null).ToList();
                 Assert.Equal(18, doContrato.Count);                                                        // vencimentos até 31/12/2028
+                Assert.All(doContrato, c => Assert.Equal("Honorários", c.Descricao));
                 Assert.Equal(("07/2027", "31/07/2027", "1/12"), (doContrato[0].Competencia, doContrato[0].Vencimento, doContrato[0].Parcela));
                 Assert.Equal(("06/2028", "30/06/2028"), (doContrato[11].Competencia, doContrato[11].Vencimento));
                 // o filtro por vencimento: só até 31/12/2027
                 hon.VencimentoAte = new DateTime(2027, 12, 31);
                 await Calma(20);
-                Assert.Equal(6, hon.Cobrancas.Count(c => c.Descricao == $"Contrato nº {numero}"));
-                hon.Selecionada = hon.Cobrancas[0];
+                Assert.Equal(6, hon.Cobrancas.Count(c => c.C.ContratoId is not null));
+                // baixa múltipla de dois títulos selecionados, com juros e multa opcionais
+                hon.Marcadas = [.. hon.Cobrancas.Where(c => c.C.ContratoId is not null).Take(2)];
                 hon.BaixarCommand.Execute(null);
                 Assert.True(hon.Baixa.FichaAberta);
+                Assert.Equal(2, hon.Baixa.Quantidade);
+                Assert.Equal("600,00", hon.Baixa.Valor);
+                hon.Baixa.Juros = "10,00";
+                hon.Baixa.Multa = "6,00";
+                Assert.Equal("616,00", hon.Baixa.Valor);
                 hon.Baixa.Observacao = "Pix";
                 await hon.Baixa.ConfirmarCommand.ExecuteAsync(null);
                 await Calma(20);
-                Assert.Equal("Recebida", hon.Cobrancas[0].Situacao);
-                Assert.Contains("(Pix)", hon.Cobrancas[0].Recebido);
+                var pagasContrato = hon.Cobrancas.Where(c => c.C.ContratoId is not null && c.Situacao == "Recebida").ToList();
+                Assert.Equal(2, pagasContrato.Count);
+                Assert.Contains("juros 5,00", pagasContrato[0].Recebido);
+                Assert.Contains("multa 3,00", pagasContrato[0].Recebido);
+                Assert.Contains("Pix", pagasContrato[0].Recebido);
                 if (pasta is not null) { var wh = janela.JanelaDa(hon)!; wh.CaptureRenderedFrame(); Dispatcher.UIThread.RunJobs(); wh.CaptureRenderedFrame()?.Save(Path.Combine(pasta, "escritorio_financeiro_honorarios.png")); }
                 return true;
             }

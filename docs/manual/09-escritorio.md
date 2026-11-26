@@ -78,7 +78,7 @@ Desmarcar um módulo aqui tira a empresa da lista daquele módulo, mas não apag
 **Para que serve:** ver todos os clientes do escritório numa só lista.
 **Onde fica:** *Relatórios › Carteira de clientes*.
 
-A lista mostra código, CNPJ/CPF, nome, regime, tarefas em aberto (e quantas estão atrasadas), honorário mensal, honorários em aberto e o contato. **Atualizar** relê os dados. Só aparecem os clientes ativos.
+A tela mostra no alto os cartões de resumo (clientes ativos, honorários mensais, valores em aberto e tarefas abertas/atrasadas) e, abaixo, a lista com código, CNPJ/CPF, nome, regime, tarefas abertas, honorário mensal, honorários em aberto e contato. **Atualizar** relê os dados. Só aparecem os clientes ativos.
 
 ## Tarefas e prazos
 
@@ -142,7 +142,7 @@ Na aba **Condições**, o quadro **Parcelas no Financeiro › Honorários** most
 3. **Estender parcelas** lança mais um prazo, a partir da competência seguinte à da última parcela, com o mesmo vencimento, e estende o fim da vigência.
 4. **Renovação automática**: quando vence a última parcela, o contrato lança sozinho as parcelas do prazo seguinte (ao abrir *Financeiro › Honorários*), como se você clicasse em Estender parcelas.
 
-As parcelas aparecem em *Financeiro › Honorários* com a descrição "Contrato nº ...". Se o contratante já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses.
+As parcelas aparecem em *Financeiro › Honorários* com a descrição **Honorários**. Se o contratante já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses.
 
 Para encerrar um contrato sem perder o histórico, desmarque **Ativo** e grave. O valor dos honorários cobrados fica em [Financeiro › Honorários](#honorarios-e-cobrancas).
 
@@ -160,7 +160,7 @@ A tela mostra as cobranças com **vencimento** entre as datas escolhidas (*de* e
    - **Competência (mês seguinte)**: o vencimento fica no mês seguinte ao da competência (o honorário de 03/2027 vence em abril). É o padrão.
    - **Regime de caixa (mesmo mês)**: o vencimento fica no próprio mês da competência (o honorário de 03/2027 vence em março).
    Marcar uma desmarca a outra; a escolha fica para os próximos lançamentos.
-4. Escolha a **Periodicidade** (parcela única, mensal, bimestral, trimestral, semestral ou anual) e quantas **parcelas**: o sistema cria as parcelas seguintes. A **prévia** mostra cada parcela com a competência, o vencimento e o valor antes de lançar.
+4. Escolha a **Periodicidade** (parcela única, mensal, bimestral, trimestral, semestral ou anual) e quantas **parcelas**: o sistema cria as parcelas seguintes. A **prévia** mostra cada parcela com a competência, o vencimento e o valor antes de lançar, mantendo os botões **Cancelar** e **Lançar** sempre fixos no rodapé da janela.
 5. **Lançar**. Se o cliente já tem honorário em alguma das competências, nada é lançado e o aviso mostra os meses: escolha outra competência, menos parcelas, ou lance como cobrança avulsa. Cobranças excluídas ou canceladas não contam: depois de excluí-las, é só lançar de novo.
 
 ### Pagamento à vista
@@ -172,12 +172,13 @@ Para cobrar um serviço extra (abertura de empresa, declaração de IRPF, consul
 ### Alterar uma cobrança
 Selecione a cobrança e clique em **Alterar**: corrija a **competência**, o **vencimento** (digite dia/mês/ano), o **valor** ou a **descrição** e clique em **Gravar**. Só cobranças em aberto podem ser alteradas (na recebida, estorne a baixa antes). O honorário não pode ir para uma competência em que o cliente já tem outro honorário.
 
-### Baixas
-1. Selecione a cobrança e clique em **Baixar** (ou dê um duplo clique nela).
-2. Confira **Recebido em** e o **Valor recebido** (pode ser diferente do valor da cobrança, com juros, multa ou desconto) e, se quiser, escreva uma **Observação** (Pix, boleto, com desconto...).
-3. **Confirmar baixa**.
+### Baixas (única ou múltipla)
+1. Selecione uma cobrança em aberto — ou selecione **dois ou mais títulos** na lista com **Ctrl + clique** ou **Shift + clique** — e clique em **Baixar** (ou tecle **Enter** / dê duplo clique).
+2. A janela traz todos os títulos em aberto selecionados e soma os valores.
+3. Confira **Recebido em**, preencha se houver **Juros (opcional)** e **Multa (opcional)** — eles são somados automaticamente ao **Valor recebido** (**Total recebido** na baixa múltipla, rateado proporcionalmente entre os títulos) — e, se quiser, escreva uma **Observação** (Pix, boleto, transferência...).
+4. **Confirmar baixa**.
 
-**Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto); **Cancelar cobrança** cancela uma cobrança em aberto.
+**Estornar baixa** desfaz o recebimento (a cobrança volta a ficar em aberto, zerando juros e multa); **Cancelar cobrança** cancela uma cobrança em aberto.
 
 ### Reajuste anual
 
@@ -198,7 +199,8 @@ Uma vez por ano, no aniversário do contrato, aplique o reajuste do índice comb
 
 **Onde fica:** *Relatórios › Relatório de honorários*. Aparece na tela e exporta em PDF, Excel e CSV.
 
-- **Relatório de honorários**: as cobranças do cliente escolhido no topo com **vencimento** entre as datas escolhidas (dia/mês/ano inicial e final), com vencimento, cliente, descrição, valor, situação e recebimento; no fim, o total, o que está em aberto e o recebido.
+- Escolha o período de **vencimento** (inicial e final) e, se quiser, filtre pela **Situação** (todas, em aberto, vencidas, recebidas ou canceladas) e clique em **Gerar**.
+- No alto aparecem os cartões de resumo (**Total faturado**, **Total recebido**, **Em aberto** e **Em atraso**) e, na tabela, as cobranças do cliente escolhido no topo com competência, vencimento, cliente, descrição (com a parcela), valor, juros/multa, situação, data de recebimento e valor recebido, destacando os títulos vencidos e a linha de totais.
 
 ## Parâmetros
 
@@ -209,12 +211,12 @@ Uma vez por ano, no aniversário do contrato, aplique o reajuste do índice comb
 **Para que serve:** ver quem está em dia com as tarefas.
 **Onde fica:** *Relatórios › Produtividade da equipe*.
 
-Escolha o período (pelo **vencimento** das tarefas) e clique em **Gerar**. Para cada responsável, a tabela mostra quantas tarefas venceram no período, quantas foram concluídas, quantas **no prazo** (concluídas até o dia do vencimento) e **com atraso**, as **atrasadas em aberto**, as que ainda **vão vencer** e o **% no prazo**. As tarefas canceladas ficam de fora. O relatório soma as tarefas de todos os clientes e pode ser exportado para PDF, Excel e CSV.
+Escolha o período (pelo **vencimento** das tarefas) e clique em **Gerar**. Os cartões no alto resumem o total de tarefas do período, as concluídas no prazo, as concluídas com atraso e as atrasadas em aberto; abaixo, para cada responsável, a tabela mostra quantas tarefas venceram no período, quantas foram concluídas, quantas **no prazo** (concluídas até o dia do vencimento) e **com atraso**, as **atrasadas em aberto**, as que ainda **vão vencer** e o **% no prazo**. As tarefas canceladas ficam de fora. O relatório soma as tarefas de todos os clientes e pode ser exportado para PDF, Excel e CSV.
 
 ## Certificados digitais a vencer
 
 **Para que serve:** renovar os certificados digitais dos clientes antes que vençam (sem certificado não há transmissão de SPED, eSocial, DCTFWeb nem emissão de notas).
 **Onde fica:** *Relatórios › Certificados digitais a vencer* (somente o administrador).
 
-Informe até que data quer ver (60 dias à frente, por padrão) e clique em **Gerar**: aparecem os certificados cadastrados em *Configurações › Certificados digitais* com validade até essa data, com a empresa, o titular, o tipo, a validade e a situação. Os já vencidos aparecem em destaque.
+Informe **Validade até** (60 dias à frente, por padrão) e clique em **Gerar**: os cartões no alto mostram quantos certificados já venceram e quantos vencem nos próximos 30 dias, e a tabela lista os certificados cadastrados em *Configurações › Certificados digitais* com a empresa, o titular, o tipo, a descrição, a validade e a situação. Os já vencidos aparecem em destaque.
 
